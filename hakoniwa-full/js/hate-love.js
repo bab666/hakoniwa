@@ -2,7 +2,9 @@
    ■ 設定：気持ちの関係「愛憎」（ties.js の T.lovehate）。どの関係にも重ねられる。相手の気持ち both＝双方。古い保存の形（敵対・不仲の欄 lh：a／b／both）も読む
    ■ 判定：HK.LoveHate（x はエンジン型の ctx でも、物語型の S でもよい。hate-kit.js の tieList と同じ流儀）
        dir(x, a, b) → 'a'（a が b に）／'b'（b が a に）／'both'／''（設定のまま。a から見た向き）
-       has(x, a, b) → a が b に愛憎を持つか。恋愛・R18にしない相手・恋愛相手の固定（ほかの人）・家族（恋愛：なし）・無関心・恐怖の組では持たない（ふつうの敵対）
+       has(x, a, b) → a が b に愛憎を持つか。恋愛・R18にしない相手・恋愛相手の固定（ほかの人）・無関心・恐怖の組では持たない（ふつうの敵対）。
+         家族（恋愛：自動＝なし）は持つ（表の顔 kin＝口の悪い家族。恋愛・体の関係にはならない：sexOk と engine.js の pf.kin が止める。2026-10-29）
+       face(x, a, b) → 表の顔 hate／love／kin／peer（構う・嫉妬・挑発の文と結末の書き分け。顔ごとの文は hate-love-more.js の HK.LoveHate.FX）
        sexOk(x, a, b) → 愛憎の二人を体の関係にしてよいか（恋愛対象を両方向・受け攻め・縛り・R18に参加・その場にいる。全年齢では常に偽）
    ■ 振る舞い（全年齢でも出る。関係の値で動く箱庭の共通の出来事 HK.COMMON）
        構う（tie_lh_kamau）：わざと突っかかる・嫌味を言いながら隣に座る・物を取り上げて追いかけさせる・世話を焼いて「勘違いするな」・ほかの人といる相手に割り込む
@@ -12,7 +14,9 @@
        物語型（邪神村・吹雪の館・人狼など。HateKit.storyTick）にも「構う」を出す（結果に lh: true。opt.lhSkip(a, b) が真の組は飛ばす：
          邪神村・館は、同じ二人の「揉める」（feud-kit.js の HK.Feud.clash）と同じ区切りで重ねないために使う）
    ■ 恋愛対象（HK.canLove 両方向）と受け攻め（HK.Pos.okSex）は越えない：合わない組は、構う・嫉妬するだけで体の関係にはならない（R18 の場面は hate-love-r18.js・hate-sex-r18.js）
-   ■ 結末：愛憎の組で、体の関係か強い絡み（構う・嫉妬が合わせて3回以上）があれば、組の結末の名前を「腐れ縁（愛憎）」に（片方だけ：kusare1／双方：kusare。epilogue.js に行く末の一文）
+   ■ 結末：愛憎の組で、体の関係か強い絡み（構う・嫉妬・新しい出来事が合わせて3回以上）があれば、表の顔で 3 種に（2026-10-29。設計 2-5）：
+       腐れ縁（愛憎）（嫌悪系・対等系。片方だけ：kusare1／双方：kusare）／喧嘩ばかりの恋人（恋人のまま。分類は lovers のまま名前だけ・印 p.lh='couple'）／
+       口の悪い家族（家族系。lhkin／lhkin1）。epilogue.js に行く末の一文、endings.js の合コン・クラスメイトの結末に行
    台詞は3本のベース「くだけた常体｜硬い常体｜敬語」（一人称は「私」、二人称は「あなた」。口調の辞書が言い換える）。登場人物はすべて成人として扱う */
 (function () {
   'use strict';
@@ -60,10 +64,13 @@
     },
     /* 愛憎を持たない扱いにする組（ふつうの敵対としてふるまう） */
     off: function (x, a, b) {
-      if (HK.ngExplicit && HK.ngExplicit(a, b)) return true;
+      /* 恋愛・R18にしない相手（loveNG の ng）。「恋愛：なし」（noLove。家族の自動を含む）は外さない：構う・嫉妬はして、恋愛・体の関係にはならない
+         （設計 2-4。恋愛は engine.js の romanceOk・pf.kin、体の関係は下の sexOk の canLove が止める。2026-10-29） */
+      if (a.ng && a.ng.indexOf(b.i) >= 0) return true;
+      if (b.ng && b.ng.indexOf(a.i) >= 0) return true;
       if (HK.lockOut && HK.lockOut(a, b)) return true;
       if (isCtx(x)) {
-        if (x.pair(a, b).kin) return true;
+        /* 家族（恋愛：なし）は外さない（表の顔 kin。体の関係は sexOk が止める。2026-10-29） */
         if (HK.Ties.apathy && (HK.Ties.apathy(x, a, b) || HK.Ties.fears(x, a, b) || HK.Ties.fears(x, b, a))) return true;
       } else if (tieList(x, a, b).some(function (t) { return (t.type === 'apathy' && t.a === a.i) || t.type === 'fear' || (t.noev === 'off' && t.type === 'lovehate'); })) {
         /* 物語型でも、無関心（a→b）・恐怖（どちら向きでも）の組と、愛憎の関係に「出来事：起こさない」を付けた組は持たない扱い（2026-10-29。調査の気づき 6） */
@@ -283,12 +290,40 @@
     cold: L('{b}は、{a}のほうを見もしなかった。返事の代わりに、小さく肩をすくめただけだった。{a}の言葉は、行き場をなくして宙に浮いた。|{b}は面倒くさそうに{a}を一瞥し、すぐに目を閉じた。相手にするだけ無駄だと、顔に書いてあった。{a}は唇を噛んだ。|{b}は眉ひとつ動かさずに、壁のほうへ顔を向けた。{a}が何をしたいのか、考える気もないようだった。肩を並べたまま、{a}は舌打ちをひとつした。'),
     annoy: L('{b}は露骨に顔をしかめて、できるかぎり{a}から体を離した。何を企んでいるのかと、疑うような目だった。{a}がなぜ自分に絡んでくるのか、{b}には見当もつかなかった。|{b}は、うんざりしたように息を吐いた。嫌っている相手とこの狭さに押し込められているだけでも、迷惑でしかなかった。{b}は身をよじって、{a}に背を向けた。|{b}は{a}の手を払いのけた。触れられた場所を、汚れでも落とすように軽くはたいた。{a}の顔が、一瞬だけ歪んだ。')
   };
+  /* 強く当たった（突き放したあとの戸惑い tie_lh_regret の引き金）／優しくした（自己嫌悪 tie_lh_selfhate・複雑 tie_lh_mixed の引き金）構い方 */
+  var HARD = { jab: 1, grab: 1, cut: 1, quarrel: 1, chase: 1, snap: 1, vie: 1, jeal: 1 }, SOFT = { care: 1, kcare: 1, lose: 1, rescue: 1 };
+  LH.HARD = HARD; LH.SOFT = SOFT;
+  /* 直近の構い方を覚える（エンジン型は組の記録 pf.lhK[持つ側]、物語型は S.lhK['a>b']。続きの出来事が見る） */
+  LH.mark = function (x, a, b, kind) {
+    var o = { kind: kind, hard: !!HARD[kind], soft: !!SOFT[kind] };
+    if (isCtx(x)) { o.at = x.stepIndex; var pf = x.pair(a, b); (pf.lhK = pf.lhK || {})[a.i] = o; }
+    else { x._lhTick = x._lhTick || 0; o.at = x._lhTick; (x.lhK = x.lhK || {})[a.i + '>' + b.i] = o; }
+    return o;
+  };
+  LH.lastMark = function (x, a, b) { return isCtx(x) ? ((x.pair(a, b).lhK || {})[a.i] || null) : ((x.lhK || {})[a.i + '>' + b.i] || null); };
+  var FACE_JA = { hate: '嫌悪', love: '素直になれない恋', kin: '口の悪い家族', peer: '張り合う相手' };
+  LH.FACE_JA = FACE_JA;
+  /* 顔ごとの構い方（hate-love-more.js の FX.KAMAU。嫌悪系は上の KAMAU） */
+  function faceKind(x, a, fc, c) {
+    var FK = LH.FX && LH.FX.KAMAU && LH.FX.KAMAU[fc], t = a.tr || {};
+    if (!FK) return '';
+    var w = Object.keys(FK).map(function (k) { return [k, FK[k].w ? FK[k].w(t) : 0.5]; });
+    if (c && fc !== 'kin') w.push(['cut', 0.45 + (t.jealous || 0) * 0.6]);
+    var sum = 0, r;
+    w.forEach(function (q) { sum += q[1]; });
+    r = rnd(x) * sum;
+    for (var i = 0; i < w.length; i++) { r -= w[i][1]; if (r <= 0) return w[i][0]; }
+    return w[0][0];
+  }
   LH.kamau = function (x, a, b, c) {
-    var cr = !!(x && x.hkSpace === 'cramped');
-    var kind = cr ? 'jab' : kamauKind(x, a, b, c), K = KAMAU[kind], m = { a: a, b: b, c: c };
+    var cr = !!(x && x.hkSpace === 'cramped'), fc = LH.face(x, a, b), FX = LH.FX || {}, FK = !cr && fc !== 'hate' && FX.KAMAU ? FX.KAMAU[fc] : null;
+    /* 狭い場所は顔を問わず「わざと突っかかる」だけ（今までどおり） */
+    var kind = cr ? 'jab' : FK ? faceKind(x, a, fc, c) : kamauKind(x, a, b, c);
+    var K = (FK && FK[kind]) || KAMAU[kind], m = { a: a, b: b, c: c };
     var text = pick(x, cr ? CRAMPED.jab : K.lead) + a.name + pick(x, K.say[ps(a)]);
-    var both = LH.has(x, b, a), react;
-    if (both) { text += pick(x, BACK.lead) + b.name + pick(x, BACK.say[ps(b)]); react = b.name + 'も同じ気持ち（愛憎：双方）。言い返しながら、構い返した'; }
+    var both = LH.has(x, b, a), react, NF = FK && FX.NOFEEL ? FX.NOFEEL[fc] : null;
+    if (both) { text += pick(x, (FK && !cr && FX.BACK_LEAD && FX.BACK_LEAD[fc]) || BACK.lead) + b.name + pick(x, ((FK && FX.BACK_SAY && FX.BACK_SAY[fc]) || BACK.say)[ps(b)]); react = b.name + 'も同じ気持ち（愛憎：双方）。言い返しながら、構い返した'; }
+    else if (NF && !cr) { text += pick(x, NF); react = b.name + 'は愛憎を持たない。' + a.name + 'の態度に首を傾げた'; }
     else if (hateLv(x, b, a) >= 35 && rnd(x) < 0.6) { text += pick(x, cr ? CRAMPED.annoy : NOFEEL.annoy); react = b.name + 'は愛憎を持たない（ふつうの敵対）。苛立って突き放した'; }
     else { text += pick(x, cr ? CRAMPED.cold : NOFEEL.cold); react = b.name + 'は愛憎を持たない（ふつうの敵対）。気にも留めなかった'; }
     if (isCtx(x)) {
@@ -296,7 +331,8 @@
       if (both) x.mod(b, a, { att: 3, ten: 1 }); else x.mod(b, a, { ten: 2 });
       var pf = x.pair(a, b); pf.lhN = (pf.lhN || 0) + 1;
     } else { var k = a.i + '>' + b.i; x.lhN = x.lhN || {}; x.lhN[k] = (x.lhN[k] || 0) + 1; }
-    return { text: fill(text, m), why: LH.why(x, a, b) + '／' + K.label + '／' + react, kind: kind, both: both };
+    LH.mark(x, a, b, kind);
+    return { text: fill(text, m), why: LH.why(x, a, b) + '／表の顔：' + FACE_JA[fc] + '／' + K.label + '／' + react, kind: kind, both: both, face: fc };
   };
 
   /* ---------- エンジン型の共通の出来事 ---------- */
@@ -360,21 +396,30 @@
         (pf.lhJAt = pf.lhJAt || {})[a.i] = ctx.stepIndex; pf.lhJeal = (pf.lhJeal || 0) + 1;
         var tr = a.tr || {}, kinds = [['iyami', 0.7 + (tr.cp || 0) * 0.3], ['jama', 0.6 + (tr.fc || 0) * 0.4], ['yatsu', 0.4 + (tr.aggr || 0) * 0.5 + (tr.impulse || 0) * 0.2], ['teki', 0.4 + (tr.aggr || 0) * 0.4 + (tr.jealous || 0) * 0.3]];
         var k = HK.weighted(ctx.rng, kinds, function (q) { return q[1]; })[0], J = JEAL[k], m = { a: a, b: b, t: t };
-        var text = ctx.pick(J.lead) + a.name + ctx.pick((J.to === 't' ? JEAL_T : JEAL_R)[ps(a)]) + ctx.pick(JEAL_TAIL[LH.has(ctx, t, a) ? 'both' : 'one']);
+        /* 表の顔（設計 2-1）：愛憎の相手に向ける台詞と、相手の受け止め方を顔ごとに（hate-love-more.js の FX.JEAL_T・FX.JEAL_TAIL。嫌悪系は今までの文） */
+        var fc = LH.face(ctx, a, t), FX = LH.FX || {}, JT = (fc !== 'hate' && FX.JEAL_T && FX.JEAL_T[fc]) || JEAL_T, JTL = (fc !== 'hate' && FX.JEAL_TAIL && FX.JEAL_TAIL[fc]) || JEAL_TAIL;
+        var text = ctx.pick(J.lead) + a.name + ctx.pick((J.to === 't' ? JT : JEAL_R)[ps(a)]) + ctx.pick(JTL[LH.has(ctx, t, a) ? 'both' : 'one']);
+        if (J.to === 't') LH.mark(ctx, a, t, 'jeal');
         /* 取られそうで、口では嫌っている相手が欲しくなる（惹かれを足し、張りつめを足さない。2026-10-28 担当LG：利用者の要望「愛憎は、誰かに取られると思ったら自分が手に入れたいと思う気持ちもある」） */
         ctx.mod(a, b, { ten: 10, aff: -6 }); ctx.mod(a, t, { att: 7, ten: 0 }); ctx.stress(a, 6);
         if (HK.Obsess && HK.Obsess.feed) HK.Obsess.feed(ctx, a, t, 3);
-        return { with: [t], text: fill(text, m), why: a.name + 'の嫉妬（愛憎）。' + t.name + 'が' + b.name + 'と' + (j.s === 2 ? '親しくしたばかりだった' : '親しげにしていた') + '。口では嫌っている相手なのに、我慢ならなかった／' + J.label, mag: 18 };
+        return { with: [t], text: fill(text, m), why: a.name + 'の嫉妬（愛憎）。' + t.name + 'が' + b.name + 'と' + (j.s === 2 ? '親しくしたばかりだった' : '親しげにしていた') + '。口では嫌っている相手なのに、我慢ならなかった／表の顔：' + FACE_JA[fc] + '／' + J.label, mag: 18 };
       }
     });
   }
 
-  /* ---------- 物語型（HateKit.storyTick）：愛憎の組には「構う」も出す ---------- */
+  /* ---------- 物語型（HateKit.storyTick）：愛憎の組には「構う」も出す ----------
+     opt.kinds が 'love'（人狼：好意が絡む二人だけの敵視）の箱庭では、構うに置き換えない（2026-10-29。調査の気づき 4）。
+     構ったあとの続き（突き放したあとの戸惑い・優しくしたあとの自己嫌悪・素直になれない仲直り）と、相手の危機に動く場面は hate-love-more.js の LH.storyMore */
   var H = HK.HateKit;
   if (H && H.storyTick && !H.storyTick._lh) {
     var st0 = H.storyTick;
     H.storyTick = function (S, live, opt) {
       opt = opt || {};
+      if (opt.kinds === 'love') return st0.apply(this, arguments);
+      S._lhTick = (S._lhTick || 0) + 1;
+      var more = LH.storyMore ? LH.storyMore(S, live || [], opt) : null;
+      if (more) return more;
       var ps0 = [];
       (live || []).forEach(function (a) { (live || []).forEach(function (b) { if (a !== b && here(a) && here(b) && LH.has(S, a, b) && !(opt.lhSkip && opt.lhSkip(a, b))) ps0.push([a, b]); }); });
       if (ps0.length && S.rng() < (opt.rate || 0.12) * 1.4) {
@@ -388,22 +433,45 @@
     H.storyTick._lh = true;
   }
 
-  /* ---------- 結末：腐れ縁（愛憎） ---------- */
-  var LAB = { kusare: { name: '腐れ縁（愛憎）', cls: 'obsess', pol: 0 }, kusare1: { name: '腐れ縁（愛憎）', cls: 'obsess', pol: 0 } };
+  /* ---------- 結末（設計 2-5）：腐れ縁（愛憎）（嫌悪系・対等系）／喧嘩ばかりの恋人（恋愛系で恋人のまま）／口の悪い家族（家族系） ----------
+     条件はどれも「体の関係か強い絡み（構う・嫉妬・挑発×2・新しい出来事）が 3 回以上」。
+     喧嘩ばかりの恋人は、結末の分類を「恋人」（lovers）のまま変えず（恋人の数え上げ・行く末がそのまま効くように）、名前だけを差し替える（endings.js の HK.simulate の包みが LH.endPatch を呼ぶ。p.lh="couple"） */
+  var LAB = {
+    kusare: { name: '腐れ縁（愛憎）', cls: 'obsess', pol: 0 }, kusare1: { name: '腐れ縁（愛憎）', cls: 'obsess', pol: 0 },
+    lhkin: { name: '口の悪い家族', cls: 'partner', pol: 1 }, lhkin1: { name: '口の悪い家族', cls: 'partner', pol: 1 }
+  };
+  var COUPLE_NAME = '喧嘩ばかりの恋人';
   var OVER = /^(lovehate|rivals|night|vague|dislike|awkward|strangers|oneway|obsess|fwbsettle|fwbend|friends|pining|guard|accomplice)$/;
+  var KIN_OVER = /^(kinbond|kinfeud|guard|accomplice|awkward|strangers)$/;
+  var END = null;   /* 喧嘩ばかりの恋人の組（この回の記録 log ごと。結果の log は後の包みで写しになることがあるので、結果には回ごとに消す END をそのまま当てる） */
   LH.refine = function (ctx, A, B, pf, cl) {
-    if (!cl || !pf || pf.kill || pf.couple || !OVER.test(cl.id)) return null;
+    if (!cl || !pf || pf.kill) return null;
     var ha = LH.has(ctx, A, B), hb = LH.has(ctx, B, A);
     if (!ha && !hb) return null;
-    var body = !!(pf.night || pf.hateSex || pf.hateNight), n = (pf.lhN || 0) + (pf.lhJeal || 0) + (pf.lhLewd || 0) * 2;
+    var body = !!(pf.night || pf.hateSex || pf.hateNight), n = (pf.lhN || 0) + (pf.lhJeal || 0) + (pf.lhLewd || 0) * 2 + (pf.lhMore || 0);
     if (!body && n < 3) return null;
     if (HK.LABELS) for (var k in LAB) if (!HK.LABELS[k]) HK.LABELS[k] = LAB[k];
+    var fc = LH.face(ctx, A, B);
+    if (pf.couple) {
+      if (cl.id === 'lovers') {
+        if (!END || END.log !== ctx.log) END = { log: ctx.log, m: {} };
+        END.m[A.i + '-' + B.i] = END.m[B.i + '-' + A.i] = 'couple';
+      }
+      return null;
+    }
+    if (fc === 'kin') return KIN_OVER.test(cl.id) ? (ha && hb ? { id: 'lhkin' } : { id: 'lhkin1', dir: ha ? A.i : B.i }) : null;
+    if (!OVER.test(cl.id)) return null;
     return ha && hb ? { id: 'kusare' } : { id: 'kusare1', dir: ha ? A.i : B.i };
   };
+  function isCouple(ctx, A, B) { return !!(END && END.log === ctx.log && END.m[A.i + '-' + B.i]); }
   LH.pairText = function (ctx, A, B, cl) {
-    if (!cl || !LAB[cl.id]) return null;
+    if (!cl) return null;
+    if (cl.id === 'lovers' && isCouple(ctx, A, B)) return '顔を合わせれば言い合いになり、そのたびにどちらからともなく元の鞘に収まった。喧嘩の数だけ、二人は恋人のままだった。';
+    if (!LAB[cl.id]) return null;
     if (cl.id === 'kusare') return '顔を合わせれば憎まれ口を叩き合い、それでも互いのそばを離れられない――そんな腐れ縁になった。';
+    if (cl.id === 'lhkin') return '口を開けば文句ばかり言い合い、それでも困ったときにいちばん先に駆けつけるのは、いつも互いだった。口の悪い家族のままだった。';
     var x = ctx.chars[cl.dir], y = x === A ? B : A;
+    if (cl.id === 'lhkin1') return x.name + 'は' + y.name + 'に口うるさく当たり続けた。それでも、' + y.name + 'が困ったときに真っ先に動くのは、いつも' + x.name + 'だった。';
     return x.name + 'は口では' + y.name + 'を嫌い続けながら、結局' + y.name + 'から離れられなかった。腐れ縁と呼ぶほかない関係だった。';
   };
   var TR = HK.TieRel;
@@ -413,5 +481,13 @@
     HK.wrap(TR, 'refine', function (rf0) { return function (ctx, A, B, pf, cl) { var r = LH.refine(ctx, A, B, pf, cl); return r || (rf0 ? rf0.apply(this, arguments) : null); }; });
     HK.wrap(TR, 'pairText', function (pt0) { return function (ctx, A, B, cl) { return LH.pairText(ctx, A, B, cl) || (pt0 ? pt0.apply(this, arguments) : null); }; });
   }
+  /* 喧嘩ばかりの恋人：結果の組（分類は lovers のまま）に名前と印 lh:'couple' を付ける（保存の前。endings.js・epilogue.js が見る）。
+     HK.simulate はこのファイルより後の engine.js で作られるので、包むのは endings.js（HK.simulate の包みから LH.endBegin／LH.endPatch を呼ぶ） */
+  LH.endBegin = function () { END = null; };
+  LH.endPatch = function (r) {
+    if (r && END && r.pairs) r.pairs.forEach(function (p) { if (p.label === 'lovers' && END.m[p.a + '-' + p.b]) { p.lh = 'couple'; p.name = COUPLE_NAME; } });
+    END = null;
+    return r;
+  };
   if (HK.LABELS) for (var k0 in LAB) if (!HK.LABELS[k0]) HK.LABELS[k0] = LAB[k0];
 })();
