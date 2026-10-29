@@ -5007,6 +5007,7 @@ when:function(ctx,a,b){
 if(HK.SAFE_ON||ctx.flags.isOne||ctx.stepIndex<1||ctx.flags.trioCur)return false;
 if(a.out||b.out||a.flags.down||b.flags.down||a.flags.cagePair!=null||b.flags.cagePair!=null)return false;
 var pf=ctx.pair(a,b);
+if(HS.lhSoft&&HS.lhSoft(ctx,a,b))return false;
 var lhP=HK.LoveHate&&HK.LoveHate.any(ctx,a,b)&&(pf.hateSex||0)>=1&&(pf.hateSex||0)<3;
 if(!ctx.rules.some(function(r){return r.k==='h'&&(lhP|| !A.ruleDone(ctx,r,a,b));}))return false;
 if(pf.hateSexAt!=null&&ctx.stepIndex-pf.hateSexAt<(lhP?3:2))return false;
@@ -5255,6 +5256,8 @@ friend:L('{a}と{b}は外に出ると、肩を叩き合って笑った。あの�
 far:L('{a}と{b}は扉を出たところで別れた。名前のほかは、互いのことをほとんど知らないままだった。|{a}と{b}は外に出るなり、目も合わせずに別々の道を選んだ。二人がまた会うことは、たぶんない。|外に出ると、{a}と{b}はそれぞれのスマホを確かめ、短く会釈して離れた。白い部屋で一緒だったことだけが、二人の接点だった。|{a}と{b}は、出口で軽く会釈をしただけだった。名前を呼ぶ機会は、結局一度もなかった。|外に出ると、{a}も{b}も、それぞれの日常へ紛れていった。'),
 go:L('{a}は先に外へ出た。部屋に残った{b}のことが、帰り道のあいだずっと頭から離れなかった。|{a}は一人で外の空気を吸った。残ると決めた{b}の顔を思い出して、少しだけ笑った。|{a}は振り返らずに外へ出た。{b}とは、それきりになった。|{a}は外で{b}を待とうとして、やめた。{b}が自分で選んだことだった。'),
 group:L('{G}は外に出ると、誰からともなく大きく息を吐いた。それから、近くの店でそろって朝食をとった。|{G}は扉の外で一度だけ振り返り、それぞれの帰り道へ散っていった。|外に出た{G}は、あの部屋のことは「なかったこと」にしようと決めた。けれど、全員の連絡先はちゃんと残っていた。|{G}は、扉の外で互いの無事を確かめ合い、駅までは一緒に歩いた。'),
+kusare:L('{a}と{b}は、扉を出たところで「これで清々した｜これで清々した｜これで清々しました」と同時に言い、同時に顔をしかめた。帰る方向は、なぜか同じだった。|{a}と{b}は、連絡先を交換しなかった。それでも一週間後、二人は同じ店で鉢合わせて、また口喧嘩を始めた。|外に出た{a}と{b}は、駅までずっと言い争っていた。改札の前で、どちらからともなく「じゃあ、また｜じゃあ、またな｜では、またお会いしましょう」と言った。|{a}は{b}に「二度と会いたくない｜二度と会いたくない｜二度と会いたくありません」と言い、{b}は「こっちの台詞｜こちらの台詞だ｜こちらの台詞です」と返した。二人が次に会ったのは、三日後だった。'),
+kusare1:L('{a}は扉を出るなり、{b}に背を向けた。けれど角を曲がる前に一度だけ振り返り、{b}がまだそこにいるのを確かめた。|{a}は「せいせいした｜せいせいした｜せいせいしました」と吐き捨てて歩き出した。その夜、{a}は{b}の名前を検索しかけて、乱暴にスマホを伏せた。|{b}は何事もなかったように帰っていった。{a}だけが、その背中に向かって聞こえないほどの悪態をつき、それから長いあいだ立ち尽くしていた。|{a}は{b}の連絡先を消そうとして、指を止めた。嫌いな相手の番号を、なぜ消せないのか、{a}自身にも分からなかった。'),
 kill:L('{G}は、外に出ても誰も口をきかなかった。白い部屋に置いてきたものの重さだけが、帰り道について来た。|{G}は、二度とこの話をしないと約束して別れた。|{G}は、扉の外で一度だけ振り返った。そこにはもう、壁しかなかった。')
 };
 PAIR.fwb=L('{a}と{b}は、外では恋人のふりをしなかった。それでも月に何度か、どちらかから短い連絡が届いた。|部屋を出たあとも、{a}と{b}はときどき会った。名前のない関係のまま、夜だけが重なっていく。|{a}と{b}は、またね、とだけ言って別れた。その「また」は、案外すぐにやってきた。|{a}と{b}は、連絡先を「部屋の人」とだけ登録した。呼び出しは、いつも夜だった。');
@@ -5274,8 +5277,20 @@ return v.ten>=50&&v.aff<15;
 }
 function isClose(ctx,a,b){return['best','buddy','childhood','sibclose'].some(function(t){return tieHas(ctx,a,b,t);});}
 function isLove(ctx,a,b){var pf=ctx.pair(a,b),v=avgR(ctx,a,b);return!!pf.couple||(v.att>45&&v.aff>35);}
+function kusareOf(ctx,a,b){
+var LH=HK.LoveHate,pf=ctx.pair(a,b);
+if(!LH|| !LH.has||pf.couple||pf.kill)return'';
+var ha=LH.has(ctx,a,b),hb=LH.has(ctx,b,a);
+if(!ha&& !hb)return'';
+var n=(pf.lhN||0)+(pf.lhJeal||0)+(pf.lhLewd||0)*2;
+if(!(pf.night||pf.hateSex||pf.hateNight)&&n<3)return'';
+return ha&&hb?'kusare':'kusare1';
+}
 function kindOf(ctx,a,b){
 var pf=ctx.pair(a,b),v=avgR(ctx,a,b),r18= !HK.SAFE_ON&& !!PAIR.fwb;
+if(isLove(ctx,a,b)&&pf.couple)return'love';
+var ku=kusareOf(ctx,a,b);
+if(ku)return ku;
 if(isLove(ctx,a,b))return'love';
 if(pf.fwb)return r18?'fwb':'friend';
 if(isHate(ctx,a,b))return'hate';
@@ -5285,8 +5300,15 @@ return'far';
 }
 RE.kindOf=kindOf;
 function pairPool(k){return k==='night'?(PAIR.night&& !HK.SAFE_ON?PAIR.night.concat(PAIR.awk):PAIR.awk):PAIR[k]||PAIR.far;}
+function pairLayer(ctx,x,y){
+var k=kindOf(ctx,x,y);
+if(k==='kusare1'&& !HK.LoveHate.has(ctx,x,y)){var s=x;x=y;y=s;}
+return fill(ctx.pick(pairPool(k)),{a:x.name,b:y.name});
+}
+RE.pairLayer=pairLayer;
 function manner(ctx,g){
-var ps=pairsOf(g),hp=ps.filter(function(p){return isLove(ctx,p[0],p[1]);})[0]||ps.filter(function(p){var v=avgR(ctx,p[0],p[1]);return isClose(ctx,p[0],p[1])||(v.aff>45&&v.ten<30);})[0];
+var ps=pairsOf(g).filter(function(p){return!kusareOf(ctx,p[0],p[1]);}),hp=ps.filter(function(p){return isLove(ctx,p[0],p[1]);})[0]||ps.filter(function(p){var v=avgR(ctx,p[0],p[1]);return isClose(ctx,p[0],p[1])||(v.aff>45&&v.ten<30);})[0];
+ps=pairsOf(g);
 if(hp)return{m:'hand',p:hp};
 if(ps.some(function(p){return isHate(ctx,p[0],p[1]);}))return{m:'silent',p:ps[0]};
 if(ps.every(function(p){var v=avgR(ctx,p[0],p[1]);return v.aff<15&&v.att<20;}))return{m:'rush'};
@@ -5350,7 +5372,7 @@ parts.push({t:fill(ctx.pick(lt?GO_WAIT:GO_LATER),{a:C[ex.a].name,b:C[ex.stay].na
 }else{
 var g=membersOf(ctx,ex),lay;
 if(ex.trio||g.length>2)lay={t:freshScene(ctx,SCENE_G),o:1};
-else{var x=g[0],y=g[1];if(ctx.rng()<0.5){var s=x;x=y;y=s;}lay={t:fill(ctx.pick(pairPool(kindOf(ctx,x,y))),{a:x.name,b:y.name}),o:0};}
+else{var x=g[0],y=g[1];if(ctx.rng()<0.5){var s=x;x=y;y=s;}lay={t:pairLayer(ctx,x,y),o:0};}
 if(!/^[^。]*(?:外に出る|部屋を出た|扉を出た)/.test(lay.t))parts.push({t:exitLine(ctx,g),o:2});
 parts.push(lay);
 }
@@ -5401,7 +5423,7 @@ if(e.trio)return;
 var t;
 if(e.group)t=fill(ctx.pick(kill?PAIR.kill:PAIR.group),{G:nm(e.group.map(function(i){return C[i];}))});
 else if(e.stay!=null)t=fill(ctx.pick(PAIR.go),{a:C[e.a].name,b:C[e.b].name});
-else{var x=C[e.a],y=C[e.b];if(ctx.rng()<0.5){var s=x;x=y;y=s;}t=fill(ctx.pick(pairPool(kindOf(ctx,x,y))),{a:x.name,b:y.name});}
+else{var x=C[e.a],y=C[e.b];if(ctx.rng()<0.5){var s=x;x=y;y=s;}t=pairLayer(ctx,x,y);}
 parts.push({t:t,o:nL?8+nL:1});
 nL++;
 });
@@ -8218,7 +8240,7 @@ var t=function(p,q){return Math.round(Math.max(R(ctx,p,q).ten,R(ctx,q,p).ten));}
 if(HK.RoomReluct&&HK.RoomReluct.blocks(ctx,x,y))return x.name+'と'+y.name+'は、この場所でするのを渋ったままだった';
 if(grudge(ctx,x,y)){
 var av=HK.Avoid?[[x,y],[y,x]].filter(function(p){return HK.Avoid.of(ctx,p[0],p[1]);})[0]:null;
-if(av)return av[0].name+'は'+av[1].name+'を避けている（'+HK.Avoid.why(ctx,av[0],av[1])+'）ので、割り切っても加わらなかった（'+av[0].name+'が持つ側の「愛憎」を不仲に付けると、避けずに加わる）';
+if(av)return av[0].name+'は'+av[1].name+'を避けている（'+HK.Avoid.why(ctx,av[0],av[1])+'）ので、割り切っても加わらなかった（'+av[0].name+'から'+av[1].name+'への「愛憎」を付けると、避けずに加わる）';
 var low=[x,y].filter(function(z){return HK.Pos&&HK.Pos.libOf&&HK.Pos.libOf(z)==='low';});
 return x.name+'と'+y.name+'は不仲で張りつめたまま（緊張 '+t(x,y)+'）、割り切れるほど焦りが溜まらなかった（焦り '+Math.round(x.stress)+'・'+Math.round(y.stress)+(low.length?'。性欲「弱い」の'+nm(low)+'は、強い焦りが要る':'')+'）';
 }
@@ -10072,7 +10094,6 @@ HK.Load.toneData("polite",{"F":[
 ["ふざけてる","ふざけた話です",1],
 ["誰が飲むか、こんなもの","誰が飲むものですか、こんなもの",1],
 ["緊張してるな","緊張していますね",1],
-["…片方だけなら","…片方だけでしたら",1],
 ["誰かに飲ませるくらいなら、私が飲む","誰かに飲ませるくらいなら、私が飲みます",1],
 ["三人で、なんて……〈〉が嫌ならやめます。でも、〈〉を一人にしておけないんです","三人で、だなんて……〈〉さんがお嫌なら、やめます。ですが、〈〉さんをひとりにはしておけないんです",1]],
 "O":{
@@ -10467,7 +10488,6 @@ HK.Load.toneData("kohai",{"F":[
 ["せっせっせーの、よいよいよい","せっせっせーの、よいよいよい！",1],
 ["効率よく済ませよう","効率よく済ませるっす",1],
 ["練習だと思って","練習だと思ってくださいっす",1],
-["…片方だけなら","…片方だけなら",1],
 ["一人だけ置いていくのは、なしにしましょう","一人だけ置いてくのは、なしにしましょうよ",1],
 ["お互い、気を落とさずにまいりましょう","お互い、気を落とさずにいきましょうっす",1],
 ["私は、するなら一人とだけです。それは譲れません","私は、するなら一人とだけっす。そこは譲れないっす",1]]});
@@ -10921,4 +10941,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 ["止まった。もう止まっている","止まった。……もう、止まっているのだよ",1],
 ["この紙、誤字っていないか","この紙、誤字があるのではないかね",1]]});
 });
-HK.Load.done('scen-whiteroom', '7b9979d20d', 1);
+HK.Load.done('scen-whiteroom', '85844ecafb', 1);

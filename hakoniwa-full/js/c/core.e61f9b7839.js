@@ -8655,7 +8655,12 @@ if(R)t+=R.resist(S,a,b,{endure:false});
 if(HK.FF)t+=f(HK.FF.pick(ctx,'body','rough'))+(R?R.say(S,b,'climax'):'')+f(HK.FF.pick(ctx,'climax','rough'));
 return t;
 }
-function lhOld(S,a,b){return love(S,a,b)&&(lv(S,a,b)>=35||lv(S,b,a)>=35||has(S,a,b,RIVAL));}
+function lhOld(S,a,b){
+var LH=HK.LoveHate;
+if(LH&&LH.off&&(LH.off(S,a,b)||LH.off(S,b,a)))return false;
+if(ties(S,a,b).some(function(t){return t.noev==='off'&&inL(t.type,LOVE+','+RIVAL+','+HATE);}))return false;
+return love(S,a,b)&&(lv(S,a,b)>=35||lv(S,b,a)>=35||has(S,a,b,RIVAL));
+}
 function lhSet(S,a,b){return!!(HK.LoveHate&&HK.LoveHate.dir(S,a,b));}
 function lhKey(a,b){return a.i<b.i?a.i+'-'+b.i:b.i+'-'+a.i;}
 var F=HK.Feud={
@@ -8671,6 +8676,7 @@ if(HK.ngExplicit&&HK.ngExplicit(a,b))return false;
 return!HK.Pos||HK.Pos.okSex(a,b);
 },
 bodyOk:function(S,a,b){return F.touchOk(S,a,b)&&(!HK.LoveHate||HK.LoveHate.sexOk(S,a,b));},
+forceOk:function(S,a,b){var LH=HK.LoveHate;return!lhSet(S,a,b)|| !(LH&&LH.face)||LH.face(S,a,b)==='hate';},
 hate:function(S,a,b){return lv(S,a,b)>=35&& !love(S,a,b);},
 hateStrong:function(S,a,b){return lv(S,a,b)>=65&& !love(S,a,b);},
 rival:function(S,a,b){return has(S,a,b,RIVAL)||lv(S,a,b)>=35||lv(S,b,a)>=35;},
@@ -8700,7 +8706,7 @@ var fill=function(x){return x.replace(/\{a\}/g,a.name).replace(/\{b\}/g,b.name);
 if(!F.touchOk(S,a,b))return{text:t+(pick?fill(pick(NOTOUCH))+pick(NOTOUCH_AFTER):''),r18:false,touch:false};
 var Pz=HK.Pos,aTop= !Pz||Pz.order(a,b,[a,b])[0]===a;
 var pk=pick||function(l){return l[0];};
-if(aTop&&F.r18Clash&&F.r18On&&F.r18On(S)&&F.bodyOk(S,a,b)){
+if(aTop&&F.r18Clash&&F.r18On&&F.r18On(S)&&F.bodyOk(S,a,b)&&F.forceOk(S,a,b)){
 if(Pz&&Pz.ff(a,b))return{text:t+ffClash(S,a,b,pk)+HK.TL.line(a,'LH_AFTER',b),r18:true,touch:true};
 return{text:t+F.r18Clash(S,a,b)+HK.TL.line(a,'LH_AFTER',b),r18:true,touch:true};
 }
@@ -19142,6 +19148,7 @@ return t.a===o.i&&t.b===c.i&&((D&&D.hate&&t.cold==='avoid')||(t.type==='crush'&&
 }
 function dirOk(x,T,B){return(hates(x,B,T)||avoids(x,B,T))&& !avoids(x,T,B);}
 function loveTop(x,T,B){return!hates(x,T,B)&&loves(x,T,B);}
+function lhSoft(x,a,b){var LH=HK.LoveHate;return!!(LH&&LH.face&&LH.any(x,a,b)&&LH.face(x,a,b)!=='hate');}
 var HS=HK.HateSex={
 OPEN:OPEN,BODY:BODY,STRIP:STRIP,FORE:FORE,ERO_FORE:ERO_FORE,INSERT:INSERT,ERO_INSERT:ERO_INSERT,RETORT:RETORT,RETORT_ROOM:RETORT_ROOM,MID:MID,LAST:LAST,LOVE_LEAD:LOVE_LEAD,RETORT_L:RETORT_L,RETORT_ROOM_L:RETORT_ROOM_L,MID_L:MID_L,LAST_L:LAST_L,PROTEST2:PROTEST2,ERO_BODY:ERO_BODY,PEAK:PEAK,ERO_PEAK:ERO_PEAK,AGAIN:AGAIN,FADE:FADE,PROTEST:PROTEST,TELL:TELL,YIELD:YIELD,AFTER:AFTER,
 hostile:function(x,a,b,opt){
@@ -19149,6 +19156,7 @@ if(!a|| !b||a===b||HK.SAFE_ON)return false;
 if(!(opt&&opt.room)&&HK.Content&& !HK.Content.ok(x,'force'))return false;
 if(HK.ngSexPair&&HK.ngSexPair(a,b))return false;
 if(x.pair&&x.pair(a,b).kin)return false;
+if(lhSoft(x,a,b))return false;
 var okP=function(){return(!HK.Pos||HK.Pos.okSex(a,b))&&(!HK.canLove||(HK.canLove(a,b)&&HK.canLove(b,a))|| !!(HK.FreeSex&&HK.FreeSex.kind&&HK.FreeSex.kind(x,a,b)==='off'));};
 if(!(HK.Pos&&HK.Pos.forceOpen?HK.Pos.forceOpen(x,[a,b],okP):okP()))return false;
 if(!tiesOf(x,a,b).some(function(t){return HOST.test(t.type);})&& !(hateLv(x,a,b)>=35||hateLv(x,b,a)>=35))return false;
@@ -19240,6 +19248,7 @@ hates:function(x,c,o){return hates(x,c,o);},
 avoids:function(x,c,o){return avoids(x,c,o);},
 loves:function(x,c,o){return loves(x,c,o);},
 dirOk:function(x,T,B){return dirOk(x,T,B);},
+lhSoft:function(x,a,b){return lhSoft(x,a,b);},
 noneWhy:function(x,T,B){
 return HK.Pos&&HK.Pos.noneWhy?HK.Pos.noneWhy(x,[T,B]):'';
 }
@@ -19695,6 +19704,7 @@ when:function(ctx,a,b){
 if(!b||scenOf(ctx)!=='goukon'|| !HS||ctx.stepIndex<3|| !on(ctx,'force'))return false;
 var pf=ctx.pair(a,b);
 if(pf.ctHate||pf.hateSexAt!=null|| !HK.Pos.okForce(ctx,a,b)|| !ctx.romanceOk([a,b],{sex:true,force:true}))return false;
+if(HS.lhSoft&&HS.lhSoft(ctx,a,b))return false;
 return HS.order(ctx,a,b)[0]===a&&HS.hostile(ctx,a,b)&& !HS.taken(ctx,a,b);
 },
 w:function(ctx,a){return 3+(a.tr.aggr||0)+(a.tr.impulse||0)*0.5;},
@@ -30191,7 +30201,7 @@ return t+R.resist(S,X,Y,{endure:false})+R.sex(S,X,Y,{mood:'rough',fore:false,sho
 var clash0=FD.clash;
 FD.clash=function(S,a,b,pick){
 var LW=HK.Lewd,Pz=HK.Pos;
-if(LW&&LW.storyEro&&LW.storyForceSex&&Pz&&Pz.ff(a,b)&&LW.storyEro(S)&& !(HK.NoGen&&HK.NoGen.on(a,b))&&FD.touchOk(S,a,b)&&Pz.order(a,b,[a,b])[0]===a&&FD.r18On(S)&&FD.bodyOk(S,a,b)){
+if(LW&&LW.storyEro&&LW.storyForceSex&&Pz&&Pz.ff(a,b)&&LW.storyEro(S)&& !(HK.NoGen&&HK.NoGen.on(a,b))&&FD.touchOk(S,a,b)&&Pz.order(a,b,[a,b])[0]===a&&FD.r18On(S)&&FD.bodyOk(S,a,b)&&(!FD.forceOk||FD.forceOk(S,a,b))){
 var t=a.name+'と'+b.name+'の口論は、いつの間にか怒鳴り合いになっていた。'+HK.TL.line(a,'LH_CLASH',b);
 return{text:t+FD.r18Clash(S,a,b)+HK.TL.line(a,'LH_AFTER',b),r18:true,touch:true};
 }
@@ -33650,9 +33660,10 @@ sections:[
 'R18版で、内容のスイッチ「合意のない展開」が入のときは、相手から力ずくで迫られることがあります。無関心な側は無関心ではいられなくなり（気の強い人は憎しみ、それ以外は動揺）、恐れる側は怯えて応じたうえで、恐怖がいっそう深まります。',
 '恐れていた相手が落ちぶれる・弱みを見せる（けが・病気・ゾンビに噛まれる・孤立する・疑われる など）と、恐怖は続きません。攻撃的な人は、極限の箱庭（ゾンビの街・無人島・邪神村・人狼・吹雪の館・宇宙船など）では突き落とす・見捨てて逃げる・「私は悪くない……」と言いながら売り渡す、ほかの箱庭では見下す・言い返す・縁を切る。臆病な人は相手から逃れ、面倒見のよい人は弱った相手に歪んだ庇護欲を向けます。まれに恋に転じることもあります（恋愛：あり のとき）。結末と関係のまとめに、恐怖のその後（憎しみ・見下し・歪んだ庇護・逃れた・恋）が出ます。',
 '**許嫁** … 二人それぞれの気持ち（乗り気・戸惑い・断りたい）を選べます。両方が乗り気で、恋愛対象と受け攻めが合う二人だけ恋人と同じ扱いになります。合わない二人は家どうしの約束として向き合います。断りたい側がほかの人を好きになると、破談になることがあります。',
-'**型・気持ち・様子** … 執着（ヤンデレ）は型（献身・束縛・排除・依存・愛憎）、恩人は恩を受けた側の気持ち（負い目）、一方的な好意・敬愛は様子（推し）、セフレは様子（愛人）を選べます。以前の「敵対の度合い（憎悪）」の選択肢はなくなりました（保存してあった設定はそのまま効きます。まとめて読み込むで「憎悪」と書いても付けられます）。',
-'**愛憎（敵対・不仲）** … 敵対と不仲には「愛憎：なし／〇〇だけ／××だけ／双方」を選べます。愛憎を持つ人は、口や態度では相手を嫌いながら、わざと突っかかる・嫌味を言いながら隣に座る・物を取り上げて追いかけさせる・世話を焼いて「勘違いするな」と言う・ほかの人といる相手に割り込む、といった形で相手を構います。相手がほかの人と親しくすると、嫉妬して嫌味・邪魔・八つ当たりをしたり、その人に敵意を向けたりします（嫉妬深い性格でなくても）。R18版では、口づけや体を押しつけて構ってもらおうとし、敵対の強引なエッチも起きやすく、「これきりだ」と言いながらまた繰り返す腐れ縁になります（攻めなら押し倒し、受けなら挑発して構わせます）。',
-'**〇〇だけ・双方の違い** … 「〇〇だけ」は、その人だけが愛憎を持ち、相手はふつうの敵対のまま（無視する・気にしない・苛立つ）です。「双方」は二人とも持つので、言い返しながら構い返します。愛憎なし（敵対のみ）は、相手がほかの人を構っていても、嫉妬深い性格でなければ怒りません。',
+'**型・気持ち・様子** … 執着（ヤンデレ）は型（献身・束縛・排除・依存・試す）、恩人は恩を受けた側の気持ち（負い目）、一方的な好意・敬愛は様子（推し）、セフレは様子（愛人）を選べます。以前の「敵対の度合い（憎悪）」の選択肢はなくなりました（保存してあった設定はそのまま効きます。まとめて読み込むで「憎悪」と書いても付けられます）。',
+'**愛憎（気持ちの関係）** … 関係の一覧の「気持ち」にある「愛憎」は、どの関係にも重ねられます（敵対・恋人・きょうだい・友人・ライバル・関係なしの二人にも）。「相手も愛憎を持つ（双方）」も選べます。愛憎を持つ人は、口や態度では相手を嫌いながら、わざと突っかかる・嫌味を言いながら隣に座る・物を取り上げて追いかけさせる・世話を焼いて「勘違いするな」と言う・ほかの人といる相手に割り込む、といった形で相手を構います。相手がほかの人と親しくすると、嫉妬して嫌味・邪魔・八つ当たりをしたり、その人に敵意を向けたりします（嫉妬深い性格でなくても）。R18版では、口づけや体を押しつけて構ってもらおうとし、敵対の強引なエッチも起きやすく、「これきりだ」と言いながらまた繰り返す腐れ縁になります（攻めなら押し倒し、受けなら挑発して構わせます）。',
+'**表の関係で変わる顔・双方の違い** … 振る舞いの顔は、重ねた関係で変わります（敵対・不仲なら喧嘩しながら構う、恋人なら素直になれない、家族なら口が悪い、友人・ライバルなら張り合いながら目で追う）。片方だけなら相手はふつうに接し、「双方」は二人とも持つので言い返しながら構い返します。以前の敵対・不仲の「愛憎」の欄で付けたものは、読み込むと同じ向きの「愛憎」に写ります。',
+'**劣等感・優越** … 関係の一覧の「気持ち」にあります。劣等感の人は、相手に助けられる・相手が目立つ・優しくされると、素直に受け取れず自己嫌悪に陥ります。優越の人は、助けられると「なぜこいつに」と苛立ち、相手より活躍できると優越感を覚えます。続けば、肩を並べる・認める・恨みに変わる・立場が逆転する、などに変わることがあります。同じ向きに劣等感と優越は付けられません。',
 '**愛憎でも越えないもの** … 恋愛対象と受け攻めが合わない二人は、構う・嫉妬するだけで、体の関係にはなりません。「恋愛・R18にしない相手」「R18に参加しない」「恋愛相手の固定」「一途」も守られます（恋愛・R18にしない相手や、ほかの人に恋愛相手を固定している人の愛憎は、ふつうの敵対として扱います）。結末では、強い絡みや体の関係があった愛憎の二人は「腐れ縁（愛憎）」になります。',
 '**仲間** … 住人の一覧の「仲間とみなすグループ」で、グループごとに入れます。入れたグループの住人どうしは、信頼が育ちやすく、助け合い・庇い合い・弔い・一緒に動く出来事が起きます（恋愛・嫉妬には関わりません）。無人島・クラスメイトで環境値「派閥の決め方」を「仲間とみなす」グループで固定にすると、そのグループがそのまま派閥になります。関係図では、線の絞り込みを「全部」にしたときに薄い線で出ます。',
 '強い想い（執着・本命・盲信・憎悪・恐怖）を向ける人は、相手から返ってくる気持ちとの差が大きいほど、過激な行動に出やすくなります（「展開の重さ」が穏やかなら抑えめ）。記録の理由に「想いの差」が出ます。'
@@ -33692,7 +33703,7 @@ sections:[
 {h:'まとめて読み込む',items:[
 '1行に「名前 名前 関係」。例：`朝霧→鷹野 片想い（脈なし）`、`鷹野-白石 親友`、`白石とミナトは恋人`',
 '「セフレで片想い」のように関係を重ねても、関係を1つずつ追加してもかまいません。',
-'**愛憎** … 敵対・不仲の行に「愛憎:双方」「愛憎（名前だけ）」「愛憎：一人目だけ」と書くと、愛憎を付けます。例：`朝霧→鷹野 敵対 愛憎（鷹野だけ）`、`朝霧 鷹野 不仲 愛憎:双方`。関係を書かずに「愛憎」だけなら、敵対として付けます。',
+'**愛憎・劣等感・優越** … 「愛憎」と書くと気持ちの関係「愛憎」を付けます。ほかの関係と一緒に書けば重ねます。例：`朝霧 鷹野 愛憎`（双方）、`朝霧→鷹野 愛憎`（朝霧だけ）、`朝霧 鷹野 敵対 愛憎（鷹野だけ）`、`朝霧 鷹野 恋人 愛憎:双方`。「劣等感」「優越」も同じく、最初に書いた人が持ちます（例：`朝霧 鷹野 劣等感`＝朝霧が鷹野に引け目）。',
 '**上下（きょうだい）** … きょうだいの行に「上下:名前」と書くとその人が上、「上下なし」と書くと上下なし（対等）にします。例：`朝霧 鷹野 兄弟姉妹 上下:鷹野`、`朝霧 鷹野 姉妹 上下なし`。',
 '**複数人にまとめて** … 1行に3人以上の名前を書くと、全員の組に同じ関係を付けます。例：`朝霧 鷹野 白石 ミナト 同僚`（6組）、`朝霧 鷹野 白石 チーム`（チーム・チームメイトは同僚として付けます）。',
 '**向きのある関係**（上司と部下・先輩後輩・師弟・教師と生徒・片想いなど）は、最初に書いた人→残りの全員です。例：`朝霧 鷹野 白石 上司と部下` は、朝霧が上司で、鷹野と白石が部下（2組）。',
@@ -33923,7 +33934,7 @@ sections:[
 {h:'性欲の強さ・体の関係の相手（R18版）',items:[
 '「性欲の強さ」（ふつう・なし・弱い・強い）は、どの住人にも決められます。恋人の夜・勢いの夜・一夜・セフレ・「誰とでも可」の人の体だけの場面・出られない部屋の条件のエッチ・オメガバースの発情の相手を受け入れる・ゾンビの街や無人島の危機の夜・合コンのお持ち帰りなど、合意のある体の場面の起こりやすさに、二人の強さを掛けます（弱いは半分ほど、強いは1.6倍ほど。二人とも強いと、さらに起きやすくなります）。',
 '性的な出来事は、性欲の強さ・衝動性（FC が高く A が低い人）・理性（CP・慎重さ・A・我慢）で起こりやすさが決まります。理性が高い人は起きにくく、低い人は起きやすくなります（止まりはしません）。お酒・媚薬・発情・部屋の条件・もう体の関係がある、は理性の効きを弱めます。記録の理由に「性欲 強・衝動 高・理性 低」のように出ます。',
-'関係の「恋愛：なし」の二人や、敵対・不仲の二人も、体の関係にはなれます（恋人にはならない体だけの関係）。敵対・不仲は表面上の嫌悪なので止まらず、起こりやすさが下がるだけです（愛憎を付けると戻ります）。家族の「恋愛：なし」・無関心・恐怖は、これまでどおり体の関係にもなりません。',
+'関係の「恋愛：なし」の二人や、敵対・不仲の二人も、体の関係にはなれます（恋人にはならない体だけの関係）。敵対・不仲は表面上の嫌悪なので止まらず、起こりやすさが下がるだけです（愛憎を付けると戻ります）。愛憎・劣等感・優越の二人は、衝動に流されやすくなり、かえって起こりやすくなります。家族の「恋愛：なし」・無関心・恐怖は、これまでどおり体の関係にもなりません。',
 '「なし」にすると、合意のある体の場面には乗りません（恋人どうしでも夜は起きません）。恋愛・告白・恋人になるのは、これまでどおり起きます。内容のスイッチ「合意のない展開」の場面は、この欄に関係なく、スイッチどおりに起きます。',
 '物語型の箱庭（邪神村・吹雪の館・宇宙船漂流記）と催眠（同意を取った催眠プレイ）でも、「なし」の人は合意のある夜に入りません。強い・弱いは、吹雪の館では夜の出来事の起こりやすさに、漂流記では夜の相手の選ばれやすさに効きます。',
 '「なし」にすると、合意のある夜にだけ効く欄（喘ぎの口調・性器の呼び方・夜の性格・夜の主導・性行為の相手の固定・ふたなり・モブ相手の受け攻め・三人の場面・濁点喘ぎ・体の関係の相手・相手ごとの夜の性格）が暗くなり、その旨の注記が出ます。値は消えないので、性欲を戻せば元どおり効きます。合意のない展開の場面には、暗くなった欄もそのまま効くので、操作はできます。',
@@ -42095,4 +42106,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '15bc2f4d5e', 1);
+HK.Load.done('core', 'e61f9b7839', 1);
