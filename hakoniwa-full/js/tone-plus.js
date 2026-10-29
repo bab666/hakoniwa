@@ -184,13 +184,44 @@
       q = FEM_PLAIN[who.tone] ? plainYagare(q).replace(new RegExp('だぜ' + END, 'g'), 'だ').replace(new RegExp('([ぁ-ゖ])ぜ' + END, 'g'), '$1') : q.replace(/やがれ/g, 'なさい');
     }
     if (who.gender === 'f' && (!HK.toneAxis || (HK.toneAxis(who.tone) || {}).ending !== 'm')) q = femKiri(femSoft(q, who), who);
+    if (who.gender === 'f' && FEM_PROUD[who.tone]) q = femProud(q);
     return q;
   };
+  /* 強気の女性（2026-10-29 利用者の報告：出られない部屋の無理やり系で、強気の女性が厳格のような言い方になる）。
+     強気と厳格は同じ硬い常体（F）を土台にするので、命令（〜なさい）のほかの言い切り・問い・接続も強気な女性の言い方に。
+     「これきりだ」→「これきりよ」、「〜するんだ」→「〜するのよ」、「言っておくが」「〜だが、」→「〜けど、」、「からな」「でな」→「からね」「でね」、
+     「つもりか。」→「つもりなの？」、「どうした」→「どうしたの」、「ここにいろ」→「ここにいなさい」、「〜すんな」→「〜しないで」。
+     厳格・冷静の女性（FEM_PLAIN）は言い切りのまま（2026-10-29 の決まり）なので当てない。喘ぎの声（言葉のない行）は変わらない */
+  var FEM_PROUD = { proud: 1 };
+  var FP_END = '(?=[…‥。！？!?、」♡〜\n]|$)';
+  var FP_NOUN = '([一-鿿々ァ-ヶー]|ため|だけ|きり|こと|もの|ほう|ところ|はず|つもり|ばかり|くらい|ぐらい|同じ|まま|とおり|嫌い|好き|扱い|違い|間違い|勘違い|思い|願い|狙い|せい|きれい|綺麗|本当|ほんと|なし|連れ|それ|これ|あれ|そう|わけ|一緒|当たり前|当然|最後|勝ち|負け|おしまい|おあいこ)';
+  function femProud(q) {
+    /* 説明の「〜んだ」は、ひらがなの活用のあと（するんだ・したんだ・ないんだ・なんだ）だけ。「読んだ」「飛んだ」（過去形）は変えない */
+    return q.replace(new RegExp('([るたいなうくすつ])んだ' + FP_END, 'g'), '$1のよ')
+      .replace(new RegExp('(何|なに|誰|どこ|どれ|いつ)だ' + FP_END, 'g'), '$1なの')
+      .replace(new RegExp(FP_NOUN + 'だ' + FP_END, 'g'), '$1よ')
+      /* ほかの「〜だ」の言い切り（扱いだ・あたしだ・こっちもだ・だめだ）。過去形（読んだ・泳いだ）の「ん」「い」のあと、「まだ」「ただ」はそのまま */
+      .replace(new RegExp('([^\\sんい「、。！？!?…‥ー〜♡っッ])だ' + FP_END, 'g'), function (m, c, off, str) {
+        var w = str.slice(Math.max(0, off - 2), off + 1);
+        return /(?:^|[^ぁ-ゖ])(?:ま|た)$|また$/.test(str.slice(0, off + 1)) && !/あんた$|こなた$|あなた$/.test(w + '') ? m : c + 'よ';
+      })
+      .replace(new RegExp('(嫌い|好き|大嫌い|大好き)、だ' + FP_END, 'g'), '$1、よ')
+      .replace(new RegExp('みたいだ' + FP_END, 'g'), 'みたいね')
+      .replace(/(^|[「…‥、。\s])だが(?=[、…‥])/g, '$1でも').replace(/([一-鿿々ァ-ヶー]|ため|だけ|こと|もの|はず|つもり|同じ)だが(?=、)/g, '$1だけど')
+      .replace(/言っておくが(?=[、…‥])/g, '言っておくけど')
+      .replace(new RegExp('(から|けど|ので|で)な' + FP_END, 'g'), '$1ね')
+      .replace(/(つもり|本気|正気|それだけ|終わり|限界|降参|満足)か(?=[。？?」]|$)/g, '$1なの')
+      .replace(/(つもり|本気|正気|それだけ|終わり|限界|降参|満足)なの。(?=[^」])/g, '$1なの？　').replace(/(つもり|本気|正気|それだけ|終わり|限界|降参|満足)なの。/g, '$1なの？')
+      .replace(new RegExp('どうした' + '(?=[。？?」…‥]|$)', 'g'), 'どうしたの')
+      .replace(new RegExp('([にで])いろ' + FP_END, 'g'), '$1いなさい')
+      .replace(new RegExp('すんな' + FP_END, 'g'), 'しないで')
+      .replace(/(?<![じゃ])(いい|ない)か(?=[。？?」]|$)/g, '$1？').replace(/？[。？?]/g, '？');
+  }
   /* 女性の話し手（男性的な口調を選んでいない人。HK.toneAxis の ending が 'm' の口調＝ヤンキー・兄貴分・熱血などは除く）：
      掛け合いの元の文や言い換えに残った男性的な語尾・語を、女性の言い方にする（男性の台詞から女性的な語尾を外す規則の逆向き）。
      「〜ぞ」「〜ぜ」は「〜よ」に（厳格・冷静の「〜だぞ」「〜だぜ」は「〜だ」の言い切りに）。断定の「〜だろ」は「〜でしょ」（問いの「〜だろ？」・「なんでだろ」は残す） */
   var FEM_DROP = { stern: 1, cool: 1, calm: 1 };
-  var FEM_HARSH = /殺|潰|殴|呪|ぶっ|ぶち|思い知|後悔|地獄|八つ裂|覚え|吊|晒/, FEM_WILL = /証明|暴|ネタ|笑い話|見返|終わらせ|勝っ/;
+  var FEM_HARSH = /殺|潰|殴|呪|ぶっ|ぶち|思い知|後悔|地獄|八つ裂|覚えて[ろお]|吊|晒/, FEM_WILL = /証明|暴|ネタ|笑い話|見返|終わらせ|勝っ/;
   function femSoft(q, who) {
     var drop = FEM_DROP[who.tone] || FEM_PLAIN[who.tone], ks = who.tone === 'kansai';
     var sent = function (str, off) { var a = str.slice(0, off); return a.slice(Math.max(a.lastIndexOf('。'), a.lastIndexOf('！'), a.lastIndexOf('？')) + 1); };
