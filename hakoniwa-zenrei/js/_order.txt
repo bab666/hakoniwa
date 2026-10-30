@@ -360,6 +360,7 @@ tone js/tone-brush3c.js
 tone js/tone-brush3b.js
 tone js/tone-brush3d.js
 tone js/tone-brush4k.js
+tone js/tone-brush5.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/incidents-social.js @pack:rel
