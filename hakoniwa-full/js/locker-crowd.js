@@ -19,7 +19,7 @@
 (function () {
   'use strict';
   /* 夜の起こりやすさ 0（全体の環境値 night。R18版だけ）で手を出さなかった理由（whyNot）。全年齢版には文を入れない（その枝は通らない） */
-  var NIGHT0_WHY = '';
+  var NIGHT0_WHY = '抱き合う場面の起こりやすさが 0 な', NIGHT0_WHY_S = NIGHT0_WHY;
   /* r18:begin */
   NIGHT0_WHY = '夜の起こりやすさが 0 な';
   /* r18:end */
@@ -173,14 +173,17 @@
   function tiesOf(S, a, b) { return (S.ties || []).filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); }); }
   function has(S, a, b, re, dir) { return tiesOf(S, a, b).some(function (t) { return re.test(t.type) && (!dir || t.a === a.i); }); }
   /* 恋愛にしない関係（家族の「恋愛：なし」・信仰の「恋愛に発展：しない」） */
+  /* 支配している信仰（cold 'dominate'）は恋愛にしない関係に入れない（出られない部屋の HK.roomWsNoSex・二人のときの locker-ties.js の noLove と同じ。2026-10-30 担当LK） */
   function noLoveTie(S, a, b) {
     var tl = tiesOf(S, a, b);
     if (tl.some(function (t) { return /^(lover|mate|fated|fwb|crush|almost|ex|master)$/.test(t.type); })) return false;
-    return tl.some(function (t) { return (HK.tieNoLove && HK.tieNoLove(t)) || (t.type === 'worship' && HK.tieOptNoLove && HK.tieOptNoLove(t)); });
+    return tl.some(function (t) { return (HK.tieNoLove && HK.tieNoLove(t)) || (t.type === 'worship' && HK.tieOptNoLove && HK.tieOptNoLove(t) && t.cold !== 'dominate'); });
   }
   /* 恋愛（HK.canLove を両方向）。R18に参加しない人も恋愛はできるので、LK.loveOK（noR18 を外して見る）を使う。
      体の関係は canAct が HK.sexBlocked・HK.State.r18ok でこれまでどおり止める */
   function okLove(a, b) { return !!(a && b && a !== b) && (LK.loveOK ? LK.loveOK(a, b) : HK.canLove(a, b) && HK.canLove(b, a)); }
+  /* 体の関係の門で見る恋愛：恋愛の起こりやすさ（環境値 romance）は見ない（体の関係は夜の起こりやすさで決まる。出られない部屋・二人のときと同じ。locker-note.js の LK.loveOKSex） */
+  function okLoveSex(a, b) { return !!(a && b && a !== b) && (LK.loveOKSex ? LK.loveOKSex(a, b) : okLove(a, b)); }
   /* 同じロッカーの二人が手を出し合ってよいか：受け攻め・恋愛対象（HK.Pos.okSex）・恋愛・R18にしない相手（HK.ngPair）・
      体の関係の縛り（HK.sexBlocked）・恋愛（HK.canLove を両方向）・R18に参加しない（HK.State.r18ok。全年齢は見ない） */
   function canAct(S, a, b) {
@@ -197,7 +200,7 @@
     if (HK.ngPair && HK.ngPair(a, b) && !freeOk(S, a, b)) return false;
     if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
     /* 恋愛相手を固定し、性行為の相手を「誰とでも可」にした人と、固定外の相手（HK.State.freeSex。free-sex.js）は、恋愛（HK.canLove）を見ずに体の関係だけ */
-    if (!(okLove(a, b) || freeOk(S, a, b)) || noLoveTie(S, a, b)) return false;
+    if (!(okLoveSex(a, b) || freeOk(S, a, b)) || noLoveTie(S, a, b)) return false;
     if (!HK.SAFE_ON && !(HK.State.r18ok(a) && HK.State.r18ok(b))) return false;
     if (!libOk(a, b)) return false;
     return true;
@@ -226,6 +229,15 @@
     return (P && P.FORCE_MARK || '〔合意のない展開〕') + (nl.length ? nl.map(function (c) { return c.name; }).join('・') + 'は性欲が「なし」だが、媚薬と敵意の切羽詰まった場面で体の関係になった（合意のない展開）' : '合意のない展開の切羽詰まった場面');
   }
   LK.crowdOk = canAct;
+  /* 事前の表示・結末の但し書き（locker-note.js）が本番と同じ判定を使うための入口。consent0 は夜の起こりやすさの抽選（S.nightNo）を見ない */
+  LK.crowdGate = {
+    consent0: function (S, a, b) { var n = S.nightNo; S.nightNo = false; try { return consentOk(S, a, b); } finally { S.nightNo = n; } },
+    host: function (S, a, b) { return hostOk(S, a, b); },
+    love: function (S, a, b) { return okLove(a, b) && !noLoveTie(S, a, b); },
+    noLoveTie: function (S, a, b) { return noLoveTie(S, a, b); },
+    free: function (S, a, b) { return freeOk(S, a, b); },
+    trio: function (S, m) { return trioBase(S, m) ? trioPlan(S, m) : null; }
+  };
   /* a が b を想っている（関係の恋人・片想いなど、またはこの回だけの「気になる相手」）。恋愛は両方向で通る組だけ */
   function interest(S, a, b) {
     if (!okLove(a, b) || noLoveTie(S, a, b)) return false;
@@ -251,8 +263,9 @@
     S.pk = function (arr) { return LK.pick(S, arr); };
     /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK：50 で 1・100 で 1.7・0 で 0。2026-10-29 担当MI）：0 なら合意の上では手を出し合わない（consentOk。
        敵対の強引な場面＝合意のない展開の経路・見回りの人（モブ）は止めない）。1 より小さければ、その見込みでだけ合意の場面を開く。上げたときは手を出す勢いを上げる */
-    S.nK = HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1;
-    S.nightNo = !HK.SAFE_ON && (S.nK <= 0 || (S.nK < 1 && !(S.rng() < S.nK)));
+    /* 全年齢版・全年齢モードでは、同じ値を「抱き合う場面の起こりやすさ」として効かせる（locker-note.js の LK.nightK。2026-10-30 担当LK） */
+    S.nK = LK.nightK ? LK.nightK(S) : HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1;
+    S.nightNo = (!HK.SAFE_ON || !!LK.nightK) && (S.nK <= 0 || (S.nK < 1 && !(S.rng() < S.nK)));
     S.P.forEach(function (p) {
       p.m = { heat: 0, reason: clamp(70 + p.tr.cp * 15 + (p.stats.gaman || 3) * 3, 40, 100), plea: 0, esc: 0 };
       p.cnt = { make: 0, refuse: 0, accept: 0, climax: 0, solve: 0, hold: 0, self: 0, jeal: 0, warm: 0 };
@@ -488,7 +501,8 @@
     P.forEach(function (p) {
       if (P.some(function (q) { return q !== p && interest(S, p, q); })) return;
       var c = P.filter(function (q) { return q !== p && okLove(p, q) && !noLoveTie(S, p, q); });
-      if (c.length && rng() < 0.5) p.secret = rng.pick(c).i;
+      /* 恋愛の起こりやすさ（locker-note.js の LK.loveK：50 で 1・100 で 1.7・0 で 0。0 なら okLove が偽なので c が空） */
+      if (c.length && rng() < Math.min(0.95, 0.5 * (LK.loveK ? LK.loveK(S) : 1))) p.secret = rng.pick(c).i;
     });
     /* 拘束 */
     S.bind = env.bind === 'random' ? rng.pick(['both', 'one', 'none', 'both']) : env.bind;
@@ -669,7 +683,7 @@
     if (noLoveTie(S, a, b)) return n + 'とは恋愛にしない関係な';
     if (HK.Pos && !HK.Pos.okSex(a, b)) return n + 'とは受け攻めの向きか恋愛対象が合わない';
     if (!libOk(a, b)) return (HK.Pos.libOf(a) === 'none' ? a : b).name + 'は性欲が「なし」な';
-    if (S && S.nightNo) return NIGHT0_WHY;
+    if (S && S.nightNo) return HK.SAFE_ON ? NIGHT0_WHY_S : NIGHT0_WHY;
     return n + 'とは恋愛にならない組な';
   }
   function relW(S, a, b, side) {
@@ -853,6 +867,11 @@
   }
   /* 三人とも互いに体の関係になれる・想い合える組（または中心のある三人）で、本命がいる人はその本命もこの三人の中にいて、熱が限界のときだけ */
   function trioOk(S, m) {
+    if (!trioBase(S, m)) return false;
+    return m.every(function (p) { return p.honmei == null || (m.some(function (q) { return q.i === p.honmei; }) && desperate(p)); });
+  }
+  /* 三人の場面の顔ぶれとして成り立つか（本命の熱の条件を除いた trioOk。事前の表示 locker-note.js も使う） */
+  function trioBase(S, m) {
     var pl = trioPlan(S, m);
     if (!pl) return false;
     /* 直接触れ合う組のどちらかが相手を避けている三人（avoid-kit.js の HK.Avoid）は、三人の場面にしない（三人の場面では誰もが自分から触れにいくため。2026-10-29 担当MR：state-audit の S31） */
@@ -860,7 +879,7 @@
       .some(function (pr) { return HK.Avoid.of(S, pr[0], pr[1]) || HK.Avoid.of(S, pr[1], pr[0]); })) return false;
     /* 恋人がこの三人の外にいる人は、三人の場面に加わらない */
     if (m.some(function (p) { return S.P.some(function (q) { return m.indexOf(q) < 0 && has(S, p, q, /^(lover|mate|fated)$/) && okLove(p, q); }); })) return false;
-    return m.every(function (p) { return p.honmei == null || (m.some(function (q) { return q.i === p.honmei; }) && desperate(p)); });
+    return true;
   }
   /* 三人の上下：攻めが二人を抱く（oneTwo）／二人の攻めが一人を（twoOne）／真ん中が前を抱き、後ろから抱かれる（sandwich） */
   function trioShape(S, m) {
@@ -923,13 +942,14 @@
     if (t3) {
       urge += (lead.goal && lead.goal.id === 'want' ? 0.12 : lead.goal && lead.goal.id === 'out' ? -0.08 : 0) + (lead.action && lead.action.id === 'flow' ? 0.08 : lead.action && lead.action.id === 'solve' ? -0.06 : 0);
       if (others.some(function (p) { return lhHas(S, lead, p); })) urge += 0.2;
-      var lm3 = libMul(m);
+      /* 夜の起こりやすさを上げたとき（S.nK > 1）は、二人のときと同じく手を出す勢いに掛ける（2026-10-30 担当LK。既定の 50 では 1） */
+      var lm3 = libMul(m) * (S.nK > 1 ? S.nK : 1);
       if (lm3 !== 1 && urge > 0) urge *= lm3;
     }
     if (urge < 0.36 + rng() * 0.3) return;
     if (t3) {
       /* 応じるか：愛憎を持つ側は口では嫌がりながら応じやすい（+0.25）。敵対する相手に強引に引き寄せられた側も、熱が回っていれば拒みきらない */
-      var willing = others.every(function (p) { return p.m.heat / 100 + p.tr.np * 0.15 + p.tr.fc * 0.15 - p.m.reason / 160 + relW(S, p, lead, 'acc') * 0.5 + (lhHas(S, p, lead) ? 0.25 : 0) > 0.3 || (hostOk(S, lead, p) && hostTop(S, lead, p) === lead && p.m.heat >= 15); });
+      var willing = others.every(function (p) { return p.m.heat / 100 + p.tr.np * 0.15 + p.tr.fc * 0.15 - p.m.reason / 160 + relW(S, p, lead, 'acc') * 0.5 + (lhHas(S, p, lead) ? 0.25 : 0) + (S.nK > 1 ? (S.nK - 1) * 0.25 : 0) > 0.3 || (hostOk(S, lead, p) && hostTop(S, lead, p) === lead && p.m.heat >= 15); });
       if (!willing) { holdPair(S, lead, others[0], '同じロッカーの' + names(others) + 'の気持ちが、まだ追いついていなかった'); return; }
       var lvMax = Math.min(LK.MAXLV || 4, 4), step = heat >= 80 ? 3 : heat >= 60 ? 2 : 1, nx = Math.min(Lk.lv + step, lvMax >= 2 ? 2 : lvMax);
       if (Lk.trioSex) {

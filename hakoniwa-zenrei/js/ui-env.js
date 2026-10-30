@@ -221,6 +221,7 @@
       if (res.scenId === 'whiteroom') return roomBand(res);
       if (res.scenId === 'kaihen') return kaihenBand(res, E.lines || []);
       if (res.scenId === 'massage') return massageBand(res, E.lines || [], stats || res.estats);
+      if (res.scenId === 'locker') return HK.LockerNote && HK.LockerNote.ending ? HK.LockerNote.ending(res) : '';   /* 媚薬ロッカー（locker-note.js） */
     } catch (e) { /* 読めない記録では帯を出さない（結末はそのまま） */ }
     return '';
   };

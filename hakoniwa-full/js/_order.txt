@@ -338,6 +338,7 @@ js/locker-night-bot.js @scen:locker
 js/locker-night.js @scen:locker
 js/locker-night-light.js @scen:locker
 js/solo-locker.js @scen:locker
+js/locker-note.js @scen:locker
 js/trap-open-locker.js @scen:locker
 js/rpg-data.js @scen:rpg
 js/scenario-rpg.js @scen:rpg

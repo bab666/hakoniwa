@@ -15,10 +15,13 @@
 (function () {
   'use strict';
   /* 夜の起こりやすさ 0（全体の環境値 night。R18版だけ）で手を出さなかった理由の文。全年齢版には文を入れない（その枝は通らない） */
-  var NIGHT0 = { hold: '', bed: '' };
+  var NIGHT0 = { hold: 'とは抱き合う場面にならない（抱き合う場面の起こりやすさが 0）ので、手は出さなかった（', bed: '抱き合う場面にならない二人（抱き合う場面の起こりやすさが 0）なので' };
+  var NIGHT0_S = NIGHT0;
   /* r18:begin */
   NIGHT0 = { hold: 'とは体の関係にならない（夜の起こりやすさが 0）ので、手は出さなかった（', bed: '体の関係にならない二人（夜の起こりやすさが 0）なので' };
   /* r18:end */
+  /* 全年齢モード（R18版の切り替え）では、全年齢の言い方 */
+  function night0() { return HK.SAFE_ON ? NIGHT0_S : NIGHT0; }
   var HK = window.HK, LK = HK.LOCKER, ST = HK.Story, clamp = HK.clamp;
   /* 表・数の見出しの言葉（全年齢版は「高鳴り」） */
   var W_CL = '高鳴り';
@@ -57,6 +60,20 @@
   /* r18:begin */
   W_SEXL = '性行為の相手を';
   /* r18:end */
+  /* 環境値「夜の起こりやすさ」「恋愛の起こりやすさ」（2026-10-30 担当LK。利用者の指示「環境値に夜の起こりやすさ、恋愛起こりやすさを設定できつつ、出られない部屋とエッチの発生条件を揃えて」）：
+     id は全体の環境値と同じ night・romance（events-common.js。夜の倍率は pos.js の HK.Pos.nightK と同じ形：50 で 1・100 で 1.7・0 で 0。恋愛も同じ形）。
+     媚薬ロッカーは物語型の箱庭なので、全体の欄ではなくこの箱庭の欄に置く（全年齢版・全年齢モードでも出す。全年齢では「抱き合う場面」の起こりやすさとして効く）。
+     効き方は locker-note.js の LK.nightK・LK.loveK。名前と説明は全年齢モードの切り替えで変わるので、読むときに決める */
+  var DESC_NIGHT = '媚薬で火照った二人が、抱き合う・寄り添う場面（暗転）に進む起こりやすさ。50 でそのまま、100 で進みやすく、0 にすると誰も手を伸ばさず、我慢で終わる。「媚薬の濃さ」は火照りの上がり方、「ハプニングの頻度」は外から起きる出来事の多さで、この値とは別';
+  var DESC_NIGHT_S = DESC_NIGHT;
+  /* r18:begin */
+  DESC_NIGHT = '媚薬に負けて体の関係（ロッカーの中で手を出し合う・扉が開いたあとのベッド）に進む起こりやすさ。50 でそのまま、100 で手を出しやすく・ベッドへ行きやすく（1.7 倍ほど）、0 にすると合意の上では体の関係にならず、媚薬の場面は我慢で終わる（敵対の二人の合意のない展開・見回りの人は除く）。「媚薬の濃さ」は発情の上がり方、「ハプニングの頻度」は外から起きる出来事の多さで、この値とは別。恋愛の起こりやすさとも別で、恋愛 0・夜 100 なら恋は始まらずに体だけが進む';
+  /* r18:end */
+  var ENV_NIGHT = { id: 'night', min: 0, max: 100, def: 50, lo: '起きにくい', hi: '起きやすい' };
+  Object.defineProperty(ENV_NIGHT, 'label', { enumerable: true, get: function () { return HK.SAFE_ON ? '抱き合う場面の起こりやすさ' : '夜の起こりやすさ'; } });
+  Object.defineProperty(ENV_NIGHT, 'desc', { enumerable: true, get: function () { return HK.SAFE_ON ? DESC_NIGHT_S : DESC_NIGHT; } });
+  var ENV_ROM = { id: 'romance', label: '恋愛の起こりやすさ', min: 0, max: 100, def: 50, lo: '起きにくい', hi: '起きやすい',
+    desc: 'ロッカーの中で恋が芽生える起こりやすさ（関係が恋に変わる・両片想いが通じる・触れずに耐えた相手が気になる・三人以上なら「気になる相手」ができて祝福や失恋が起きる）。50 でそのまま、100 で 1.7 倍ほど、0 にすると新しい恋は始まらない（もとからの恋人・関係はそのまま）。媚薬で手を出し合うかどうかは「夜の起こりやすさ」（全年齢では「抱き合う場面の起こりやすさ」）で決まり、この値とは別' };
   var scen = {
     id: 'locker', name: '媚薬ロッカー', kicker: '1〜6人・R18', solo: true, maxCast: 6, minCast: 1,
     /* r18:begin */
@@ -70,7 +87,9 @@
       { id: 'dose', label: '媚薬の濃さ', min: 0, max: 100, def: 65, lo: 'ほのか', hi: '理性が飛ぶ' },
       { id: 'diff', label: '仕掛けの難しさ', min: 0, max: 100, def: 50, lo: '簡単', hi: '激ムズ' },
       { id: 'turns', label: '制限時間', min: 6, max: 14, def: 12, lo: '30分', hi: '70分', desc: '5分ごとに区切る。時間切れになると扉は開くが……' },
-      { id: 'ev', label: 'ハプニングの頻度', min: 0, max: 100, def: 45, lo: 'たまに', hi: '頻繁' },
+      { id: 'ev', label: 'ハプニングの頻度', min: 0, max: 100, def: 45, lo: 'たまに', hi: '頻繁', desc: 'ガスの噴き出し・物音など、外から起きる出来事の多さ（媚薬の場面に進むかどうかは「夜の起こりやすさ」、熱の上がり方は「媚薬の濃さ」）' },
+      ENV_NIGHT,
+      ENV_ROM,
       { id: 'layout', label: 'ロッカーの分け方（3人以上）', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'big', label: '大きなロッカーに三人ずつ' }, { v: 'split', label: '二人ずつ別のロッカーに' }], desc: '3人以上のとき、誰と誰が同じロッカーになるかは運しだい。余った人は一人のロッカーに' },
       { id: 'finder', label: '見回りの人（1人のとき）', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ（運しだい）' }, { v: 'mob', label: '来る' }, { v: 'none', label: '来ない（自力で出る）' }], desc: '1人のとき、外から扉を開けてくれる人が来るか' },
       { id: 'lewd', label: '描写の濃さ', type: 'select', def: 'mid', options: [{ v: 'low', label: 'ぼかす' }, { v: 'mid', label: 'ほどほど' }, { v: 'high', label: '濃いめ' }] }
@@ -172,8 +191,9 @@
     /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK：50 で 1・100 で 1.7・0 で 0。2026-10-29 担当MI）：0 なら、性欲「なし」の二人と同じく
        合意の上では体の関係にならない（手を出さずに耐える・自分から閉じ込められた人は出さない。敵対の強引な場面＝合意のない展開の経路は開いたまま）。
        1 より小さければ、その見込みでだけ合意の場面を開く。上げたときは、手を出す勢いとベッドへ行く見込みを上げる */
-    var nK = HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1;
-    var nightNo = !ngP && !r18No && !libNo && !HK.SAFE_ON && (nK <= 0 || (nK < 1 && !(rng() < nK)));
+    /* 全年齢版・全年齢モードでは、同じ値を「抱き合う場面の起こりやすさ」として効かせる（locker-note.js の LK.nightK。2026-10-30 担当LK） */
+    var nK = LK.nightK ? LK.nightK(S) : HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(S) : 1;
+    var nightNo = !ngP && !r18No && !libNo && (!HK.SAFE_ON || !!LK.nightK) && (nK <= 0 || (nK < 1 && !(rng() < nK)));
     if (nK > 1) libM *= nK;
     if (ngP || r18No || libNo || nightNo) plotter = null;
     /* 拘束 */
@@ -264,7 +284,7 @@
       a.cnt.hold++; a.m.reason = clamp(a.m.reason + 3, 0, 100); a.m.plea = clamp(a.m.plea + 8, 0, 90);
       if (a.cnt.hold > 3 && rng() < 0.5) return;
       var ty = clashType(a), C = LK.CLASH;
-      ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + (a.noR18 ? 'は媚薬で火照っていた（' : 'は発情していた（') + Math.round(a.m.heat) + '）が、' + b.name + (libNo ? 'とは体の関係にならない（' + libWho.name + 'は性欲が「なし」）ので、手は出さなかった（' : nightNo ? NIGHT0.hold : ngP ? 'とは' + (tieNL ? nlWhy + 'の二人' : '恋愛・R18にしない組') + 'なので、手は出さなかった（' : sexP ? 'とは体の関係にならない（' + sexWhy + '）ので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
+      ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + (a.noR18 ? 'は媚薬で火照っていた（' : 'は発情していた（') + Math.round(a.m.heat) + '）が、' + b.name + (libNo ? 'とは体の関係にならない（' + libWho.name + 'は性欲が「なし」）ので、手は出さなかった（' : nightNo ? night0().hold : ngP ? 'とは' + (tieNL ? nlWhy + 'の二人' : '恋愛・R18にしない組') + 'なので、手は出さなかった（' : sexP ? 'とは体の関係にならない（' + sexWhy + '）ので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
     }
     /* 女性の攻め（t）×男性の受け（u）か：女性が跨る書き方にする */
     function fmPair(t, u) { return !!(Pos && !ff && Pos.isF(t) && !Pos.isF(u)); }
@@ -645,7 +665,7 @@
       outcome = 'endure';
       /* 理性の残っていた方が、性格に合わせたやり方で二人を引き離す */
       var ke = A.m.reason >= B.m.reason ? A : B, tye = clashType(ke);
-      ST.key(S, ST.say(S, { actors: [A, B], tag: '耐え抜いた', text: (how === 'timeout' ? LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/, '') : '') + ST.fmt(pk(LK.CLASH.bed[tye]), { a: ke.name, b: ke.o.name }), why: (r18No ? '二人とも媚薬で火照っていた（' : '二人とも発情していた（') + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）が、' + (tieNL ? nlWhy + 'の二人なので' : sexP ? '体の関係にならない二人（' + sexWhy + '）なので' : libNo ? '体の関係にならない二人（' + libWho.name + 'は性欲が「なし」）なので' : nightNo ? NIGHT0.bed : '受け攻めの向きが合わない二人なので') + '、ベッドには行かなかった（' + ke.name + 'の理性 ' + Math.round(ke.m.reason) + '）', mag: 30 }), '結末');
+      ST.key(S, ST.say(S, { actors: [A, B], tag: '耐え抜いた', text: (how === 'timeout' ? LK.BED.timeout[0].replace(/そこには、大きなベッドが置かれていた。$/, '') : '') + ST.fmt(pk(LK.CLASH.bed[tye]), { a: ke.name, b: ke.o.name }), why: (r18No ? '二人とも媚薬で火照っていた（' : '二人とも発情していた（') + Math.round(A.m.heat) + '・' + Math.round(B.m.heat) + '）が、' + (tieNL ? nlWhy + 'の二人なので' : sexP ? '体の関係にならない二人（' + sexWhy + '）なので' : libNo ? '体の関係にならない二人（' + libWho.name + 'は性欲が「なし」）なので' : nightNo ? night0().bed : '受け攻めの向きが合わない二人なので') + '、ベッドには行かなかった（' + ke.name + 'の理性 ' + Math.round(ke.m.reason) + '）', mag: 30 }), '結末');
     } else {
       /* ロッカーの中で最後までした二人は「怒りの脱出」にしない（そのあと受け入れている） */
       outcome = how === 'timeout' ? 'rescue' : plotter && !plotOk ? 'plotfail' : pair.refusedHard && pair.acts >= 1 && !pair.sexIn ? 'angry' : pair.acts >= 1 ? 'awkward' : (A.cnt.make + B.cnt.make) > 0 || (clash && A.cnt.hold + B.cnt.hold > 0) || pair.toNo ? 'near' : 'clean';
@@ -698,9 +718,13 @@
     /* R18に参加しない人がいて、恋愛はできる二人（loveNo）：体の関係の代わりに、触れずに耐えた・気づかい合った時間が恋のきっかけになる
        （両片想いは通じる。ほかの関係は LK.REL.pure の一文。何もなかった二人・怒って出た二人には出さない） */
     var heldNo = loveNo && (A.cnt.hold + B.cnt.hold > 0 || outcome === 'endure') && outcome !== 'angry' && outcome !== 'plotfail';
-    if (rel === 'mutual' && LK.MUT) lines.push(ST.fmt(pk(LK.MUT.end[outcome === 'bed' || heldNo || (pair.acts >= 1 && outcome !== 'angry' && outcome !== 'plotfail') ? 'told' : 'miss']), v0));
+    /* 恋愛の起こりやすさ（locker-note.js の LK.loveK：50 で 1・0 で 0）：両片想いが通じる・恋のきっかけの見込みに掛ける（1 のときは乱数を引かない） */
+    var lkK = LK.loveK ? LK.loveK(S) : 1;
+    var told = outcome === 'bed' || heldNo || (pair.acts >= 1 && outcome !== 'angry' && outcome !== 'plotfail');
+    if (told && lkK < 1 && rel === 'mutual' && LK.MUT) told = lkK > 0 && rng() < lkK;
+    if (rel === 'mutual' && LK.MUT) lines.push(ST.fmt(pk(LK.MUT.end[told ? 'told' : 'miss']), v0));
     var RP = heldNo && rel !== 'mutual' && LK.REL && LK.REL.pure && LK.REL.pure[rel];
-    if (RP && rng() < 0.6) lines.push(ST.fmt(pk(RP), { a: A.name, b: B.name, c: (crusher || A).name, o: (crusher || A).o.name, u: master ? master.name : A.name, d: servant ? servant.name : B.name }));
+    if (RP && rng() < Math.min(0.95, 0.6 * lkK)) lines.push(ST.fmt(pk(RP), { a: A.name, b: B.name, c: (crusher || A).name, o: (crusher || A).o.name, u: master ? master.name : A.name, d: servant ? servant.name : B.name }));
     var rows = P.map(function (p) { return { i: p.i, rank: '', cells: [Math.round(p.m.heat) + '', Math.round(p.m.reason) + '', String(p.cnt.make), String(p.cnt.refuse), String(p.cnt.climax), String(p.cnt.solve), p.fate] }; });
     return ST.result(S, input, {
       ending: { title: title, kind: outcome === 'clean' ? 'ok' : 'over', lines: lines },
