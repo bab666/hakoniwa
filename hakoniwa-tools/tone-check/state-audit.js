@@ -39,6 +39,8 @@
    S20: 恐怖（a が b を恐れる）：二人が恋人・夜・恋愛の出来事・性的な文・関係図の恋の線（物語型は恋愛・夜の札、恋人の記録）になった／HK.canLove（両方向）・HK.Pos.okSex が通った
         （2026-10-28 担当MG：無関心・恐怖は引き金の出来事で動く設計（cold-fear.js）。S19 は、理由に「無関心の変化：」がある記録（二人とも登場）の区切りから先の値の動きと、
         そのあとの助け合い・嫉妬・心配を数えない。S19・S20 の性的な文は、R18版の引き金「力ずくで迫られる」場面（理由に〔合意のない展開〕と「無関心／恐怖の変化：」）を数えない）
+        （2026-10-30 担当FS：恐怖の二人の体の関係は、合意のない展開でだけ恐れられる側が迫る形で起きてよい。その場面でも、内容のスイッチが切・恐れる側が迫る側・
+        恐れられる側の性欲「なし」なら S20 に数える。出られない部屋の条件のエッチ cf_room_r18 も同じ印〔合意のない展開〕と「恐怖の変化：」を書く）
    S21: 許嫁：破談（pf.fiBroken）のあとに恋人（pf.couple）・恋愛の出来事が出た／恋愛対象・受け攻めの合わない許嫁が恋人と同じ扱いになった
    S22: グループの「仲間」（画面）：オンのグループの住人どうしに関係「仲間」が付かない／オフ・別のグループの組に付いた／ほかの関係が消えた／JSON にオン・オフが入らない／古い JSON が読めない
    S25〜S30（2026-10-26、死んだ・消えた人の再登場。記録ごとに、書く直前の住人の状態を写して文で見る。ふつうの回と、死のある箱庭を
@@ -844,6 +846,17 @@ const JUDGE = function (HK, opt) {
           /* 性的な文に、無関心・恐怖の二人の名前だけが出た */
           (res.log || []).forEach(e => {
             if (!e || typeof e.text !== 'string') return;
+            /* 恐怖の二人の体の関係（2026-10-30 担当FS：合意のない展開でだけ、恐れられる側が迫る形で起きてよい）：力ずくの場面の印があっても、
+               内容のスイッチ「合意のない展開」が切・恐れる側が迫る側（理由の先頭）・恐れられる側の性欲「なし」なら誤り */
+            if (e.lewd && CFF.test(String(e.why || ''))) {
+              const ac0 = e.actors || [], w0 = String(e.why || ''), ctOn = /(^|,)force(,|$)/.test(String((run.input.env || {}).ct || ''));
+              ties.filter(t => t.type === 'fear' && ac0.indexOf(t.a) >= 0 && ac0.indexOf(t.b) >= 0 && chars[t.a] && chars[t.b]).forEach(t => {
+                const why0 = nlTxt(chars, t) + ' | ' + w0.slice(0, 100);
+                if (!ctOn && !(HK.Content && HK.Content.CORE && HK.Content.CORE[sc])) hit('S20', '恐怖の二人の夜（スイッチ切） ' + why0);
+                if (w0.indexOf(chars[t.a].name + 'が') === 0) hit('S20', '恐れる側が迫った ' + why0);
+                if (chars[t.b].libido === 'none') hit('S20', '恐れられる側の性欲「なし」で恐怖の夜 ' + why0);
+              });
+            }
             if (!CFF.test(String(e.why || ''))) sents(e.text).forEach(x => { if (!isSex(x) || MOB.test(x) || /最期に遺した言葉/.test(x)) return; const inS = chars.map((c, i) => x.indexOf(c.name) >= 0 ? i : -1).filter(i => i >= 0); if (inS.length === 2) { const nl = nlOf(ties, inS[0], inS[1]); if (nl) hit(nlKey(nl), '性的な文 ' + nlTxt(chars, nl) + ' | ' + x.slice(0, 120)); } });
             /* 参考：恐怖で避けた・無関心で受け流した出来事の数 */
             const w = String(e.why || '');

@@ -321,6 +321,59 @@
   };
   /* 切羽詰まった場面の体の関係の組か（HK.State.pairSex＝その場にいる・R18に参加する・受け攻めと恋愛対象が合う、を開いて見る） */
   P.okForce = function (x, a, b) { return P.forceOpen(x, [a, b], function () { return !!(HK.State && HK.State.pairSex ? HK.State.pairSex(a, b) : P.okSex(a, b)); }); };
+  /* ---------- 関係「恐怖」の二人の体の関係（2026-10-30 担当FS。利用者の指示「恐怖関係でも、体の関係が自由で性欲があれば、恋愛はオフでもエッチはできてほしい。無理矢理迫られる形になるはず」） ----------
+     恐怖（{a} が {b} を恐れる）の二人は、恋愛は今までどおり止める（noLove：HK.canLove・告白・恋人にならない）。体の関係は、次がすべて成り立つときだけ、
+     合意のない展開としてだけ起こせる（呼ぶ側：cold-fear-r18.js の力ずくの夜 cf_force_r18・出られない部屋の条件「エッチ」cold-fear-room-r18.js）：
+       ・内容のスイッチ「合意のない展開」が入（HK.Pos.forceOn。全年齢版・全年齢モードでは起きない）
+       ・恐れられる側（{b}）の性欲の強さが「なし」でない（恐れる側の性欲は見ない。迫られる側なので）
+       ・恐怖の印（ties.js の HK.Ties.after が入れる noLove／noSex のうち恐怖で入れたもの：_fearNL／_fearNS）だけを外した二人が、
+         その場にいる・R18に参加する・恋愛対象（体の関係の相手）・性行為の相手の固定・一途・恋愛やR18にしない相手・同じ人の恋人どうし・血縁で止まらない（HK.State.pairSex を P.forceOpen の中で）
+       ・恐れられる側が攻め・恐れる側が受けに回れる（P.dirOk。自分で攻めを選んだ恐れる側は受けにしない）。互いに恐れ合う二人は、どちらも迫らない
+     住人の印：恐れる側の fearOf（恐れている相手の番号）。エンジン型の箱庭だけに付く（物語型・一人用は HK.fearInput が「恋愛・R18にしない相手」に入れるので、今までどおり体の関係にもならない） */
+  P.fearOf = function (a, b) { return !!(a && b && a !== b && Array.isArray(a.fearOf) && a.fearOf.indexOf(b.i) >= 0); };
+  /* 恐怖の二人の向き：[恐れられる側, 恐れる側]。片方だけが恐れているときだけ（恐怖でない・互いに恐れ合うなら null） */
+  P.fearDir = function (a, b) { var ab = P.fearOf(a, b), ba = P.fearOf(b, a); return ab === ba ? null : ab ? [b, a] : [a, b]; };
+  /* c の写しから、相手 o への恐怖の印（恐怖で入れた noLove・noSex）だけを外す（「恋愛：なし」の家族・無関心の印は残す） */
+  P.fearStrip = function (c, o) {
+    var x = {}, k;
+    for (k in c) x[k] = c[k];
+    var has = function (l) { return Array.isArray(l) && l.indexOf(o.i) >= 0; };
+    [['noLove', '_fearNL', ['_kinNL', '_apaNL']], ['noSex', '_fearNS', ['_apaNS']]].forEach(function (f) {
+      if (Array.isArray(c[f[0]]) && has(c[f[1]]) && !f[2].some(function (k2) { return has(c[k2]); })) x[f[0]] = c[f[0]].filter(function (i) { return i !== o.i; });
+    });
+    return x;
+  };
+  /* top が攻め・bot が受けに回れる向き（自分で攻めを選んだ bot・受けを選んだ top は不可。相手ごとの指定・攻め度で向きが決まる組はその向きだけ） */
+  P.dirOk = function (top, bot) {
+    if (!P.orients(top, bot).some(function (o) { return o[0] === top; })) return false;
+    var pr = P.prefer(top, bot);
+    return !pr || pr[0] === top;
+  };
+  /* 恐れられる側 T が、T を恐れる H に迫れるか：null（迫れる）か { k, t, fix }（全年齢版では常に止める） */
+  P.fearSexInfo = function () { return { k: 'safe', t: '', fix: '' }; };
+  /* r18:begin */
+  P.FEAR_OK_T = '関係「恐怖」の二人：合意のない展開でだけ体の関係になります（恐れられる側が迫る形。恋愛にはなりません）';
+  var POS_JA_F = { top: '攻め', bottom: '受け', riba: 'リバ' };
+  P.fearSexInfo = function (x, T, H) {
+    if (!T || !H || T === H || !P.fearOf(H, T)) return { k: 'nofear', t: '', fix: '' };
+    if (HK.SAFE_ON) return { k: 'safe', t: '', fix: '' };
+    var both = T.name + 'と' + H.name + 'は関係「恐怖」の二人（' + H.name + 'が' + T.name + 'を恐れている）。';
+    if (P.fearOf(T, H)) return { k: 'fearMutual', t: T.name + 'と' + H.name + 'は互いに恐れ合っている（関係「恐怖」が両方向）ので、どちらも相手に迫らない', fix: 'どちらかの「恐怖」を外す' };
+    if (!P.forceOn(x)) return { k: 'fearForce', t: both + '恋愛にはならず、体の関係は内容のスイッチ「合意のない展開」が入のときだけ、恐れられる側が迫る形で起きる', fix: '内容のスイッチ「合意のない展開」を入にする（または二人の関係を変える）' };
+    if (P.libOf(T) === 'none') return { k: 'fearLib', t: both + '恐れられる側の' + T.name + 'の性欲の強さが「なし」なので、' + T.name + 'は迫らない', fix: T.name + 'の「性欲の強さ」を「ふつう」などにする' };
+    var t2 = P.fearStrip(T, H), h2 = P.fearStrip(H, T);
+    var ok = !!P.forceOpen(x, [t2, h2], function () { return !!(HK.State && HK.State.pairSex ? HK.State.pairSex(t2, h2) : P.okSex(t2, h2)) && P.dirOk(t2, h2); });
+    if (ok) return null;
+    if (HK.State && HK.State.here && !(HK.State.here(T) && HK.State.here(H))) return { k: 'gone', t: both + 'どちらかがその場にいない', fix: '' };
+    var r = P.noSexInfo ? P.noSexInfo(t2, h2, { ctx: x && x.chars ? x : null, lib: false, room: false, noFear: true }) : null;
+    if (r && r.k !== 'pos') return { k: r.k, t: both + r.t, fix: r.fix };
+    var lab = function (c, o) { return explicit(c, o) ? POS_JA_F[P.of(c, o)] || 'おまかせ' : 'おまかせ'; };
+    return { k: 'fearPos', t: both + '恐れられる側の' + T.name + 'が攻め・' + H.name + 'が受けに回れない（' + T.name + '：' + lab(T, H) + '・' + H.name + '：' + lab(H, T) + '）', fix: T.name + 'が攻めかリバ、' + H.name + 'が受けかリバに回れるように、受け攻め（相手ごとの指定・「相手の受け攻め」）を変える' };
+  };
+  /* r18:end */
+  P.fearSexOK = function (x, T, H) { return !P.fearSexInfo(x, T, H); };
+  /* 二人が恐怖の二人で、恐れられる側が合意のない展開として迫れるか（迫れれば [恐れられる側, 恐れる側]、でなければ null） */
+  P.fearPairOK = function (x, a, b) { var d = P.fearDir(a, b); return d && P.fearSexOK(x, d[0], d[1]) ? d : null; };
   /* 恋愛の出来事を起こしてよいか（engine.js の ctx.romanceOk）：
      ・合意ありの体の出来事（ev.sex で ev.force でない）：性欲「なし」の人がいれば起こさない。恋愛対象「なし」の人は「体の関係の相手」で開いて見る
      ・切羽詰まった体の場面（ev.force かつ ev.sex）：恋愛対象「なし」を開き、性欲は見ない（合意のない展開が入のとき） */
@@ -406,7 +459,9 @@
     var nameOf = function (k) { var c = C && k >= 0 ? C[k] : null; return c ? c.name : 'この箱庭にいない人'; };
     var gen = function (c) { return GEN_JA[c.gender] ? '（' + GEN_JA[c.gender] + '）' : ''; };
     for (i = 0; i < 2; i++) { x = pr[i][0]; if (x.noR18) return { k: 'noR18', t: x.name + 'が「R18に参加しない」', fix: x.name + 'の「R18に参加しない」を外す' }; }
-    for (i = 0; i < 2 && opt.lib !== false; i++) { x = pr[i][0]; if (!P.libOK([x])) return { k: 'lib', t: x.name + 'の性欲の強さが「なし」', fix: x.name + 'の「性欲の強さ」を「ふつう」などにする' }; }
+    /* 恐怖の二人（エンジン型。P.fearDir＝[恐れられる側, 恐れる側]）：合意のない展開が入なら、恐れる側の性欲は見ない（迫られる側なので。2026-10-30 担当FS） */
+    var fd = opt.noFear ? null : P.fearDir(a, b), fForce = !!(fd && P.forceOn(ctx));
+    for (i = 0; i < 2 && opt.lib !== false; i++) { x = pr[i][0]; if (fForce && x === fd[1]) continue; if (!P.libOK([x])) return { k: 'lib', t: x.name + 'の性欲の強さが「なし」', fix: x.name + 'の「性欲の強さ」を「ふつう」などにする' }; }
     for (i = 0; i < 2; i++) {
       x = pr[i][0]; y = pr[i][1];
       if (likesOne(x, y, true)) continue;
@@ -441,6 +496,12 @@
       }
     }
     for (i = 0; i < 2; i++) { x = pr[i][0]; y = pr[i][1]; if (HK.Poly && HK.Poly.faithNG && HK.Poly.faithNG(x, y)) return { k: 'faith', t: x.name + 'は一途で、恋人がいる間は恋人以外と体の関係を持たない', fix: x.name + 'の「一途」を外す' }; }
+    /* 恐怖の二人：恐怖の理由で書く。合意のない展開で迫れる組は k 'fearOK'（soft。ふつうの夜にはならないので持てない組のまま。帯には出さず、薄い一行で知らせる） */
+    if (fd && HK.noLovePair && HK.noLovePair(a, b)) {
+      var fi = P.fearSexInfo(ctx, fd[0], fd[1]);
+      if (!fi) return { k: 'fearOK', soft: true, t: fd[0].name + 'と' + fd[1].name + 'は関係「恐怖」の二人（' + fd[1].name + 'が' + fd[0].name + 'を恐れている）。合意のない展開でだけ、恐れられる側が迫る二人きりの場面で体の関係になる（恋愛にはならない。三人の場面では直接は触れ合わない）', fix: '' };
+      if (fi.t) return fi;
+    }
     if (HK.noLovePair && HK.noLovePair(a, b)) {
       var T0 = HK.Ties, kind = ctx && T0 && T0.has ? (T0.has(ctx, a, b, 'apathy') ? '関係「無関心」' : T0.has(ctx, a, b, 'fear') ? '関係「恐怖」' : '「恋愛：なし」の家族') : '関係「無関心」「恐怖」か「恋愛：なし」の家族';
       return { k: 'noLove', t: a.name + 'と' + b.name + 'は' + kind + 'の二人', fix: '二人の関係を変える（家族なら関係の「恋愛」を「あり」にする）' };

@@ -296,6 +296,7 @@ js/fam-kin.js
 js/cold-fear-text.js @pack:rel
 js/cold-fear.js @pack:rel
 js/cold-fear-r18.js @pack:rel
+js/cold-fear-room-r18.js @scen:whiteroom
 js/esteem-text.js @pack:rel
 js/esteem.js @pack:rel
 js/esteem-r18.js @pack:rel

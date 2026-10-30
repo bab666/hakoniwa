@@ -22,7 +22,10 @@ const COND = [
     ['e', '敵対', { type: 'enemy' }], ['f', '不仲', { type: 'bad' }], ['g', '敵対愛憎', [{ type: 'enemy' }, { type: 'lovehate', cold: 'both' }]], ['h', '関係なし', null],
     ['i', '理性高', { type: 'friend', love: 'no' }, 'hi'], ['j', '理性低', { type: 'friend', love: 'no' }, 'lo'],
     /* 気持ちの関係（2026-10-29。設計 4 章）：愛憎・劣等感・優越を付けた組が、付けない組（友人 b）より起こりにくくなっていないこと（衝動の倍率が効いていること） */
-    ['k', '友人愛憎', [{ type: 'friend' }, { type: 'lovehate', cold: 'both' }]], ['l', '友人劣等', [{ type: 'friend' }, { type: 'inferior' }]], ['m', '友人優越', [{ type: 'friend' }, { type: 'superior' }]]
+    ['k', '友人愛憎', [{ type: 'friend' }, { type: 'lovehate', cold: 'both' }]], ['l', '友人劣等', [{ type: 'friend' }, { type: 'inferior' }]], ['m', '友人優越', [{ type: 'friend' }, { type: 'superior' }]],
+    /* 恐怖（2026-10-30 担当FS）：恐怖の二人（0 が 1 を・2 が 3 を恐れる）は、合意のない展開が入のときだけ、恐れられる側が迫る形で体の関係になってよい。
+       n＝恐怖だけ（スイッチ切なら 0 件であること）／o＝恐れる側が性行為の相手をほかの人に固定（0 件であること）／p＝恐れられる側の性欲「なし」（0 件であること） */
+    ['n', '恐怖', { type: 'fear' }], ['o', '恐怖固定', { type: 'fear' }, 'lock'], ['p', '恐怖性欲なし', { type: 'fear' }, 'nolib']
   ];
 
 /* ---------- パス sexgate（ページの中）：opt = { N, only, force, lib, cond } ---------- */
@@ -45,6 +48,9 @@ const PASS = function* (HK, opt) {
             if (cd[3] === 'lo') { eg.CP = (s + i) % 3; eg.AC = (s * 3 + i) % 3; }
             chars.push({ name: NAMES[i], eg: eg, gender: (i + s) % 2 ? 'f' : 'm', likes: 'both', pos: '', tone: '', fp: '', calls: {}, memo: '', libido: LIB });
           }
+          /* 恐怖の列の上書き：o は恐れる側（0・2）を互いに固定、p は恐れられる側（1・3）の性欲を「なし」に */
+          if (cd[3] === 'lock') { if (n >= 4) { chars[0].sexLock = [2]; chars[2].sexLock = [0]; } else chars[0].sexLock = [-1]; }
+          if (cd[3] === 'nolib') { chars[1].libido = 'none'; if (n >= 4) chars[3].libido = 'none'; }
           const env = {}; (sc.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
           (sc.env || []).forEach(e => { if (e.max != null && /romance|love|night|lewd|heat|aphro|dose|pleasure|shady|prey/.test(e.id)) env[e.id] = e.max; });
           if (HK.Content) env.ct = HK.Content.TAGS.map(t => t.id).filter(t => FORCE || t !== 'force').join(',');
@@ -67,12 +73,14 @@ const JUDGE = function (HK, opt) {
     end(run, res) {
       const o = oOf(run.sc), k = run.meta.k, n = run.input.chars.length;
           o.runs++;
+          o.forceOn = /(^|,)force(,|$)/.test(String((run.input.env || {}).ct || ''));
           const prs = n >= 4 ? [[0, 1], [2, 3]] : [[0, 1]];
           (res.log || []).forEach(e => {
             if (!e || !e.lewd || !Array.isArray(e.actors)) return;
             prs.forEach(p => {
               if (e.actors.indexOf(p[0]) < 0 || e.actors.indexOf(p[1]) < 0) return;
               o.cnt[k]++;
+              if (/[nop]/.test(k) && o.ex.length < 16) o.ex.push('恐怖の列 ' + k + ' ｜ ' + String(e.text).slice(0, 60) + ' ｜ why ' + String(e.why || '').slice(0, 90));
               if (WHY && o.ex.length < 16 && /[cdef]/.test(k)) o.ex.push(k + ' ' + (e.tag || e.label || '') + ' ｜ ' + String(e.text).slice(0, 70) + ' ｜ why ' + String(e.why || '').slice(0, 90));
             });
           });
@@ -99,6 +107,12 @@ function verdict(r, show) {
     /* 気持ちの関係の列：付けない組の 85% を下回ったら不具合（しづらくしない原則。比べる側が MIN_B 件以上あるときだけ） */
     [['g', 'e'], ['k', 'b'], ['l', 'b'], ['m', 'b']].forEach(([x, y]) => { if (c[x] != null && c[y] >= MIN_B && c[x] < c[y] * 0.85) { v += '／不具合：' + x + '=' + Math.round(c[x] / c[y] * 100) + '%（' + y + ' 比）'; if (bad.indexOf(id) < 0) bad.push(id); } });
     if (c.j > 0) v += '／理性 高÷低 ' + Math.round(c.i / c.j * 100) + '%';
+    /* 恐怖の列（2026-10-30 担当FS）：スイッチ切の恐怖の夜・固定を越えた恐怖の夜・恐れられる側の性欲「なし」での恐怖の夜は 1 件でも不具合 */
+    const fz = [];
+    if (c.n > 0 && !o.forceOn) fz.push('n=' + c.n + '（スイッチ切）');
+    if (c.o > 0) fz.push('o=' + c.o + '（固定を越えた）');
+    if (c.p > 0) fz.push('p=' + c.p + '（性欲なし）');
+    if (fz.length) { v += '／不具合：恐怖の夜 ' + fz.join(' '); if (bad.indexOf(id) < 0) bad.push(id); }
     show && console.log(id.padEnd(10), COND.map(cd => String(c[cd[0]]).padEnd(8 + cd[1].length)).join(' '), v, o.err ? 'err ' + o.err : '');
     if (show) o.ex.forEach(x => console.log('    ' + String(x).replace(/\n/g, ' ')));
   }

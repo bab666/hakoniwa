@@ -101,7 +101,8 @@
     var a = HK.weighted(rng, P, function (x) { var v = x.corrupt / 100 + x.pleasure / 140 + x.tr.impulse * 0.3 - 0.75; return v > 0 ? v : 0; });
     if (!a) return false;
     /* 体の関係になる組だけ（恋愛対象・受け攻め・恋愛やR18にしない組・性行為の相手の固定。HK.State.pairSex・HK.ngPair・HK.sexBlocked） */
-    var cand = P.filter(function (x) { return x !== a && canLove(a, x) && (!HK.State || HK.State.pairSex(a, x)) && !(HK.ngPair && HK.ngPair(a, x)) && !(HK.sexBlocked && HK.sexBlocked(a, x)); });
+    /* 恋愛相手の固定と「誰とでも可」・恋愛対象「なし」と体の関係の相手（HK.State.freeSex）は、恋愛の判定で止めない（2026-10-30 担当FS：性欲と恋愛を混ぜない） */
+    var cand = P.filter(function (x) { return x !== a && (canLove(a, x) || !!(HK.State && HK.State.freeSex && HK.State.freeSex(S, a, x))) && (!HK.State || HK.State.pairSex(a, x)) && !(HK.ngSexPair ? HK.ngSexPair(a, x) : HK.ngPair && HK.ngPair(a, x)) && !(HK.sexBlocked && HK.sexBlocked(a, x)); });
     if (!cand.length) return false;
     var b = HK.weighted(rng, cand, function (x) { return Math.max(0.05, 0.3 + rel(S, a, x).att / 50); });
     if (!b) return false;

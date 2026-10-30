@@ -292,6 +292,8 @@ const PROBES = String.raw`
   add({ id: 'part.loveNG', group: '参加・相手', label: '恋愛・R18にしない相手（この二人の場面 0）', type: 'excl', mod: X => { noTies(X); set(X, 0, { loveNG: [1] }); set(X, 1, { loveNG: [0] }); }, base: X => { noTies(X); }, judge: exclJ(R => H.xWith(R, j => j === 1)) });
   const otherSex = withOther;
   add({ id: 'part.lockPick', group: '参加・相手', label: '性行為の相手の固定：固定した相手だけ（ほかの住人・モブ 0）', type: 'excl', mod: X => { set(X, 0, { sexLock: [1] }); }, base: X => {}, judge: (R, B) => exclJ(Q => otherSex(Q).concat(MOB_FREE[Q.sc] ? [] : H.xMob(Q)))(R, B) });
+  /* 固定した相手が箱庭にいない（配役の外。画面の buildInput は -1 を入れる）：住人のだれとも、モブとも（「固定した相手だけ」）性的な場面にならない（2026-10-30 担当FS） */
+  add({ id: 'part.lockGone', group: '参加・相手', label: '性行為の相手の固定：固定した相手が箱庭にいない（住人・モブ 0）', type: 'excl', mod: X => { set(X, 0, { sexLock: [-1] }); }, base: X => {}, judge: (R, B) => exclJ(Q => withAny(Q).concat(MOB_FREE[Q.sc] ? [] : H.xMob(Q)))(R, B) });
   add({ id: 'part.lockMob', group: '参加・相手', label: '性行為の相手の固定：固定＋モブ（ほかの住人 0）', type: 'excl', mod: X => { set(X, 0, { sexLock: [1], sexLockMob: true }); }, base: X => {}, judge: exclJ(otherSex) });
   add({ id: 'part.lockMobN', group: '参加・相手', label: '性行為の相手の固定：固定＋モブ（モブとの場面は残る）', type: 'rate', expect: 'keep', mod: X => { set(X, 0, { sexLock: [1], sexLockMob: true }); }, base: X => {}, judge: (R, B) => ({ p: H.mob(R).length, b: H.mob(B).length }) });
   add({ id: 'part.loveLock', group: '参加・相手', label: '恋愛相手の固定（性行為の固定は「合わせる」→ほかの住人 0）', type: 'excl', mod: X => { set(X, 0, { loveLock: [1] }); }, base: X => {}, judge: exclJ(otherSex) });

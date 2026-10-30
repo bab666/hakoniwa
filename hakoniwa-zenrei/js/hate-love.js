@@ -89,8 +89,11 @@
       if (HK.SAFE_ON || !a || !b || a === b) return false;
       if (HK.State && !HK.State.pairSex(a, b)) return false;
       if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
-      if (HK.ngPair && HK.ngPair(a, b)) return false;
-      if (!HK.canLove(a, b) || !HK.canLove(b, a)) return false;
+      /* 恋愛相手を別の人に固定し、性行為の相手を「誰とでも可」にした人・恋愛対象「なし」で体の関係の相手を選んだ人・「恋愛：なし」の関係の二人は、
+         恋愛の判定（HK.ngPair の恋愛相手の固定・HK.canLove）で体の関係まで止めない（体だけの組 HK.State.freeSex を通す。2026-10-30 担当FS：性欲と恋愛を混ぜない） */
+      var free = !!(HK.State && HK.State.freeSex && HK.State.freeSex(x, a, b));
+      if (HK.ngSexPair ? HK.ngSexPair(a, b) : HK.ngPair && HK.ngPair(a, b)) return false;
+      if ((!HK.canLove(a, b) || !HK.canLove(b, a)) && !free) return false;
       if (HK.Pos && !HK.Pos.okSex(a, b)) return false;
       if (isCtx(x) && x.pair(a, b).kin) return false;
       return true;

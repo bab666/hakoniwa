@@ -129,6 +129,14 @@
     afterHate: L('{a}が離れると、{b}はゆっくりと身を起こした。その目には、これまで一度も{a}に向けたことのない光が宿っていた。{b}は、{a}をはっきりと憎んでいた。|' +
       '{b}は乱れた服を直しながら、{a}の背中を見据えた。無関心だった頃には戻れない。{b}の中で、冷たい怒りが静かに形を取っていった。|' +
       '{b}は何も言わなかった。ただ、{a}が出ていった扉を、長いあいだ睨みつけていた。どうでもよかった相手は、もうどこにもいなかった。'),
+    /* 出られない部屋（cold-fear-room-r18.js。2026-10-30 担当FS）：始まり（扉の紙が条件のエッチを求めている部屋で、恐れられる側が迫る。逃げ場はない） */
+    openRoom: L('{a}は扉の紙を一度だけ見上げ、それから{b}のほうへ歩いてきた。{b}は後ずさったが、白い壁はすぐ背中に当たった。四方を囲まれた部屋のどこにも、{b}の逃げ込める場所はなかった。|' +
+      '{a}「条件、分かってるでしょ｜条件は、分かっているな｜条件は、お分かりですよね」――{a}の声は低く、拒む余地を残していなかった。{b}は首を振ろうとしたが、{a}に見下ろされると、それだけで体が固まった。{a}は{b}の肩を掴み、床に押し倒した。|' +
+      '部屋の隅で膝を抱えていた{b}の前に、{a}の影が落ちた。{b}は顔を上げることもできず、ただ息を詰めていた。{a}は何も言わずに{b}の腕を引き、寝台の上に放り出した。'),
+    /* 出られない部屋：事後（恐怖が深まる。部屋からは出られないまま） */
+    afterRoom: L('{a}が離れたあとも、{b}は寝台の上から動けなかった。同じ部屋の中に{a}の気配がある、それだけで震えが止まらなかった。扉が開くまで、{b}は{a}のほうを一度も見なかった。|' +
+      '{a}は身なりを整えると、扉の紙のほうへ目をやった。{b}は乱れた服をかき寄せ、部屋の隅で膝を抱えた。逃げる場所のない白い部屋で、{a}への恐怖は前よりも深く根を張っていた。|' +
+      '{b}は、自分が逆らわなかったことを何度も思い返した。逆らえなかったのだと、分かっていても。扉の向こうに出られたとしても、この部屋のことは消えないと、{b}には分かっていた。'),
     /* 事後（無関心：心が乱れる） */
     afterShaken: L('{a}が離れたあとも、{b}はしばらく天井を見つめていた。どうでもいい相手だったはずなのに、{a}の顔が頭から離れなかった。{b}は、自分の心がひどく乱れていることに戸惑った。|' +
       '{b}は乱れた服をかき寄せ、膝に顔を埋めた。怒るべきなのか、怯えるべきなのか、{b}には分からなかった。ただ、{a}を景色の一部として見ることは、もうできなかった。|' +
@@ -162,6 +170,25 @@
         '{b}は、{a}が自分に何かをするとは思ってもいなかった。その油断が、逃げる間を失わせた。')
     }
   };
+  /* 出られない部屋のきっかけ（cold-fear-room-r18.js）：なぜ迫ったか（扉の条件・焦り・相手の怯え）・場（閉ざされた部屋）・なぜ拒みきれなかったか（恐怖で固まる・命じられると従う）。
+     二度目は二度目の理由（条件の回数がまだ残っている）。性的な語・体の語は書かない */
+  LEAD.room = {
+    mot: L('扉の紙は、二人にエッチを求めていた。時間が過ぎるほど、{a}の苛立ちは募っていった。{a}は、自分を恐れている{b}なら逆らわないと踏んだ。|' +
+      '出口のない部屋で、{a}の焦りは限界に近づいていた。扉の条件を満たせる相手を、{a}は一人しか思いつかなかった。それは、{a}の顔を見るたびに目を伏せる{b}だった。|' +
+      '{a}は、{b}が自分を怖がっていることをよく知っていた。扉の紙の条件を読んだとき、{a}の目は迷わず{b}に向いた。怯えた相手なら、断られることはないと{a}は考えた。'),
+    again: L('扉の紙の数字は、まだ足りていなかった。{a}は、さっきと同じように{b}を見た。{b}には、それが何を意味するのか分かってしまった。|' +
+      '一度で終わりではなかった。扉の紙が求める回数は、まだ残っていた。{a}が近づいてくる足音に、{b}の体は前よりも早くすくんだ。'),
+    res: L('{b}は、{a}に逆らう自分を思い描くことさえできなかった。命じられると、体のほうが先に従ってしまう。閉ざされた部屋の中で、{b}に逃げる場所はなかった。|' +
+      '声を上げても、この部屋には誰も来ない。それは{b}にも分かっていた。{a}を前にすると喉が締めつけられ、{b}は拒む言葉ひとつ言えなかった。|' +
+      '逆らえば、もっとひどい目に遭う。{b}の体は、そのことを先に覚えていた。{a}が手を伸ばしたとき、{b}はただ目を閉じることしかできなかった。')
+  };
+  R.leadRoom = function (ctx, T, H, n) {
+    var parts = [pk(ctx, n > 0 ? LEAD.room.again : LEAD.room.mot), pk(ctx, LEAD.room.res)];
+    return {
+      text: parts.map(function (s) { return fl(s, T, H); }).join(''),
+      why: 'きっかけ：' + T.name + 'が' + H.name + 'に迫った理由＝扉の条件のエッチ' + (n > 0 ? '（二度目以降：条件の回数がまだ残っていた）' : '') + '・相手の怯え／' + H.name + 'は' + T.name + 'を恐れていた（拒みきれなかった理由：恐怖で体がすくみ、命じられると従ってしまう）'
+    };
+  };
   var MOT_JA = { want: '惹かれ', hate: '嫌悪', own: '執着・支配', power: '気性の荒さ', fear: '怯える相手を侮った', cold: '無関心への苛立ち' };
   /* 動機：惹かれ 30 以上／嫌悪 50 以上／執着・支配の関係／攻撃性が高い／（どれもなければ）相手の怯え・無関心そのもの */
   R.lead = function (ctx, T, H, p) {
@@ -175,11 +202,13 @@
       why: 'きっかけ：' + T.name + 'が' + H.name + 'に迫った理由＝' + MOT_JA[mk] + '／' + (ty === 'fear' ? H.name + 'は' + T.name + 'を恐れていた（拒みきれなかった理由：恐怖で体がすくんだ）' : H.name + 'は' + T.name + 'に無関心だった（拒みきれなかった理由：油断と力の差）')
     };
   };
-  /* 場面の記録の直前に、きっかけの記録を足す（出られない部屋で HK.SexLead が先に足していれば足さない） */
+  /* 場面の記録の直前に、きっかけの記録を足す（出られない部屋で HK.SexLead が先に足していれば足さない）。
+     力ずくの夜（cf_force_r18）と、出られない部屋の恐怖の二人の条件のエッチ（cf_room_r18。cold-fear-room-r18.js） */
+  var CF_EV = R.LEAD_EV = { cf_force_r18: 1, cf_room_r18: 1 };
   if (HK.Ctx && HK.Ctx.prototype.say) HK.wrap(HK.Ctx.prototype, 'say', function (prev) {
     return function (o) {
       var L0 = this._cfLead;
-      if (!L0 || !o || o.kind !== 'event' || !this._ev || this._ev.id !== 'cf_force_r18' || typeof o.text !== 'string' || !o.text) return prev.apply(this, arguments);
+      if (!L0 || !o || o.kind !== 'event' || !this._ev || !CF_EV[this._ev.id] || typeof o.text !== 'string' || !o.text) return prev.apply(this, arguments);
       this._cfLead = null;
       var log = this.log, at = log.length, last = log[at - 1];
       if (last && last.tag === 'きっかけ' && last.step === this.stepIndex) return prev.apply(this, arguments);
@@ -194,7 +223,7 @@
         if (eroN && this._eroN === at + 1) this._eroN = at;
         return e;
       }
-      if (HK.SexLead && HK.SexLead.log) HK.SexLead.log.push({ kind: 'cf', ev: 'cf_force_r18', n: e0.n, scene: e.n, gens: ['cf'] });
+      if (HK.SexLead && HK.SexLead.log) HK.SexLead.log.push({ kind: 'cf', ev: this._ev.id, n: e0.n, scene: e.n, gens: ['cf'] });
       return e;
     };
   });
@@ -210,6 +239,7 @@
   /* 迫る側（top）が攻め・受ける側（bot）が受けに回れる向き（自分で攻めを選んだ受ける側・受けを選んだ迫る側は不可。相手ごとの指定・攻め度で向きが決まる組はその向きだけ） */
   R.dirOk = function (top, bot) {
     var P = HK.Pos;
+    if (P && P.dirOk) return P.dirOk(top, bot);
     if (!P || !P.orients) return true;
     if (!P.orients(top, bot).some(function (o) { return o[0] === top; })) return false;
     var pr = P.prefer ? P.prefer(top, bot) : null;
@@ -223,6 +253,9 @@
     if ([T, H].some(function (c) { return c.flags && (c.flags.caged != null || c.flags.cagePair != null); })) return false;
     if (ctx.pair(T, H).kin || CF.pairOf(ctx, T, H)) return false;
     if (HK.Avoid && HK.Avoid.of && HK.Avoid.of(ctx, T, H)) return false;
+    /* 恐怖の二人（H が T を恐れる）：pos.js の HK.Pos.fearSexInfo で見る（恐れられる側 T の性欲「なし」なら迫らない・性行為の相手の固定・一途・受け攻めの向き。
+       恐怖で入れた印だけを外す。2026-10-30 担当FS：利用者の指示「体の関係が自由で性欲があれば、恐怖の二人もエッチはできてほしい（無理やり迫られる形）」） */
+    if (P.fearOf && P.fearOf(H, T)) return !!(P.fearSexOK && P.fearSexOK(ctx, T, H));
     var t2 = strip(T, H), h2 = strip(H, T);
     return !!P.forceOpen(ctx, [t2, h2], function () { return !!(HK.State && HK.State.pairSex(t2, h2)) && R.dirOk(t2, h2); });
   };
@@ -255,11 +288,13 @@
   };
 
   /* ---------- 本文 ---------- */
-  R.scene = function (ctx, T, H, type) {
-    var Lw = HK.Lewd, env = ctx.env, ps = CF.per(H), after = type === 'fear' ? X.afterFear : type === 'ahate' ? X.afterHate : X.afterShaken;
+  /* opt.room：出られない部屋（始まり・事後を部屋の中の文に。cold-fear-room-r18.js） */
+  R.scene = function (ctx, T, H, type, opt) {
+    var room = !!(opt && opt.room) && type === 'fear';
+    var Lw = HK.Lewd, env = ctx.env, ps = CF.per(H), after = room ? X.afterRoom : type === 'fear' ? X.afterFear : type === 'ahate' ? X.afterHate : X.afterShaken;
     if (Lw && Lw.low(env)) return fl(pk(ctx, X.dim), T, H);
     var k = kindOf(T, H), ero = Lw && Lw.ero(env), short = Lw && Lw.short(env, ctx.rng);
-    var fear = type === 'fear', open = pk(ctx, fear ? X.openFear : X.openCold), line = pk(ctx, (fear ? X.plead : X.cold)[ps] || (fear ? X.plead : X.cold).gentle);
+    var fear = type === 'fear', open = pk(ctx, room ? X.openRoom : fear ? X.openFear : X.openCold), line = pk(ctx, (fear ? X.plead : X.cold)[ps] || (fear ? X.plead : X.cold).gentle);
     var crack = fear ? '' : pk(ctx, X.crack);
     var HF = HK.HateSex && HK.HateSex.Force, sub = HF ? HF.subOf(T, H, k) : '';
     if (ero && HF && sub && X.bodyEro[sub]) {

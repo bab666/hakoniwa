@@ -37,7 +37,7 @@
   function gapWhy(ctx, a, b) { var w = HK.Gap ? HK.Gap.why(ctx, a, b) : ''; return w ? '（' + w + '）' : ''; }
   function gapK(ctx, a, b) { return HK.Gap ? HK.Gap.k(ctx, a, b) : 1; }
   /* 体の関係が成り立つ組か（R18に参加しない人も恋人にはなれるので、恋人扱いの判定では noR18 を外して見る） */
-  function okSexLove(a, b) { if (!HK.Pos) return true; var x = {}, y = {}, k; for (k in a) x[k] = a[k]; for (k in b) y[k] = b[k]; x.noR18 = false; y.noR18 = false; return HK.Pos.okSex(x, y); }
+  function okSexLove(a, b) { if (!HK.Pos) return true; var x = {}, y = {}, k; for (k in a) x[k] = a[k]; for (k in b) y[k] = b[k]; x.noR18 = false; y.noR18 = false; return HK.Pos.okLove ? HK.Pos.okLove(a, b) : HK.Pos.okSex(x, y); }
   /* 死のある箱庭（危害が命に関わりうる） */
   function deadly(ctx) { return !HK.SAFE_ON && !!(ctx && ctx.scen && /^(br|zombie|island)$/.test(ctx.scen.id)); }
   var TN = HK.TieNew = { P9: P9, per: per };

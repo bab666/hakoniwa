@@ -39,7 +39,16 @@
     var P = HK.Pos;
     if (!P || !P.okSex) return true;
     var f = function () { return P.okSex(a, b) && (!P.libOK || P.libOK([a, b])); };
-    return P.forceOpen ? !!P.forceOpen(ctx, [a, b], f) : !!f();
+    if (P.forceOpen ? P.forceOpen(ctx, [a, b], f) : f()) return true;
+    /* 関係「恐怖」の二人：合意のない展開で、恐れられる側が迫って満たせる（cold-fear-room-r18.js の cf_room_r18。pos.js の HK.Pos.fearPairOK。2026-10-30 担当FS） */
+    return !!(P.fearPairOK && P.fearPairOK(ctx, a, b));
+  }
+  /* 恐怖の二人で、合意のない展開でだけ満たせる組（帯には出さず、薄い一行で知らせる） */
+  function fearSoft(ctx, C) {
+    var P = HK.Pos, out = [];
+    if (!P || !P.fearPairOK || HK.SAFE_ON) return out;
+    for (var i = 0; i < C.length; i++) for (var j = i + 1; j < C.length; j++) { var d = P.fearPairOK(ctx, C[i], C[j]); if (d) out.push({ a: d[0].name, b: d[1].name }); }
+    return out;
   }
   /* 誰とも持てない人の理由（その人の設定） */
   function personWhy(c, force) {
@@ -66,6 +75,11 @@
     for (i = 0; i < 2; i++) { x = pr[i][0]; y = pr[i][1]; if (likeMiss(x, y)) return { t: x.name + 'の恋愛対象「' + LIKE_JA[x.likes] + '」に、' + y.name + '（' + LIKE_JA[y.gender] + '）が合わない', fix: x.name + 'の「恋愛対象」を変える' }; }
     for (i = 0; i < 2; i++) { x = pr[i][0]; y = pr[i][1]; if (x.ng && x.ng.indexOf(y.i) >= 0) return { t: x.name + 'が' + y.name + 'を「恋愛にしない相手」にしている', fix: x.name + 'の「恋愛にしない相手」から' + y.name + 'を外す' }; }
     if ((a.coNG && a.coNG.indexOf(b.i) >= 0) || (b.coNG && b.coNG.indexOf(a.i) >= 0)) return { t: '同じ人の恋人どうし', fix: '二人のあいだに恋愛の関係を足すか、恋人の関係を見直す' };
+    /* 関係「無関心」「恐怖」・「恋愛：なし」の家族の二人（engine.js の HK.noLovePair。全年齢では固定の理由に落ちていた。2026-10-30 担当FS） */
+    if (HK.noLovePair && HK.noLovePair(a, b)) {
+      var T0 = HK.Ties, kind = T0 && T0.has ? (T0.has(ctx, a, b, 'fear') ? '関係「恐怖」' : T0.has(ctx, a, b, 'apathy') ? '関係「無関心」' : '「恋愛：なし」の家族') : '恋愛にしない関係';
+      return { t: a.name + 'と' + b.name + 'は' + kind + 'の二人（恋愛にならない関係）', fix: '二人の関係を変える（家族なら関係の「恋愛」を「あり」にする）' };
+    }
     if (HK.sexBlocked && HK.sexBlocked(a, b)) return { t: 'どちらかが相手を固定している（恋愛相手の固定など）', fix: '相手の固定を見直す' };
     var lab = function (c, o) { return P.explicit && P.explicit(c, o) ? POS_JA[P.of(c, o)] || 'おまかせ' : 'おまかせ'; };
     return { t: '受け攻めが合わない（' + a.name + '：' + lab(a, b) + '・' + b.name + '：' + lab(b, a) + '）', fix: '受け攻めを、どちらかが受けかリバに回れるようにする' };
@@ -99,7 +113,9 @@
           notes: ['直し方：' + (max > 0 ? '人数を' + max + '人以下にするか、' : '') + '住人を増やす'] });
       }
     });
-    return items.length ? { n: N, items: items } : null;
+    /* 条件「エッチ」の部屋：合意のない展開でだけ満たせる恐怖の二人（薄い一行） */
+    var soft = rules.some(function (r) { return r.k === 'h'; }) ? fearSoft(ctx, C) : [];
+    return items.length || soft.length ? { n: N, items: items, soft: soft } : null;
   };
 
   /* ---------- 動かす前に調べる ---------- */
@@ -119,13 +135,17 @@
   };
   /* 表示の HTML（赤い帯。理由の行は1行1組・1人で、その人の ⚙設定を開くボタンつき） */
   NX.html = function (res) {
-    if (!res || !res.items || !res.items.length || !HK.NgBand) return '';
+    if (!res || !HK.NgBand) return '';
+    var sh = (res.soft || []).map(function (x) { return '<div class="desc trioinfo">' + HK.escape(x.a + 'と' + x.b + '：' + softText()) + '</div>'; }).join('');
+    if (!res.items || !res.items.length) return sh;
     var rows = [], notes = [], more = 0;
     res.items.forEach(function (it) { rows = rows.concat(it.rows || []); more += it.more || 0; notes = notes.concat(it.notes || []); });
     if (more) notes.unshift('ほか' + more + '組も、同じく体の関係になりません');
     return HK.NgBand.html({ red: true, count: false, title: 'この状況では脱出できません', lead: res.items.map(function (it) { return it.lead; }).join(''), rows: rows, notes: notes,
-      foot: '扉は最後まで開かず、時間切れになります（そのあとの結末で、救助などで外に出ることはあります）。' });
+      foot: '扉は最後まで開かず、時間切れになります（そのあとの結末で、救助などで外に出ることはあります）。' }) + sh;
   };
+  /* 恐怖の二人の薄い一行の文（R18版だけ。pos.js の HK.Pos.FEAR_OK_T） */
+  function softText() { return String((HK.Pos && HK.Pos.FEAR_OK_T) || '').replace(/^関係「恐怖」の二人：/, '関係「恐怖」の二人。'); }
 
   /* ---------- 箱庭タブの表示 ---------- */
   if (typeof document === 'undefined' || !document.addEventListener || typeof MutationObserver === 'undefined') return;

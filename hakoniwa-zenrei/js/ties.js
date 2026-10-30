@@ -62,14 +62,21 @@
   /* 追加の気持ち・関係（2026-10-25。場面は tie-new.js と、物語型は tie-new-story.js）
      apathy：無関心（{a}→{b}）。a から b への好意・信頼・惹かれ・緊張は最初の値から動かない（engine.js の凍結）。
              a は b との恋愛・夜・嫉妬・心配・助け合いの出来事に入らない（b からの一方的な働きかけは起きる）
-     fear：恐怖（{a} が {b} を恐れる）。a は b を避け、命じられると従い、第三者に庇護を求める。二人は恋愛にも夜にもならない
-     ※ 無関心・恐怖の二人は、住人の noLove（互いの番号）に入れる：HK.ngPair・HK.canLove・HK.sexBlocked・HK.Pos.okSex がどれも偽になる
+     fear：恐怖（{a} が {b} を恐れる）。a は b を避け、命じられると従い、第三者に庇護を求める。二人は恋愛にならず、合意ありの夜にもならない。
+           R18版で内容のスイッチ「合意のない展開」が入なら、b が a に力ずくで迫る場面（cold-fear-r18.js・cold-fear-room-r18.js）でだけ体の関係になる（pos.js の HK.Pos.fearSexInfo。2026-10-30）
+     ※ 無関心・恐怖の二人は、住人の noLove（互いの番号）に入れる：HK.ngPair・HK.canLove・HK.sexBlocked・HK.Pos.okSex がどれも偽になる。
+       恐怖で入れた印は _fearNL／_fearNS にも覚え、恐れる側に fearOf を付ける（合意のない展開の場面だけ、その印を外して体の関係を見る）
      fiance：許嫁（向きなし）。二人それぞれの気持ち（t.feel＝{a} の、t.feelB＝{b} の：eager 乗り気／unsure 戸惑い／refuse 断りたい）。
              両方が乗り気で、恋愛対象と受け攻めが合う組（HK.canLove 両方向・HK.Pos.okSex）だけ、恋人と同じ扱い（pf.couple）。
              断りたい側がほかの人を好きになると破談（tie-new.js。pf.fiBroken。以後は恋愛の出来事を起こさず、元恋人に近い気まずさ）
      comrade：仲間（関係の一覧には出さない。住人の一覧のグループの「仲間」を入れたグループの住人どうしに、ui.js が自動で付ける） */
   T.apathy = { mods: {}, effect: '無関心な側は相手に何の感情も動かさない。好意・信頼・惹かれ・緊張は最初のまま変わらず、相手との恋愛・夜・嫉妬・心配・助け合いの出来事に入らない（相手からの一方的な働きかけは起きる）', label: '無関心', dir: true, roleA: '無関心な側', roleB: '相手', ab: {}, ba: {}, pol: 0, chem: 0.05, pull: 0.9, apathy: true, biasA: { romance: 0, help: 0.15, bond: 0.3, conflict: 0.4, combat: 0.5, betray: 0.6 }, biasB: {} };
-  T.fear = { mods: {}, modsA: { trust: 0.5, aff: 0.6 }, effect: '恐れる側は相手を避け（同じ場所にいたがらない・目を合わせない・話しかけられると固まる）、命じられると逆らえずに従い、ほかの人に庇護を求める。この二人は恋愛にも夜にもならない', label: '恐怖', dir: true, roleA: '恐れる側', roleB: '恐れられる側', ab: { ten: 42, aff: -12, trust: -18 }, ba: {}, pol: -1, chem: 0.05, fric: 1.2, pull: 1.1, fear: true, stiffA: { ten: 0.4 }, biasA: { romance: 0, help: 0.3, bond: 0.25, conflict: 0.35, combat: 0.25, betray: 0.7 }, biasB: { romance: 0.2 } };
+  /* 恐怖の二人の夜の扱い（R18版は、合意のない展開でだけ恐れられる側が迫る。2026-10-30 担当FS） */
+  var FEAR_NIGHT = 'この二人は恋愛にも夜にもならない';
+  /* r18:begin */
+  FEAR_NIGHT = 'この二人は恋愛にならない。体の関係は、内容のスイッチ「合意のない展開」が入のときだけ、恐れられる側が力ずくで迫る形で起きる（恐れられる側の性欲が「なし」・性行為の相手の固定などで止まるときは起きない）';
+  /* r18:end */
+  T.fear = { mods: {}, modsA: { trust: 0.5, aff: 0.6 }, effect: '恐れる側は相手を避け（同じ場所にいたがらない・目を合わせない・話しかけられると固まる）、命じられると逆らえずに従い、ほかの人に庇護を求める。' + FEAR_NIGHT, label: '恐怖', dir: true, roleA: '恐れる側', roleB: '恐れられる側', ab: { ten: 42, aff: -12, trust: -18 }, ba: {}, pol: -1, chem: 0.05, fric: 1.2, pull: 1.1, fear: true, stiffA: { ten: 0.4 }, biasA: { romance: 0, help: 0.3, bond: 0.25, conflict: 0.35, combat: 0.25, betray: 0.7 }, biasB: { romance: 0.2 } };
   /* 気持ちの関係（2026-10-29。docs/reports/2026-10-29/lovehate-design.md）：どの関係にも重ねられる、向きのある気持ち。表の顔は重ねた関係が決める。
      lovehate：愛憎（{a} が {b} に）。口や態度では嫌悪・反発しながら、相手を構いたがり、相手がほかの人を構うと嫉妬する。
                相手も持つ（双方）は「相手の気持ち」の欄 cold:'both'（両片想いと同じく、箱庭に渡す前に二本に開く：HK.Ties.expand）。
@@ -1021,7 +1028,7 @@
           o.feel = xf.feel; o.feelB = xf.feelB;
           /* 両方が乗り気で、恋愛対象と受け攻めが合う組だけ恋人と同じ扱い（R18に参加しない人も恋人にはなれるので、受け攻めは noR18 を外して見る） */
           var nr = function (c) { var x = {}; for (var kk in c) x[kk] = c[kk]; x.noR18 = false; return x; };
-          if (o.feel === 'eager' && o.feelB === 'eager' && HK.canLove && HK.canLove(A, B) && HK.canLove(B, A) && (!HK.Pos || HK.Pos.okSex(nr(A), nr(B)))) { p.couple = true; o.couple = true; }
+          if (o.feel === 'eager' && o.feelB === 'eager' && HK.canLove && HK.canLove(A, B) && HK.canLove(B, A) && (!HK.Pos || (HK.Pos.okLove ? HK.Pos.okLove(A, B) : HK.Pos.okSex(nr(A), nr(B))))) { p.couple = true; o.couple = true; }
         }
         list.push(o);
         list.sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
@@ -1052,14 +1059,23 @@
              （HK.Pos.okSex・HK.sexBlocked だけを見る吸血の夜・敵対の夜・三人の場面など）でも、恋愛・体の関係にしない */
           if (HK.tieNoLove && HK.tieNoLove(t) && ctx.chars[t.a] && ctx.chars[t.b] && t.a !== t.b) {
             var KA = ctx.chars[t.a], KB = ctx.chars[t.b];
-            [[KA, KB], [KB, KA]].forEach(function (q) { var l = q[0].noLove = q[0].noLove || []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); });
+            /* _kinNL：家族の「恋愛：なし」で入れた印（恐怖の印だけを外す pos.js の HK.Pos.fearStrip が、家族の印を残すため） */
+            [[KA, KB], [KB, KA]].forEach(function (q) { var l = q[0].noLove = q[0].noLove || [], kl = q[0]._kinNL = q[0]._kinNL || []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); if (kl.indexOf(q[1].i) < 0) kl.push(q[1].i); });
             return;
           }
           if (t.type !== 'apathy' && t.type !== 'fear') return;
           var A = ctx.chars[t.a], B = ctx.chars[t.b];
           /* 「恋愛：あり」にした無関心・恐怖：恋愛は止めず、体の関係・夜だけを今までどおり止める（noSex：engine.js の HK.sexBlocked） */
           var lv = HK.tieLoveOK(t);
-          [[A, B], [B, A]].forEach(function (q) { var f = lv ? 'noSex' : 'noLove', l = q[0][f] = q[0][f] || []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); });
+          /* 恐怖で入れた印は _fearNL（noLove）・_fearNS（noSex）にも覚え、恐れる側に fearOf（恐れている相手）を付ける（pos.js の HK.Pos.fearSexInfo：
+             合意のない展開として、恐れられる側が迫る場面だけ、この印を外して体の関係を見る。2026-10-30 担当FS） */
+          [[A, B], [B, A]].forEach(function (q) {
+            var f = lv ? 'noSex' : 'noLove', l = q[0][f] = q[0][f] || [];
+            if (l.indexOf(q[1].i) < 0) { l.push(q[1].i); if (t.type === 'fear') { var tr = q[0][lv ? '_fearNS' : '_fearNL'] = q[0][lv ? '_fearNS' : '_fearNL'] || []; tr.push(q[1].i); } }
+            /* 無関心で入れた印も覚える（恐怖の印だけを外すときに、同じ二人の無関心の印は残す） */
+            if (t.type === 'apathy') { var ap = q[0][lv ? '_apaNS' : '_apaNL'] = q[0][lv ? '_apaNS' : '_apaNL'] || []; if (ap.indexOf(q[1].i) < 0) ap.push(q[1].i); }
+          });
+          if (t.type === 'fear') { var fo = A.fearOf = A.fearOf || []; if (fo.indexOf(B.i) < 0) fo.push(B.i); }
           var m = t.type === 'apathy' ? (ctx._apathy = ctx._apathy || {}) : (ctx._fear = ctx._fear || {});
           m[t.a + '>' + t.b] = 1;
           if (lv) { ctx.pair(A, B).night = false; return; }
@@ -1101,6 +1117,8 @@
     fiLoveOk: function (a, b) {
       if (!a || !b || !HK.canLove || !HK.canLove(a, b) || !HK.canLove(b, a)) return false;
       if (!HK.Pos) return true;
+      /* 恋愛の判定（HK.Pos.okLove）で見る：性行為の相手の固定・一途の体の縛り・R18に参加しないは体の関係だけを止める設定なので、許嫁の恋は止めない（2026-10-30 担当FS：性欲と恋愛を混ぜない） */
+      if (HK.Pos.okLove) return HK.Pos.okLove(a, b);
       var x = {}, y = {}, k; for (k in a) x[k] = a[k]; for (k in b) y[k] = b[k]; x.noR18 = false; y.noR18 = false;
       return HK.Pos.okSex(x, y);
     },
