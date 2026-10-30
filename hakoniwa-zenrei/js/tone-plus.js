@@ -341,6 +341,8 @@
       var next = parts[i + 1] || '', more = parts.slice(i + 2).join('').replace(/[\s　…‥。！？!?]/g, '') !== '';
       var r = fkEnd(body, next, more, kiri, keepYo, moanLine);
       if (!r) continue;
+      /* 胡散臭い（〜だろう？・〜だねえ）の女性は、推し量りの「〜だろう」を「〜でしょう」にしない（敬語に聞こえる。2026-10-30 第2回） */
+      if (who.tone === 'usan' && /だろう$/.test(body) && /でしょう$/.test(r.b)) continue;
       parts[i] = r.b + tm[2];
       /* 問いにしたとき：「〜なの。くだらない」→「〜なの？　くだらない」 */
       if (r.p && !tm[2]) parts[i + 1] = r.p + (more ? '　' : '') + next.replace(/^。/, '');
