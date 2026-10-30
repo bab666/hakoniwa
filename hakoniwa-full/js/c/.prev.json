@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.408a4f170c.js",
+  "core": "core.c10c8f36e7.js",
   "late": "late.7ddb6ab9fc.js",
   "pack-rel": "pack-rel.5f4d4e1c5d.js",
   "scen-goukon": "scen-goukon.ddceabfa6d.js",
@@ -71,7 +71,7 @@
   "tone-yankee": "tone-yankee.562fa4adcc.js"
  },
  "prev": {
-  "core": "core.122c33b621.js",
+  "core": "core.408a4f170c.js",
   "late": "late.7ddb6ab9fc.js",
   "pack-rel": "pack-rel.5f4d4e1c5d.js",
   "scen-goukon": "scen-goukon.ddceabfa6d.js",
@@ -95,7 +95,7 @@
   "scen-jashin": "scen-jashin.435fe84a39.js",
   "scen-yakata": "scen-yakata.7cf52042ef.js",
   "scen-ship": "scen-ship.ac69053775.js",
-  "pack-story": "pack-story.4695d07360.js",
+  "pack-story": "pack-story.05db79586c.js",
   "scen-jinro": "scen-jinro.2efeb3e7d5.js",
   "scen-futari": "scen-futari.2dafa32261.js",
   "pack-catalog": "pack-catalog.a42ba8b4b5.js",
