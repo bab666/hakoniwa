@@ -503,7 +503,7 @@
       }
     },
     jinro: {
-      ok: function (S) { return /昼/.test(S.label || ''); },
+      ok: function (S) { return /昼/.test(S.label || '') && !/^1日目/.test(S.label || ''); },   /* 1日目の昼は議論も投票もまだなので、恐怖の変化（売り渡す・見捨てる）は2日目から */
       sell: function (S, a, b) { return { t: b.name + 'への疑いが一気に集まった', go: function () { S.P.forEach(function (q) { if (q !== b && q.alive && q.role !== 'wolf' && q.sus) q.sus[b.i] = clamp((q.sus[b.i] == null ? 50 : q.sus[b.i]) + 22, 0, 100); }); } }; },
       abandon: function (S, a, b) { return { t: '', go: function () { if (a.sus) a.sus[b.i] = 100; S.P.forEach(function (q) { if (q !== b && q !== a && q.alive && q.role !== 'wolf' && q.sus) q.sus[b.i] = clamp((q.sus[b.i] == null ? 50 : q.sus[b.i]) + 8, 0, 100); }); } }; }
     },

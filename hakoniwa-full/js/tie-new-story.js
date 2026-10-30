@@ -297,6 +297,18 @@
     return { all: all, use: all.filter(function (t) { return USE.test(t.type) && t.noev !== 'off' && holders(t, P).length > 0; }) };
   }
 
+  /* 人狼の 1日目の昼（議論も投票もまだ）には、投票・矛盾・昨日・吊りに触れる文を出さない（文の候補から外し、残らない型は起こさない） */
+  var JR_DAY1 = /投票|票を|票先|票が|矛盾|昨日|初日|吊ら|吊れ|処刑/;
+  function jrDay1(S, label, TX) {
+    if (!TX || !(S.scen && S.scen.id === 'jinro' && /^1日目/.test(label || ''))) return TX;
+    var o = {};
+    Object.keys(TX).forEach(function (k) {
+      if (typeof TX[k] !== 'string' || k === 'cNPC') { o[k] = TX[k]; return; }
+      var a = TX[k].split('|').filter(function (t) { return !JR_DAY1.test(t); });
+      if (a.length) o[k] = a.join('|');
+    });
+    return o;
+  }
   /* ---------- 物語型の箱庭：場面の区切りのたびに ---------- */
   var BOX = TN.BOX = {};
   if (ST && ST.state && ST.step) {
@@ -310,7 +322,7 @@
     var step0 = ST.step;
     ST.step = function (S, label) {
       var o = step0.apply(this, arguments);
-      var TX = BOX[S.scen && S.scen.id];
+      var TX = jrDay1(S, label, BOX[S.scen && S.scen.id]);
       if (TX && S.tnTies && S.tnTies.length && !SKIP.test(label || '') && (S.tnN || 0) < 6 && S.rng() < 0.4) {
         var live = S.P.filter(here);
         var c = choose(S, S.P, live, TX, S.rng);
