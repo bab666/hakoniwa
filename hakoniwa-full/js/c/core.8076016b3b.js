@@ -5600,6 +5600,7 @@ return out;
 }
 function join(ss){return ss.map(function(s){return s.body+s.punct;}).join('');}
 var TAIL= /[っッ…‥〜～ー―♡♪、\s　]*$/,MARK='\uE061';
+var VOCAB_END=new RegExp(MARK+'([^'+MARK+']*)'+MARK+'$'),VOCAB_TAIL= /(?:[てでと](?:る|た)|[てで](?:ない|ねえ|ん)|[てで]お(?:る|った|らぬ|らん)|へん|らない|んない)$/;
 function splitTail(body){var t=(body.match(TAIL)||[''])[0];return[body.slice(0,body.length-t.length),t];}
 var ADJ_NAI= /(少|危|仕方|しょうが|情け|つまら|くだら|もったい|だらし|切|みっとも|あっけ|頼り|物足り|はした|ぎこち|さりげ|間違い|違い|申し訳|面目|容赦|汚|きた|せつ|あぶ|すく|かたじけ|やる気|元気|関係|意味|興味|問題|時間|余裕|自信|用|金|気|暇|仕事|しかた|心配|覚え|記憶|文句|縫い目|隙|勝ち目|しょう|たま|他|ほか|な|こと)$/;
 var ICHI= /(起き|生き|落ち|信じ|感じ|閉じ|浴び|借り|降り|過ぎ|すぎ|足り|伸び|延び|滅び|帯び|詫び|満ち|飽き|尽き|老い|報い|でき|着|似|煮|居|い|見|寝|出|来)$/;
@@ -5673,6 +5674,7 @@ var k=0;
 return body.replace(/([一-鿿々ァ-ヶー\uE100-\uE1FF]{1,6})(が|は|を)(?=[一-鿿々ぁ-ゖァ-ヶ\uE100-\uE1FF])/g,function(m,n,p,at,all){
 k++;
 if(DROP_NOUN.test(all.slice(at+m.length)))return m;
+if(p==='が'&& /^[らりるれろっせさしすそずぜぞ]/.test(all.slice(at+m.length)))return m;
 return(hash(seed+'#drop'+k)%100)<rate*100?n:m;
 });
 }
@@ -5718,7 +5720,7 @@ if(/[っッー〜]$/.test(c)&& /^[？?]/.test(p))p='！'+p.replace(/^[？?]+/,''
 return pre+wrapCand(c)+(CAND_END.test(c)?'':p);
 });
 }
-var LAUGH= /(^|[^ぁ-ゖ一-鿿々ァ-ヶー])(あはは+|うふふ+|えへへ+|はは+|ふふ+|くく+|へへ+|にしし+|フハハ+|ハハ+|フフ+|クク+)(っ?)(?![ぁ-ゖ])([、…‥！!。]*)/g;
+var LAUGH= /(^|[^ぁ-ゖ一-鿿々ァ-ヶー])(あはは+|うふふ+|えへへ+|きゃはは+|わはは+|がはは+|ぐふふ+|にひひ+|うひひ+|くす(?:くす)*|けらけら+|はは+|ふふ+|くく+|へへ+|にしし+|フハハ+|アハハ+|ウフフ+|エヘヘ+|クスクス+|ハハ+|フフ+|クク+)([っッ]?)(?![ぁ-ゖ])([、…‥！!。]*)/g;
 function ruleLaugh(q,list,seed){
 var k=0;
 return q.replace(LAUGH,function(m,pre,w,tu,p){
@@ -5781,7 +5783,34 @@ if(/[だよぜぞ]$/.test(s.body)&&hash(seed+'#bg'+i)%100<50)return{body:s.body,
 return s;
 });
 }
-function fxShort(ss){if(ss.length<=1)return ss;var f=ss[0];return[{body:(/^(?:[ぁ-ゖァ-ヶー]{1,3})?[…‥]/.test(f.body.replace(new RegExp(MARK,'g'),''))?'':'……')+f.body,punct:f.punct==='。'?'':f.punct}];}
+var SHORT_LEN=function(x){return x.replace(/^[…‥]*＠[^＠]*＠/,'').replace(/\{[^}]*\}|〈〉/g,'名前').replace(/[…‥、。！？!?\s　「」]/g,'').length;};
+var CUT_LEAD= /^[…‥\s　]*(?:[ぁ-ゖァ-ヶ]、)?(?:ねえねえ|ねえ|なあ|じゃあさ|じゃあ|では|それなら|それじゃ|あの|ほら|まあ|うん|ああ|ごめん|ごめんね|ごめんなさい|すまない|違う|ほんと|そうだね|そうだよね|そっか|へえ|ふうん|ふーん|うわ|うわあ|うわー|いやー|よし|さあ|ところで|とにかく|とりあえず|正直|まさか|はい|\{[^}]+\}|〈〉|みんな|ねえ\{[^}]+\})[…‥っ！!？?\s　]*$/;
+function cutComma(body,n){
+if(!n||SHORT_LEN(body)<n|| !/[、…‥]/.test(body.replace(/^[…‥]+/,'')))return body;
+var sp=(body.match(/^[…‥]*＠[^＠]*＠/)||[''])[0],rest=body.slice(sp.length);
+var sp2=rest.split(/(、|[…‥]+)/),u=[],d=[];
+for(var x=0;x<sp2.length;x+=2){u.push(sp2[x]);d.push(sp2[x+1]||'');}
+var k=0,cut1=false,from=function(i){var s='';for(var y=i;y<u.length;y++)s+=u[y]+d[y];return s;};
+while(k<u.length-1&&SHORT_LEN(from(k))>=n){
+var pk=u[k].replace(/^[\s　]+/,''),dropN=1;
+if(!pk){k++;continue;}
+if(/^[ぁ-ゖァ-ヶ]$/.test(pk)&&d[k]==='、'&&k+1<u.length-1){pk=pk+'、'+u[k+1];dropN=2;}
+if(!(CUT_LEAD.test(pk)||(/^[…‥]/.test(d[k+dropN-1])&& /(?:けど|けれど|けども)$/.test(pk))))break;
+k+=dropN;cut1=true;
+}
+if(!cut1||k>=u.length)return body;
+var tail=from(k);
+if(SHORT_LEN(tail)<4|| /^[…‥\s　]*(?:って|と|けど|から|が|し|の|で|に|を|は|も|ね|よ|な)/.test(tail))return body;
+return sp?'……'+sp.replace(/^[…‥]+/,'')+tail.replace(/^[…‥\s　]+/,''):'……'+tail.replace(/^[…‥\s　]+/,'');
+}
+function fxShort(ss,cut){
+var f=ss[0];
+if(ss.length>1)f={body:(/^(?:[ぁ-ゖァ-ヶー]{1,3})?[…‥]/.test(f.body.replace(new RegExp(MARK,'g'),''))?'':'……')+f.body,punct:f.punct==='。'?'':f.punct};
+else if(!cut)return ss;
+var b=cutComma(f.body,cut);
+if(b!==f.body)f={body:b,punct:f.punct==='。'?'':f.punct};
+return ss.length>1||b!==ss[0].body?[f]:ss;
+}
 function fxStammer(q,seed){
 if(hash(seed+'#stm')%100>=30|| /^[…‥]/.test(q)|| /^[ぁ-ゖァ-ヶ][ゃゅょャュョ]?[、…‥]/.test(q))return q;
 var m=q.match(/^([ぁ-ゖァ-ヶ][ゃゅょぁぃぅぇぉャュョァィゥェォ]?)/);
@@ -5851,15 +5880,20 @@ return/[一-鿿々ァ-ヶーいのんと]が(?![らりるれろっせさしす�
 }
 T.exclaimNa=exclaimNa;
 var GREET= /(?:おはよう|ありがとう|おめでとう|ごちそうさまでした|ごちそうさま|お粗末さまでした|お粗末さま|お疲れさまでした|おつかれさまでした|すみませんでした|申し訳ありませんでした|申し訳ございませんでした|ありがとうございました|ごめんなさい)$/;
-function applyEnds(body,punct,ends,seed,i,strict,strong,avoid,once,grave,hot){
+function applyEnds(body,punct,ends,seed,i,strict,strong,avoid,once,grave,hot,rest){
 if(!ends|| !ends.length)return{body:body,punct:punct};
 var st=splitTail(body),core=st[0];
-if(core.slice(-1)===MARK)return{body:body,punct:punct};
+if(core.slice(-1)===MARK){
+var vm=core.match(VOCAB_END);
+if(!vm|| !VOCAB_TAIL.test(vm[1])|| /[。、！？!?…‥]/.test(vm[1]))return{body:body,punct:punct};
+core=core.slice(0,core.length-vm[0].length)+vm[1];
+}
 for(var j=0;j<ends.length;j++){
 var e=ends[j],from=e[0],qm= /[？?]$/.test(from);
 if(qm){if(!/^[？?]/.test(punct))continue;from=from.slice(0,-1);}
 var head=core.slice(0,core.length-from.length);
-if(core.length>=from.length&&core.slice(core.length-from.length)===from&&(!e[2]||e[2].test(head.replace(new RegExp(MARK,'g'),'')))){
+if(core.length>=from.length&&core.slice(core.length-from.length)===from&&(!e[2]||e[2].test(head.replace(new RegExp(MARK,'g'),'')))
+&&(!e[3]||e[3].test((st[1]+punct+(rest||'')).replace(new RegExp(MARK,'g'),'')))){
 var h0=head.replace(new RegExp(MARK,'g'),''),ask=strict&& !qm&&(/^[？?]/.test(punct)||isQuestion(h0+from));
 if(/な$/.test(from)&& !(from==='な'&& !e[2])&& /[うくぐすつぬぶむる]な$/.test(h0+from)&&exclaimNa(h0+from,punct))continue;
 var gm=(h0+from).match(GREET),inGreet=gm&&from.length<gm[0].length;
@@ -5883,6 +5917,7 @@ if(ask&&c!==from&&(!/(?:か|の|かな|かい|かね|だい)[〜ー～ぁあ]*$/
 return true;
 });
 if(!okc.length)return{body:body,punct:punct};
+if(once&&once.probe)return{canOnce:okc.some(function(c){return!(/[。、]/.test(c.replace(/^[…‥、]+/,''))&& !/[。、]/.test(from))&&once.list.some(function(w){return w&&c.indexOf(w)>=0&&from.indexOf(w)<0;});})};
 if(avoid){var ok2=okc.filter(function(c){return addedTail(from,c)!==avoid;});if(ok2.length)okc=ok2;}
 if(once&&(once.used.length|| !once.cur)){var ok3=okc.filter(function(c){return!once.list.some(function(w){return w&&c.indexOf(w)>=0&&from.indexOf(w)<0;});});if(!ok3.length)return{body:body,punct:punct};okc=ok3;}
 var to=okc.length===e[1].length?choose(e[1],seed+'#e'+i):choose(okc,seed+'#e'+i);
@@ -5955,7 +5990,7 @@ function twistEnds(d,type,noQ){
 if(type==='retort'||type==='other')return d.ends;
 var c=d._twEnds||(d._twEnds=d.ends.map(function(e){
 var keep=e[1].filter(function(x){return/[？?]$/.test(e[0])|| !/[？?]$/.test(x);});
-return[e[0],keep.length?keep:[e[0]],e[2]];
+return[e[0],keep.length?keep:[e[0]],e[2],e[3]];
 }));
 return c;
 }
@@ -6007,7 +6042,7 @@ var ss=segs(q),prevTail='',once=r.once&&r.once.length?{list:r.once,used:r.once.f
 ss.forEach(function(s,i){if(s.body.replace(/[…‥、〜ー～っッ♡\s　]/g,''))lastI=i;});
 var twLead=false,twFirst= -1,twNoQ= !!(r.twistType&&T.scene&&T.scene[(who&&who.name)||'']);
 if(r.twistType)ss.forEach(function(s,i){if(twFirst<0&&s.body.replace(/[…‥、〜ー～っッ♡\s　]/g,''))twFirst=i;});
-ss=ss.map(function(s,i){
+var prep=ss.map(function(s,i){
 var body=s.body;
 if(r.neg)body=ruleNeg(body,r.neg);
 if(r.copula)body=ruleCopula(body,r.copula);
@@ -6018,20 +6053,36 @@ var pre0=core0.replace(/(?:です|ます|ません|ました|でしょう|くだ
 var sc=r.shortCasual!=null&&(SET_PHRASE.test(core0)||(coreLen<=r.shortCasual&& !/[はがをにへとでもの]/.test(pre0))||(/^[？?]/.test(punct)&&coreLen<=r.shortCasual+2));
 var strong= /^[！!]/.test(punct)&&r.strongExpl!=='残す';
 if(strong)body=strongCut(body);
-if(once)once.cur=i===lastI;
-var endsUse=sc?CASUAL_ENDS:d.ends;
+var endsUse=sc?CASUAL_ENDS:d.ends,done=null;
 if(r.twistType&& !sc&& !hot){
 var tw=twistSeg(body,punct,core0,i===twFirst&& !/^[…‥]/.test(s.body),seed+'#tw'+i,twNoQ);
-if(tw.body!=null){if(tw.lead)twLead=true;return{body:tw.body.replace(new RegExp(MARK,'g'),''),punct:punct};}
-endsUse=twistEnds(d,tw.type,twNoQ);
+if(tw.body!=null){if(tw.lead)twLead=true;done={body:tw.body.replace(new RegExp(MARK,'g'),''),punct:punct};}
+else endsUse=twistEnds(d,tw.type,twNoQ);
 }
-var ap=applyEnds(body,punct,endsUse,seed,i,newRules(r),strong,prevTail,sc?null:once,grave,hot||(dP&&WARM.test(core0)?1:0));
+return{body:body,punct:punct,core0:core0,sc:sc,strong:strong,endsUse:endsUse,done:done};
+});
+var onceAt=lastI;
+var rests=prep.map(function(p,i){return prep.slice(i+1).map(function(x){return x.body+x.punct;}).join('');});
+if(once&& !once.used.length){
+for(var oi=prep.length-1;oi>=0;oi--){
+var po0=prep[oi];
+if(po0.done||po0.sc||(oi!==lastI&& /^[、，]/.test(po0.punct)))continue;
+var pr=applyEnds(po0.body,po0.punct,po0.endsUse,seed,oi,newRules(r),po0.strong,'',{list:once.list,used:[],cur:true,probe:true},grave,hot||(dP&&WARM.test(po0.core0)?1:0),rests[oi]);
+if(pr.canOnce){onceAt=oi;break;}
+}
+}
+ss=ss.map(function(s,i){
+var po=prep[i];
+if(po.done)return po.done;
+var body=po.body,punct=po.punct,core0=po.core0,sc=po.sc,strong=po.strong,endsUse=po.endsUse;
+if(once)once.cur=i===onceAt;
+var ap=applyEnds(body,punct,endsUse,seed,i,newRules(r),strong,prevTail,sc?null:once,grave,hot||(dP&&WARM.test(core0)?1:0),rests[i]);
 prevTail=ap.tail||(/[んの]だ$/.test(splitTail(ap.body.replace(new RegExp(MARK,'g'),''))[0])?'んだ':'');
 return{body:ap.body.replace(new RegExp(MARK,'g'),''),punct:ap.punct};
 });
 if(fx.stretch)ss=fxStretch(ss,seed);
 if(fx.bangOn&& !grave)ss=fxBangOn(ss,seed);
-if(fx.short)ss=fxShort(ss);
+if(fx.short)ss=fxShort(ss,r.cutLen);
 q=join(ss);
 q=q.replace(/([！？!?])。/g,'$1').replace(/([！？!?])、/g,'$1　').replace(/？(?=？)/g,'').replace(/！(?=！(?!！))/g,'').replace(/([！？])(?=[ぁ-ゖァ-ヶ一-鿿々「（])/g,'$1　');
 if(fx.bangOff)q=fxBang(q);
@@ -6084,9 +6135,19 @@ else if(f==='K'&&d.base==='P'&&HK.Voice&&HK.Voice.polite)q=HK.Voice.polite(q);
 return T.apply(q,d,who);
 };
 var RULE_KEYS={'否定':'neg','進行':'prog','断定':'copula','助詞落とし':'drop','縮約':'contract','強調語':'emph','強調語の割合':'emphRate','存在':'exist','短い文はため口':'shortCasual','ため口を混ぜる':'mixK','皮肉の型':'twistType',
-'前置き':'lead','言い切りの前置き':'leadS','反応の前置き':'leadR','一度だけ':'once','前置きの割合':'leadRate','驚き':'surprise','笑い':'laugh','言い切り':'flat','動揺':'shaken','動揺の割合':'shakenRate','強い文の説明':'strongExpl'};
+'前置き':'lead','言い切りの前置き':'leadS','反応の前置き':'leadR','一度だけ':'once','前置きの割合':'leadRate','驚き':'surprise','笑い':'laugh','言い切り':'flat','動揺':'shaken','動揺の割合':'shakenRate','強い文の説明':'strongExpl','読点で切る':'cutLen'};
 var FX_KEYS={'感嘆符を落とす':'bangOff','伸ばす':'stretch','言い切りに！':'bangOn','言い切りに!':'bangOn','短くする':'short','言いよどみ':'stammer','前に……':'dots','間を置く':'pause'};
 function alts(v){return String(v).split(/[／/]/).map(function(x){return x.replace(/^\s+|\s+$/g,'');});}
+function splitAhead(c){
+if(!/\)$/.test(c))return[c,''];
+for(var p=c.length-1,dp=0;p>=0;p--){
+var ch=c.charAt(p),esc1=p>0&&c.charAt(p-1)==='\\';
+if(esc1)continue;
+if(ch===')')dp++;
+else if(ch==='('&& --dp===0)return/^\(\?[=!]/.test(c.slice(p))?[c.slice(0,p),c.slice(p)]:[c,''];
+}
+return[c,''];
+}
 T.parse=function(text,userMode){
 var out={dicts:{},errors:[]},cur=null,sec=null,n=0;
 String(text||'').split(/\r?\n/).forEach(function(raw,i){
@@ -6108,7 +6169,15 @@ if(!sm){out.errors.push((i+1)+'行目：節「'+hd[0]+'」が読めません（�
 sec=sm;return;
 }
 if(!cur){out.errors.push((i+1)+'行目：先に [口調] が要ります');return;}
-var kv=line.match(/^(.+?)\s*[=＝]\s*(.*)$/);
+var kv=(function(x){
+for(var p=0,dp=0;p<x.length;p++){
+var ch=x.charAt(p);
+if(ch==='\\'){p++;continue;}
+if(ch==='('||ch==='（')dp++;else if((ch===')'||ch==='）')&&dp>0)dp--;
+else if((ch==='='||ch==='＝')&& !dp&&p>0)return[x,x.slice(0,p).replace(/\s+$/,''),x.slice(p+1).replace(/^\s+/,'')];
+}
+return x.match(/^(.+?)\s*[=＝]\s*(.*)$/);
+})(line);
 if(!kv){out.errors.push((i+1)+'行目：「元=先」の形で書いてください');return;}
 var k=kv[1].replace(/^\s+|\s+$/g,''),v=kv[2].replace(/^\s+|\s+$/g,'');
 if(sec==='head'){
@@ -6122,12 +6191,21 @@ else if(k==='説明')cur.desc=v.slice(0,80);
 else out.errors.push((i+1)+'行目：項目「'+k+'」が読めません');
 return;
 }
-if(sec==='ends'){var cond=null;var cm=k.match(/^(.+?)\((.+)\)$/);if(cm){k=cm[1];try{cond=new RegExp(cm[2]+'$');}catch(e){cond=null;}}cur.ends.push([k,alts(v),cond]);return;}
+if(sec==='ends'){
+var cond=null,ahead=null;var cm=k.match(/^(.+?)\((.+)\)$/);
+if(cm){
+k=cm[1];
+var ca=splitAhead(cm[2]);
+try{cond=ca[0]?new RegExp(ca[0]+'$'):null;ahead=ca[1]?new RegExp('^'+ca[1]):null;}catch(e){cond=null;ahead=null;out.errors.push((i+1)+'行目：条件が読めません');}
+}
+cur.ends.push(ahead?[k,alts(v),cond,ahead]:[k,alts(v),cond]);return;
+}
 if(sec==='words'){cur.words.push([k,alts(v)]);return;}
 if(sec==='rules'){
-var rk=RULE_KEYS[k];if(!rk){out.errors.push((i+1)+'行目：規則「'+k+'」は使えません（否定／進行／断定／助詞落とし／縮約／強調語／存在／短い文はため口／ため口を混ぜる／皮肉の型／前置き／言い切りの前置き／反応の前置き／驚き／笑い／言い切り／動揺／一度だけ／強い文の説明）');return;}
+var rk=RULE_KEYS[k];if(!rk){out.errors.push((i+1)+'行目：規則「'+k+'」は使えません（否定／進行／断定／助詞落とし／縮約／強調語／存在／短い文はため口／ため口を混ぜる／皮肉の型／前置き／言い切りの前置き／反応の前置き／驚き／笑い／言い切り／動揺／一度だけ／強い文の説明／読点で切る）');return;}
 if(rk==='drop'){var rate=parseFloat(v);cur.rules.drop=rate>0?Math.min(1,rate):0;}
 else if(rk==='emphRate'){var er=parseFloat(v);cur.rules.emphRate=er>=0?Math.min(1,er):0.5;}
+else if(rk==='cutLen'){var cl=parseInt(v,10);if(cl>0)cur.rules.cutLen=cl;else out.errors.push((i+1)+'行目：読点で切るは字数');}
 else if(rk==='shortCasual'){var sl=parseInt(v,10);cur.rules.shortCasual=sl>0?sl:6;}
 else if(rk==='mixK'){var mk=parseFloat(v);if(mk>=0)cur.rules.mixK=Math.min(1,mk);else out.errors.push((i+1)+'行目：ため口を混ぜるは 0〜1 の数');}
 else if(rk==='contract')cur.rules.contract=yes(v);
@@ -6149,7 +6227,7 @@ var dicts={};
 Object.keys(out.dicts).forEach(function(k){
 var d=out.dicts[k];
 if(!d.key){if(!d.label){out.errors.push(d.line+'行目の [口調]：名前がありません');return;}d.key=userMode?'u:'+d.label:d.label;}
-d.ends.sort(function(a,b){return b[0].length-a[0].length||(b[2]?1:0)-(a[2]?1:0);});
+d.ends.sort(function(a,b){return b[0].length-a[0].length||(b[2]||b[3]?1:0)-(a[2]||a[3]?1:0);});
 if(!d.base)d.base=T.BASE[d.key]||'K';
 dicts[d.key]=d;
 });
@@ -6304,7 +6382,7 @@ T.addBuiltin([
 '[口調 usan]',
 '名前=胡散臭い（〜だねえ）','ベース=K',
 '[文末]',
-'だよ=だよ／なのさ','だね=だねえ','だよね=だよねえ','でしょ=だろう？／だろうねえ','だろう？=だろう？','だろう=だろうねえ','だろ=だろう？','かな=かねえ／かな','かも=かもねえ','なの((?<=[一-鿿々ァ-ヶー])(?<!何|誰))=だよ／さ','なの=なのさ','んだ=んだよねえ／のさ','んだよ=んだよねえ','しよう=しようか','よう=ようか','てね=てね','てよ=てくれよ','て((?<!どうし|そし|[だるたいうよんねぜさ]っ))=てくれるかい？／て','じゃん=じゃないか','こう((?<![どそあいイ]|^))=こうじゃないか／こうか','ろう((?<![だでしや]|^))=ろうじゃないか／ろうか','こう？((?<![どそあいイ]|^))=こうか？','ろう？((?<![だでしや]|^))=ろうか？','から=からさ／からねえ','けど((?<!だ))=けどねえ／けどさ','でしょう=だろう？','ないで=ないでくれよ','ない？=ないかい？','ない=ないよ／ないねえ','の？=のかい？','よ=よ','ね=ねえ','か？=かい？','た((?<!ま|あな|あし))=たよ','たい？=たいんだい？','たい=たいねえ','る=るよ','う((?<![こそあどとよょおうゅ]))=うよ','く((?<![しきよ早遅強弱軽重近遠高低長短広狭深浅多太細古若新暑寒熱冷痛辛甘黒白赤青丸硬固堅鋭濃薄偉安良悪酷うやまはすごっな]))=くよ','いい=いいよ／いいさ','だ=だよ／なのさ',
+'だよ=だよ／なのさ','だね=だねえ','だよね=だよねえ','でしょ=だろう？／だろうねえ','だろう？=だろう？','だろう=だろうねえ','だろ=だろう？','かな=かねえ／かな','かも=かもねえ','なの=なのさ','んだ=んだよねえ／のさ','んだよ=んだよねえ','しよう=しようか','よう=ようか','てね=てね','てよ=てくれよ','て((?<!どうし|そし|[だるたいうよんねぜさ]っ))=てくれるかい？／て','じゃん=じゃないか','こう((?<![どそあいイ]|^))=こうじゃないか／こうか','ろう((?<![だでしや]|^))=ろうじゃないか／ろうか','こう？((?<![どそあいイ]|^))=こうか？','ろう？((?<![だでしや]|^))=ろうか？','から=からさ／からねえ','けど((?<!だ))=けどねえ／けどさ','でしょう=だろう？','ないで=ないでくれよ','ない？=ないかい？','ない=ないよ／ないねえ','の？=のかい？','よ=よ','ね=ねえ','か？=かい？','た((?<!ま|あな|あし))=たよ','たい？=たいんだい？','たい=たいねえ','る=るよ','う((?<![こそあどとよょおうゅ]))=うよ','く((?<![しきよ早遅強弱軽重近遠高低長短広狭深浅多太細古若新暑寒熱冷痛辛甘黒白赤青丸硬固堅鋭濃薄偉安良悪酷うやまはすごっな]))=くよ','いい=いいよ／いいさ','だ=だよ／なのさ',
 '[語彙]',
 'ありがとう=ありがとうねえ／どうもどうも','ごめんね=悪いねえ','ごめん=悪いねえ','すごい=たいしたもんだ','すごく=ずいぶん','とても=ずいぶん','本当に=本当に','本当=本当','みんな=みんな','絶対=こりゃ、絶対','わかった=わかったよ','分かった=分かったよ','わかる=わかるよ','ちょっと=ちょいと','だめ=だめだよ','じゃん=じゃないか','うん=ああ','ええ=ああ','はい=はいはい',
 '[効果]',
@@ -6336,7 +6414,7 @@ T.addBuiltin([
 '[口調 mystic]',
 '名前=ミステリアス（〜かい？）','ベース=F',
 '[文末]',
-'だな=だね／だよ','だよ=だよ','だね=だね','だろう=だろうね','だろ=だろう','そうか=そうかい','か((?<!だろう|でしょう|[おこごとのぼもよろ]う))=かい？／かな','のか=のかい','か？((?<!だろう|でしょう|[おこごとのぼもよろ]う))=かい？','のか？=のかい？','な=ね','ない((?<=[^…‥、]{6})(?<!しれ))=ないんだ／ない','ない((?<!しれ))=ないよ／ない','ないか=ないかい','ないか？=ないかい？','しよう=しようか','よう=ようか','てくれ=てくれるかい','ろ((?:[えけげせぜてでねべめれきぎじちにびみり見寝着出居似煮]|(?<!む)し|(?<!ろ)い))=てくれるかい','するな=しないでおくれ','な((?:[くぐすつぬぶむ]|(?<![よろこそとのぼもごおょ])う|(?<!てい|んでい|いでい)る))=な','いい=いいよ','た((?<!ま|あな|あし))=たよ／たんだ','んだ=んだ／んだよ','のだ=のさ／のだよ','だ(.*(?:何|誰|どこ|いつ|なぜ|どうして|どれ|どっち|どちら)(?!でも|も|か|にも|にか)(?!.*(?:ても|でも|たら|れば))[^、]*)=だい？','だ((?<=[^…‥、]{4})(?<![んの]))=だよ／なんだ','だ((?<![んの]))=だよ','ぞ=よ','来い=おいで','言え=言っておくれ','待て=待っておくれ','抜け=抜いておくれ','忘れるな=忘れないでおくれ','る=るんだ／るよ','う((?<![こそあどとよょおうゅ]))=うよ','く((?<![しきよ早遅強弱軽重近遠高低長短広狭深浅多太細古若新暑寒熱冷痛辛甘黒白赤青丸硬固堅鋭濃薄偉安良悪酷うやまはすごっな]))=くよ',
+'だな=だね／だよ','だよ=だよ','だね=だね','だろう=だろうね','だろ=だろう','そうか=そうかい','か((?<!だろう|でしょう|[おこごとのぼもよろ]う|ば))=かい？／かな','のか=のかい','か？((?<!だろう|でしょう|[おこごとのぼもよろ]う))=かい？','のか？=のかい？','な=ね','ない((?<!しれ))=ないよ／ない','ないか=ないかい','ないか？=ないかい？','しよう=しようか','よう=ようか','てくれ((?![…‥]*っ))=てくれるかい','ろ((?:[えけげせぜてでねべめれきぎじちにびみり見寝着出居似煮]|(?<!む)し|(?<!ろ)い)(?![…‥]*っ))=てくれるかい','ろ((?:[えけげせぜてでねべめれきぎじちにびみり見寝着出居似煮]|(?<!む)し|(?<!ろ)い)(?=[…‥]*っ))=ておくれ','するな=しないでおくれ','な((?:[くぐすつぬぶむ]|(?<![よろこそとのぼもごおょ])う|(?<!てい|んでい|いでい)る))=な','いい=いいよ','た((?<!ま|あな|あし))=たよ／たんだ','んだ=んだ／んだよ','のだ=のさ／のだよ','だ(.*(?:何|誰|どこ|いつ|なぜ|どうして|どれ|どっち|どちら)(?!でも|も|か|にも|にか)(?!.*(?:ても|でも|たら|れば))[^、]*)=だい？','だ((?<![んの]))=だよ','ぞ=よ','来い=おいで','言え=言っておくれ','待て=待っておくれ','抜け=抜いておくれ','忘れるな=忘れないでおくれ','る=るんだ／るよ','う((?<![こそあどとよょおうゅ]))=うよ','く((?<![しきよ早遅強弱軽重近遠高低長短広狭深浅多太細古若新暑寒熱冷痛辛甘黒白赤青丸硬固堅鋭濃薄偉安良悪酷うやまはすごっな]))=くよ',
 '[語彙]',
 'ありがとうと=ありがとうと','ありがとうって=ありがとうって','ありがとう=ありがとう。……礼を言うよ','ごめん=すまないね','すまない=すまないね','お前=きみ','あんた=きみ','すごい=大したものだ','すごく=ずいぶん','とても=ずいぶん','じゃないか=じゃないか','じゃない=ではない','みんな=みんな','わかった=わかったよ','ちょっと=少し','だめだ=いけないよ','だめなんだ=いけないんだ','だめ=いけないよ','うん=ああ','ええ=ああ','生きてる=生きている','してる=している',
 '[効果]',
@@ -6409,10 +6487,10 @@ T.addBuiltin([
 '[効果]','感嘆符を落とす=はい',
 '',
 '[口調 mukuchi]','名前=無口','ベース=K',
-'[文末]','だよ=','だね=','だよね=','かな=かな','よ=','ね=','てね=て','てよ=て','ないでよ=ないで','ないでね=ないで',
+'[文末]','んだよ=んだ','んだね=んだ','んだよね=んだ','だよ=','だね=','だよね=','かな=かな','よ=','ね=','てね=て','てよ=て','ないでよ=ないで','ないでね=ないで',
 '[語彙]','ありがとう=……ありがと','ごめん=……ごめん','うん=……ん','はい=……ん','わかった=……わかった','そうだね=……そう',
 'やったやった=……やった','やったー=……やった','やったぁ=……やった','やったあ=……やった','わーい=……','わぁい=……','いえーい=……','イエーイ=……','やっほー=……ん','よっしゃ=……よし','たのしー=……楽しい','楽しー=……楽しい','うれしー=……嬉しい','嬉しー=……嬉しい','いっくぞー=……行く','えへへ=……',
-'[効果]','短くする=はい','前に……=はい','感嘆符を落とす=はい',
+'[規則]','読点で切る=16','[効果]','短くする=はい','前に……=はい','感嘆符を落とす=はい',
 '',
 '[口調 mixed]','名前=敬語まじりのため口','ベース=P',
 '[文末]','大丈夫です=大丈夫ですって／大丈夫です／大丈夫','なります=なります／なりますって','できます=できます／できますって',
@@ -6448,7 +6526,7 @@ T.addBuiltin([
 '[語彙]','あら=おや','あらあら=おやおや',
 '',
 '[口調 tsun_n]','名前=意地っ張り（中性的）','ベース=K',
-'[文末]','わよ=よ','のよ=んだよ','わね=ね','かしら=かな','だわ=だよ','わ=よ','のね=んだね','なさい=て','んだよ=んだ／んだから','だよ((?:から|ため|せい|ついで))=だし','だよ=だよ／','ね((?<=[いるたうくすつぬむぶぐ])(?<!よろしく|ごめん|おやすみ|おはよう|ありがとう))=ね／よね',
+'[文末]','わよ=よ','のよ=んだよ','わね=ね','かしら=かな','だわ=だよ','わ=よ','のね=んだね','なさい=て','んだよ=んだ／んだから','だよ((?:から|ため|せい|ついで))=だし','だよ=だよ／',
 '[語彙]','ありがとう=……ありがと','ごめん=……ごめん','うれしい=……別に、うれしくない',
 '',
 '[口調 devoted_p]','名前=健気（くだけた）','ベース=K',
@@ -6507,7 +6585,7 @@ T.addBuiltin([
 '[規則]','驚き=なんと！／おお……！','笑い=フハハ／ふふふ','前置き=ふむ、／いやはや、','前置きの割合=0.15','一度だけ=ですぞ／ますぞ／ませんぞ／ましたぞ／ましょうぞ／ですな／ますな／ましたな／からな',
 '',
 '[口調 tsun_soft]','名前=意地っ張り（柔らかい語尾）','ベース=K',
-'[文末]','だよ=だもん／だよ……','だね=だね……','よ=よ……／よ','ね((?<!よろしく|ごめん|おやすみ|おはよう|ありがとう))=ね……','よろしくね=……よろしく、ね','ない((?<!じゃ|しか|わけじゃ))=ないもん／ない','かな=かな……','て((?<!うっ|りし))=てよ……／て','だ=だもん',
+'[文末]','だよ=だもん／だよ……','だね=だね……','よ=よ……／よ','ね((?<!よろしく|ごめん|おやすみ|おはよう|ありがとう))=ね……','よろしくね=……よろしく、ね','ない((?<!じゃ|しか|わけじゃ))=ないもん／ない','かな=かな……','て((?<!うっ|りし|なく|たっ|だっ)(?![…‥]*[！!？?]))=てよ……／て','だ=だもん',
 '[語彙]','ありがとう=……ありがと、ね','ごめん=……ごめん、ね','うれしい=……うれしく、ないもん','嬉しい=……うれしく、ないもん','すごい=まあ、すごい……かも',
 '[規則]','笑い=ふふ……／……ふん',
 '',
@@ -6540,11 +6618,11 @@ T.addBuiltin([
 '[文末]','じゃん=','でしょ=','てよ=て','ないでよ=ないで',
 '[語彙]','うん=ん',
 'やったやった=……やった','やったー=……やった','やったぁ=……やった','やったあ=……やった','わーい=……','わぁい=……','いえーい=……','イエーイ=……','やっほー=……ん','よっしゃ=……よし','たのしー=……楽しい','楽しー=……楽しい','うれしー=……嬉しい','嬉しー=……嬉しい','いっくぞー=……行く','えへへ=……','うわーっ=……っ','うわー、=……','うわあ、=……','わーい、=……','えへへ、=……','うわー=……',
-'[規則]','前置き=……','前置きの割合=0.5','驚き=え……','笑い=……',
+'[規則]','前置き=……','前置きの割合=0.5','驚き=え……','笑い=……','読点で切る=18',
 '[効果]','短くする=はい','感嘆符を落とす=はい',
 '',
 '[口調 ronkyaku]','名前=冷徹な論客（〜なのだよ）','ベース=F','二人称=キミ',
-'[文末]','んだ=んだ／のだよ','のだ=のだ／のだよ','だ((?<![んの]))=だ／だ／なのだよ','だな=だな','だろう=だろうな','だろ=だろう','か=かね','のか=のかね','ない=ない／ない／ないな','じゃないか=ではないか','じゃない=ではない','る((?<!す|れ))=るのだよ／る','た=た','だよ=なのだよ','だね=だな','よね=だろう？','るね=るとしよう','ね((?<!る))=な','よ=','のだぞ=のだぞ','んだぞ=のだぞ','だぞ=なのだぞ','ぞ=／な','てくれ=てくれたまえ','しろ((?<!む))=したまえ','ないで=ないでもらおうか','の？=のかね？',
+'[文末]','もちろんだ=もちろんだ','んだ=んだ／のだよ','のだ=のだ／のだよ','だ((?<![んの]))=だ／だ／なのだよ','だな=だな','だろう=だろうな','だろ=だろう','か=かね','のか=のかね','ない=ない／ない／ないな','じゃないか=ではないか','じゃない=ではない','る((?<!す|れ))=るのだよ／る','た=た','だよ=なのだよ','だね=だな','よね=だろう？','るね=るとしよう','ね((?<!る))=な','よ=','のだぞ=のだぞ','んだぞ=のだぞ','だぞ=なのだぞ','ぞ=／な','てくれ=てくれたまえ','しろ((?<!む))=したまえ','ないで=ないでもらおうか','の？=のかね？',
 '[語彙]','すごいな=見事だな','すごいね=見事だな','すごいよ=見事だ','すごい！=見事だ！','すごい=見事な','ばかだ=愚かだ','ばかな=愚かな','ばか=愚か者','ばかり=ばかり','ばかし=ばかし','が分かった=が分かった','がわかった=がわかった','バカだ=愚かだ','バカ=愚か者','わかった=理解した','分かった=理解した','わかりました=理解した','ありがとう=礼を言おう','感謝する=礼を言おう','ごめん=すまない','本当にすごい=実に見事だ','本当に助か=実に助か','ほんとに助か=実に助か','本当に面白=実に面白','本当に嬉し=実に嬉し','本当に困=実に困','とても=実に','すごく=実に','やばい=まずいな','座れ=座りたまえ','休め=休みたまえ','待て=待ちたまえ','来い=来たまえ','落ち着け=落ち着きたまえ','聞け=聞きたまえ','見ろ=見たまえ','黙れ=黙らぬか','任せろ=任せたまえ','よろしく頼む=……まあ、よろしく頼むよ',
 '[規則]','強い文の説明=残す','進行=ている','前置き=フッ……。／やれやれ。／……ふむ。','前置きの割合=0.35','一度だけ=のだよ／ないな／るのだ','動揺=く……ッ！／バカな……！／な、何だと……！？','動揺の割合=0.5','笑い=フッ……','驚き=ほう……／ほう。',
 '',
@@ -6621,7 +6699,7 @@ function formOf(tone){return T.baseOf?T.baseOf(tone,false):'K';}
 var RULE_JA={neg:'否定',prog:'進行',copula:'断定',drop:'助詞落とし',contract:'縮約',emph:'強調語',emphRate:'強調語の割合',exist:'存在',shortCasual:'短い文はため口',mixK:'ため口を混ぜる',
 lead:'前置き',leadRate:'前置きの割合',surprise:'驚き',laugh:'笑い',flat:'言い切り',shaken:'動揺',shakenRate:'動揺の割合'};
 var FX_JA={bangOff:'感嘆符を落とす',stretch:'伸ばす',bangOn:'言い切りに！',short:'短くする',stammer:'言いよどみ',dots:'前に……',pause:'間を置く'};
-function endLine(e){return e[0]+(e[2]?'('+e[2].source.replace(/\$$/,'')+')':'')+'='+e[1].join('／');}
+function endLine(e){return e[0]+(e[2]||e[3]?'('+(e[2]?e[2].source.replace(/\$$/,''):'')+(e[3]?e[3].source.replace(/^\^/,''):'')+')':'')+'='+e[1].join('／');}
 function ruleVal(k,v){return Array.isArray(v)?v.join('／'):v===true?'はい':String(v);}
 var ASK_FROM= /(?:か|かな|かね|かい|の)[？?]?$|[？?]$/;
 var COP=['でござんす','でございます','でござる','であります','でやんす','でごわす','である','なの','だ','や','じゃ'];
@@ -43373,4 +43451,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', 'c10c8f36e7', 1);
+HK.Load.done('core', '8076016b3b', 1);
