@@ -516,6 +516,16 @@
     }
   });
 
+  /* ---------- 気分の一句（emotion.js の X.fits）：切羽詰まった段・疲れの段（room-stamina-r18.js）の頭に、浮かれた・張り切った一句を挿さない（出られない部屋のときだけ） ---------- */
+  var RP_CLASH = /残りの時間|残り時間|時間切れ|時計|覚悟|ぐったり|足が立た|息が上が|倒れ込|動けな|休む|まぶたが重|焦/;
+  if (HK.Emo && typeof HK.Emo.fits === 'function') HK.wrap(HK.Emo, 'fits', function (f0) {
+    return function (m, cat, text) {
+      var r = f0.apply(this, arguments), c = HK._curCtx;
+      if (!r || (m !== 'joy' && m !== 'lust') || !c || !c.scen || c.scen.id !== 'whiteroom') return r;
+      return !RP_CLASH.test(String(text || ''));
+    };
+  });
+
   /* ---------- 恐怖の入口（cold-fear-room-r18.js の cf_room_r18）のきっかけの段に、残り時間の切迫を足す（R18版だけ） ---------- */
   var CF_TIME = { late: '残りの時間は、もう三割を切っていた。条件の回数が、時計と一緒に二人を追い詰めていた。', last: '照明が暗くなり、残された時間はわずかだった。時間切れの恐ろしさが、ためらいを押し流した。' };
   if (!HK.SAFE_ON && HK.ColdFear && HK.ColdFear.R18 && typeof HK.ColdFear.R18.leadRoom === 'function') HK.wrap(HK.ColdFear.R18, 'leadRoom', function (f0) {
