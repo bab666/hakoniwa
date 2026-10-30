@@ -4,6 +4,10 @@
 Playwright（Chromium）でビルドのページを開き、全箱庭を何度も実行して、住人の台詞を
 「元の文・変換後・口調・文脈」つきで集めます。
 
+## 口調の違和感の点検（場面・台詞を足したら毎回）
+
+`node tone-feel.js ../../hakoniwa-full [--scen=locker] [--tones=kansai] [--why] [--base=feel-base.json]`：49 口調 × 3 箱庭で台詞を集め、口調ごとの決まり（feel/*.js）で違和感の割合を出す。すべて ◯（3% 以下）で終了コード 0。約 2 分。詳しくは docs/reports/2026-10-30/tone-feel.md。
+
 ## 使い方
 
 ```sh
