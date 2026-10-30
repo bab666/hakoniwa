@@ -30,7 +30,8 @@
 
   function multiOf(ctx) { return ctx.env.multi || 'open'; }
   /* 一人しか出られない（ほかの条件と併用）部屋でも、三人で一緒に満たせる（満たしたあと、扉をくぐれるのは一人。2026-10-26 順164） */
-  function allowed(ctx) { return multiOf(ctx) !== 'no' && !ctx.flags.isOne && A.hasPairRule(ctx); }
+  /* multiOff：「三人の場面でだけ数える」を選んだが、この条件では効かない部屋（room-games.js）。二人ずつだけ数える */
+  function allowed(ctx) { return multiOf(ctx) !== 'no' && !ctx.flags.multiOff && !ctx.flags.isOne && A.hasPairRule(ctx); }
   /* 三人の場面でだけ数える部屋（multi 'only'。room-games.js の setup が ctx.flags.trioOnly を決める） */
   function only(ctx) { return !!ctx.flags.trioOnly; }
   /* 三人で抱き合う版で書く部屋：三人の場面でだけ数える部屋で、行為の条件がハグ・手繋ぎ・膝枕まで（エッチの条件が成り立たずに替わった部屋を含む） */
@@ -1017,7 +1018,7 @@
   HK.addTo(EV, {
     id: 'trio_heat', label: '三人に薬が回り条件に向かう', cat: 'romance', sex: true, scope: 'pair', pri: true,
     when: function (ctx, a, b) {
-      if (multiOf(ctx) === 'no' || ctx.flags.isOne || ctx.flags.oneCond || A.hasPairRule(ctx) || !ctx.flags.hasAphroRule || ctx.flags.trioHeat) return false;
+      if (multiOf(ctx) === 'no' || ctx.flags.multiOff || ctx.flags.isOne || ctx.flags.oneCond || A.hasPairRule(ctx) || !ctx.flags.hasAphroRule || ctx.flags.trioHeat) return false;
       var g = ctx.present();
       if (g.length !== 3 || !g.every(free) || !aphroHot(ctx, g)) return false;
       if (pairsOf(g).some(function (p) { return family(ctx, p[0], p[1]); })) return false;

@@ -410,7 +410,7 @@
     /* 全員で出られる部屋（順26）では、三人目の恋人を待つ・付き添うために残る必要がない（その人も一緒に出る） */
     var stay = null, lt = allOut(ctx) ? null : loveThird(ctx, a, b);
     if (lt) {
-      var multiOk = (ctx.env.multi || 'open') !== 'no' && ctx.flags.multiKnown;
+      var multiOk = (ctx.env.multi || 'open') !== 'no' && !ctx.flags.multiOff && ctx.flags.multiKnown;
       if (multiOk) {
         var W = ctx.flags.loveWait = ctx.flags.loveWait || {}, key = loveWaitKey(a, b);
         if (W[key]) return { cat: 'romance', mag: 6, text: text + a.name + 'と' + b.name + 'は、' + lt.name + 'と三人で出るまで、扉の前を素通りした。', why: why + '／三人で出るのを待っている' };

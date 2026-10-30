@@ -60,13 +60,16 @@
     hurt: ['扉の紙の下には、赤い字で注意書きがあった。傷つけ方は問わない、と。誰も、すぐには口を開かなかった。', '扉の紙を読んだ全員の顔がこわばった。殴る必要はない。けれど、何もしないわけにはいかない。', '扉の紙の条件の横に、小さな救急箱が置かれていた。それが、かえって気味が悪かった。']
   };
   /* 三人の場面でだけ数える部屋の導入（旧・条件「三人で」の導入。抱き合う版・全年齢と、R18版のエッチの部屋。R18版の文は全年齢版では落ちて null のまま） */
-  var INTRO_T = ['扉の紙の条件の横には、三つの丸を線でつないだ絵が描かれていた。', '扉の紙には、三人が抱き合う簡単な絵が添えられていた。', '扉の紙の「三人で」の字だけが、やけに大きく書かれていた。'];
+  /* どの文も、二人だけでは数えない念押しまでを一つの記録に書く（2026-10-30 担当TR：念押しを別の一文で続けると「小さな字」「紙」などが二度出たため、文ごとに書き分けた） */
+  var INTRO_T = ['扉の紙の条件の横には、三つの丸を線でつないだ絵が描かれていた。その下には、三人以上が同時に済ませたときに限って数える、と書き添えてある。二人きりでは、どうにもならないらしい。',
+    '扉の紙には、三人が抱き合う簡単な絵が添えられていた。注意書きによれば、三人以上が同時に済ませたときに限って数えるという。二人きりでは、どうにもならないらしい。',
+    '扉の紙の「三人で」の字だけが、やけに大きく書かれていた。その下には、三人以上が同時に済ませたときに限って数える、と念を押す一文がある。二人きりでは、どうにもならないらしい。'];
   var INTRO_H = null;
   /* r18:begin */
-  INTRO_H = ['扉の紙の条件の下に、小さな字で但し書きがあった。三人そろって、仲良く。意味は分かるはず、と。', '扉の紙の「三人で仲良く」の字の横に、ハートが三つ描かれていた。その意味を取り違える者はいなかった。', 'ベッドの脇には、三人で寝ても余るほど大きな毛布が畳んであった。扉の紙の「三人で」が、急に生々しく見えた。'];
+  INTRO_H = ['扉の紙の条件の下に、小さな字で但し書きがあった。三人そろって、仲良く。三人以上が同時に済ませたときに限って数える――意味は分かるはず、と。二人きりでは、どうにもならないらしい。',
+    '扉の紙の「三人で仲良く」の字の横に、ハートが三つ描かれていた。その意味を取り違える者はいなかった。添え書きによれば、三人以上が同時に済ませたときに限って数えるという。二人きりでは、どうにもならないらしい。',
+    'ベッドの脇には、三人で寝ても余るほど大きな毛布が畳んであった。扉の紙の「三人で」が、急に生々しく見えた。その下には、三人以上が同時に済ませたときに限って数える、と書き添えてある。二人きりでは、どうにもならないらしい。'];
   /* r18:end */
-  /* 念押しの一文（二人だけでは数えない） */
-  var ONLY_NOTE = '紙の一番下の小さな字は、「\u2060※三人以上で同時に行った場合に限り、条件を満たしたものとみなす」と念を押していた。二人だけで済ませても、扉は数えないらしい。';
 
   /* ================= お題の出来事（部屋全体で数える） ================= */
   var TASK = {};
@@ -433,6 +436,15 @@
     return ok ? { gr: gr } : null;
   }
 
+  /* 「三人の場面でだけ数える」が効かない理由（効くなら ''）：利用者向けの短い言葉 */
+  function onlyOffWhy(ctx) {
+    var R0 = ctx.rules, has = function (f) { return R0.some(function (r) { var T = K[r.k]; return !!T && f(T, r); }); };
+    if (ctx.flags.isOne) return '「一人しか出られない」だけの部屋なので';
+    if (has(function (T) { return T.type === 'hurt'; })) return '「相手を傷つける」の条件があるので';
+    if (!has(function (T) { return T.type === 'act' || T.type === 'word'; })) return '二人で数える行為・言葉の条件がなく、部屋の全員で数える条件だけなので';
+    return HK.roomOnlyRules && !HK.roomOnlyRules(R0) ? 'この条件の組み合わせでは' : '';
+  }
+
   /* ================= 準備・最初の記録・終わりの記録 ================= */
   var setup0 = scen.setup, phase0 = scen.phase, finish0 = scen.finish;
   scen.setup = function (ctx) {
@@ -440,8 +452,18 @@
     /* 媚薬ガスの風船など、媚薬の段を使う条件（room-games-r18.js） */
     if (ctx.rules.some(function (r) { return K[r.k].aphro; })) { ctx.flags.hasAphroRule = true; ctx.flags.romantic = true; }
     /* 三人の場面でだけ数える部屋（環境値 multi 'only'。行為・言葉の条件があり、傷つける条件がない。「一人しか出られない」だけの部屋は除く） */
-    if ((ctx.env.multi || 'open') !== 'only' || ctx.flags.isOne || !(HK.roomOnlyRules && HK.roomOnlyRules(ctx.rules))) return;
+    if ((ctx.env.multi || 'open') !== 'only') return;
     var C = ctx.chars.filter(function (c) { return HK.State.here(c); });
+    /* 「三人の場面でだけ数える」が効かない条件（HK.roomOnlyRules が偽）：二人ずつ数える部屋にして（三人以上で一緒に満たす、も使わない）、
+       事前の表示・最初の記録に「この条件では無効」と出す（2026-10-30 担当TR：利用者の依頼） */
+    var offWhy = onlyOffWhy(ctx);
+    if (offWhy) {
+      ctx.flags.trioOff = offWhy; ctx.flags.multiOff = true; ctx.flags.multiKnown = false;
+      /* 二人で数える条件がある部屋（傷つける条件など）は「二人ずつ」、ない部屋（一人しか出られない・全員で数える条件だけ）は「いつもどおり」 */
+      ctx.flags.trioOffPair = A.hasPairRule(ctx) && !ctx.flags.isOne;
+      if (HK._trioPrev) HK._trioPrev.res = { n: C.length, off: offWhy, pair: ctx.flags.trioOffPair };
+      return;
+    }
     if (C.length < 3) {
       if (HK._trioPrev) HK._trioPrev.res = { n: C.length, few: true };
       /* 二人しかいない：三人の場面でだけ数える、は成り立たないので、二人ずつ数える部屋に（部屋の名前は、最初の記録（元の名前）のあとで付け直す） */
@@ -575,7 +597,9 @@
     if (ctx.flags.trioLabel) ctx.flags.roomLabel = ctx.flags.trioLabel;
     if (ctx.flags.trioOnly && !ctx.flags.trioFall && NG_NOTE) { var nt = NG_NOTE(ctx, false); if (nt) ctx.say({ text: nt }); }
     /* 三人の場面でだけ数える部屋の導入：扉の紙の絵（R18版のエッチの部屋はハートの但し書き）と、二人だけでは数えない念押し */
-    if (ctx.flags.trioOnly) ctx.say({ text: ctx.pick(!soft(ctx) && INTRO_H ? INTRO_H : INTRO_T) + ONLY_NOTE });
+    if (ctx.flags.trioOnly) ctx.say({ text: ctx.pick(!soft(ctx) && INTRO_H ? INTRO_H : INTRO_T) });
+    /* 「三人の場面でだけ数える」を選んだが、この条件では効かない部屋（ctx.flags.trioOff）：その旨の地の文 */
+    else if (ctx.flags.trioOff) ctx.say({ text: '扉の紙の隅には「三人で」と書き添えてあったが、この条件では意味を持たなかった。' + (ctx.flags.trioOffPair ? '二人ずつ満たせばよいらしい。' : '') });
     ctx.rules.forEach(function (r) {
       var pool = INTRO[r.k] || HK.RoomGames.INTRO[r.k];
       if (pool && pool.length) ctx.say({ text: fillN(ctx.pick(pool), r.n) });
@@ -595,6 +619,7 @@
     });
     if (ctx.flags.hurtLog && ctx.flags.hurtLog.length) notes('傷つけた：' + ctx.flags.hurtLog.map(function (h) { return ctx.chars[h.a].name + '→' + ctx.chars[h.b].name + '（' + { word: '言葉', pinch: 'つねる', slap: '平手' }[h.tier] + '）'; }).join('、'));
     if (ctx.flags.trioFall === 'few') notes('三人の場面でだけ数える：部屋に三人そろわなかったので、二人ずつ数えた');
+    if (ctx.flags.trioOff) notes('三人の場面でだけ数える：' + ctx.flags.trioOff + '、この条件では無効だった' + (ctx.flags.trioOffPair ? '（二人ずつ数えた）' : ''));
     if (ctx.flags.trioFall === 'ngs') notes('三人の場面でだけ数える：三人の場面を組める三人がいなかったので、条件は「三人で抱き合う」に替わった');
     /* r18:begin */
     if (ctx.flags.trioFall === 'ng') notes('三人の場面でだけ数える：体の関係を持てる三人がいなかったので、条件は「三人で抱き合う」に替わった');
