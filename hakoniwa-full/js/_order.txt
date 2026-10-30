@@ -141,6 +141,8 @@ js/content-text-r18.js
 js/content-events-r18.js
 js/room-know.js @scen:whiteroom
 js/room-end.js @scen:whiteroom
+js/room-end-vary.js @scen:whiteroom
+js/room-awkward.js @scen:whiteroom
 js/room-tie.js @scen:whiteroom
 js/room-tie-more.js @scen:whiteroom
 js/room-tie-more2.js @scen:whiteroom
@@ -530,6 +532,8 @@ tone js/tone-brush5.js
 tone js/tone-brush5-r18.js
 tone js/tone-brush6.js
 tone js/tone-brush6-r18.js
+tone js/tone-brush7a.js
+tone js/tone-brush7a-r18.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/omega-mob-r18.js @scen:omega

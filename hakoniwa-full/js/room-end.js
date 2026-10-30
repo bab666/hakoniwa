@@ -200,6 +200,8 @@
     return fill(ctx.pick(pairPool(k)), { a: x.name, b: y.name });
   }
   RE.pairLayer = pairLayer;
+  /* 結末の書き分け（room-end-vary.js）が包む入口：RE.layerOf（二人の関係の層。ex＝出た記録）・RE.exitOf（出る様子）・RE.groupOf（三人以上の組の層） */
+  RE.layerOf = function (ctx, x, y, ex) { return pairLayer(ctx, x, y); };
   /* 出る様子：手を取る（恋人・親友）／無言（敵対）／我先に（関係が薄い）／ふつう */
   function manner(ctx, g) {
     /* 腐れ縁の二人（kusareOf）は手を取って出ない（関係の層の言い争いと食い違うため） */
@@ -271,6 +273,8 @@
      部品：出る様子（exitLine）＋関係の層（PAIR。三人以上の組は、後日談が結末の段にあるので外の情景 SCENE_G）。先に出て一人が残った組は GO_LATER／GO_WAIT（三人目の恋人に付き添う）。
      書いた組の出た記録には told が付き、結末の段（closing）はその組の出る様子・一緒に出た人・関係の層を書き直さない。外の情景の場所も、結末の段では避ける。
      この扉で部屋の動きが終わるとき（全員が出た など）は呼ばれない（最後の「結末」の段に任せる） */
+  RE.exitOf = function (ctx, g, ex) { return exitLine(ctx, g); };
+  RE.groupOf = function (ctx, g, ex, kill) { return fill(ctx.pick(kill ? PAIR.kill : PAIR.group), { G: nm(g) }); };
   RE.groupEnd = function (ctx, ex, opt) {
     opt = opt || {};
     if (!ex || ex.how) return '';
@@ -281,9 +285,9 @@
     } else {
       var g = membersOf(ctx, ex), lay;
       if (ex.trio || g.length > 2) lay = { t: freshScene(ctx, SCENE_G), o: 1 };
-      else { var x = g[0], y = g[1]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } lay = { t: pairLayer(ctx, x, y), o: 0 }; }
+      else { var x = g[0], y = g[1]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } lay = { t: RE.layerOf(ctx, x, y, ex), o: 0 }; }
       /* 関係の層の一文目が出るところから書く型（「外に出ると」「部屋を出た〇〇は」など）なら、出る様子は重ねない */
-      if (!/^[^。]*(?:外に出る|部屋を出た|扉を出た)/.test(lay.t)) parts.push({ t: exitLine(ctx, g), o: 2 });
+      if (!/^[^。]*(?:外に出る|部屋を出た|扉を出た)/.test(lay.t)) parts.push({ t: RE.exitOf(ctx, g, ex), o: 2 });
       parts.push(lay);
     }
     return trim(parts, 3).map(function (p) { return p.t; }).join('');
@@ -314,7 +318,7 @@
       if (fresh.length === 1) {
         var e0 = fresh[0], g0 = membersOf(ctx, e0);
         if (kill && e0.group) parts.push({ t: ctx.pick(KILL_PAUSE), o: 4 });
-        parts.push({ t: kill && e0.group ? fill(ctx.pick(EXIT.silent), { G: nm(g0) }) : exitLine(ctx, g0), o: 0 });
+        parts.push({ t: kill && e0.group ? fill(ctx.pick(EXIT.silent), { G: nm(g0) }) : RE.exitOf(ctx, g0, e0), o: 0 });
       } else if (fresh.length > 1) {
         var byL = [], lab = {};
         fresh.forEach(function (e) { var k = seqLabel(e.label); if (lab[k] == null) { lab[k] = byL.length; byL.push({ l: k, g: [] }); } byL[lab[k]].g.push(membersOf(ctx, e)); });
@@ -337,9 +341,10 @@
       fresh.forEach(function (e) {
         if (e.trio) return;
         var t;
-        if (e.group) t = fill(ctx.pick(kill ? PAIR.kill : PAIR.group), { G: nm(e.group.map(function (i) { return C[i]; })) });
+        if (e.group && (kill || e.group.length !== 2)) t = RE.groupOf(ctx, e.group.map(function (i) { return C[i]; }), e, kill);
+        else if (e.group) t = RE.layerOf(ctx, C[e.group[0]], C[e.group[1]], e);
         else if (e.stay != null) t = fill(ctx.pick(PAIR.go), { a: C[e.a].name, b: C[e.b].name });
-        else { var x = C[e.a], y = C[e.b]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } t = pairLayer(ctx, x, y); }
+        else { var x = C[e.a], y = C[e.b]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } t = RE.layerOf(ctx, x, y, e); }
         parts.push({ t: t, o: nL ? 8 + nL : 1 });
         nL++;
       });

@@ -95,6 +95,8 @@ js/room-left.js @scen:whiteroom
 js/room-cheer.js @scen:whiteroom
 js/room-know.js @scen:whiteroom
 js/room-end.js @scen:whiteroom
+js/room-end-vary.js @scen:whiteroom
+js/room-awkward.js @scen:whiteroom
 js/room-tie.js @scen:whiteroom
 js/room-tie-more.js @scen:whiteroom
 js/room-tie-more2.js @scen:whiteroom
@@ -362,6 +364,7 @@ tone js/tone-brush3d.js
 tone js/tone-brush4k.js
 tone js/tone-brush5.js
 tone js/tone-brush6.js
+tone js/tone-brush7a.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/incidents-social.js @pack:rel

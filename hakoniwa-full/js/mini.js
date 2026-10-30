@@ -227,6 +227,22 @@
     if (/\{a\}(?:が|は|の方が|のほうが)年下/.test(t)) return a.age < b.age;
     return true;
   }
+  /* 関係に合わない前提の文（2026-10-30 担当W1。利用者の報告：親子なのに「友達じゃいられなくなるかも」的な話が入る）：
+     ・友達の前提（ずっと友達・友達のまま・友達に戻れない など）は、家族（親子・擬似親子・きょうだい・親族）か恋人どうしの組には使わない
+     ・「付き合ってもいない」の前提は、恋人どうし（箱庭の中で恋人になった組・恋人の関係）には使わない */
+  var FRIEND_TXT = /ずっとも|ずっと友|友達(?:じゃ|では|で|に|の)(?:いられ|戻れ|まま)|友人(?:では|で|に|の)(?:いられ|戻れ|まま)/, UNPAIRED_TXT = /付き合って(?:も)?いない|付き合ってない/;
+  var FAM_TIES = ['parent', 'pparent', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'stepsib', 'relative'], LOVE_TIES = ['lover', 'spouse', 'mate', 'fiance', 'fated'];
+  function tieAny(ctx, a, b, l) { return !!(HK.Ties && HK.Ties.has && ctx.ties) && l.some(function (t) { return HK.Ties.has(ctx, a, b, t); }); }
+  function relFits(ctx, t, a, b) {
+    if (!b) return true;
+    var fr = FRIEND_TXT.test(t), un = UNPAIRED_TXT.test(t);
+    if (!fr && !un) return true;
+    var cp = !!ctx.pair(a, b).couple || tieAny(ctx, a, b, LOVE_TIES);
+    if (un && cp) return false;
+    if (fr && (cp || tieAny(ctx, a, b, FAM_TIES))) return false;
+    return true;
+  }
+  HK.relFits = relFits;
   /* DSL → エンジンのイベント形式 */
   HK.E = function (id, cat, scope, w, when, fx, texts) {
     var terms = parseExpr(w), conds = parseWhen(when), effects = parseFx(fx);
@@ -273,6 +289,7 @@
         if (hasLove && !loveTalkOk(ctx, [a, b, c])) { var nl = cand.filter(function (t) { return !LOVE_TXT.test(t); }); if (nl.length) cand = nl; }
         /* 年齢が決まっている二人なら、「同い年」「年上」の文は実際の年齢に合うものだけ */
         if (b && a.age && b.age) { var ag = cand.filter(function (t) { return ageFits(t, a, b); }); if (ag.length) cand = ag; else return null; }
+        if (b && cand.some(function (t) { return FRIEND_TXT.test(t) || UNPAIRED_TXT.test(t); })) { var rf = cand.filter(function (t) { return relFits(ctx, t, a, b); }); if (rf.length) cand = rf; else return null; }
         var text = ctx.t(ctx.pick(cand.length ? cand : list), a, b, c);
         /* 問いで終わる文には、いつも相手の答え（HK.TAILS_Q）を続ける。問いでない文は今までどおり（乱数の引き方も同じ） */
         var isQ = withTail && b ? askEnd(text, a, b) : '', ans = isQ === 'a' ? a : b;
