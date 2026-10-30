@@ -140,6 +140,8 @@
     var a, b;
     try { a = cur ? JSON.parse(cur) : {}; b = inc ? JSON.parse(inc) : {}; } catch (e) { return null; }
     ['tone', 'night', 'rate', 'gender'].forEach(function (k) { a[k] = a[k] && typeof a[k] === 'object' ? a[k] : {}; var bb = b[k] && typeof b[k] === 'object' ? b[k] : {}; Object.keys(bb).forEach(function (x) { if (a[k][x] == null) a[k][x] = bb[x]; }); });
+    /* ♡の扱い（全員なし）も、今が既定なら読み込んだ値にする */
+    if (a.heart == null && b.heart === 'off') a.heart = 'off';
     return JSON.stringify(a);
   }
   VS.add({

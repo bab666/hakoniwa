@@ -115,6 +115,10 @@
       '<div class="mf-h">性別で整える</div>' +
       gch('unfemM', '男性の喘ぎから女性的な語尾を外す', '男性の「いいわ」「だめよ」「あら」などを外す（「整えない」にした口調には効かない）') +
       gch('unmascF', '女性の喘ぎから男性的な語尾を外す', '女性の「〜ぜ」「〜ぞ」「〜だろ」「〜ねえ」を外す（男性的な語尾を残す口調・関西弁・やわらかい口調には効かない）') +
+      '<div class="mf-h">♡（ハート）</div>' +
+      '<div class="mf-row' + (c && c.heart === 'off' ? ' on' : '') + '" id="mf-h-heart"><div class="mf-n">♡の扱い</div><div class="mf-c">' +
+      sel('data-f="adv" data-k="' + ID + '" data-m="heart" aria-label="♡の扱い"', [['', '住人の設定に従う（既定）', '住人ごとの「♡喘ぎ（男性向け）」のとおりにします'], ['off', '全員なし', '全員の性的な場面の喘ぎ・台詞から♡を外します']], c && c.heart === 'off' ? 'off' : '') +
+      '<div class="mf-d" style="flex-basis:100%;margin:0">男性向けの作風の喘ぎや台詞に付く♡を外せます。住人ごとには、住人の⚙設定「恋愛と夜」の「♡喘ぎ（男性向け）」で外せます。外したあとは「あっ♡」→「あっ」、「……♡」→「……」のように整えます</div></div></div>' +
       '<div class="row" style="margin-top:10px"><button type="button" class="mini" data-act="adv:mf-reset">既定に戻す</button></div>' +
       demoBox();
   }
@@ -131,6 +135,7 @@
     nightList().forEach(function (x) { mark('mf-n-' + x[0], c && c.night[x[0]]); });
     RATES.forEach(function (r) { mark('mf-a-' + r.k, c && c.rate[r.k] != null); var v = document.getElementById('mf-v-' + r.k); if (v) v.textContent = rateText(r.k, rateVal(r.k)); });
     ['unfemM', 'unmascF'].forEach(function (k) { mark('mf-g-' + k, c && c.gender[k] === false); });
+    mark('mf-h-heart', c && c.heart === 'off');
     /* 見本を出していれば、同じ種で出し直す（調整の違いが見えるように） */
     if (DEMO.last) showDemo(DEMO.last.all, true);
   }
@@ -143,6 +148,7 @@
     } else if (m === 'night') c.night[t.dataset.n] = t.value;
     else if (m === 'rate') { c.rate[t.dataset.r] = (+t.value) / 100; }
     else if (m === 'gender') c.gender[t.dataset.g] = !!t.checked;
+    else if (m === 'heart') { if (t.value === 'off') c.heart = 'off'; else delete c.heart; }
     /* 見本の作風：場面の一覧を入れ替える（設定は変えない） */
     else if (m === 'style') { var ks = document.getElementById('adv-mf-key'); if (ks) ks.innerHTML = keyOpts(t.value === 'novel' ? 'n1' : 'w1', t.value); return; }
     else return;
