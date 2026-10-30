@@ -102,6 +102,7 @@ js/room-same.js @scen:whiteroom
 js/room-games.js @scen:whiteroom
 js/room-trio-note.js @scen:whiteroom
 js/room-noexit-note.js @scen:whiteroom
+js/room-pressure.js @scen:whiteroom
 js/trap-open-room.js @scen:whiteroom
 js/scenario-trial.js @scen:trial
 js/ego-image.js
@@ -362,6 +363,7 @@ tone js/tone-brush3d.js
 tone js/tone-brush4k.js
 tone js/tone-brush5.js
 tone js/tone-brush6.js
+tone js/tone-brush7b.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/incidents-social.js @pack:rel
