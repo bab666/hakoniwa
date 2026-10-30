@@ -7,13 +7,8 @@
   'use strict';
   var HK = window.HK, A = HK.RoomAPI, G = HK.RoomGames;
   if (!A || !A.addKind || !G) return;
-  /* 全年齢モード：R18向けの条件は足さない。条件「三人で」の選択肢の名前は、抱き合う版にする */
-  if (HK.SAFE_ON) {
-    var SL = '三人で抱き合う（三人以上のとき）';
-    A.KLABEL.trio3 = SL;
-    (A.scen.env || []).forEach(function (e) { if (e.id === 'cond' || e.id === 'cond2') (e.options || []).forEach(function (o) { if (o.v === 'trio3') o.label = SL; }); });
-    return;
-  }
+  /* 全年齢モード：R18向けの条件は足さない */
+  if (HK.SAFE_ON) return;
   var K = A.K, EV = A.EV, ITEM = A.ITEM;
   function R(ctx, a, b) { return ctx.R(a, b); }
   var free = G.free, topKey = G.topKey;

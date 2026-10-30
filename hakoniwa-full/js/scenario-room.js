@@ -32,8 +32,8 @@
   HK.ROOM_KINDS = K;
   /* 部屋全体で数える条件か（飲む・殺す・お題（room-games.js の task：風船・ロシアンルーレットなど）） */
   function isGlob(T) { return !!T && (T.type === 'consume' || T.type === 'kill' || T.type === 'task'); }
-  /* 二人の組で数える条件か（行為・言葉・傷つける・三人で） */
-  function isPairT(T) { return !!T && (T.type === 'act' || T.type === 'word' || T.type === 'hurt' || T.type === 'trio'); }
+  /* 二人の組で数える条件か（行為・言葉・傷つける） */
+  function isPairT(T) { return !!T && (T.type === 'act' || T.type === 'word' || T.type === 'hurt'); }
   /* この版・このモードに無い条件（R18版の全年齢モードや全年齢版で、R18向けの条件を選んだ保存を開いたとき）は、近い条件に置き換える */
   var ALT = { water: 'sake', gasballoon: 'balloon' };
   function fixKind(k) { return K[k] ? k : ALT[k] && K[ALT[k]] ? ALT[k] : 'h'; }
@@ -62,22 +62,43 @@
     return (NOUN_N[r.k] || T.noun) + (n > 1 ? n + T.unit + (T.type === 'word' ? 'ずつ' : '') : '');
   }
   HK.roomLabel = function (env) { return HK.roomLabelOf(env, rulesOf(env)); };
-  /* 条件の並び r から部屋の名前を作る（三人で、の条件が成り立たずに別の条件に替わったとき（room-games.js）も、これで付け直す） */
-  HK.roomLabelOf = function (env, r) {
+  /* 三人以上で一緒に満たす（env.multi。room-trio.js）の「三人の場面でだけ数える」（only）が効く条件の並びか：行為・言葉の条件があり、傷つける条件がない
+     （傷つける条件は三人の場面で数えないので、only を選んでも今までどおり二人ずつ） */
+  function onlyRules(r) { return r.some(function (x) { var T = K[x.k]; return !!T && (T.type === 'act' || T.type === 'word'); }) && !r.some(function (x) { return K[x.k] && K[x.k].type === 'hurt'; }); }
+  HK.roomOnlyRules = onlyRules;
+  /* 条件の並び r から部屋の名前を作る（三人の場面でだけ数える部屋が成り立たずに条件が替わったとき（room-games.js・room-trio.js）も、これで付け直す）。
+     「三人の場面でだけ数える」部屋は「三人でエッチしないと出られない部屋」のように「三人で」を頭に付ける（o.two：三人そろわない部屋。付けない） */
+  HK.roomLabelOf = function (env, r, o) {
     if (env.label && String(env.label).trim()) return String(env.label).trim();
     if (r[0].k === 'one') return '一人しか出られない部屋';
+    var tri = env.multi === 'only' && !(o && o.two) && onlyRules(r) ? '三人で' : '';
     /* 条件が二つ：順番あり（seq）は「〇〇したあとに、××しないと」、どちらからでもは「〇〇と××、両方を済ませないと」（2026-10-26 順77） */
     var s = r.length < 2 ? K[r[0].k].fin(r[0].n)
       : env.order === 'seq' ? K[r[0].k].mid(r[0].n).replace(/て$/, 'た').replace(/で$/, 'だ') + 'あとに、' + K[r[1].k].fin(r[1].n)
       : nounN(r[0]) + 'と' + nounN(r[1]) + '、両方を済ませないと';
     /* 「一人しか出られない」をほかの条件と併用（env.only1）：条件を満たしても、扉をくぐれるのは一人 */
     /* 条件1に「一人しか出られない」・条件2にほかの条件、を選んだときも同じ（順164）。全員で出られる（env.allout）は、その旨を添える（順26） */
-    return s + (oneWith(env) ? '出られない部屋（ただし、出られるのは一人だけ）' : allOutEnv(env) ? '出られない部屋（ただし、条件を満たした人と一緒に、ほかの全員も出られる）' : '出られない部屋');
+    return tri + s + (oneWith(env) ? '出られない部屋（ただし、出られるのは一人だけ）' : allOutEnv(env) ? '出られない部屋（ただし、条件を満たした人と一緒に、ほかの全員も出られる）' : '出られない部屋');
   };
   /* 「一人しか出られない」：条件1で選ぶ（ほかの条件なし）か、ほかの条件と併用する（env.only1、または条件1に選んで条件2を足す） */
   HK.roomOnlyOne = function (env) { return rulesOf(env)[0].k === 'one' || oneWith(env); };
   HK.roomAllOut = allOutEnv;
   HK.roomRules = rulesOf;
+  /* 古い保存の写し替え（2026-10-30 担当TR）：条件「三人で仲良くする」（kind trio3）は、環境値「三人以上で一緒に満たす」の
+     「三人の場面でだけ数える（三人で仲良く）」（multi 'only'）に統合した。条件1の trio3 はエッチ（全年齢版はハグ）に、条件2の trio3 は消して、multi を only に。
+     inPlace が偽なら写しを返す（保存・履歴の記録そのものは書き換えない。箱庭に渡す前（setup）と、箱庭タブの読み込み（room-trio.js）で呼ぶ） */
+  var MIG_K = 'hug';
+  /* r18:begin */
+  MIG_K = 'h';
+  /* r18:end */
+  HK.roomEnvMigrate = function (env, inPlace) {
+    if (!env || typeof env !== 'object' || (env.cond !== 'trio3' && env.cond2 !== 'trio3')) return env;
+    var e = inPlace ? env : JSON.parse(JSON.stringify(env));
+    if (e.cond === 'trio3') e.cond = MIG_K;
+    if (e.cond2 === 'trio3' || e.cond2 === e.cond) e.cond2 = 'none';
+    e.multi = 'only';
+    return e;
+  };
 
   var options = Object.keys(KLABEL).map(function (k) { return { v: k, label: KLABEL[k] }; });
   /* 条件を足す（room-games.js・room-games-r18.js）：部品・見出し・条件1と条件2の選択肢に、末尾に足す（既存の選択肢の並びは変えない） */
@@ -126,7 +147,7 @@
     if (T.type === 'consume' || T.type === 'task') return [(ctx.flags.consumed[rule.k] || 0), 0];
     if (T.type === 'kill') return [killCount(ctx), 0];
     var p = prog(ctx, a, b);
-    if (T.type === 'act' || T.type === 'hurt' || T.type === 'trio') return [p.act[rule.k] || 0, 0];
+    if (T.type === 'act' || T.type === 'hurt') return [p.act[rule.k] || 0, 0];
     if (T.type === 'word') return [p.said[rule.k + a.i] || 0, p.said[rule.k + b.i] || 0];
     return [0, 0];
   }
@@ -175,6 +196,9 @@
   function seqFlush(ctx, r, a, b) { if (seqOn(ctx) && r === ctx.rules[1]) effOf(ctx, r, a, b); }
   function bumpAct(ctx, r, a, b, inc, to, cap) {
     var p = prog(ctx, a, b);
+    /* 三人の場面でだけ数える部屋（trioOnly）：三人の場面の数え方（room-trio.js の count。ctx.flags.trioIn）のほかでは数えない。
+       二人の出来事は起こさない（room-trio.js の出来事の山の包み）ので、ここに来るのは取りこぼしだけ（点検用に HK.roomTrioLeak に数える） */
+    if (trioOnly(ctx) && !ctx.flags.trioIn) { HK.roomTrioLeak = (HK.roomTrioLeak || 0) + 1; return true; }
     if (seqWait(ctx, r, a, b)) { p.pre = p.pre || {}; p.pre[r.k] = (p.pre[r.k] || 0) + (to != null ? to : inc || 1); return false; }
     seqFlush(ctx, r, a, b);
     var v = to != null ? to : (p.act[r.k] || 0) + (inc || 1);
@@ -224,7 +248,7 @@
       if (seqOn(ctx) && r === ctx.rules[1] && !ruleDone(ctx, ctx.rules[0], a, b)) { out.push('そのあと' + (T.type === 'consume' ? T.item + 'を' + r.n + T.unit : T.type === 'kill' ? '誰かの命' : T.noun + (r.n > 1 ? 'を' + r.n + T.unit : ''))); return; }
       /* 足した条件（room-games.js）：残りの言い方を条件の側が持つ（left：部屋全体の残り／leftP：この組の残り） */
       if (T.type === 'task') { out.push(T.left ? T.left(globLeft(ctx, r)) : T.noun + 'があと' + globLeft(ctx, r) + T.unit); return; }
-      if (T.type === 'hurt' || T.type === 'trio') { out.push(T.leftP ? T.leftP(r.n - (p.act[r.k] || 0), r.n) : T.noun); return; }
+      if (T.type === 'hurt') { out.push(T.leftP ? T.leftP(r.n - (p.act[r.k] || 0), r.n) : T.noun); return; }
       if (T.type === 'act') out.push(T.noun + (r.n > 1 ? 'があと' + (r.n - (p.act[r.k] || 0)) + T.unit : ''));
       else if (T.type === 'word' && T.mode === 'both') {
         var who = [a, b].filter(function (c) { return (p.said[r.k + c.i] || 0) < r.n; }).map(function (c) { return c.name; });
@@ -255,6 +279,9 @@
     return '（' + pairTag(ctx, a, b) + K[r.k].noun + ' ' + cnt + '/' + r.n + (inc > 1 ? '・まとめて' + inc + K[r.k].unit : '') + '）';
   }
   function hasPairRule(ctx) { return ctx.rules.some(function (r) { return isPairT(K[r.k]); }); }
+  /* 三人の場面でだけ数える部屋か（環境値 multi 'only'。三人以上いて、行為・言葉の条件があるとき。room-trio.js の setup が決める） */
+  function trioOnly(ctx) { return !!(ctx && ctx.flags && ctx.flags.trioOnly); }
+  HK.roomTrioOnly = trioOnly;
   /* 条件を満たした人と一緒に、残りの全員も出られる部屋か（順26） */
   function allOut(ctx) { return !ctx.flags.isOne && !ctx.flags.oneCond && ctx.env.allout === 'on'; }
   /* ---------- 扉が開いたとき（2026-10-28 担当KJ：退出の定型「扉の鍵が外れる音がした」「そろって部屋を出た」「扉をくぐった」「あとについて外へ出た」を廃止） ----------
@@ -721,6 +748,8 @@
     },
     longRun: function (env) { return +env.hours > 48; },
     setup: function (ctx) {
+      /* 古い保存の条件「三人で」を、三人の場面でだけ数える部屋に写す（写しにして、渡された入力・記録は書き換えない） */
+      ctx.env = HK.roomEnvMigrate(ctx.env);
       ctx.place = '白い部屋';
       ctx.rules = rulesOf(ctx.env);
       ctx.flags.prog = {}; ctx.flags.consumed = {}; ctx.flags.drank = {};
@@ -799,7 +828,8 @@
   function countFlavor(ctx) {
     var from = ctx.flags.scan || 0, L = ctx.log;
     ctx.flags.scan = L.length;
-    if (ctx.flags.isOne) return;
+    /* 三人の場面でだけ数える部屋：二人の記録の中の行為・「好き」は数えない */
+    if (ctx.flags.isOne || trioOnly(ctx)) return;
     for (var i = from; i < L.length; i++) {
       var e = L[i], ac = e.actors || [];
       if (ac.length !== 2 || !e.text || /扉|\d+\/\d+）/.test(e.text)) continue;
@@ -1485,7 +1515,7 @@
   /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
   if (HK.SCEN_ORDER.indexOf('whiteroom') < 0) HK.SCEN_ORDER.splice(1, 0, 'whiteroom');
   /* 追加の展開（room-trio.js など）から使う部品 */
-  HK.RoomAPI = { K: K, EV: EV, scen: scen, prog: prog, ruleDone: ruleDone, seqWait: seqWait, seqFlush: seqFlush, bumpAct: bumpAct, waitNote: waitNote, pairDone: pairDone, leftText: leftText, eager: eager, willing: willing, desperate: desperate, tieWall: tieWall, names: names, hasPairRule: hasPairRule, finishExit: finishExit, exitPair: exitPair, doorOpen: doorOpen, doorFlush: doorFlush, DOOR_LINE: DOOR_LINE,
+  HK.RoomAPI = { K: K, EV: EV, scen: scen, prog: prog, ruleDone: ruleDone, seqWait: seqWait, seqFlush: seqFlush, bumpAct: bumpAct, waitNote: waitNote, pairDone: pairDone, leftText: leftText, eager: eager, willing: willing, desperate: desperate, tieWall: tieWall, names: names, hasPairRule: hasPairRule, trioOnly: trioOnly, finishExit: finishExit, exitPair: exitPair, doorOpen: doorOpen, doorFlush: doorFlush, DOOR_LINE: DOOR_LINE,
     /* 条件を足す側（room-games.js・room-games-r18.js）から使う部品 */
     KLABEL: KLABEL, ITEM: ITEM, ACT_TEXT: ACT_TEXT, addKind: addKind, noteN: noteN, isGlob: isGlob, globLeft: globLeft, globDone: globDone, checkExit: checkExit, exitAll: exitAll, oneDoor: oneDoor, allOut: allOut, bringAlong: bringAlong, lastOf: lastOf, okSex: okSex, exclOther: exclOther, cntTag: cntTag };
 })();

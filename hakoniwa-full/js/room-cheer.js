@@ -186,11 +186,12 @@
       var a = rest.sort(function (p, q) { return (R(ctx, q, b).aff + R(ctx, q, c).aff) - (R(ctx, p, b).aff + R(ctx, p, c).aff); })[0];
       if (a && ctx.rng() < 0.5) {
         ctx.mod(a, b, { aff: 3 }); ctx.mod(a, c, { aff: 3 }); ctx.stress(a, -4);
-        ctx.pending.push({ kind: 'event', cat: 'bond', actors: [a, b, c], text: ctx.t(ctx.pick(T.sendLead) + G.byPer(ctx, SEND, a), a, b, c), why: b.name + 'と' + c.name + 'が条件を満たして部屋を出た。残る' + a.name + 'が送り出した（送り出し・仲良し）', mag: 10, _rcA: a.i });
+        /* 送り出し・再会は体の関係の場面ではない（sex: false。扉を開けた出来事が体の関係の出来事でも、その印を引き継がない。2026-10-30 担当TR） */
+        ctx.pending.push({ kind: 'event', cat: 'bond', sex: false, actors: [a, b, c], text: ctx.t(ctx.pick(T.sendLead) + G.byPer(ctx, SEND, a), a, b, c), why: b.name + 'と' + c.name + 'が条件を満たして部屋を出た。残る' + a.name + 'が送り出した（送り出し・仲良し）', mag: 10, _rcA: a.i });
       }
       var de = gonePair(ctx, i);
       if (de && de.indexOf(b) < 0 && de.indexOf(c) < 0 && ctx.rng() < 0.6)
-        ctx.pending.push({ kind: 'event', cat: 'bond', actors: [b, c], text: G.fill(ctx, ctx.pick(T.reunion), null, b, c, de[0], de[1]), why: '先に出た' + de[0].name + 'と' + de[1].name + 'が、外で' + b.name + 'と' + c.name + 'を待っていた（再会・仲良し）', mag: 8 });
+        ctx.pending.push({ kind: 'event', cat: 'bond', sex: false, actors: [b, c], text: G.fill(ctx, ctx.pick(T.reunion), null, b, c, de[0], de[1]), why: '先に出た' + de[0].name + 'と' + de[1].name + 'が、外で' + b.name + 'と' + c.name + 'を待っていた（再会・仲良し）', mag: 8 });
     }
   }
   var setup0 = scen.setup;

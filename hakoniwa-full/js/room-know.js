@@ -59,7 +59,8 @@
   function honneRule(ctx) { return (ctx.rules || []).filter(function (r) { return r.k === 'honne'; })[0]; }
   function countHonne(ctx, a, b, who) {
     var r = honneRule(ctx), p = ctx.flags.prog && ctx.flags.prog[a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i];
-    if (!r || !p) return false;
+    /* 三人の場面でだけ数える部屋（room-trio.js）：二人の会話の本音は数えない */
+    if (!r || !p || (HK.roomTrioOnly && HK.roomTrioOnly(ctx))) return false;
     var k = 'honne' + who.i;
     if ((p.said[k] || 0) >= r.n) return false;
     p.said[k] = (p.said[k] || 0) + 1;

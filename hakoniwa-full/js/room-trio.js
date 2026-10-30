@@ -3,7 +3,12 @@
    ・三人になるきっかけ：選べない三角関係／恋人同士が取り残されそうな一人を誘う／ノリで／時間切れが迫って
    ・行為の場面は受け攻めの指定どおり（三人のなかでの上下を決めて書き分ける）
    ・回数が一回でも、一度の三人の場面で全員の分が数えられ、そのまま三人で出られる
-   ・部屋を出たあとの三人（三人婚・三人だけの秘密・なかったことに） */
+   ・部屋を出たあとの三人（三人婚・三人だけの秘密・なかったことに）
+   ・環境値「三人以上で一緒に満たす」の「三人の場面でだけ数える（三人で仲良く）」（multi 'only'。2026-10-30 担当TR：条件「三人で仲良くする」（trio3）を統合）：
+     二人の条件（エッチ・キス・ハグ・言葉など）は、ここの三人の場面でだけ進む。二人だけで条件を進める出来事（エッチ・キスの行為、言葉、みんなで、
+     スピード型、媚薬の熱、関係のある二人の夜、嫌い合う二人、嫉妬など体の関係の出来事）は起こさない（下の出来事の山の包み）。三人の場面の入り口は最初から使える。
+     行為の条件がハグ・手繋ぎ・膝枕だけの部屋（全年齢版・全年齢モードの「三人で抱き合う」、R18版で成り立つ三人がいない部屋）は、三人で抱き合う文（TRIO_SOFT）で書く。
+     準備（成り立つ三人・三人未満・抱き合う版への替わり）・最初の記録・結末の但し書きは room-games.js */
 (function () {
   'use strict';
   var HK = window.HK, A = HK.RoomAPI;
@@ -18,13 +23,18 @@
   scen.env.splice(4, 0, { id: 'multi', label: '三人以上で一緒に満たす', type: 'select', def: 'open', options: [
     { v: 'open', label: '最初から紙に書いてある' },
     { v: 'note', label: '扉の紙の裏に但し書きがある（見つけたら使える）' },
-    { v: 'no', label: '認めない（二人ずつだけ）' }
-  ], desc: '「三人以上で同時にした場合、全員がそれぞれ満たしたものとみなす」。回数が一回でも、三人の場面一度で全員分が数えられます。三人ちょうどでエッチか媚薬の部屋なら、受けに回れる人が一人でもいれば三人の場面（3P）が起こります' });
+    { v: 'no', label: '認めない（二人ずつだけ）' },
+    { v: 'only', label: '三人の場面でだけ数える（三人で仲良く）' }
+  ], desc: '「三人以上で同時にした場合、全員がそれぞれ満たしたものとみなす」。回数が一回でも、三人の場面一度で全員分が数えられます。三人ちょうどでエッチか媚薬の部屋なら、受けに回れる人が一人でもいれば三人の場面（3P）が起こります。' +
+    '「三人の場面でだけ数える」を選ぶと、二人の条件（エッチ・キス・ハグ・言葉など）は三人の場面でしか進まず、二人きりのエッチ・キスなどは起きません（三人以上のとき。二人しかいなければ二人ずつ。全年齢では三人で抱き合う場面で数えます）' });
 
   function multiOf(ctx) { return ctx.env.multi || 'open'; }
-  /* 一人しか出られない（ほかの条件と併用）部屋でも、三人で一緒に満たせる（満たしたあと、扉をくぐれるのは一人。2026-10-26 順164）。
-     条件「三人で」（room-games.js）の部屋は、その条件の場面だけで三人になる（ここの三人の場面は使わない） */
-  function allowed(ctx) { return multiOf(ctx) !== 'no' && !ctx.flags.isOne && !ctx.flags.trioRule && A.hasPairRule(ctx); }
+  /* 一人しか出られない（ほかの条件と併用）部屋でも、三人で一緒に満たせる（満たしたあと、扉をくぐれるのは一人。2026-10-26 順164） */
+  function allowed(ctx) { return multiOf(ctx) !== 'no' && !ctx.flags.isOne && A.hasPairRule(ctx); }
+  /* 三人の場面でだけ数える部屋（multi 'only'。room-games.js の setup が ctx.flags.trioOnly を決める） */
+  function only(ctx) { return !!ctx.flags.trioOnly; }
+  /* 三人で抱き合う版で書く部屋：三人の場面でだけ数える部屋で、行為の条件がハグ・手繋ぎ・膝枕まで（エッチの条件が成り立たずに替わった部屋を含む） */
+  function hugOnly(ctx) { return only(ctx) && !ctx.rules.some(function (r) { var T0 = K[r.k]; return T0.type === 'act' && T0.lvl > 2; }) && ctx.rules.some(function (r) { return K[r.k].type === 'act'; }); }
   /* 受け攻めの部品（親が pos.js に足す予定のものは、無ければ自前の判定に戻す） */
   /* pos.js はこのファイルより後に読み込まれるので、HK.Pos は呼ぶたびに見る（読み込み時に束縛しない） */
   function isF(c) { var P = HK.Pos; return !!(P && P.isF(c)); }
@@ -184,13 +194,14 @@
   var setup0 = scen.setup, phase0 = scen.phase, finish0 = scen.finish;
   scen.setup = function (ctx) {
     setup0(ctx);
-    ctx.flags.multiKnown = multiOf(ctx) === 'open';
+    ctx.flags.multiKnown = multiOf(ctx) === 'open' || multiOf(ctx) === 'only';
     ctx.flags.trios = []; ctx.flags.trioHL = {};
     ctx.flags.trioRoll = null;   /* 三人ちょうどのとき、この回は三人の場面に向かうか（性格・関係から一度だけ決める） */
   };
   scen.phase = function (ctx, s, n) {
     phase0(ctx, s, n);
-    if (s === 0 && ctx.flags.multiKnown && allowed(ctx) && ctx.present().length >= 3)
+    /* 三人の場面でだけ数える部屋の但し書きは、room-games.js の最初の記録（扉の紙の絵・念押しの一文） */
+    if (s === 0 && ctx.flags.multiKnown && allowed(ctx) && ctx.present().length >= 3 && multiOf(ctx) !== 'only')
       ctx.say({ text: '紙の一番下には、小さな字で但し書きがあった。「\u2060※三人以上で同時に行った場合、参加者全員がそれぞれ条件を満たしたものとみなす」' });
   };
 
@@ -244,7 +255,7 @@
       var g = [a, b, c];
       if (done3(ctx, g)) return;
       if (pairsOf(g).some(function (p) { return family(ctx, p[0], p[1]); })) return;
-      if (g.some(function (x) { return x.flags.trioNo; })) return;
+      if (g.some(function (x) { return x.flags.trioNo || (x.flags.trioNoTill != null && ctx.stepIndex < x.flags.trioNoTill); })) return;
       if (g.some(function (x) { return exclBlock(ctx, x, g); })) return;
       /* 部屋に残る誰かの恋人を連れていく組み合わせは選ばない。
          ただし恋人が三人以上いる人（円満な三人の中心）は、二人の恋人と三人で過ごしたあと、残る恋人のために部屋に残る（T.exitGroup）。場面はいつも三人まで */
@@ -283,6 +294,12 @@
       /* どの二人も、同じ行為を二人きりでできる程度には打ち解けている */
       if (pairsOf(g).every(function (p) { return A.willing(ctx, p[0], p[1], Math.min(lv, 4)); }))
         cands.push({ kind: 'warm', h: g[0], v: 1.0 });
+      /* 三人の場面でだけ数える部屋：三組とも、その気・焦り・時間が三割半を過ぎての覚悟で踏み切れる三人（不仲の組は、ほかの組が踏み切れるときに割り切る。
+         room-games.js の onlyOk。旧・条件「三人で」の入り口）。時間が経つほど、残り三割を切ったらさらに、三人の場面へ向かいやすく */
+      if (only(ctx) && HK.RoomGames && HK.RoomGames.onlyOk) {
+        var oc = HK.RoomGames.onlyOk(ctx, g);
+        if (oc) cands.push({ kind: oc.gr.length ? 'grudge' : 'warm', h: g[0], gr: oc.gr, v: 1.7 + ctx.stepIndex / Math.max(4, ctx.stepsTotal) * 2 + (ctx.stepIndex >= ctx.stepsTotal * 0.7 ? 2 : 0) });
+      }
       cands.forEach(function (cd) {
         cd.g = cd.h ? [cd.h].concat(g.filter(function (x) { return x !== cd.h; })) : g;
         /* 条件がエッチなら、受け攻めの指定で成り立つ形があるときだけ（中心がずれるきっかけは、中心を先頭に） */
@@ -343,6 +360,29 @@
     hand: L('{a}は右手で{b}と、左手で{c}と手を繋いだ。真ん中の{a}だけが、二人の両方と繋がっていた。|{a}を真ん中に、三人は並んで座った。{a}の右手は{b}と、左手は{c}と繋がっていた。'),
     lap: L('{a}は{b}の膝に頭を乗せ、{c}の膝に脚を預けた。三人は、そのまましばらく黙っていた。')
   };
+  /* 三人で抱き合う版（三人の場面でだけ数える部屋で、行為の条件がハグ・手繋ぎ・膝枕まで。旧・条件「三人で」の文を移した。{a}{b}{c} は三人） */
+  var TRIO_SOFT = {
+    first: L('{a}が{b}と{c}に手を差し出した。三人は輪になって手をつなぎ、それから、誰からともなく身を寄せ合った。|{a}「三人で、だって｜三人で、だそうだ｜三人で、だそうです」{a}が両腕を広げると、{b}と{c}が照れくさそうにその中に入った。|三人は、どこに手を置けばいいか迷いながら、ぎこちなく抱き合った。{b}の肘が{c}の脇腹に当たって、三人そろって吹き出した。'),
+    again: L('三人はもう一度輪になって、肩を寄せ合った。さっきより、ずっと自然だった。|{a}が「もう一回｜もう一回だ｜もう一回しましょう」と言うと、{b}と{c}は笑って、また腕を回した。|三人で抱き合うたびに、扉の紙の数字が一つずつ減っていった。{c}は、それを少しだけ惜しそうに見ていた。'),
+    done: L('三人が抱き合ったまま、扉の紙の文字が淡く光った。|腕をほどいた三人は、顔を見合わせて小さく笑った。|三人の輪がほどけると、部屋の空気が少しだけ温かくなっていた。')
+  };
+  /* 三人の場面でだけ数える部屋の、最初の三人の場面の頭の一文（R18版。全年齢版では文ごと落ちて null のまま。{a}{b}{c} は三人） */
+  var LEAD_H = null;
+  /* r18:begin */
+  LEAD_H = L('扉の紙の「三人で仲良く」の意味を、三人はもう取り違えなかった。|{a}と{b}と{c}は、扉の紙をもう一度だけ見て、それから互いを見た。|三人は、誰からともなくベッドへ向かった。');
+  /* r18:end */
+  function leadH(ctx, g, kind) {
+    if (!LEAD_H || !only(ctx) || ctx.flags.trioLeadDone || HK.SAFE_ON || !hasH(ctx) || kind === 'grudge') return '';
+    ctx.flags.trioLeadDone = true;
+    return ctx.t(ctx.pick(LEAD_H), g[0], g[1], g[2]);
+  }
+  /* 三人で出る（三人で抱き合う版は、結びの一文を足し、三人の後日談（三人婚など）を付けない） */
+  function exitG(ctx, g, text, why, night, kind) {
+    var hs = hugOnly(ctx), n0 = (ctx.flags.trios || []).length;
+    var ex = T.exitGroup(ctx, g, text + (hs ? ctx.t(ctx.pick(TRIO_SOFT.done), g[0], g[1], g[2]) : ''), why, night, kind);
+    if (hs && ctx.flags.trios && ctx.flags.trios.length > n0) ctx.flags.trios.length = n0;
+    return ex;
+  }
   var OPEN = {
     /* 二人の恋人が、同じ一人（{h}）にそろって執着している：取り合い */
     loveclash: L('{x}と{y}は、但し書きを読み終える前に{h}の両腕を掴んでいた。どちらも、手を離す気はなかった。{x}「{h}は私のだ｜{h}は私のものだ｜{h}は私のものです」{y}「最初から、私のだ｜最初から、私のものだ｜最初から、私のものです」|{h}が但し書きを読み上げると、{x}と{y}は同時に{h}を引き寄せようとして、互いの手がぶつかった。二人は睨み合い、それから同じことを考えた。三人でなら、相手に{h}を独り占めさせずに済む。|「三人で」と{h}が言い終わる前に、{x}が{h}の唇を塞いだ。{y}はその肩を掴んで{h}を自分の方へ向かせ、奪い返すように口づけた。どちらも、相手に一秒でも長く{h}を渡したくなかった。'),
@@ -626,6 +666,12 @@
   function scene(ctx, g, kind, first, nPresent, pre, force) {
     var h = g[0], x = g[1], y = g[2], V = HK.Voice, pf = function (arr) { return ctx.pick(arr); };
     var rk = pairRules(ctx), sex = force || rk.some(function (r) { return r.k === 'h'; });
+    /* 三人の場面でだけ数える部屋の、三人で抱き合う版（言葉の条件があれば、三人で言い合う文を続ける） */
+    if (!sex && hugOnly(ctx)) {
+      var ts = ctx.t(ctx.pick(first ? TRIO_SOFT.first : TRIO_SOFT.again), h, x, y);
+      rk.forEach(function (r) { if (K[r.k].type === 'word' && SOFT[r.k]) ts += ctx.t(ctx.pick(SOFT[r.k]), h, x, y); });
+      return ts;
+    }
     /* 体の関係を持てない二人（攻め×攻め・性行為の相手の固定など）は直接は繋がらない：両方と持てる一人を中心にする */
     var sh = sex ? pre || shapeFor(ctx, g, kind) : null;
     /* 中心のある三人の場面：導入・二回目の書き出し・ほかの条件（キス・ハグなど）の文でも、直接は繋がらない二人（ap）を触れ合わせない（2026-10-27 担当HN） */
@@ -652,15 +698,23 @@
     return txt;
   }
   /* 進み具合：三人の組み合わせ全部に、同じだけ数える */
+  /* 三人の場面でだけ数える部屋（only）：一度の場面で三組とも同じだけ進める（旧・条件「三人で」の数え方。求める回数と残りの時間から、時間内に満たせる数）。
+     scenario-room.js の bumpAct は、この中（ctx.flags.trioIn）でだけ数える */
   function count(ctx, g) {
-    var span = Math.max(3, ctx.stepsTotal * 0.55);
+    ctx.flags.trioIn = true;
+    try { count0(ctx, g); } finally { ctx.flags.trioIn = false; }
+    if (only(ctx)) ctx.flags.trioSexN = (ctx.flags.trioSexN || 0) + 1;
+  }
+  function count0(ctx, g) {
+    var span = Math.max(3, ctx.stepsTotal * 0.55), on = only(ctx);
     ctx.flags.trioWait = null;
     pairRules(ctx).forEach(function (r) {
       var Tk = K[r.k];
+      var inc1 = on && Tk.type === 'act' ? (r.n > 3 ? Math.max(1, Math.round(r.n / span * (0.6 + ctx.rng() * 0.8))) : 1) : 0;
       pairsOf(g).forEach(function (pr) {
         var p = A.prog(ctx, pr[0], pr[1]);
         if (Tk.type === 'act') {
-          var inc = r.n > 3 ? Math.max(1, Math.round(r.n / span * 1.2 * (0.6 + ctx.rng() * 0.8) * (6 - Tk.lvl) / 3)) : 1;
+          var inc = inc1 || (r.n > 3 ? Math.max(1, Math.round(r.n / span * 1.2 * (0.6 + ctx.rng() * 0.8) * (6 - Tk.lvl) / 3)) : 1);
           /* 条件の順番あり：条件1を待っている組の条件2は数えない（scenario-room.js の bumpAct。数えなかったら progText で「まだ数えない」と書く） */
           if (A.bumpAct) { if (!A.bumpAct(ctx, r, pr[0], pr[1], inc) && !ctx.flags.trioWait) ctx.flags.trioWait = [r, pr[0], pr[1]]; } else p.act[r.k] = Math.min(r.n, (p.act[r.k] || 0) + inc);
         } else if (A.seqWait && A.seqWait(ctx, r, pr[0], pr[1])) {
@@ -739,11 +793,11 @@
     if (A.doorOpen) A.doorOpen(ctx, { g: g.concat(al), ex: ex, why: w });
     return { cat: 'escape', mag: 40, text: text, why: w, with: g, lewd: night ? true : undefined };
   };
-  /* 条件「三人で」（room-games.js）の三人の場面：三人の場面（3P）の判定（plan3＝HK.Pos.trioPlan）が通る三人なら、
+  /* 不仲の組が割り切って加わる三人の場面（三人の場面でだけ数える部屋の trio。旧・条件「三人で」の場面）：三人の場面（3P）の判定（plan3＝HK.Pos.trioPlan）が通る三人なら、
      三組とも直接できれば三人とも、二組なら中心とだけ触れ合う形で（kind は恋人どうしの三人なら love など、ほかは warm）。
      書けないときは null（呼ぶ側が抱き合う版に落とす） */
   T.sexOk3 = function (g) { return g.length === 3 && !!sexShape(g, false); };
-  /* opt.kind 'grudge'・opt.gr（不仲で張りつめたまま割り切った組。room-games.js の grudgeOk。2026-10-28 担当LG）：
+  /* opt.kind 'grudge'・opt.gr（不仲で張りつめたまま割り切った組。room-games.js の grudgeOk・onlyOk。2026-10-28 担当LG）：
      書き出しは OPEN.grudge（{h} と {x} が不仲の二人、{y} がもう一人）。中心のある形なら、中心が {h} のまま、不仲の相手を {x} に */
   T.condScene = function (ctx, g, first, opt) {
     if (!T.sexOk3(g)) return null;
@@ -835,6 +889,8 @@
   }
   function roll(ctx) {
     var g = ctx.present();
+    /* 三人の場面でだけ数える部屋：二人ずつの回はない */
+    if (only(ctx)) { ctx.flags.trioRoll = 'y'; ctx.flags.trioProb = 1; return true; }
     if (ctx.flags.trioRoll == null) {
       if (g.length !== 3) return false;
       var p = trioProb(ctx, g);
@@ -949,11 +1005,11 @@
       g.forEach(function (c) { c.flags.partner = null; });
       count(ctx, g);
       pairsOf(g).forEach(function (pr) { ctx.mod2(pr[0], pr[1], { att: 8, aff: 5, trust: 4 }, { att: 8, aff: 5, trust: 4 }); if (okSex(pr[0], pr[1])) ctx.pair(pr[0], pr[1]).heatDone = true; });
-      var text = turn + scene(ctx, go, kind, true, 3, { sg: go, hubOnly: sh.hubOnly, sp: sp }, !hasH(ctx));
-      var why = '三人の場面：' + KIND_WHY[kind] + infoWhy(ctx, sh) + '／三人になる確率 ' + Math.round((ctx.flags.trioProb || 0) * 100) + '%（積極性・奔放・内気・CP・決め事・媚薬から）／但し書き：三人以上で同時なら全員分';
+      var text = leadH(ctx, go, kind) + turn + scene(ctx, go, kind, true, 3, { sg: go, hubOnly: sh.hubOnly, sp: sp }, !hasH(ctx));
+      var why = '三人の場面：' + KIND_WHY[kind] + infoWhy(ctx, sh) + (only(ctx) ? '／扉の紙：三人の場面でだけ数える' : '／三人になる確率 ' + Math.round((ctx.flags.trioProb || 0) * 100) + '%（積極性・奔放・内気・CP・決め事・媚薬から）／但し書き：三人以上で同時なら全員分');
       if (ctx.flags.lastTrioTags && ctx.flags.lastTrioTags.length) { why += '／見所：' + ctx.flags.lastTrioTags.join('・'); ctx.flags.lastTrioTags = null; }
       var third = g.filter(function (c) { return c !== a && c !== b; });
-      if (done3(ctx, g)) { ctx.flags.trioCur = null; return T.exitGroup(ctx, g, text, why, hasH(ctx), kind); }
+      if (done3(ctx, g)) { ctx.flags.trioCur = null; return exitG(ctx, g, text, why, hasH(ctx), kind); }
       return { text: text + progText(ctx, g) + '扉はまだ開かない。', why: why, mag: 30, with: third };
     }
   });
@@ -993,15 +1049,19 @@
       ctx._trioPlan = pl;
       return !!pl;
     },
-    w: function (ctx, a, b) { var pl = plan(ctx, a, b); return pl ? (0.6 + pl.v * 0.9) * (seqWaitAll(ctx, pl.g) ? 0.15 : 1) : 0; },
+    /* 三人の場面でだけ数える部屋の四人以上：三人の外の人の出来事に埋もれないように、人数の分だけ上げる */
+    w: function (ctx, a, b) { var pl = plan(ctx, a, b); return pl ? (0.6 + pl.v * 0.9) * (seqWaitAll(ctx, pl.g) ? 0.15 : 1) * (only(ctx) ? Math.max(1, ctx.present().length / 3) : 1) : 0; },
     run: function (ctx, a, b) {
       var pl = plan(ctx, a, b);
       if (!pl) return { text: ctx.t('{a}と{b}は、紙の但し書きをもう一度読んだ。', a, b) };
       var g = pl.g;
       /* 三人のうち誰かが強く拒むことがある（CP・恋人への操） */
       var refuser = g.filter(function (c) { return c.tr.cp > 0.72 && A.eager(ctx, c) < 0.35 && pl.kind !== 'late' && !isLoveAny(pl.kind); })[0];
+      /* 三人の場面でだけ数える部屋：拒むのは一人一度、時間の三割半まで、二区切りのあいだだけ（ずっと拒むと、誰も出られない） */
+      /* 三人で抱き合う版（hugOnly）は拒まない（抱き合うだけの三人を、体の関係の三人のように断らない） */
+      if (refuser && only(ctx) && (hugOnly(ctx) || pl.kind === 'grudge' || refuser.flags.trioRefused || ctx.stepIndex >= ctx.stepsTotal * 0.35)) refuser = null;
       if (refuser) {
-        refuser.flags.trioNo = true;
+        if (only(ctx)) { refuser.flags.trioNoTill = ctx.stepIndex + 2; refuser.flags.trioRefused = true; } else refuser.flags.trioNo = true;
         g.forEach(function (c) { if (c !== refuser) ctx.mod(refuser, c, { ten: 6 }); });
         return { cat: 'conflict', text: ctx.t(ctx.pick(['{a}は「三人で、なんて絶対に無理｜三人で、というのは絶対に無理だ｜三人で、なんて絶対に無理です」と首を振った。話は、そこで終わった。', '{a}は但し書きの紙を裏返して、「見なかったことにする｜＝｜見なかったことにします」と言った。', '{a}「私は、するなら一人とだけ。それは譲れない｜私は、するなら一人とだけだ。それは譲れない｜私は、するなら一人とだけです。それは譲れません」']), refuser), why: refuser.name + 'のCP（' + Math.round(refuser.eg.CP) + '）：三人でという形には頷けなかった', mag: 12, with: g.filter(function (c) { return c !== refuser; }) };
       }
@@ -1017,10 +1077,13 @@
       count(ctx, g);
       pairsOf(g).forEach(function (pr) { ctx.mod2(pr[0], pr[1], { att: 8, aff: 5, trust: 4 }, { att: 8, aff: 5, trust: 4 }); });
       ctx.present().filter(function (o) { return g.indexOf(o) < 0; }).forEach(function (o) { g.forEach(function (c) { ctx.mod(o, c, { ten: 3 }); }); ctx.stress(o, 5); });
-      var text = turn + scene(ctx, g, pl.kind, true, ctx.present().length);
-      var why = '三人の場面：' + { loveclash: g[1].name + 'と' + g[2].name + 'はどちらも' + g[0].name + 'の恋人で、どちらも' + g[0].name + 'に執着していた。激しい取り合いになった', love: KIND_WHY.love, lovehub: g[0].name + 'は' + g[1].name + 'と' + g[2].name + 'の両方と恋人（または友達以上恋人未満）で、' + g[1].name + 'と' + g[2].name + 'も仲がよい。円満な三人', hub: g[1].name + 'と' + g[2].name + 'がどちらも' + g[0].name + 'に惹かれていた。' + g[0].name + 'は選ばなかった', invite: g[1].name + 'と' + g[2].name + 'は、' + g[0].name + 'を一人で残したくなかった', free: '三人とも積極的だった（' + g.map(function (c) { return Math.round(A.eager(ctx, c) * 100); }).join('・') + '）', late: '残り時間への焦り。三人なら一度で済む', warm: '三人とも、互いに打ち解けていた' }[pl.kind] + infoWhy(ctx, null) + '／但し書き：三人以上で同時なら全員分';
+      /* 不仲の組が割り切って加わる三人（三人の場面でだけ数える部屋。room-games.js の onlyOk）：書き出しは張りつめたまま割り切る形（T.condScene の kind 'grudge'） */
+      var gsc = pl.kind === 'grudge' && hasH(ctx) ? T.condScene(ctx, g, true, { kind: 'grudge', gr: pl.gr || [] }) : null;
+      var text = leadH(ctx, g, pl.kind) + turn + (gsc ? gsc.text : scene(ctx, g, pl.kind, true, ctx.present().length));
+      var grW = pl.kind === 'grudge' && pl.gr && pl.gr.length ? pl.gr.map(function (p) { return p[0].name + 'と' + p[1].name + '（緊張 ' + Math.round(Math.max(R(ctx, p[0], p[1]).ten, R(ctx, p[1], p[0]).ten)) + '）'; }).join('・') + 'は不仲で張りつめたままだったが、焦り（' + pl.gr.map(function (p) { return p[0].name + ' ' + Math.round(p[0].stress) + '・' + p[1].name + ' ' + Math.round(p[1].stress); }).join('／') + '）に押されて、もう一人がいる三人ならと割り切った' : '';
+      var why = gsc ? '三人の場面：' + gsc.why + '／' + grW + '／扉の紙：三人の場面でだけ数える' : '三人の場面：' + ({ loveclash: g[1].name + 'と' + g[2].name + 'はどちらも' + g[0].name + 'の恋人で、どちらも' + g[0].name + 'に執着していた。激しい取り合いになった', love: KIND_WHY.love, lovehub: g[0].name + 'は' + g[1].name + 'と' + g[2].name + 'の両方と恋人（または友達以上恋人未満）で、' + g[1].name + 'と' + g[2].name + 'も仲がよい。円満な三人', hub: g[1].name + 'と' + g[2].name + 'がどちらも' + g[0].name + 'に惹かれていた。' + g[0].name + 'は選ばなかった', invite: g[1].name + 'と' + g[2].name + 'は、' + g[0].name + 'を一人で残したくなかった', free: '三人とも積極的だった（' + g.map(function (c) { return Math.round(A.eager(ctx, c) * 100); }).join('・') + '）', late: '残り時間への焦り。三人なら一度で済む', warm: '三人とも、互いに打ち解けていた' }[pl.kind] || KIND_WHY[pl.kind] || '') + (grW ? '／' + grW : '') + infoWhy(ctx, null) + (only(ctx) ? '／扉の紙：三人の場面でだけ数える' : '／但し書き：三人以上で同時なら全員分');
       if (ctx.flags.lastTrioTags && ctx.flags.lastTrioTags.length) { why += '／見所：' + ctx.flags.lastTrioTags.join('・'); ctx.flags.lastTrioTags = null; }
-      if (done3(ctx, g)) { ctx.flags.trioCur = null; return T.exitGroup(ctx, g, text, why, hasH(ctx), pl.kind); }
+      if (done3(ctx, g)) { ctx.flags.trioCur = null; return exitG(ctx, g, text, why, hasH(ctx), pl.kind); }
       return { text: text + progText(ctx, g) + '扉はまだ開かない。', why: why, mag: 30, with: g.filter(function (c) { return c !== a && c !== b; }) };
     }
   });
@@ -1034,12 +1097,14 @@
       if (!c.g.every(function (i) { return free(ctx.chars[i]); })) { ctx.flags.trioCur = null; return false; }
       return c.g.indexOf(a.i) >= 0;
     },
-    w: function (ctx) { var c = ctx.flags.trioCur; return c && seqWaitAll(ctx, c.g.map(function (i) { return ctx.chars[i]; })) ? 0.33 : 2.2; },
+    /* 三人の場面でだけ数える部屋：時間が経つほど、残り三割を切ったらさらに、続きへ向かいやすく（旧・条件「三人で」の重みより少し強く。
+       四人以上の部屋は、三人の外の人の出来事に埋もれないように人数の分だけ上げる） */
+    w: function (ctx, a) { var c = ctx.flags.trioCur; return c && seqWaitAll(ctx, c.g.map(function (i) { return ctx.chars[i]; })) ? 0.33 : only(ctx) ? (2.6 + ctx.stepIndex / Math.max(4, ctx.stepsTotal) * 3 + A.eager(ctx, a) + (ctx.stepIndex >= ctx.stepsTotal * 0.7 ? 2.5 : 0)) * Math.max(1, ctx.present().length / 3) : 2.2; },
     run: function (ctx, a) {
       var c = ctx.flags.trioCur, g = c.g.map(function (i) { return ctx.chars[i]; });
       count(ctx, g);
       var text = scene(ctx, g, c.kind, false);
-      if (done3(ctx, g)) { ctx.flags.trioCur = null; return T.exitGroup(ctx, g, text, '三人で、条件の回数を重ねきった', hasH(ctx), c.kind); }
+      if (done3(ctx, g)) { ctx.flags.trioCur = null; return exitG(ctx, g, text, '三人で、条件の回数を重ねきった', hasH(ctx), c.kind); }
       return { text: text + progText(ctx, g), why: '三人で条件を重ねていく', mag: 12, with: g.filter(function (x) { return x !== a; }) };
     }
   });
@@ -1059,6 +1124,43 @@
       return r;
     };
   });
+
+  /* ---------- 三人の場面でだけ数える部屋：二人だけで条件を進める出来事を起こさない（2026-10-30 担当TR） ----------
+     出られない部屋の出来事の山（HK.buildPool）を作るときだけ包む（元の出来事は書き換えない。後から届いたかたまりの出来事も、山を作るときに包まれる）。
+     止めるのは、二人の行為・言葉の条件を進める出来事（doact・doword・みんなで group_h・スピード型・媚薬の熱）と、体の関係の出来事（sex の印）すべて
+     （関係のある二人の夜・嫌い合う二人・闇に堕ちた自分 など）。結果の側でだけ体の関係の場面を返す出来事（決めた相手を取り戻しに行く嫉妬 jealous_claim・
+     闇に堕ちた自分が想い人を奪う rs_dk_ntr）も名前で止める。三人の場面（trio・trio_auto・trio_more・trio_heat）と説得（trio_persuade）は通す。
+     恋愛の会話・ハグの気持ち・口論などは今までどおり（会話の中の行為・「好き」は scenario-room.js の countFlavor が数えない） */
+  var ONLY_OK = { trio: 1, trio_auto: 1, trio_more: 1, trio_heat: 1, trio_persuade: 1, trio_note: 1 };
+  /* 「相手は一人だけ」と決める・その決め事で誘いを断る（pick_one・decline_more）も、二人で満たす部屋の出来事なので起こさない（三人の場面に加わらない人が出ないように） */
+  var ONLY_NO = { doact: 1, doword: 1, group_h: 1, speedrun: 1, aphro_heat: 1, jealous_claim: 1, rs_dk_ntr: 1, pick_one: 1, decline_more: 1 };
+  /* 三人の場面でだけ数える部屋では、三人の場面が条件を満たす出来事なので、二人の行為（doact）と同じく環境値「夜の起こりやすさ」を掛けず、0 でも止めない（nightCond） */
+  var ONLY_NC = { trio: 1, trio_auto: 1, trio_more: 1 };
+  function onlyBlock(e) { return !!e && !ONLY_OK[e.id] && (!!ONLY_NO[e.id] || !!e.sex); }
+  if (HK.wrap && HK.buildPool) HK.wrap(HK, 'buildPool', function (bp0) { return function (sc) {
+    var pool = bp0.apply(this, arguments);
+    if (!sc || sc.id !== 'whiteroom') return pool;
+    /* 山を作るのは箱庭の準備（setup）のあとなので、三人の場面でだけ数える部屋かはもう決まっている。そうでない部屋の山は、元のまま（包まない） */
+    var cx = HK._curCtx, on = !!(cx && cx.flags && cx.flags.trioOnly);
+    if (!on) return pool;
+    return pool.map(function (e) {
+      if (on && e && ONLY_NC[e.id] && !e.nightCond) { var nc = Object.create(e); nc.nightCond = true; return nc; }
+      if (!onlyBlock(e)) return e;
+      var w = Object.create(e), w0 = e.when;
+      w.when = function (ctx) { if (ctx && ctx.flags && ctx.flags.trioOnly) return false; return w0 ? w0.apply(this, arguments) : true; };
+      return w;
+    });
+  }; });
+  /* 箱庭タブの読み込み：保存してあった条件「三人で」（trio3）を、三人の場面でだけ数える部屋に写す（scenario-room.js の HK.roomEnvMigrate）。
+     箱庭タブの環境値を読む所（ui.js の envVal が呼ぶ HK.Lewd.norm）で、箱庭タブの今の値（HK.UI.state() の env.whiteroom）だけを直す。
+     保存・履歴の記録（結果の input）は書き換えない（そちらは箱庭に渡すときに scen.setup が写しで読み替える） */
+  if (HK.wrap && HK.Lewd && HK.Lewd.norm) HK.wrap(HK.Lewd, 'norm', function (n0) { return function (id, env) {
+    if (id === 'whiteroom' && env && HK.roomEnvMigrate) {
+      var S = HK.UI && HK.UI.state ? HK.UI.state() : null;
+      if (S && S.env && S.env.whiteroom === env) HK.roomEnvMigrate(env, true);
+    }
+    return n0.apply(this, arguments);
+  }; });
 
   /* ---------- 部屋を出たあとの三人 ---------- */
   T.bond = function (ctx, g) {

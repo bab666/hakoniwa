@@ -48,6 +48,7 @@
     aphro: L('テーブルの上の媚薬の瓶は、もう何本も空になっていた。|飲み切らなければ出られない媚薬が、少しずつ体の中に溜まっていた。|空いた媚薬の瓶が、床に転がっていた。飲んだ分だけ、部屋の空気が甘く重くなっていた。'),
     one: L('条件を満たしても、扉をくぐれるのは一人だけだった。それでも、満たさなければ誰も出られない。|出られるのは一人だけ、という但し書きが、部屋の空気を重くしていた。'),
     allout: L('誰か一組でも条件を満たせば、全員で外へ出られる。そう分かってから、部屋の空気が変わった。|一組が済ませれば、全員が出られる。その一行が、背中を押していた。'),
+    /* 三人の場面でだけ数える部屋（環境値 multi 'only'。旧・条件「三人で」） */
     trio3: L('扉の紙の条件は、三人でのエッチだった。|扉の紙は、三人でなければ数えないと告げていた。'),
     night: L('照明が落ちて、白い部屋は夜の色に沈んでいた。|扉が開かないまま、また夜が来た。|出口の見えない夜が、白い部屋の隅々にまで影を落としていた。')
   };
@@ -260,6 +261,8 @@
   function nSent(s) { return (String(s).replace(/「[^」]*」/g, '').match(/[。！？]/g) || []).length; }
   function rulesOf(ctx) { return Array.isArray(ctx.rules) ? ctx.rules : []; }
   function ruleOf(ctx, k) { return rulesOf(ctx).filter(function (r) { return r.k === k; })[0] || null; }
+  /* 三人の場面でだけ数えるエッチの部屋（環境値 multi 'only'。scenario-room.js の HK.roomTrioOnly） */
+  function onlyH(ctx) { return !!(HK.roomTrioOnly && HK.roomTrioOnly(ctx)) && !!ruleOf(ctx, 'h'); }
   function API() { return HK.RoomAPI; }
   /* 組の条件のエッチの数（三人以上は組ごとの最小） */
   function hCount(ctx, who) {
@@ -401,12 +404,12 @@
       /* ---------- 三人（言い出す一言は場面の側の導入なので、前振りは理由まで） ---------- */
       if (kind === 'rival' && o.rv) {
         m.k = o.rv.k; m.c = o.rv.c; m.u = o.rv.u;
-        if (!first) againS(true); else if (o.ev === 'cond_trio' || ruleOf(ctx, 'trio3')) { P(T.SIT.trio3); mat.push('条件「三人で」'); } else sitFirst();
+        if (!first) againS(true); else if (onlyH(ctx)) { P(T.SIT.trio3); mat.push('三人の場面でだけ数える部屋'); } else sitFirst();
         P(T.RIVAL); P(T.RIVAL2); mat.push('こじれた三人（' + o.rv.k.name + 'と' + o.rv.u.name + 'は不仲・' + o.rv.c.name + 'は' + o.rv.u.name + 'を想う）');
       } else if (!first) againS(true);
       else {
         var tr = o.trio || {};
-        if (o.ev === 'cond_trio' || ruleOf(ctx, 'trio3')) { P(T.TRIO.rule); mat.push('条件「三人で」'); }
+        if (onlyH(ctx)) { P(T.TRIO.rule); mat.push('三人の場面でだけ数える部屋'); }
         else { sitFirst(); if (ctx.env && (ctx.env.multi || 'open') !== 'no') { P(T.TRIO.clause); mat.push('但し書き：三人以上で同時なら全員分'); } }
         if (tr.lovers) { m.c = tr.lovers; P(T.TRIO.lovers); mat.push('恋人どうしが一人を迎える'); }
         else if (tr.jeal) { m.h = tr.jeal; P(T.TRIO.jeal); mat.push('取り合いの決着'); }

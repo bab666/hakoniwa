@@ -3,27 +3,28 @@
    ■ HK.RoomNoExit.judge(ctx)：準備（scen.setup）が済んだ部屋で、扉の条件を誰も満たせないと「確実に」言えるかを調べる。
      返り値は null（満たせる見込みがある・確実には言えない）か { n: 部屋にいる人数, items: [{ lead, rows: [{ a, b, who, t, fix }], more, notes }] }。
      偽陽性を出さない（迷ったら出さない）。見るのは次の三つだけ：
-       1. 二人で数える条件（行為・言葉・傷つける・三人で）があるのに、部屋にいるのが一人
+       1. 二人で数える条件（行為・言葉・傷つける）があるのに、部屋にいるのが一人
        2. 条件「エッチ」：部屋にいるどの二人も体の関係を持てない（HK.Pos.okSex と性欲 HK.Pos.libOK。内容のスイッチ「合意のない展開」が入なら
           HK.Pos.forceOpen の中で見る＝性欲「なし」・恋愛対象「なし」でも止めない）。部屋の中でエッチを数える出来事（scenario-room.js の act・group_h・
-          speedrun・媚薬の熱、room-tie-r18*.js、hate-sex-room-r18.js、solo-room-jealous.js、room-games.js と room-trio.js の三人の場面）は、
+          speedrun・媚薬の熱、room-tie-r18*.js、hate-sex-room-r18.js、solo-room-jealous.js、room-trio.js の三人の場面）は、
           どれもこの判定（か、より厳しい判定）を通る組でしか起きない。三人の場面の「直接は触れ合わない組」は数えられることがあるが、持てる組が二つ要るので、
           持てる組が一つもなければ起きない。恋愛にしない関係（HK.roomWsNoSex）は見ない（合意のない展開の出来事が見ないため。見逃すほうに倒す）
        3. 条件「誰かを殺す（全年齢では気絶させる）」：人数が、部屋にいる人数−1（二人で数える条件もあれば −2）を超える（扉をくぐる人が残らない）
      見ないもの（起きにくいだけ・ほかの出来事の中で数えられることがある）：キス・ハグ・手を繋ぐ・膝枕（体の関係を持てない組でも、焦りで満たせる）、
      「好き」と言い合う（恋愛にならない組でも、会話の中の「好き」を数える）、本音・いいところ・飲む・お題・傷つける・一人しか出られない、
-     三人で（成り立つ三人がいなければ「三人で抱き合う」、二人なら「ハグ」に替わる。room-games.js の setup のあとの条件で見る）。
+     三人の場面でだけ数える部屋（環境値 multi 'only'。成り立つ三人がいなければ条件のエッチが「ハグ」（三人で抱き合う）に、二人なら二人ずつに替わる。
+     room-games.js の setup のあとの条件で見る。成り立つ三人がいる部屋は、体の関係を持てる組が二つ以上あるので、上の 2 にも当たらない）。
      条件が二つ（どちらからでも／条件1のあとに条件2）なら、扉が開くのはどちらも満たした組だけ（scenario-room.js の pairDone・exitAll）なので、
      どちらか一つでも満たせなければ脱出できない。「一人しか出られない」との併用・「全員出られる」も、誰かが条件を満たさないと扉は開かない
    ■ HK.RoomNoExit.preview(input)：入力の写しで HK.simulate を区切り0個で回し（room-trio-note.js と同じ仕組み）、judge の結果を返す
-   ■ 箱庭タブで出られない部屋を選んでいるとき、環境値の欄の上（#noexit-note。「三人で」の表示 #trio-note のさらに上）に赤い帯（ui-env.js の
+   ■ 箱庭タブで出られない部屋を選んでいるとき、環境値の欄の上（#noexit-note。「三人の場面でだけ数える」の表示 #trio-note のさらに上）に赤い帯（ui-env.js の
      HK.NgBand.html の red）で出す。住人のオン／オフ・設定・条件の変更で書き換える（room-trio-note.js と同じ見張り方）。記録・結果には効かない */
 (function () {
   'use strict';
   var HK = window.HK, A = HK && HK.RoomAPI, scen = A && A.scen;
   if (!scen) return;
   var K = A.K, NX = HK.RoomNoExit = {};
-  function isPairT(T) { return !!T && (T.type === 'act' || T.type === 'word' || T.type === 'hurt' || T.type === 'trio'); }
+  function isPairT(T) { return !!T && (T.type === 'act' || T.type === 'word' || T.type === 'hurt'); }
   function hereOf(ctx) { return ctx.chars.filter(function (c) { return HK.State && HK.State.here ? HK.State.here(c) : c.alive !== false && !c.out; }); }
   /* 条件の呼び名（「条件1「エッチ」」。条件の順番ありの条件2は「（条件1のあと）」を添える） */
   function condName(ctx, r) {
@@ -131,7 +132,7 @@
   var timer = null, busy = false, lastKey = '', lastHtml = '';
   function schedule() { if (busy) return; clearTimeout(timer); timer = setTimeout(update, 250); }
   function drop(old) { if (old && old.parentNode) { busy = true; old.parentNode.removeChild(old); setTimeout(function () { busy = false; }, 0); } }
-  /* 置き場所：環境値の欄の上。「三人で」の表示（#trio-note）があれば、そのさらに上。描き直しで消えたら、入れ直す */
+  /* 置き場所：環境値の欄の上。「三人の場面でだけ数える」の表示（#trio-note）があれば、そのさらに上。描き直しで消えたら、入れ直す */
   function update() {
     try {
       var UI = HK.UI, S = UI && UI.state ? UI.state() : null, old = document.getElementById('noexit-note');
