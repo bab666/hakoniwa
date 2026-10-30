@@ -67,6 +67,12 @@
     var tgt = kb && kb.mode === 'subA' ? kb.z : y, mt = { x: x.name, y: tgt.name };
     var k = p.love ? 'afterSoft' : react(tgt);
     var body = p.love ? (ero ? loveEro(S, x, y, kr) : R.sex(S, x, y, { mood: 'love' })) : (ero ? forceEro(S, KR, x, tgt) : R.sex(S, x, tgt, { mood: 'rough' }));
+    /* 濁点喘ぎの設定の人（受け）：男性向けの夜で一度も濁点の声が出なかったら、山場の声を一つ足す（moan-engine.js の HK.Moan.say＝態度・口調の喘ぎの表と、
+       濁点喘ぎの表・濁らせ（dakuize）を通す。物語とは別の乱数 KR）。一回のゲームで夜は一度きりなので、設定が見えないまま終わらないように。2026-10-30 担当JW */
+    if (ero && HK.Ero.dakuOf && HK.Ero.dakuOf(tgt) && !/[゛ﾞ]/.test(body) && HK.Moan && HK.Moan.say) {
+      for (var dt = 0, dm = ''; dt < 6 && !/゛/.test(dm); dt++) dm = HK.Moan.say(KR, tgt, 'climax', { force: !p.love, late: true });
+      if (/゛/.test(dm)) body += ' ' + tgt.name + '「' + dm + '」';
+    }
     var t = HK.Story.fmt(HK.Story.pick(S, p.love ? T.soft : T.force), m);
     if (kb) t += '\n\n' + kbFill(kb, KB.motive[kb.rel], kr) + (kb.mode !== 'both' ? ' ' + kbFill(kb, JK[kb.mode], kr) : '');
     t += '\n\n' + body;

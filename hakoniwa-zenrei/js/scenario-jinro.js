@@ -9,6 +9,7 @@
    全年齢・R18版の両方で使う */
 /* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
 /* @event-ok 人狼ゲームの中の言い回しを足しただけ（盤面整理・白確を外す一言・名前の出る罪着せ。新しい出来事ではない） */
+/* @event-ok 投票の理由（票ごとに、疑いが上がったきっかけを一言添える。新しい出来事ではない） */
 /* @event scen=jinro id=jr_game cat=conflict tags=death cond=HK.Dark.f(S, 'night') label=人狼ゲーム（占い・騙り・投票・夜の襲撃） */
 (function () {
   'use strict';
@@ -142,7 +143,13 @@
     function claimants() { return seerCO.filter(function (c) { return c.alive; }); }
     function snap() { P.forEach(function (p) { var o = alive().filter(function (q) { return q !== p && !isW(q); }); p.m.sus = o.length ? Math.round(avg(o, function (q) { return q.sus[p.i] || 0; })) : 0; }); ST.snap(S, ['sus', 'effort']); }
     function check() { var w = alive().filter(isW).length, v = alive().length - w; if (!w) return 'vill'; if (w >= v) return 'wolf'; return ''; }
-    function bump(q, x, v) { if (q === x || !q.alive) return; if (isW(q)) return; q.sus[x.i] = clamp((q.sus[x.i] || 50) + v, 0, 100); }
+    /* 疑いを動かす。k＝きっかけの種類・by＝きっかけになった人。上がった分は q.susLog に残し、投票の理由はそこから選ぶ（起きていないことを理由にしない） */
+    function bump(q, x, v, k, by) {
+      if (q === x || !q.alive) return; if (isW(q)) return;
+      var b0 = q.sus[x.i] || 50; q.sus[x.i] = clamp(b0 + v, 0, 100);
+      var dv = q.sus[x.i] - b0;
+      if (dv > 0 && k) { q.susLog = q.susLog || {}; (q.susLog[x.i] = q.susLog[x.i] || []).push({ k: k, by: by || null, v: dv, d: S.jrDay || 0 }); }
+    }
     /* 話し手 sp の言葉を、聞き手 q がどれだけ信じるか */
     function cred(q, sp) { return clamp(1 - (q.sus[sp.i] || 50) / 100 + (sp.like - 0.5) * 0.3, 0.05, 1); }
     /* 疑いの動き方の重み（名指しは第一印象の差（最大 22）に負けない量に。人狼の票の乗り方は勝率の調整に使う） */
@@ -284,6 +291,52 @@
       skipSaid[raw.i] = day;
       say({ actors: [p.i, top.i, raw.i], tag: '盤面', text: F(wsT, { a: p.name, x: top.name, y: raw.name }), why: raw.name + 'は' + (B.white[raw.i] ? '白確' : '準白確（対抗のいない占い師の白など）') + '。' + p.name + 'は投票の候補から外した' });
     }
+    /* ---------- 投票の理由（その人の疑いが上がった実際のきっかけから選ぶ） ----------
+       ・決まりで入れた票（占いの結果・黒確・方針・自分の名指し・協力相手）は、その決まりを理由にする
+       ・それ以外は、susLog（bump が残す「誰の・どの出来事で・いくつ上がったか」）を、きっかけごとに足して、いちばん大きいもの（今日の分は 1.5 倍）
+       ・人狼は本心を言わないので、今日その人を名指しした人など、記録に出た出来事だけを口実にする
+       ・きっかけが無ければ、今日一度も話していない・前の日の票が記録と合う・名指し最多・第一印象の順
+       名指し最多と違う相手に入れた人と、今日話していない人の分を、票の記録（札「投票」）に「A→B「理由」」で出す */
+    function whyOf(p, x, B) {
+      if (p.vRule) return p.vRule;
+      if (!isW(p)) {
+        var agg = {}, best = null;
+        ((p.susLog && p.susLog[x.i]) || []).forEach(function (e) {
+          if (e.k === 'seer' && e.by && B.black[e.by.i]) return;   /* 偽と分かった占い師の黒は理由にしない */
+          var key = e.k + '>' + (e.by ? e.by.i : ''), o = agg[key] = agg[key] || { k: e.k, by: e.by, v: 0 };
+          o.v += e.v * (e.d === day ? 1.5 : 1);
+        });
+        Object.keys(agg).forEach(function (k) { if (!best || agg[k].v > best.v) best = agg[k]; });
+        if (best && best.v >= 4) return { k: best.k, by: best.by };
+      } else {
+        var acc = (named[x.i] || []).filter(function (q) { return q !== p && q !== x; });
+        if (acc.length) return { k: 'acc', by: acc[acc.length - 1] };
+      }
+      if (!spoke[x.i]) return { k: 'silent' };
+      var vf = voteFacts(x, p);
+      if (vf.lines.some(function (t) { return t.indexOf('{y}') < 0; })) return { k: 'votes' };
+      if (topNamed().indexOf(x) >= 0) return { k: 'flow' };
+      if (x.like < 0.4) return { k: 'firstRude' };
+      return { k: 'first' };
+    }
+    function topNamed() {
+      var mx = 0, t = [];
+      Object.keys(named).forEach(function (k) { var c = named[k].length; if (!P[k].alive) return; if (c > mx) { mx = c; t = [P[k]]; } else if (c === mx) t.push(P[k]); });
+      return t;
+    }
+    function voteWhySay() {
+      var tn = topNamed(), B2 = board(), parts = [], rec = [];
+      A.forEach(function (p) {
+        var x = p.voted; if (!x) return;
+        var w = whyOf(p, x, B2), show = w.k !== 'emo' && (tn.indexOf(x) < 0 || !spoke[p.i]);
+        rec.push({ p: p.i, x: x.i, k: w.k, by: w.by ? w.by.i : null, shown: show });
+        if (!show) return;
+        var t = J.voteWhy[w.k]; if (!t) return;
+        parts.push(p.name + '→' + x.name + '\u300c＠' + p.name + '＠' + fill(t, { y: w.by ? w.by.name : '' }) + '\u300d');
+      });
+      S._jrVoteWhy = rec;
+      if (parts.length) say({ actors: A.filter(function (p) { return p.voted; }).map(function (p) { return p.i; }), tag: '投票', text: '投票の理由。' + parts.join('　'), why: '名指し最多' + (tn.length ? '（' + tn.map(function (q) { return q.name; }).join('・') + '）' : '') + 'と違う相手に入れた人と、今日話していない人の理由。疑いが上がった実際のきっかけから選んだ' });
+    }
     /* 盤面整理の台詞（3本のベース）と、点検用の値 */
     function boardSay(sp, B) {
       var BP = J.boardPart, nm = function (l) { return l.map(function (q) { return q.name; }).join('・'); };
@@ -321,7 +374,7 @@
     }
     /* 占い結果を聞いたときの反応：信じる度合いで疑いが動く */
     function hearResult(c, x, black) {
-      alive().forEach(function (q) { if (q === c) return; var b = q.belief[c.i] == null ? 0.5 : q.belief[c.i]; if (x === q) { if (black && !isW(q)) { q.belief[c.i] = 0; q.sus[c.i] = 100; } return; } bump(q, x, black ? 34 * b : -18 * b); });
+      alive().forEach(function (q) { if (q === c) return; var b = q.belief[c.i] == null ? 0.5 : q.belief[c.i]; if (x === q) { if (black && !isW(q)) { q.belief[c.i] = 0; q.sus[c.i] = 100; q.susLog = q.susLog || {}; (q.susLog[c.i] = q.susLog[c.i] || []).push({ k: 'liar', by: c, v: 50, d: S.jrDay || 0 }); } return; } bump(q, x, black ? 34 * b : -18 * b, 'seer', c); });
     }
     function setBelief() {
       var cl = claimants();
@@ -340,7 +393,7 @@
     for (var day = 1; day <= n + 2 && !winner; day++) {
       played = day;
       ST.step(S, day + '日目・昼');
-      spoke = {}; named = {}; accBy = {};
+      spoke = {}; named = {}; accBy = {}; S.jrDay = day;
       /* 霊媒・噛みの話は、昨日の吊り・昨夜の噛みだけ（前の日の噛みを「昨夜」と言わない） */
       var A = alive(), lastEx = executed[executed.length - 1] || null, lastKill = killed.length && killed[killed.length - 1].killedDay === day ? killed[killed.length - 1] : null;
       /* 敵視（hate-kit.js）：人狼では、好意が絡む二人のときだけ（片方が愛している・恋愛の関係がある） */
@@ -364,13 +417,13 @@
           if (foundW || seer.tr.honesty > 0.6 || pressure > 55 || (plan.fake && day >= 1 && rng() < 0.4) || day >= 2 && rng() < 0.6) {
             seerCO.push(seer); setBelief();
             say({ actors: [seer.i, seer.lastDiv.i], tag: '占い師CO', text: F(pk(J.seerCO), { a: seer.name, x: seer.lastDiv.name, r: foundW ? '人狼でした' : '人狼ではありませんでした' }), why: seer.name + 'は本物の占い師（' + (foundW ? '人狼を見つけた' : seer.tr.honesty > 0.6 ? '正直さ' : pressure > 55 ? '疑いをかわすため' : '頃合いを見て') + '）' });
-            said(seer, seer.lastDiv, foundW, day);
+            said(seer, seer.lastDiv, foundW, day); spoke[seer.i] = 1;
             hearResult(seer, seer.lastDiv, foundW);
           }
         } else if (seerCO.indexOf(seer) >= 0 && seer.lastDiv && seer.lastDiv.alive) {
           var bl = seer.known[seer.lastDiv.i] === 'wolf';
           say({ actors: [seer.i, seer.lastDiv.i], tag: '占い結果', text: F(pk(J.seerRes), { a: seer.name, x: seer.lastDiv.name, r: bl ? '人狼' : '人間' }), why: seer.name + 'は本物の占い師' });
-          said(seer, seer.lastDiv, bl, day);
+          said(seer, seer.lastDiv, bl, day); spoke[seer.i] = 1;
           hearResult(seer, seer.lastDiv, bl);
         }
       }
@@ -383,19 +436,19 @@
         if (tgt) {
           fw.fakeLast = tgt; fw.cnt.lies++;
           say({ actors: [fw.i, tgt.i], tag: seerCO.length > 1 ? '対抗CO' : '占い師CO', text: F(pk(seerCO.length > 1 ? J.fakeCO : J.seerCO), { a: fw.name, x: tgt.name, r: ft ? '人狼ではありませんでした' : '人狼でした' }), why: fw.name + 'は人狼。占い師を騙った（' + (ft ? '仲間に白を出して守る' : '推理役に黒を出す') + '・堂々さ ' + Math.round(fw.bold * 100) + '）' });
-          said(fw, tgt, !ft, day);
+          said(fw, tgt, !ft, day); spoke[fw.i] = 1;
           hearResult(fw, tgt, !ft);
         }
       } else if (fw && fw.alive && seerCO.indexOf(fw) >= 0 && day > 1) {
         var ft2 = A.filter(function (q) { return !isW(q) && q !== fw && q !== fw.fakeLast; }).sort(function (a, b) { return b.acc - a.acc; })[rng() < 0.6 ? 0 : 1];
-        if (ft2) { var blk = rng() < 0.45; fw.fakeLast = ft2; say({ actors: [fw.i, ft2.i], tag: '占い結果', text: F(pk(J.seerRes), { a: fw.name, x: ft2.name, r: blk ? '人狼' : '人間' }), why: fw.name + 'は偽の占い師（人狼）' }); said(fw, ft2, blk, day); hearResult(fw, ft2, blk); }
+        if (ft2) { var blk = rng() < 0.45; fw.fakeLast = ft2; say({ actors: [fw.i, ft2.i], tag: '占い結果', text: F(pk(J.seerRes), { a: fw.name, x: ft2.name, r: blk ? '人狼' : '人間' }), why: fw.name + 'は偽の占い師（人狼）' }); said(fw, ft2, blk, day); spoke[fw.i] = 1; hearResult(fw, ft2, blk); }
       }
       /* 霊媒 */
       if (lastEx) {
         if (med && med.alive && (medCO.indexOf(med) >= 0 || med.tr.honesty > 0.45 || isW(lastEx) || claimants().length > 1 || rng() < 0.5)) {
           if (medCO.indexOf(med) < 0) medCO.push(med);
           say({ actors: [med.i, lastEx.i], tag: '霊媒', text: F(pk(J.medCO), { a: med.name, x: lastEx.name, r: isW(lastEx) ? '人狼でした' : '人狼ではありませんでした' }), why: med.name + 'は本物の霊媒師' });
-          pub.med.push({ c: med, x: lastEx, black: isW(lastEx) });
+          pub.med.push({ c: med, x: lastEx, black: isW(lastEx) }); spoke[med.i] = 1;
           /* 霊媒結果で占い師の真贋が見える */
           alive().forEach(function (q) { if (isW(q) || q === med) return; claimants().forEach(function (c) { var said0 = c === seer ? seer.known[lastEx.i] : c.fakeLast === lastEx ? 'wolf' : null; if (said0) q.belief[c.i] = clamp((q.belief[c.i] || 0.5) + ((said0 === 'wolf') === isW(lastEx) ? 0.2 : -0.35) * (0.5 + q.acc * 0.5), 0.02, 0.98); }); });
         }
@@ -403,11 +456,11 @@
         if (fm && fm.alive && medCO.indexOf(fm) < 0 && (medCO.length || rng() < 0.5)) {
           medCO.push(fm); fm.cnt.lies++;
           say({ actors: [fm.i, lastEx.i], tag: '霊媒騙り', text: F(pk(J.medCO), { a: fm.name, x: lastEx.name, r: isW(lastEx) ? '人狼ではありませんでした' : '人狼でした' }), why: fm.name + 'は人狼。霊媒師を騙った' });
-          pub.med.push({ c: fm, x: lastEx, black: !isW(lastEx) });
-          alive().forEach(function (q) { if (!isW(q)) { bump(q, fm, 8 * q.acc); if (med && med.alive && medCO.indexOf(med) >= 0) bump(q, med, 6 * (1 - q.acc)); } });
+          pub.med.push({ c: fm, x: lastEx, black: !isW(lastEx) }); spoke[fm.i] = 1;
+          alive().forEach(function (q) { if (!isW(q)) { bump(q, fm, 8 * q.acc, 'claim'); if (med && med.alive && medCO.indexOf(med) >= 0) bump(q, med, 6 * (1 - q.acc), 'claim'); } });
         }
       }
-      if (lastKill && lastKill === seer && seerCO.indexOf(seer) >= 0) alive().forEach(function (q) { if (!isW(q)) claimants().forEach(function (c) { q.belief[c.i] = clamp((q.belief[c.i] || 0.5) - 0.25 * q.acc, 0.02, 0.98); bump(q, c, 15 * q.acc); }); });
+      if (lastKill && lastKill === seer && seerCO.indexOf(seer) >= 0) alive().forEach(function (q) { if (!isW(q)) claimants().forEach(function (c) { q.belief[c.i] = clamp((q.belief[c.i] || 0.5) - 0.25 * q.acc, 0.02, 0.98); bump(q, c, 15 * q.acc, 'claim'); }); });
 
       /* ---------- 村の方針（仕切り役の気質で決まる。仕切り役が人狼なら、狼に都合のいい方へ）。方針を言わない日は「なし」 ---------- */
       var B = board();
@@ -422,7 +475,7 @@
         if (policy !== 'gray' && !polT) policy = 'gray';
         policyLog.push(POLICY_LABEL[policy]);
         /* 方針の相手がいない（グレー吊り）ときは、{x} の無い文だけ（「今日はグレーの」と名前が抜けないように） */
-        var polArr = J.policy[policy].filter(function (t) { return polT || t.indexOf('{x}') < 0; });
+        var polArr = J.policy[policy].filter(function (t) { return polT ? t.indexOf('{x}') >= 0 : t.indexOf('{x}') < 0; });   /* 相手がいれば名前の出る文だけ（名前の出ない名指しをしない） */
         var polText = F(pf(polArr, { p: inf, x: polT }) || polArr[0], { a: inf.name, x: polT ? polT.name : '' });
         say({ actors: [inf.i].concat(polT ? [polT.i] : []), tag: '村の方針', text: polText, why: '仕切り役の' + inf.name + 'が「' + POLICY_LABEL[policy] + '」を提案（' + (isW(inf) ? '実は人狼。狼に都合のいい方針' : { roller: 'CP・慎重さ', judge: '推理の正確さ', gray: 'NP。情報源を残したい' }[policy]) + '）' });
         spoke[inf.i] = 1;
@@ -452,16 +505,16 @@
             var bt = F(busT, { a: p.name, x: mate.name });
             say({ actors: [p.i, mate.i], tag: '仲間切り', text: bt, why: p.name + 'は人狼。疑われた仲間を自分から切って、信用を買った（ドライさ・知能）' });
             accuse(p, mate, bt);
-            others.forEach(function (q) { bump(q, mate, 12); bump(q, p, -10 * (1 - q.acc * 0.5)); });
+            others.forEach(function (q) { bump(q, mate, 12, 'acc', p); bump(q, p, -10 * (1 - q.acc * 0.5)); });
             p.busVote = mate; return;
           }
           if (mate && mateHeat > 55 && rng() < p.coverP) {
             var scp = others.filter(function (q) { return !isW(q) && !safe(B, q); }).sort(function (a, b) { return b.acc - a.acc; })[0];
             var cvT = scp ? pf(J.cover, { p: p, x: mate, y: scp }) || pk(J.cover) : pk(J.cover.filter(function (t) { return t.indexOf('{y}') < 0; }));
             var cvx = F(cvT, { a: p.name, x: mate.name, y: scp ? scp.name : '' });
-            say({ actors: [p.i, mate.i], tag: '庇う', text: cvx, why: p.name + 'は人狼。仲間を庇った（NP・衝動性）' });
+            say({ actors: scp && cvx.indexOf(scp.name) >= 0 ? [p.i, mate.i, scp.i] : [p.i, mate.i], tag: '庇う', text: cvx, why: p.name + 'は人狼。仲間を庇った（NP・衝動性）' });
             if (scp) accuse(p, scp, cvx);
-            others.forEach(function (q) { bump(q, mate, -6 * (1 - q.acc)); bump(q, p, 8 * q.acc); });
+            others.forEach(function (q) { bump(q, mate, -6 * (1 - q.acc)); bump(q, p, 8 * q.acc, 'cover', mate); });
             return;
           }
           /* 村人と手を組んで隠れ蓑にする（感じのよさ・演技力）。用が済めば切り捨てる */
@@ -470,7 +523,7 @@
             var btx = F(pf(J.betray, { p: p, x: dupe }) || pk(J.betray), { a: p.name, x: dupe.name }) + F(pk(J.betrayed), { a: p.name, x: dupe.name });
             say({ actors: [p.i, dupe.i], tag: '裏切り', text: btx, why: p.name + 'は人狼。隠れ蓑にしていた' + dupe.name + 'を切り捨てた（ドライさ）' });
             accuse(p, dupe, btx);
-            others.forEach(function (q) { bump(q, dupe, 14 * (1 - q.acc * 0.5)); });
+            others.forEach(function (q) { bump(q, dupe, 14 * (1 - q.acc * 0.5), 'betrayed', p); });
             p.busVote = dupe; dupe.ally = null; p.ally = null; return;
           }
           if (!p.ally && rng() < 0.25 + p.like * 0.3 + p.act * 0.2) {
@@ -491,13 +544,13 @@
           var lieX = F(lieT, { a: p.name, x: scape.name });
           say({ actors: [p.i, scape.i], tag: '議論', text: lieX, why: boldNow ? '' : p.name + 'の嘘が、少し顔に出た（正直さ・AC）' });
           accuse(p, scape, lieX);
-          others.forEach(function (q) { bump(q, scape, (boldNow ? WOLF_K.lieBold : WOLF_K.lieShaky) * cred(q, p) * (1 - q.acc * 0.4)); if (!boldNow) bump(q, p, 10 * q.acc); });
+          others.forEach(function (q) { bump(q, scape, (boldNow ? WOLF_K.lieBold : WOLF_K.lieShaky) * cred(q, p) * (1 - q.acc * 0.4), 'acc', p); if (!boldNow) bump(q, p, 10 * q.acc, 'shaky'); });
           if (rng() < (1 - p.intel) * 0.18 + (seerCO.indexOf(p) >= 0 ? 0.06 : 0)) {
             var bwT = pf(J.breakWolf, { p: p, kill: lastKill });
             if (bwT) {
               p.cnt.breaks++; moments.push(p.name + 'が口を滑らせた');
               say({ actors: [p.i], tag: '失言', text: F(bwT, { a: p.name, y: lastKill ? lastKill.name : '' }), why: p.name + 'の嘘がほころんだ（知能 ' + Math.round(p.intel * 5) + '）' });
-              others.forEach(function (q) { bump(q, p, 25 * (0.4 + q.acc)); });
+              others.forEach(function (q) { bump(q, p, 25 * (0.4 + q.acc), 'slip'); });
             }
           }
           return;
@@ -509,7 +562,7 @@
           var btx2 = F(pf(J.betray, { p: p, x: ex2 }) || pk(J.betray), { a: p.name, x: ex2.name }) + F(pk(J.betrayed), { a: p.name, x: ex2.name });
           say({ actors: [p.i, ex2.i], tag: '裏切り', text: btx2, why: p.name + 'は' + ex2.name + 'と組んでいたが、疑いが上回った（' + Math.round(p.sus[ex2.i]) + '）' });
           accuse(p, ex2, btx2);
-          others.forEach(function (q) { bump(q, ex2, 10); });
+          others.forEach(function (q) { bump(q, ex2, 10, 'betrayed', p); });
           ex2.ally = null; p.ally = null; return;
         }
         /* 協力：信頼できる相手と組む */
@@ -550,14 +603,14 @@
           p.cnt.talk++;
           say({ actors: [p.i, top.i], tag: '推理', text: text, why: p.name + 'の推理（' + STYLE[p.style] + '・正確さ ' + Math.round(p.acc * 100) + '）' });
           accuse(p, top, text);
-          others.forEach(function (q) { if (q !== top) bump(q, top, VILL_K.logic * cred(q, p) * (0.6 + q.acc * 0.4)); });
+          others.forEach(function (q) { if (q !== top) bump(q, top, VILL_K.logic * cred(q, p) * (0.6 + q.acc * 0.4), 'acc', p); });
           /* 推理の破綻：知能が低いと起きやすい */
           if (rng() < (1 - p.intel) * 0.22) {
             var brT = pf(J.break, { p: p, x: top, y: yy });
             if (brT) {
               p.cnt.breaks++;
               say({ actors: [p.i], tag: '破綻', text: F(brT, { a: p.name, x: top.name, y: m0.y }), why: p.name + 'の推理が破綻した（知能 ' + Math.round(p.intel * 5) + '）' });
-              others.forEach(function (q) { bump(q, p, 8 * q.acc); bump(q, top, -8); });
+              others.forEach(function (q) { bump(q, p, 8 * q.acc, 'break'); bump(q, top, -8); });
             }
           }
         } else if (p.style === 'lead') {
@@ -569,15 +622,16 @@
           var useY = t3 && ldT.indexOf('{y}') >= 0;
           say({ actors: useY ? [p.i, t2.i, t3.i] : [p.i, t2.i], tag: '仕切り', text: ldx, why: p.name + 'のCP・主導性' + (useY ? '／次点は' + t3.name : '') });
           accuse(p, t2, ldx);
-          others.forEach(function (q) { if (q !== t2) bump(q, t2, 14 * cred(q, p) * (0.5 + q.tr.ac * 0.5)); });
+          others.forEach(function (q) { if (q !== t2) bump(q, t2, 14 * cred(q, p) * (0.5 + q.tr.ac * 0.5), 'acc', p); });
           top = t2;
-        } else if (p.style === 'gut') {
+        } else if (p.style === 'gut' || (p.style === 'contra' && fixedTop)) {
+          /* 逆張りの人でも、占いの結果・黒確・方針に従うと決めた日は、その相手を名指しする */
           skipWhite(p, top, others, B);
           var gtx = F(pf(J.gut, { p: p, x: top }, ['{x}']) || J.gut[0], { a: p.name, x: top.name });
           say({ actors: [p.i, top.i], tag: '勘', text: gtx, why: p.name + 'のFC・衝動性' });
           accuse(p, top, gtx);
-          others.forEach(function (q) { if (q !== top) bump(q, top, VILL_K.gut * cred(q, p)); });
-        } else if (p.style === 'contra') {
+          others.forEach(function (q) { if (q !== top) bump(q, top, VILL_K.gut * cred(q, p), 'acc', p); });
+        } else if (p.style === 'contra' && !fixedTop) {
           /* 逆張り：今日いちばん名指しされた人（流れ）を疑わず、別の人を推す */
           var crowd = Object.keys(named).map(Number).filter(function (k) { return P[k].alive && P[k] !== p; }).sort(function (a, b) { return named[b].length - named[a].length; }).map(function (k) { return P[k]; })[0] || null;
           var alt = cand0.filter(function (q) { return q !== crowd; }).sort(function (a, b) { return p.sus[b.i] - p.sus[a.i]; })[0] || top;
@@ -586,7 +640,7 @@
           var ctx = F(ctT, { a: p.name, x: crowd ? crowd.name : '', y: alt.name });
           say({ actors: [p.i, alt.i], tag: '逆張り', text: ctx, why: p.name + 'の攻撃性・ACの低さ（多数派を疑う）' });
           accuse(p, alt, ctx);
-          others.forEach(function (q) { if (crowd && ctx.indexOf(crowd.name) >= 0) bump(q, crowd, -6); bump(q, alt, 8 * cred(q, p)); });
+          others.forEach(function (q) { if (crowd && ctx.indexOf(crowd.name) >= 0) bump(q, crowd, -6); bump(q, alt, 8 * cred(q, p), 'acc', p); });
           top = alt;
         } else {
           /* 同調：その人を名指しした人（いれば）に合わせる。名前の出る文だけ */
@@ -603,12 +657,12 @@
         if (p.like < 0.35 && rng() < 0.35) {
           var hearer = others[Math.floor(rng() * others.length)];
           say({ actors: [p.i, hearer.i], tag: '空気', text: F(pk(J.rude), { a: p.name, x: hearer.name }) + F(pk(J.rudeReact), { a: p.name, x: hearer.name }), why: p.name + 'は日頃から感じが悪い（ドライさ・攻撃性。感じのよさ ' + Math.round(p.like * 100) + '）' });
-          others.forEach(function (q) { bump(q, p, 9); });
+          others.forEach(function (q) { bump(q, p, 9, 'rude'); });
         }
         /* 名指しされた側の弁明 */
         if (top && top.alive && rng() < 0.55) {
           spoke[top.i] = 1;
-          if (isW(top)) { var bd = rng() < top.bold + 0.1; top.cnt.lies++; say({ actors: [top.i], tag: '弁明', text: F(pf(bd ? J.lieBold : J.lieShaky, { p: top, x: p }) || pk(J.lieBold.filter(function (t) { return t.indexOf('{x}') < 0; })), { a: top.name, x: p.name }), why: bd ? top.name + 'は堂々と嘘をついた（正直さの低さ・CP）' : top.name + 'の弁明はぎこちなかった' }); others.forEach(function (q) { if (q !== top) bump(q, top, bd ? -8 * (1 - q.acc) : 10 * q.acc); }); }
+          if (isW(top)) { var bd = rng() < top.bold + 0.1; top.cnt.lies++; say({ actors: [top.i], tag: '弁明', text: F(pf(bd ? J.lieBold : J.lieShaky, { p: top, x: p }) || pk(J.lieBold.filter(function (t) { return t.indexOf('{x}') < 0; })), { a: top.name, x: p.name }), why: bd ? top.name + 'は堂々と嘘をついた（正直さの低さ・CP）' : top.name + 'の弁明はぎこちなかった' }); others.forEach(function (q) { if (q !== top) bump(q, top, bd ? -8 * (1 - q.acc) : 10 * q.acc, 'shaky'); }); }
           else { var dl = J.defend[top.persona] || J.defend.gentle; say({ actors: [top.i], tag: '弁明', text: F(pf(dl, { p: top, x: p }) || pk(J.defend.gentle.filter(function (t) { return lineOK(t, {}); })), { a: top.name, x: p.name }), why: '' }); others.forEach(function (q) { if (q !== top) bump(q, top, -10 * q.acc * (0.5 + top.like * 0.5)); }); }
         }
       });
@@ -622,11 +676,15 @@
       var villTarget = function (p) {
         var others = A.filter(function (q) { return q !== p; });
         var lean = leanOf(p, others, B), c = candOf(p, others, B);
-        if ((p === seer && seer.known[lean.i] === 'wolf') || B.black[lean.i] || (lean === polT && p.followPol === day)) return lean;
+        /* p.vRule：決まりで入れたときの理由（占いの結果・黒確・方針・自分の名指し・協力相手）。なければ疑いのきっかけから選ぶ */
+        p.vRule = null;
+        if (p === seer && seer.known[lean.i] === 'wolf') { p.vRule = { k: 'seerOwn' }; return lean; }
+        if (B.black[lean.i]) { p.vRule = { k: 'black' }; return lean; }
+        if (lean === polT && p.followPol === day) { p.vRule = { k: p === inf ? 'self' : 'policy', by: inf }; return lean; }
         /* 議論で自分が名指しした相手：疑いが最大に近ければ、そのまま入れる */
-        if (p.named && p.namedDay === day && p.named.alive && c.indexOf(p.named) >= 0 && (p.sus[p.named.i] || 0) >= (p.sus[lean.i] || 0) - 10) return p.named;
+        if (p.named && p.namedDay === day && p.named.alive && c.indexOf(p.named) >= 0 && (p.sus[p.named.i] || 0) >= (p.sus[lean.i] || 0) - 10) { p.vRule = { k: 'self' }; return p.named; }
         /* 協力相手（自分より推理の確かな人）の今日の票に合わせる */
-        if (p.ally && p.ally.alive && p.ally.acc > p.acc && p.ally.voted && p.ally.votedDay === day && p.ally.voted !== p && p.ally.voted.alive && c.indexOf(p.ally.voted) >= 0) return p.ally.voted;
+        if (p.ally && p.ally.alive && p.ally.acc > p.acc && p.ally.voted && p.ally.votedDay === day && p.ally.voted !== p && p.ally.voted.alive && c.indexOf(p.ally.voted) >= 0) { p.vRule = { k: 'ally', by: p.ally }; return p.ally.voted; }
         return lean;
       };
       /* 仮の投票で吊られそうな狩人は、COして逃れようとする */
@@ -642,17 +700,18 @@
         if (guardLast && hcT.indexOf('{x}') >= 0 && peaceDay === day && hunter.savedDay === day) pub.guard.push({ c: hunter, x: guardLast, day: day });
         A.forEach(function (q) { bump(q, hunter, -30 * (0.5 + q.acc * 0.5)); });
         var cw = A.filter(function (w) { return isW(w) && w.bold > 0.8; })[0];
-        if (cw && rng() < 0.5) { hunterCO.push(cw); cw.cnt.lies++; moments.push(cw.name + 'が狩人に対抗した'); say({ actors: [cw.i, hunter.i], tag: '狩人対抗', text: F(pk(J.hunterCounter), { a: cw.name, x: hunter.name }), why: cw.name + 'は人狼。狩人を騙って対抗した（堂々さ）' }); A.forEach(function (q) { bump(q, hunter, 18 * (1 - q.acc)); bump(q, cw, 18 * q.acc); }); }
+        if (cw && rng() < 0.5) { hunterCO.push(cw); cw.cnt.lies++; moments.push(cw.name + 'が狩人に対抗した'); say({ actors: [cw.i, hunter.i], tag: '狩人対抗', text: F(pk(J.hunterCounter), { a: cw.name, x: hunter.name }), why: cw.name + 'は人狼。狩人を騙って対抗した（堂々さ）' }); A.forEach(function (q) { bump(q, hunter, 18 * (1 - q.acc), 'claim'); bump(q, cw, 18 * q.acc, 'claim'); }); }
       } else if (cand && isW(cand) && cand.bold > 0.85 && hunterCO.indexOf(cand) < 0 && rng() < 0.35) {
         hunterCO.push(cand); cand.cnt.lies++; moments.push(cand.name + 'が狩人を騙った');
         say({ actors: [cand.i], tag: '狩人CO', text: F(pk(J.hunterCO), { a: cand.name, x: A.filter(function (q) { return q !== cand; })[0].name }), why: cand.name + 'は人狼。吊られそうになって狩人を騙った（堂々さ）' });
         A.forEach(function (q) { bump(q, cand, -22 * (1 - q.acc * 0.6)); });
-        if (hunter && hunter.alive && hunterCO.indexOf(hunter) < 0 && rng() < 0.6 + hunter.tr.honesty * 0.3) { hunterCO.push(hunter); say({ actors: [hunter.i, cand.i], tag: '狩人対抗', text: F(pk(J.hunterCounter), { a: hunter.name, x: cand.name }), why: hunter.name + 'は本物の狩人' }); A.forEach(function (q) { bump(q, cand, 25 * q.acc); }); }
+        if (hunter && hunter.alive && hunterCO.indexOf(hunter) < 0 && rng() < 0.6 + hunter.tr.honesty * 0.3) { hunterCO.push(hunter); say({ actors: [hunter.i, cand.i], tag: '狩人対抗', text: F(pk(J.hunterCounter), { a: hunter.name, x: cand.name }), why: hunter.name + 'は本物の狩人' }); A.forEach(function (q) { bump(q, cand, 25 * q.acc, 'claim'); }); }
       }
       B = board();
       function wolfTarget(p, others) {
         if (!isW(p)) return villTarget(p);
-        if (p.busVote && p.busVote.alive) return p.busVote;
+        p.vRule = null;
+        if (p.busVote && p.busVote.alive) { p.vRule = { k: 'self' }; return p.busVote; }
         /* 人狼は村人の吊り先に乗る（仲間が危ないときは、仲間以外の最多票へ）。白確・準白確には入れない（目立つので） */
         var vs = others.filter(function (q) { return !isW(q) && !safe(B, q); });
         if (!vs.length) vs = others.filter(function (q) { return !isW(q); });
@@ -667,9 +726,11 @@
         if (vt && vt !== base && safe(B, vt)) vt = base;
         /* 殺さない相手には票を入れない（ほかに入れられる相手がいれば、次に疑わしい人へ） */
         if (SSK && vt && SSK.nk(S, p, vt)) { var alt = SSK.spare(S, p, others).filter(function (q) { return !safe(B, q); }).sort(function (a, b) { return (p.sus[b.i] || 0) - (p.sus[a.i] || 0); })[0]; if (alt) vt = alt; }
+        if (vt !== base) p.vRule = vt && LM && S.emoLog && S.emoLog.some(function (e) { return e.p === p && e.to === vt; }) ? { k: 'emo' } : null;
         return vt;
       });
       if (LM) LM.flush(S, say, pk);
+      voteWhySay();
       A.forEach(function (p) { p.busVote = null; if (p.voted) { p.cnt.votes++; if (!isW(p) && isW(p.voted)) p.cnt.right++; } });
       var maxV = 0, tops = [];
       Object.keys(votes).forEach(function (k) { if (votes[k] > maxV) { maxV = votes[k]; tops = [+k]; } else if (votes[k] === maxV) tops.push(+k); });

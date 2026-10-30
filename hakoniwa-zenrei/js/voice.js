@@ -981,7 +981,7 @@
   /* シミュレーション結果全体に適用 */
   /* 語尾の記号：文末の「。」「！」を、設定した記号に置き換える（「分かった。引き受けよう」→「分かった！！！引き受けよう！！！」「分かった♣引き受けよう♦」）。
      記号は空白・読点・カンマ区切りで複数（文ごとに台詞の文字から決まるくじで選ぶので、同じ台詞は同じ結果になる）。
-     問い（？）・言いよどみ（……）・伸ばし（ー〜）・喘ぎ（っ・♡）で終わる文はそのまま */
+     問い（？）・言いよどみ（……）・伸ばし（ー〜）・喘ぎ（っ・♡）で終わる文はそのまま（ただし「……！」「っ！」の「！」は記号に） */
   V.marksList = function (m) {
     return String(m || '').split(/[\s、,，　]+/).map(function (x) { return x.replace(/[「」『』]/g, '').slice(0, 6); }).filter(Boolean).slice(0, 8);
   };
@@ -990,7 +990,9 @@
     if (!L.length || !q) return q;
     var k = 0;
     function pick() { var h = 0, t = q + '#' + (k++); for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return L[h % L.length]; }
-    var out = q.replace(/([^。！!？?…‥]*?)([。！!]+)(?![？?])/g, function (m, body, p) {
+    var out = q.replace(/([^。！!？?…‥]*?)([。！!]+)(?![？?])/g, function (m, body, p, at) {
+      /* 言いよどみ・詰まり（……・っ）のあとの「！」は、文末の「！」なので記号に置き換える（「ああっ……！」→「ああっ……♣」。2026-10-30 担当JW）。「。」はそのまま */
+      if (/[！!]/.test(p) && !/。/.test(p) && (body ? /[っッ]$/.test(body) : /[…‥]$/.test(q.slice(0, at)))) return body + pick();
       if (!body || /[？?…‥ー〜～っッ♡]$/.test(body)) return m;
       return body + pick();
     });

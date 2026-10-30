@@ -494,6 +494,8 @@
   /* 箱庭ごとの、行動の効き目（箱庭の仕組みを使う。人を直接は殺さない） */
   /* 返す：{ t：理由に足す文, gone：相手がその場を離れる, go：記録を書いたあとに当てる動き }（何もしなければ null） */
   function take(S, b) { return function () { b.taken = true; b.takenAt = S.h; }; }
+  /* 人狼：疑いが上がったきっかけを残す（投票の理由に使う。scenario-jinro.js の susLog） */
+  function jrLog(S, q, b, a, v) { q.susLog = q.susLog || {}; (q.susLog[b.i] = q.susLog[b.i] || []).push({ k: 'sold', by: a, v: v, d: S.jrDay || 0 }); }
   var SA = {
     jashin: {
       sell: function (S, a, b) { return b.curse == null ? { t: b.name + 'は村人に連れ去られた（生贄の候補）', gone: true, go: take(S, b) } : null; },
@@ -504,8 +506,8 @@
     },
     jinro: {
       ok: function (S) { return /昼/.test(S.label || '') && !/^1日目/.test(S.label || ''); },   /* 1日目の昼は議論も投票もまだなので、恐怖の変化（売り渡す・見捨てる）は2日目から */
-      sell: function (S, a, b) { return { t: b.name + 'への疑いが一気に集まった', go: function () { S.P.forEach(function (q) { if (q !== b && q.alive && q.role !== 'wolf' && q.sus) q.sus[b.i] = clamp((q.sus[b.i] == null ? 50 : q.sus[b.i]) + 22, 0, 100); }); } }; },
-      abandon: function (S, a, b) { return { t: '', go: function () { if (a.sus) a.sus[b.i] = 100; S.P.forEach(function (q) { if (q !== b && q !== a && q.alive && q.role !== 'wolf' && q.sus) q.sus[b.i] = clamp((q.sus[b.i] == null ? 50 : q.sus[b.i]) + 8, 0, 100); }); } }; }
+      sell: function (S, a, b) { return { t: b.name + 'への疑いが一気に集まった', go: function () { S.P.forEach(function (q) { if (q !== b && q.alive && q.role !== 'wolf' && q.sus) { q.sus[b.i] = clamp((q.sus[b.i] == null ? 50 : q.sus[b.i]) + 22, 0, 100); if (q !== a) jrLog(S, q, b, a, 22); } }); } }; },
+      abandon: function (S, a, b) { return { t: '', go: function () { if (a.sus) a.sus[b.i] = 100; S.P.forEach(function (q) { if (q !== b && q !== a && q.alive && q.role !== 'wolf' && q.sus) { q.sus[b.i] = clamp((q.sus[b.i] == null ? 50 : q.sus[b.i]) + 8, 0, 100); jrLog(S, q, b, a, 8); } }); } }; }
     },
     yakata: {
       sell: function (S, a, b) { return { t: b.name + 'への疑いが強まった', go: function () { b.m.sus = clamp(b.m.sus + 25, 0, 100); } }; },

@@ -94,8 +94,8 @@
       q.aff[p.i] = clamp(q.aff[p.i] + 0.1, -1, 1); q.spare = q.spare || {}; q.spare[p.i] = c.day;
       others.forEach(function (o) { if (o !== q && !c.isW(o)) o.sus[p.i] = clamp((o.sus[p.i] || 50) - 3 + (o.acc > 0.7 ? 6 : 0), 0, 100); });
     } else {
-      if (!c.isW(q)) q.sus[p.i] = clamp((q.sus[p.i] || 50) + 10, 0, 100);
-      others.forEach(function (o) { if (o !== q) c.bump(o, p, 4 + o.acc * 4); });
+      if (!c.isW(q)) { q.sus[p.i] = clamp((q.sus[p.i] || 50) + 10, 0, 100); q.susLog = q.susLog || {}; (q.susLog[p.i] = q.susLog[p.i] || []).push({ k: 'appeal', by: null, v: 10, d: c.day }); }
+      others.forEach(function (o) { if (o !== q) c.bump(o, p, 4 + o.acc * 4, 'appeal'); });
     }
     c.say({ actors: [p.i, q.i], tag: '好意', text: text, why: '好意モード：' + p.name + 'は' + q.name + 'に好かれている（好感度 ' + affTxt(q.aff[p.i]) + (q.tieL[p.i] ? '・' + q.tieL[p.i] : '') + '）。「' + APPEAL[kind].label + '」は性格から。成功率 ' + Math.round(chance * 100) + '％は嘘の技能（演技力 ' + Math.round(p.act * 100) + '）次第' + (c.isW(p) ? '。……' + p.name + 'は人狼だ' : '') + '――' + (ok ? '通った' : '通らなかった') });
     return true;
