@@ -143,6 +143,7 @@
   V.iIre = iIre;
 
   HK.toneFinish('polite', iIre);
-  HK.toneFinish('kohai', function (q, who) { return kohai(q, who).replace(/くださいる/g, 'くれる'); });
+  /* 2026-10-30 第3回（TB）：敬語の書き下ろしを借りた台詞の改まった言い方を、後輩らしい軽さに（「いたさない」「お声が漏れていらっしゃる」「拝見する」「〜ていた」） */
+  HK.toneFinish('kohai', function (q, who) { return kohai(q, who).replace(/くださいる/g, 'くれる').replace(/いたさな/g, 'しな').replace(/お声/g, '声').replace(/お顔/g, '顔').replace(/拝見し/g, '見').replace(/拝見する/g, '見る').replace(/お吐きになる/g, '吐く').replace(/でございます(?=[。、…！？]|$)/g, 'っす').replace(/([てで])いらっしゃる/g, '$1る').replace(/([てで])いらして/g, '$1いて').replace(/([てで])い(る|た)(?=[。、…！？!?]|$|ん|の|か|け|は|ら|っす|はず|人)/g, '$1$2').replace(/([てで])いられ/g, '$1られ').replace(/ておいて/g, 'といて'); });
   HK.toneFinish('ojou', ojou);
 })();
