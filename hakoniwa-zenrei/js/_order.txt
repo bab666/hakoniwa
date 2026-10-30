@@ -356,6 +356,7 @@ tone js/tone-fix-g7e.js
 tone js/tone-fix-g7f.js
 tone js/tone-brush2.js
 tone js/tone-brush3a.js
+tone js/tone-brush3c.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/incidents-social.js @pack:rel
