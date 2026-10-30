@@ -15,7 +15,8 @@
      倍率は pos.js の HK.Pos.nightK（50 で 1・100 で 1.7・0 で 0）。性欲＋衝動性＋状況×理性（HK.Pos.sexDrive）・エンジンの体の出来事の重み・物語型の箱庭の夜の見込みに掛ける。
      r18：全年齢モードでは欄を出さない（ui.js の genv・view.js の結果の札）。sparse：指定が無ければ住人の env に入れない（古い記録・全年齢モードの結果は既定 50 として読む。指紋も変えない）。
      all＋show：物語型の箱庭のうち住人どうしの夜がある箱庭（NIGHT_SOLO）にも出す。R18が中心の箱庭（HK.State.R18_CORE）には出さない（条件の夜なので効かせない） */
-  var NIGHT_SOLO = { ship: 1, jashin: 1, yakata: 1, saimin: 1, locker: 1, jinro: 1 };
+  /* 媚薬ロッカー（locker）は、この箱庭の環境値に同じ id の night を持つので（solo-locker.js。全年齢でも出すため）、ここには入れない（2026-10-30 担当LK） */
+  var NIGHT_SOLO = { ship: 1, jashin: 1, yakata: 1, saimin: 1, jinro: 1 };
   HK.GLOBAL_ENV.splice(2, 0, {
     id: 'night', label: '夜の起こりやすさ', min: 0, max: 100, def: 50, lo: '起きにくい', hi: '起きやすい', r18: 1, sparse: 1, all: 1,
     show: function (scen) { return !!scen && !(HK.State && HK.State.R18_CORE && HK.State.R18_CORE[scen.id]) && (!scen.solo || !!NIGHT_SOLO[scen.id]); },

@@ -199,7 +199,8 @@
       if (!nt.dev && c.turn >= 3 && (nt.kept || c.turn >= 5) && rng() < 0.4) {
         var k, pool, why, eff = null, D0 = DEV[nt.type];
         if (nt.dom) { k = 'dom'; pool = D0.dom; }
-        else if (NT.romOK(nt, c.ngP) && rng() < (nt.type === 'worship' ? 0.75 : 0.55)) { k = 'rom'; pool = nt.type === 'worship' ? D0['rom' + cap(nt.g)] : D0.rom; }
+        /* 恋愛の起こりやすさ（locker-note.js の LK.loveK：50 で 1・100 で 1.7・0 で 0）を、恋に変わる見込みに掛ける（2026-10-30 担当LK） */
+        else if (NT.romOK(nt, c.ngP) && rng() < Math.min(0.95, (nt.type === 'worship' ? 0.75 : 0.55) * (LK.loveK ? LK.loveK(S) : 1))) { k = 'rom'; pool = nt.type === 'worship' ? D0['rom' + cap(nt.g)] : D0.rom; }
         else { k = 'plain'; pool = nt.type === 'worship' ? D0['plain' + cap(nt.g)] : D0.plain; }
         nt.dev = k;
         if (k === 'rom') { nt.rom = true; u.m.heat = Math.min(100, u.m.heat + 6); d.m.heat = Math.min(100, d.m.heat + 6); why = '関係が恋に変わった（' + nt.label + (nt.type === 'worship' ? '・恋愛に発展：する' : '') + '）'; }

@@ -225,6 +225,7 @@ js/locker-ties.js @scen:locker
 js/locker-tie-more.js @scen:locker
 js/locker-crowd.js @scen:locker
 js/solo-locker.js @scen:locker
+js/locker-note.js @scen:locker
 js/trap-open-locker.js @scen:locker
 js/rpg-data.js @scen:rpg
 js/scenario-rpg.js @scen:rpg
