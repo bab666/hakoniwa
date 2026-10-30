@@ -142,7 +142,8 @@
     var casualN = picked.length + info.filter(function (o) { return o.casual; }).length, politeN = free.length - picked.length;
     /* 2文以上：全部が敬語なら、いちばんため口になりやすい文（同じなら後ろの文）を ため口に。全部がため口なら、ため口にした文のうちいちばん長い文を敬語に戻す（「私は〇〇です。よろしく」） */
     if (politeN + casualN >= 2 && !casualN) {
-      var best = -1; free.forEach(function (i) { if (best < 0 || info[i].pc >= info[best].pc) best = i; });
+      /* 同じなら前の文（素の反応はため口、あとの説明・安心させる文は敬語：「大丈夫、なんとかなりますって」。2026-10-30 利用者の指示） */
+      var best = -1; free.forEach(function (i) { if (best < 0 || info[i].pc > info[best].pc) best = i; });
       if (best >= 0) pick[best] = true;
     } else if (politeN + casualN >= 2 && !politeN && picked.length) {
       var lg = -1; picked.forEach(function (i) { if (lg < 0 || info[i].len > info[lg].len) lg = i; });
