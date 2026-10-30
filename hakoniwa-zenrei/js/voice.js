@@ -780,6 +780,8 @@
             if (V.applyCalls) q = V.applyCalls(q, who, people);
             /* 呼び方を決めてある相手に向けた台詞は、二人称を呼び方にし、ときどき呼びかけを足す（tone-plus.js の callAddress） */
             if (V.callAddress && !nounQ) q = V.callAddress(q, who, addresseeOf(text, start, i + 1, q, who, people, actors), q0);
+            /* ♡を外す（「♡喘ぎ」を外した人・全体の「全員なし」。性的な場面の台詞と、喘ぎらしい台詞だけ）：語尾の記号より前に（♡で終わる文にも記号が付くように。V.unheart） */
+            if (V._heartEv != null && !nounQ && V.hasHeart(q) && (V._heartEv || mq) && V.heartOff(who)) q = V.unheart(q);
             /* 語尾の記号（キャラごとの設定。複数あれば文ごとにランダム） */
             if (who.marks && !nounQ) q = V.applyMarks(q, who.marks);
             if (sv1) { who.fp = sv1.fp; who.you = sv1.you; }
@@ -978,6 +980,43 @@
       return NS.dec(pt0.call(this, t2, P2, A2));
     };
   })();
+  /* ---------- ♡を外す（住人の設定「♡喘ぎ（男性向け）」を外した人・全体の「喘ぎ声の調整」の「♡：全員なし」。2026-10-30 担当HT） ----------
+     V.unheart(q, kind)：台詞・喘ぎの中身 q から ♡（♥）を外して体裁を整える（kind が 'n' なら地の文として、♡だけを外す）
+       「あっ♡」→「あっ」／「……♡」→「……」／「♡♡」→なし／「く、ぁ……♡　たまんねえ」→「く、ぁ……　たまんねえ」／「、♡」「。♡」→「、」「。」／
+       「……♡……」→「……」／言葉のあいだの♡は読点に（「すき♡すき」→「すき、すき」）／外したあとの重なった句読点（「、。」→「。」）・二つ続く空白・台詞の頭と終わりの空白と読点（終わりの「、」は「……」に）。
+       外すと何も残らない・「っ」だけ・記号だけの発話は、短い素の声（V.HEART_VOICE。R18版だけ）に、一字だけの声（「あ」）は「あっ」にする
+     V.heartOff(who)：その人の♡を外すか（who.noHeart＝住人の設定で外した人、または全体の「全員なし」＝HK.Moan.heartAllOff()）
+     外す場所と順番：(1) processText の中（話し手が分かる台詞・埋まった発話）。口調の言い換え・喘ぎの整え（HK.Moan.fit）・語尾の設定のあと、
+       語尾の記号（V.applyMarks）の前に外す（♡で終わっていた文にも記号が付くように）。(2) voice-seg.js の最後の包みで、e.seg の区分ごとに
+       （喘ぎ・モブの声（m）・地の文・話し手の決まらない発話は、その場面の受けの設定に従う。受けが分からなければ外さない）。どちらも同じ関数で、二度通しても変わらない。
+       性的な場面（HK.lewdEvent）の文と、喘ぎ（喘ぎらしい台詞・区分 m）だけ。ふだんの会話の口調の♡（「〜だよ♡」など）はそのまま */
+  var HEART_RE = /[♡♥]/, HEART_ALL = /[♡♥]+/g;
+  /* r18:begin */
+  V.HEART_VOICE = ['ん……っ', 'あっ……', 'は、ぁ……っ', 'んぅ……っ'];
+  /* r18:end */
+  V.hasHeart = function (s) { return typeof s === 'string' && HEART_RE.test(s); };
+  V.heartOff = function (who) { return !!(who && who.noHeart) || !!(HK.Moan && HK.Moan.heartAllOff && HK.Moan.heartAllOff()); };
+  V.unheart = function (q, kind) {
+    if (!V.hasHeart(q)) return q;
+    var H = '\uE0FE';
+    var t = q.replace(HEART_ALL, H).replace(/\uE0FE(?:[ 　]*\uE0FE)+/g, H);
+    if (kind === 'n') return t.replace(/\uE0FE/g, '').replace(/([、。])\1+/g, '$1');
+    var mk = (t.match(/^[\u2060-\u2064]*/) || [''])[0], b = t.slice(mk.length);
+    b = b.replace(/([…‥]{2,})\uE0FE[…‥]{2,}/g, '$1')
+      .replace(/([ぁ-ゖァ-ヺー一-鿿々])\uE0FE(?=[ぁ-ゖァ-ヺ一-鿿々])/g, '$1、')
+      .replace(/\uE0FE/g, '')
+      .replace(/[ 　]{2,}/g, '　')
+      .replace(/[、。]+[ 　]*(?=[、。！？!?])/g, '')
+      .replace(/^[ 　、。]+|[ 　]+$/g, '')
+      .replace(/、$/, '……');
+    var core = b.replace(/[…‥、。！？!?\s　ー〜～]/g, '');
+    if (!b || (!core && !/[…‥]/.test(b)) || /^[っッ]+[、。！!]*$/.test(b)) {
+      var L = V.HEART_VOICE || ['……'], h = 0;
+      for (var i = 0; i < q.length; i++) h = (h * 31 + q.charCodeAt(i)) >>> 0;
+      b = L[h % L.length];
+    } else if (/^[ぁ-んァ-ヶ][゛ﾞ]?$/.test(b)) b += 'っ';
+    return mk + b;
+  };
   /* シミュレーション結果全体に適用 */
   /* 語尾の記号：文末の「。」「！」を、設定した記号に置き換える（「分かった。引き受けよう」→「分かった！！！引き受けよう！！！」「分かった♣引き受けよう♦」）。
      記号は空白・読点・カンマ区切りで複数（文ごとに台詞の文字から決まるくじで選ぶので、同じ台詞は同じ結果になる）。
@@ -1024,6 +1063,8 @@
       /* 語尾の設定（tone-ending.js）を使う住人の口調は e:… の鍵（辞書だけの口調）。文面の表（態度）はベースの口調のまま */
       p.persona = r.persona || HK.personaOf({ tone: c.tone, eg: c.eg });
       if (c.toneCustom) p.toneCustom = c.toneCustom;
+      /* ♡喘ぎを外した人（ui.js が外したときだけ heart: false を渡す。V.unheart） */
+      if (c.heart === false) p.noHeart = true;
       /* 相手ごとの二人称・一人称（番号 → 名前。attr.js の HK.Attr.voiceFor） */
       if (HK.Attr && HK.Attr.voiceFor) HK.Attr.voiceFor(p, c, input.chars);
       return p;
@@ -1031,13 +1072,16 @@
     var f = function (t, ac) { return V.processText(t, people, ac); };
     /* 描写の作風「男性向け」（ero-kit.js）の結果では、はっきりした口調でも♡を残す（tone-firm.js） */
     V._keepHeart = !HK.SAFE_ON && !!(input.env && input.env.style === 'ero');
+    var hOff = people.some(function (p) { return p.noHeart; }) || V.heartOff(null);
     /* 記録ごとに、「」の区分と話し手を V._segBuf に集め、voice-seg.js（HK.Seg.keep）に渡す（e.seg は、ほかの仕上げがすべて済んでから作る） */
     (res.log || []).forEach(function (e) {
       if (!e || typeof e.text !== 'string') return;
       var buf = V._segBuf = [];
       /* 状況で変わる一人称（怒ったとき・恋人ができてから。voice-fp.js）：この記録の間だけ、話し手の一人称を差し替える */
       var fpBack = V.fpSwap ? V.fpSwap(people, e) : null;
-      try { e.text = V.nestQuote(f(e.text, e.actors)); } finally { V._segBuf = null; if (fpBack) fpBack(); }
+      /* ♡を外す人がいれば、この記録が性的な場面か（V.unheart を当てる範囲。外す人がいなければ null で、何もしない） */
+      V._heartEv = hOff ? !!(HK.lewdEvent && HK.lewdEvent(e)) : null;
+      try { e.text = V.nestQuote(f(e.text, e.actors)); } finally { V._segBuf = null; V._heartEv = null; if (fpBack) fpBack(); }
       if (HK.Seg && HK.Seg.keep) HK.Seg.keep(e, buf);
     });
     var E = res.ending || res.end;

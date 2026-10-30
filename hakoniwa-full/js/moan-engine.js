@@ -245,7 +245,8 @@
      HK.Moan.setFit(設定 または JSON 文字列) … 区分・夜の性格→声の基盤・割合・性別の整えを上書きする（既定と同じ値は持たない。空・null なら組み込みのまま）
        { tone: { 口調の鍵: { kind: 'firm'|'soft'|'grand'|'none'|'off', masc: 真偽, dialect: 真偽 } },
          night: { sadist|maso|mean|sweet|shy: 態度の鍵 | 'off' }, rate: { tone, toneMoan, set（0〜1）, talk（倍率 0.5〜1.5） },
-         gender: { unfemM: 真偽, unmascF: 真偽 } }
+         gender: { unfemM: 真偽, unmascF: 真偽 }, heart: 'off' }
+       heart … ♡の扱い（'off'＝全員の性的な場面の喘ぎ・台詞から♡を外す。無ければ住人の設定「♡喘ぎ」に従う。外し方は voice.js の V.unheart。2026-10-30 担当HT）
        kind … firm はっきり（言い切り）／soft やわらかい／grand 古風・尊大（はっきり＋「〜ちゃう」→「〜てしまう」）／none 区分なし（性別の整えだけ）／off 整えない（性別の整えもしない）
        masc … 男性的な語尾を残す（女性でも「〜ぜ」「〜ぞ」）／dialect … のじゃ・関西弁の語尾に直す（その2口調だけ）
        night の 'off' … 夜の性格で声の基盤を変えない（口調の態度のまま。鍵の選び方（マゾは懇願が増える など）は夜の性格のまま）
@@ -291,12 +292,15 @@
       if (v != null && v !== RATE_DEF[k]) { out.rate[k] = v; any = true; }
     });
     ['unfemM', 'unmascF'].forEach(function (k) { if (o.gender && o.gender[k] === false) { out.gender[k] = false; any = true; } });
+    if (o.heart === 'off') { out.heart = 'off'; any = true; }
     M.fitCfg = any ? out : null;
     /* 中で引く形（rate は既定と同じものも持たない。gender は既定 on） */
-    CC = any ? { tone: out.tone, night: out.night, rate: out.rate, unfemM: out.gender.unfemM !== false, unmascF: out.gender.unmascF !== false } : null;
+    CC = any ? { tone: out.tone, night: out.night, rate: out.rate, unfemM: out.gender.unfemM !== false, unmascF: out.gender.unmascF !== false, heart: out.heart || '' } : null;
     return { errors: errors, cfg: M.fitCfg };
   };
   M.fitCfg = null;
+  /* 全体の「♡：全員なし」か（箱庭を回すあいだは入口の設定。voice.js・voice-seg.js の♡を外す処理が見る） */
+  M.heartAllOff = function () { var c = cc(); return !HK.SAFE_ON && !!(c && c.heart === 'off'); };
   /* who（住人）を渡すと、住人の設定（⚙設定「声の区分（この住人だけ）」c.moanFit）も重ねる（own＝住人の設定で変わったか、advKind＝高度設定までの区分） */
   M.fitKind = function (t, who) {
     var d = defKind(t), k0 = CC ? kindIn(CC, t) : d, of = who ? ownFitOf(who) : null, k = of ? ownKind(k0, of) : k0;

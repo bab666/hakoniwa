@@ -117,8 +117,11 @@ function inPage() {
     if (A) { A.log = []; A.raceLog = []; A.featLog = []; if ('moanLog' in A) A.moanLog = []; }
     if (HK.PosLead) HK.PosLead.log = [];
     let res;
+    /* pre・post … 全体の設定を変える項目（回すあいだだけ。例：喘ぎ声の調整の「♡：全員なし」） */
+    if (cfg.pre) cfg.pre();
     try { res = HK.simulate({ scenId: sc, seed: 7100 + s * 13, env: X.env, chars: X.chars, perChar: X.chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {}, role: '' })), ties: X.ties }); }
     catch (e) { return { err: String(e && e.stack || e).slice(0, 300) }; }
+    finally { if (cfg.post) cfg.post(); }
     const names = X.chars.map(x => x.name);
     const idxOf = x => typeof x === 'number' ? x : x && typeof x.i === 'number' ? x.i : null;
     const recs = [];
@@ -287,6 +290,17 @@ const PROBES = String.raw`
     judge: R => { const ls = H.lx(R).flatMap(r => segOf(r, 0, ['m'])); if (!ls.length) return { should: 0 }; return { should: ls.length, hit: ls.filter(x => x.s.indexOf('♣') >= 0).length, ex: (ls.filter(x => x.s.indexOf('♣') < 0)[0] || {}).s || '' }; } });
   add({ id: 'moan.daku', group: '喘ぎ', label: '濁点喘ぎ（受け・男性向けの作風）→あ゛お゛', type: 'dir', mod: X => { set(X, 0, { pos: 'bottom', daku: true }); set(X, 1, { gender: 'm', pos: 'top' }); if ('style' in X.env) X.env.style = 'ero'; },
     judge: R => { const rs = H.lx(R); if (!rs.length) return { should: 0 }; const ms = R.moan.filter(m => m.who === X0); return { should: 1, hit: rs.some(r => /[あおんぁぉ]゛/.test(r.t)) || ms.some(m => /゛/.test(m.out)) ? 1 : 0, ex: H.ex(rs[0]) }; } });
+  /* ♡喘ぎ（住人の設定 c.heart・全体の「♡：全員なし」。voice.js の V.unheart。2026-10-30 担当HT）：外した人の性的な場面の台詞・喘ぎ・発話に♡が 0、ほかの人の♡は残る */
+  const HEART = /[♡♥]/;
+  const heartJ = kinds => R => { const ls = H.lx(R).flatMap(r => segOf(r, 0, kinds)); if (!ls.length) return { should: 0 }; return { should: ls.length, hit: ls.filter(x => !HEART.test(x.s)).length, ex: (ls.filter(x => HEART.test(x.s))[0] || {}).s || '' }; };
+  const heartMod = X => { set(X, 0, { pos: 'bottom', heart: false }); set(X, 1, { gender: 'm', pos: 'top' }); if ('style' in X.env) X.env.style = 'ero'; };
+  add({ id: 'moan.heart', group: '喘ぎ', label: '♡喘ぎを外す（受け・男性向けの作風）：その人の台詞・喘ぎ・発話に♡が残らない割合', type: 'cnt', mod: heartMod, judge: heartJ(['l', 'q', 'm', 'u']) });
+  add({ id: 'moan.heartKeep', group: '喘ぎ', label: '♡喘ぎを外す（受け）：相手（攻め）の♡は残る', type: 'rate', expect: 'keep', mod: heartMod, base: X => { set(X, 0, { pos: 'bottom' }); set(X, 1, { gender: 'm', pos: 'top' }); if ('style' in X.env) X.env.style = 'ero'; },
+    judge: (R, B) => { const f = Q => H.lx(Q).flatMap(r => (r.seg || []).filter(x => x.who === 1)).reduce((a, x) => a + (x.s.match(/[♡♥]/g) || []).length, 0); return { p: f(R), b: f(B) }; } });
+  add({ id: 'moan.heartAll', group: '喘ぎ', label: '喘ぎ声の調整「♡：全員なし」（男性向けの作風）：性的な場面の文に♡が残らない割合', type: 'cnt',
+    pre: () => { if (HK.Moan && HK.Moan.setFit) HK.Moan.setFit({ heart: 'off' }); }, post: () => { if (HK.Moan && HK.Moan.setFit) HK.Moan.setFit(null); },
+    mod: X => { set(X, 1, { gender: 'm', pos: 'top' }); if ('style' in X.env) X.env.style = 'ero'; },
+    judge: R => { const ls = H.lx(R).flatMap(r => r.seg || [{ s: r.t }]); if (!ls.length) return { should: 0 }; return { should: ls.length, hit: ls.filter(x => !HEART.test(x.s)).length, ex: (ls.filter(x => HEART.test(x.s))[0] || {}).s || '' }; } });
   /* ===== 参加・相手 ===== */
   add({ id: 'part.noR18', group: '参加・相手', label: 'R18に参加しない（場面 0）', type: 'excl', skip: CORE, mod: X => { set(X, 0, { noR18: true }); }, base: X => {}, judge: exclJ(H.xSex) });
   add({ id: 'part.loveNG', group: '参加・相手', label: '恋愛・R18にしない相手（この二人の場面 0）', type: 'excl', mod: X => { noTies(X); set(X, 0, { loveNG: [1] }); set(X, 1, { loveNG: [0] }); }, base: X => { noTies(X); }, judge: exclJ(R => H.xWith(R, j => j === 1)) });

@@ -168,10 +168,47 @@
   /* 発話（台詞行・埋まった発話・モブ・決まらない発話）があるか（画面の吹き出し） */
   S.talk = function (seg) { return (seg || []).some(function (x) { return /^[lqmu]$/.test(x.t); }); };
 
+  /* ♡を外す（voice.js の V.unheart。住人の設定「♡喘ぎ（男性向け）」を外した人・全体の「♡：全員なし」。2026-10-30 担当HT）
+     seg を作ったあとで、区分ごとに外して e.text を作り直す（seg をつなぐと e.text のまま）。
+     話し手のある区分（台詞行 l・埋まった発話 q・喘ぎ m・決まらない発話 u で who があるもの）は話し手の設定で。
+     話し手の無い区分（地の文 n・名詞の引用 c・話し手の無い m・u）は、その場面の受け（出来事の登場人物のうち攻めでない人。何人もいれば、
+     この場面で喘いでいる人）が全員外していれば外す。受けが分からなければ外さない。
+     性的な場面（HK.lewdEvent）の区分だけ。喘ぎ（m）は性的な場面でなくても話し手の設定で外す */
+  function heartPlan(input) {
+    var cs = (input && input.chars) || [], all = !!(V.heartOff && V.heartOff(null));
+    var off = cs.map(function (c) { return all || !!(c && c.heart === false); });
+    if (!V.unheart || (!all && !off.some(Boolean))) return null;
+    return { all: all, off: off, pos: cs.map(function (c) { return (c && c.pos) || ''; }) };
+  }
+  function unheartEv(e, seg, P) {
+    if (!V.hasHeart(e.text)) return;
+    var lewd = HK.lewdEvent ? HK.lewdEvent(e) : true, rv = null, any = false;
+    var recvOff = function () {
+      if (rv != null) return rv;
+      if (P.all) return (rv = true);
+      var ac = (e.actors || []).filter(function (i) { return typeof i === 'number' && i >= 0 && i < P.off.length; });
+      var cand = ac.filter(function (i) { return P.pos[i] !== 'top'; });
+      if (cand.length > 1) { var mo = cand.filter(function (i) { return seg.some(function (x) { return x.t === 'm' && x.who === i; }); }); if (mo.length) cand = mo; }
+      if (!cand.length) cand = ac;
+      return (rv = cand.length > 0 && cand.every(function (i) { return P.off[i]; }));
+    };
+    seg.forEach(function (x) {
+      if (!x || !V.hasHeart(x.s) || (!lewd && x.t !== 'm')) return;
+      var hasWho = x.who >= 0 && x.t !== 'n' && x.t !== 'c';
+      if (!(hasWho ? P.off[x.who] : lewd && recvOff())) return;
+      var a = x.t === 'n' ? -1 : x.s.indexOf('「'), b = x.s.lastIndexOf('」');
+      x.s = a < 0 || b <= a ? V.unheart(x.s, 'n') : x.s.slice(0, a + 1) + V.unheart(x.s.slice(a + 1, b)) + x.s.slice(b);
+      any = true;
+    });
+    if (any) e.text = S.text(seg);
+  }
+  S.heartPlan = heartPlan;
+  S.unheartEv = unheartEv;
   /* いちばん外側の包み：ほかの仕上げがすべて済んだ文に合わせて e.seg を作る */
   /* 包み直しは HK.wrap（包む順を元のファイルの順に固定。分割読み込みで後から届いた包みが内側に入る） */
   if (HK.simulate && !HK.simulate._seg) HK.wrap(HK, 'simulate', function (sim0) {
     var sim = function (input) {
+      var hp = heartPlan(input);
       var r = sim0.apply(this, arguments);
       if (r && Array.isArray(r.log)) {
         var names = namesOf(input && input.chars && input.chars.length ? input.chars : r);
@@ -180,6 +217,7 @@
           /* 句読点の仕上げ（core.js の HK.punctFix：文頭の「。」・「。。」・文頭の台詞のあとの「」。」）を、seg を作る前に一度だけ */
           if (typeof e.text === 'string' && HK.punctFix) { try { e.text = HK.punctFix(e.text, names); } catch (err) { /* 直せなくても結果は返す */ } }
           try { if (typeof e.text === 'string') hide(e, 'seg', S.build(e.text, names, e._sq)); } catch (err) { /* 区分に失敗しても結果は返す */ }
+          if (hp && e.seg) { try { unheartEv(e, e.seg, hp); } catch (err) { /* 外せなくても結果は返す */ } }
           if (e._sq) delete e._sq;
         });
       }

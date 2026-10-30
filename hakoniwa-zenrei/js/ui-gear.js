@@ -219,6 +219,8 @@
         /* 三人の場面（3P）：する／しない（attr.js の A.TRIO。判定は pos.js の HK.Pos.trioOptOut・trioPlan。2026-10-27 担当HN） */
         (HK.Attr && HK.Attr.TRIO ? '<label' + ld + ' title="出られない部屋・ロッカー・吹雪の館・エロトラップダンジョンなどの三人以上の場面（3P）に加わるかです。する（既定）でも、性行為の相手を固定している人は固定した相手とだけ触れ合います（受けなら固定した相手からだけ受けます）。直接触れ合えない二人は、同じ場にいても見ている・声をかける程度です。直接触れ合える組が一つしかないときは、三人の場面にならず二人の場面になります。しないにすると、三人以上の場面には加わりません">三人の場面（3P） ' + selOf('trio', HK.Attr.TRIO, c.trio || '') + '</label>' : '') +
         (c.pos !== 'top' ? '<label' + ld + ' title="男性向けの作風で、絶頂や奥を深く突かれた場面の喘ぎを、あ゛・お゛のような濁点の喘ぎにします"><input type="checkbox" data-gf="daku"' + (c.daku ? ' checked' : '') + '> 濁点喘ぎ（男性向け）</label>' : '') +
+        /* ♡喘ぎ：外すと、この人の性的な場面の喘ぎ・台詞から♡を外す（受け攻めを問わず。攻めの声にも♡が付くため）。既定はオン。外し方は voice.js の V.unheart（2026-10-30 担当HT） */
+        '<label' + ld + ' title="男性向けの作風で、喘ぎや台詞に付く♡を外します（チェックを外すと、この人の性的な場面の喘ぎ・台詞から♡が消えます。ふだんの会話の口調の♡はそのまま）"><input type="checkbox" data-gf="heart"' + (c.heart !== false ? ' checked' : '') + '> ♡喘ぎ（男性向け）</label>' +
         /* 性欲の強さ（全住人）・体の関係の相手（恋愛対象「なし」の人だけ）。attr.js の A.LIBIDO・A.SEXLIKES、判定は pos.js（2026-10-27 担当HG） */
         (HK.Attr && HK.Attr.LIBIDO ? '<label title="恋人の夜・勢いの夜・一夜・セフレ・出られない部屋の条件のエッチ・発情の相手を受け入れる・危機の夜・お持ち帰りなど、合意のある体の場面の起こりやすさが変わります（弱いは半分ほど、強いは1.6倍ほど。二人とも強いともっと起きやすい）。なしにすると、合意のある体の場面には乗りません（恋愛はふつうに起きます）。内容のスイッチ「合意のない展開」の場面は、この欄に関係なく起きます">性欲の強さ ' + selOf('libido', HK.Attr.LIBIDO, c.libido || '') + '</label>' : '') +
         (c.likes === 'none' && HK.Attr && HK.Attr.SEXLIKES ? '<label' + ld + ' title="恋愛対象「なし」の人は恋愛（告白・恋人・片想い）にはなりませんが、体だけの関係（セフレ・一夜・勢いの夜・危機の夜・部屋の条件など）にはなれます。その相手の性別を選びます。おまかせは相手の恋愛対象・受け攻めに合わせます。なしにすると、体の関係にもなりません（合意のない展開の場面でも）">体の関係の相手 ' + selOf('sexLikes', HK.Attr.SEXLIKES, c.sexLikes || '') + '</label>' : '');
@@ -413,6 +415,7 @@
       case 'pos': if (isInput) return; c.pos = ['top', 'bottom', 'riba'].indexOf(t.value) >= 0 ? t.value : ''; changed(false); render(); break;
       case 'futa': if (isInput) return; c.futa = t.checked; changed(false); break;
       case 'daku': if (isInput) return; c.daku = t.checked; changed(false); break;
+      case 'heart': if (isInput) return; c.heart = !!t.checked; changed(false); break;
       case 'faithful': if (isInput) return; c.faithful = t.checked; changed(false); break;
       case 'noR18': if (isInput) return; c.noR18 = t.checked; changed(true); break;
       case 'trio': if (isInput) return; c.trio = t.value === 'no' ? 'no' : ''; changed(false); break;
