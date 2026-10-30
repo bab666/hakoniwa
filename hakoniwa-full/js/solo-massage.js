@@ -303,7 +303,11 @@
     var kindR = ff ? 'ff' : staff.g === 'f' && !noP(h) ? 'lady' : 'recv', kindT = custF ? (staff.g === 'm' ? 'topF' : 'topFF') : 'top';
     function lwc(dom) { return { S: S, h: h, ero: eroOn, dom: dom, fmt: function (t) { return K.fmt(S, t); } }; }
     function lwOn() { return !!(ML && ML.on(S, env)); }
+    /* 拒否反応を示した・「普通じゃない」と気づいたのに、受け入れていない回（快楽に負けた・ねだった・分かっていて続けた・立場逆転のどれでもない。2026-10-29 担当NC）：
+       絶頂の文を「体だけが反応し、心は拒んでいる」文に（solo-massage-data.js の M.REFUSE_CL。R18版だけ） */
+    function refusing() { return (wrong || !!S.flags.noticedAt) && !stayed && !asked && !fell && !reversed; }
     function logC(list) {
+      if (!dark && list.length && M.REFUSE_CL && refusing()) list = list.map(function () { return K.fmt(S, K.pick(S, M.REFUSE_CL[h.persona] || M.REFUSE_CL.gentle)); });
       if (!dark) return K.logClimax(S, list);
       if (!list.length) return;
       var o = K.say(S, { kind: 'climax', tag: K.W_CL, text: K.fmt(S, K.pick(S, MD.climax)) + (list.length > 1 ? '（' + list.length + '回）' : ''), why: h.climax === list.length ? '初めての' + K.W_CL : '' });
@@ -600,7 +604,9 @@
     if (extended && !hardTop && !left && !reversed && !fell) {
       S.step = seq.length; K.step(S, '延長');
       var rx2 = K.stim(S, 40, { part: 'all', mult: 1.2, defer: true });
-      K.say(S, { kind: 'ev', tag: '延長', lewd: true, text: K.fmt(S, K.pick(S, ['延長の三十分は、それまでの九十分よりずっと長かった。{m}の手はもう、遠慮をしなかった。', '{m}「延長分は、特に念入りに」――{a}は延長を頼んだことを、ほんの少しだけ後悔した。', '延長の間、{a}は時計を見なかった。見る余裕がなかった。'])) + phUp(2) + tail(0.7) + (lwOn() ? ML.ext(lwc(false)) : ''), why: '延長した' });
+      /* 最後まで受け入れていない回は、延長も拒んだまま（M.REFUSE_EXT。反応の一文は足さない） */
+      var refX = !!(M.REFUSE_EXT && refusing());
+      K.say(S, { kind: 'ev', tag: '延長', lewd: true, text: (refX ? K.fmt(S, K.pick(S, M.REFUSE_EXT)) : K.fmt(S, K.pick(S, ['延長の三十分は、それまでの九十分よりずっと長かった。{m}の手はもう、遠慮をしなかった。', '{m}「延長分は、特に念入りに」――{a}は延長を頼んだことを、ほんの少しだけ後悔した。', '延長の間、{a}は時計を見なかった。見る余裕がなかった。'])) + phUp(2) + tail(0.7)) + (lwOn() ? ML.ext(lwc(false)) : ''), why: '延長した' });
       logC(rx2.climaxes);
       if (K.settle(S)) fell = true;
     }
@@ -681,6 +687,8 @@
     /* 相手を匂わせる台詞：事後（際どい施術を受けて、帰らずに最後までいたとき） */
     if (!left && (fell || asked || stayed || reversed || h.climax > 0)) loveAt('after');
     S.flags.wrong = wrong;
+    /* 最後まで受け入れなかった回（気づいていた・拒否反応を示した）：店を出たあとの文を、嫌悪・後味の悪さの文に（M.REFUSE_AFTER） */
+    S.flags.refuse = refusing() && !!S.flags.noticedAt;
     var E = ending(S, { reversed: reversed, slept: slept, evidence: !!S.flags.evidence, left: left, fell: fell, asked: asked, stayed: stayed, noticed: !!S.flags.noticedAt, deceived: deceived, positions: positions, staff: staff, res: !!TR });
     var adv = [];
     if (deceived) adv.push('言い訳に' + deceived + '回騙された。AC（' + Math.round(h.eg.AC) + '）とNP（' + Math.round(h.eg.NP) + '）の素直さが、疑う気持ちに勝った。');
@@ -706,11 +714,14 @@
     else if (!x.noticed) { kind = 'mid'; title = '最後まで気づかなかった ― 星5のレビューを書いた'; L0.push(h.name + '「すごく丁寧な施術だった。特にリンパのところが効いた｜＝｜すごく丁寧な施術でした。特にリンパのところが効きました」――レビューには「参考になった」が千件ついた。'); }
     else if (x.stayed) { kind = 'mid'; title = '分かっていて、最後まで ― 誰にも言えない90分'; L0.push(h.name + 'は気づいていた。それでも最後まで、施術台から降りなかった。'); }
     else { kind = 'mid'; title = '耐えきった ― 何事もなかった顔で会計した'; L0.push(h.name + 'は最後まで声を出さなかった。会計を済ませて外に出た瞬間、壁に手をついて座り込んだ。'); }
+    /* 拒否反応があった回の「耐えきった」「分かっていて、最後まで」：嫌悪・後味の悪さ・二度と来ない（2026-10-29 担当NC） */
+    var endure = !x.reversed && !x.left && !x.fell && !x.asked && !(x.slept && !x.noticed) && (x.stayed || x.noticed);
+    if (S.flags.wrong && M.WRONG_ENDURE && endure) L0.push(HK.SoloKit.fmt(S, S.rng.pick(M.WRONG_ENDURE)));
     if ((x.fell || x.asked) && (h.tr.ac > 0.55 || h.tr.np > 0.6) && S.rng() < 0.6) L0.push(S.h.name ? HK.SoloKit.fmt(S, S.rng.pick(x.res ? HK.MassageCast.RES_AFTER : M.CRUSH)) : '');
-    if (S.flags.wrong && M.WRONG_END && (x.fell || x.asked || x.stayed)) L0.push(HK.SoloKit.fmt(S, S.rng.pick(M.WRONG_END.filter(function (t) { return t.indexOf('{sx}') < 0; }))));
+    if (S.flags.wrong && M.WRONG_END && (x.fell || x.asked || (x.stayed && !(M.WRONG_ENDURE && endure)))) L0.push(HK.SoloKit.fmt(S, S.rng.pick(M.WRONG_END.filter(function (t) { return t.indexOf('{sx}') < 0; }))));
     if (h.goal.id === 'heal') L0.push(h.name + 'の肩こりは、本当にきれいに治っていた。それが一番、腹立たしかった。');
     if (h.goal.id === 'free') L0.push('タダ券の裏には、小さく「二回目以降は通常料金」と書いてあった。');
-    L0.push(HK.SoloKit.fmt(S, S.rng.pick(M.AFTERSHOP[h.persona])));
+    L0.push(HK.SoloKit.fmt(S, S.rng.pick(S.flags.refuse && M.REFUSE_AFTER ? M.REFUSE_AFTER[h.persona] || M.REFUSE_AFTER.gentle : M.AFTERSHOP[h.persona])));
     L0.push(h.name + '：' + K.W_CL + ' ' + h.climax + '回・堕ち度 ' + Math.min(100, Math.round(h.corrupt)) + '・理性 ' + Math.max(0, Math.round(h.reason)));
     return { type: kind, kind: kind, title: title, lines: L0 };
   }

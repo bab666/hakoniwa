@@ -58,15 +58,21 @@
         var pf = ctx.pair(a, b), p = A.prog(ctx, a, b), r = ctx.rules.filter(function (q) { return q.k === 'h'; })[0], done0 = !!(r && A.ruleDone(ctx, r, a, b));
         /* 条件の順番（順77）：条件1を待っている条件2のエッチは数えない（A.bumpAct が偽を返す。そのときは「まだ数えない」の一文を足す） */
         var counted = r ? (A.bumpAct ? A.bumpAct(ctx, r, a, b, 1) : (p.act.h = Math.min(r.n, (p.act.h || 0) + 1), true)) : true;
-        pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.hateSex = (pf.hateSex || 0) + 1; pf.hateSexAt = ctx.stepIndex;
-        ctx.mod2(a, b, { att: 10, aff: 4, ten: -4 }, { att: 12, aff: 5, ten: -6 });
+        pf.hateSex = (pf.hateSex || 0) + 1; pf.hateSexAt = ctx.stepIndex;
+        /* 受けの行き先（HS.outcome。2026-10-29 担当NC）：流される回は今までどおり仲が深まる。最後まで受け入れない回（'refuse'）は嫌悪の向きに動かし、夜の関係の印を付けない */
+        var oc = HS.outcome ? HS.outcome(ctx, a, b, { room: !done0 }) : 'swept';
+        var sweep = function () { pf.night = true; pf.nights = (pf.nights || 0) + 1; ctx.mod2(a, b, { att: 10, aff: 4, ten: -4 }, { att: 12, aff: 5, ten: -6 }); };
+        if (oc !== 'refuse') sweep();
         var rv = rivalOf(ctx, a, b);
-        var text = HS.scene(ctx, a, b, { room: !done0 }), why = HS.why(ctx, a, b, { room: !done0 }) + (done0 ? '／条件はもう満たしていたのに、また（腐れ縁）' : '／条件のエッチ') + HS.shieldWhy(HS.lastShield) +
+        var text = HS.scene(ctx, a, b, { room: !done0, out: oc });
+        var rfd = oc === 'refuse' && HS.refused(ctx, a, b);
+        if (oc === 'refuse') { if (rfd) HS.hurt(ctx, a, b); else sweep(); }
+        var why = HS.why(ctx, a, b, { room: !done0 }) + (done0 ? '／条件はもう満たしていたのに、また（腐れ縁）' : '／条件のエッチ') + HS.shieldWhy(HS.lastShield) +
           (rv ? '／愛憎：' + rv.h.name + 'は、' + rv.o.name + 'を' + rv.z.name + 'に取られそうで焦った' : '');
         var ln = [a, b].filter(function (c) { return HK.Pos && HK.Pos.libOf && HK.Pos.libOf(c) === 'none'; });
         if (ln.length) why += '／' + ((HK.Pos && HK.Pos.FORCE_MARK) || '〔合意のない展開〕') + '性欲「なし」の' + ln.map(function (c) { return c.name; }).join('・') + 'も、部屋の条件の切羽詰まった場面で体の関係になった（内容のスイッチ「合意のない展開」が入）';
         if (!counted && A.waitNote) return { cat: 'romance', text: text + A.waitNote(ctx, r, a, b), why: why + '／条件の順番：条件1がまだなので数えない', mag: 30 };
-        if (A.pairDone(ctx, a, b)) { var ex = A.exitPair(ctx, a, b, text, why, true); ex.cat = 'romance'; return ex; }
+        if (A.pairDone(ctx, a, b)) { var ex = A.exitPair(ctx, a, b, text, why, !rfd); ex.cat = 'romance'; return ex; }
         return { cat: 'romance', text: text + (r && r.n > 1 && !done0 ? '（エッチ ' + p.act.h + '/' + r.n + '）' : '') + '扉はまだ開かない。', why: why, mag: 30 };
       }
     });

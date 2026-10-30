@@ -50,6 +50,8 @@
     var r0 = e.run, hate = e.id === 'om_hatenight';
     e.run = function (ctx, a, b) {
       var res = r0.apply(this, arguments);
+      /* 敵対の強引な夜で、受けが最後まで受け入れなかった回（hate-sex-r18.js の HS.refused。2026-10-29 担当NC）は、厚い版（荒いが合意寄りの抱き方）に差し替えない */
+      if (hate && HK.HateSex && HK.HateSex.refused && HK.HateSex.refused(ctx, a, b)) return res;
       var lew = ctx.env.lewd || 'mid';
       if (!res || typeof res.text !== 'string' || !TK.on(lew) || !HK.Pos || !HK.Voice) return res;
       /* 描写の長さ：厚く＝いつも段落の版、混ぜる＝半分、短く＝元の文のまま（設定をそろえる前の入力は半分） */

@@ -693,11 +693,15 @@
       w: function (ctx, a, b) { return (5 + (a.tr.aggr || 0) * 2 + a.stress / 40) * (HK.LoveHate ? HK.LoveHate.k(ctx, a, b) : 1); },
       run: function (ctx, a, b) {
         var HS = HK.HateSex, pf = ctx.pair(a, b), o = HS.order(ctx, a, b);
-        pf.sitN = (pf.sitN || 0) + 1; pf.sitAt = ctx.stepIndex; pf.night = true; pf.hateSex = (pf.hateSex || 0) + 1;
-        ctx.mod2(a, b, { att: 10, aff: 4, ten: -4 }, { att: 12, aff: 5, ten: -6 });
-        a.stress = Math.max(0, a.stress - 10); b.stress = Math.max(0, b.stress - 10);
+        pf.sitN = (pf.sitN || 0) + 1; pf.sitAt = ctx.stepIndex; pf.hateSex = (pf.hateSex || 0) + 1;
+        /* 受けの行き先（HS.outcome。2026-10-29 担当NC）：最後まで受け入れない回は、仲が深まる値の動き・夜の印・受けのストレスの減りをやめて、嫌悪の向きに（HS.hurt） */
+        var oc = HS.outcome ? HS.outcome(ctx, a, b) : 'swept';
+        var sweep = function () { pf.night = true; ctx.mod2(a, b, { att: 10, aff: 4, ten: -4 }, { att: 12, aff: 5, ten: -6 }); a.stress = Math.max(0, a.stress - 10); b.stress = Math.max(0, b.stress - 10); };
+        if (oc !== 'refuse') sweep();
         var place = fill(fp(ctx, ZH_PLACE), { a: o[0].name, b: o[1].name });
-        return { cat: 'romance', text: HS.scene(ctx, a, b, { place: place, low: Z.loveLv(ctx) === 'fade' }), why: HS.why(ctx, a, b) + '・' + Z.day(ctx) + '日目' + (HS.shieldWhy ? HS.shieldWhy(HS.lastShield) : ''), mag: 26 };
+        var text = HS.scene(ctx, a, b, { place: place, low: Z.loveLv(ctx) === 'fade', out: oc });
+        if (oc === 'refuse') { if (HS.refused(ctx, a, b)) { HS.hurt(ctx, a, b); o[0].stress = Math.max(0, o[0].stress - 10); } else sweep(); }
+        return { cat: 'romance', text: text, why: HS.why(ctx, a, b) + '・' + Z.day(ctx) + '日目' + (HS.shieldWhy ? HS.shieldWhy(HS.lastShield) : ''), mag: 26 };
       }
     });
   });
