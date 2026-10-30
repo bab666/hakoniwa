@@ -16,13 +16,114 @@
   function dot(i) { return '<span class="dot" style="background:' + pc(i) + '"></span>'; }
   function av(res, i, size, extra) { var c = res.chars[i]; return c ? HK.Icons.html(c.name, i, size, extra) : ''; }
 
+  /* ---------- 記録の札と段の見た目（担当W3 2026-10-30。表示だけで記録・文は変えない） ----------
+     出られない部屋（whiteroom）の記録の li に data-rm（種類）を付け、頭に小さな札（.rmb）を置く。種類は記録の印と本文の形から表示側で決める：
+       cond 条件を進めた・満たした出来事（回数の表示「（○○ n/m）」がある、または e.goal）＝緑／lead きっかけの段（e.tag 'きっかけ'）＝薄い橙／
+       door 扉が開いた区切りの行＝藍／end 結末の段＝藍の灰／rule 最初の扉の紙＝藍の灰／note 順番待ちで数えなかった注記＝黄（札だけ）。
+       まとめて進んだ回のダイジェスト（本文の最後の段）は灰青の囲み（.evdg）と「まとめて n 回」の見出し。
+     重要な出来事の枠（data-hot：情事・目標など）が付いた行は、その枠と背景のまま札だけ足す（R18 の色付き・目標の色とぶつけない）。
+     色の量「フル」は種類の色の薄い背景と左の縁 3px、藍のみ・キャラ色は藍の左の線の種類（実線・破線・二重・点線）と面の色 --bg1。印刷は背景を消して線と札だけ。
+     段の見た目（全箱庭）：長い文の段落（HK.fmtLong の空行）を段にして間を空け、名前「…」だけの段は左に細い線を引いて地の文と分ける */
+  var RM_CSS =
+    ':root{--rm-cond:#2F9E44;--rm-dg:#5C7CA3;--rm-lead:#D9822B;--rm-door:#364FC7;--rm-end:#16233B;--rm-note:#B38600;--rm-mix:8%;--rm-chip:12%}' +
+    ':root[data-theme="gray"]{--rm-cond:#2B8A3E;--rm-dg:#4F6D93;--rm-lead:#C2701F;--rm-door:#2F44AD;--rm-note:#946F00;--rm-mix:11%;--rm-chip:16%}' +
+    '@media (prefers-color-scheme: dark){:root:not([data-theme="light"],[data-theme="gray"]){--rm-cond:#69DB7C;--rm-dg:#A5B8D8;--rm-lead:#FFB46B;--rm-door:#91A7FF;--rm-end:#BAC4DA;--rm-note:#FFD43B;--rm-mix:13%;--rm-chip:20%}}' +
+    ':root[data-theme="dark"]{--rm-cond:#69DB7C;--rm-dg:#A5B8D8;--rm-lead:#FFB46B;--rm-door:#91A7FF;--rm-end:#BAC4DA;--rm-note:#FFD43B;--rm-mix:13%;--rm-chip:20%}' +
+    ':root:not([data-palette="full"]){--rm-cond:var(--ai);--rm-dg:var(--ai);--rm-lead:var(--ai);--rm-door:var(--ai);--rm-end:var(--ai);--rm-note:var(--ai)}' +
+    '[data-k="cond"],[data-rm="cond"]{--rk:var(--rm-cond)}[data-k="dg"]{--rk:var(--rm-dg)}[data-k="lead"],[data-rm="lead"]{--rk:var(--rm-lead)}[data-k="door"],[data-rm="door"]{--rk:var(--rm-door)}' +
+    '[data-k="end"],[data-rm="end"],[data-k="rule"],[data-rm="rule"]{--rk:var(--rm-end)}[data-k="note"],[data-rm="note"]{--rk:var(--rm-note)}' +
+    /* 札：Mono 10px の小さな四角（ほかの札 .goalb・.markb と同じ寸法）。文字は種類の色を藍に寄せて 4.5:1 以上に */
+    '.rmb{--rk-ink:var(--ink);display:inline-block;font-family:var(--f-num);font-size:10px;font-weight:600;letter-spacing:.08em;line-height:1.6;padding:0 6px;margin-right:6px;vertical-align:2px;border:1px solid var(--rk,var(--ink));border-radius:2px;color:var(--rk-ink);background:var(--paper);white-space:nowrap}' +
+    '.rmb[data-k="note"]{border-style:dashed}' +
+    /* 行の囲み（重要の枠の無い行）：左の点は枠の分だけ戻す（index.html の data-hot と同じ計算） */
+    '.tl .stepblk ol>.ev[data-rm]:not([data-hot]){--hbl:2px;border-left:2px solid var(--rk);border-radius:4px;padding:6px 10px;margin-left:calc(-1 * var(--hfx));background:var(--bg1)}' +
+    '.tl .stepblk ol>.ev[data-rm]:not([data-hot])::before{left:calc(-1 * var(--rail) - 4px + var(--hfx) - var(--hbl));top:14px}' +
+    '.tl .stepblk ol>.ev[data-rm]:not([data-hot]).hot::before{left:calc(-1 * var(--rail) - 6px + var(--hfx) - var(--hbl));top:12px}' +
+    ':root:not([data-palette="full"]) .tl .stepblk ol>.ev[data-rm="lead"]:not([data-hot]){border-left-style:dashed}' +
+    ':root:not([data-palette="full"]) .tl .stepblk ol>.ev[data-rm="door"]:not([data-hot]){--hbl:3px;border-left:3px double var(--ink)}' +
+    ':root:not([data-palette="full"]) .tl .stepblk ol>.ev[data-rm="note"]:not([data-hot]){border-left-style:dotted}' +
+    ':root:not([data-palette="full"]) .tl .stepblk ol>.ev[data-rm="rule"]:not([data-hot]){border-left-color:var(--line2);background:none}' +
+    ':root[data-palette="full"] .tl .stepblk ol>.ev[data-rm]:not([data-hot]){--hbl:3px;border-left-width:3px}' +
+    ':root[data-palette="full"] .tl .stepblk ol>.ev[data-rm="note"]:not([data-hot]),:root[data-palette="full"] .tl .stepblk ol>.ev[data-rm="rule"]:not([data-hot]){--hbl:2px;border-left-width:2px;background:none}' +
+    /* 区切りの行（扉が開いた・扉の紙）は、ふだんの灰色の小さな字ではなく本文の色で */
+    '.tl .ev.phase[data-rm="door"],.tl .ev.phase[data-rm="rule"]{color:var(--ink);font-size:14px}.tl .ev.phase[data-rm="door"] .evb{font-weight:600}' +
+    /* まとめて進んだ回のダイジェスト：本文の最後の段を灰青の囲みに */
+    '.ev .evdg{margin-top:.7em;padding:4px 10px 6px;border-left:2px dotted var(--rm-dg);border-radius:0 4px 4px 0;background:var(--accent-soft);font-size:13.5px}' +
+    '.ev .evdg::before{content:attr(data-dg);display:block;font-family:var(--f-num);font-size:10px;font-weight:600;letter-spacing:.08em;line-height:1.8;color:var(--muted2)}' +
+    ':root[data-palette="full"] .ev .evdg{border-left-style:solid}' +
+    /* 段の見た目（全箱庭）：行間を少し広く、段落の間を空け、台詞だけの段は左に細い線 */
+    '.tl .ev .evb{line-height:1.8}.tl .stepblk ol{gap:12px}' +
+    '.ev .evp{display:block}.ev .evp+.evp{margin-top:.6em}' +
+    '.ev .evq{padding-left:10px;border-left:2px solid var(--line2)}' +
+    '.tl .stepblk+.stepblk{border-top:1px dashed var(--line)}' +
+    /* 見出しの凡例（出られない部屋の札） */
+    'h2.sec .rmleg{margin-left:10px}.rmleg .rmb{margin-right:0;vertical-align:0}' +
+    '@supports (color: color-mix(in srgb, red 50%, blue)){' +
+      '.rmb{--rk-ink:color-mix(in srgb,var(--rk,var(--ink)) 62%,var(--ink));background:color-mix(in srgb,var(--rk,var(--ink)) var(--rm-chip),var(--paper))}' +
+      ':root[data-palette="full"] .tl .stepblk ol>.ev[data-rm]:not([data-hot]):not([data-rm="note"]):not([data-rm="rule"]){background:color-mix(in srgb,var(--rk) var(--rm-mix),var(--paper))}' +
+      ':root[data-palette="full"] .ev .evdg{background:color-mix(in srgb,var(--rm-dg) 10%,transparent)}' +
+      ':root[data-palette="full"] .ev .evdg::before{color:color-mix(in srgb,var(--rm-dg) 62%,var(--ink))}' +
+      '.roomcnt.rcsh[style*="--rp"]{background:linear-gradient(90deg,color-mix(in srgb,var(--rm-cond) 26%,var(--paper)) var(--rp),var(--accent-soft) var(--rp))}' +
+    '}' +
+    '@media print{.tl .stepblk ol>.ev[data-rm]:not([data-hot]),.ev .evdg,.rmb{background:none!important}.roomcnt[style*="--rp"]{background:none!important;border:1px solid #A3A9B3}}';
+  var RM_DOOR = /^条件を満たしたので扉が開いた/, RM_WAIT = /数えなかった|数えてもらえない|あとから数える/;
+  var RM_NAME = { cond: '条件', lead: 'きっかけ', door: '脱出', end: '結末', rule: '部屋の条件', note: '注意', dg: 'まとめて' };
+  /* 回数の表示「（○○ n/m）」から条件の名前を取る（組の頭「A×Bの」・三人の「：A×B」は落とす） */
+  function rmNoun(tag) {
+    var m = /^（(.*?) ?\d+\/\d+/.exec(tag), s = m ? m[1] : '';
+    if (s.indexOf('：') >= 0) s = s.split('：')[0];
+    else s = s.replace(/^.+?×.+?の/, '');
+    return s.trim();
+  }
+  /* 記録の行の種類と札（出られない部屋だけ。ほかの箱庭は null） */
+  function rmInfo(e, res, inEnd) {
+    if (!res || res.scenId !== 'whiteroom' || !e || e.kind === 'step') return null;
+    var t = String(e.text || ''), I = { k: '', chips: [], dg: '' }, seen = {};
+    function chip(k, s) { if (!seen[s]) { seen[s] = 1; I.chips.push([k, s]); } }
+    if (inEnd) { I.k = 'end'; chip('end', RM_NAME.end); return I; }
+    if (e.kind === 'phase') {
+      if (RM_DOOR.test(t)) { I.k = 'door'; chip('door', RM_NAME.door); }
+      else if (e.n === 1 && /扉/.test(t)) { I.k = 'rule'; chip('rule', RM_NAME.rule); }
+      return I.k ? I : null;
+    }
+    if (e.tag === 'きっかけ') { I.k = 'lead'; chip('lead', RM_NAME.lead); }
+    var tags = t.match(ROOMCNT_RE) || [];
+    tags.forEach(function (tag) {
+      var n = rmNoun(tag), d = /・まとめて(\d+[^（）<>・]{0,3})/.exec(tag);
+      if (n && !e.goal) chip('cond', RM_NAME.cond + '：' + n);
+      if (d && !I.dg) I.dg = RM_NAME.dg + d[1].replace(/）$/, '');
+    });
+    if (RM_WAIT.test(t)) chip('note', RM_NAME.note + '：まだ数えない');
+    if (!I.k && (tags.length || e.goal || e.goalExit)) I.k = 'cond';
+    if (!I.k && RM_WAIT.test(t)) I.k = 'note';
+    return I.k || I.chips.length ? I : null;
+  }
+  /* 本文の段（HK.fmtLong・山場の空行）を段落の箱にする。dg：最後の段をまとめての囲みにするときの見出し */
+  function paraWrap(body, dg) {
+    var ps = body.split(/(?:<br>\s*){2,}/);
+    if (ps.length < 2) return { html: body, dg: false };
+    return { dg: !!dg, html: ps.map(function (p, i) {
+      if (dg && i === ps.length - 1) return '<span class="evp evdg" data-dg="' + esc(dg) + '">' + p + '</span>';
+      var plain = p.replace(/<[^>]+>/g, '').trim();
+      return '<span class="evp' + (/^[^「」。、！？\s]{0,24}「[\s\S]*」$/.test(plain) ? ' evq' : '') + '">' + p + '</span>';
+    }).join('') };
+  }
+
   /* 出られない部屋の回数の表示（scenario-room.js の cntTag「（誰と誰のエッチ 10/100・まとめて5回）」、飲む・お題の「（媚薬 3/10本）」、三人の「（三人で：A×B 3/10・…）」）を、
      太字・強調色・少し大きめで目立たせる（表示だけで記録は変えない。履歴・保存から開いた記録も同じ。「まだ数えない」などの注記は数字が無いので当たらない。HK.fmtLong が語と数字のあいだの空白を詰めることがあるので、空白は無くてもよい。2026-10-29 担当RD） */
   var ROOMCNT_RE = /（[^（）<>]{1,40}? ?\d+\/\d+(?:[本杯錠回個つ人秒]|ml)?(?:・まとめて\d+[^（）<>・]{1,3})?(?:・[^（）<>]{1,30}? ?\d+\/\d+(?:[本杯錠回個つ人秒]|ml)?)*）/g;
-  function roomCnt(t, res) { return res && res.scenId === 'whiteroom' ? t.replace(ROOMCNT_RE, '<span class="roomcnt">$&</span>') : t; }
+  /* 数字の札の地に、進み具合（最初の「n/m」の割合）を薄い帯で敷く（--rp。2026-10-30 担当W3） */
+  function roomCnt(t, res) {
+    if (!res || res.scenId !== 'whiteroom') return t;
+    return t.replace(ROOMCNT_RE, function (m) {
+      var x = /(\d+)\/(\d+)/.exec(m), p = x && +x[2] ? Math.max(0, Math.min(100, Math.round(+x[1] / +x[2] * 100))) : -1;
+      /* 短い札（組の分が一つ）は途中で折り返さない。三人の分などの長い札は文の中で折り返す */
+      return '<span class="roomcnt' + (m.length <= 24 ? ' rcsh' : '') + '"' + (p >= 0 ? ' style="--rp:' + p + '%"' : '') + '>' + m + '</span>';
+    });
+  }
   if (typeof document !== 'undefined' && document.head && !document.getElementById('hk-roomcnt')) {
     var rcs = document.createElement('style'); rcs.id = 'hk-roomcnt';
-    rcs.textContent = '.roomcnt{font-weight:700;color:var(--accent);font-size:1.08em;background:var(--accent-soft);border-radius:4px;padding:0 .2em;margin:0 .1em}';
+    rcs.textContent = '.roomcnt.rcsh{display:inline-block;max-width:100%}.roomcnt{font-weight:700;color:var(--accent);font-size:1.08em;background:var(--accent-soft);border-radius:4px;padding:0 .2em;margin:0 .1em}' + RM_CSS;
     document.head.appendChild(rcs);
   }
 
@@ -433,11 +534,11 @@
     return s;
   }
   function timeline(res) {
-    var ks = keySet(res), H = hotInfo(res), groups = [], cur = null;
+    var ks = keySet(res), H = hotInfo(res), groups = [], cur = null, inEnd = false;
     /* 似た派閥の出来事が続くときは畳む（factions.js の HK.Factions.foldSet。表示だけ。人で絞り込んでいるときは畳まない） */
     var fold = res.factions && HK.Factions && HK.Factions.foldSet && !tl.who.length ? HK.Factions.foldSet(res) : null;
     res.log.forEach(function (e, li) {
-      if (e.kind === 'step') { cur = { label: e.label, step: e.step, items: [] }; groups.push(cur); return; }
+      if (e.kind === 'step') { cur = { label: e.label, step: e.step, items: [], end: e.text === '結末' || e.label === '結末' }; groups.push(cur); return; }
       if (!cur) { cur = { label: '', step: null, items: [] }; groups.push(cur); }
       if (tl.who.length) {
         var all = tl.who.every(function (w) { return e.actors.indexOf(w) >= 0; });
@@ -454,6 +555,7 @@
       /* 左の列：ターン番号（Mono）と局面名。重要な出来事のある区切りは番号を赤に */
       var tn = tno(g.step), gh = g.items.some(function (e) { return !e.fold && isHot(e, H); });
       var when = '<div class="when' + (gh ? ' hot' : '') + '">' + (tn ? '<span class="tn">' + tn + '</span>' + (g.label ? '<span class="ph">' + esc(g.label) + '</span>' : '') : esc(g.label)) + '</div>';
+      inEnd = !!g.end;
       return '<div class="stepblk' + (gh ? ' hasHot' : '') + '">' + when + '<ol>' + g.items.map(function (e) {
         if (e.fold) return '<li class="ev phase facfold"><details><summary style="cursor:pointer;color:var(--muted);font-size:12px">似た派閥の動き ' + e.fold.length + '件（続くので畳んでいます）</summary><ol style="padding-bottom:0">' + e.fold.map(evLi).join('') + '</ol></details></li>';
         return evLi(e);
@@ -461,9 +563,10 @@
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
     function evLi(e) {
-      var hot = isHot(e, H), hk = hotKind(e, H);
+      var hot = isHot(e, H), hk = hotKind(e, H), rm = rmInfo(e, res, inEnd);
       var cls = 'ev' + (e.kind === 'event' && e.cat ? ' cat-' + e.cat : '') + (e.trouble ? ' trouble' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (hot ? ' hot' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '') + (hk ? ' hot-' + hk : '');
-      var chip = e.kind === 'event' ? '<span class="c cc-' + esc(e.cat) + '">' + esc(HK.CAT_NAME[e.cat] || e.cat) + '</span>' : '';
+      /* 出られない部屋の条件の行は、種類の札「脱出」を「条件」の札に任せる（同じことを二つ並べない） */
+      var chip = e.kind === 'event' && !(rm && rm.k === 'cond' && e.cat === 'escape') ? '<span class="c cc-' + esc(e.cat) + '">' + esc(HK.CAT_NAME[e.cat] || e.cat) + '</span>' : '';
       /* 出られない部屋：条件を満たした・扉が開いた出来事の札 */
       if (e.goal || e.goalExit) chip = (e.goal || []).map(function (g) { return '<span class="goalb">条件達成：' + esc(g) + '</span>'; }).join('') + (e.goalExit ? '<span class="goalb exitb">扉が開いた</span>' : '') + chip;
       /* 決定的な関係の節目（付き合い始めた・別れた・浮気）の札（engine.js の markRel） */
@@ -476,7 +579,11 @@
       var talk = !!(avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)));
       var body = paint(e.text, res, sg);
       if (talk) body = body.replace(/「[^「」]*」/g, '<span class="q">$&</span>');
-      return '<li class="' + cls + (avs ? ' hasav' : '') + (talk ? ' talk' : '') + '"' + (hk ? ' data-hot="' + hk + '"' : '') + '>' + avs + '<div class="evb">' + chip + body + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+      /* 段落の箱と、出られない部屋の札（まとめての見出しは囲みに。段が一つだけなら札に） */
+      var pw = paraWrap(body, rm && rm.dg);
+      body = pw.html;
+      if (rm) chip = rm.chips.concat(rm.dg && !pw.dg ? [['dg', rm.dg]] : []).map(function (c) { return '<span class="rmb" data-k="' + c[0] + '">' + esc(c[1]) + '</span>'; }).join('') + chip;
+      return '<li class="' + cls + (avs ? ' hasav' : '') + (talk ? ' talk' : '') + '"' + (hk ? ' data-hot="' + hk + '"' : '') + (rm && rm.k ? ' data-rm="' + rm.k + '"' : '') + '>' + avs + '<div class="evb">' + chip + body + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
     }
   }
   function tlBar(res) {
@@ -500,7 +607,22 @@
   function hotLegend(res) {
     var H = hotInfo(res), seen = {};
     res.log.forEach(function (e) { var k = hotKind(e, H); if (k) seen[k] = 1; });
-    return hotLegendOf(seen);
+    return hotLegendOf(seen) + rmLegend(res);
+  }
+  /* 出られない部屋の札の凡例：その結果に出る種類だけ（まとめては囲みの見出しなので、まとめて進んだ回があるときだけ） */
+  function rmLegend(res) {
+    if (!res || res.scenId !== 'whiteroom') return '';
+    var seen = {}, inEnd = false;
+    res.log.forEach(function (e) {
+      if (e.kind === 'step') { inEnd = e.text === '結末' || e.label === '結末'; return; }
+      var I = rmInfo(e, res, inEnd);
+      if (I) { if (I.k) seen[I.k] = 1; if (I.dg) seen.dg = 1; I.chips.forEach(function (c) { seen[c[0]] = 1; }); }
+    });
+    var ks = ['cond', 'dg', 'lead', 'note', 'door', 'end'].filter(function (k) { return seen[k]; });
+    if (!ks.length) return '';
+    return '<span class="hotleg rmleg" role="note" aria-label="記録の札の見分け方"><span class="hkl">札</span>' + ks.map(function (k) {
+      return '<span class="rmb" data-k="' + k + '">' + esc(RM_NAME[k]) + '</span>';
+    }).join('') + '</span>';
   }
 
   /* ---------- 全体 ---------- */
