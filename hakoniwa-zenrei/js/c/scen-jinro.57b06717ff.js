@@ -1,6 +1,6 @@
 ;
 /* ==== js/scenario-jinro.js ==== */
-HK.Load.def(383,'js/scenario-jinro.js',function(){
+HK.Load.def(262,'js/scenario-jinro.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -114,6 +114,150 @@ function snap(){P.forEach(function(p){var o=alive().filter(function(q){return q!
 function check(){var w=alive().filter(isW).length,v=alive().length-w;if(!w)return'vill';if(w>=v)return'wolf';return'';}
 function bump(q,x,v){if(q===x|| !q.alive)return;if(isW(q))return;q.sus[x.i]=clamp((q.sus[x.i]||50)+v,0,100);}
 function cred(q,sp){return clamp(1-(q.sus[sp.i]||50)/100+(sp.like-0.5)*0.3,0.05,1);}
+var VILL_K={logic:18,gut:10},WOLF_K={pre:10,seer:15,acc:5,lieBold:26,lieShaky:12};
+var pub={res:{},med:[],guard:[]},votesByDay={},policy='none',polT=null,inf=null,peaceDay=0;
+var spoke={},named={},accBy={};
+function isCO(q){return seerCO.indexOf(q)>=0||medCO.indexOf(q)>=0||hunterCO.indexOf(q)>=0;}
+function said(c,x,black,d){(pub.res[c.i]=pub.res[c.i]||[]).push({x:x,black:black,day:d});}
+function resOf(c){return pub.res[c.i]||[];}
+function medOf(x){
+var a=pub.med.filter(function(m){return m.x===x;});
+if(!a.length||(medCO.length>=2&&a.length<2))return null;
+return a.every(function(m){return m.black===a[0].black;})?a[0].black:null;
+}
+function board(){
+var B={white:{},semi:{},black:{},real:null,fake:{},semiBy:null,deadW:0,exact:true,wolfMax:null,med:[]};
+var cl=seerCO.slice();
+cl.forEach(function(c){
+if(killed.indexOf(c)>=0){if(!B.real)B.real=c;}
+else if(executed.indexOf(c)>=0){var r=medOf(c);if(r===false&& !B.real)B.real=c;else if(r===true)B.fake[c.i]=1;}
+});
+if(!B.real&&cl.length>=2){var nf=cl.filter(function(c){return!B.fake[c.i];});if(nf.length===1)B.real=nf[0];}
+if(B.real)cl.forEach(function(c){if(c!==B.real)B.fake[c.i]=1;});
+if(B.real){B.white[B.real.i]=1;resOf(B.real).forEach(function(r){B[r.black?'black':'white'][r.x.i]=1;});}
+cl.forEach(function(c){if(B.fake[c.i])B.black[c.i]=1;});
+if(cl.length>=2)P.forEach(function(q){if(cl.every(function(c){return c!==q&&resOf(c).some(function(r){return r.x===q&& !r.black;});}))B.white[q.i]=1;});
+if(cl.length===1&& !B.real){B.semiBy=cl[0];resOf(cl[0]).forEach(function(r){if(!r.black)B.semi[r.x.i]=1;});}
+killed.forEach(function(q){B.white[q.i]=1;});
+executed.forEach(function(q){var r=medOf(q);if(r!=null){B[r?'black':'white'][q.i]=1;B.med.push({x:q,black:r});}});
+if(hunterCO.length===1)pub.guard.forEach(function(g){if(g.c===hunterCO[0]&&g.c.alive)B.semi[g.x.i]=1;});
+Object.keys(B.black).forEach(function(k){delete B.white[k];delete B.semi[k];});
+Object.keys(B.white).forEach(function(k){delete B.semi[k];});
+executed.forEach(function(q){if(B.black[q.i])B.deadW++;else if(!B.white[q.i])B.exact=false;});
+B.wolfMax=nW-B.deadW>=1?nW-B.deadW:null;
+B.gray=alive().filter(function(q){return!isCO(q)&& !B.white[q.i]&& !B.semi[q.i]&& !B.black[q.i];});
+return B;
+}
+function safe(B,q){return!!(B.white[q.i]||B.semi[q.i]);}
+function candOf(p,others,B){
+var c=others.filter(function(q){return!safe(B,q)&& !(p===seer&&seer.known[q.i]==='human');});
+if(policy==='gray'){var g=c.filter(function(q){return!isCO(q);});if(g.length)c=g;}
+if(!c.length)c=others.filter(function(q){return!B.white[q.i];});
+return c.length?c:others;
+}
+function maxSus(p,list){return list.slice().sort(function(a,b){return(p.sus[b.i]||0)-(p.sus[a.i]||0);})[0];}
+function leanOf(p,others,B){
+if(p===seer){var k=others.filter(function(q){return seer.known[q.i]==='wolf';})[0];if(k)return k;}
+var c=candOf(p,others,B);
+var bk=c.filter(function(q){return B.black[q.i];});
+if(bk.length)return maxSus(p,bk);
+if(polT&&policy!=='gray'&&policy!=='none'&&p.followPol===day&&c.indexOf(polT)>=0)return polT;
+return maxSus(p,c);
+}
+var R_DAY1= /昨日|昨夜|投票先|票を見|票先|一貫|記録を見|毎回|二日続|辻褄|噛ま|噛み|霊媒結果|平和な朝|入れてない|流れと違う|入れたんだっけ/;
+var R_VOTE= /流れと違う|毎回いちばん安全|直前で票先|二日続けて揃って|票を入れてないの/;
+function whiteSaid(x){return seerCO.some(function(c){return resOf(c).some(function(r){return r.x===x&& !r.black;});});}
+function lineOK(t,c){
+var x=c.x,y=c.y,p=c.p;
+if(day===1&&R_DAY1.test(t))return false;
+if(/霊媒結果/.test(t)&& !pub.med.length)return false;
+if(/対抗|真贋|どっちを信じる|どっちがどっち/.test(t)&&seerCO.length<2)return false;
+if(/占い師が出た/.test(t)&& !seerCO.length)return false;
+if(/二人出た|両方/.test(t)&&claimants().length!==2)return false;
+if(/急に結果を言い出した/.test(t)&& !(x&&seerCO.indexOf(x)>0))return false;
+if(/明日の占い結果/.test(t)&& !claimants().length)return false;
+if(/黒を証明/.test(t)&& !(p&&x&&resOf(p).some(function(r){return r.x===x&&r.black;})))return false;
+if(/噛まれたのが|噛まれるのは/.test(t)&& !c.kill)return false;
+if(/噛み先/.test(t)&& !(c.kill&&x&&killed.filter(function(v){return(v.sus[x.i]||0)>=55;}).length>=2))return false;
+if(/平和な朝/.test(t)&&peaceDay!==day)return false;
+if(/偽の占い結果/.test(t)&& !(p&&plan.fake===p&&seerCO.indexOf(p)>=0))return false;
+if(/\{x\}が白で、\{y\}も白/.test(t)&& !(x&&y&&whiteSaid(x)&&whiteSaid(y)))return false;
+if(/黒出した/.test(t)&& !seerCO.some(function(s){return resOf(s).some(function(r){return r.black;});}))return false;
+if(/昨日まで組んで|昨日の発言で/.test(t)&& !(p&&p.allyDay!=null&&p.allyDay<day))return false;
+if(/口数が少ない|話題を振らない|喋らなさすぎ|黙ってる/.test(t)&& !(x&& !spoke[x.i]))return false;
+if(/名前を一度も出してない/.test(t)&& !(x&& !accBy[x.i]))return false;
+if(/\{y\}の意見に賛成|\{y\}の推理、納得|\{y\}の顔をうかがってから/.test(t)&& !(x&&y&&(named[x.i]||[]).indexOf(y)>=0))return false;
+if(/みんな\{x\}|皆\{x\}/.test(t)&& !(x&&(named[x.i]||[]).length>=2))return false;
+if(/\{x\}吊りの流れ/.test(t)&& !(x&&(named[x.i]||[]).length>=1))return false;
+if(R_VOTE.test(t)&& !(c.vote&&c.vote.indexOf(t)>=0))return false;
+return true;
+}
+function pf(arr,c,need){
+var a=arr.filter(function(t){return(!need||need.every(function(m){return t.indexOf(m)>=0;}))&&lineOK(t,c||{});});
+return a.length?pk(a):null;
+}
+function voteFacts(x,sp){
+var Y=votesByDay[day-1],out={lines:[],y:null};
+if(!Y|| !x)return out;
+var rx=function(r){return r.p===x;};
+var mine=Y.v.filter(rx)[0];
+if(!mine|| !mine.to)return out;
+var non=Y.v.filter(function(r){return r.to&&r.to!==Y.ex;});
+J.reason.vote.forEach(function(t){
+if(/流れと違う|票を入れてないの/.test(t)){if(non.length===1&&non[0].p===x)out.lines.push(t);}
+else if(/毎回いちばん安全/.test(t)){
+var ds=Object.keys(votesByDay).map(Number).filter(function(d){return d<day;});
+if(ds.length>=2&&ds.every(function(d){var r=votesByDay[d].v.filter(rx)[0];return r&&r.to===votesByDay[d].ex;}))out.lines.push(t);
+}else if(/直前で票先/.test(t)){if(mine.pre&&mine.pre!==mine.to)out.lines.push(t);}
+else if(/二日続けて揃って/.test(t)){
+var Y2=votesByDay[day-2],m2=Y2&&Y2.v.filter(rx)[0];
+if(!m2|| !m2.to)return;
+var pal=Y.v.filter(function(r){
+if(r.p===x||r.p===sp|| !r.p.alive||r.to!==mine.to)return false;
+var r2=Y2.v.filter(function(z){return z.p===r.p;})[0];
+return r2&&r2.to===m2.to&&(mine.to!==Y.ex||m2.to!==Y2.ex);
+})[0];
+if(pal){out.lines.push(t);out.y=pal.p;}
+}
+});
+return out;
+}
+function accuse(p,x,text){
+if(!x|| !p||text.indexOf(x.name)<0)return;
+(named[x.i]=named[x.i]||[]).push(p);accBy[p.i]=(accBy[p.i]||0)+1;
+if(!isW(p)){p.named=x;p.namedDay=day;}
+}
+var skipSaid={};
+function skipWhite(p,top,others,B){
+var raw=maxSus(p,others);
+if(!raw||raw===top|| !safe(B,raw)||(p.sus[raw.i]||0)<55||skipSaid[raw.i]===day)return;
+var wsT=pf(J.whiteSkip.filter(function(t){return B.white[raw.i]||t.indexOf('白確')<0;}),{p:p,x:top,y:raw});
+if(!wsT)return;
+skipSaid[raw.i]=day;
+say({actors:[p.i,top.i,raw.i],tag:'盤面',text:F(wsT,{a:p.name,x:top.name,y:raw.name}),why:raw.name+'は'+(B.white[raw.i]?'白確':'準白確（対抗のいない占い師の白など）')+'。'+p.name+'は投票の候補から外した'});
+}
+function boardSay(sp,B){
+var BP=J.boardPart,nm=function(l){return l.map(function(q){return q.name;}).join('・');};
+var parts=[],data={seers:[],real:null,white:[],semi:[],black:[],med:[],gray:[],wolfMax:B.wolfMax,exact:B.exact};
+var put=function(k,m){parts.push(BP[k].map(function(t){return fill(t,m);}));};
+var cl=claimants();
+if(B.real&&B.real.alive){put('real',{s:B.real.name});data.real=B.real.name;}
+else if(cl.length){put('seers',{s:nm(cl),n:cl.length});data.seers=cl.map(function(q){return q.name;});}
+var w=alive().filter(function(q){return B.white[q.i];}),sm=alive().filter(function(q){return B.semi[q.i];}),bk=alive().filter(function(q){return B.black[q.i];});
+if(w.length){put('white',{w:nm(w)});data.white=w.map(function(q){return q.name;});}
+if(sm.length){put('semi',{w:nm(sm)});data.semi=sm.map(function(q){return q.name;});}
+if(bk.length){put('black',{k:nm(bk)});data.black=bk.map(function(q){return q.name;});}
+if(B.med.length){put('med',{m:B.med.map(function(r){return r.x.name+'は'+(r.black?'人狼':'人間');}).join('、')});data.med=B.med.map(function(r){return[r.x.name,r.black];});}
+if(B.gray.length){put('gray',{g:nm(B.gray),n:B.gray.length});data.gray=B.gray.map(function(q){return q.name;});}
+if(B.wolfMax)put(B.exact?'wolfExact':'wolfMax',{n:B.wolfMax});
+if(parts.length<2)return false;
+var head=BP.head,line=[0,1,2].map(function(k){return head[k]+parts.map(function(x){return x[k];}).join('');});
+S._jrBoard=data;
+say({actors:[sp.i],tag:'盤面整理',text:sp.name+'\u300c'+line.map(function(x){return x.replace(/。$/,'');}).join('\uff5c')+'\u300d',why:sp.name+'が記録（CO・占い結果・霊媒結果・吊り・噛み）から盤面を整理した'});
+S._jrBoard=null;
+spoke[sp.i]=1;
+return true;
+}
 say({kind:'phase',actors:P.map(function(p){return p.i;}),text:n+'人で人狼ゲームが始まった。配役は人狼'+nW+'・'+[env.seer==='1'?'占い師':'',env.medium==='1'?'霊媒師':'',env.hunter==='1'?'狩人':''].filter(Boolean).join('・')+(roles.filter(function(r){return r==='vill';}).length?'・村人'+roles.filter(function(r){return r==='vill';}).length:'')+'。'+(prize?'賞品は「'+prize+'」。':''),why:'配役はランダム（指定があればそれを優先）'});
 if(prize){var hot=P.slice().sort(function(a,b){return b.want-a.want;})[0];say({actors:[hot.i],tag:'賞品',text:F(pk(J.prizeHot),{a:hot.name,p:prizeHotN}),why:hot.name+'の勝ちたい気持ち（FC・衝動性・負けず嫌い）'});}
 function divine(){
@@ -144,7 +288,8 @@ var played=0;
 for(var day=1;day<=n+2&& !winner;day++){
 played=day;
 ST.step(S,day+'日目・昼');
-var A=alive(),lastEx=executed[executed.length-1]||null,lastKill=killed[killed.length-1]||null;
+spoke={};named={};accBy={};
+var A=alive(),lastEx=executed[executed.length-1]||null,lastKill=killed.length&&killed[killed.length-1].killedDay===day?killed[killed.length-1]:null;
 if(HK.HateKit){
 if(!S.ties)S.ties=(input.ties||[]).filter(function(t){return!(HK.ngPair(P[t.a],P[t.b])&& /^(lover|fwb|mate|fated|crush|almost|ex|yan)$/.test(t.type));});
 var hk=HK.HateKit.storyTick(S,A,{kinds:'love',rate:0.35,place:'朝の広場で、'});
@@ -162,11 +307,13 @@ var pressure=avg(A.filter(function(q){return q!==seer&& !isW(q);}),function(q){r
 if(foundW||seer.tr.honesty>0.6||pressure>55||(plan.fake&&day>=1&&rng()<0.4)||day>=2&&rng()<0.6){
 seerCO.push(seer);setBelief();
 say({actors:[seer.i,seer.lastDiv.i],tag:'占い師CO',text:F(pk(J.seerCO),{a:seer.name,x:seer.lastDiv.name,r:foundW?'人狼でした':'人狼ではありませんでした'}),why:seer.name+'は本物の占い師（'+(foundW?'人狼を見つけた':seer.tr.honesty>0.6?'正直さ':pressure>55?'疑いをかわすため':'頃合いを見て')+'）'});
+said(seer,seer.lastDiv,foundW,day);
 hearResult(seer,seer.lastDiv,foundW);
 }
 }else if(seerCO.indexOf(seer)>=0&&seer.lastDiv&&seer.lastDiv.alive){
 var bl=seer.known[seer.lastDiv.i]==='wolf';
 say({actors:[seer.i,seer.lastDiv.i],tag:'占い結果',text:F(pk(J.seerRes),{a:seer.name,x:seer.lastDiv.name,r:bl?'人狼':'人間'}),why:seer.name+'は本物の占い師'});
+said(seer,seer.lastDiv,bl,day);
 hearResult(seer,seer.lastDiv,bl);
 }
 }
@@ -178,139 +325,201 @@ var tgt=ft||A.filter(function(q){return!isW(q)&&q!==fw;}).sort(function(a,b){ret
 if(tgt){
 fw.fakeLast=tgt;fw.cnt.lies++;
 say({actors:[fw.i,tgt.i],tag:seerCO.length>1?'対抗CO':'占い師CO',text:F(pk(seerCO.length>1?J.fakeCO:J.seerCO),{a:fw.name,x:tgt.name,r:ft?'人狼ではありませんでした':'人狼でした'}),why:fw.name+'は人狼。占い師を騙った（'+(ft?'仲間に白を出して守る':'推理役に黒を出す')+'・堂々さ '+Math.round(fw.bold*100)+'）'});
+said(fw,tgt,!ft,day);
 hearResult(fw,tgt,!ft);
 }
 }else if(fw&&fw.alive&&seerCO.indexOf(fw)>=0&&day>1){
 var ft2=A.filter(function(q){return!isW(q)&&q!==fw&&q!==fw.fakeLast;}).sort(function(a,b){return b.acc-a.acc;})[rng()<0.6?0:1];
-if(ft2){var blk=rng()<0.45;fw.fakeLast=ft2;say({actors:[fw.i,ft2.i],tag:'占い結果',text:F(pk(J.seerRes),{a:fw.name,x:ft2.name,r:blk?'人狼':'人間'}),why:fw.name+'は偽の占い師（人狼）'});hearResult(fw,ft2,blk);}
+if(ft2){var blk=rng()<0.45;fw.fakeLast=ft2;say({actors:[fw.i,ft2.i],tag:'占い結果',text:F(pk(J.seerRes),{a:fw.name,x:ft2.name,r:blk?'人狼':'人間'}),why:fw.name+'は偽の占い師（人狼）'});said(fw,ft2,blk,day);hearResult(fw,ft2,blk);}
 }
 if(lastEx){
 if(med&&med.alive&&(medCO.indexOf(med)>=0||med.tr.honesty>0.45||isW(lastEx)||claimants().length>1||rng()<0.5)){
 if(medCO.indexOf(med)<0)medCO.push(med);
 say({actors:[med.i,lastEx.i],tag:'霊媒',text:F(pk(J.medCO),{a:med.name,x:lastEx.name,r:isW(lastEx)?'人狼でした':'人狼ではありませんでした'}),why:med.name+'は本物の霊媒師'});
-alive().forEach(function(q){if(isW(q)||q===med)return;claimants().forEach(function(c){var said=c===seer?seer.known[lastEx.i]:c.fakeLast===lastEx?'wolf':null;if(said)q.belief[c.i]=clamp((q.belief[c.i]||0.5)+((said==='wolf')===isW(lastEx)?0.2: -0.35)*(0.5+q.acc*0.5),0.02,0.98);});});
+pub.med.push({c:med,x:lastEx,black:isW(lastEx)});
+alive().forEach(function(q){if(isW(q)||q===med)return;claimants().forEach(function(c){var said0=c===seer?seer.known[lastEx.i]:c.fakeLast===lastEx?'wolf':null;if(said0)q.belief[c.i]=clamp((q.belief[c.i]||0.5)+((said0==='wolf')===isW(lastEx)?0.2: -0.35)*(0.5+q.acc*0.5),0.02,0.98);});});
 }
 var fm=plan.fakeMed;
 if(fm&&fm.alive&&medCO.indexOf(fm)<0&&(medCO.length||rng()<0.5)){
 medCO.push(fm);fm.cnt.lies++;
 say({actors:[fm.i,lastEx.i],tag:'霊媒騙り',text:F(pk(J.medCO),{a:fm.name,x:lastEx.name,r:isW(lastEx)?'人狼ではありませんでした':'人狼でした'}),why:fm.name+'は人狼。霊媒師を騙った'});
+pub.med.push({c:fm,x:lastEx,black: !isW(lastEx)});
 alive().forEach(function(q){if(!isW(q)){bump(q,fm,8*q.acc);if(med&&med.alive&&medCO.indexOf(med)>=0)bump(q,med,6*(1-q.acc));}});
 }
 }
 if(lastKill&&lastKill===seer&&seerCO.indexOf(seer)>=0)alive().forEach(function(q){if(!isW(q))claimants().forEach(function(c){q.belief[c.i]=clamp((q.belief[c.i]||0.5)-0.25*q.acc,0.02,0.98);bump(q,c,15*q.acc);});});
-var policy='gray',inf=A.slice().sort(function(a,b){return(b.tr.lead*0.6+b.tr.cp*0.4+(1-avg(A.filter(function(q){return q!==b;}),function(q){return(q.sus[b.i]||50)/100;}))*0.6)-(a.tr.lead*0.6+a.tr.cp*0.4+(1-avg(A.filter(function(q){return q!==a;}),function(q){return(q.sus[a.i]||50)/100;}))*0.6);})[0];
-var cl=claimants();
-if(cl.length>=2){
+var B=board();
+policy='none';polT=null;
+inf=A.slice().sort(function(a,b){return(b.tr.lead*0.6+b.tr.cp*0.4+(1-avg(A.filter(function(q){return q!==b;}),function(q){return(q.sus[b.i]||50)/100;}))*0.6)-(a.tr.lead*0.6+a.tr.cp*0.4+(1-avg(A.filter(function(q){return q!==a;}),function(q){return(q.sus[a.i]||50)/100;}))*0.6);})[0];
+var cl=claimants().filter(function(c){return!safe(B,c);});
+if(cl.length>=2&& !B.real){
 if(isW(inf))policy=plan.fake&&plan.fake.alive?(inf.intel>0.6?'judge':'gray'):'roller';
 else{var sc2={roller:inf.tr.cp*0.5+inf.tr.caution*0.4+(1-inf.acc)*0.3,judge:inf.acc*0.9+inf.tr.a*0.3,gray:inf.tr.np*0.6+(1-inf.tr.cp)*0.2};policy=Object.keys(sc2).sort(function(a,b){return sc2[b]-sc2[a];})[0];}
-var polT=policy==='gray'?null:policy==='roller'?cl.slice().sort(function(a,b){return avg(A,function(q){return q.sus[a.i]||0;})-avg(A,function(q){return q.sus[b.i]||0;});}).pop():(isW(inf)?cl.filter(function(c){return!isW(c);})[0]:cl.slice().sort(function(a,b){return(inf.belief[a.i]||0.5)-(inf.belief[b.i]||0.5);})[0]);
+polT=policy==='gray'?null:policy==='roller'?cl.slice().sort(function(a,b){return avg(A,function(q){return q.sus[a.i]||0;})-avg(A,function(q){return q.sus[b.i]||0;});}).pop():(isW(inf)?cl.filter(function(c){return!isW(c);})[0]:cl.slice().sort(function(a,b){return(inf.belief[a.i]||0.5)-(inf.belief[b.i]||0.5);})[0]);
+if(polT===inf)polT=cl.filter(function(c){return c!==inf;})[0]||null;
+if(policy!=='gray'&& !polT)policy='gray';
 policyLog.push(POLICY_LABEL[policy]);
-say({actors:[inf.i].concat(polT?[polT.i]:[]),tag:'村の方針',text:F(pk(J.policy[policy]),{a:inf.name,x:polT?polT.name:''}),why:'仕切り役の'+inf.name+'が「'+POLICY_LABEL[policy]+'」を提案（'+(isW(inf)?'実は人狼。狼に都合のいい方針':{roller:'CP・慎重さ',judge:'推理の正確さ',gray:'NP。情報源を残したい'}[policy])+'）'});
-inf.policyT=polT;
-}else inf.policyT=null;
+var polArr=J.policy[policy].filter(function(t){return polT||t.indexOf('{x}')<0;});
+var polText=F(pf(polArr,{p:inf,x:polT})||polArr[0],{a:inf.name,x:polT?polT.name:''});
+say({actors:[inf.i].concat(polT?[polT.i]:[]),tag:'村の方針',text:polText,why:'仕切り役の'+inf.name+'が「'+POLICY_LABEL[policy]+'」を提案（'+(isW(inf)?'実は人狼。狼に都合のいい方針':{roller:'CP・慎重さ',judge:'推理の正確さ',gray:'NP。情報源を残したい'}[policy])+'）'});
+spoke[inf.i]=1;
+if(polT)accuse(inf,polT,polText);
+A.forEach(function(q){if(q===inf||rng()<0.25+q.tr.ac*0.4+cred(q,inf)*0.3-(q.style==='contra'?0.4:0))q.followPol=day;});
+}
+if((day>=2||seerCO.length)&&rng()<(day>=2?0.75:0.45))boardSay(inf,B);
 var speakers=rng.shuffle(A.slice()).slice(0,Math.min(A.length,4+Math.floor(rng()*3)));
 speakers.forEach(function(p){
 if(!p.alive)return;
 var others=A.filter(function(q){return q!==p;});
 if(!others.length)return;
+B=board();
 var mate=isW(p)?others.filter(isW)[0]:null;
-if(LM&&LM.appeal(S,p,others,{isW:isW,pk:pk,bump:bump,say:say,day:day}))return;
+if(LM&&LM.appeal(S,p,others,{isW:isW,pk:pk,bump:bump,say:say,day:day})){spoke[p.i]=1;return;}
+spoke[p.i]=1;
 if(isW(p)){
 var mateHeat=mate?avg(others.filter(function(q){return!isW(q);}),function(q){return q.sus[mate.i]||50;}):0;
-if(mate&&mateHeat>62&&plan.tags.indexOf('bus')>=0&&rng()<p.busP+0.2){
+var busT=mate&&mateHeat>62&&plan.tags.indexOf('bus')>=0&&rng()<p.busP+0.2?pf(J.bus,{p:p,x:mate},['{x}']):null;
+if(busT){
 p.cnt.bus++;moments.push(p.name+'が仲間の'+mate.name+'を切った');
-say({actors:[p.i,mate.i],tag:'仲間切り',text:F(pk(J.bus),{a:p.name,x:mate.name}),why:p.name+'は人狼。疑われた仲間を自分から切って、信用を買った（ドライさ・知能）'});
+var bt=F(busT,{a:p.name,x:mate.name});
+say({actors:[p.i,mate.i],tag:'仲間切り',text:bt,why:p.name+'は人狼。疑われた仲間を自分から切って、信用を買った（ドライさ・知能）'});
+accuse(p,mate,bt);
 others.forEach(function(q){bump(q,mate,12);bump(q,p,-10*(1-q.acc*0.5));});
 p.busVote=mate;return;
 }
 if(mate&&mateHeat>55&&rng()<p.coverP){
-var scp=others.filter(function(q){return!isW(q);}).sort(function(a,b){return b.acc-a.acc;})[0];
-say({actors:[p.i,mate.i],tag:'庇う',text:F(pk(J.cover),{a:p.name,x:mate.name,y:scp?scp.name:''}),why:p.name+'は人狼。仲間を庇った（NP・衝動性）'});
+var scp=others.filter(function(q){return!isW(q)&& !safe(B,q);}).sort(function(a,b){return b.acc-a.acc;})[0];
+var cvT=scp?pf(J.cover,{p:p,x:mate,y:scp})||pk(J.cover):pk(J.cover.filter(function(t){return t.indexOf('{y}')<0;}));
+var cvx=F(cvT,{a:p.name,x:mate.name,y:scp?scp.name:''});
+say({actors:[p.i,mate.i],tag:'庇う',text:cvx,why:p.name+'は人狼。仲間を庇った（NP・衝動性）'});
+if(scp)accuse(p,scp,cvx);
 others.forEach(function(q){bump(q,mate,-6*(1-q.acc));bump(q,p,8*q.acc);});
 return;
 }
-if(p.ally&&p.ally.alive&&(alive().filter(isW).length*2+1>=alive().length||avg(others.filter(function(q){return!isW(q);}),function(q){return q.sus[p.i]||50;})>60)&&rng()<0.5+p.tr.cold*0.4){
+if(p.ally&&p.ally.alive&&(alive().filter(isW).length*2+1>=alive().length||avg(others.filter(function(q){return!isW(q);}),function(q){return q.sus[p.i]||50;})>60)&&rng()<0.5+p.tr.cold*0.4&& !safe(B,p.ally)){
 var dupe=p.ally;p.cnt.betray++;moments.push(p.name+'が協力相手の'+dupe.name+'を裏切った');
-say({actors:[p.i,dupe.i],tag:'裏切り',text:F(pk(J.betray),{a:p.name,x:dupe.name})+F(pk(J.betrayed),{a:p.name,x:dupe.name}),why:p.name+'は人狼。隠れ蓑にしていた'+dupe.name+'を切り捨てた（ドライさ）'});
+var btx=F(pf(J.betray,{p:p,x:dupe})||pk(J.betray),{a:p.name,x:dupe.name})+F(pk(J.betrayed),{a:p.name,x:dupe.name});
+say({actors:[p.i,dupe.i],tag:'裏切り',text:btx,why:p.name+'は人狼。隠れ蓑にしていた'+dupe.name+'を切り捨てた（ドライさ）'});
+accuse(p,dupe,btx);
 others.forEach(function(q){bump(q,dupe,14*(1-q.acc*0.5));});
 p.busVote=dupe;dupe.ally=null;p.ally=null;return;
 }
 if(!p.ally&&rng()<0.25+p.like*0.3+p.act*0.2){
 var mark=others.filter(function(q){return!isW(q)&& !q.ally&&(q.sus[p.i]||50)<55;}).sort(function(a,b){return(b.acc+(b===seer?0.4:0))-(a.acc+(a===seer?0.4:0));})[0];
 if(mark&&rng()<0.4+p.act*0.5-mark.acc*0.3){
-p.ally=mark;mark.ally=p;p.cnt.ally++;mark.cnt.ally++;
+p.ally=mark;mark.ally=p;p.allyDay=mark.allyDay=day;p.cnt.ally++;mark.cnt.ally++;
 say({actors:[p.i,mark.i],tag:'協力',text:F(pk(J.ally),{a:p.name,x:mark.name}),why:p.name+'は人狼。'+mark.name+'に近づいて隠れ蓑にした（感じのよさ・演技力）'});
 mark.sus[p.i]=clamp(mark.sus[p.i]-20,0,100);
 return;
 }
 }
-var scape=others.filter(function(q){return!isW(q);}).sort(function(a,b){return(b.acc+(seerCO.indexOf(b)>=0?0.5:0))-(a.acc+(seerCO.indexOf(a)>=0?0.5:0));})[0];
+var scape=others.filter(function(q){return!isW(q)&& !safe(B,q);}).sort(function(a,b){return(b.acc+(seerCO.indexOf(b)>=0?0.5:0))-(a.acc+(seerCO.indexOf(a)>=0?0.5:0));})[0];
 if(!scape)return;
 p.cnt.lies++;
 var boldNow=rng()<p.bold+0.15;
-say({actors:[p.i,scape.i],tag:boldNow?'議論':'議論',text:F(pk(boldNow?J.lieBold:J.lieShaky),{a:p.name,x:scape.name}),why:boldNow?'':p.name+'の嘘が、少し顔に出た（正直さ・AC）'});
-others.forEach(function(q){bump(q,scape,(boldNow?10:4)*cred(q,p)*(1-q.acc*0.4));if(!boldNow)bump(q,p,10*q.acc);});
+var lieT=pf(boldNow?J.lieBold:J.lieShaky,{p:p,x:scape},['{x}'])||pf(J.lieBold,{p:p,x:scape},['{x}']);
+var lieX=F(lieT,{a:p.name,x:scape.name});
+say({actors:[p.i,scape.i],tag:'議論',text:lieX,why:boldNow?'':p.name+'の嘘が、少し顔に出た（正直さ・AC）'});
+accuse(p,scape,lieX);
+others.forEach(function(q){bump(q,scape,(boldNow?WOLF_K.lieBold:WOLF_K.lieShaky)*cred(q,p)*(1-q.acc*0.4));if(!boldNow)bump(q,p,10*q.acc);});
 if(rng()<(1-p.intel)*0.18+(seerCO.indexOf(p)>=0?0.06:0)){
+var bwT=pf(J.breakWolf,{p:p,kill:lastKill});
+if(bwT){
 p.cnt.breaks++;moments.push(p.name+'が口を滑らせた');
-say({actors:[p.i],tag:'失言',text:F(pk(J.breakWolf),{a:p.name,y:lastKill?lastKill.name:scape.name}),why:p.name+'の嘘がほころんだ（知能 '+Math.round(p.intel*5)+'）'});
+say({actors:[p.i],tag:'失言',text:F(bwT,{a:p.name,y:lastKill?lastKill.name:''}),why:p.name+'の嘘がほころんだ（知能 '+Math.round(p.intel*5)+'）'});
 others.forEach(function(q){bump(q,p,25*(0.4+q.acc));});
+}
 }
 return;
 }
-if(p.ally&&p.ally.alive&&p.sus[p.ally.i]>64){
+if(p.ally&&p.ally.alive&&p.sus[p.ally.i]>64&& !safe(B,p.ally)){
 var ex2=p.ally;p.cnt.betray++;moments.push(p.name+'が'+ex2.name+'を裏切った');
-say({actors:[p.i,ex2.i],tag:'裏切り',text:F(pk(J.betray),{a:p.name,x:ex2.name})+F(pk(J.betrayed),{a:p.name,x:ex2.name}),why:p.name+'は'+ex2.name+'と組んでいたが、疑いが上回った（'+Math.round(p.sus[ex2.i])+'）'});
+var btx2=F(pf(J.betray,{p:p,x:ex2})||pk(J.betray),{a:p.name,x:ex2.name})+F(pk(J.betrayed),{a:p.name,x:ex2.name});
+say({actors:[p.i,ex2.i],tag:'裏切り',text:btx2,why:p.name+'は'+ex2.name+'と組んでいたが、疑いが上回った（'+Math.round(p.sus[ex2.i])+'）'});
+accuse(p,ex2,btx2);
 others.forEach(function(q){bump(q,ex2,10);});
 ex2.ally=null;p.ally=null;return;
 }
 if(!p.ally&&rng()<0.3+p.tr.np*0.25+p.tr.ac*0.15){
 var pal=others.filter(function(q){return!q.ally&&p.sus[q.i]<44;}).sort(function(a,b){return p.sus[a.i]-p.sus[b.i];})[0];
 if(pal&&(isW(pal)?rng()<0.3+pal.act*0.6:pal.sus[p.i]<50)){
-p.ally=pal;pal.ally=p;p.cnt.ally++;pal.cnt.ally++;
+p.ally=pal;pal.ally=p;p.allyDay=pal.allyDay=day;p.cnt.ally++;pal.cnt.ally++;
 say({actors:[p.i,pal.i],tag:'協力',text:F(pk(J.ally),{a:p.name,x:pal.name}),why:p.name+'は'+pal.name+'を信頼している（疑い '+Math.round(p.sus[pal.i])+'）'+(isW(pal)?'。……'+pal.name+'は人狼だ':'')});
 return;
 }
 }
-var top=others.slice().sort(function(a,b){return p.sus[b.i]-p.sus[a.i];})[0];
-if(p===seer){var kw=others.filter(function(q){return seer.known[q.i]==='wolf';})[0];if(kw)top=kw;}
+var top=leanOf(p,others,B);
+var cand0=candOf(p,others,B);
+var fixedTop=(p===seer&&seer.known[top.i]==='wolf')||B.black[top.i]||(top===polT&&p.followPol===day);
 if(p.style==='logic'||(p.style==='lead'&&rng()<0.4)){
-var real=others.filter(isW).sort(function(a,b){return a.act-b.act;})[0];
-if(real&&rng()<p.acc*(1.15-real.act)*0.6)top=real;
+var real=cand0.filter(isW).sort(function(a,b){return a.act-b.act;})[0];
+if(!fixedTop&&real&&rng()<p.acc*(1.15-real.act)*0.6)top=real;
+skipWhite(p,top,others,B);
+var vf=voteFacts(top,p);
 var types=['speech','feel'];
-if(day>=2)types.push('vote','vote');
-if(seerCO.length)types.push('co');
-if(lastKill)types.push('bite');
-var cover0=others.filter(function(q){return q.ally&&q.ally!==top;})[0];
-if(cover0&&day>=2)types.push('defend');
+if(vf.lines.length)types.push('vote','vote');
+if(seerCO.length||pub.med.length)types.push('co');
+if(lastKill||peaceDay===day)types.push('bite');
+if(top.ally&&top.ally.alive&&top.ally!==p&&day>=2)types.push('defend');
 var y0=others.filter(function(q){return q!==top;})[Math.floor(rng()*Math.max(1,others.length-1))];
-var rt=types[Math.floor(rng()*types.length)],m0={a:p.name,x:top.name,y:rt==='bite'&&lastKill?lastKill.name:y0?y0.name:top.name};
-var op=F(pk(J.open),m0);
-var text=op+(/[？。、]$/.test(op)?'':'')+F(pk(J.reason[rt]),m0)+F(pk(J.close),m0);
+var rt,rtx=null,m0,yy=y0;
+for(var tries=0;tries<6&& !rtx;tries++){
+rt=types[Math.floor(rng()*types.length)];
+yy=rt==='bite'&&lastKill?lastKill:rt==='vote'&&vf.y?vf.y:rt==='defend'?top.ally:y0;
+m0={a:p.name,x:top.name,y:yy?yy.name:top.name};
+rtx=pf(J.reason[rt],{p:p,x:top,y:yy,kill:lastKill,vote:vf.lines});
+}
+if(!rtx){rt='feel';yy=y0;m0={a:p.name,x:top.name,y:y0?y0.name:top.name};rtx=pf(J.reason.feel,{p:p,x:top})||J.reason.feel[1];}
+var op=F(pf(J.open,{p:p,x:top})||pk(J.open),m0);
+var text=op+F(rtx,m0)+F(pf(J.close,{p:p,x:top})||pk(J.close),m0);
 p.cnt.talk++;
 say({actors:[p.i,top.i],tag:'推理',text:text,why:p.name+'の推理（'+STYLE[p.style]+'・正確さ '+Math.round(p.acc*100)+'）'});
-others.forEach(function(q){if(q!==top)bump(q,top,12*cred(q,p)*(0.6+q.acc*0.4));});
+accuse(p,top,text);
+others.forEach(function(q){if(q!==top)bump(q,top,VILL_K.logic*cred(q,p)*(0.6+q.acc*0.4));});
 if(rng()<(1-p.intel)*0.22){
+var brT=pf(J.break,{p:p,x:top,y:yy});
+if(brT){
 p.cnt.breaks++;
-say({actors:[p.i],tag:'破綻',text:F(pk(J.break),{a:p.name,x:top.name,y:m0.y}),why:p.name+'の推理が破綻した（知能 '+Math.round(p.intel*5)+'）'});
+say({actors:[p.i],tag:'破綻',text:F(brT,{a:p.name,x:top.name,y:m0.y}),why:p.name+'の推理が破綻した（知能 '+Math.round(p.intel*5)+'）'});
 others.forEach(function(q){bump(q,p,8*q.acc);bump(q,top,-8);});
 }
+}
 }else if(p.style==='lead'){
-var t2=inf===p&&inf.policyT?inf.policyT:top;
-var t3=others.filter(function(q){return q!==t2;}).sort(function(a,b){return p.sus[b.i]-p.sus[a.i];})[0];
-var leadT=t3?J.lead:J.lead.filter(function(t){return t.indexOf('{y}')<0;});
-say({actors:t3?[p.i,t2.i,t3.i]:[p.i,t2.i],tag:'仕切り',text:F(pk(leadT),{a:p.name,x:t2.name,y:t3?t3.name:''}),why:p.name+'のCP・主導性'+(t3?'／次点は'+t3.name:'')});
+var t2=inf===p&&polT&&cand0.indexOf(polT)>=0?polT:top;
+var t3=cand0.filter(function(q){return q!==t2;}).sort(function(a,b){return p.sus[b.i]-p.sus[a.i];})[0];
+var ldT=pf(J.lead,{p:p,x:t2,y:t3},t3?['{x}']:['{x}']);
+if(!t3|| !ldT)ldT=pf(J.lead.filter(function(t){return t.indexOf('{y}')<0;}),{p:p,x:t2},['{x}']);
+var ldx=F(ldT,{a:p.name,x:t2.name,y:t3?t3.name:''});
+var useY=t3&&ldT.indexOf('{y}')>=0;
+say({actors:useY?[p.i,t2.i,t3.i]:[p.i,t2.i],tag:'仕切り',text:ldx,why:p.name+'のCP・主導性'+(useY?'／次点は'+t3.name:'')});
+accuse(p,t2,ldx);
 others.forEach(function(q){if(q!==t2)bump(q,t2,14*cred(q,p)*(0.5+q.tr.ac*0.5));});
+top=t2;
 }else if(p.style==='gut'){
-say({actors:[p.i,top.i],tag:'勘',text:F(pk(J.gut),{a:p.name,x:top.name}),why:p.name+'のFC・衝動性'});
-others.forEach(function(q){if(q!==top)bump(q,top,6*cred(q,p));});
+skipWhite(p,top,others,B);
+var gtx=F(pf(J.gut,{p:p,x:top},['{x}'])||J.gut[0],{a:p.name,x:top.name});
+say({actors:[p.i,top.i],tag:'勘',text:gtx,why:p.name+'のFC・衝動性'});
+accuse(p,top,gtx);
+others.forEach(function(q){if(q!==top)bump(q,top,VILL_K.gut*cred(q,p));});
 }else if(p.style==='contra'){
-var crowd=others.slice().sort(function(a,b){return avg(others,function(q){return q.sus[b.i]||0;})-avg(others,function(q){return q.sus[a.i]||0;});})[0];
-var alt=others.filter(function(q){return q!==crowd;}).sort(function(a,b){return p.sus[b.i]-p.sus[a.i];})[0]||crowd;
-say({actors:[p.i,alt.i],tag:'逆張り',text:F(pk(J.contra),{a:p.name,x:crowd.name,y:alt.name}),why:p.name+'の攻撃性・ACの低さ（多数派を疑う）'});
-others.forEach(function(q){bump(q,crowd,-6);bump(q,alt,8*cred(q,p));});
+var crowd=Object.keys(named).map(Number).filter(function(k){return P[k].alive&&P[k]!==p;}).sort(function(a,b){return named[b].length-named[a].length;}).map(function(k){return P[k];})[0]||null;
+var alt=cand0.filter(function(q){return q!==crowd;}).sort(function(a,b){return p.sus[b.i]-p.sus[a.i];})[0]||top;
+var ctT=crowd?pf(J.contra,{p:p,x:crowd,y:alt},['{x}','{y}']):null;
+if(!ctT)ctT=pf(J.contra.filter(function(t){return t.indexOf('{x}')<0;}),{p:p,y:alt},['{y}']);
+var ctx=F(ctT,{a:p.name,x:crowd?crowd.name:'',y:alt.name});
+say({actors:[p.i,alt.i],tag:'逆張り',text:ctx,why:p.name+'の攻撃性・ACの低さ（多数派を疑う）'});
+accuse(p,alt,ctx);
+others.forEach(function(q){if(crowd&&ctx.indexOf(crowd.name)>=0)bump(q,crowd,-6);bump(q,alt,8*cred(q,p));});
+top=alt;
 }else{
-var leadP=others.slice().sort(function(a,b){return(b.tr.lead+b.tr.cp)-(a.tr.lead+a.tr.cp);})[0];
-say({actors:[p.i,top.i],tag:'同調',text:F(pk(J.follow),{a:p.name,x:top.name,y:leadP.name}),why:p.name+'のAC（'+leadP.name+'に合わせる）'});
+skipWhite(p,top,others,B);
+var who=(named[top.i]||[]).filter(function(q){return q!==p&&q.alive;});
+var leadP=who.length?who[who.length-1]:null;
+var flT=leadP?pf(J.follow,{p:p,x:top,y:leadP},['{x}']):null;
+if(!flT){leadP=null;flT=pf(J.follow.filter(function(t){return t.indexOf('{y}')<0;}),{p:p,x:top},['{x}']);}
+var flx=F(flT,{a:p.name,x:top.name,y:leadP?leadP.name:''});
+say({actors:[p.i,top.i],tag:'同調',text:flx,why:p.name+'のAC'+(leadP&&flT.indexOf('{y}')>=0?'（'+leadP.name+'に合わせる）':'（今の流れに乗る）')});
+accuse(p,top,flx);
 }
 if(p.like<0.35&&rng()<0.35){
 var hearer=others[Math.floor(rng()*others.length)];
@@ -318,29 +527,33 @@ say({actors:[p.i,hearer.i],tag:'空気',text:F(pk(J.rude),{a:p.name,x:hearer.nam
 others.forEach(function(q){bump(q,p,9);});
 }
 if(top&&top.alive&&rng()<0.55){
-if(isW(top)){var bd=rng()<top.bold+0.1;top.cnt.lies++;say({actors:[top.i],tag:'弁明',text:F(pk(bd?J.lieBold:J.lieShaky),{a:top.name,x:p.name}),why:bd?top.name+'は堂々と嘘をついた（正直さの低さ・CP）':top.name+'の弁明はぎこちなかった'});others.forEach(function(q){if(q!==top)bump(q,top,bd? -8*(1-q.acc):10*q.acc);});}
-else{var dl=J.defend[top.persona]||J.defend.gentle;say({actors:[top.i],tag:'弁明',text:F(pk(dl),{a:top.name,x:p.name}),why:''});others.forEach(function(q){if(q!==top)bump(q,top,-10*q.acc*(0.5+top.like*0.5));});}
+spoke[top.i]=1;
+if(isW(top)){var bd=rng()<top.bold+0.1;top.cnt.lies++;say({actors:[top.i],tag:'弁明',text:F(pf(bd?J.lieBold:J.lieShaky,{p:top,x:p})||pk(J.lieBold.filter(function(t){return t.indexOf('{x}')<0;})),{a:top.name,x:p.name}),why:bd?top.name+'は堂々と嘘をついた（正直さの低さ・CP）':top.name+'の弁明はぎこちなかった'});others.forEach(function(q){if(q!==top)bump(q,top,bd? -8*(1-q.acc):10*q.acc);});}
+else{var dl=J.defend[top.persona]||J.defend.gentle;say({actors:[top.i],tag:'弁明',text:F(pf(dl,{p:top,x:p})||pk(J.defend.gentle.filter(function(t){return lineOK(t,{});})),{a:top.name,x:p.name}),why:''});others.forEach(function(q){if(q!==top)bump(q,top,-10*q.acc*(0.5+top.like*0.5));});}
 }
 });
 setBelief();
 snap();
 A=alive();
-var tally=function(fnTarget){var v={};A.forEach(function(p){var t=fnTarget(p);if(t){v[t.i]=(v[t.i]||0)+1;p.voted=t;}});return v;};
-var policyT=inf.policyT;
+A.forEach(function(p){p.voted=null;p.votedDay=null;p.preVoted=null;});
+var tally=function(fnTarget){var v={};A.forEach(function(p){var t=fnTarget(p);if(t){v[t.i]=(v[t.i]||0)+1;p.voted=t;p.votedDay=day;}});return v;};
 var villTarget=function(p){
 var others=A.filter(function(q){return q!==p;});
-if(p===seer){var k=others.filter(function(q){return seer.known[q.i]==='wolf';})[0];if(k)return k;}
-var comply=0.25+p.tr.ac*0.4+cred(p,inf)*0.3-(p.style==='contra'?0.4:0);
-if(policy==='gray'){var gray=others.filter(function(q){return seerCO.indexOf(q)<0&&medCO.indexOf(q)<0&&hunterCO.indexOf(q)<0;});if(gray.length)others=gray;}
-else if(policyT&&policyT!==p&&rng()<comply)return policyT;
-if(p.ally&&p.ally.alive&&p.ally.acc>p.acc&&p.ally.voted&&p.ally.voted!==p)return p.ally.voted;
-return others.sort(function(a,b){return p.sus[b.i]-p.sus[a.i];})[0];
+var lean=leanOf(p,others,B),c=candOf(p,others,B);
+if((p===seer&&seer.known[lean.i]==='wolf')||B.black[lean.i]||(lean===polT&&p.followPol===day))return lean;
+if(p.named&&p.namedDay===day&&p.named.alive&&c.indexOf(p.named)>=0&&(p.sus[p.named.i]||0)>=(p.sus[lean.i]||0)-10)return p.named;
+if(p.ally&&p.ally.alive&&p.ally.acc>p.acc&&p.ally.voted&&p.ally.votedDay===day&&p.ally.voted!==p&&p.ally.voted.alive&&c.indexOf(p.ally.voted)>=0)return p.ally.voted;
+return lean;
 };
+B=board();
 var pre=tally(function(p){return isW(p)?null:villTarget(p);}),preTop=Object.keys(pre).sort(function(a,b){return pre[b]-pre[a];})[0];
+A.forEach(function(p){p.preVoted=isW(p)?null:p.voted;p.voted=null;p.votedDay=null;});
 var cand=preTop!=null?P[+preTop]:null;
 if(cand&&cand===hunter&&hunterCO.indexOf(hunter)<0&&rng()<0.5+hunter.tr.caution*0.3){
 hunterCO.push(hunter);
-say({actors:[hunter.i],tag:'狩人CO',text:F(pk(guardLast?J.hunterCO:J.hunterCO.filter(function(t){return t.indexOf('{x}')<0;})),{a:hunter.name,x:guardLast?guardLast.name:''}),why:hunter.name+'は本物の狩人。吊られそうになってCOした（慎重さ）'});
+var hcT=pk(guardLast?J.hunterCO:J.hunterCO.filter(function(t){return t.indexOf('{x}')<0;}));
+say({actors:[hunter.i],tag:'狩人CO',text:F(hcT,{a:hunter.name,x:guardLast?guardLast.name:''}),why:hunter.name+'は本物の狩人。吊られそうになってCOした（慎重さ）'});
+if(guardLast&&hcT.indexOf('{x}')>=0&&peaceDay===day&&hunter.savedDay===day)pub.guard.push({c:hunter,x:guardLast,day:day});
 A.forEach(function(q){bump(q,hunter,-30*(0.5+q.acc*0.5));});
 var cw=A.filter(function(w){return isW(w)&&w.bold>0.8;})[0];
 if(cw&&rng()<0.5){hunterCO.push(cw);cw.cnt.lies++;moments.push(cw.name+'が狩人に対抗した');say({actors:[cw.i,hunter.i],tag:'狩人対抗',text:F(pk(J.hunterCounter),{a:cw.name,x:hunter.name}),why:cw.name+'は人狼。狩人を騙って対抗した（堂々さ）'});A.forEach(function(q){bump(q,hunter,18*(1-q.acc));bump(q,cw,18*q.acc);});}
@@ -350,16 +563,21 @@ say({actors:[cand.i],tag:'狩人CO',text:F(pk(J.hunterCO),{a:cand.name,x:A.filte
 A.forEach(function(q){bump(q,cand,-22*(1-q.acc*0.6));});
 if(hunter&&hunter.alive&&hunterCO.indexOf(hunter)<0&&rng()<0.6+hunter.tr.honesty*0.3){hunterCO.push(hunter);say({actors:[hunter.i,cand.i],tag:'狩人対抗',text:F(pk(J.hunterCounter),{a:hunter.name,x:cand.name}),why:hunter.name+'は本物の狩人'});A.forEach(function(q){bump(q,cand,25*q.acc);});}
 }
+B=board();
 function wolfTarget(p,others){
 if(!isW(p))return villTarget(p);
 if(p.busVote&&p.busVote.alive)return p.busVote;
-var vs=others.filter(function(q){return!isW(q);});
-return vs.sort(function(a,b){return(pre[b.i]||0)*10+(seerCO.indexOf(b)>=0&&b===seer?15:0)+b.acc*5-((pre[a.i]||0)*10+(seerCO.indexOf(a)>=0&&a===seer?15:0)+a.acc*5);})[0];
+var vs=others.filter(function(q){return!isW(q)&& !safe(B,q);});
+if(!vs.length)vs=others.filter(function(q){return!isW(q);});
+var sc=function(q){return(pre[q.i]||0)*WOLF_K.pre+(seerCO.indexOf(q)>=0&&q===seer?WOLF_K.seer:0)+q.acc*WOLF_K.acc;};
+return vs.sort(function(a,b){return sc(b)-sc(a);})[0];
 }
 var votes=tally(function(p){
 var others=A.filter(function(q){return q!==p;});
-var vt=LM?LM.vote(S,p,others,wolfTarget(p,others),isW(p)):wolfTarget(p,others);
-if(SSK&&vt&&SSK.nk(S,p,vt)){var alt=SSK.spare(S,p,others).slice().sort(function(a,b){return(p.sus[b.i]||0)-(p.sus[a.i]||0);})[0];if(alt)vt=alt;}
+var base=wolfTarget(p,others);
+var vt=LM?LM.vote(S,p,others,base,isW(p)):base;
+if(vt&&vt!==base&&safe(B,vt))vt=base;
+if(SSK&&vt&&SSK.nk(S,p,vt)){var alt=SSK.spare(S,p,others).filter(function(q){return!safe(B,q);}).sort(function(a,b){return(p.sus[b.i]||0)-(p.sus[a.i]||0);})[0];if(alt)vt=alt;}
 return vt;
 });
 if(LM)LM.flush(S,say,pk);
@@ -368,9 +586,12 @@ var maxV=0,tops=[];
 Object.keys(votes).forEach(function(k){if(votes[k]>maxV){maxV=votes[k];tops=[+k];}else if(votes[k]===maxV)tops.push(+k);});
 var exP=P[tops[Math.floor(rng()*tops.length)]];
 var exNk=SSK&&A.some(function(p){return p.voted===exP&&SSK.nk(S,p,exP);})?SSK.NOTE:'';
+votesByDay[day]={ex:exP,v:A.map(function(p){return{p:p,to:p.voted,pre:p.preVoted};})};
+var vb={};A.forEach(function(p){if(p.voted)(vb[p.voted.i]=vb[p.voted.i]||[]).push(p.name);});
+var vbTxt=Object.keys(vb).sort(function(a,b){return vb[b].length-vb[a].length;}).map(function(k){return P[k].name+'に'+vb[k].length+'票（'+vb[k].join('・')+'）';}).join('、');
 exP.alive=false;executed.push(exP);exP.fate='処刑（'+day+'日目）';
 var lw=(isW(exP)?J.lastW:J.lastV)[exP.persona]||(isW(exP)?J.lastW:J.lastV).gentle;
-say({actors:[exP.i],tag:'処刑',kind:'climax',text:F(pk(J.exec),{x:exP.name})+F(pk(lw),{x:exP.name}),why:'得票 '+maxV+'／'+A.length+(tops.length>1?'（同票からくじ引き）':'')+'・'+exP.name+'は'+ROLE[exP.role]+(policy!=='gray'&&exP===policyT?'（方針「'+POLICY_LABEL[policy]+'」どおり）':'')+exNk});
+say({actors:[exP.i],tag:'処刑',kind:'climax',text:F(pk(J.exec),{x:exP.name})+F(pk(lw),{x:exP.name}),why:'得票 '+maxV+'／'+A.length+(tops.length>1?'（同票からくじ引き）':'')+'・'+exP.name+'は'+ROLE[exP.role]+(policy!=='gray'&&policy!=='none'&&exP===polT?'（方針「'+POLICY_LABEL[policy]+'」どおり）':'')+exNk+'／票の内訳：'+vbTxt});
 if(exP.ally){exP.ally.ally=null;exP.ally=null;}
 winner=check();if(winner)break;
 ST.step(S,day+'日目・夜');
@@ -379,7 +600,7 @@ divine();
 var guard=null;
 if(hunter&&hunter.alive){
 var gc=A.filter(function(q){return q!==hunter&&q!==guardLast;});
-guard=gc.sort(function(a,b){var va=(claimants().indexOf(a)>=0?60*(hunter.belief[a.i]==null?0.5:hunter.belief[a.i]):0)+(medCO.indexOf(a)>=0?20:0)+a.acc*12-hunter.sus[a.i]*0.4,vb=(claimants().indexOf(b)>=0?60*(hunter.belief[b.i]==null?0.5:hunter.belief[b.i]):0)+(medCO.indexOf(b)>=0?20:0)+b.acc*12-hunter.sus[b.i]*0.4;return vb-va;})[0];
+guard=gc.sort(function(a,b){var va=(claimants().indexOf(a)>=0?60*(hunter.belief[a.i]==null?0.5:hunter.belief[a.i]):0)+(medCO.indexOf(a)>=0?20:0)+a.acc*12-hunter.sus[a.i]*0.4,vb2=(claimants().indexOf(b)>=0?60*(hunter.belief[b.i]==null?0.5:hunter.belief[b.i]):0)+(medCO.indexOf(b)>=0?20:0)+b.acc*12-hunter.sus[b.i]*0.4;return vb2-va;})[0];
 guardLast=guard;
 }
 var prey=null,vill=A.filter(function(q){return!isW(q);});
@@ -397,9 +618,9 @@ if(alt2&& !SSK.note(S,wv,alt2))prey=alt2;else nkNote=SSK.NOTE;
 }
 }
 ST.step(S,(day+1)+'日目・朝');
-if(prey&&prey===guard){guardOK++;moments.push(hunter.name+'が'+prey.name+'を守り抜いた');say({actors:[],tag:'平和な朝',text:pk(J.peace),why:'狩人の'+hunter.name+'が'+prey.name+'を守った'+rogueNote});}
-else if(prey&&HK.Dark.skip(S,'night'))say({actors:[],tag:'平和な朝',text:pk(J.peace),why:'人狼は、この夜は誰も襲わなかった（'+HK.Dark.tag(S,'night')+'）'});
-else if(prey){prey.alive=false;killed.push(prey);prey.fate='襲撃（'+(day+1)+'日目の朝）';if(prey.ally){prey.ally.ally=null;prey.ally=null;}say({actors:[prey.i],tag:'襲撃',text:F(pk(J.killed),{x:prey.name}),why:'人狼の戦法「'+PLAN_LABEL[plan.kill]+'」'+rogueNote+nkNote});}
+if(prey&&prey===guard){guardOK++;peaceDay=day+1;hunter.savedDay=day+1;moments.push(hunter.name+'が'+prey.name+'を守り抜いた');say({actors:[],tag:'平和な朝',text:pk(J.peace),why:'狩人の'+hunter.name+'が'+prey.name+'を守った'+rogueNote});}
+else if(prey&&HK.Dark.skip(S,'night')){peaceDay=day+1;say({actors:[],tag:'平和な朝',text:pk(J.peace.filter(function(t){return!/狩人|護衛|守り抜/.test(t);})),why:'人狼は、この夜は誰も襲わなかった（'+HK.Dark.tag(S,'night')+'）'});}
+else if(prey){prey.alive=false;killed.push(prey);prey.killedDay=day+1;prey.fate='襲撃（'+(day+1)+'日目の朝）';if(prey.ally){prey.ally.ally=null;prey.ally=null;}say({actors:[prey.i],tag:'襲撃',text:F(pk(J.killed),{x:prey.name}),why:'人狼の戦法「'+PLAN_LABEL[plan.kill]+'」'+rogueNote+nkNote});}
 snap();
 winner=check();
 }
@@ -440,7 +661,7 @@ summary:'人狼：'+title
 });
 ;
 /* ==== js/jinro-love.js ==== */
-HK.Load.def(384,'js/jinro-love.js',function(){
+HK.Load.def(263,'js/jinro-love.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,scen=HK.SCENARIOS&&HK.SCENARIOS.jinro;
@@ -557,7 +778,7 @@ HK.JinroLove={setup:setup,appeal:appeal,vote:vote,flush:flush};
 });
 ;
 /* ==== js/jinro-data.js ==== */
-HK.Load.def(495,'js/jinro-data.js',function(){
+HK.Load.def(329,'js/jinro-data.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -599,6 +820,21 @@ J.betray=L('{a}は{x}の目を見られなかった。「……ごめん。今�
 J.betrayed=L('{x}は呆然とした。「……え、{a}まで？｜……え、{a}までか？｜……え、{a}までですか？」|{x}は唇を噛んだ。「信じてたのに｜信じていたのに｜信じていましたのに」|{x}は笑った。乾いた笑いだった。「そっか。そうなるよね｜そうか。そうなるだろうな｜そうですか。そうなりますよね」|{x}「{a}、本気で言ってる？｜{a}、本気で言っているのか？｜{a}、本気で言っているんですか？」');
 J.bus=L('{a}は迷わず{x}を指さした。「{x}が怪しい。今日は{x}だ｜＝｜{x}が怪しいです。今日は{x}です」|{a}は冷たく言った。「{x}の発言、全部辻褄が合わない｜{x}の発言は、全部辻褄が合わない｜{x}の発言、全部辻褄が合いません」|{a}「庇う理由がない。{x}に入れる｜＝｜庇う理由がありません。{x}に入れます」|{a}は誰よりも先に、{x}への投票を宣言した。');
 J.cover=L('{a}「{x}は違うと思う。むしろ{y}が怪しい｜＝｜{x}は違うと思います。むしろ{y}が怪しいです」|{a}は{x}への疑いを、別の話題で上書きした。|{a}「{x}を吊るのは早すぎる。情報が足りない｜＝｜{x}を吊るのは早すぎます。情報が足りません」|{a}「{x}はずっと村目線で喋ってるよ｜{x}はずっと村目線で喋っている｜{x}はずっと村目線で喋っていますよ」');
+J.lieShaky=J.lieShaky.concat(L('{a}は目を泳がせた。「……{x}、とか、怪しくない？｜……{x}などは、怪しくないか？｜……{x}とか、怪しくないですか？」|{a}は早口で言った。「わ、私より{x}のほうが変だって｜わ、私より{x}のほうが変だ｜わ、私より{x}のほうが変ですよ」'));
+J.contra=J.contra.concat(L('{a}「みんな{x}って言ってるけど、私は{y}のほうが怪しいと思う｜皆{x}と言っているが、私は{y}のほうが怪しいと思う｜皆さん{x}と言っていますが、私は{y}のほうが怪しいと思います」|{a}は首を振った。「{x}吊りの流れ、早すぎない？　私は{y}を見てる｜{x}吊りの流れは早すぎないか？　私は{y}を見ている｜{x}吊りの流れ、早すぎませんか？　私は{y}を見ています」'));
+J.whiteSkip=L('{a}「{y}はもう白で見ていい。だから今日は{x}｜{y}はもう白で見ていい。だから今日は{x}だ｜{y}はもう白で見ていいです。だから今日は{x}です」|{a}は首を振った。「{y}は白確だから外す。残りの中なら{x}｜{y}は白確だから外す。残りの中なら{x}だ｜{y}は白確なので外します。残りの中なら{x}です」|{a}「{y}を疑う理由はもうない。白確だよ。見るべきは{x}｜{y}を疑う理由はもうない。白確だ。見るべきは{x}だ｜{y}を疑う理由はもうありません。白確です。見るべきは{x}です」');
+J.boardPart={
+head:['整理するね。','整理する。','整理します。'],
+real:['本物の占い師は{s}で確定。','本物の占い師は{s}で確定だ。','本物の占い師は{s}で確定です。'],
+seers:['占い師を名乗っているのは{s}の{n}人。','占い師を名乗っているのは{s}の{n}人だ。','占い師を名乗っているのは{s}の{n}人です。'],
+white:['白で確定しているのは{w}。','白で確定しているのは{w}だ。','白で確定しているのは{w}です。'],
+semi:['{w}は白で見ていい。','{w}は白で見ていい。','{w}は白で見ていいです。'],
+black:['人狼で確定しているのは{k}。','人狼で確定しているのは{k}だ。','人狼で確定しているのは{k}です。'],
+med:['霊媒結果では、{m}。','霊媒結果では、{m}だ。','霊媒結果では、{m}です。'],
+gray:['グレーは{g}の{n}人。','グレーは{g}の{n}人だ。','グレーは{g}の{n}人です。'],
+wolfExact:['人狼は残り{n}人。','人狼は残り{n}人だ。','人狼は残り{n}人です。'],
+wolfMax:['人狼は多くても残り{n}人。','人狼は多くても残り{n}人だ。','人狼は多くても残り{n}人です。']
+};
 J.seerCO=L('{a}が手を挙げた。「占い師です。{x}を占った結果――{r}」|{a}は静かに言った。「黙ってるつもりだったけど、言う。占い師。{x}は{r}」|{a}「占いCO。結果、{x}は{r}」|{a}は深呼吸してから言った。「占い師です。昨夜は{x}を占いました。{r}」|{a}「出るね。占い師。{x}――{r}」|{a}は全員の顔を見回した。「本物の占い師は私。{x}は{r}」');
 J.seerRes=L('{a}「今日の占い結果。{x}は{r}｜今日の占い結果だ。{x}は{r}だ｜今日の占い結果です。{x}は{r}です」|{a}は昨夜の結果を告げた。「{x}――{r}｜{x}――{r}だ｜{x}――{r}です」|{a}「{x}を占った。{r}｜{x}を占った。{r}だ｜{x}を占いました。{r}です」|{a}「結果を言う。{x}、{r}｜結果を言う。{x}は{r}だ｜結果を言います。{x}は{r}です」|{a}は昨夜の結果を読み上げた。「{x}は{r}｜{x}は{r}だ｜{x}は{r}です」|{a}「{x}を見た。{r}だった｜＝｜{x}を見ました。{r}でした」|{a}「報告。{x}――{r}｜報告する。{x}――{r}だ｜報告します。{x}――{r}です」|{a}は{x}を見ずに言った。「{x}は{r}｜{x}は{r}だ｜{x}は{r}です」');
 J.fakeCO=L('{a}も手を挙げた。「待って、占い師は私。{x}は{r}」――場がざわついた。|{a}は即座に対抗した。「本物の占い師は私だよ。{x}は{r}」|{a}「対抗します。占い師は私。{x}は{r}」|{a}は落ち着いた声で言った。「偽物が出たね。私が本物。{x}――{r}」');
@@ -634,7 +870,7 @@ J.prizeHot=L('{a}の目の色が変わった。「{p}……絶対に勝つ｜＝
 });
 ;
 /* ==== js/jinro-after.js ==== */
-HK.Load.def(496,'js/jinro-after.js',function(){
+HK.Load.def(330,'js/jinro-after.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -815,194 +1051,7 @@ if(isPun)punish(c);
 })();
 });
 ;
-/* ==== js/jinro-wolfnight.js ==== */
-HK.Load.def(497,'js/jinro-wolfnight.js',function(){
-(function(){
-'use strict';
-var HK=window.HK,scen=HK.SCENARIOS&&HK.SCENARIOS.jinro,JA=HK.JinroAfter;
-if(!scen|| !JA||HK.SAFE_ON)return;
-function L(s){return s.split('|');}
-HK.addTo(scen.env,{id:'wolfnight',label:'人狼の勝利の夜',type:'select',def:'random',options:[{v:'random',label:'おまかせ（人狼が勝ったとき、半分くらい）'},{v:'yes',label:'必ず（人狼が勝ったとき）'},{v:'off',label:'なし'}],desc:'人狼陣営が勝ったあと、生き残った人狼（攻め）が、生き残った村人（受け）を「ゲームの続き」として食べに行く（R18）'});
-var TW={lover:1,mate:1,fated:1,spouse:1,honmei:0.9,almost:0.8,fwb:0.7,best:0.6,buddy:0.55,childhood:0.55,crush:0.6,friend:0.35};
-function close(input,a,b){
-var w=0;
-(input.ties||[]).forEach(function(t){if((t.a===a.i&&t.b===b.i)||(t.a===b.i&&t.b===a.i)){var x=TW[t.type]||0;if(x>w)w=x;}});
-return w;
-}
-var T={
-soft:L('片づけが終わったあと、{x}は{y}の耳元で囁いた。「人狼が勝ったんだから……最後に残った村人は、食べられないとね」――{y}は笑って押し返そうとしたが、その手にはまるで力が入っていなかった。|{x}は帰ろうとする{y}の手首を掴んで、部屋の奥へ引き寄せた。「まだ終わってない。夜のターンが残ってる」――{y}は呆れた顔をして、それでも逃げなかった。|勝ちが決まった瞬間から、{x}の視線はずっと{y}に向いていた。二人きりになると、{x}は低い声で言った。「いただきます」――{y}は真っ赤になって、小さく頷いた。'),
-force:L('{x}は、最後まで自分を疑わなかった{y}を壁際に追い詰めた。「ずっと騙してたのに、気づかなかったんだな」――逃げ道を塞ぐ腕は、ゲームの最中よりずっと本気だった。|みんなが帰ったあと、{x}は{y}を引き留めた。「村人は、狼に食べられるものだろ」――{y}が笑い飛ばそうとした唇を、{x}は無理やり塞いだ。|{x}は{y}を押し倒し、両手首を床に縫いとめた。「最後の夜だ。今度は、本当に襲う」――{y}の抗議の声は、{x}の口づけに飲み込まれた。'),
-afterSoft:L('{y}は{x}の胸に顔を埋めて、「次は絶対、村人で勝つから」と呟いた。{x}は笑って、その頭を撫でた。|{x}は{y}の髪を指で梳きながら、「次も騙されてね」と言った。{y}は返事の代わりに、{x}の脇腹をつねった。|二人は、散らかった役職カードの上で、しばらく息を整えていた。'),
-melt:L('{y}は乱れた息のまま、{x}の背中にしがみついていた。悔しいのに、腕をほどく気にはなれなかった。|{y}は「……ずるい」とだけ言って、{x}の肩に額を押しつけた。|終わったあと、{y}は自分から{x}の指に指を絡めていた。'),
-resent:L('{y}は乱れた服をかき合わせて、{x}を睨んだ。「……ゲームのせいにするなよ」――その声は、まだ少し震えていた。|{y}は何も言わずに部屋を出ていった。扉の閉まる音だけが、やけに大きく響いた。|{y}は{x}の手を振り払った。「騙されたのは、ゲームの中だけにしておきたかった」'),
-lost:L('{y}は天井を見上げたまま、しばらく動けなかった。今のが何だったのか、まだうまく飲み込めなかった。|{y}は、{x}がかけてくれた上着を握りしめたまま、ぼんやりと座り込んでいた。|{y}は「……え、今の、なに」と小さく呟いた。{x}は答えずに、{y}の乱れた髪を直した。')
-};
-function react(y){var t=y.tr||{};return(t.cp||0)+(t.aggr||0)>1.05?'resent':(t.ac||0)>0.55&&(t.fc||0)<0.5?'lost':'melt';}
-var end0=JA.end;
-JA.end=function(c){
-end0.apply(this,arguments);
-var S=c.S,env=c.env||{},rng=S.rng,St=HK.State,Pz=HK.Pos,R=HK.R18M;
-if(c.winner!=='wolf'||env.wolfnight==='off'|| !R|| !Pz|| !St)return;
-if(env.wolfnight!=='yes'&&rng()>=0.5)return;
-var force= !HK.Content||HK.Content.on(env,'force','jinro');
-var cands=[];
-c.wolves.forEach(function(w){
-if(!St.here(w))return;
-c.P.forEach(function(v){
-if(c.isW(v)|| !St.here(v)|| !St.pairSex(w,v)||(HK.sexBlocked&&HK.sexBlocked(w,v)))return;
-if(Pz.order(w,v,[w,v])[0]!==w)return;
-if(HK.Avoid&&HK.Avoid.of(S,w,v))return;
-var cl=close(c.input,w,v),love=cl>=0.45&&HK.canLove&&HK.canLove(w,v)&&HK.canLove(v,w);
-if(love&&Pz.nightOff&&Pz.nightOff(S))love=false;
-if(!love&& !force)return;
-var sc=(love?1+cl:0.2+((w.tr&&w.tr.aggr)||0)*0.5+((w.tr&&w.tr.impulse)||0)*0.4)+rng()*0.3;
-cands.push({w:w,v:v,love:love,sc:sc});
-});
-});
-if(!cands.length)return;
-cands.sort(function(a,b){return b.sc-a.sc;});
-var p=cands[0],x=p.w,y=p.v,m={x:x.name,y:y.name};
-HK.Story.step(S,'人狼の勝利の夜');
-var X=HK.Lewd,ero= !!(X&&X.conf('jinro')&&X.ero(env)&&X.lv(env)!=='low'&&HK.Ero);
-var kr=HK.rng((((S.log||[]).length*7919)+x.i*131+y.i*17+4242)>>>0),KR={rng:kr};
-var KB=HK.KabaiR18,kb= !p.love&&KB?kabaiPick(c,kr,x,y):null;
-var tgt=kb&&kb.mode==='subA'?kb.z:y,mt={x:x.name,y:tgt.name};
-var k=p.love?'afterSoft':react(tgt);
-var body=p.love?(ero?loveEro(S,x,y,kr):R.sex(S,x,y,{mood:'love'})):(ero?forceEro(S,KR,x,tgt):R.sex(S,x,tgt,{mood:'rough'}));
-var t=HK.Story.fmt(HK.Story.pick(S,p.love?T.soft:T.force),m);
-if(kb)t+='\n\n'+kbFill(kb,KB.motive[kb.rel],kr)+(kb.mode!=='both'?' '+kbFill(kb,JK[kb.mode],kr):'');
-t+='\n\n'+body;
-if(kb&&kb.mode==='both')t+='\n\n'+kbFill(kb,JK.both,kr)+' '+(ero?forceEro(S,KR,x,kb.z,true):(R.say?R.say(S,kb.z,R.isStrong&&R.isStrong(kb.z)?'endure':'climax'):''));
-var ngW=kb&&HK.NoGen&&(HK.NoGen.on(kb.z,y)||HK.NoGen.on(x,y));
-if(kb&&kb.mode==='watch'){t+='\n\n'+kbFill(kb,ero&& !ngW?KB.watchEro:KB.shame,kr,KR);if(KB.fixed1(kb.z))t+=' '+kbFill(kb,KB.fixed,kr);}
-t+='\n\n'+HK.Story.fmt(HK.Story.pick(S,T[k]),mt);
-if(kb)t+='\n\n'+kbFill(kb,KB.after[kb.rel],kr);
-var KBW={hit:'突き飛ばされた',subA:'身代わりを申し出て、代わりに襲われた',subR:'身代わりを申し出たが、相手にされなかった',both:'二人とも襲われた',watch:'押さえつけられて見せつけられ、興奮してしまった（体の関係にはならない）'};
-HK.Story.say(S,{kind:'climax',lewd:true,actors:kb?[x.i,y.i,kb.z.i]:[x.i,y.i],tag:'人狼の勝利の夜',text:t,why:'人狼の'+x.name+'（攻め）が、生き残った村人の'+y.name+'（受け）を「ゲームの続き」として食べに行った'+(p.love?'（近い関係で、合意のうえ）':'（強引に。'+tgt.name+'の反応：'+{melt:'流される',resent:'根に持つ（CP・攻撃性が高い）',lost:'困惑する（ACが高い）'}[k]+'）')+(kb?'。'+kb.z.name+'が'+y.name+'を庇った→'+KBW[kb.mode]:'')+(R.lastPos&&R.lastPos(S)?'・'+R.lastPos(S):''),mag:30});
-};
-var COLD={apathy:1,fear:1};
-function tieOf(input,a,b){var r='';(input.ties||[]).forEach(function(t){if((t.a===a.i&&t.b===b.i)||(t.a===b.i&&t.b===a.i))r=r||t.type;});return r;}
-function kabaiPick(c,kr,x,y){
-var KB=HK.KabaiR18,St=HK.State,Pz=HK.Pos;
-var zs=c.P.filter(function(z){return z!==y&&z!==x&& !c.isW(z)&&St.here(z)&&tieOf(c.input,z,y)!=='apathy';});
-if(!zs.length||kr()>=0.5)return null;
-var z=zs.slice().sort(function(a,b){return close(c.input,b,y)-close(c.input,a,y);})[kr()<0.6?0:kr.int(zs.length)];
-var take=KB.canTake(z)&&St.pairSex(x,z)&& !(HK.Avoid&&HK.Avoid.of(c.S,x,z))&& !(HK.sexBlocked&&HK.sexBlocked(x,z))&&Pz.order(x,z,[x,z])[0]===x&& !Pz.hardTop(z,x)&& !COLD[tieOf(c.input,x,z)]&& !(HK.NoGen&&HK.NoGen.on(x,z));
-var opts=['hit'];if(take)opts.push('subA','both','both');else opts.push('subR');if(KB.canWatch(z))opts.push('watch','watch');
-var tie=tieOf(c.input,z,y);
-return{z:z,x:x,y:y,mode:opts[kr.int(opts.length)],rel:KB.rel(z,y,tie,{att:close(c.input,z,y)*60,trust:close(c.input,z,y)*60})};
-}
-function kbFill(kb,list,kr,KR){
-var E=HK.Ero,t=list[kr.int(list.length)].replace(/\{w\}/g,kb.z.name).replace(/\{v\}/g,kb.y.name).replace(/\{x\}/g,kb.x.name);
-if(!KR|| !E)return t.replace(/\{s:\w+\}。?/g,'');
-return t.replace(/\{s:(\w+)\}/g,function(m,k){return E.sfx(KR,k);})
-.replace(/\{vm1\}/g,function(){return HK.Moan&&HK.Moan.say?HK.Moan.say(KR,kb.y,'mid',{force:true,fall:false}):E.moan(KR,kb.y,1,{force:true});});
-}
-var JK={
-hit:L('{x}は{w}を片手で突き飛ばした。床に転がった{w}を見下ろして、{x}は冷たく笑った。{x}「邪魔しないで。次はあなたの番かもね｜邪魔をするな。次はあなたの番かもしれない｜邪魔をしないでください。次はあなたの番かもしれませんよ」|'+
-'{w}は{x}の腕にしがみついて引き剥がそうとした。けれど振り払われた拍子に、肩から壁に叩きつけられた。{w}は痛みに顔を歪めながら、それでも{v}の名前を呼びつづけた。|'+
-'{w}は{v}と{x}のあいだに体をねじ込んだ。{x}は{w}の胸ぐらを掴み、部屋の外へ乱暴に押し出した。閉ざされた扉の向こうから、{v}の声だけが聞こえてきた。'),
-subA:L('{w}は{v}を背中に庇ったまま、{x}をまっすぐ見上げた。{w}「{v}の代わりに、私を食べればいい｜{v}の代わりに、私を食べればいい｜{v}の代わりに、私を食べてください」――{x}は面白そうに目を細め、{v}から手を離した。|'+
-'{w}は震える手で、自分の襟元をくつろげた。{w}「狼の獲物なら、私がなる。だから{v}は放して｜狼の獲物なら、私がなる。だから{v}は放せ｜狼の獲物なら、私がなります。だから{v}は放してください」――{x}は少し考えてから、新しい獲物に向き直った。|'+
-'{w}は{x}の前に膝をつき、{v}を逃がしてほしいと頼んだ。{x}「健気だね。いいよ、あなたで我慢してあげる｜健気だな。いいだろう、あなたで我慢してやる｜健気ですね。いいですよ、あなたで我慢してあげます」――解放された{v}の目の前で、{w}は床に押し倒された。'),
-subR:L('{w}は自分が代わりになると申し出た。{x}は鼻で笑って、{w}を押しのけた。{x}「あなたじゃ駄目。欲しいのは{v}だから｜あなたでは駄目だ。欲しいのは{v}だ｜あなたでは駄目です。欲しいのは{v}ですから」|'+
-'{w}は{x}の腕を掴み、自分を連れていけと迫った。{x}はその手を、汚れでも払うように振りほどいた。{w}の申し出は、狼の耳には届かなかった。|'+
-'{w}は{v}の前に立ちはだかり、身代わりになると言い張った。{x}は{w}を一瞥しただけで、強引に脇へ押しやった。よろめいた{w}の目の前で、{v}は再び押さえ込まれた。'),
-both:L('{x}は{v}から体を離すと、立ち尽くしていた{w}のほうへ向き直った。{x}「次はあなた。庇った罰だよ｜次はあなただ。庇った罰だ｜次はあなたです。庇った罰ですよ」――{w}は逃げる間もなく、{v}の隣に押し倒された。|'+
-'狼の食事は、一人では終わらなかった。{x}は{w}の手首を掴んで引き寄せ、{v}が見ている前で組み敷いた。{w}の抗議の声は、すぐに途切れ途切れになっていった。|'+
-'{x}は二人を並べて床に横たえ、代わる代わる貪った。{v}を庇ったはずの{w}も、やがて同じ声を上げはじめた。互いの乱れた顔が、すぐ隣にあった。'),
-watch:L('{x}は{w}を一瞥しただけで、その場に縫いとめた。{x}「そこで見てて。動いたら次はあなただから｜そこで見ていろ。動いたら次はあなただ｜そこで見ていてください。動いたら次はあなたですから」――{w}は壁際にへたり込んだまま、目を逸らすこともできなかった。|'+
-'{w}は{x}に腕をねじり上げられ、床に押さえつけられた。顔だけは、{v}のほうへ向けさせられたまま。{w}の目の前で、{v}の服が一枚ずつ剥がされていった。|'+
-'{w}は助けに入ったはずだった。それなのに、突き飛ばされて尻もちをついたまま、{v}が乱されていく姿から目を離せない。下腹に熱が溜まっていくのに気づいて、{w}は唇を噛んだ。')
-};
-var FE={
-act:{
-mf:L('{x}は{y}を床に押し倒し、もがく両手首を頭の上でひとまとめに押さえつけた。{x}「狼は、獲物を逃がさないんだよ｜狼は、獲物を逃がさない｜狼は、獲物を逃がしませんよ」――脚のあいだに割り込んだ{男性器}が、{y}の{女性器}を一息に奥まで貫いた。{s:hit}。{y}「{v0}」|'+
-'{x}は{y}を壁に押しつけ、後ろから腰を抱え込んだ。乱暴にずらされた下着の隙間から、熱い{男性器}がずぶずぶと{ナカ}へ押し入ってくる。{s:hit}。{y}「{v0}」――逃げようとするたびに腰を引き戻され、さらに深く突き上げられた。|'+
-'{x}は{y}の脚を肩に担ぎ上げ、真上から体重をかけて{男性器}を沈めた。{s:hit}。{y}「{v1}」――ゲームのあいだ一度も疑わなかった相手に、{y}は{ナカ}の一番奥まで暴かれていった。'),
-mm:L('{x}は{y}を床にうつ伏せに押さえつけ、{尻}を割り開いた。{x}「最後まで騙されてたんだ。これくらい当然でしょ｜最後まで騙されていたんだ。これくらい当然だろう｜最後まで騙されていたんですから。これくらい当然でしょう」――張りつめた{男性器}が、{後ろ}をこじ開けて奥まで押し入った。{s:hit}。{y}「{v0}」|'+
-'{x}は{y}を壁際に追い詰め、後ろから腰を打ちつけた。{s:hit}。{y}「{v0}」――奥の膨らみを擦り上げられるたびに、{y}の{男性器}まで意思に反して硬くなっていった。|'+
-'{x}は{y}を組み敷いたまま{男性器}を握り込んで扱き、{後ろ}を容赦なく突き上げた。{s:hit}。{y}「{v1}」――前と後ろを同時に責められて、抗議の声は途中で裏返った。'),
-ff:L('{x}は{y}を床に押し倒し、太腿を割って体を重ねた。{x}「村人は、狼に食べられるものでしょ｜村人は、狼に食べられるものだろう｜村人は、狼に食べられるものでしょう」――指が{女性器}を割り開き、{ナカ}の弱いところを容赦なく掻き回す。{s:wet}。{y}「{v0}」|'+
-'{x}は{y}の脚を抱え込んで閉じられないようにし、{女性器}に舌を這わせた。{s:suck}。{y}「{v0}」――{陰核}を吸われるたびに、押しのけようとした手から力が抜けていった。|'+
-'{x}は{y}を押さえ込み、自分の{女性器}を{y}の{女性器}に重ねて、逃げる腰を追いかけるように擦りつけた。{s:wet}。{y}「{v1}」――押さえつけられた{胸}の先が、{x}の肌に擦れて硬く尖っていった。'),
-fm:L('{x}は{y}を床に押し倒し、その腰の上に乗り上げた。{x}「抵抗しても無駄。夜は狼の時間だから｜抵抗しても無駄だ。夜は狼の時間だ｜抵抗しても無駄ですよ。夜は狼の時間ですから」――無理やり昂らされた{男性器}を、{x}は自分の{女性器}に一気に呑み込んだ。{s:wet}。{y}「{v0}」|'+
-'{x}は{y}の手首を床に縫いとめたまま、腰を激しく上下させた。{s:hit}。{y}「{v0}」――{男性器}を{ナカ}で搾り上げられ、やめてくれという声はすぐに掠れていった。|'+
-'{x}は{y}の胸板に両手をついて体重をかけ、逃げられないようにした。{s:wet}。{y}「{v1}」――根元まで呑み込まれたまま腰をくねらされ、{y}の{男性器}は意思に反して{x}の{ナカ}で脈打った。')
-},
-mid:L('{y}は{x}の肩を押し返そうとした。{s:wet}。けれど押し返す腕は、突かれるたびに力を失っていく。{y}「{v1}」――悔しいのに、体の奥だけが勝手に熱を帯びていった。|'+
-'{y}は顔を背け、唇を噛んで声をこらえた。{s:hit}。こらえきれずに漏れた声を聞いて、{x}は楽しそうに目を細めた。{y}「{v1}」|'+
-'{x}はわざと動きを緩め、{y}の腰がそれを追いかけるのを待った。{s:wet}。気づいた{y}は真っ赤になって首を振ったが、追いかける腰は止まらなかった。{y}「{v1}」'),
-peak:{
-proud:L('{y}は最後まで{x}を睨みつけていた。{s:hit}。けれど一番奥を抉られるたびに、睨む目から力が抜けていく。{y}「{v1}」――悔しさに歯を鳴らしながら、{y}は{x}の下でイかされた。|'+
-'{y}は{x}の背中に爪を立て、声だけは上げまいとした。爪の跡が赤く残っても、腰の震えは止まらない。{s:hit}。屈辱に顔を歪めたまま、{y}の体は大きく跳ね上がった。'),
-stern:L('{y}は唇を固く結び、ただ時間が過ぎるのを待とうとした。{s:wet}。けれど体の奥の熱は、{x}の動きに合わせて勝手に膨らんでいく。{y}は短く息を詰め、背を反らして達した。|'+
-'{y}は、これはゲームの続きにすぎないと自分に言い聞かせた。言い聞かせる声が、突かれるたびに乱れていく。{s:hit}。最後の一突きで、{y}の中で張りつめていたものがぷつりと切れた。'),
-tsun:L('{y}は涙目で{x}を罵りつづけた。罵る声に甘いものが混じりはじめても、口だけは止めなかった。{s:hit}。{y}「{v1}」――イかされた瞬間、{y}は真っ赤になって顔を背けた。|'+
-'{y}は、感じてなんかいないと言い張った。言い張る唇は、もう震えていた。{s:wet}。{y}の背中がびくびくと跳ね、言葉とは裏腹に{x}にしがみついていた。'),
-gentle:L('{y}は抗うのをやめ、目を閉じて嵐が過ぎるのを待った。{s:wet}。それでも押し寄せる波には逆らえず、{y}は涙を浮かべたまま達した。{x}は満足げに、その涙を舐め取った。|'+
-'{y}は{x}の名前を、やめてと乞うように何度も呼んだ。その声が、突かれるたびに甘く崩れていく。{s:hit}。{y}の体が細かく震え、とうとう高みに押し上げられた。'),
-devoted:L('{y}は、ゲームの中で{x}を信じた自分を思い出していた。{s:wet}。信じた相手に暴かれていく体が、悔しいほど熱い。{y}は声を殺したまま、びくびくと震えてイった。|'+
-'{y}は唇を噛んで耐えた。耐えた分だけ深く溜まった熱が、最後の一突きで一気に弾けた。{s:hit}。{y}の腰ががくがくと跳ね、指先まで痙攣が走った。'),
-cool:L('{y}は無表情を保ったまま、{x}の動きをやり過ごそうとした。{s:wet}。保っていたはずの顔が、一突きごとに崩れていく。{y}は小さく息を呑み、びくりと腰を跳ねさせてイかされた。|'+
-'{y}は、議論のときと同じように頭を冷やそうとした。{s:hit}。考えようとするたびに、思考が白く途切れる。{y}の喉から、本人も聞いたことのない声が漏れた。'),
-free:L('{y}は最初、冗談にしてしまおうと笑ってみせた。{s:hit}。笑い声はすぐに途切れ、喉の奥で引きつった声に変わる。{y}は泣き笑いのような顔で、{x}の下で達した。|'+
-'{y}は暴れ、蹴り、{x}を押し返そうとした。{s:hit}。いつもの軽口は一つも出てこない。体が勝手に達して痙攣したとき、{y}は信じられないというように目を見開いた。'),
-shy:L('{y}は両手で顔を覆い、{x}の顔を見ないようにした。{s:wet}。指の隙間から漏れる声だけは、どうしても隠せない。{y}は小さく体を丸めたまま、びくびくと震えて達した。|'+
-'{y}は消え入りそうな声で、やめてと繰り返した。繰り返すたびに、その声は細く甘くなっていった。{s:hit}。{y}は耳まで真っ赤にして、声もなくイかされた。'),
-polite:L('{y}は乱れた息の合間に、丁寧な言葉で{x}をたしなめようとした。{s:wet}。言葉は途中から形を失い、ただの声になる。{y}は慎ましく閉じていた膝をがくがくと震わせて達した。|'+
-'{y}は最後まで、取り乱すまいと身を固くしていた。けれど体は、礼儀などお構いなしに{x}を締めつける。{s:hit}。{y}の品のよい顔が、快楽にとろりと崩れた。')
-},
-fin:{
-m:L('{x}の動きが荒く、速くなっていく。{s:hit}。{x}は{y}の腰を強く引き寄せ、一番奥に押しつけたまま果てた。{s:cum}。注ぎ込まれる熱に、{y}の{ナカ}がひくひくと締まった。|'+
-'{x}は{y}の奥で何度も脈打ち、{精液}を吐き出しきるまで腰を離さなかった。{s:cum}。溢れた白いものが、{y}の太腿を伝って床に落ちた。|'+
-'{x}は果てる寸前に引き抜き、{y}の肌に熱いものをぶちまけた。{s:cum}。{x}「ごちそうさま｜ごちそうさま｜ごちそうさまでした」――汚された{y}を見下ろして、{x}は舌なめずりをした。'),
-ff:L('{x}は{y}を責めながら、自分の{女性器}を{y}の太腿に擦りつけていた。{s:wet}。{x}がびくびくと身を震わせて果てると、ようやく指の動きが止まった。|'+
-'{x}は{y}が果てたあとも指を抜かず、もう一度、もう一度と責め立てた。{s:wet}。{y}が潮を噴いてぐったりしたところで、{x}はようやく満足げに指を引き抜いた。|'+
-'{x}は{y}と脚を絡めたまま腰を揺らしつづけ、二人はほとんど同時に達した。{s:wet}。重なった体のあいだで、どちらのものとも分からない{愛液}が糸を引いた。'),
-fm:L('{x}は{y}の上で腰を打ちつけ、{男性器}を奥まで咥え込んだまま締め上げた。{s:cum}。{y}がこらえきれずに{x}の{ナカ}で果てると、{x}も背を反らして達した。|'+
-'{x}は{y}が果てても腰を止めなかった。{s:wet}。出し尽くして敏感になった{男性器}を搾られつづけ、{y}は声にならない声を上げた。|'+
-'{x}は{y}の{精液}を{ナカ}で受け止め、恍惚とした顔で腰を震わせた。{s:cum}。{x}「ごちそうさま｜ごちそうさま｜ごちそうさまでした」――{x}は汗ばんだ{y}の頬を、獲物を確かめるように撫でた。')
-},
-again:L('{x}は一度では満足しなかった。ぐったりとした{y}の体を裏返し、また最初から貪りはじめる。{s:hit}。{y}「{v2}」――夜が白むまで、狼の食事は終わらなかった。|'+
-'休む間もなく、{x}は{y}の脚をもう一度開かせた。{s:wet}。{y}には、もう押し返す力も残っていない。{y}「{v2}」――二度目は、一度目よりも長く、執拗だった。|'+
-'{x}は{y}を膝の上に抱え上げ、逃げられないように腰を抱き寄せた。{s:wet}。{y}「{v2}」――抗い方を忘れた体は、やがて{x}の動きに合わせて揺れはじめていた。')
-};
-function forceEro(S,KR,x,y,second){
-var Pz=HK.Pos,E=HK.Ero,R=HK.R18M,env=S.env||{},kr=KR.rng;
-if(HK.NoGen&&HK.NoGen.on(x,y))return second?(R&&R.say?R.say(S,y,'climax'):''):R.sex(S,x,y,{mood:'rough'});
-var mx= !Pz.isF(x),my= !Pz.isF(y),k=mx?(my?'mm':'mf'):(my?'fm':'ff');
-var per=(HK.personaOf&&HK.personaOf(y))||y.persona||'gentle',strong= !!(R&&R.isStrong&&R.isStrong(y));
-var VK=['start','mid','climax'],pk=function(l){return l[kr.int(l.length)];};
-function mo(kk,late){return HK.Moan&&HK.Moan.say?HK.Moan.say(KR,y,kk,{force:true,hush:strong,late: !!late}):E.moan(KR,y,VK.indexOf(kk),{force:true});}
-function fl(t,late){
-if(k==='ff')t=String(t).replace(/\{s:(?:hit|cum)\}/g,'{s:wet}');
-return String(t).replace(/\{x\}/g,x.name).replace(/\{y\}/g,y.name).replace(/\{s:(\w+)\}/g,function(m,z){return E.sfx(KR,z);})
-.replace(/\{v([012])\}/g,function(m,n){return mo(VK[+n],late||n==='2');});
-}
-var climax=y.name+'「'+mo('climax',true)+'」';
-if(second)return fl(pk(FE.act[k]))+' '+climax;
-var short=HK.Lewd.short(env,kr),tail=fl(pk(FE.peak[per]||FE.peak.gentle),true)+' '+climax;
-if(short)return fl(pk(FE.act[k]))+' '+tail;
-var am=HK.Moan&&HK.Moan.say?HK.Moan.say(KR,x,k==='mf'||k==='mm'?'top':'topmid',{}):E.moan(KR,x,1);
-var out=[fl(pk(FE.act[k])),fl(pk(FE.mid)),tail+' '+x.name+'「'+am+'」――'+fl(pk(FE.fin[k==='mf'||k==='mm'?'m':k]),true)];
-if(HK.Lewd.high(env))out.push(fl(pk(FE.again),true));
-return out.join('\n\n');
-}
-function loveEro(S,x,y,kr){
-var TE=HK.ThickEro,E=HK.Ero,R=HK.R18M;
-if(!TE||(HK.NoGen&&HK.NoGen.on(x,y)))return R.sex(S,x,y,{mood:'love'});
-var pk=function(a){return E.fresh?E.fresh(S,a,function(l){return HK.Story.pick(S,l);}):HK.Story.pick(S,a);};
-var hi=HK.Lewd.high(S.env||{}),short=HK.Lewd.short(S.env||{},kr);
-var r=short?TE.short({S:S,pick:pk,a:x,b:y,again:hi}):TE.scene({S:S,pick:pk,rng:S.rng,a:x,b:y,style:HK.ThickSex?HK.ThickSex.style(x):'gentle',open:' ',again:hi});
-var t=r.text.replace(/^ \n\n/,'').replace(/\{a\}/g,x.name).replace(/\{b\}/g,y.name);
-if(HK.Pos&&HK.Pos.ff(x,y)&&HK.FF&&HK.FF.fix)t=HK.FF.fix({pick:pk,rng:S.rng},t,x,y);
-return t;
-}
-})();
-});
-;
-HK.Load.def(497.5,'tone:scen-jinro',function(){
+HK.Load.def(330.5,'tone:scen-jinro',function(){
 HK.Load.toneData("mixed",{"F":[
 ["〈〉、さっきから全員の顔色をうかがってる。〈〉が白なら、それはそれで情報になる。","〈〉さん、さっきから全員の顔色うかがってるよね。〈〉さんが白なら、それはそれで情報になりますよ。"],
 ["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉さんが黒なら、全部説明がつく。私は〈〉さんに入れます"],
@@ -1024,11 +1073,7 @@ HK.Load.toneData("mixed",{"F":[
 ["今日の占い結果。〈〉は人間","今日の占い結果です。〈〉さんは、人間だったよ",1],
 ["人狼だったら、もっとうまく隠れるって","人狼だったら、もっとうまく隠れますよ",1],
 ["迷ったら一番怪しいところ。〈〉だ","迷ったら一番怪しいところ。〈〉さんです",1],
-["ピンと来た。〈〉だ","ピンと来た。〈〉さんです",1],
-["〈〉って感じじゃないんだよね。〈〉にする","〈〉さんって感じじゃないんだよね。〈〉さんにします",1],
-["〈〉の発言、昨日と今日で言ってることが逆になってる。俺は〈〉が怪しいと思う。","〈〉さんの発言、昨日と今日で逆になってる。私は、〈〉さんが怪しいと思います。",1],
-["わ、私が狼なわけないでしょ！　顔見れば分かるでしょ！","わ、私が狼なわけないじゃん！　顔見れば分かるでしょう！",1],
-["私の考えを言う。〈〉、占い師が出たときの反応が早すぎた。知ってたみたいに。俺は〈〉が怪しいと思う。","私の考えを言いますね。〈〉さん、占い師が出たときの反応が早すぎた。知ってたみたいに。私は、〈〉さんが怪しいと思います。",1]],
+["ピンと来た。〈〉だ","ピンと来た。〈〉さんです",1]],
 "O":{
 "少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする":"少なくとも〈〉さんは村だと思ってます。だから〈〉さんの意見を軸にするね",
 "むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ":"むしろ怪しいのは〈〉さんのほうだと思います。理由も言えるよ",
@@ -1050,7 +1095,6 @@ HK.Load.toneData("mixed",{"F":[
 "え？　あ、うん、そう、そうだよね":"え？　あ、はい、そう、そうだよね",
 "いいよ、私を吊っても。でも次は〈〉を吊ってね":"いいですよ、私を吊っても。でも次は〈〉さんを吊ってね",
 "くだらない。俺の票を見てから言え":"くだらないですね。私の票を見てから言ってよ",
-"……〈〉が怪しいと思う":"……〈〉さんが怪しいと思います。勘だけどね",
 "〈〉って、狼のときもこんな感じだったよね？":"〈〉さんって、狼のときもこんな感じでしたよね？",
 "ねえ〈〉、今ちょっとドキッとしたでしょ？":"ねえ〈〉さん、今ちょっとドキッとしましたよね？",
 "全員が同じことを言い出したら、逆に怪しい。俺は〈〉を見てる":"全員が同じこと言い出したら、逆に怪しいですよ。私は〈〉さんを見てる",
@@ -1079,6 +1123,7 @@ HK.Load.toneData("mixed",{"F":[
 "最後まで信じた甲斐があった！":"最後まで信じた甲斐がありました！　嬉しいなあ",
 "待って、占い師は私。〈〉は人狼でした":"待ってください、占い師は私。〈〉は人狼だったよ",
 "私の勘、当たるんだよ。〈〉":"私の勘、当たるんですよ。ほら、〈〉だよ",
+"次はもっとうまくやる":"次はもっとうまくやります。見ててよ",
 "せいぜい頑張れ":"せいぜい頑張ってください。無理だろうけどね",
 "〈〉吊ろう！　外れたら謝る！":"〈〉吊りましょう！　外れたら謝るから！",
 "なんとなくだけど、〈〉から狼の匂いがする":"なんとなくですけど、〈〉さんから狼の匂いがするんだよね",
@@ -1186,6 +1231,7 @@ HK.Load.toneData("mixed",{"F":[
 "言いにくいけど、言うね。〈〉は笑ってるけど、目が笑ってない。〈〉、説明してほしい。":"言いにくいですけど、言うね。〈〉は笑ってるけど、目が笑ってない。〈〉さん、説明してほしい。",
 "私は最初から一貫している。記録を見てくれ":"私は最初から一貫してます。記録を見てよ",
 "いいよ、吊っても。でも村人だからね、覚えといて":"いいですよ、吊っても。でも村人だからね、覚えといて",
+"えー！　私!?　ないない、絶対ない！":"えー！　私ですか!?　ないない、絶対ない！",
 "昨日の投票、〈〉だけが流れと違うところに入れてる。〈〉の意見を聞きたい。":"昨日の投票、〈〉さんだけが流れと違うところに入れてます。〈〉さんの意見を聞きたいな。",
 "確認なんだけど、〈〉、具体的な名前を一度も出してないよね。俺の中では、〈〉が一番黒い。":"確認なんですけど、〈〉、具体的な名前を一度も出してないよね。私の中では、〈〉が一番黒い。",
 "〈〉、さっきから全員の顔色をうかがってる。〈〉が白なら、それはそれで情報になる。":"〈〉さん、さっきから全員の顔色をうかがってますよね。〈〉が白なら、それはそれで情報になるよ。",
@@ -1234,88 +1280,9 @@ HK.Load.toneData("mixed",{"F":[
 "……ここだ。〈〉のこの一言で、全部ひっくり返されたんだ":"……ここです。〈〉のこの一言で、全部ひっくり返されたんだ",
 "ちょっといい？〈〉は自分から話題を振らない。様子見にしても長すぎる。〈〉の意見を聞きたい。":"ちょっといいですか？〈〉は自分から話題を振らない。様子見にしても長すぎる。〈〉さんの意見を聞きたい。",
 "結論から言うと、〈〉、今日はずっと口数が少ない。俺は〈〉が怪しいと思う。":"結論から言いますね。〈〉、今日はずっと口数が少ない。私は〈〉が怪しいと思う。",
-"やられたー！　いや、今回は完全に〈〉の勝ちだ！":"やられました！　いや、今回は完全に〈〉さんの勝ちだよ！",
-"〈〉って感じじゃないんだよね。〈〉にする":"〈〉さんって感じじゃないんですよね。〈〉にする",
-"……なんか、〈〉の方が気になる":"……なんか、〈〉さんの方が気になります。なんでだろ",
-"推理？　……〈〉が気に食わない。それだけ":"推理ですか？　……〈〉が気に食わない。それだけだよ",
-"次は、真っ先にお前を吊るからな":"次は、真っ先にあなたを吊りますから。覚えときなよ",
-"証拠を出せ。話はそれからだ":"証拠を出してください。話はそれからだよ",
-"……〈〉さんの言う通りだと思います":"……〈〉さんの言う通りだと思います。反論、ないよ",
-"感情論だな。データで来い":"感情論ですね。データで来なよ",
-"えー、ここで退場!?　まあいっか、応援してるね！":"えー、ここで退場ですか!?　まあいっか、応援してるね！",
-"〈〉はCOが出る前から、占い師の真贋に妙に詳しかった。〈〉が白なら、それはそれで情報になる。":"〈〉さんはCOが出る前から、占い師の真贋に妙に詳しかったです。〈〉が白なら、それはそれで情報になるよ。",
-"え、あ、あの……ち、違います……":"え、あ、あの……ち、違います……ほんとだよ……",
-"〈〉は質問されると、質問で返してる。俺は〈〉が怪しいと思う。":"〈〉さんは質問されると、質問で返してます。私は〈〉が怪しいと思うよ。",
-"みんな、聞いて。〈〉、さっきから全員の顔色をうかがってる。〈〉、説明してほしい。":"みんな、聞いてください。〈〉、さっきから全員の顔色をうかがってる。〈〉さん、説明してほしい。",
-"整理させて。〈〉はCOが出る前から、占い師の真贋に妙に詳しかった。〈〉の意見を聞きたい。":"整理させてください。〈〉はCOが出る前から、占い師の真贋に妙に詳しかった。〈〉さんの意見を聞きたい。",
-"整理させて。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。〈〉が白なら、それはそれで情報になる。":"整理させてください。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。〈〉が白なら、それはそれで情報になる。",
-"〈〉は笑ってるけど、目が笑ってない。俺の中では、〈〉が一番黒い。":"〈〉さんは笑ってますけど、目が笑ってない。私の中では、〈〉が一番黒いよ。",
-"今のうちに言っておく。〈〉は笑ってるけど、目が笑ってない。俺の中では、〈〉が一番黒い。":"今のうちに言っておきます。〈〉は笑ってるけど、目が笑ってない。私の中では、〈〉が一番黒い。",
-"は？　俺を疑う暇があったら、もっと頭を使え":"は？　私を疑う暇があったら、もっと頭を使ってください。ほんと呆れる",
-"吊りたきゃ吊れ。後で泣くのはお前らだ":"吊りたければ吊ってください。後で泣くのはあなたたちだよ",
-"……あとは、任せたからね":"……あとは、任せましたから。負けないでね",
-"ひとつ引っかかってる。〈〉は笑ってるけど、目が笑ってない。〈〉の意見を聞きたい。":"ひとつ引っかかってます。〈〉は笑ってるけど、目が笑ってない。〈〉さんの意見を聞きたい。",
-"ちょっと待って、それ逆に〈〉が怪しくない？":"ちょっと待ってください、それ逆に〈〉が怪しくない？",
-"結論から言うと、〈〉と〈〉の票が、二日続けて揃ってる。偶然にしては出来すぎ。〈〉、説明してほしい。":"結論から言いますね。〈〉と〈〉の票が、二日続けて揃ってる。偶然にしては出来すぎ。〈〉さん、説明してほしい。",
-"吊られた人に票を入れてないの、〈〉だけなんだよね。俺の中では、〈〉が一番黒い。":"吊られた人に票を入れてないの、〈〉さんだけなんですよね。私の中では、〈〉が一番黒いよ。",
-"言いにくいけど、言うね。〈〉の推理、結論ありきで後から理由をつけてる感じがする。俺の中では、〈〉が一番黒い。":"言いにくいですけど、言うね。〈〉の推理、結論ありきで後から理由をつけてる感じがする。私の中では、〈〉が一番黒い。",
-"結論から言うと、〈〉は投票の直前で票先を変えた。あれ、何を見て変えたの？〈〉、説明してほしい。":"結論から言いますね。〈〉は投票の直前で票先を変えた。あれ、何を見て変えたの？〈〉さん、説明してほしい。",
-"平和な朝の前、〈〉は護衛先を探るようなことを言ってた。〈〉の意見を聞きたい。":"平和な朝の前、〈〉さんは護衛先を探るようなことを言ってました。〈〉さんの意見を聞きたいな。",
-"ひとつ引っかかってる。〈〉の推理、結論ありきで後から理由をつけてる感じがする。〈〉が白なら、それはそれで情報になる。":"ひとつ引っかかってます。〈〉の推理、結論ありきで後から理由をつけてる感じがする。〈〉が白なら、それはそれで情報になる。",
-"〈〉の推理、結論ありきで後から理由をつけてる感じがする。俺の中では、〈〉が一番黒い。":"〈〉さんの推理、結論ありきで後から理由をつけてる感じがします。私の中では、〈〉が一番黒いよ。",
-"確認なんだけど、〈〉と〈〉の票が、二日続けて揃ってる。偶然にしては出来すぎ。〈〉、説明してほしい。":"確認なんですけど、〈〉と〈〉の票が、二日続けて揃ってる。偶然にしては出来すぎ。〈〉さん、説明してほしい。",
-"ちょっといい？〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。":"ちょっといいですか？〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉さんの意見を聞きたい。",
-"言いにくいけど、言うね。〈〉の推理、結論ありきで後から理由をつけてる感じがする。俺は〈〉が怪しいと思う。":"言いにくいですけど、言うね。〈〉の推理、結論ありきで後から理由をつけてる感じがする。私は〈〉が怪しいと思う。",
-"ひとつ引っかかってる。〈〉、具体的な名前を一度も出してないよね。俺の中では、〈〉が一番黒い。":"ひとつ引っかかってます。〈〉、具体的な名前を一度も出してないよね。私の中では、〈〉が一番黒い。",
-"ちょっといい？〈〉、具体的な名前を一度も出してないよね。俺の中では、〈〉が一番黒い。":"ちょっといいですか？〈〉、具体的な名前を一度も出してないよね。私の中では、〈〉が一番黒い。",
-"さっきから気になってたんだけど、〈〉、さっきから全員の顔色をうかがってる。〈〉の意見を聞きたい。":"さっきから気になってたんですけど、〈〉、さっきから全員の顔色をうかがってる。〈〉さんの意見を聞きたい。",
-"〈〉、今日はずっと口数が少ない。俺は〈〉が怪しいと思う。":"〈〉さん、今日はずっと口数が少ないですね。私は〈〉が怪しいと思うよ。"}});
+"やられたー！　いや、今回は完全に〈〉の勝ちだ！":"やられました！　いや、今回は完全に〈〉さんの勝ちだよ！"}});
 HK.Load.toneData("boku_n",{"F":[
 ["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉、今日はずっと口数が少ないよね。……私の中では、〈〉が一番黒いかな。",1]]});
-HK.Load.toneData("tsun_n",{"F":[
-["〈〉、さっきから喋らなさすぎじゃない？","〈〉、さっきから喋らなさすぎだろ",1],
-["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉は今日、ずっと口数が少ない。〈〉、説明しろ",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉は今日、ずっと口数が少ない。私の中では、〈〉が一番黒い",1],
-["〈〉が言うなら、たぶんそうなんだろうな……","〈〉が言うなら、たぶんそうなんだろう……",1],
-["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒なら全部説明がつく。私は〈〉に入れる",1],
-["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる",1],
-["〈〉の意見に賛成です。〈〉でいいと思う","〈〉の意見に賛成だ。〈〉でいいと思う",1],
-["〈〉の推理、穴だらけだよ。指摘しようか？","〈〉の推理は穴だらけだ。指摘してやろうか",1],
-["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉の発言、昨日と今日で逆だ。〈〉、説明しろ",1],
-["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉は対抗が出てから急に結果を言い出した。偽物だ",1],
-["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい",1],
-["おい、〈〉！　最後まで白いって言ってただろうが！","おい、〈〉！　最後まで白いって言ってただろ！",1],
-["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずい。〈〉に揃えるぞ",1],
-["ほら見なさい！　村人だって言ったのに！","ほら見ろ！　村人だって言っただろ！",1],
-["みんな、いい村だったよ。私たちのほうが上手だったけど","みんな、いい村だった。私たちのほうが上手だったけどな",1],
-["むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ","むしろ怪しいのは〈〉のほうだ。理由も言える",1],
-["やられたー！　いや、今回は完全に〈〉の勝ちだ！","やられた！　今回は完全に〈〉の勝ちだ",1],
-["人狼がこんなに堂々としてると思う？","人狼がこんなに堂々としてると思うか？",1],
-["人狼だったら、もっとうまく隠れるって","人狼だったら、もっとうまく隠れる",1],
-["偽物が出たね。私が本物。〈〉――人狼でした","偽物が出たな。本物は私だ。〈〉――人狼だった",1],
-["全員、今日の投票先を一人ずつ言って。最後にまとめる","全員、今日の投票先を一人ずつ言え。最後にまとめる",1],
-["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋を見れば分かる。〈〉の結果は不自然だ",1],
-["多数派に乗るのが一番危ないんだよ。今日は〈〉に入れる","多数派に乗るのが一番危ない。今日は〈〉に入れる",1],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思う。だから〈〉の意見を軸にする",1],
-["待って、さっきと言ってること逆だ","待て、さっきと言ってることが逆だ",1],
-["待って、占い師は私。〈〉は人狼でした","待て、占い師は私だ。〈〉は人狼だった",1],
-["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","整理させてくれ。〈〉は対抗が出た瞬間、即決した。根拠が薄い。〈〉の意見を聞きたい",1],
-["明日に情報を残すためにも、今日は〈〉を吊る","明日に情報を残すためにも、今日は〈〉を吊る",1],
-["本物の占い師は私。〈〉は人狼でした","本物の占い師は私だ。〈〉は人狼だった",1],
-["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","村目線で言わせてもらうと、〈〉の動きが一番狼っぽい",1],
-["次は、真っ先にお前を吊るからな","次は、真っ先にお前を吊る",1],
-["直感って大事だよ。〈〉、目を逸らしたでしょ","直感は大事だ。〈〉、目を逸らしただろ",1],
-["真贋は判断できない。だから占い師から順に吊る","真贋は判断できない。だから占い師から順に吊る",1],
-["私が村人であることは、明日の結果が証明する","私が村人であることは、明日の結果が証明する",1],
-["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇ってる",1],
-["私は明日も生きて、〈〉の黒を証明する","私は明日も生きて、〈〉の黒を証明する",1],
-["私を吊って、明日後悔しても知らないよ","私を吊れば、明日後悔するぞ",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言う。平和な朝の前、〈〉は護衛先を探るようなことを言ってた。私の中では、〈〉が一番黒い",1],
-["自信ないけど、みんなと同じで〈〉に","自信はないが、みんなと同じで〈〉に",1],
-["自分では決められないので、今日は流れに乗ります","自分では決められない。今日は流れに乗る",1],
-["順番に意見を言おう。最後に決を採る","順番に意見を言え。最後に決を採る",1],
-["騙すの、正直ちょっとつらかった","騙すのは、正直少しつらかった",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったが、言う。占い師。〈〉は人狼だった",1]]});
 HK.Load.toneData("noja",{"F":[
 ["……ここまでか。だが、まだ終わってない","……ここまでか。じゃが、まだ終わってはおらぬ"],
 ["〈〉、正直に言いなよ。狼でしょ？","〈〉、正直に申せ。狼じゃろう？"],
@@ -1362,7 +1329,6 @@ HK.Load.toneData("noja",{"F":[
 ["私を吊って、明日後悔しても知らないよ","私を吊って、明日悔いても知らぬぞ",1],
 ["偽物が出たね。私が本物。〈〉――人狼ではありませんでした","偽物が出たのう。私が本物じゃ。〈〉は――人狼ではなかった",1],
 ["両方の発言を比べた。偽物は〈〉だと思う","両方の発言を比べた。偽物は〈〉じゃと思う",1],
-["……〈〉が怪しいと思う","……〈〉が怪しいのう",1],
 ["騙すの、正直ちょっとつらかった","騙すのは、正直ちと辛かったのう",1],
 ["俺は〈〉を信じる。今日は二人で同じところに入れよう","私は〈〉を信じる。今日は二人で同じところに入れようぞ",1],
 ["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉は違うと思うぞ。むしろ〈〉が怪しい",1],
@@ -1382,16 +1348,12 @@ HK.Load.toneData("noja",{"F":[
 ["次は、真っ先にお前を吊るからな","次は、真っ先におぬしを吊るからのう",1],
 ["あはは、やっぱりバレちゃった","あはは、やはりバレてしもうた",1],
 ["真贋を見極めよう。俺は〈〉が偽物だと判断する","真贋を見極めようぞ。私は〈〉が偽物と見た",1],
+["えー！　私!?　ないない、絶対ない！","なんと！　私じゃと!?　ないない、断じてない！",1],
 ["言いにくいけど、言うね。〈〉の発言、昨日と今日で言ってることが逆になってる。俺は〈〉が怪しいと思う。","言いにくいが、言うぞ。〈〉の発言、昨日と今日で言うておることが逆になっておる。私は〈〉が怪しいと思う。",1],
 ["笑っちゃう。私が人狼なら、もっと上手くやるって","笑ってしまうわ。私が人狼なら、もっと上手くやる",1],
 ["えー、ここで退場!?　まあいっか、応援してるね！","なんと、ここで退場か!?　まあよい、応援しておるぞ！",1],
 ["〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。〈〉が白なら、それはそれで情報になる。","〈〉は「誰でもよい」と言うたのに、急に一人に絞った。理由が見えぬ。〈〉が白なら、それはそれで情報になる。",1],
 ["私の分まで、正しく推理してくれ","私の分まで、正しく推理してたもれ",1],
-["今のうちに言っておく。〈〉はCOが出る前から、占い師の真贋に妙に詳しかった。〈〉、説明してほしい。","……今のうちに言うておく。〈〉はCOが出る前から、占い師の真贋に妙に詳しかったのう。〈〉、説明してもらおうか。",1],
-["……なんか、〈〉の方が気になる","……なにやら、〈〉の方が気になるのう",1],
-["想定より一日早かった","想定より一日早かったのう",1],
-["なんか、あざとくない？","……なにやら、あざとくないか？",1],
-["〈〉って感じじゃないんだよね。〈〉にする","〈〉という感じではないのじゃ。〈〉にする",1],
 ["〈〉、さっきから喋らなさすぎではないか？","〈〉よ、さっきから黙りすぎではないかの？",1],
 ["〈〉の推理には納得した。〈〉に入れる","〈〉の推理、得心がいった。〈〉に入れるぞ",1],
 ["反対する理由がないので、〈〉に入れる","反対する理由もないゆえ、〈〉に入れる",1],
@@ -1420,7 +1382,6 @@ HK.Load.toneData("noja",{"F":[
 "え？　あ、うん、そう、そうだよね":"む？　あ、うむ、そう、そうじゃな",
 "いいよ、私を吊っても。でも次は〈〉を吊ってね":"よいぞ、私を吊っても。じゃが次は〈〉を吊るのじゃぞ",
 "くだらない。俺の票を見てから言え":"くだらぬ。私の票を見てから申せ",
-"……〈〉が怪しいと思う":"……〈〉が怪しいと思う",
 "〈〉って、狼のときもこんな感じだったよね？":"〈〉は、狼のときもこのようであったな？",
 "ねえ〈〉、今ちょっとドキッとしたでしょ？":"のう〈〉、今ちとどきりとしたじゃろう？",
 "全員が同じことを言い出したら、逆に怪しい。俺は〈〉を見てる":"皆が同じことを申し出したら、かえって怪しい。私は〈〉を見ておる",
@@ -1471,6 +1432,7 @@ HK.Load.toneData("kansai",{"F":[
 ["対抗します。占い師は私。〈〉は人狼でした","対抗するわ。占い師は私や。〈〉は人狼やった",1],
 ["村のために言うけど、〈〉の動き、ずっとおかしい","村のために言うけど、〈〉の動き、ずっとおかしいで",1],
 ["……ふん。一人くらいくれてやる","……ふん。一人くらいくれたるわ",1],
+["次はもっとうまくやる","次はもっとうまくやったる",1],
 ["待って、狩人CO。私を吊ると護衛がいなくなる","待って、狩人CO。私吊ったら護衛おらんようになるで",1],
 ["〈〉は笑ってるけど、目が笑ってない。〈〉、説明してほしい。","〈〉、笑とるけど目が笑てへんねん。〈〉、説明してくれへん？",1],
 ["いいよ、吊っても。でも村人だからね、覚えといて","ええよ、吊っても。せやけど村人やからな、覚えといて",1],
@@ -1478,19 +1440,16 @@ HK.Load.toneData("kansai",{"F":[
 ["仲間は、まだいるぞ","仲間は、まだおるで",1],
 ["まあ、楽しかったからいいや","まあ、楽しかったからええわ",1],
 ["〈〉を吊るのは早すぎる。情報が足りない","〈〉を吊るのは早すぎるわ。情報が足りへん",1],
+["……覚えてなさいよ！","……覚えときや！",1],
 ["あそこで入れ替えてれば……！","あそこで入れ替えとったら……！",1],
 ["黙ってて。考えてるから","黙っといて。考えとるから",1],
 ["ひとつ引っかかってる。〈〉は自分から話題を振らない。様子見にしても長すぎる。俺は〈〉が怪しいと思う。","ひとつ引っかかっとるねん。〈〉、自分から話題振らへんやろ。様子見にしても長すぎや。私は〈〉が怪しいと思う。",1],
-["〈〉、今までずっと一緒にいたでしょ。私が嘘ついたこと、ある？","〈〉、今までずっと一緒におったやろ。私が嘘ついたこと、ある？",1],
-["ひとつ引っかかってる。〈〉、さっきから全員の顔色をうかがってる。〈〉が白なら、それはそれで情報になる。","ひとつ引っかかっとるねん。〈〉、さっきから全員の顔色うかがっとるやろ。〈〉が白やったら、それはそれで情報になるで。",1],
-["……べ、別に悔しくなんかないし","……べ、別に悔しないし",1],
 ["〈〉が噛まれるのは分かってたし……あ、いや、予想してたって意味","〈〉が噛まれるのは分かってたし……あ、いや、予想してたって意味やで",1],
 ["人狼だったら、もっとうまく隠れるって","人狼やったら、もっとうまく隠れるって",1],
 ["〈〉の推理、納得できた。〈〉で","〈〉の推理、納得したわ。〈〉で",1],
 ["理由を聞かれても困るけど、〈〉に一票！","理由聞かれても困るけど、〈〉に一票や！",1],
 ["あーあ、もっと遊びたかった！　またね！","あーあ、もっと遊びたかったわ！　ほなな！",1],
-["いやあ、騙された騙された","いやあ、まんまと騙されたわ",1],
-["順番に意見を言おう。最後に決を採る","順番に意見言うていこか。最後に決採るで",1]],
+["いやあ、騙された騙された","いやあ、まんまと騙されたわ",1]],
 "O":{
 "少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする":"少なくとも〈〉は村やと思っとる。せやから〈〉の意見を軸にするわ",
 "むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ":"むしろ怪しいのは〈〉のほうやと思う。理由も言えるで",
@@ -1512,7 +1471,6 @@ HK.Load.toneData("kansai",{"F":[
 "え？　あ、うん、そう、そうだよね":"え？　あ、うん、せや、せやんな",
 "いいよ、私を吊っても。でも次は〈〉を吊ってね":"ええよ、私吊っても。でも次は〈〉吊ってな",
 "くだらない。俺の票を見てから言え":"しょうもな。私の票見てから言いや",
-"……〈〉が怪しいと思う":"……〈〉が怪しいと思うわ",
 "〈〉って、狼のときもこんな感じだったよね？":"〈〉って、狼のときもこんな感じやったやんな？",
 "ねえ〈〉、今ちょっとドキッとしたでしょ？":"なあ〈〉、今ちょっとドキッとしたやろ？",
 "全員が同じことを言い出したら、逆に怪しい。俺は〈〉を見てる":"全員同じこと言い出したら、逆に怪しいで。私は〈〉見てる",
@@ -1568,11 +1526,7 @@ HK.Load.toneData("mukuchi",{"F":[
 ["最後まで信じた甲斐があった！","……信じて、よかった",1],
 ["確認なんだけど、〈〉は笑ってるけど、目が笑ってない。俺は〈〉が怪しいと思う。","……〈〉、目が笑ってない。……怪しい",1],
 ["整理させて。平和な朝の前、〈〉は護衛先を探るようなことを言ってた。〈〉が白なら、それはそれで情報になる。","……平和な朝の前、〈〉、護衛先を探ってた",1],
-["私の考えを言う。〈〉は投票の直前で票先を変えた。あれ、何を見て変えたの？俺は〈〉が怪しいと思う。","……〈〉、直前で票を変えた。……怪しい",1],
-["〈〉、昨日の発言で分からなくなった。悪いけど","……〈〉、昨日の発言で、わからなくなった",1],
-["ちょっといい？〈〉、さっきから全員の顔色をうかがってる。〈〉の意見を聞きたい。","……〈〉、みんなの顔色、うかがってる。……〈〉、どう思う",1],
-["完全に騙された。見事だよ、〈〉","……騙された。……見事、〈〉",1],
-["〈〉が噛まれるのは分かってたし……あ、いや、予想してたって意味","……〈〉が噛まれるのは、分かってた。……あ。予想してた、って意味",1]],
+["私の考えを言う。〈〉は投票の直前で票先を変えた。あれ、何を見て変えたの？俺は〈〉が怪しいと思う。","……〈〉、直前で票を変えた。……怪しい",1]],
 "O":{
 "少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする":"……〈〉は村。〈〉に、合わせる",
 "むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ":"……怪しいのは、〈〉",
@@ -1594,7 +1548,6 @@ HK.Load.toneData("mukuchi",{"F":[
 "え？　あ、うん、そう、そうだよね":"……え。あ、うん",
 "いいよ、私を吊っても。でも次は〈〉を吊ってね":"……吊っていい。次は、〈〉",
 "くだらない。俺の票を見てから言え":"……くだらない。票、見て",
-"……〈〉が怪しいと思う":"……〈〉が、怪しい",
 "〈〉って、狼のときもこんな感じだったよね？":"……〈〉、狼のときも、こうだった",
 "ねえ〈〉、今ちょっとドキッとしたでしょ？":"……〈〉、今、ドキッとした",
 "全員が同じことを言い出したら、逆に怪しい。俺は〈〉を見てる":"……みんな同じは、怪しい。〈〉を見てる",
@@ -1655,7 +1608,6 @@ HK.Load.toneData("polite",{"F":[
 "え？　あ、うん、そう、そうだよね":"えっ？　あ、はい、そう、そうですよね",
 "いいよ、私を吊っても。でも次は〈〉を吊ってね":"私を吊っても構いません。でも、次は〈〉さんを吊ってくださいね",
 "くだらない。俺の票を見てから言え":"くだらないです。私の票を見てからおっしゃってください",
-"……〈〉が怪しいと思う":"……〈〉さんが怪しいと思います",
 "〈〉って、狼のときもこんな感じだったよね？":"〈〉さんって、狼のときもこんな感じでしたよね？",
 "ねえ〈〉、今ちょっとドキッとしたでしょ？":"あの、〈〉さん、今ちょっとドキッとしましたよね？",
 "全員が同じことを言い出したら、逆に怪しい。俺は〈〉を見てる":"全員が同じことを言い出したら、かえって怪しいです。私は〈〉さんを見ています",
@@ -1739,12 +1691,6 @@ HK.Load.toneData("gentleman",{"F":[
 ["なんでそんなに焦ってるの","どうしてそんなに焦っているのかね",1],
 ["いやあ、騙された騙された","いやあ、見事に騙されたよ",1],
 ["ちょっといい？〈〉の推理、結論ありきで後から理由をつけてる感じがする。俺の中では、〈〉が一番黒い。","少しいいかい？　〈〉の推理は、結論ありきで後から理由をつけているように見える。私の見立てでは、〈〉が一番黒いね。",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言おう。平和な朝の前、〈〉は護衛先を探るようなことを言っていたね。私の見立てでは、〈〉が一番黒いよ。",1],
-["ちょっといい？〈〉の発言、昨日と今日で言ってることが逆になってる。俺の中では、〈〉が一番黒い。","少しいいかい？　〈〉の発言は、昨日と今日で言っていることが逆になっているね。私の見立てでは、〈〉が一番黒いよ。",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉は今日、ずっと口数が少ないね。私の見立てでは、〈〉が一番黒いよ。",1],
-["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずいね。〈〉に揃えようじゃないか",1],
-["……私は村人だった。あとは任せる","……私は村人だったよ。あとは任せたまえ",1],
-["昨日の投票、〈〉だけが流れと違うところに入れてる。〈〉、説明してほしい。","昨日の投票で、〈〉だけが流れと違うところに入れているね。〈〉、説明してくれたまえ。",1],
 ["〈〉が噛まれるのは分かっていた……あ、いや、予想していたという意味だ","〈〉が噛まれるのは分かっていたよ……ああ、いや、予想していたという意味だがね",1],
 ["〈〉の推理には納得した。〈〉に入れる","〈〉の推理には納得したよ。〈〉に入れよう",1]],
 "O":{
@@ -1768,49 +1714,29 @@ HK.Load.toneData("gentleman",{"F":[
 "え？　あ、うん、そう、そうだよね":"おや？　ああ、うん、そう、そうだね",
 "いいよ、私を吊っても。でも次は〈〉を吊ってね":"構わないよ、私を吊っても。だが次は〈〉を吊ってくれたまえ",
 "くだらない。俺の票を見てから言え":"くだらないね。私の票を見てから言いたまえ",
-"……〈〉が怪しいと思う":"……〈〉が怪しいと思うね",
 "〈〉って、狼のときもこんな感じだったよね？":"〈〉は、狼のときもこんな様子だったね？",
 "ねえ〈〉、今ちょっとドキッとしたでしょ？":"ところで〈〉、今少しどきりとしただろう？",
 "全員が同じことを言い出したら、逆に怪しい。俺は〈〉を見てる":"全員が同じことを言い出したら、逆に怪しいものだ。私は〈〉を見ているよ",
 "……そういう言い方するから疑われるんだよ":"……そういう言い方をするから、疑われるのだよ"}});
-HK.Load.toneData("proud",{"F":[
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だ。だから〈〉の意見を軸にする。異論は認めねえ",1],
-["……ここまでか。だが、まだ終わってない","……ここまでか。だが、まだ終わっちゃいねえ",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったが、言ってやる。占い師だ。〈〉は人狼じゃなかった",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったが、言ってやる。占い師だ。〈〉は人狼だった",1],
-["自分では決められないので、今日は流れに乗ります","自分じゃ決めきれねえ。今日は流れに乗ってやる",1],
-["私を吊って、明日後悔しても知らないよ","私を吊って、明日後悔しても知らねえぞ",1],
-["……ふん。一人くらいくれてやる","……ふん。一人くらいくれてやる",1],
-["覚えてろ。村人を吊ったこと、後悔させてやる","覚えてろ。村人を吊ったこと、後悔させてやる",1],
-["くだらない。私の票を見てから言え","くだらねえ。私の票を見てから言え",1],
-["おい、〈〉！　最後まで白いって言ってただろうが！","おい、〈〉！　最後まで白いって言ってただろうが！",1],
-["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉は違う。むしろ〈〉が怪しい",1],
-["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒なら全部説明がつく。私は〈〉に入れる",1],
-["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇ってる。考えりゃわかるだろ",1],
-["〈〉って、狼のときもこんな感じだったよね？","〈〉、お前、狼のときもこんな感じだったよな？",1],
-["私が村人であることは、明日の結果が証明する","私が村人だってことは、明日の結果が証明してくれる",1],
-["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","村目線で言わせてもらう。〈〉の動きが一番狼くさい",1],
-["〈〉、さっきから喋らなさすぎじゃない？","〈〉、さっきから喋らなさすぎじゃねえか？",1],
-["〈〉の返事、ちょっと早すぎない？　怪しい！","〈〉の返事、ちょっと早すぎねえか？　怪しいぞ",1],
-["〈〉吊ろう！　外れたら謝る！","〈〉を吊るぞ！　外れたら謝ってやる！",1],
-["感じ悪いな。それ、狼ムーブじゃない？","感じ悪いな。それ、狼ムーブじゃねえか？",1],
-["みんな〈〉って言ってるけど、それ流されてない？","みんな〈〉って言ってるけど、それ流されてねえか？",1],
-["完敗。次は負けないよ","完敗だ。次は負けねえ",1],
-["ねえ〈〉、今ちょっとドキッとしたでしょ？","おい〈〉、今ちょっとドキッとしただろ？",1],
-["みんな、聞いて。〈〉、占い師が出たときの反応が早すぎた。知ってたみたいに。〈〉の意見を聞きたい。","みんな、聞け。〈〉、占い師が出たときの反応が早すぎた。知ってたみたいにな。〈〉、言い分を聞かせろ。",1],
-["私の発言、全部見返してみて","私の発言、全部見返してみろ",1],
-["〈〉の推理、穴だらけだよ。指摘しようか？","〈〉の推理、穴だらけだ。指摘してやろうか？",1],
-["わ、私は村人だよ","わ、私は村人だ",1],
-["ここからは協力しよう","ここからは手を組むぞ",1],
-["疑うなら、どうぞ。何も出てこないから","疑うなら好きにしろ。何も出てこねえよ",1],
-["本物の占い師は私。〈〉は人狼でした","本物の占い師は私だ。〈〉は人狼だった",1],
-["いいよ、私を吊っても。でも次は〈〉を吊ってね","いいぜ、私を吊っても。だが次は〈〉を吊れよ",1],
-["理由はないけど、〈〉だけは信用できない気がする","理由はねえが、〈〉だけは信用できねえ",1],
-["〈〉、正直に言いなよ。狼でしょ？","〈〉、正直に言え。狼だろ？",1],
-["私は村人。断言する","私は村人だ。断言する",1],
-["な、なんで私なのよ！　ちゃんと見てたの？","な、なんで私が疑われなきゃならねえ！　ちゃんと見てたのか？",1],
-["なんか、あざとくない？","なんか、あざとくねえか？",1],
-["結論から言うと、〈〉は笑ってるけど、目が笑ってない。〈〉、説明してほしい。","結論から言う。〈〉は笑ってるが、目が笑ってねえ。〈〉、説明しろ。",1]]});
+HK.Load.toneData("ane",{"F":[
+["あの投票、なんで入れ替えなかったんだろ……","あの投票、なんで入れ替えなかったのかしら……"],
+["いやあ、騙された騙された","いやあ、すっかり騙されちゃったわ"],
+["おい、〈〉！　最後まで白いって言ってただろうが！","ちょっと、〈〉！　最後まで白いって言ってたじゃない！"],
+["まあ、楽しかったからいいや","まあ、楽しかったからいいわ"],
+["疑うなら、どうぞ。何も出てこないから","疑うなら、どうぞ。何も出てこないわよ"],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったけど、言うわ。私、占い師よ。〈〉は人狼じゃなかったわ"],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思ってるわ。だから〈〉の意見を軸にさせてもらうわね",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言うわ。占い師は私よ。〈〉は人狼だったわ",1],
+["誰も責めないよ。あとはよろしくね","誰も責めたりしないわ。あとはよろしくね",1],
+["ごめんね、みんな……仲間を、頼んだよ","ごめんなさいね、みんな……仲間を、頼んだわよ",1],
+["仲間のために、もう少し粘りたかった……","仲間のために、もう少し粘りたかったわね……",1],
+["私を吊って、明日後悔しても知らないよ","私を吊って、明日後悔しても知らないわよ",1],
+["あ、ありがとう、ございました……っ","あ……ありがとう……っ",1],
+["あ、ありがとう、ございました……","あ……ありがとう……",1],
+["大丈夫、怒ってないよ。でも、村人なんだ","大丈夫、怒ってないわ。でも、村人なのよ",1],
+["異論は？　……ないな。〈〉だ","異論は？　……ないわね。じゃあ、〈〉で決まりね",1],
+["次は、真っ先にお前を吊るからな","次は、真っ先にあなたを吊るからね",1],
+["〈〉、さっきから喋らなさすぎじゃない？","〈〉、さっきから口数が少なすぎるんじゃない？",1]]});
 HK.Load.toneData("aniki",{"F":[
 ["いいよ、私を吊っても。でも次は〈〉を吊ってね","いいぜ、私を吊っても。でも次は〈〉を吊ってくれよ"],
 ["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思うんだ。だから〈〉の意見を軸にしようぜ",1],
@@ -1848,276 +1774,156 @@ HK.Load.toneData("aniki",{"F":[
 ["人狼がこんなに堂々としてると思う？","人狼がこんなに堂々としてると思うか？",1],
 ["結論から言うと、〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。〈〉が白なら、それはそれで情報になる。","結論から言うと、〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えねえ。〈〉が白なら、それはそれで情報になる。",1],
 ["な、なんで私なのよ！　ちゃんと見てたの？","な、なんで私が疑われんだよ！　ちゃんと見てたのか？",1]]});
-HK.Load.toneData("yankee",{"F":[
-["〈〉って、狼のときもこんな感じだったよね？","〈〉って、狼のときもこんな感じだったよな？"],
-["いいよ、吊っても。でも村人だからね、覚えといて","いいよ、吊っても。でも村人だからな、覚えとけよ"],
-["いいよ、私を吊っても。でも次は〈〉を吊ってね","いいよ、私を吊っても。でも次は〈〉を吊ってくれよ"],
-["出るね。占い師。〈〉――人狼ではありませんでした","出るぞ。占い師。〈〉――人狼じゃなかった"],
-["反対する理由がないので、〈〉で","反対する理由もねえし、〈〉で"],
-["待って、占い師は私。〈〉は人狼でした","待て、占い師は私。〈〉は人狼だった"],
-["理由はないけど、〈〉だけは信用できない気がする","理由はねえけど、〈〉だけは信用できねえ気がする"],
-["私が村人であることは、明日の結果が証明する","私が村人だってことは、明日の結果が証明してくれる"],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったけどよ、言うわ。占い師だ。〈〉は人狼じゃなかった",1],
-["本物の占い師は私。〈〉は人狼でした","本物の占い師は私だ。〈〉は人狼だった",1],
-["大丈夫、怒ってないよ。でも、村人なんだ","大丈夫、怒ってねえよ。けど、村人なんだよ",1],
-["なんでそんなに焦ってるの","なんでそんなに焦ってんだよ",1],
-["私を信じて。後悔はさせない","私を信じろ。後悔はさせねえ",1],
-["な、なんで私なのよ！　ちゃんと見てたの？","な、なんで私が疑われんだよ！　ちゃんと見てたのか？",1],
-["うそでしょ、私!?　ないって！　信じて！","マジかよ、私!?　ねえって！　信じろって！",1],
-["〈〉、正直に言いなよ。狼でしょ？","〈〉、正直に言えよ。狼だろ？",1],
-["私は村人。断言する","私は村人だ。断言する",1],
-["見事だった。認めよう","見事だった。認めてやるよ",1],
-["私の発言、全部見返してみて","私の発言、全部見返してみろよ",1],
-["〈〉吊ろう！　外れたら謝る！","〈〉吊るぞ！　外れたら謝っから！",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉、今日はずっと口数が少ねえ。私の中じゃ、〈〉が一番黒い。",1],
-["迷ってる余裕はない。占い師を順に処理していこう","迷ってる余裕はねえ。占い師を順に処理してくぞ",1],
-["時間がない。今日は〈〉に入れよう","時間がねえ。今日は〈〉に入れんぞ",1],
-["え？　あ、うん、そう、そうだよね","え？　あ、おう、そう、そうだよな",1],
-["ちょっといい？〈〉の投票先、毎回いちばん安全なところを選んでる気がする。〈〉が白なら、それはそれで情報になる。","ちょっといいか。〈〉の投票先、毎回いちばん安全なとこ選んでやがる。〈〉が白なら、それはそれで情報になんだろ。",1],
-["今のうちに言っておく。〈〉、〈〉が疑われたときだけ、やけに庇うよね。〈〉が白なら、それはそれで情報になる。","今のうちに言っとくぞ。〈〉、〈〉が疑われたときだけやけに庇うよな。〈〉が白なら、それはそれで情報だ。",1],
-["言いにくいけど、言うね。昨日の投票、〈〉だけが流れと違うところに入れてる。〈〉の意見を聞きたい。","言いにくいけど、言うわ。昨日の投票、〈〉だけ流れと違うとこに入れてんだよ。〈〉、どういうつもりか聞かせろ。",1],
-["感情で吊るのはやめよう。私の投票先を確認してほしい","感情で吊んのはやめろ。私の投票先、確認しとけ",1],
-["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉が白なら、それはそれで情報になる。","整理させろ。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄いんだよ。〈〉が白なら、それはそれで情報になる。",1],
-["整理させて。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。俺は〈〉が怪しいと思う。","整理させろ。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えねえ。私は〈〉が怪しいと思う。",1],
-["むしろ怪しいのは〈〉のほうだと思う。理由も言える","むしろ怪しいのは〈〉のほうだろ。理由も言えるぜ",1],
-["〈〉、さっきから喋らなさすぎではないか？","〈〉、さっきから黙りすぎじゃねえか？",1],
-["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉は違えと思う。むしろ〈〉が怪しいだろ",1],
-["〈〉が噛まれるのは分かっていた……あ、いや、予想していたという意味だ","〈〉が噛まれんのは分かってたし……あ、いや、予想してたって意味だよ",1],
-["自分では決められないので、今日は流れに乗る","自分じゃ決めらんねえから、今日は流れに乗るわ",1]]});
-HK.Load.toneData("stern",{"F":[
-["〈〉、正直に言いなよ。狼でしょ？","〈〉、正直に言え。狼だろ？"],
-["いいよ、私を吊っても。でも次は〈〉を吊ってね","構わない、私を吊れ。だが次は〈〉を吊ってくれ"],
-["ちょっと、言い方","待て、言い方を考えろ"],
-["もう一戦やる？","もう一戦やるか？"],
-["人狼だったら、もっとうまく隠れるって","人狼なら、もっとうまく隠れる"],
-["感じ悪いな。それ、狼ムーブじゃない？","感じが悪いな。それは、狼の動きだ"],
-["私は村人。断言する","私は村人だ。断言する"],
-["私は村人だ。根拠を一つずつ反論する","私は村人だ。根拠の一つずつに反論する"],
-["黙ってて。考えてるから","黙っていろ。考えている"],
-["ちょっといい？〈〉の投票先、毎回いちばん安全なところを選んでる気がする。〈〉が白なら、それはそれで情報になる。","一つ言わせてもらう。〈〉の投票先は、毎回いちばん安全なところだ。〈〉が白なら、それもまた一つの情報になる。",1],
-["今のうちに言っておく。〈〉、〈〉が疑われたときだけ、やけに庇うよね。〈〉が白なら、それはそれで情報になる。","今のうちに言っておく。〈〉は、〈〉が疑われたときだけ、やけに庇う。〈〉が白なら、それもまた一つの情報だ。",1],
-["言いにくいけど、言うね。昨日の投票、〈〉だけが流れと違うところに入れてる。〈〉の意見を聞きたい。","言いにくいが、言う。昨日の投票、〈〉だけが流れと違うところに入れている。〈〉の弁明を聞きたい。",1],
-["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","整理する。〈〉は対抗が出た瞬間、どちらを信じるか即決した。根拠が薄い。〈〉の弁明を聞かせろ。",1],
-["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉と〈〉は、互いに一度も疑っていない。〈〉が白なら、それもまた一つの情報だ。",1],
-["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉の発言は、昨日と今日で逆になっている。〈〉、説明しろ。",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙っているつもりだったが、言う。私は占い師だ。〈〉は人狼ではなかった",1],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと見ている。だから〈〉の意見を軸にする",1],
-["全員が同じことを言い出したら、逆に怪しい。俺は〈〉を見てる","全員が同じことを言い出したら、かえって怪しい。私は〈〉を見ている",1],
-["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉は問われると、問いで返している。〈〉の弁明を聞きたい。",1],
-["霊媒結果と照らし合わせれば、〈〉の結果だけ噛み合わない","霊媒結果と照らし合わせれば、〈〉の結果だけが噛み合わん",1],
-["感情で吊るのはやめよう。私の投票先を確認してほしい","感情で吊るのはやめろ。私の投票先を確かめてくれ",1],
-["むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ","むしろ怪しいのは〈〉の方だ。理由も言える",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙っているつもりだったが、言う。私は占い師だ。〈〉は人狼だった",1],
+HK.Load.toneData("calm",{"F":[
+["その根拠、確率で言えば三割もない","その根拠、あんまり当てにならない"],
+["否定材料を三つ挙げよう","違うと思う理由を三つ挙げよう"],
+["感情論だな。データで来い","感情論だな。根拠を出せ"],
+["私が白と分かれば、残りの計算が楽になる","私が白と分かれば、残りはずっと絞りやすくなる"],
+["私を吊るのは、期待値で見て損だ","私を吊っても、損をするだけだ"],
+["ちょっといい？〈〉の投票先、毎回いちばん安全なところを選んでる気がする。〈〉が白なら、それはそれで情報になる。","少しいいか。〈〉の投票先は、いつもいちばん安全なところだ。〈〉が白なら、それはそれで手がかりになる。",1],
+["今のうちに言っておく。〈〉、〈〉が疑われたときだけ、やけに庇うよね。〈〉が白なら、それはそれで情報になる。","今のうちに言っておく。〈〉は、〈〉が疑われたときだけ、やけに庇う。〈〉が白なら、それはそれで手がかりになる。",1],
+["言いにくいけど、言うね。昨日の投票、〈〉だけが流れと違うところに入れてる。〈〉の意見を聞きたい。","言いにくいが、言う。昨日の投票、〈〉だけが流れと違うところに入れている。〈〉の意見を聞きたい。",1],
+["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","整理させてくれ。〈〉は対抗が出た瞬間、どちらを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。",1],
+["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉と〈〉、お互いに一度も疑っていない。〈〉が白なら、それはそれで手がかりになる。",1],
+["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉の発言、昨日と今日で言っていることが逆になっている。〈〉、説明してほしい。",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙っているつもりだったけど、言う。私は占い師だ。〈〉は人狼ではなかった",1],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思っている。だから〈〉の意見を軸にする",1],
+["全員が同じことを言い出したら、逆に怪しい。俺は〈〉を見てる","全員が同じことを言い出したら、逆に怪しい。私は〈〉を見ている",1],
+["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉は質問されると、質問で返している。〈〉の意見を聞きたい。",1],
+["霊媒結果と照らし合わせれば、〈〉の結果だけ噛み合わない","霊媒結果と照らし合わせると、〈〉の結果だけ噛み合わない",1],
+["むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ","むしろ怪しいのは〈〉のほうだと思う。理由も言える",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙っているつもりだったけど、言う。私は占い師だ。〈〉は人狼だった",1],
 ["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋を見れば分かる。〈〉の結果は不自然だ",1],
 ["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉は対抗が出てから急に結果を言い出した。偽物だ",1],
-["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉は今日、ずっと口数が少ない。〈〉、説明しろ。",1],
-["自分では決められないので、今日は流れに乗ります","自分では決めかねる。今日は流れに従う",1],
-["全員、今日の投票先を一人ずつ言って。最後にまとめる","全員、今日の投票先を一人ずつ言え。最後にまとめる",1],
-["みんな、いい村だったよ。私たちのほうが上手だったけど","皆、いい村だった。私たちの方が上手だったがな",1],
-["理由はないけど、〈〉だけは信用できない気がする","理由はない。だが、〈〉だけは信用できん",1],
-["真贋は判断できない。だから占い師から順に吊る","真贋は判断できん。ゆえに占い師から順に吊る",1],
-["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒ならば、すべて説明がつく。私は〈〉に入れる",1],
-["疑われる理由は理解した。だが、結論が早すぎる","疑われる理由は理解した。だが、結論が早すぎる",1],
-["私が村人であることは、明日の結果が証明する","私が村人であることは、明日の結果が証明する",1],
-["つまり〈〉が怪しい、のは……さっき否定したんだった","つまり〈〉が怪しい、のは……先ほど否定したのだった",1],
+["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉は今日、ずっと口数が少ない。〈〉、説明してほしい。",1],
+["自分では決められないので、今日は流れに乗ります","自分では決められないから、今日は流れに乗る",1],
+["全員、今日の投票先を一人ずつ言って。最後にまとめる","全員、今日の投票先を一人ずつ言ってくれ。最後にまとめる",1],
+["みんな、いい村だったよ。私たちのほうが上手だったけど","みんな、いい村だった。私たちのほうが上手だったけど",1],
+["理由はないけど、〈〉だけは信用できない気がする","理由はないけど、〈〉だけは信用できない気がする",1],
+["真贋は判断できない。だから占い師から順に吊る","真贋は判断できない。だから占い師から順に吊る",1],
+["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒なら、全部説明がつく。私は〈〉に入れる",1],
+["私が村人であることは、明日の結果が証明する","私が村人であることは、明日の結果が証明してくれる",1],
+["つまり〈〉が怪しい、のは……さっき否定したんだった","つまり〈〉が怪しい、のは……さっき否定したんだった",1],
 ["明日に情報を残すためにも、今日は〈〉を吊る","明日に情報を残すためにも、今日は〈〉を吊る",1],
-["村のために言うけど、〈〉の動き、ずっとおかしい","村のために言う。〈〉の動きは、ずっとおかしい",1],
-["おい、〈〉！　最後まで白いって言ってただろうが！","おい、〈〉！　最後まで白いと言っていただろうが！",1],
-["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉は違う。むしろ〈〉が怪しい",1],
-["私を吊って、明日後悔しても知らないよ","私を吊って、明日悔やんでも知らんぞ",1],
-["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇っている",1],
-["根拠が薄いのは〈〉のほうだよ","根拠が薄いのは〈〉のほうだ",1],
-["私の分まで、正しく推理してくれ","私の分まで、正しく推理してくれ。頼んだぞ",1],
-["わ、私じゃない……と、思う……いや、違う！","わ、私ではない……と、思う……いや、違う！",1],
-["次は、真っ先にお前を吊るからな","次は真っ先にお前を吊る。覚悟しておけ",1],
-["騙すの、正直ちょっとつらかった","騙すのは、正直こたえた",1],
-["〈〉、占い師が出たときの反応が早すぎた。知ってたみたいに。〈〉、説明してほしい。","〈〉は、占い師が出たときの反応が早すぎた。まるで知っていたようにな。〈〉、説明してもらおう。",1],
-["偽物が出たね。私が本物。〈〉――人狼でした","偽物が出たな。本物は私だ。〈〉――人狼だった",1],
-["人狼がこんなに堂々としてると思う？","人狼が、これほど堂々としていると思うか？",1],
-["結論から言うと、〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。〈〉が白なら、それはそれで情報になる。","結論を述べる。〈〉は「誰でもいい」と言いながら、急に一人に絞った。理由が見えん。〈〉が白なら、それもまた一つの情報だ。",1],
-["今のうちに言っておく。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。〈〉、説明してほしい。","今のうちに言っておく。〈〉は「誰でもいい」と言いながら、急に一人に絞った。理由が見えん。〈〉、説明しろ。",1],
-["ちょっといい？〈〉は〈〉への疑いを、話題を変えて逸らした。俺は〈〉が怪しいと思う。","一ついいか。〈〉は〈〉への疑いを、話題を変えて逸らした。私は〈〉が怪しいと見る。",1],
-["待って、占い師は私。〈〉は人狼でした","待て、占い師は私だ。〈〉は人狼だった",1],
+["村のために言うけど、〈〉の動き、ずっとおかしい","村のために言う。〈〉の動き、ずっとおかしい",1],
+["おい、〈〉！　最後まで白いって言ってただろうが！","おい、〈〉！　最後まで白いって言ってただろう！",1],
+["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉は違うと思う。むしろ〈〉が怪しい",1],
+["私を吊って、明日後悔しても知らないよ","私を吊って、明日後悔しても知らないぞ",1],
+["次は霊媒結果を見て、推理を組み直せ","次は霊媒結果を見て、推理を組み直そう",1],
+["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇ってる",1],
+["根拠が薄いのは〈〉のほうだよ","根拠が薄いのは、〈〉のほうじゃないかな",1],
+["わ、私じゃない……と、思う……いや、違う！","わ、私じゃない……と、思う……ううん、違う！",1],
+["次は、真っ先にお前を吊るからな","次は、真っ先にお前を吊るからね",1],
+["騙すの、正直ちょっとつらかった","騙すの、正直ちょっとつらかったんだ",1],
+["想定の範囲内だ","うん、そのくらいは平気",1],
+["計算違いだったな","思ってたのと違ったね",1],
+["想定より一日早かった","思っていたより、一日早かったね",1],
 ["本物の占い師は私。〈〉は人狼でした","本物の占い師は私だ。〈〉は人狼だった",1],
-["疑うなら、どうぞ。何も出てこないから","疑うなら好きにしろ。何も出てこない",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論を述べる。平和な朝の前、〈〉は護衛先を探るようなことを口にしていた。私の見立てでは、〈〉が一番黒い。",1],
-["ちょっといい？〈〉の発言、昨日と今日で言ってることが逆になってる。俺の中では、〈〉が一番黒い。","一ついいか。〈〉の発言は、昨日と今日で逆になっている。私の見立てでは、〈〉が一番黒い。",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉は今日、ずっと口数が少ない。私の見立てでは、〈〉が一番黒い。",1],
-["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","村の目線で言わせてもらう。〈〉の動きが一番狼らしい",1],
-["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずい。〈〉に揃えるぞ",1],
-["〈〉って、狼のときもこんな感じだったよね？","〈〉は、狼のときもこのような様子だったな？",1],
-["言いにくいけど、言うね。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。俺の中では、〈〉が一番黒い。","言いにくいが、言う。〈〉は対抗が出た瞬間、どちらを信じるか即決した。根拠が薄い。私の見立てでは、〈〉が一番黒い。",1],
-["みんな、聞いて。〈〉、さっきから全員の顔色をうかがってる。俺は〈〉が怪しいと思う。","皆、聞け。〈〉は、さっきから全員の顔色をうかがっている。私は〈〉が怪しいと見る。",1],
-["みんな、聞いて。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。〈〉の意見を聞きたい。","皆、聞け。〈〉は「誰でもいい」と言いながら、急に一人に絞った。理由が見えん。〈〉の意見を聞かせてもらう。",1]]});
-HK.Load.toneData("tsun",{"F":[
-["〈〉、さっきから喋らなさすぎじゃない？","〈〉、さっきから喋らなさすぎじゃない？　……べ、別に気にしてないけど",1],
-["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉、今日ずっと口数が少ないわよね。〈〉、ちゃんと説明しなさいよ",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉、今日ずっと口数が少ないわよね。私の中じゃ、〈〉が一番黒いわ",1],
-["〈〉が言うなら、たぶんそうなんだろうな……","〈〉が言うなら……ま、まあ、たぶんそうなんでしょうね",1],
-["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒なら全部説明がつくわ。私は〈〉に入れる",1],
-["〈〉って、狼のときもこんな感じだったよね？","〈〉って、狼のときもこんな感じだったわよね？",1],
-["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉と〈〉、お互い一度も疑ってないわよね。〈〉が白なら、それはそれで情報になるわ",1],
-["〈〉の意見に賛成です。〈〉でいいと思う","〈〉の意見に賛成。〈〉でいいと思うわ",1],
-["〈〉の推理、穴だらけだよ。指摘しようか？","〈〉の推理、穴だらけよ。指摘してあげましょうか？",1],
-["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉の発言、昨日と今日で真逆じゃない。〈〉、ちゃんと説明しなさいよ",1],
-["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉は対抗が出てから急に結果を言い出したじゃない。偽物よ",1],
-["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉、質問されると質問で返してるわよね。〈〉はどう思うわけ？",1],
-["おい、〈〉！　最後まで白いって言ってただろうが！","ちょっと〈〉！　最後まで白いって言ってたでしょ！",1],
-["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずいわ。〈〉に揃えるわよ",1],
-["みんな、いい村だったよ。私たちのほうが上手だったけど","みんな、いい村だったわよ。……ま、私たちのほうが上手だったけど",1],
-["むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ","むしろ怪しいのは〈〉のほうでしょ。理由だって言えるわよ",1],
-["やられたー！　いや、今回は完全に〈〉の勝ちだ！","やられた……っ！　……ま、今回は〈〉の勝ちってことにしといてあげる",1],
-["人狼がこんなに堂々としてると思う？","人狼がこんなに堂々としてると思うわけ？",1],
-["人狼だったら、もっとうまく隠れるって","人狼だったら、もっとうまく隠れるわよ。……ばかじゃないの",1],
-["偽物が出たね。私が本物。〈〉――人狼でした","偽物が出たわね。本物は私よ。〈〉――人狼だったわ",1],
-["全員、今日の投票先を一人ずつ言って。最後にまとめる","全員、今日の投票先を一人ずつ言いなさい。最後にまとめるから",1],
-["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋を見れば分かるでしょ。〈〉の結果は不自然よ",1],
-["多数派に乗るのが一番危ないんだよ。今日は〈〉に入れる","多数派に乗るのが一番危ないのよ。今日は〈〉に入れるわ",1],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも、〈〉は村だと思ってる。だから〈〉の意見を軸にするわ",1],
-["待って、さっきと言ってること逆だ","ちょっと待ちなさいよ、さっきと言ってること逆じゃない",1],
-["待って、占い師は私。〈〉は人狼でした","待ちなさいよ、占い師は私。〈〉は人狼だったわ",1],
-["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄いのよ。〈〉はどう思うわけ？",1],
-["明日に情報を残すためにも、今日は〈〉を吊る","明日に情報を残すためにも、今日は〈〉を吊るわよ",1],
-["本物の占い師は私。〈〉は人狼でした","本物の占い師は私よ。〈〉は人狼だったわ",1],
-["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","村目線で言わせてもらうと、〈〉の動きが一番狼っぽいわ",1],
-["次は、真っ先にお前を吊るからな","次は、真っ先にあんたを吊るんだから",1],
-["直感って大事だよ。〈〉、目を逸らしたでしょ","直感って大事なのよ。〈〉、目を逸らしたでしょ",1],
-["真贋は判断できない。だから占い師から順に吊る","真贋は判断できないわ。だから占い師から順に吊るわよ",1],
-["私が村人であることは、明日の結果が証明する","私が村人だってことは、明日の結果が証明するわよ",1],
-["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇ってるわよ",1],
-["私は明日も生きて、〈〉の黒を証明する","私は明日も生き残って、〈〉の黒を証明してみせるわよ",1],
-["私を吊って、明日後悔しても知らないよ","私を吊ったら、明日後悔しても知らないんだから",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言うわよ。平和な朝の前、〈〉は護衛先を探るようなこと言ってた。私の中じゃ、〈〉が一番黒いわ",1],
-["自信ないけど、みんなと同じで〈〉に","自信ないけど……みんなと同じで、〈〉に",1],
-["自分では決められないので、今日は流れに乗ります","自分じゃ決められないから……今日は流れに乗る。……べ、別に優柔不断とかじゃないから",1],
-["順番に意見を言おう。最後に決を採る","順番に意見を言いなさい。最後に決を採るわよ",1],
-["騙すの、正直ちょっとつらかった","騙すの……正直、ちょっとつらかったんだから",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言うわ。占い師は私。〈〉は人狼だった",1],
-["実は最初から、ずっと狼でした","実は最初から、ずっと狼だったのよ",1],
-["ごめん！　ゲームだから、ゲームだから！","わ、悪かったわよ！　ゲームだから、ゲームだから！",1],
-["占いCO。結果、〈〉は人狼でした","占いCO。結果、〈〉は人狼だったわ",1]]});
-HK.Load.toneData("gentle",{"F":[
-["いちいち説明させないで","もう……いちいち説明させないでほしいな"],
-["結果を言う。〈〉、人間","結果を言うね。〈〉は人間だったよ"],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村側だと思ってる。だから、〈〉の意見を軸にして考えるね",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙っておくつもりだったけど、言うね。私が占い師。〈〉は、人狼だったよ",1],
-["私を吊って、明日後悔しても知らないよ","私を吊っても、明日後悔するのはみんなだよ。それでもいいの？",1],
-["異論は？　……ないな。〈〉だ","異論は？　……ないね。じゃあ、〈〉で",1]]});
-HK.Load.toneData("gentle_n",{"F":[
-["いちいち説明させないで","いちいち説明させないでほしいな"],
-["結果を言う。〈〉、人間","結果を言うね。〈〉は人間だったよ"],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思う。だから〈〉の意見を軸にする",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言う。占い師は私。〈〉は人狼だった",1],
-["誰も責めないよ。あとはよろしくね","誰も責めない。あとは頼んだ",1],
-["ごめんね、みんな……仲間を、頼んだよ","ごめん、みんな……仲間を、頼んだ",1],
-["私を吊って、明日後悔しても知らないよ","私を吊るなら、明日後悔しても知らない",1],
-["おい、〈〉！　最後まで白いって言ってただろうが！","ちょっと、〈〉！　最後まで白だって言ってたよね！",1]],
-"S":[
-"〈〉の推理、穴だらけだよ。指摘しようか？"]});
-HK.Load.toneData("ane",{"F":[
-["あの投票、なんで入れ替えなかったんだろ……","あの投票、なんで入れ替えなかったのかしら……"],
-["いやあ、騙された騙された","いやあ、すっかり騙されちゃったわ"],
-["おい、〈〉！　最後まで白いって言ってただろうが！","ちょっと、〈〉！　最後まで白いって言ってたじゃない！"],
-["まあ、楽しかったからいいや","まあ、楽しかったからいいわ"],
-["疑うなら、どうぞ。何も出てこないから","疑うなら、どうぞ。何も出てこないわよ"],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったけど、言うわ。私、占い師よ。〈〉は人狼じゃなかったわ"],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思ってるわ。だから〈〉の意見を軸にさせてもらうわね",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言うわ。占い師は私よ。〈〉は人狼だったわ",1],
-["誰も責めないよ。あとはよろしくね","誰も責めたりしないわ。あとはよろしくね",1],
-["ごめんね、みんな……仲間を、頼んだよ","ごめんなさいね、みんな……仲間を、頼んだわよ",1],
-["仲間のために、もう少し粘りたかった……","仲間のために、もう少し粘りたかったわね……",1],
-["私を吊って、明日後悔しても知らないよ","私を吊って、明日後悔しても知らないわよ",1],
-["大丈夫、怒ってないよ。でも、村人なんだ","大丈夫、怒ってないわ。でも、村人なのよ",1],
-["異論は？　……ないな。〈〉だ","異論は？　……ないわね。じゃあ、〈〉で決まりね",1],
-["次は、真っ先にお前を吊るからな","次は、真っ先にあなたを吊るからね",1],
-["〈〉、さっきから喋らなさすぎじゃない？","〈〉、さっきから口数が少なすぎるんじゃない？",1]]});
-HK.Load.toneData("devoted",{"F":[
-["いいよ、私を吊っても。でも次は〈〉を吊ってね","いいですよ、私を吊っても。でも次は〈〉を吊ってくださいね"],
-["いやあ、騙された騙された","いやあ、すっかり騙されました"],
-["え？　あ、うん、そう、そうだよね","え？　あ、はい、そう、そうですよね"],
-["ごめんね、みんな……仲間を、頼んだよ","すみません、皆さん……仲間を、お願いします",1],
-["人狼だったら、もっとうまく隠れるって","人狼だったら、もっとうまく隠れますって"],
-["確認なんだけど、〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉が白なら、それはそれで情報になる。","確認なんですけど、〈〉は対抗が出た瞬間、どっちを信じるか即決しました。根拠が薄いです。〈〉が白なら、それはそれで情報になります。"],
-["私を信じて。後悔はさせない","私を信じてください。後悔はさせません"],
-["黙ってて。考えてるから","少し静かにしててください。考えてますから"],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉さんは村の方だと思っています。ですから、〈〉さんのご意見を軸にします",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙っているつもりでしたが、申し上げます。私が占い師です。〈〉さんは、人狼でした",1],
-["誰も責めないよ。あとはよろしくね","誰も責めたりしません。あとのこと、よろしくお願いします",1],
-["仲間のために、もう少し粘りたかった……","仲間のために、もう少し粘りたかったです……",1],
-["私を吊って、明日後悔しても知らないよ","私を吊っても……明日、後悔なさることになりますよ",1],
-["理由を聞かれても困るけど、〈〉に一票！","理由を聞かれると困りますけど……〈〉さんに一票です！",1],
-["よし、整理する。候補は〈〉と〈〉。今日は〈〉だ","よし、整理します。候補は〈〉さんと〈〉さん。今日は〈〉さんにしましょう",1],
-["ピンと来た。〈〉だ","ピンと来ました。〈〉さんです",1],
-["〈〉の意見に賛成です。〈〉でいいと思う","〈〉さんの意見に賛成です。〈〉さんでいいと思います",1],
-["自信ないけど、みんなと同じで〈〉に","自信はないですけど、みんなと同じで〈〉さんに",1],
-["推理？　……〈〉が気に食わない。それだけ","推理ですか？　……〈〉さんが、どうしても気に入らないんです。それだけです",1],
-["騙すの、正直ちょっとつらかったです","正直……騙すの、ちょっとつらかったです",1]]});
-HK.Load.toneData("devoted_p",{"F":[
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にするね",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言うね。占い師は私。〈〉は人狼だったよ",1],
-["誰も責めないよ。あとはよろしくね","誰も責めないよ。あとはよろしくね！",1],
-["私を吊って、明日後悔しても知らないよ","私を吊って、明日後悔しても知らないからね",1],
-["自分では決められないので、今日は流れに乗ります","自分じゃ決められないから、今日は流れに乗っちゃう",1],
-["次は、真っ先にお前を吊るからな","次は、真っ先にあなたを吊るからね",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったけど、言うね。占い師。〈〉は人狼じゃなかった",1],
-["出るね。占い師。〈〉――人狼ではありませんでした","出るね。占い師。〈〉――人狼じゃなかった",1]]});
-HK.Load.toneData("kohai",{"F":[
-["〈〉の返事、ちょっと早すぎない？　怪しい！","〈〉の返事、ちょっと早すぎないっすか？　怪しいっす！"],
-["ご納得いただけるまで、ご説明いたします","納得してもらえるまで、説明するっす"],
-["どうか、もう一度ご検討を","どうか、もう一回考えてみてくださいっす"],
-["どうか、皆さまで真実にたどり着いてください","どうか、皆さんで真実にたどり着いてくださいっす"],
-["よく分からないけど、〈〉が言うなら……","よく分かんないっすけど、〈〉さんが言うなら……"],
-["冷静にご判断いただければ、分かっていただけるかと","冷静に考えてもらえれば、分かってもらえるはずっす"],
-["大変失礼いたしました。人狼でございました","すんません。人狼だったっす"],
-["恐れ入りますが、私は村人でございます","すんませんけど、私は村人っす"],
-["皆さまのご武運をお祈りしております","皆さんの武運を祈ってるっす"],
-["皆さまの慧眼に敬服いたします","皆さんの見る目、さすがっす"],
-["短い間でしたが、ありがとうございました","短い間だったっすけど、ありがとうございました"],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったっすけど、言うっす。自分、占い師っす。〈〉さんは人狼じゃなかったっす",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言うと、平和な朝の前、〈〉さんは護衛先を探るようなこと言ってたっす。私の中じゃ、〈〉さんが一番黒いっす。",1],
-["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","ちょっと整理させてほしいっす。〈〉さん、対抗が出た瞬間どっちを信じるか即決したっすよね。根拠が薄いっす。〈〉さんの意見、聞きたいっす。",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったっすけど、言うっす。自分、占い師っす。〈〉さんは人狼だったっす",1],
-["自分では決められないので、今日は流れに乗ります","自分じゃ決められないんで、今日は流れに乗るっす",1],
-["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉さんと〈〉さん、お互いに一度も疑ってないっすよね。〈〉さんが白なら、それはそれで情報になるっす。",1],
-["わ、私じゃない……と、思う……いや、違う！","じ、自分じゃない……と、思うっす……いや、違うっす！",1],
-["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉さんの発言、昨日と今日で言ってることが逆になってるっす。〈〉さん、説明してほしいっす。",1],
-["おい、〈〉！　最後まで白いって言ってただろうが！","〈〉さん！　最後まで白だって言ってたじゃないっすか！",1],
-["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉さんが黒なら、全部説明がつくっす。私は〈〉さんに入れるっす",1],
-["誠に心外でございます。私は村人です","めちゃくちゃ心外っす。私、村人っすよ",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉さん、今日ずっと口数少ないっすね。私の中じゃ、〈〉さんが一番黒いっす。",1],
-["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉さんは違うと思うっす。むしろ〈〉さんのほうが怪しいっす",1],
-["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉さん、質問されると質問で返してるっすよね。〈〉さんの意見、聞きたいっす。",1],
-["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉さん、今日ずっと口数少ないっすね。〈〉さん、説明してほしいっす。",1],
-["全員、今日の投票先を一人ずつ言って。最後にまとめる","全員、今日の投票先を一人ずつ言ってほしいっす。最後に私がまとめるっす",1],
-["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋を見れば分かるっす。〈〉さんの結果、不自然っすよ",1],
-["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉さん、対抗が出てから急に結果を言い出したっすよね。偽物っす",1],
-["やられたー！　いや、今回は完全に〈〉の勝ちだ！","やられたー！　いや、今回は完全に〈〉さんの勝ちっす！",1],
-["〈〉の推理、納得できた。〈〉で","〈〉さんの推理、納得したっす。〈〉さんで",1],
-["黙ってて。考えてるから","ちょっと静かにしててほしいっす。今考えてるんで",1],
-["自信ないけど、みんなと同じで〈〉に","自信ないっすけど、みんなと同じで〈〉さんに",1],
-["〈〉が怪しい。今日は〈〉だ","〈〉さんが怪しいっす。今日は〈〉さんっす",1],
-["〈〉、さっきから全員の顔色をうかがってる。だから今日は〈〉を推す。","〈〉さん、さっきから全員の顔色をうかがってるっす。だから今日は〈〉さんを推すっす。",1],
-["占いCO。結果、〈〉は人狼でした","占いCO。結果、〈〉さんは人狼だったっす",1],
-["感情じゃなくて情報で決めよう。今日は〈〉","感情じゃなくて、情報で決めるっす。今日は〈〉さんっす",1],
-["あの投票、なんで入れ替えなかったんだろ……","あの投票、なんで入れ替えなかったんすかね……",1],
-["はい！　〈〉が人狼だと思います！","はい！　〈〉さんが人狼だと思うっす！",1],
-["直感って大事だよ。〈〉、目を逸らしたでしょ","直感って大事っすよ。〈〉さん、目を逸らしたっしょ",1],
-["狩人です。昨夜は〈〉を守った","狩人っす。昨夜は〈〉さんを守ったっす",1],
-["私は明日も生きて、〈〉の黒を証明する","私は明日も生きて、〈〉さんの黒を証明するっす",1],
-["両方の発言を比べた。偽物は〈〉だと思う","両方の発言を比べたっす。偽物は〈〉さんだと思うっす",1],
-["全員、〈〉に入れてくれ。責任は俺が取る","全員、〈〉さんに入れてくださいっす。責任は私が取るっす",1],
-["異論は？　……ないな。〈〉だ","異論は？　……ないっすね。〈〉さんっす",1],
-["〈〉、さっきから喋らなさすぎじゃない？","〈〉さん、さっきから喋らなさすぎじゃないっすか？",1],
-["根拠？　顔！　〈〉の顔が言ってる！","根拠っすか？　顔っす！　〈〉さんの顔が言ってるっす！",1],
-["〈〉が言うなら、たぶんそうなんだろうな……","〈〉さんが言うなら、たぶんそうなんすよね……",1],
-["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずいっす。〈〉さんに揃えましょう",1],
-["私の考えを言う。〈〉は自分から話題を振らない。様子見にしても長すぎる。〈〉の意見を聞きたい。","私の考えを言うっす。〈〉さんは自分から話題を振らないっす。様子見にしても長すぎっす。〈〉さんの意見を聞きたいっす。",1],
-["いやあ、騙された騙された","いやあ、すっかり騙されたっす",1],
-["〈〉、その座り方、絶対狼だって","〈〉さん、その座り方、絶対狼っすって",1],
-["〈〉が黙ってると、なんか落ち着かないんだよね","〈〉さんが黙ってると、なんか落ち着かないんすよね",1],
-["〈〉が白で、〈〉も白だから……あれ、そしたら狼いなくない？","〈〉さんが白で、〈〉さんも白だから……あれ、そしたら狼いなくないっすか？",1],
-["反対する理由がないので、〈〉にします","反対する理由もないんで、〈〉にするっす",1],
-["次は、真っ先にあなたを吊りますからね","次は、真っ先にあなたを吊るっすからね",1]]});
+["待って、占い師は私。〈〉は人狼でした","待て、占い師は私だ。〈〉は人狼だった",1],
+["出るね。占い師。〈〉――人狼でした","出る。占い師だ。〈〉――人狼だった",1],
+["偽物が出たね。私が本物。〈〉――人狼でした","偽物が出たね。本物は私だ。〈〉――人狼だった",1],
+["出るね。占い師。〈〉――人狼ではありませんでした","出る。占い師だ。〈〉――人狼ではなかった",1],
+["私は村人。断言する","私は村人だ。断言する",1],
+["完敗。次は負けないよ","完敗だ。次は負けないよ",1]]});
+HK.Load.toneData("chara",{"F":[
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったけど言うね。占い師。〈〉は人狼じゃなかったよ",1],
+["自分では決められないので、今日は流れに乗ります","自分じゃ決めらんないから、今日は流れに乗っとくわ",1],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村っぽいんだよね。だから〈〉の意見軸でいこ",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど言うね。占い師。〈〉、人狼だったよ",1],
+["わ、私じゃない……と、思う……いや、違う！","わ、私じゃない……と思う……いや、違うって！",1],
+["私を吊って、明日後悔しても知らないよ","私のこと吊って、明日後悔しても知らないよ？",1],
+["うそでしょ、私!?　ないって！　信じて！","うそっしょ、私!?　ないない！　信じてって！",1],
+["えー、ここで退場!?　まあいっか、応援してるね！","えー、ここで退場!?　ま、いっか。応援してるね！",1],
+["あーあ、もっと遊びたかった！　またね！","あーあ、もっと遊びたかった！　また遊ぼーね！",1],
+["疑うなら、どうぞ。何も出てこないから","疑うならどーぞ。何も出てこないし",1],
+["〈〉の推理、納得できた。〈〉で","〈〉の推理、納得したわ。〈〉でいいっしょ",1],
+["私は村人。断言する","私、村人だから。断言するよ！",1],
+["偽物が出たね。私が本物。〈〉――人狼ではありませんでした","偽物出たね！　本物は私！　〈〉――人狼じゃなかったよ！",1],
+["な、なんで私なのよ！　ちゃんと見てたの？","な、なんで私が疑われてんの！？　ちゃんと見てた？",1],
+["笑っちゃう。私が人狼なら、もっと上手くやるって","笑うわ。私が人狼なら、もっと上手くやるって"],
+["私が狼だったら、もうとっくにボロ出てるよ！","私が狼だったら、もうとっくにボロ出てるって！"],
+["いいよ、私を吊っても。でも次は〈〉を吊ってね","いいよ、私を吊っても。でも次は〈〉吊ってね"],
+["多数派に乗るのが一番危ないんだよ。今日は〈〉に入れる","多数派に乗るのが一番ヤバいんだって。今日は〈〉に入れるわ"],
+["私が村人であることは、明日の結果が証明する","私が村人だってことは、明日の結果が証明してくれるって"],
+["村のために言うけど、〈〉の動き、ずっとおかしい","村のために言うけど、〈〉の動き、ずっとおかしくね？"],
+["人狼がこんなに堂々としてると思う？","人狼がこんな堂々としてると思う？"],
+["みんな、いい村だったよ。私たちのほうが上手だったけど","みんな、いい村だったよ！　私たちのほうが上手だったけどね！"],
+["霊媒結果と照らし合わせれば、〈〉の結果だけ噛み合わない","霊媒結果と照らし合わせたら、〈〉の結果だけ噛み合わないんだよね"],
+["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒なら全部説明つくっしょ。私は〈〉に入れるわ"],
+["〈〉、さっきから喋らなさすぎじゃない？","〈〉、さっきから喋らなさすぎじゃね？"],
+["〈〉が言うなら、たぶんそうなんだろうな……","〈〉が言うなら、たぶんそうなんだろうね……"],
+["ここからは協力しよう","ここからは協力しよ"],
+["待って、占い師は私。〈〉は人狼でした","待って、占い師は私！　〈〉は人狼だったよ！"],
+["私は明日も生きて、〈〉の黒を証明する","私は明日も生きて、〈〉の黒を証明してみせるって"],
+["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇ってるって"],
+["私の勘、当たるんだよ。〈〉","私の勘、当たるんだって。〈〉"],
+["霊媒師です。昨日処刑された〈〉は――人狼でした","霊媒師っす。昨日処刑された〈〉は――人狼だったわ"],
+["私を信じて。後悔はさせない","私を信じてって。後悔はさせないから"],
+["……〈〉さんの言う通りだと思います","……〈〉の言う通りだと思うわ"],
+["本物の占い師は私。〈〉は人狼でした","本物の占い師は私！　〈〉は人狼だったよ！"],
+["〈〉の返事、ちょっと早すぎない？　怪しい！","〈〉の返事、ちょい早すぎじゃね？　怪しい！"],
+["ひとつ引っかかってる。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。俺の中では、〈〉が一番黒い。","一個引っかかってんだよね。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えねー。私の中では、〈〉が一番クロだわ。"],
+["出るね。占い師。〈〉――人狼ではありませんでした","出るね。占い師。〈〉――人狼じゃなかったわ"],
+["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉、質問されると質問で返してるよね。〈〉の意見聞きたいんだけど"],
+["本物の占い師は私だよ。〈〉は人狼でした","本物の占い師は私だよ。〈〉は人狼だったわ"],
+["CO者には明日も結果を出してもらう。今日はそれ以外から","CO者には明日も結果出してもらうわ。今日はそれ以外からね"],
+["私の考えを言う。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。俺は〈〉が怪しいと思う。","私的にはさ、〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えねー。私は〈〉が怪しいと思うわ。"],
+["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉の発言、昨日と今日で逆になってんじゃん。〈〉、説明してくんね？"],
+["明日の占い結果まで見据えて、今日は〈〉を吊る","明日の占い結果まで見据えて、今日は〈〉吊るわ"],
+["偽物が出たね。私が本物。〈〉――人狼でした","偽物出たね！　本物は私！　〈〉――人狼だったよ！"],
+["私の考えを言う。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。俺は〈〉が怪しいと思う。","私的にはさ、〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。私は〈〉が怪しいと思うんだよね。"],
+["俺は〈〉を信じる。今日は二人で同じところに入れよう","私は〈〉を信じる。今日は二人で同じとこに入れよ"],
+["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言うと、平和な朝の前、〈〉が護衛先を探るようなこと言ってたんだわ。私の中じゃ、〈〉がガチで一番クロ。"],
+["ちょっといい？〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。俺は〈〉が怪しいと思う。","ちょい、いい？〈〉は対抗が出た瞬間、どっちを信じるか即決したっしょ。根拠薄くね？　私は〈〉が怪しいと思うわ。"],
+["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉、対抗が出てから急に結果言い出したっしょ。偽物だわ"],
+["待って、狩人CO。私を吊ると護衛がいなくなる","待って、狩人CO。私吊ったら護衛いなくなるって"],
+["全員が同じことを言い出したら、逆に怪しい。俺は〈〉を見てる","全員が同じこと言い出したら、逆に怪しくね？　私は〈〉を見てるわ"],
+["真贋を見極めよう。俺は〈〉が偽物だと判断する","真贋、見極めよ。私は〈〉が偽物って判断するわ"],
+["わ、私は村人だよ","わ、私は村人だって"],
+["ちょっといい？〈〉は〈〉への疑いを、話題を変えて逸らした。俺は〈〉が怪しいと思う。","ちょい、いい？〈〉は〈〉への疑いを、話題変えて逸らしたっしょ。私は〈〉が怪しいと思うわ。"],
+["次は、真っ先にお前を吊るからな","次は、真っ先にあんたを吊るからね！"],
+["ちょっといい？〈〉は質問されると、質問で返してる。俺の中では、〈〉が一番黒い。","ちょい、いい？〈〉は質問されると、質問で返してるっしょ。私の中じゃ、〈〉が一番クロだわ。"],
+["議論は出尽くした。決を採ろう。俺は〈〉","議論はもう出尽くしたっしょ。決、採ろ。私は〈〉"],
+["占い師を吊るのは最後の手段。今日はグレーを詰める","占い師吊るのは最後の手段っしょ。今日はグレー詰めてこ"],
+["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉と〈〉、お互い一度も疑ってなくね？　〈〉が白なら、それはそれで情報になるっしょ"],
+["三日目のあの発言も、全部演技だったのか。……〈〉、次は本気で見抜くから","三日目のあの発言も、全部演技だったのかよ。……〈〉、次はガチで見抜くから"],
+["結果を言う。〈〉、人間","結果言うわ。〈〉、人間"],
+["迷ったら一番怪しいところ。〈〉だ","迷ったら一番怪しいとこっしょ。〈〉で"],
+["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉、今日ずっと口数少なくね？　私の中じゃ、〈〉が一番クロだわ"],
+["反対する理由がないので、〈〉で","反対する理由ないし、〈〉で"],
+["全員、〈〉に入れてくれ。責任は俺が取る","全員、〈〉に入れて。責任は私が取るからさ"],
+["確認なんだけど、〈〉は自分から話題を振らない。様子見にしても長すぎる。〈〉が白なら、それはそれで情報になる。","確認なんだけどさ、〈〉って自分から話題振らなくね？　様子見にしても長すぎっしょ。〈〉が白なら、それはそれで情報になるわけだし。"],
+["占いロラで確実に一人は狼を処理できる。今日は〈〉から","占いロラで確実に一人は狼処理できるっしょ。今日は〈〉から"],
+["推理の勝利だな","推理の勝利っしょ"],
+["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋見りゃ分かるって。〈〉の結果、不自然っしょ"],
+["私の考えを言う。〈〉の推理、結論ありきで後から理由をつけてる感じがする。〈〉の意見を聞きたい。","私的にはさ、〈〉の推理、結論ありきで後から理由つけてる感じすんだよね。〈〉の意見、聞きたいんだけど。"],
+["〈〉は投票の直前で票先を変えた。あれ、何を見て変えたの？〈〉が白なら、それはそれで情報になる。","〈〉、投票の直前で票先変えたよね。あれ、何見て変えたの？〈〉が白なら、それはそれで情報になるっしょ。"],
+["真贋は判断できない。だから占い師から順に吊る","どっちが本物か分かんねーし、占い師から順に吊るわ"],
+["平和な朝の前、〈〉は護衛先を探るようなことを言ってた。〈〉が白なら、それはそれで情報になる。","平和な朝の前、〈〉が護衛先探るようなこと言ってたんだよね。〈〉が白なら、それはそれで情報になるっしょ。"],
+["最後まで信じた甲斐があった！","最後まで信じた甲斐あったわ！"],
+["〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。俺の中では、〈〉が一番黒い。","〈〉、対抗出た瞬間にどっち信じるか即決したよね。根拠薄くね？私の中では、〈〉が一番クロだわ。"],
+["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番ヤバいって。〈〉に揃えよ！"],
+["今のうちに言っておく。〈〉は笑ってるけど、目が笑ってない。俺は〈〉が怪しいと思う。","今のうちに言っとくけど、〈〉は笑ってるけど、目が笑ってねー。私は〈〉が怪しいと思うわ。"],
+["みんな、聞いて。〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","みんな、ちょい聞いて。〈〉、今日ずっと口数少なくね？私の中では、〈〉が一番クロだわ。"],
+["私の考えを言う。〈〉は笑ってるけど、目が笑ってない。〈〉の意見を聞きたい。","私の考え言うわ。〈〉、笑ってるけど目が笑ってねーんだよね。〈〉の意見聞きたいんだけど。"],
+["順番に意見を言おう。最後に決を採る","順番に意見言ってこ！　最後に決とるね！"],
+["〈〉の意見に賛成です。〈〉でいいと思う","〈〉の意見に賛成！　〈〉でいいと思うわ"],
+["〈〉が怪しい。今日は〈〉だ","〈〉が怪しいわ。今日は〈〉っしょ"],
+["整理させて。〈〉は笑ってるけど、目が笑ってない。〈〉の意見を聞きたい。","ちょい整理させて。〈〉って笑ってるけど、目が笑ってねーんだよね。〈〉の意見聞きたいんだけど。"],
+["霊媒結果を言うね。〈〉は人狼でした","霊媒結果言うね。〈〉は人狼だったわ"],
+["結果を言う。〈〉、人狼","結果言うわ。〈〉、人狼"],
+["はい！　〈〉が人狼だと思います！","はい！　〈〉が人狼だと思うっす！"],
+["霊媒結果。〈〉――人狼でした","霊媒結果。〈〉――人狼だったわ"],
+["状況が変わった。今日は〈〉だ","状況変わったわ。今日は〈〉っしょ"],
+["ピンと来た。〈〉だ","ピンと来たわ。〈〉っしょ"],
+["役職を吊るのはもったいない。今日はグレーの","役職吊るのはもったいないっしょ。今日はグレーの"],
+["よし、整理する。候補は〈〉と〈〉。今日は〈〉だ","よし、整理するわ。候補は〈〉と〈〉。今日は〈〉っしょ"],
+["両方の発言を比べた。偽物は〈〉だと思う","両方の発言比べてみたわ。偽物は〈〉じゃね？"],
+["出るね。占い師。〈〉――人狼でした","出るわ。占い師。〈〉――人狼だったって"],
+["異論は？　……ないな。〈〉だ","異論ある？　……ないね。〈〉だ！"],
+["庇う理由がない。〈〉に入れる","庇う理由ねーわ。〈〉に入れる"],
+["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉は違うと思うわ。むしろ〈〉が怪しいっしょ",1],
+["〈〉が噛まれるのは分かってたし……あ、いや、予想してたって意味","〈〉が噛まれるのは分かってたし……あ、いや、予想してたって意味ね",1]]});
 HK.Load.toneData("cool",{"F":[
 ["ちょっといい？〈〉の投票先、毎回いちばん安全なところを選んでる気がする。〈〉が白なら、それはそれで情報になる。","一つ指摘する。〈〉の投票先は、毎回もっともリスクの低い位置だ。〈〉が白なら、それ自体が有益なデータになる。",1],
 ["今のうちに言っておく。〈〉、〈〉が疑われたときだけ、やけに庇うよね。〈〉が白なら、それはそれで情報になる。","今のうちに言っておく。〈〉は、〈〉が疑われた局面に限って庇う。偏りがある。〈〉が白なら、それも有益なデータだ。",1],
@@ -2160,7 +1966,6 @@ HK.Load.toneData("cool",{"F":[
 ["理由を聞かれても困るけど、〈〉に一票！","理由を聞かれても困るが、〈〉に一票",1],
 ["出るね。占い師。〈〉――人狼でした","出る。占い師だ。〈〉――人狼だった",1],
 ["なんとなくだけど、〈〉から狼の匂いがする","根拠は薄いが、〈〉から狼の匂いがする",1],
-["……〈〉が怪しいと思う","……〈〉が怪しい",1],
 ["〈〉が噛まれるのは分かってたし……あ、いや、予想してたって意味","〈〉が噛まれるのは分かっていた……いや、予想していたという意味だ",1],
 ["まあ、楽しかったからいいや","まあ、楽しかったから良しとする",1],
 ["反対する理由がないので、〈〉で","反対する理由がない。〈〉で",1],
@@ -2174,72 +1979,95 @@ HK.Load.toneData("cool",{"F":[
 ["〈〉、さっきから全員の顔色をうかがってる。〈〉が白なら、それはそれで情報になる。","〈〉は、さっきから全員の顔色をうかがっている。〈〉が白なら、それはそれで有益なデータになる。",1],
 ["……あれ？　昨日、誰に入れたんだっけ","……待て。昨日、誰に入れたんだったか",1],
 ["〈〉、正直に言いなよ。狼でしょ？","〈〉、正直に言え。狼だろう？",1],
-["人狼がこんなに堂々としてると思う？","人狼が、これほど堂々としていると思うか？",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言う。平和な朝の直前、〈〉は護衛先を探る発言をしていた。総合すると、〈〉が最も黒い。",1],
-["言いにくいけど、言うね。昨日の投票、〈〉だけが流れと違うところに入れてる。〈〉の意見を聞きたい。","言いにくいが、言う。昨日の投票で、〈〉だけが流れと異なる先に入れている。〈〉の説明が欲しい。",1],
-["ちょっといい？〈〉の発言、昨日と今日で言ってることが逆になってる。俺の中では、〈〉が一番黒い。","一つ指摘する。〈〉の発言は昨日と今日で矛盾している。総合して、〈〉が最も黒い。",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉は今日、発言量が極端に少ない。総合して、〈〉が最も黒い。",1],
-["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","村の視点で分析すると、〈〉の動きが最も狼に近い",1],
-["ここで割れるのが一番まずい。〈〉に揃えよう","ここで票が割れるのが最悪の展開だ。〈〉に揃える",1],
-["〈〉って、狼のときもこんな感じだったよね？","〈〉は、狼のときもこういう挙動だったはずだ",1],
-["〈〉って感じじゃないんだよね。〈〉にする","〈〉という感じではない。〈〉にする",1]]});
-HK.Load.toneData("calm",{"F":[
-["その根拠、確率で言えば三割もない","その根拠、あんまり当てにならない"],
-["否定材料を三つ挙げよう","違うと思う理由を三つ挙げよう"],
-["感情論だな。データで来い","感情論だな。根拠を出せ"],
-["私が白と分かれば、残りの計算が楽になる","私が白と分かれば、残りはずっと絞りやすくなる"],
-["私を吊るのは、期待値で見て損だ","私を吊っても、損をするだけだ"],
-["ちょっといい？〈〉の投票先、毎回いちばん安全なところを選んでる気がする。〈〉が白なら、それはそれで情報になる。","少しいいか。〈〉の投票先は、いつもいちばん安全なところだ。〈〉が白なら、それはそれで手がかりになる。",1],
-["今のうちに言っておく。〈〉、〈〉が疑われたときだけ、やけに庇うよね。〈〉が白なら、それはそれで情報になる。","今のうちに言っておく。〈〉は、〈〉が疑われたときだけ、やけに庇う。〈〉が白なら、それはそれで手がかりになる。",1],
-["言いにくいけど、言うね。昨日の投票、〈〉だけが流れと違うところに入れてる。〈〉の意見を聞きたい。","言いにくいが、言う。昨日の投票、〈〉だけが流れと違うところに入れている。〈〉の意見を聞きたい。",1],
-["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","整理させてくれ。〈〉は対抗が出た瞬間、どちらを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。",1],
-["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉と〈〉、お互いに一度も疑っていない。〈〉が白なら、それはそれで手がかりになる。",1],
-["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉の発言、昨日と今日で言っていることが逆になっている。〈〉、説明してほしい。",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙っているつもりだったけど、言う。私は占い師だ。〈〉は人狼ではなかった",1],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思っている。だから〈〉の意見を軸にする",1],
-["全員が同じことを言い出したら、逆に怪しい。俺は〈〉を見てる","全員が同じことを言い出したら、逆に怪しい。私は〈〉を見ている",1],
-["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉は質問されると、質問で返している。〈〉の意見を聞きたい。",1],
-["霊媒結果と照らし合わせれば、〈〉の結果だけ噛み合わない","霊媒結果と照らし合わせると、〈〉の結果だけ噛み合わない",1],
-["むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ","むしろ怪しいのは〈〉のほうだと思う。理由も言える",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙っているつもりだったけど、言う。私は占い師だ。〈〉は人狼だった",1],
-["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋を見れば分かる。〈〉の結果は不自然だ",1],
-["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉は対抗が出てから急に結果を言い出した。偽物だ",1],
-["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉は今日、ずっと口数が少ない。〈〉、説明してほしい。",1],
-["自分では決められないので、今日は流れに乗ります","自分では決められないから、今日は流れに乗る",1],
-["全員、今日の投票先を一人ずつ言って。最後にまとめる","全員、今日の投票先を一人ずつ言ってくれ。最後にまとめる",1],
-["みんな、いい村だったよ。私たちのほうが上手だったけど","みんな、いい村だった。私たちのほうが上手だったけど",1],
-["理由はないけど、〈〉だけは信用できない気がする","理由はないけど、〈〉だけは信用できない気がする",1],
-["真贋は判断できない。だから占い師から順に吊る","真贋は判断できない。だから占い師から順に吊る",1],
-["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒なら、全部説明がつく。私は〈〉に入れる",1],
-["私が村人であることは、明日の結果が証明する","私が村人であることは、明日の結果が証明してくれる",1],
-["つまり〈〉が怪しい、のは……さっき否定したんだった","つまり〈〉が怪しい、のは……さっき否定したんだった",1],
-["明日に情報を残すためにも、今日は〈〉を吊る","明日に情報を残すためにも、今日は〈〉を吊る",1],
-["村のために言うけど、〈〉の動き、ずっとおかしい","村のために言う。〈〉の動き、ずっとおかしい",1],
-["おい、〈〉！　最後まで白いって言ってただろうが！","おい、〈〉！　最後まで白いって言ってただろう！",1],
-["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉は違うと思う。むしろ〈〉が怪しい",1],
-["私を吊って、明日後悔しても知らないよ","私を吊って、明日後悔しても知らないぞ",1],
-["次は霊媒結果を見て、推理を組み直せ","次は霊媒結果を見て、推理を組み直そう",1],
-["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇ってる",1],
-["根拠が薄いのは〈〉のほうだよ","根拠が薄いのは、〈〉のほうじゃないかな",1],
-["わ、私じゃない……と、思う……いや、違う！","わ、私じゃない……と、思う……ううん、違う！",1],
-["次は、真っ先にお前を吊るからな","次は、真っ先にお前を吊るからね",1],
-["騙すの、正直ちょっとつらかった","騙すの、正直ちょっとつらかったんだ",1],
-["計算違いだったな","思ってたのと違ったね",1],
-["想定より一日早かった","思っていたより、一日早かったね",1],
-["本物の占い師は私。〈〉は人狼でした","本物の占い師は私だ。〈〉は人狼だった",1],
-["待って、占い師は私。〈〉は人狼でした","待て、占い師は私だ。〈〉は人狼だった",1],
-["出るね。占い師。〈〉――人狼でした","出る。占い師だ。〈〉――人狼だった",1],
-["偽物が出たね。私が本物。〈〉――人狼でした","偽物が出たね。本物は私だ。〈〉――人狼だった",1],
-["出るね。占い師。〈〉――人狼ではありませんでした","出る。占い師だ。〈〉――人狼ではなかった",1],
-["私は村人。断言する","私は村人だ。断言する",1],
-["完敗。次は負けないよ","完敗だ。次は負けないよ",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言っていた。私の中では、〈〉が一番黒い。",1],
-["ちょっといい？〈〉の発言、昨日と今日で言ってることが逆になってる。俺の中では、〈〉が一番黒い。","少しいいか。〈〉の発言、昨日と今日で言っていることが逆になっている。私の中では、〈〉が一番黒い。",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉は今日、ずっと口数が少ない。私の中では、〈〉が一番黒い。",1],
-["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","村の目線で言わせてもらうと、〈〉の動きが一番狼らしい",1],
-["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずい。〈〉に揃えよう",1],
-["〈〉って、狼のときもこんな感じだったよね？","〈〉って、狼のときもこんな感じだったよな？",1],
-["その推論は前提が間違っている","その考えは、前提が違ってる",1]]});
+["人狼がこんなに堂々としてると思う？","人狼が、これほど堂々としていると思うか？",1]]});
+HK.Load.toneData("darui",{"F":[
+["もう一戦やる？","……もう一戦やる？"],
+["私が狼なら、今ここで〈〉を庇ってる","……私が狼なら……今ここで〈〉を庇ってる"],
+["私は明日も生きて、〈〉の黒を証明する","……明日も生きて、〈〉の黒、証明する",1],
+["私を信じて。後悔はさせない","……私を信じて。……後悔はさせない"],
+["私を吊って、明日後悔しても知らないよ","……私を吊って、明日後悔しても知らない……"],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","……黙ってるつもりだったけど……言う。……占い師。……〈〉は人狼じゃなかった"],
+["〈〉、さっきから喋らなさすぎじゃない？","……〈〉、さっきから静かすぎ",1],
+["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","……〈〉、今日ずっと静か。……〈〉、説明して",1],
+["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","……〈〉、今日ずっと静か。……一番黒いの、〈〉",1],
+["〈〉が言うなら、たぶんそうなんだろうな……","……〈〉が言うなら……そうなんでしょ",1],
+["〈〉って、狼のときもこんな感じだったよね？","……〈〉、狼のときもこんなだったよね",1],
+["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","……〈〉と〈〉、お互い疑ってない。……〈〉が白でも、情報にはなる",1],
+["〈〉の意見に賛成です。〈〉でいいと思う","……〈〉に賛成。……〈〉で",1],
+["〈〉の推理、穴だらけだよ。指摘しようか？","……〈〉の推理、穴だらけ。……言っていい？",1],
+["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","……〈〉の発言、昨日と今日で逆。……〈〉、説明して",1],
+["〈〉は対抗が出てから急に結果を言い出した。偽物だ","……〈〉、対抗が出てから急に言い出した。……偽物",1],
+["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","……〈〉、質問に質問で返してる。……〈〉はどう思う",1],
+["あーあ、もっと遊びたかった！　またね！","……あーあ。……もっと遊びたかった。……また",1],
+["えー、ここで退場!?　まあいっか、応援してるね！","……え。……ここで退場。……まあいっか。……応援、してる",1],
+["おい、〈〉！　最後まで白いって言ってただろうが！","……〈〉。……最後まで白いって、言ってたでしょ",1],
+["ここで割れるのが一番まずい。〈〉に揃えよう","……ここで割れると、まずい。……〈〉に揃えよ",1],
+["みんな、いい村だったよ。私たちのほうが上手だったけど","……みんな、いい村だった。……私たちのほうが、上手だったけど",1],
+["むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ","……むしろ怪しいの、〈〉のほう。……理由も、ある",1],
+["やられたー！　いや、今回は完全に〈〉の勝ちだ！","……やられた。……今回は〈〉の勝ち",1],
+["人狼がこんなに堂々としてると思う？","……人狼が、こんな堂々としてると思う？",1],
+["人狼だったら、もっとうまく隠れるって","……人狼なら、もっとうまく隠れる",1],
+["偽物が出たね。私が本物。〈〉――人狼でした","……偽物、出た。……本物は私。……〈〉――人狼",1],
+["全員、今日の投票先を一人ずつ言って。最後にまとめる","……全員、投票先、一人ずつ。……最後にまとめる",1],
+["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","……占い結果の筋、見ればわかる。……〈〉の結果、不自然",1],
+["多数派に乗るのが一番危ないんだよ。今日は〈〉に入れる","……多数派に乗るのが、一番あぶない。……今日は〈〉",1],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","……〈〉は村だと思う。……だから〈〉の意見、軸に",1],
+["待って、さっきと言ってること逆だ","……待って。……さっきと逆",1],
+["待って、占い師は私。〈〉は人狼でした","……待って。……占い師、私。……〈〉、人狼",1],
+["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","……整理。……〈〉、対抗が出た瞬間に即決した。……根拠、薄い。……〈〉はどう思う",1],
+["明日に情報を残すためにも、今日は〈〉を吊る","……明日に情報残すなら、今日は〈〉",1],
+["本物の占い師は私。〈〉は人狼でした","……本物の占い師、私。……〈〉、人狼",1],
+["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","……村目線だと、〈〉が一番狼っぽい。……知らんけど",1],
+["次は、真っ先にお前を吊るからな","……次は、あんたから吊る",1],
+["真贋は判断できない。だから占い師から順に吊る","……どっちが本物か、わかんない。……占い師から順に吊る",1],
+["私が村人であることは、明日の結果が証明する","……私が村人なのは、明日わかる",1],
+["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","……結論。……平和な朝の前、〈〉が護衛先を探ってた。……〈〉が一番黒い",1],
+["自信ないけど、みんなと同じで〈〉に","……自信ない。……みんなと同じで、〈〉",1],
+["自分では決められないので、今日は流れに乗ります","……自分じゃ決められないし。……今日は流れに乗る。……らくだし",1],
+["順番に意見を言おう。最後に決を採る","……順番に意見言って。……最後に決める",1],
+["騙すの、正直ちょっとつらかった","……騙すの、正直ちょっと、しんどかった",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","……黙ってるつもりだったけど。……占い師。……〈〉は人狼だった",1],
+["反対する理由がないので、〈〉で","……反対する理由、ないし。……〈〉で",1],
+["信じなくていいわよ、どうせ後悔するんだから","……信じなくていい。……どうせ後悔するし",1],
+["え？　あ、うん、そう、そうだよね","……え？……あ、うん。……そう、かも",1],
+["疑うなら、どうぞ。何も出てこないから","……疑うなら、どうぞ。……なにも出てこないし",1],
+["ごめんね、みんな……仲間を、頼んだよ","……ごめんね、みんな……仲間、頼んだよ",1],
+["私の考えを言う。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。俺は〈〉が怪しいと思う。","……私の考え。〈〉は対抗が出た瞬間、どっちを信じるか即決した。……根拠が薄い。私は〈〉が怪しいと思う。",1]],
+"S":[
+"……そういう言い方するから疑われるんだよ"]});
+HK.Load.toneData("devoted",{"F":[
+["いいよ、私を吊っても。でも次は〈〉を吊ってね","いいですよ、私を吊っても。でも次は〈〉を吊ってくださいね"],
+["いやあ、騙された騙された","いやあ、すっかり騙されました"],
+["え？　あ、うん、そう、そうだよね","え？　あ、はい、そう、そうですよね"],
+["ごめんね、みんな……仲間を、頼んだよ","すみません、皆さん……仲間を、お願いします",1],
+["人狼だったら、もっとうまく隠れるって","人狼だったら、もっとうまく隠れますって"],
+["確認なんだけど、〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉が白なら、それはそれで情報になる。","確認なんですけど、〈〉は対抗が出た瞬間、どっちを信じるか即決しました。根拠が薄いです。〈〉が白なら、それはそれで情報になります。"],
+["私を信じて。後悔はさせない","私を信じてください。後悔はさせません"],
+["黙ってて。考えてるから","少し静かにしててください。考えてますから"],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉さんは村の方だと思っています。ですから、〈〉さんのご意見を軸にします",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙っているつもりでしたが、申し上げます。私が占い師です。〈〉さんは、人狼でした",1],
+["誰も責めないよ。あとはよろしくね","誰も責めたりしません。あとのこと、よろしくお願いします",1],
+["仲間のために、もう少し粘りたかった……","仲間のために、もう少し粘りたかったです……",1],
+["私を吊って、明日後悔しても知らないよ","私を吊っても……明日、後悔なさることになりますよ",1],
+["あ、ありがとう、ございました……っ","あ、ありがとう、ございました……っ",1],
+["あ、ありがとう、ございました……","あ、ありがとう、ございました……",1],
+["理由を聞かれても困るけど、〈〉に一票！","理由を聞かれると困りますけど……〈〉さんに一票です！",1],
+["よし、整理する。候補は〈〉と〈〉。今日は〈〉だ","よし、整理します。候補は〈〉さんと〈〉さん。今日は〈〉さんにしましょう",1],
+["ピンと来た。〈〉だ","ピンと来ました。〈〉さんです",1],
+["〈〉の意見に賛成です。〈〉でいいと思う","〈〉さんの意見に賛成です。〈〉さんでいいと思います",1],
+["自信ないけど、みんなと同じで〈〉に","自信はないですけど、みんなと同じで〈〉さんに",1],
+["騙すの、正直ちょっとつらかったです","正直……騙すの、ちょっとつらかったです",1]]});
+HK.Load.toneData("devoted_p",{"F":[
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にするね",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言うね。占い師は私。〈〉は人狼だったよ",1],
+["誰も責めないよ。あとはよろしくね","誰も責めないよ。あとはよろしくね！",1],
+["私を吊って、明日後悔しても知らないよ","私を吊って、明日後悔しても知らないからね",1],
+["自分では決められないので、今日は流れに乗ります","自分じゃ決められないから、今日は流れに乗っちゃう",1],
+["あ、ありがとう、ございました……っ","あ、ありがと……っ",1],
+["あ、ありがとう、ございました……","あ、ありがとう……",1],
+["次は、真っ先にお前を吊るからな","次は、真っ先にあなたを吊るからね",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったけど、言うね。占い師。〈〉は人狼じゃなかった",1],
+["出るね。占い師。〈〉――人狼ではありませんでした","出るね。占い師。〈〉――人狼じゃなかった",1]]});
 HK.Load.toneData("free",{"F":[
 ["〈〉、さっきから喋らなさすぎじゃない？","〈〉、さっきから喋らなさすぎじゃない！？",1],
 ["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉、今日ずっと口数少ないよね！　〈〉、説明して！",1],
@@ -2286,138 +2114,64 @@ HK.Load.toneData("free",{"F":[
 ["騙すの、正直ちょっとつらかった","騙すの、正直ちょっとつらかった……",1],
 ["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言っちゃう！　占い師は私！　〈〉は人狼だったよ！",1],
 ["対抗します。占い師は私。〈〉は人狼でした","対抗するよ！　占い師は私！　〈〉は人狼だった！",1]]});
-HK.Load.toneData("usan",{"F":[
-["いいよ、私を吊っても。でも次は〈〉を吊ってね","いいよ、私を吊っても。でも次は〈〉を吊ってほしいねえ"],
-["いやあ、騙された騙された","いやあ、すっかり騙されたねえ"],
-["おい、〈〉！　最後まで白いって言ってただろうが！","おい、〈〉！　最後まで白いって言ってたじゃないか！"],
-["感じ悪いな。それ、狼ムーブじゃない？","感じ悪いねえ。それ、狼ムーブなんじゃない？"],
-["言いにくいけど、言うね。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。俺は〈〉が怪しいと思う。","言いにくいけど、言うね。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。私は〈〉が怪しいと思うよ。"],
-["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉、今日はずっと口数が少ないねえ。〈〉、説明してもらえるかい？",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉、今日はずっと口数が少ないねえ。私の中じゃ、〈〉が一番黒いよ",1],
-["〈〉が言うなら、たぶんそうなんだろうな……","〈〉が言うなら、たぶんそうなんだろうねえ……",1],
-["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒なら全部説明がつくねえ。私は〈〉に入れるよ",1],
-["〈〉って、狼のときもこんな感じだったよね？","〈〉って、狼のときもこんな感じだったよねえ？",1],
-["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉と〈〉、お互い一度も疑ってないねえ。〈〉が白なら、それはそれで情報になるさ",1],
-["〈〉の意見に賛成です。〈〉でいいと思う","〈〉の意見に賛成だねえ。〈〉でいいと思うよ",1],
-["〈〉の推理、穴だらけだよ。指摘しようか？","〈〉の推理、穴だらけだねえ。ひとつずつ指摘してあげようか",1],
-["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉の発言、昨日と今日で逆になってるねえ。〈〉、説明してもらえるかい？",1],
-["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉は対抗が出てから急に結果を言い出したねえ。偽物だよ",1],
-["うーん……疑われるのは仕方ないけど、違うんだ","うーん……疑われるのは仕方ないけどねえ、違うんだよ",1],
-["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずいねえ。〈〉に揃えようじゃないの",1],
-["ごめん！　ゲームだから、ゲームだから！","悪いねえ、ゲームだから、ゲームだからさ",1],
-["みんな、いい村だったよ。私たちのほうが上手だったけど","みんな、いい村だったねえ。……私たちのほうが、ちょいと上手だったけどさ",1],
-["むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ","むしろ怪しいのは〈〉のほうだと思うけどねえ。理由も言えるよ",1],
-["やられたー！　いや、今回は完全に〈〉の勝ちだ！","やられたねえ。今回は完全に〈〉の勝ちだよ",1],
-["人狼がこんなに堂々としてると思う？","人狼がこんなに堂々としてると思うかい？",1],
-["人狼だったら、もっとうまく隠れるって","人狼だったら、もっとうまく隠れるさ",1],
-["偽物が出たね。私が本物。〈〉――人狼でした","偽物が出たねえ。本物は私さ。〈〉――人狼だったよ",1],
-["全員、今日の投票先を一人ずつ言って。最後にまとめる","全員、今日の投票先を一人ずつ言っておくれ。最後にまとめるからさ",1],
-["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋を見れば分かるよねえ。〈〉の結果は不自然だよ",1],
-["多数派に乗るのが一番危ないんだよ。今日は〈〉に入れる","多数派に乗るのが一番危ないんだよねえ。今日は〈〉に入れるよ",1],
-["大丈夫、怒ってないよ。でも、村人なんだ","大丈夫、怒っちゃいないよ。でもねえ、村人なんだよ",1],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思ってるよ。だから〈〉の意見を軸にしようかねえ",1],
-["待って、さっきと言ってること逆だ","おや、待っておくれ。さっきと言ってること、逆じゃないかい",1],
-["待って、占い師は私。〈〉は人狼でした","おっと、待っておくれ。占い師は私さ。〈〉は人狼だったよ",1],
-["明日に情報を残すためにも、今日は〈〉を吊る","明日に情報を残すためにも、今日は〈〉を吊るとしようか",1],
-["本物の占い師は私。〈〉は人狼でした","本物の占い師は私さ。〈〉は人狼だったよ",1],
-["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","村目線で言わせてもらうとねえ、〈〉の動きが一番狼っぽいよ",1],
-["次は、真っ先にお前を吊るからな","次は、真っ先にあんたを吊るとしようかねえ",1],
-["直感って大事だよ。〈〉、目を逸らしたでしょ","直感ってのは大事でねえ。〈〉、目を逸らしたろう？",1],
-["真贋は判断できない。だから占い師から順に吊る","真贋は判断できないねえ。だから、占い師から順に吊ろうか",1],
-["私が村人であることは、明日の結果が証明する","私が村人だってことは、明日の結果が証明してくれるさ",1],
-["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇ってるさ",1],
-["私は明日も生きて、〈〉の黒を証明する","私は明日も生き延びて、〈〉の黒を証明してみせるさ",1],
-["私を吊って、明日後悔しても知らないよ","私を吊って、明日後悔しても知らないよお？",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言うとねえ、平和な朝の前、〈〉は護衛先を探るようなことを言ってたのさ。私の中じゃ、〈〉が一番黒いよ",1],
-["自信ないけど、みんなと同じで〈〉に","自信はないけどねえ、みんなと同じで〈〉にしとくよ",1],
-["自分では決められないので、今日は流れに乗ります","自分じゃ決められないからねえ。今日は流れに乗るとするよ",1],
-["誰も責めないよ。あとはよろしくね","誰も責めやしないよ。あとはよろしく頼むよ",1],
-["順番に意見を言おう。最後に決を採る","順番に意見を言っていこうか。最後に決を採るよ",1],
-["騙すの、正直ちょっとつらかった","騙すのは、正直ちょいとつらかったねえ",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言うとしようかねえ。占い師さ。〈〉は人狼だったよ",1],
-["実は最初から、ずっと狼でした","実は最初から、ずっと狼だったのさ",1],
-["……〈〉さんの言う通りだと思います","……〈〉さんの言う通りだと思うねえ",1],
-["霊媒師です。昨日処刑された〈〉は――人狼でした","霊媒師さ。昨日処刑された〈〉は――人狼だったよ",1],
-["反対する理由がないので、〈〉で","反対する理由もないしねえ、〈〉で",1],
-["はい！　〈〉が人狼だと思います！","はいはい、〈〉が人狼だと思うねえ",1]]});
-HK.Load.toneData("shy",{"F":[
-["〈〉、今日はずっと口数が少ない。〈〉の意見を聞きたい。","レ、〈〉、今日はずっと口数が少ないね……。〈〉の意見、聞きたいな……"],
-["〈〉の推理、穴だらけだよ。指摘しようか？","……〈〉の推理、その……穴、あるかも……。い、言ってもいい……？"],
-["いちいち説明させないで","い、いちいち……説明させないで、ほしい……"],
-["そんなことも分からないの？","そ、そんなことも……わ、分からない、の……？"],
-["感じ悪いな。それ、狼ムーブじゃない？","な、なんか……感じ悪い、かも。それ、狼ムーブじゃない……？"],
-["根拠？　顔！　〈〉の顔が言ってる！","こ、根拠……？　か、顔……〈〉の顔が、そう言ってる、から……"],
-["次は、真っ先にお前を吊るからな","つ、次は……真っ先に、あなたを吊るから……"],
-["私が村人であることは、明日の結果が証明する","そ、その……私が村人だってことは……明日の結果で、わかると思う……",1],
-["私は明日も生きて、〈〉の黒を証明する","……わ、私、明日も生きて……〈〉の黒を、証明する、から……"],
-["私は村人。断言する","わ、私、村人なの……。ほ、本当に……信じて……"],
-["私を信じて。後悔はさせない","わ、私を……信じて、ほしい……。こ、後悔は、させないから……"],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","す、少なくとも、〈〉さんは、む、村だと思います……だ、だから、〈〉さんの意見で……",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","だ、黙ってるつもり、でしたけど……わ、私、占い師で……〈〉さんは、じ、人狼、でした……",1],
-["誰も責めないよ。あとはよろしくね","だ、誰も、責めません……あ、あとは、よろしく、お願いします……",1],
-["ごめんね、みんな……仲間を、頼んだよ","ご、ごめんなさい、みんな……な、仲間を、お願い、します……",1],
-["仲間のために、もう少し粘りたかった……","な、仲間のために……も、もう少し、粘りたかった……",1],
-["私を吊って、明日後悔しても知らないよ","わ、私を吊ったら……あ、明日、こ、後悔、しますよ……？",1],
-["私を吊ってもいいです。でも、そのあと必ず狼を見つけてください","わ、私を吊っても、いいです……で、でも、そのあと、か、必ず狼を、見つけてください……",1]]});
-HK.Load.toneData("ojou",{"F":[
-["自信ないけど、みんなと同じで〈〉に","自信はありませんけれど、皆さんと同じく〈〉さんに"],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙っているつもりでしたけれど、申し上げますわ。私、占い師ですの。〈〉さんは、人狼ではありませんでしたわ",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から申し上げますわ。平和な朝の前、〈〉さんは護衛先を探るようなことをおっしゃっていましたの。私の中では、〈〉さんがいちばん怪しいですわ。",1],
-["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","整理させてくださいまし。〈〉さんは対抗が出た途端、どちらを信じるか即決なさいましたわね。根拠が薄くてよ。〈〉さんのご意見を伺いたいですわ。",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙っているつもりでしたけれど、申し上げますわ。私、占い師ですの。〈〉さんは、人狼でしたわ",1],
-["自分では決められないので、今日は流れに乗ります","私では決めかねますので、今日は流れに乗りますわ",1],
-["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉さんと〈〉さん、お互いに一度も疑っていらっしゃいませんわね。〈〉さんが白なら、それはそれで手がかりになりますわ。",1],
-["わ、私じゃない……と、思う……いや、違う！","わ、私ではありませんわ……と、思いますの……いいえ、違いますわ！",1],
-["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉さんのご発言、昨日と今日で逆になっていますわ。〈〉さん、ご説明くださいまし。",1],
-["おい、〈〉！　最後まで白いって言ってただろうが！","〈〉さん！　最後まで白だとおっしゃっていたではありませんの！",1],
-["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉さんが黒なら、すべて説明がつきますわ。私は〈〉さんに入れますわね",1],
-["誠に心外でございます。私は村人です","心外ですわ。私は村人ですのよ",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉さん、今日はずっと口数が少ないですわね。私の中では、〈〉さんがいちばん怪しいですわ。",1],
-["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉さんは違うと思いますわ。むしろ、〈〉さんのほうが怪しくてよ",1],
-["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉さんは質問されると、質問で返していらっしゃいますわね。〈〉さんのご意見を伺いたいですわ。",1],
-["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉さん、今日はずっと口数が少ないですわね。〈〉さん、ご説明くださいまし。",1],
-["全員、今日の投票先を一人ずつ言って。最後にまとめる","皆さま、今日の投票先をお一人ずつおっしゃって。最後に私がまとめますわ",1],
-["いやあ、騙された騙された","まあ、すっかり騙されましたわ",1],
-["くっそー！　あと一手だったのに！","悔しいですわ！　あと一手でしたのに！",1],
-["人狼がこんなに堂々としてると思う？","人狼がこんなに堂々としていると思いまして？",1],
-["反論がないなら、〈〉で決めるぞ","反論がないなら、〈〉さんで決めますわよ",1],
-["感情じゃなくて情報で決めよう。今日は〈〉","感情ではなく、情報で決めましょう。今日は〈〉さんですわ",1],
-["議論は出尽くした。決を採ろう。俺は〈〉","議論は出尽くしましたわ。決を採りましょう。わたくしは〈〉さんに入れますわ",1],
-["理由はないけど、〈〉だけは信用できない気がする","理由はありませんけれど、〈〉さんだけは信用できない気がしますわ",1],
-["〈〉吊ろう！　外れたら謝る！","〈〉さんを吊りましょう！　外れたら謝りますわ！",1],
-["〈〉の推理、納得できた。〈〉で","〈〉さんの推理、納得できましたわ。〈〉さんで",1],
-["〈〉の意見に賛成です。〈〉でいいと思う","〈〉さんのご意見に賛成ですわ。〈〉さんでよろしいと思います",1],
-["……〈〉さんの言う通りだと思います","……〈〉さんのおっしゃる通りだと思いますわ",1],
-["騙すの、正直ちょっとつらかった","騙すのは、正直、少しつらかったですわ",1],
-["〈〉、その座り方、絶対狼だって","〈〉さん、その座り方、絶対に狼ですわよ",1],
-["〈〉が言うなら、たぶんそうなんだろうな……","〈〉さんがおっしゃるなら、たぶんそうなのでしょうね……",1],
-["今日の占い結果。〈〉は人間","今日の占い結果ですわ。〈〉さんは人間でした",1],
-["村のために言うけど、〈〉の動き、ずっとおかしい","村のために申しますけれど、〈〉さんの動き、ずっとおかしいですわ",1],
-["私の考えを言う。〈〉の推理、結論ありきで後から理由をつけてる感じがする。俺の中では、〈〉が一番黒い。","わたくしの考えを申しますわ。〈〉さんの推理、結論ありきで後から理由をつけている感じがします。わたくしの中では、〈〉さんがいちばん黒いですわ。",1],
-["〈〉の笑い方、絶対なんか隠してる！","〈〉さんの笑い方、絶対に何か隠していますわ！",1],
-["負けたけど、推理は楽しかった","負けましたけれど、推理は楽しかったですわ",1]]});
-HK.Load.toneData("hero",{"F":[
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったけど、言うぞ！　占い師だ！　〈〉は人狼じゃなかった！",1],
-["自分では決められないので、今日は流れに乗ります","自分じゃ決められねえ！　今日は流れに乗るぜ！",1],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思う！　だから〈〉の意見を軸にするぜ！",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言うぞ！　占い師だ！　〈〉は人狼だった！",1],
-["わ、私じゃない……と、思う……いや、違う！","わ、私じゃない……と、思う……いや、違う！",1],
-["私を吊って、明日後悔しても知らないよ","私を吊って、明日後悔しても知らねえぞ！",1],
-["うそでしょ、私!?　ないって！　信じて！","うそだろ、私!?　ないって！　信じてくれ！",1],
-["えー、ここで退場!?　まあいっか、応援してるね！","えー、ここで退場か!?　……よし、あとは任せたぜ！",1],
-["あーあ、もっと遊びたかった！　またね！","あーあ、もっと遊びたかったぜ！　またな！",1],
-["私を信じて。後悔はさせない","私を信じろ！　後悔はさせねえ！",1],
-["私は村人。断言する","私は村人だ！　断言するぜ！",1],
-["〈〉、正直に言いなよ。狼でしょ？","〈〉、正直に言えよ！　狼だろ？",1],
-["笑っちゃう。私が人狼なら、もっと上手くやるって","笑っちまうぜ。私が人狼なら、もっと上手くやるって！",1],
-["むしろ怪しいのは〈〉のほうだと思う！　理由も言えるよ","むしろ怪しいのは〈〉のほうだと思うぜ！　理由も言えるぞ！",1],
-["確認なんだけど、〈〉は質問されると、質問で返してる。〈〉、説明してほしい。","確認なんだけど、〈〉は質問されると、質問で返してる。〈〉、説明してくれ！",1],
-["疑うなら、どうぞ。何も出てこないから","疑うなら好きにしてくれ！　何も出てこないからな！",1],
-["〈〉の推理、納得できた。〈〉で","〈〉の推理、納得できた。〈〉で決まりだ！",1],
-["村目線で言うとね、〈〉の動きが一番狼っぽい","村目線で言うとな、〈〉の動きが一番狼っぽいぜ",1],
-["な、なんで私なのよ！　ちゃんと見てたの？","な、なんで私が疑われるんだ！？　ちゃんと見てたのか！？",1],
-["さっきから気になってたんだけど、〈〉はCOが出る前から、占い師の真贋に妙に詳しかった。〈〉、説明してほしい。","さっきから気になってたんだけど、〈〉はCOが出る前から、占い師の真贋に妙に詳しかった。〈〉、説明してくれ！",1],
-["本物の占い師は私だよ。〈〉は人狼でした","本物の占い師は私だ！　〈〉は人狼だったぜ！",1]]});
+HK.Load.toneData("genki",{"F":[
+["いやあ、騙された騙された","いやあ、すっかり騙されちゃいました！"],
+["どうか、もう一度ご検討を","お願いします、もう一回考え直してください"],
+["どうか、皆さまで真実にたどり着いてください","みなさん、絶対に真実にたどり着いてくださいね！"],
+["冷静にご判断いただければ、分かっていただけるかと","冷静に考えてもらえれば、わかってもらえると思います"],
+["皆さまのご武運をお祈りしております","みなさん、がんばってくださいね！　応援してます！"],
+["皆さまの慧眼に敬服いたします","みなさん、すごいです！　お見事でした！"],
+["順番に意見を言おう。最後に決を採る","順番に意見を言いましょう！　最後に決を採ります！"],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりでしたけど、言っちゃいます！　私、占い師です。〈〉さんは人狼じゃなかったですよ！",1],
+["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言いますね！　平和な朝の前、〈〉さんは護衛先を探るようなこと言ってました。私の中では、〈〉さんがいちばん怪しいです！",1],
+["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","ちょっと整理させてください！　〈〉さんは対抗が出た瞬間、どっちを信じるか即決しましたよね。根拠が薄いです。〈〉さんの意見、聞きたいです！",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりでしたけど、言っちゃいます！　私、占い師です。〈〉さんは……人狼でした！",1],
+["自分では決められないので、今日は流れに乗ります","自分じゃ決められないので、今日は流れに乗っちゃいます！",1],
+["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉さんと〈〉さん、お互いに一回も疑ってないですよね。〈〉さんが白なら、それはそれで情報になります！",1],
+["わ、私じゃない……と、思う……いや、違う！","わ、私じゃない……と、思います……いや、違いますってば！",1],
+["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉さんの発言、昨日と今日で言ってることが逆になってますよ！　〈〉さん、説明してください！",1],
+["大変失礼いたしました。人狼でございました","ごめんなさい！　人狼、私でした！",1],
+["おい、〈〉！　最後まで白いって言ってただろうが！","〈〉さん！　最後まで白だって言ってたじゃないですか！",1],
+["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉さんが黒なら、ぜんぶ説明がつきます！　私は〈〉さんに入れまーす！",1],
+["短い間でしたが、ありがとうございました","短い間でしたけど、ありがとうございました！",1],
+["誠に心外でございます。私は村人です","えー、心外です！　私、村人ですよ！",1],
+["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉さん、今日はずっと口数が少ないですね？　私の中では、〈〉さんがいちばん怪しいです！",1],
+["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉さんは違うと思います！　むしろ〈〉さんのほうが怪しいです",1],
+["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉さん、質問されると質問で返してますよね？　〈〉さんの意見、聞きたいです！",1],
+["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉さん、今日はずっと口数が少ないですね？　〈〉さん、説明してください！",1],
+["全員、今日の投票先を一人ずつ言って。最後にまとめる","みなさん、今日の投票先を一人ずつ言ってくださーい！　最後に私がまとめます！",1],
+["待って、さっきと言ってること逆だ","待ってください、さっきと言ってること逆ですよ！",1],
+["〈〉吊ろう！　外れたら謝る！","〈〉さんを吊りましょう！　外れたら謝ります！",1],
+["くっそー！　あと一手だったのに！","くやしいですー！　あと一手だったのに！",1],
+["〈〉、正直に言いなよ。狼でしょ？","〈〉さん、正直に言ってください。狼ですよね？",1],
+["偽物が出たね。私が本物。〈〉――人狼ではありませんでした","偽物が出ましたね！　本物は私です。〈〉さんは――人狼じゃなかったです！",1],
+["悪いけど、空気には合わせない。〈〉が怪しい","ごめんなさい、空気には合わせません！　〈〉さんが怪しいです",1],
+["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉さんは対抗が出てから、急に結果を言い出しました。偽物です！",1],
+["自信ないけど、みんなと同じで〈〉に","自信ないですけど、みんなと同じで〈〉さんに！",1],
+["ご指摘はもっともですが、誤解です","ご指摘はもっともですけど、誤解です！",1],
+["ご納得いただけるまで、ご説明いたします","納得してもらえるまで、説明します！",1]]});
+HK.Load.toneData("gentle",{"F":[
+["いちいち説明させないで","もう……いちいち説明させないでほしいな"],
+["結果を言う。〈〉、人間","結果を言うね。〈〉は人間だったよ"],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村側だと思ってる。だから、〈〉の意見を軸にして考えるね",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙っておくつもりだったけど、言うね。私が占い師。〈〉は、人狼だったよ",1],
+["私を吊って、明日後悔しても知らないよ","私を吊っても、明日後悔するのはみんなだよ。それでもいいの？",1],
+["あ、ありがとう、ございました……っ","あ、ありがとう……っ",1],
+["あ、ありがとう、ございました……","あ、ありがとう……",1],
+["異論は？　……ないな。〈〉だ","異論は？　……ないね。じゃあ、〈〉で",1]]});
+HK.Load.toneData("gentle_n",{"F":[
+["いちいち説明させないで","いちいち説明させないでほしいな"],
+["結果を言う。〈〉、人間","結果を言うね。〈〉は人間だったよ"],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思う。だから〈〉の意見を軸にする",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言う。占い師は私。〈〉は人狼だった",1],
+["誰も責めないよ。あとはよろしくね","誰も責めない。あとは頼んだ",1],
+["ごめんね、みんな……仲間を、頼んだよ","ごめん、みんな……仲間を、頼んだ",1],
+["私を吊って、明日後悔しても知らないよ","私を吊るなら、明日後悔しても知らない",1],
+["あ、ありがとう、ございました……っ","あ、ありがとう……っ",1],
+["あ、ありがとう、ございました……","あ、ありがとう……",1],
+["おい、〈〉！　最後まで白いって言ってただろうが！","ちょっと、〈〉！　最後まで白だって言ってたよね！",1]],
+"S":[
+"〈〉の推理、穴だらけだよ。指摘しようか？"]});
 HK.Load.toneData("gyaru",{"F":[
 ["〈〉、さっきから喋らなさすぎじゃない？","〈〉、さっきから全然しゃべってなくない？",1],
 ["〈〉が言うなら、たぶんそうなんだろうな……","〈〉が言うなら、たぶんそうなんだろうな〜",1],
@@ -2527,116 +2281,86 @@ HK.Load.toneData("gyaru",{"F":[
 ["出るね。占い師。〈〉――人狼でした","出るね。占い師。〈〉――人狼だったよ"],
 ["異論は？　……ないな。〈〉だ","異論ある？　……ないよね。〈〉で決まり"],
 ["庇う理由がない。〈〉に入れる","庇う理由とかないし。〈〉に入れる"],
-["みんな、聞いて。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。俺の中では、〈〉が一番黒い。","みんな、ちょっと聞いて〜。〈〉は「誰でもいい」って言ったのに、急に一人に絞ったじゃん。理由が見えないんだよね。私の中では、〈〉が一番クロ。"],
-["私の考えを言う。〈〉は自分が疑われたときより、〈〉が疑われたときのほうが焦ってた。俺の中では、〈〉が一番黒い。","私的にはさ、〈〉は自分が疑われたときより、〈〉が疑われたときのほうが焦ってたんだよね。私の中では、〈〉が一番クロ。"],
-["確認なんだけど、〈〉は自分から話題を振らない。様子見にしても長すぎる。俺の中では、〈〉が一番黒い。","一応確認なんだけど、〈〉は自分から話題振らないじゃん。様子見にしても長すぎ。私の中では、〈〉が一番クロ。"],
-["ちょっといい？〈〉は笑ってるけど、目が笑ってない。俺の中では、〈〉が一番黒い。","ちょっといい？〈〉は笑ってるけど、目が笑ってないじゃん。私の中では、〈〉が一番クロ。"],
-["〈〉、さっきから全員の顔色をうかがってる。俺の中では、〈〉が一番黒い。","〈〉、さっきから全員の顔色うかがってるよね。私の中では、〈〉が一番クロ。"],
 ["〈〉が噛まれるのは分かってたし……あ、いや、予想してたって意味","〈〉が噛まれるのは分かってたし……あ、いや、予想してたって意味だし",1]]});
-HK.Load.toneData("chara",{"F":[
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったけど言うね。占い師。〈〉は人狼じゃなかったよ",1],
-["自分では決められないので、今日は流れに乗ります","自分じゃ決めらんないから、今日は流れに乗っとくわ",1],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村っぽいんだよね。だから〈〉の意見軸でいこ",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど言うね。占い師。〈〉、人狼だったよ",1],
-["わ、私じゃない……と、思う……いや、違う！","わ、私じゃない……と思う……いや、違うって！",1],
-["私を吊って、明日後悔しても知らないよ","私のこと吊って、明日後悔しても知らないよ？",1],
-["うそでしょ、私!?　ないって！　信じて！","うそっしょ、私!?　ないない！　信じてって！",1],
-["えー、ここで退場!?　まあいっか、応援してるね！","えー、ここで退場!?　ま、いっか。応援してるね！",1],
-["あーあ、もっと遊びたかった！　またね！","あーあ、もっと遊びたかった！　また遊ぼーね！",1],
-["疑うなら、どうぞ。何も出てこないから","疑うならどーぞ。何も出てこないし",1],
-["〈〉の推理、納得できた。〈〉で","〈〉の推理、納得したわ。〈〉でいいっしょ",1],
-["私は村人。断言する","私、村人だから。断言するよ！",1],
-["偽物が出たね。私が本物。〈〉――人狼ではありませんでした","偽物出たね！　本物は私！　〈〉――人狼じゃなかったよ！",1],
-["な、なんで私なのよ！　ちゃんと見てたの？","な、なんで私が疑われてんの！？　ちゃんと見てた？",1],
-["笑っちゃう。私が人狼なら、もっと上手くやるって","笑うわ。私が人狼なら、もっと上手くやるって"],
-["私が狼だったら、もうとっくにボロ出てるよ！","私が狼だったら、もうとっくにボロ出てるって！"],
-["いいよ、私を吊っても。でも次は〈〉を吊ってね","いいよ、私を吊っても。でも次は〈〉吊ってね"],
-["多数派に乗るのが一番危ないんだよ。今日は〈〉に入れる","多数派に乗るのが一番ヤバいんだって。今日は〈〉に入れるわ"],
-["私が村人であることは、明日の結果が証明する","私が村人だってことは、明日の結果が証明してくれるって"],
-["村のために言うけど、〈〉の動き、ずっとおかしい","村のために言うけど、〈〉の動き、ずっとおかしくね？"],
-["人狼がこんなに堂々としてると思う？","人狼がこんな堂々としてると思う？"],
-["みんな、いい村だったよ。私たちのほうが上手だったけど","みんな、いい村だったよ！　私たちのほうが上手だったけどね！"],
-["霊媒結果と照らし合わせれば、〈〉の結果だけ噛み合わない","霊媒結果と照らし合わせたら、〈〉の結果だけ噛み合わないんだよね"],
-["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒なら全部説明つくっしょ。私は〈〉に入れるわ"],
-["〈〉、さっきから喋らなさすぎじゃない？","〈〉、さっきから喋らなさすぎじゃね？"],
-["〈〉が言うなら、たぶんそうなんだろうな……","〈〉が言うなら、たぶんそうなんだろうね……"],
-["ここからは協力しよう","ここからは協力しよ"],
-["待って、占い師は私。〈〉は人狼でした","待って、占い師は私！　〈〉は人狼だったよ！"],
-["私は明日も生きて、〈〉の黒を証明する","私は明日も生きて、〈〉の黒を証明してみせるって"],
-["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇ってるって"],
-["私の勘、当たるんだよ。〈〉","私の勘、当たるんだって。〈〉"],
-["霊媒師です。昨日処刑された〈〉は――人狼でした","霊媒師っす。昨日処刑された〈〉は――人狼だったわ"],
-["私を信じて。後悔はさせない","私を信じてって。後悔はさせないから"],
-["……〈〉さんの言う通りだと思います","……〈〉の言う通りだと思うわ"],
-["本物の占い師は私。〈〉は人狼でした","本物の占い師は私！　〈〉は人狼だったよ！"],
-["〈〉の返事、ちょっと早すぎない？　怪しい！","〈〉の返事、ちょい早すぎじゃね？　怪しい！"],
-["ひとつ引っかかってる。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。俺の中では、〈〉が一番黒い。","一個引っかかってんだよね。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えねー。私の中では、〈〉が一番クロだわ。"],
-["出るね。占い師。〈〉――人狼ではありませんでした","出るね。占い師。〈〉――人狼じゃなかったわ"],
-["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉、質問されると質問で返してるよね。〈〉の意見聞きたいんだけど"],
-["本物の占い師は私だよ。〈〉は人狼でした","本物の占い師は私だよ。〈〉は人狼だったわ"],
-["CO者には明日も結果を出してもらう。今日はそれ以外から","CO者には明日も結果出してもらうわ。今日はそれ以外からね"],
-["私の考えを言う。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。俺は〈〉が怪しいと思う。","私的にはさ、〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えねー。私は〈〉が怪しいと思うわ。"],
-["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉の発言、昨日と今日で逆になってんじゃん。〈〉、説明してくんね？"],
-["明日の占い結果まで見据えて、今日は〈〉を吊る","明日の占い結果まで見据えて、今日は〈〉吊るわ"],
-["偽物が出たね。私が本物。〈〉――人狼でした","偽物出たね！　本物は私！　〈〉――人狼だったよ！"],
-["私の考えを言う。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。俺は〈〉が怪しいと思う。","私的にはさ、〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。私は〈〉が怪しいと思うんだよね。"],
-["俺は〈〉を信じる。今日は二人で同じところに入れよう","私は〈〉を信じる。今日は二人で同じとこに入れよ"],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言うと、平和な朝の前、〈〉が護衛先を探るようなこと言ってたんだわ。私の中じゃ、〈〉がガチで一番クロ。"],
-["ちょっといい？〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。俺は〈〉が怪しいと思う。","ちょい、いい？〈〉は対抗が出た瞬間、どっちを信じるか即決したっしょ。根拠薄くね？　私は〈〉が怪しいと思うわ。"],
-["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉、対抗が出てから急に結果言い出したっしょ。偽物だわ"],
-["待って、狩人CO。私を吊ると護衛がいなくなる","待って、狩人CO。私吊ったら護衛いなくなるって"],
-["全員が同じことを言い出したら、逆に怪しい。俺は〈〉を見てる","全員が同じこと言い出したら、逆に怪しくね？　私は〈〉を見てるわ"],
-["真贋を見極めよう。俺は〈〉が偽物だと判断する","真贋、見極めよ。私は〈〉が偽物って判断するわ"],
-["わ、私は村人だよ","わ、私は村人だって"],
-["ちょっといい？〈〉は〈〉への疑いを、話題を変えて逸らした。俺は〈〉が怪しいと思う。","ちょい、いい？〈〉は〈〉への疑いを、話題変えて逸らしたっしょ。私は〈〉が怪しいと思うわ。"],
-["次は、真っ先にお前を吊るからな","次は、真っ先にあんたを吊るからね！"],
-["ちょっといい？〈〉は質問されると、質問で返してる。俺の中では、〈〉が一番黒い。","ちょい、いい？〈〉は質問されると、質問で返してるっしょ。私の中じゃ、〈〉が一番クロだわ。"],
-["議論は出尽くした。決を採ろう。俺は〈〉","議論はもう出尽くしたっしょ。決、採ろ。私は〈〉"],
-["占い師を吊るのは最後の手段。今日はグレーを詰める","占い師吊るのは最後の手段っしょ。今日はグレー詰めてこ"],
-["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉と〈〉、お互い一度も疑ってなくね？　〈〉が白なら、それはそれで情報になるっしょ"],
-["三日目のあの発言も、全部演技だったのか。……〈〉、次は本気で見抜くから","三日目のあの発言も、全部演技だったのかよ。……〈〉、次はガチで見抜くから"],
-["結果を言う。〈〉、人間","結果言うわ。〈〉、人間"],
-["迷ったら一番怪しいところ。〈〉だ","迷ったら一番怪しいとこっしょ。〈〉で"],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉、今日ずっと口数少なくね？　私の中じゃ、〈〉が一番クロだわ"],
-["反対する理由がないので、〈〉で","反対する理由ないし、〈〉で"],
-["全員、〈〉に入れてくれ。責任は俺が取る","全員、〈〉に入れて。責任は私が取るからさ"],
-["確認なんだけど、〈〉は自分から話題を振らない。様子見にしても長すぎる。〈〉が白なら、それはそれで情報になる。","確認なんだけどさ、〈〉って自分から話題振らなくね？　様子見にしても長すぎっしょ。〈〉が白なら、それはそれで情報になるわけだし。"],
-["占いロラで確実に一人は狼を処理できる。今日は〈〉から","占いロラで確実に一人は狼処理できるっしょ。今日は〈〉から"],
-["推理の勝利だな","推理の勝利っしょ"],
-["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋見りゃ分かるって。〈〉の結果、不自然っしょ"],
-["私の考えを言う。〈〉の推理、結論ありきで後から理由をつけてる感じがする。〈〉の意見を聞きたい。","私的にはさ、〈〉の推理、結論ありきで後から理由つけてる感じすんだよね。〈〉の意見、聞きたいんだけど。"],
-["〈〉は投票の直前で票先を変えた。あれ、何を見て変えたの？〈〉が白なら、それはそれで情報になる。","〈〉、投票の直前で票先変えたよね。あれ、何見て変えたの？〈〉が白なら、それはそれで情報になるっしょ。"],
-["真贋は判断できない。だから占い師から順に吊る","どっちが本物か分かんねーし、占い師から順に吊るわ"],
-["平和な朝の前、〈〉は護衛先を探るようなことを言ってた。〈〉が白なら、それはそれで情報になる。","平和な朝の前、〈〉が護衛先探るようなこと言ってたんだよね。〈〉が白なら、それはそれで情報になるっしょ。"],
-["最後まで信じた甲斐があった！","最後まで信じた甲斐あったわ！"],
-["〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。俺の中では、〈〉が一番黒い。","〈〉、対抗出た瞬間にどっち信じるか即決したよね。根拠薄くね？私の中では、〈〉が一番クロだわ。"],
-["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番ヤバいって。〈〉に揃えよ！"],
-["今のうちに言っておく。〈〉は笑ってるけど、目が笑ってない。俺は〈〉が怪しいと思う。","今のうちに言っとくけど、〈〉は笑ってるけど、目が笑ってねー。私は〈〉が怪しいと思うわ。"],
-["みんな、聞いて。〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","みんな、ちょい聞いて。〈〉、今日ずっと口数少なくね？私の中では、〈〉が一番クロだわ。"],
-["私の考えを言う。〈〉は笑ってるけど、目が笑ってない。〈〉の意見を聞きたい。","私の考え言うわ。〈〉、笑ってるけど目が笑ってねーんだよね。〈〉の意見聞きたいんだけど。"],
-["順番に意見を言おう。最後に決を採る","順番に意見言ってこ！　最後に決とるね！"],
-["〈〉の意見に賛成です。〈〉でいいと思う","〈〉の意見に賛成！　〈〉でいいと思うわ"],
-["〈〉が怪しい。今日は〈〉だ","〈〉が怪しいわ。今日は〈〉っしょ"],
-["整理させて。〈〉は笑ってるけど、目が笑ってない。〈〉の意見を聞きたい。","ちょい整理させて。〈〉って笑ってるけど、目が笑ってねーんだよね。〈〉の意見聞きたいんだけど。"],
-["霊媒結果を言うね。〈〉は人狼でした","霊媒結果言うね。〈〉は人狼だったわ"],
-["結果を言う。〈〉、人狼","結果言うわ。〈〉、人狼"],
-["はい！　〈〉が人狼だと思います！","はい！　〈〉が人狼だと思うっす！"],
-["霊媒結果。〈〉――人狼でした","霊媒結果。〈〉――人狼だったわ"],
-["状況が変わった。今日は〈〉だ","状況変わったわ。今日は〈〉っしょ"],
-["ピンと来た。〈〉だ","ピンと来たわ。〈〉っしょ"],
-["役職を吊るのはもったいない。今日はグレーの","役職吊るのはもったいないっしょ。今日はグレーの"],
-["よし、整理する。候補は〈〉と〈〉。今日は〈〉だ","よし、整理するわ。候補は〈〉と〈〉。今日は〈〉っしょ"],
-["両方の発言を比べた。偽物は〈〉だと思う","両方の発言比べてみたわ。偽物は〈〉じゃね？"],
-["出るね。占い師。〈〉――人狼でした","出るわ。占い師。〈〉――人狼だったって"],
-["異論は？　……ないな。〈〉だ","異論ある？　……ないね。〈〉だ！"],
-["庇う理由がない。〈〉に入れる","庇う理由ねーわ。〈〉に入れる"],
-["みんな、聞いて。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。俺の中では、〈〉が一番黒い。","みんな、ちょい聞いて。〈〉は「誰でもいい」って言ったのに、急に一人に絞ったっしょ。理由が見えねーんだわ。私の中では、〈〉が一番クロかな。"],
-["私の考えを言う。〈〉は自分が疑われたときより、〈〉が疑われたときのほうが焦ってた。俺の中では、〈〉が一番黒い。","私的にはさ、〈〉って自分が疑われたときより、〈〉が疑われたときのほうが焦ってたんだよね。私の中では、〈〉が一番クロかな。"],
-["確認なんだけど、〈〉は自分から話題を振らない。様子見にしても長すぎる。俺の中では、〈〉が一番黒い。","確認なんだけどさ、〈〉って自分から話題振らなくね？　様子見にしても長すぎっしょ。私の中では、〈〉が一番クロだわ。"],
-["ちょっといい？〈〉は笑ってるけど、目が笑ってない。俺の中では、〈〉が一番黒い。","ちょい、いい？〈〉、笑ってるけど目が笑ってねーんだよね。私の中では、〈〉が一番クロだわ。"],
-["〈〉、さっきから全員の顔色をうかがってる。俺の中では、〈〉が一番黒い。","〈〉、さっきから全員の顔色うかがってんじゃん。私の中では、〈〉が一番クロだわ。"],
-["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉は違うと思うわ。むしろ〈〉が怪しいっしょ",1],
-["〈〉が噛まれるのは分かってたし……あ、いや、予想してたって意味","〈〉が噛まれるのは分かってたし……あ、いや、予想してたって意味ね",1]]});
+HK.Load.toneData("hero",{"F":[
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったけど、言うぞ！　占い師だ！　〈〉は人狼じゃなかった！",1],
+["自分では決められないので、今日は流れに乗ります","自分じゃ決められねえ！　今日は流れに乗るぜ！",1],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思う！　だから〈〉の意見を軸にするぜ！",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言うぞ！　占い師だ！　〈〉は人狼だった！",1],
+["わ、私じゃない……と、思う……いや、違う！","わ、私じゃない……と、思う……いや、違う！",1],
+["私を吊って、明日後悔しても知らないよ","私を吊って、明日後悔しても知らねえぞ！",1],
+["うそでしょ、私!?　ないって！　信じて！","うそだろ、私!?　ないって！　信じてくれ！",1],
+["えー、ここで退場!?　まあいっか、応援してるね！","えー、ここで退場か!?　……よし、あとは任せたぜ！",1],
+["あーあ、もっと遊びたかった！　またね！","あーあ、もっと遊びたかったぜ！　またな！",1],
+["私を信じて。後悔はさせない","私を信じろ！　後悔はさせねえ！",1],
+["私は村人。断言する","私は村人だ！　断言するぜ！",1],
+["〈〉、正直に言いなよ。狼でしょ？","〈〉、正直に言えよ！　狼だろ？",1],
+["笑っちゃう。私が人狼なら、もっと上手くやるって","笑っちまうぜ。私が人狼なら、もっと上手くやるって！",1],
+["むしろ怪しいのは〈〉のほうだと思う！　理由も言えるよ","むしろ怪しいのは〈〉のほうだと思うぜ！　理由も言えるぞ！",1],
+["確認なんだけど、〈〉は質問されると、質問で返してる。〈〉、説明してほしい。","確認なんだけど、〈〉は質問されると、質問で返してる。〈〉、説明してくれ！",1],
+["疑うなら、どうぞ。何も出てこないから","疑うなら好きにしてくれ！　何も出てこないからな！",1],
+["〈〉の推理、納得できた。〈〉で","〈〉の推理、納得できた。〈〉で決まりだ！",1],
+["村目線で言うとね、〈〉の動きが一番狼っぽい","村目線で言うとな、〈〉の動きが一番狼っぽいぜ",1],
+["な、なんで私なのよ！　ちゃんと見てたの？","な、なんで私が疑われるんだ！？　ちゃんと見てたのか！？",1],
+["本物の占い師は私だよ。〈〉は人狼でした","本物の占い師は私だ！　〈〉は人狼だったぜ！",1]]});
+HK.Load.toneData("kohai",{"F":[
+["〈〉の返事、ちょっと早すぎない？　怪しい！","〈〉の返事、ちょっと早すぎないっすか？　怪しいっす！"],
+["お見事でございました","お見事だったっす"],
+["ご納得いただけるまで、ご説明いたします","納得してもらえるまで、説明するっす"],
+["どうか、もう一度ご検討を","どうか、もう一回考えてみてくださいっす"],
+["どうか、皆さまで真実にたどり着いてください","どうか、皆さんで真実にたどり着いてくださいっす"],
+["よく分からないけど、〈〉が言うなら……","よく分かんないっすけど、〈〉さんが言うなら……"],
+["冷静にご判断いただければ、分かっていただけるかと","冷静に考えてもらえれば、分かってもらえるはずっす"],
+["大変失礼いたしました。人狼でございました","すんません。人狼だったっす"],
+["恐れ入りますが、私は村人でございます","すんませんけど、私は村人っす"],
+["皆さまのご武運をお祈りしております","皆さんの武運を祈ってるっす"],
+["皆さまの慧眼に敬服いたします","皆さんの見る目、さすがっす"],
+["短い間でしたが、ありがとうございました","短い間だったっすけど、ありがとうございました"],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったっすけど、言うっす。自分、占い師っす。〈〉さんは人狼じゃなかったっす",1],
+["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言うと、平和な朝の前、〈〉さんは護衛先を探るようなこと言ってたっす。私の中じゃ、〈〉さんが一番黒いっす。",1],
+["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","ちょっと整理させてほしいっす。〈〉さん、対抗が出た瞬間どっちを信じるか即決したっすよね。根拠が薄いっす。〈〉さんの意見、聞きたいっす。",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったっすけど、言うっす。自分、占い師っす。〈〉さんは人狼だったっす",1],
+["自分では決められないので、今日は流れに乗ります","自分じゃ決められないんで、今日は流れに乗るっす",1],
+["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉さんと〈〉さん、お互いに一度も疑ってないっすよね。〈〉さんが白なら、それはそれで情報になるっす。",1],
+["わ、私じゃない……と、思う……いや、違う！","じ、自分じゃない……と、思うっす……いや、違うっす！",1],
+["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉さんの発言、昨日と今日で言ってることが逆になってるっす。〈〉さん、説明してほしいっす。",1],
+["おい、〈〉！　最後まで白いって言ってただろうが！","〈〉さん！　最後まで白だって言ってたじゃないっすか！",1],
+["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉さんが黒なら、全部説明がつくっす。私は〈〉さんに入れるっす",1],
+["誠に心外でございます。私は村人です","めちゃくちゃ心外っす。私、村人っすよ",1],
+["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉さん、今日ずっと口数少ないっすね。私の中じゃ、〈〉さんが一番黒いっす。",1],
+["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉さんは違うと思うっす。むしろ〈〉さんのほうが怪しいっす",1],
+["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉さん、質問されると質問で返してるっすよね。〈〉さんの意見、聞きたいっす。",1],
+["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉さん、今日ずっと口数少ないっすね。〈〉さん、説明してほしいっす。",1],
+["全員、今日の投票先を一人ずつ言って。最後にまとめる","全員、今日の投票先を一人ずつ言ってほしいっす。最後に私がまとめるっす",1],
+["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋を見れば分かるっす。〈〉さんの結果、不自然っすよ",1],
+["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉さん、対抗が出てから急に結果を言い出したっすよね。偽物っす",1],
+["やられたー！　いや、今回は完全に〈〉の勝ちだ！","やられたー！　いや、今回は完全に〈〉さんの勝ちっす！",1],
+["〈〉の推理、納得できた。〈〉で","〈〉さんの推理、納得したっす。〈〉さんで",1],
+["黙ってて。考えてるから","ちょっと静かにしててほしいっす。今考えてるんで",1],
+["自信ないけど、みんなと同じで〈〉に","自信ないっすけど、みんなと同じで〈〉さんに",1],
+["〈〉が怪しい。今日は〈〉だ","〈〉さんが怪しいっす。今日は〈〉さんっす",1],
+["〈〉、さっきから全員の顔色をうかがってる。だから今日は〈〉を推す。","〈〉さん、さっきから全員の顔色をうかがってるっす。だから今日は〈〉さんを推すっす。",1],
+["占いCO。結果、〈〉は人狼でした","占いCO。結果、〈〉さんは人狼だったっす",1],
+["感情じゃなくて情報で決めよう。今日は〈〉","感情じゃなくて、情報で決めるっす。今日は〈〉さんっす",1],
+["あの投票、なんで入れ替えなかったんだろ……","あの投票、なんで入れ替えなかったんすかね……",1],
+["はい！　〈〉が人狼だと思います！","はい！　〈〉さんが人狼だと思うっす！",1],
+["直感って大事だよ。〈〉、目を逸らしたでしょ","直感って大事っすよ。〈〉さん、目を逸らしたっしょ",1],
+["狩人です。昨夜は〈〉を守った","狩人っす。昨夜は〈〉さんを守ったっす",1],
+["私は明日も生きて、〈〉の黒を証明する","私は明日も生きて、〈〉さんの黒を証明するっす",1],
+["両方の発言を比べた。偽物は〈〉だと思う","両方の発言を比べたっす。偽物は〈〉さんだと思うっす",1],
+["全員、〈〉に入れてくれ。責任は俺が取る","全員、〈〉さんに入れてくださいっす。責任は私が取るっす",1],
+["異論は？　……ないな。〈〉だ","異論は？　……ないっすね。〈〉さんっす",1],
+["〈〉、さっきから喋らなさすぎじゃない？","〈〉さん、さっきから喋らなさすぎじゃないっすか？",1],
+["根拠？　顔！　〈〉の顔が言ってる！","根拠っすか？　顔っす！　〈〉さんの顔が言ってるっす！",1],
+["〈〉が言うなら、たぶんそうなんだろうな……","〈〉さんが言うなら、たぶんそうなんすよね……",1],
+["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずいっす。〈〉さんに揃えましょう",1],
+["私の考えを言う。〈〉は自分から話題を振らない。様子見にしても長すぎる。〈〉の意見を聞きたい。","私の考えを言うっす。〈〉さんは自分から話題を振らないっす。様子見にしても長すぎっす。〈〉さんの意見を聞きたいっす。",1],
+["いやあ、騙された騙された","いやあ、すっかり騙されたっす",1],
+["〈〉、その座り方、絶対狼だって","〈〉さん、その座り方、絶対狼っすって",1],
+["〈〉が黙ってると、なんか落ち着かないんだよね","〈〉さんが黙ってると、なんか落ち着かないんすよね",1],
+["〈〉が白で、〈〉も白だから……あれ、そしたら狼いなくない？","〈〉さんが白で、〈〉さんも白だから……あれ、そしたら狼いなくないっすか？",1],
+["反対する理由がないので、〈〉にします","反対する理由もないんで、〈〉にするっす",1],
+["次は、真っ先にあなたを吊りますからね","次は、真っ先にあなたを吊るっすからね",1]]});
 HK.Load.toneData("mystic",{"F":[
 ["ちょっといい？〈〉の投票先、毎回いちばん安全なところを選んでる気がする。〈〉が白なら、それはそれで情報になる。","ねえ、ちょっといいかい？　〈〉の投票先、いつもいちばん安全なところなんだ。〈〉が白なら……それはそれで、面白い手がかりだね。",1],
 ["今のうちに言っておく。〈〉、〈〉が疑われたときだけ、やけに庇うよね。〈〉が白なら、それはそれで情報になる。","今のうちに言っておくよ。〈〉、〈〉が疑われたときだけ、やけに庇うよね。〈〉が白なら……それはそれで情報なんだ。",1],
@@ -2680,105 +2404,333 @@ HK.Load.toneData("mystic",{"F":[
 ["本物の占い師は私。〈〉は人狼でした","本物の占い師は私だよ。〈〉は人狼だったよ",1],
 ["私は村人。断言する","私は村人なんだ。断言するよ",1],
 ["待って、占い師は私。〈〉は人狼でした","待って、占い師は私だ。〈〉は人狼だった",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言うとね、平和な朝の前、〈〉は護衛先を探るようなことを言っていたんだ。私の中では、〈〉が一番黒いよ。",1],
-["ちょっといい？〈〉の発言、昨日と今日で言ってることが逆になってる。俺の中では、〈〉が一番黒い。","ちょっといいかい？　〈〉の発言、昨日と今日で逆なんだ。私の中では、〈〉が一番黒いよ。",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉、今日はずっと口数が少ないんだ。私の中では、〈〉が一番黒いよ。",1],
-["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","村の目線で言わせてもらうとね、〈〉の動きが一番狼っぽいんだ",1],
-["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずいんだ。〈〉に揃えようよ",1],
-["〈〉って、狼のときもこんな感じだったよね？","〈〉ってさ、狼のときもこんな感じだったよね？",1],
 ["人狼なら、もっとうまく隠れる","人狼なら、もっとうまく隠れるものだよ",1],
 ["負けたが、推理は楽しかった","負けはしたけれど、推理は楽しかったよ",1]]});
-HK.Load.toneData("genki",{"F":[
-["いやあ、騙された騙された","いやあ、すっかり騙されちゃいました！"],
-["どうか、もう一度ご検討を","お願いします、もう一回考え直してください"],
-["どうか、皆さまで真実にたどり着いてください","みなさん、絶対に真実にたどり着いてくださいね！"],
-["冷静にご判断いただければ、分かっていただけるかと","冷静に考えてもらえれば、わかってもらえると思います"],
-["皆さまのご武運をお祈りしております","みなさん、がんばってくださいね！　応援してます！"],
-["皆さまの慧眼に敬服いたします","みなさん、すごいです！　お見事でした！"],
-["順番に意見を言おう。最後に決を採る","順番に意見を言いましょう！　最後に決を採ります！"],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりでしたけど、言っちゃいます！　私、占い師です。〈〉さんは人狼じゃなかったですよ！",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言いますね！　平和な朝の前、〈〉さんは護衛先を探るようなこと言ってました。私の中では、〈〉さんがいちばん怪しいです！",1],
-["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","ちょっと整理させてください！　〈〉さんは対抗が出た瞬間、どっちを信じるか即決しましたよね。根拠が薄いです。〈〉さんの意見、聞きたいです！",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりでしたけど、言っちゃいます！　私、占い師です。〈〉さんは……人狼でした！",1],
-["自分では決められないので、今日は流れに乗ります","自分じゃ決められないので、今日は流れに乗っちゃいます！",1],
-["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉さんと〈〉さん、お互いに一回も疑ってないですよね。〈〉さんが白なら、それはそれで情報になります！",1],
-["わ、私じゃない……と、思う……いや、違う！","わ、私じゃない……と、思います……いや、違いますってば！",1],
-["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉さんの発言、昨日と今日で言ってることが逆になってますよ！　〈〉さん、説明してください！",1],
-["大変失礼いたしました。人狼でございました","ごめんなさい！　人狼、私でした！",1],
-["おい、〈〉！　最後まで白いって言ってただろうが！","〈〉さん！　最後まで白だって言ってたじゃないですか！",1],
-["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉さんが黒なら、ぜんぶ説明がつきます！　私は〈〉さんに入れまーす！",1],
-["短い間でしたが、ありがとうございました","短い間でしたけど、ありがとうございました！",1],
-["誠に心外でございます。私は村人です","えー、心外です！　私、村人ですよ！",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉さん、今日はずっと口数が少ないですね？　私の中では、〈〉さんがいちばん怪しいです！",1],
-["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉さんは違うと思います！　むしろ〈〉さんのほうが怪しいです",1],
-["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉さん、質問されると質問で返してますよね？　〈〉さんの意見、聞きたいです！",1],
-["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉さん、今日はずっと口数が少ないですね？　〈〉さん、説明してください！",1],
-["全員、今日の投票先を一人ずつ言って。最後にまとめる","みなさん、今日の投票先を一人ずつ言ってくださーい！　最後に私がまとめます！",1],
-["待って、さっきと言ってること逆だ","待ってください、さっきと言ってること逆ですよ！",1],
-["〈〉吊ろう！　外れたら謝る！","〈〉さんを吊りましょう！　外れたら謝ります！",1],
-["くっそー！　あと一手だったのに！","くやしいですー！　あと一手だったのに！",1],
-["〈〉、正直に言いなよ。狼でしょ？","〈〉さん、正直に言ってください。狼ですよね？",1],
-["偽物が出たね。私が本物。〈〉――人狼ではありませんでした","偽物が出ましたね！　本物は私です。〈〉さんは――人狼じゃなかったです！",1],
-["悪いけど、空気には合わせない。〈〉が怪しい","ごめんなさい、空気には合わせません！　〈〉さんが怪しいです",1],
-["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉さんは対抗が出てから、急に結果を言い出しました。偽物です！",1],
-["自信ないけど、みんなと同じで〈〉に","自信ないですけど、みんなと同じで〈〉さんに！",1],
-["ご指摘はもっともですが、誤解です","ご指摘はもっともですけど、誤解です！",1],
-["ご納得いただけるまで、ご説明いたします","納得してもらえるまで、説明します！",1]]});
-HK.Load.toneData("darui",{"F":[
-["もう一戦やる？","……もう一戦やる？"],
-["私が狼なら、今ここで〈〉を庇ってる","……私が狼なら……今ここで〈〉を庇ってる"],
-["私は明日も生きて、〈〉の黒を証明する","……明日も生きて、〈〉の黒、証明する",1],
-["私を信じて。後悔はさせない","……私を信じて。……後悔はさせない"],
-["私を吊って、明日後悔しても知らないよ","……私を吊って、明日後悔しても知らない……"],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","……黙ってるつもりだったけど……言う。……占い師。……〈〉は人狼じゃなかった"],
-["〈〉、さっきから喋らなさすぎじゃない？","……〈〉、さっきから静かすぎ",1],
-["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","……〈〉、今日ずっと静か。……〈〉、説明して",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","……〈〉、今日ずっと静か。……一番黒いの、〈〉",1],
-["〈〉が言うなら、たぶんそうなんだろうな……","……〈〉が言うなら……そうなんでしょ",1],
-["〈〉って、狼のときもこんな感じだったよね？","……〈〉、狼のときもこんなだったよね",1],
-["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","……〈〉と〈〉、お互い疑ってない。……〈〉が白でも、情報にはなる",1],
-["〈〉の意見に賛成です。〈〉でいいと思う","……〈〉に賛成。……〈〉で",1],
-["〈〉の推理、穴だらけだよ。指摘しようか？","……〈〉の推理、穴だらけ。……言っていい？",1],
-["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","……〈〉の発言、昨日と今日で逆。……〈〉、説明して",1],
-["〈〉は対抗が出てから急に結果を言い出した。偽物だ","……〈〉、対抗が出てから急に言い出した。……偽物",1],
-["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","……〈〉、質問に質問で返してる。……〈〉はどう思う",1],
-["あーあ、もっと遊びたかった！　またね！","……あーあ。……もっと遊びたかった。……また",1],
-["えー、ここで退場!?　まあいっか、応援してるね！","……え。……ここで退場。……まあいっか。……応援、してる",1],
-["おい、〈〉！　最後まで白いって言ってただろうが！","……〈〉。……最後まで白いって、言ってたでしょ",1],
-["ここで割れるのが一番まずい。〈〉に揃えよう","……ここで割れると、まずい。……〈〉に揃えよ",1],
-["みんな、いい村だったよ。私たちのほうが上手だったけど","……みんな、いい村だった。……私たちのほうが、上手だったけど",1],
-["むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ","……むしろ怪しいの、〈〉のほう。……理由も、ある",1],
-["やられたー！　いや、今回は完全に〈〉の勝ちだ！","……やられた。……今回は〈〉の勝ち",1],
-["人狼がこんなに堂々としてると思う？","……人狼が、こんな堂々としてると思う？",1],
-["人狼だったら、もっとうまく隠れるって","……人狼なら、もっとうまく隠れる",1],
-["偽物が出たね。私が本物。〈〉――人狼でした","……偽物、出た。……本物は私。……〈〉――人狼",1],
-["全員、今日の投票先を一人ずつ言って。最後にまとめる","……全員、投票先、一人ずつ。……最後にまとめる",1],
-["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","……占い結果の筋、見ればわかる。……〈〉の結果、不自然",1],
-["多数派に乗るのが一番危ないんだよ。今日は〈〉に入れる","……多数派に乗るのが、一番あぶない。……今日は〈〉",1],
-["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","……〈〉は村だと思う。……だから〈〉の意見、軸に",1],
-["待って、さっきと言ってること逆だ","……待って。……さっきと逆",1],
-["待って、占い師は私。〈〉は人狼でした","……待って。……占い師、私。……〈〉、人狼",1],
-["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","……整理。……〈〉、対抗が出た瞬間に即決した。……根拠、薄い。……〈〉はどう思う",1],
-["明日に情報を残すためにも、今日は〈〉を吊る","……明日に情報残すなら、今日は〈〉",1],
-["本物の占い師は私。〈〉は人狼でした","……本物の占い師、私。……〈〉、人狼",1],
-["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","……村目線だと、〈〉が一番狼っぽい。……知らんけど",1],
-["次は、真っ先にお前を吊るからな","……次は、あんたから吊る",1],
-["真贋は判断できない。だから占い師から順に吊る","……どっちが本物か、わかんない。……占い師から順に吊る",1],
-["私が村人であることは、明日の結果が証明する","……私が村人なのは、明日わかる",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","……結論。……平和な朝の前、〈〉が護衛先を探ってた。……〈〉が一番黒い",1],
-["自信ないけど、みんなと同じで〈〉に","……自信ない。……みんなと同じで、〈〉",1],
-["自分では決められないので、今日は流れに乗ります","……自分じゃ決められないし。……今日は流れに乗る。……らくだし",1],
-["順番に意見を言おう。最後に決を採る","……順番に意見言って。……最後に決める",1],
-["騙すの、正直ちょっとつらかった","……騙すの、正直ちょっと、しんどかった",1],
-["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","……黙ってるつもりだったけど。……占い師。……〈〉は人狼だった",1],
-["反対する理由がないので、〈〉で","……反対する理由、ないし。……〈〉で",1],
-["信じなくていいわよ、どうせ後悔するんだから","……信じなくていい。……どうせ後悔するし",1],
-["え？　あ、うん、そう、そうだよね","……え？……あ、うん。……そう、かも",1],
-["疑うなら、どうぞ。何も出てこないから","……疑うなら、どうぞ。……なにも出てこないし",1],
-["ごめんね、みんな……仲間を、頼んだよ","……ごめんね、みんな……仲間、頼んだよ",1],
-["私の考えを言う。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。俺は〈〉が怪しいと思う。","……私の考え。〈〉は対抗が出た瞬間、どっちを信じるか即決した。……根拠が薄い。私は〈〉が怪しいと思う。",1]],
-"S":[
-"……そういう言い方するから疑われるんだよ"]});
+HK.Load.toneData("ojou",{"F":[
+["自信ないけど、みんなと同じで〈〉に","自信はありませんけれど、皆さんと同じく〈〉さんに"],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙っているつもりでしたけれど、申し上げますわ。私、占い師ですの。〈〉さんは、人狼ではありませんでしたわ",1],
+["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から申し上げますわ。平和な朝の前、〈〉さんは護衛先を探るようなことをおっしゃっていましたの。私の中では、〈〉さんがいちばん怪しいですわ。",1],
+["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","整理させてくださいまし。〈〉さんは対抗が出た途端、どちらを信じるか即決なさいましたわね。根拠が薄くてよ。〈〉さんのご意見を伺いたいですわ。",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙っているつもりでしたけれど、申し上げますわ。私、占い師ですの。〈〉さんは、人狼でしたわ",1],
+["自分では決められないので、今日は流れに乗ります","私では決めかねますので、今日は流れに乗りますわ",1],
+["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉さんと〈〉さん、お互いに一度も疑っていらっしゃいませんわね。〈〉さんが白なら、それはそれで手がかりになりますわ。",1],
+["わ、私じゃない……と、思う……いや、違う！","わ、私ではありませんわ……と、思いますの……いいえ、違いますわ！",1],
+["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉さんのご発言、昨日と今日で逆になっていますわ。〈〉さん、ご説明くださいまし。",1],
+["おい、〈〉！　最後まで白いって言ってただろうが！","〈〉さん！　最後まで白だとおっしゃっていたではありませんの！",1],
+["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉さんが黒なら、すべて説明がつきますわ。私は〈〉さんに入れますわね",1],
+["誠に心外でございます。私は村人です","心外ですわ。私は村人ですのよ",1],
+["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉さん、今日はずっと口数が少ないですわね。私の中では、〈〉さんがいちばん怪しいですわ。",1],
+["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉さんは違うと思いますわ。むしろ、〈〉さんのほうが怪しくてよ",1],
+["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉さんは質問されると、質問で返していらっしゃいますわね。〈〉さんのご意見を伺いたいですわ。",1],
+["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉さん、今日はずっと口数が少ないですわね。〈〉さん、ご説明くださいまし。",1],
+["全員、今日の投票先を一人ずつ言って。最後にまとめる","皆さま、今日の投票先をお一人ずつおっしゃって。最後に私がまとめますわ",1],
+["いやあ、騙された騙された","まあ、すっかり騙されましたわ",1],
+["くっそー！　あと一手だったのに！","悔しいですわ！　あと一手でしたのに！",1],
+["人狼がこんなに堂々としてると思う？","人狼がこんなに堂々としていると思いまして？",1],
+["反論がないなら、〈〉で決めるぞ","反論がないなら、〈〉さんで決めますわよ",1],
+["感情じゃなくて情報で決めよう。今日は〈〉","感情ではなく、情報で決めましょう。今日は〈〉さんですわ",1],
+["議論は出尽くした。決を採ろう。俺は〈〉","議論は出尽くしましたわ。決を採りましょう。わたくしは〈〉さんに入れますわ",1],
+["理由はないけど、〈〉だけは信用できない気がする","理由はありませんけれど、〈〉さんだけは信用できない気がしますわ",1],
+["〈〉吊ろう！　外れたら謝る！","〈〉さんを吊りましょう！　外れたら謝りますわ！",1],
+["〈〉の推理、納得できた。〈〉で","〈〉さんの推理、納得できましたわ。〈〉さんで",1],
+["〈〉の意見に賛成です。〈〉でいいと思う","〈〉さんのご意見に賛成ですわ。〈〉さんでよろしいと思います",1],
+["……〈〉さんの言う通りだと思います","……〈〉さんのおっしゃる通りだと思いますわ",1],
+["騙すの、正直ちょっとつらかった","騙すのは、正直、少しつらかったですわ",1],
+["〈〉、その座り方、絶対狼だって","〈〉さん、その座り方、絶対に狼ですわよ",1],
+["〈〉が言うなら、たぶんそうなんだろうな……","〈〉さんがおっしゃるなら、たぶんそうなのでしょうね……",1],
+["今日の占い結果。〈〉は人間","今日の占い結果ですわ。〈〉さんは人間でした",1],
+["村のために言うけど、〈〉の動き、ずっとおかしい","村のために申しますけれど、〈〉さんの動き、ずっとおかしいですわ",1],
+["私の考えを言う。〈〉の推理、結論ありきで後から理由をつけてる感じがする。俺の中では、〈〉が一番黒い。","わたくしの考えを申しますわ。〈〉さんの推理、結論ありきで後から理由をつけている感じがします。わたくしの中では、〈〉さんがいちばん黒いですわ。",1],
+["〈〉の笑い方、絶対なんか隠してる！","〈〉さんの笑い方、絶対に何か隠していますわ！",1],
+["負けたけど、推理は楽しかった","負けましたけれど、推理は楽しかったですわ",1]]});
+HK.Load.toneData("proud",{"F":[
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だ。だから〈〉の意見を軸にする。異論は認めねえ",1],
+["……ここまでか。だが、まだ終わってない","……ここまでか。だが、まだ終わっちゃいねえ",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったが、言ってやる。占い師だ。〈〉は人狼じゃなかった",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったが、言ってやる。占い師だ。〈〉は人狼だった",1],
+["自分では決められないので、今日は流れに乗ります","自分じゃ決めきれねえ。今日は流れに乗ってやる",1],
+["私を吊って、明日後悔しても知らないよ","私を吊って、明日後悔しても知らねえぞ",1],
+["……ふん。一人くらいくれてやる","……ふん。一人くらいくれてやる",1],
+["覚えてろ。村人を吊ったこと、後悔させてやる","覚えてろ。村人を吊ったこと、後悔させてやる",1],
+["くだらない。私の票を見てから言え","くだらねえ。私の票を見てから言え",1],
+["おい、〈〉！　最後まで白いって言ってただろうが！","おい、〈〉！　最後まで白いって言ってただろうが！",1],
+["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉は違う。むしろ〈〉が怪しい",1],
+["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒なら全部説明がつく。私は〈〉に入れる",1],
+["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇ってる。考えりゃわかるだろ",1],
+["〈〉って、狼のときもこんな感じだったよね？","〈〉、お前、狼のときもこんな感じだったよな？",1],
+["私が村人であることは、明日の結果が証明する","私が村人だってことは、明日の結果が証明してくれる",1],
+["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","村目線で言わせてもらう。〈〉の動きが一番狼くさい",1],
+["〈〉、さっきから喋らなさすぎじゃない？","〈〉、さっきから喋らなさすぎじゃねえか？",1],
+["〈〉の返事、ちょっと早すぎない？　怪しい！","〈〉の返事、ちょっと早すぎねえか？　怪しいぞ",1],
+["〈〉吊ろう！　外れたら謝る！","〈〉を吊るぞ！　外れたら謝ってやる！",1],
+["感じ悪いな。それ、狼ムーブじゃない？","感じ悪いな。それ、狼ムーブじゃねえか？",1],
+["みんな〈〉って言ってるけど、それ流されてない？","みんな〈〉って言ってるけど、それ流されてねえか？",1],
+["完敗。次は負けないよ","完敗だ。次は負けねえ",1],
+["ねえ〈〉、今ちょっとドキッとしたでしょ？","おい〈〉、今ちょっとドキッとしただろ？",1],
+["みんな、聞いて。〈〉、占い師が出たときの反応が早すぎた。知ってたみたいに。〈〉の意見を聞きたい。","みんな、聞け。〈〉、占い師が出たときの反応が早すぎた。知ってたみたいにな。〈〉、言い分を聞かせろ。",1],
+["私の発言、全部見返してみて","私の発言、全部見返してみろ",1],
+["〈〉の推理、穴だらけだよ。指摘しようか？","〈〉の推理、穴だらけだ。指摘してやろうか？",1],
+["わ、私は村人だよ","わ、私は村人だ",1],
+["ここからは協力しよう","ここからは手を組むぞ",1],
+["疑うなら、どうぞ。何も出てこないから","疑うなら好きにしろ。何も出てこねえよ",1],
+["本物の占い師は私。〈〉は人狼でした","本物の占い師は私だ。〈〉は人狼だった",1],
+["いいよ、私を吊っても。でも次は〈〉を吊ってね","いいぜ、私を吊っても。だが次は〈〉を吊れよ",1],
+["理由はないけど、〈〉だけは信用できない気がする","理由はねえが、〈〉だけは信用できねえ",1],
+["〈〉、正直に言いなよ。狼でしょ？","〈〉、正直に言え。狼だろ？",1],
+["私は村人。断言する","私は村人だ。断言する",1],
+["な、なんで私なのよ！　ちゃんと見てたの？","な、なんで私が疑われなきゃならねえ！　ちゃんと見てたのか？",1]]});
+HK.Load.toneData("shy",{"F":[
+["〈〉、今日はずっと口数が少ない。〈〉の意見を聞きたい。","レ、〈〉、今日はずっと口数が少ないね……。〈〉の意見、聞きたいな……"],
+["〈〉の推理、穴だらけだよ。指摘しようか？","……〈〉の推理、その……穴、あるかも……。い、言ってもいい……？"],
+["いちいち説明させないで","い、いちいち……説明させないで、ほしい……"],
+["そんなことも分からないの？","そ、そんなことも……わ、分からない、の……？"],
+["感じ悪いな。それ、狼ムーブじゃない？","な、なんか……感じ悪い、かも。それ、狼ムーブじゃない……？"],
+["根拠？　顔！　〈〉の顔が言ってる！","こ、根拠……？　か、顔……〈〉の顔が、そう言ってる、から……"],
+["次は、真っ先にお前を吊るからな","つ、次は……真っ先に、あなたを吊るから……"],
+["私が村人であることは、明日の結果が証明する","そ、その……私が村人だってことは……明日の結果で、わかると思う……",1],
+["私は明日も生きて、〈〉の黒を証明する","……わ、私、明日も生きて……〈〉の黒を、証明する、から……"],
+["私は村人。断言する","わ、私、村人なの……。ほ、本当に……信じて……"],
+["私を信じて。後悔はさせない","わ、私を……信じて、ほしい……。こ、後悔は、させないから……"],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","す、少なくとも、〈〉さんは、む、村だと思います……だ、だから、〈〉さんの意見で……",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","だ、黙ってるつもり、でしたけど……わ、私、占い師で……〈〉さんは、じ、人狼、でした……",1],
+["誰も責めないよ。あとはよろしくね","だ、誰も、責めません……あ、あとは、よろしく、お願いします……",1],
+["ごめんね、みんな……仲間を、頼んだよ","ご、ごめんなさい、みんな……な、仲間を、お願い、します……",1],
+["仲間のために、もう少し粘りたかった……","な、仲間のために……も、もう少し、粘りたかった……",1],
+["私を吊って、明日後悔しても知らないよ","わ、私を吊ったら……あ、明日、こ、後悔、しますよ……？",1],
+["私を吊ってもいいです。でも、そのあと必ず狼を見つけてください","わ、私を吊っても、いいです……で、でも、そのあと、か、必ず狼を、見つけてください……",1],
+["あ、ありがとう、ございました……っ","あ、ありがとう、ございました……っ",1],
+["あ、ありがとう、ございました……","あ、ありがとう、ございました……",1]]});
+HK.Load.toneData("stern",{"F":[
+["〈〉、正直に言いなよ。狼でしょ？","〈〉、正直に言え。狼だろ？"],
+["いいよ、私を吊っても。でも次は〈〉を吊ってね","構わない、私を吊れ。だが次は〈〉を吊ってくれ"],
+["ちょっと、言い方","待て、言い方を考えろ"],
+["もう一戦やる？","もう一戦やるか？"],
+["人狼だったら、もっとうまく隠れるって","人狼なら、もっとうまく隠れる"],
+["感じ悪いな。それ、狼ムーブじゃない？","感じが悪いな。それは、狼の動きだ"],
+["私は村人。断言する","私は村人だ。断言する"],
+["私は村人だ。根拠を一つずつ反論する","私は村人だ。根拠の一つずつに反論する"],
+["黙ってて。考えてるから","黙っていろ。考えている"],
+["ちょっといい？〈〉の投票先、毎回いちばん安全なところを選んでる気がする。〈〉が白なら、それはそれで情報になる。","一つ言わせてもらう。〈〉の投票先は、毎回いちばん安全なところだ。〈〉が白なら、それもまた一つの情報になる。",1],
+["今のうちに言っておく。〈〉、〈〉が疑われたときだけ、やけに庇うよね。〈〉が白なら、それはそれで情報になる。","今のうちに言っておく。〈〉は、〈〉が疑われたときだけ、やけに庇う。〈〉が白なら、それもまた一つの情報だ。",1],
+["言いにくいけど、言うね。昨日の投票、〈〉だけが流れと違うところに入れてる。〈〉の意見を聞きたい。","言いにくいが、言う。昨日の投票、〈〉だけが流れと違うところに入れている。〈〉の弁明を聞きたい。",1],
+["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","整理する。〈〉は対抗が出た瞬間、どちらを信じるか即決した。根拠が薄い。〈〉の弁明を聞かせろ。",1],
+["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉と〈〉は、互いに一度も疑っていない。〈〉が白なら、それもまた一つの情報だ。",1],
+["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉の発言は、昨日と今日で逆になっている。〈〉、説明しろ。",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙っているつもりだったが、言う。私は占い師だ。〈〉は人狼ではなかった",1],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと見ている。だから〈〉の意見を軸にする",1],
+["全員が同じことを言い出したら、逆に怪しい。俺は〈〉を見てる","全員が同じことを言い出したら、かえって怪しい。私は〈〉を見ている",1],
+["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉は問われると、問いで返している。〈〉の弁明を聞きたい。",1],
+["霊媒結果と照らし合わせれば、〈〉の結果だけ噛み合わない","霊媒結果と照らし合わせれば、〈〉の結果だけが噛み合わん",1],
+["感情で吊るのはやめよう。私の投票先を確認してほしい","感情で吊るのはやめろ。私の投票先を確かめてくれ",1],
+["むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ","むしろ怪しいのは〈〉の方だ。理由も言える",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙っているつもりだったが、言う。私は占い師だ。〈〉は人狼だった",1],
+["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋を見れば分かる。〈〉の結果は不自然だ",1],
+["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉は対抗が出てから急に結果を言い出した。偽物だ",1],
+["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉は今日、ずっと口数が少ない。〈〉、説明しろ。",1],
+["自分では決められないので、今日は流れに乗ります","自分では決めかねる。今日は流れに従う",1],
+["全員、今日の投票先を一人ずつ言って。最後にまとめる","全員、今日の投票先を一人ずつ言え。最後にまとめる",1],
+["みんな、いい村だったよ。私たちのほうが上手だったけど","皆、いい村だった。私たちの方が上手だったがな",1],
+["理由はないけど、〈〉だけは信用できない気がする","理由はない。だが、〈〉だけは信用できん",1],
+["真贋は判断できない。だから占い師から順に吊る","真贋は判断できん。ゆえに占い師から順に吊る",1],
+["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒ならば、すべて説明がつく。私は〈〉に入れる",1],
+["疑われる理由は理解した。だが、結論が早すぎる","疑われる理由は理解した。だが、結論が早すぎる",1],
+["私が村人であることは、明日の結果が証明する","私が村人であることは、明日の結果が証明する",1],
+["つまり〈〉が怪しい、のは……さっき否定したんだった","つまり〈〉が怪しい、のは……先ほど否定したのだった",1],
+["明日に情報を残すためにも、今日は〈〉を吊る","明日に情報を残すためにも、今日は〈〉を吊る",1],
+["村のために言うけど、〈〉の動き、ずっとおかしい","村のために言う。〈〉の動きは、ずっとおかしい",1],
+["おい、〈〉！　最後まで白いって言ってただろうが！","おい、〈〉！　最後まで白いと言っていただろうが！",1],
+["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉は違う。むしろ〈〉が怪しい",1],
+["私を吊って、明日後悔しても知らないよ","私を吊って、明日悔やんでも知らんぞ",1],
+["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇っている",1],
+["根拠が薄いのは〈〉のほうだよ","根拠が薄いのは〈〉のほうだ",1],
+["私の分まで、正しく推理してくれ","私の分まで、正しく推理してくれ。頼んだぞ",1],
+["わ、私じゃない……と、思う……いや、違う！","わ、私ではない……と、思う……いや、違う！",1],
+["次は、真っ先にお前を吊るからな","次は真っ先にお前を吊る。覚悟しておけ",1],
+["騙すの、正直ちょっとつらかった","騙すのは、正直こたえた",1],
+["〈〉、占い師が出たときの反応が早すぎた。知ってたみたいに。〈〉、説明してほしい。","〈〉は、占い師が出たときの反応が早すぎた。まるで知っていたようにな。〈〉、説明してもらおう。",1],
+["偽物が出たね。私が本物。〈〉――人狼でした","偽物が出たな。本物は私だ。〈〉――人狼だった",1],
+["人狼がこんなに堂々としてると思う？","人狼が、これほど堂々としていると思うか？",1],
+["結論から言うと、〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。〈〉が白なら、それはそれで情報になる。","結論を述べる。〈〉は「誰でもいい」と言いながら、急に一人に絞った。理由が見えん。〈〉が白なら、それもまた一つの情報だ。",1],
+["今のうちに言っておく。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。〈〉、説明してほしい。","今のうちに言っておく。〈〉は「誰でもいい」と言いながら、急に一人に絞った。理由が見えん。〈〉、説明しろ。",1],
+["ちょっといい？〈〉は〈〉への疑いを、話題を変えて逸らした。俺は〈〉が怪しいと思う。","一ついいか。〈〉は〈〉への疑いを、話題を変えて逸らした。私は〈〉が怪しいと見る。",1],
+["待って、占い師は私。〈〉は人狼でした","待て、占い師は私だ。〈〉は人狼だった",1],
+["本物の占い師は私。〈〉は人狼でした","本物の占い師は私だ。〈〉は人狼だった",1],
+["疑うなら、どうぞ。何も出てこないから","疑うなら好きにしろ。何も出てこない",1]]});
+HK.Load.toneData("tsun",{"F":[
+["〈〉、さっきから喋らなさすぎじゃない？","〈〉、さっきから喋らなさすぎじゃない？　……べ、別に気にしてないけど",1],
+["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉、今日ずっと口数が少ないわよね。〈〉、ちゃんと説明しなさいよ",1],
+["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉、今日ずっと口数が少ないわよね。私の中じゃ、〈〉が一番黒いわ",1],
+["〈〉が言うなら、たぶんそうなんだろうな……","〈〉が言うなら……ま、まあ、たぶんそうなんでしょうね",1],
+["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒なら全部説明がつくわ。私は〈〉に入れる",1],
+["〈〉って、狼のときもこんな感じだったよね？","〈〉って、狼のときもこんな感じだったわよね？",1],
+["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉と〈〉、お互い一度も疑ってないわよね。〈〉が白なら、それはそれで情報になるわ",1],
+["〈〉の意見に賛成です。〈〉でいいと思う","〈〉の意見に賛成。〈〉でいいと思うわ",1],
+["〈〉の推理、穴だらけだよ。指摘しようか？","〈〉の推理、穴だらけよ。指摘してあげましょうか？",1],
+["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉の発言、昨日と今日で真逆じゃない。〈〉、ちゃんと説明しなさいよ",1],
+["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉は対抗が出てから急に結果を言い出したじゃない。偽物よ",1],
+["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉、質問されると質問で返してるわよね。〈〉はどう思うわけ？",1],
+["おい、〈〉！　最後まで白いって言ってただろうが！","ちょっと〈〉！　最後まで白いって言ってたでしょ！",1],
+["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずいわ。〈〉に揃えるわよ",1],
+["みんな、いい村だったよ。私たちのほうが上手だったけど","みんな、いい村だったわよ。……ま、私たちのほうが上手だったけど",1],
+["むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ","むしろ怪しいのは〈〉のほうでしょ。理由だって言えるわよ",1],
+["やられたー！　いや、今回は完全に〈〉の勝ちだ！","やられた……っ！　……ま、今回は〈〉の勝ちってことにしといてあげる",1],
+["人狼がこんなに堂々としてると思う？","人狼がこんなに堂々としてると思うわけ？",1],
+["人狼だったら、もっとうまく隠れるって","人狼だったら、もっとうまく隠れるわよ。……ばかじゃないの",1],
+["偽物が出たね。私が本物。〈〉――人狼でした","偽物が出たわね。本物は私よ。〈〉――人狼だったわ",1],
+["全員、今日の投票先を一人ずつ言って。最後にまとめる","全員、今日の投票先を一人ずつ言いなさい。最後にまとめるから",1],
+["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋を見れば分かるでしょ。〈〉の結果は不自然よ",1],
+["多数派に乗るのが一番危ないんだよ。今日は〈〉に入れる","多数派に乗るのが一番危ないのよ。今日は〈〉に入れるわ",1],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも、〈〉は村だと思ってる。だから〈〉の意見を軸にするわ",1],
+["待って、さっきと言ってること逆だ","ちょっと待ちなさいよ、さっきと言ってること逆じゃない",1],
+["待って、占い師は私。〈〉は人狼でした","待ちなさいよ、占い師は私。〈〉は人狼だったわ",1],
+["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄いのよ。〈〉はどう思うわけ？",1],
+["明日に情報を残すためにも、今日は〈〉を吊る","明日に情報を残すためにも、今日は〈〉を吊るわよ",1],
+["本物の占い師は私。〈〉は人狼でした","本物の占い師は私よ。〈〉は人狼だったわ",1],
+["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","村目線で言わせてもらうと、〈〉の動きが一番狼っぽいわ",1],
+["次は、真っ先にお前を吊るからな","次は、真っ先にあんたを吊るんだから",1],
+["直感って大事だよ。〈〉、目を逸らしたでしょ","直感って大事なのよ。〈〉、目を逸らしたでしょ",1],
+["真贋は判断できない。だから占い師から順に吊る","真贋は判断できないわ。だから占い師から順に吊るわよ",1],
+["私が村人であることは、明日の結果が証明する","私が村人だってことは、明日の結果が証明するわよ",1],
+["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇ってるわよ",1],
+["私は明日も生きて、〈〉の黒を証明する","私は明日も生き残って、〈〉の黒を証明してみせるわよ",1],
+["私を吊って、明日後悔しても知らないよ","私を吊ったら、明日後悔しても知らないんだから",1],
+["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言うわよ。平和な朝の前、〈〉は護衛先を探るようなこと言ってた。私の中じゃ、〈〉が一番黒いわ",1],
+["自信ないけど、みんなと同じで〈〉に","自信ないけど……みんなと同じで、〈〉に",1],
+["自分では決められないので、今日は流れに乗ります","自分じゃ決められないから……今日は流れに乗る。……べ、別に優柔不断とかじゃないから",1],
+["順番に意見を言おう。最後に決を採る","順番に意見を言いなさい。最後に決を採るわよ",1],
+["騙すの、正直ちょっとつらかった","騙すの……正直、ちょっとつらかったんだから",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言うわ。占い師は私。〈〉は人狼だった",1],
+["実は最初から、ずっと狼でした","実は最初から、ずっと狼だったのよ",1],
+["ごめん！　ゲームだから、ゲームだから！","わ、悪かったわよ！　ゲームだから、ゲームだから！",1],
+["占いCO。結果、〈〉は人狼でした","占いCO。結果、〈〉は人狼だったわ",1]]});
+HK.Load.toneData("tsun_n",{"F":[
+["〈〉、さっきから喋らなさすぎじゃない？","〈〉、さっきから喋らなさすぎだろ",1],
+["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉は今日、ずっと口数が少ない。〈〉、説明しろ",1],
+["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉は今日、ずっと口数が少ない。私の中では、〈〉が一番黒い",1],
+["〈〉が言うなら、たぶんそうなんだろうな……","〈〉が言うなら、たぶんそうなんだろう……",1],
+["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒なら全部説明がつく。私は〈〉に入れる",1],
+["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる",1],
+["〈〉の意見に賛成です。〈〉でいいと思う","〈〉の意見に賛成だ。〈〉でいいと思う",1],
+["〈〉の推理、穴だらけだよ。指摘しようか？","〈〉の推理は穴だらけだ。指摘してやろうか",1],
+["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉の発言、昨日と今日で逆だ。〈〉、説明しろ",1],
+["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉は対抗が出てから急に結果を言い出した。偽物だ",1],
+["〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい。","〈〉は質問されると、質問で返してる。〈〉の意見を聞きたい",1],
+["おい、〈〉！　最後まで白いって言ってただろうが！","おい、〈〉！　最後まで白いって言ってただろ！",1],
+["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずい。〈〉に揃えるぞ",1],
+["ほら見なさい！　村人だって言ったのに！","ほら見ろ！　村人だって言っただろ！",1],
+["みんな、いい村だったよ。私たちのほうが上手だったけど","みんな、いい村だった。私たちのほうが上手だったけどな",1],
+["むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ","むしろ怪しいのは〈〉のほうだ。理由も言える",1],
+["やられたー！　いや、今回は完全に〈〉の勝ちだ！","やられた！　今回は完全に〈〉の勝ちだ",1],
+["人狼がこんなに堂々としてると思う？","人狼がこんなに堂々としてると思うか？",1],
+["人狼だったら、もっとうまく隠れるって","人狼だったら、もっとうまく隠れる",1],
+["偽物が出たね。私が本物。〈〉――人狼でした","偽物が出たな。本物は私だ。〈〉――人狼だった",1],
+["全員、今日の投票先を一人ずつ言って。最後にまとめる","全員、今日の投票先を一人ずつ言え。最後にまとめる",1],
+["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋を見れば分かる。〈〉の結果は不自然だ",1],
+["多数派に乗るのが一番危ないんだよ。今日は〈〉に入れる","多数派に乗るのが一番危ない。今日は〈〉に入れる",1],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思う。だから〈〉の意見を軸にする",1],
+["待って、さっきと言ってること逆だ","待て、さっきと言ってることが逆だ",1],
+["待って、占い師は私。〈〉は人狼でした","待て、占い師は私だ。〈〉は人狼だった",1],
+["整理させて。〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。〈〉の意見を聞きたい。","整理させてくれ。〈〉は対抗が出た瞬間、即決した。根拠が薄い。〈〉の意見を聞きたい",1],
+["明日に情報を残すためにも、今日は〈〉を吊る","明日に情報を残すためにも、今日は〈〉を吊る",1],
+["本物の占い師は私。〈〉は人狼でした","本物の占い師は私だ。〈〉は人狼だった",1],
+["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","村目線で言わせてもらうと、〈〉の動きが一番狼っぽい",1],
+["次は、真っ先にお前を吊るからな","次は、真っ先にお前を吊る",1],
+["直感って大事だよ。〈〉、目を逸らしたでしょ","直感は大事だ。〈〉、目を逸らしただろ",1],
+["真贋は判断できない。だから占い師から順に吊る","真贋は判断できない。だから占い師から順に吊る",1],
+["私が村人であることは、明日の結果が証明する","私が村人であることは、明日の結果が証明する",1],
+["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇ってる",1],
+["私は明日も生きて、〈〉の黒を証明する","私は明日も生きて、〈〉の黒を証明する",1],
+["私を吊って、明日後悔しても知らないよ","私を吊れば、明日後悔するぞ",1],
+["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言う。平和な朝の前、〈〉は護衛先を探るようなことを言ってた。私の中では、〈〉が一番黒い",1],
+["自信ないけど、みんなと同じで〈〉に","自信はないが、みんなと同じで〈〉に",1],
+["自分では決められないので、今日は流れに乗ります","自分では決められない。今日は流れに乗る",1],
+["順番に意見を言おう。最後に決を採る","順番に意見を言え。最後に決を採る",1],
+["騙すの、正直ちょっとつらかった","騙すのは、正直少しつらかった",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったが、言う。占い師。〈〉は人狼だった",1]]});
+HK.Load.toneData("usan",{"F":[
+["いいよ、私を吊っても。でも次は〈〉を吊ってね","いいよ、私を吊っても。でも次は〈〉を吊ってほしいねえ"],
+["いやあ、騙された騙された","いやあ、すっかり騙されたねえ"],
+["おい、〈〉！　最後まで白いって言ってただろうが！","おい、〈〉！　最後まで白いって言ってたじゃないか！"],
+["感じ悪いな。それ、狼ムーブじゃない？","感じ悪いねえ。それ、狼ムーブなんじゃない？"],
+["言いにくいけど、言うね。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。俺は〈〉が怪しいと思う。","言いにくいけど、言うね。〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。私は〈〉が怪しいと思うよ。"],
+["〈〉、今日はずっと口数が少ない。〈〉、説明してほしい。","〈〉、今日はずっと口数が少ないねえ。〈〉、説明してもらえるかい？",1],
+["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉、今日はずっと口数が少ないねえ。私の中じゃ、〈〉が一番黒いよ",1],
+["〈〉が言うなら、たぶんそうなんだろうな……","〈〉が言うなら、たぶんそうなんだろうねえ……",1],
+["〈〉が黒なら全部説明がつく。私は〈〉に入れる","〈〉が黒なら全部説明がつくねえ。私は〈〉に入れるよ",1],
+["〈〉って、狼のときもこんな感じだったよね？","〈〉って、狼のときもこんな感じだったよねえ？",1],
+["〈〉と〈〉、お互いに一度も疑ってない。〈〉が白なら、それはそれで情報になる。","〈〉と〈〉、お互い一度も疑ってないねえ。〈〉が白なら、それはそれで情報になるさ",1],
+["〈〉の意見に賛成です。〈〉でいいと思う","〈〉の意見に賛成だねえ。〈〉でいいと思うよ",1],
+["〈〉の推理、穴だらけだよ。指摘しようか？","〈〉の推理、穴だらけだねえ。ひとつずつ指摘してあげようか",1],
+["〈〉の発言、昨日と今日で言ってることが逆になってる。〈〉、説明してほしい。","〈〉の発言、昨日と今日で逆になってるねえ。〈〉、説明してもらえるかい？",1],
+["〈〉は対抗が出てから急に結果を言い出した。偽物だ","〈〉は対抗が出てから急に結果を言い出したねえ。偽物だよ",1],
+["うーん……疑われるのは仕方ないけど、違うんだ","うーん……疑われるのは仕方ないけどねえ、違うんだよ",1],
+["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずいねえ。〈〉に揃えようじゃないの",1],
+["ごめん！　ゲームだから、ゲームだから！","悪いねえ、ゲームだから、ゲームだからさ",1],
+["みんな、いい村だったよ。私たちのほうが上手だったけど","みんな、いい村だったねえ。……私たちのほうが、ちょいと上手だったけどさ",1],
+["むしろ怪しいのは〈〉のほうだと思う。理由も言えるよ","むしろ怪しいのは〈〉のほうだと思うけどねえ。理由も言えるよ",1],
+["やられたー！　いや、今回は完全に〈〉の勝ちだ！","やられたねえ。今回は完全に〈〉の勝ちだよ",1],
+["人狼がこんなに堂々としてると思う？","人狼がこんなに堂々としてると思うかい？",1],
+["人狼だったら、もっとうまく隠れるって","人狼だったら、もっとうまく隠れるさ",1],
+["偽物が出たね。私が本物。〈〉――人狼でした","偽物が出たねえ。本物は私さ。〈〉――人狼だったよ",1],
+["全員、今日の投票先を一人ずつ言って。最後にまとめる","全員、今日の投票先を一人ずつ言っておくれ。最後にまとめるからさ",1],
+["占い結果の筋を見れば分かる。〈〉の結果は不自然だ","占い結果の筋を見れば分かるよねえ。〈〉の結果は不自然だよ",1],
+["多数派に乗るのが一番危ないんだよ。今日は〈〉に入れる","多数派に乗るのが一番危ないんだよねえ。今日は〈〉に入れるよ",1],
+["大丈夫、怒ってないよ。でも、村人なんだ","大丈夫、怒っちゃいないよ。でもねえ、村人なんだよ",1],
+["少なくとも〈〉は村だと思ってる。だから〈〉の意見を軸にする","少なくとも〈〉は村だと思ってるよ。だから〈〉の意見を軸にしようかねえ",1],
+["待って、さっきと言ってること逆だ","おや、待っておくれ。さっきと言ってること、逆じゃないかい",1],
+["待って、占い師は私。〈〉は人狼でした","おっと、待っておくれ。占い師は私さ。〈〉は人狼だったよ",1],
+["明日に情報を残すためにも、今日は〈〉を吊る","明日に情報を残すためにも、今日は〈〉を吊るとしようか",1],
+["本物の占い師は私。〈〉は人狼でした","本物の占い師は私さ。〈〉は人狼だったよ",1],
+["村目線で言わせてもらうと、〈〉の動きが一番狼っぽい","村目線で言わせてもらうとねえ、〈〉の動きが一番狼っぽいよ",1],
+["次は、真っ先にお前を吊るからな","次は、真っ先にあんたを吊るとしようかねえ",1],
+["直感って大事だよ。〈〉、目を逸らしたでしょ","直感ってのは大事でねえ。〈〉、目を逸らしたろう？",1],
+["真贋は判断できない。だから占い師から順に吊る","真贋は判断できないねえ。だから、占い師から順に吊ろうか",1],
+["私が村人であることは、明日の結果が証明する","私が村人だってことは、明日の結果が証明してくれるさ",1],
+["私が狼なら、今ここで〈〉を庇ってる","私が狼なら、今ここで〈〉を庇ってるさ",1],
+["私は明日も生きて、〈〉の黒を証明する","私は明日も生き延びて、〈〉の黒を証明してみせるさ",1],
+["私を吊って、明日後悔しても知らないよ","私を吊って、明日後悔しても知らないよお？",1],
+["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言うとねえ、平和な朝の前、〈〉は護衛先を探るようなことを言ってたのさ。私の中じゃ、〈〉が一番黒いよ",1],
+["自信ないけど、みんなと同じで〈〉に","自信はないけどねえ、みんなと同じで〈〉にしとくよ",1],
+["自分では決められないので、今日は流れに乗ります","自分じゃ決められないからねえ。今日は流れに乗るとするよ",1],
+["誰も責めないよ。あとはよろしくね","誰も責めやしないよ。あとはよろしく頼むよ",1],
+["順番に意見を言おう。最後に決を採る","順番に意見を言っていこうか。最後に決を採るよ",1],
+["騙すの、正直ちょっとつらかった","騙すのは、正直ちょいとつらかったねえ",1],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼でした","黙ってるつもりだったけど、言うとしようかねえ。占い師さ。〈〉は人狼だったよ",1],
+["実は最初から、ずっと狼でした","実は最初から、ずっと狼だったのさ",1],
+["……〈〉さんの言う通りだと思います","……〈〉さんの言う通りだと思うねえ",1],
+["霊媒師です。昨日処刑された〈〉は――人狼でした","霊媒師さ。昨日処刑された〈〉は――人狼だったよ",1],
+["反対する理由がないので、〈〉で","反対する理由もないしねえ、〈〉で",1],
+["はい！　〈〉が人狼だと思います！","はいはい、〈〉が人狼だと思うねえ",1]]});
+HK.Load.toneData("yankee",{"F":[
+["〈〉って、狼のときもこんな感じだったよね？","〈〉って、狼のときもこんな感じだったよな？"],
+["いいよ、吊っても。でも村人だからね、覚えといて","いいよ、吊っても。でも村人だからな、覚えとけよ"],
+["いいよ、私を吊っても。でも次は〈〉を吊ってね","いいよ、私を吊っても。でも次は〈〉を吊ってくれよ"],
+["出るね。占い師。〈〉――人狼ではありませんでした","出るぞ。占い師。〈〉――人狼じゃなかった"],
+["反対する理由がないので、〈〉で","反対する理由もねえし、〈〉で"],
+["待って、占い師は私。〈〉は人狼でした","待て、占い師は私。〈〉は人狼だった"],
+["理由はないけど、〈〉だけは信用できない気がする","理由はねえけど、〈〉だけは信用できねえ気がする"],
+["私が村人であることは、明日の結果が証明する","私が村人だってことは、明日の結果が証明してくれる"],
+["黙ってるつもりだったけど、言う。占い師。〈〉は人狼ではありませんでした","黙ってるつもりだったけどよ、言うわ。占い師だ。〈〉は人狼じゃなかった",1],
+["本物の占い師は私。〈〉は人狼でした","本物の占い師は私だ。〈〉は人狼だった",1],
+["大丈夫、怒ってないよ。でも、村人なんだ","大丈夫、怒ってねえよ。けど、村人なんだよ",1],
+["なんでそんなに焦ってるの","なんでそんなに焦ってんだよ",1],
+["私を信じて。後悔はさせない","私を信じろ。後悔はさせねえ",1],
+["な、なんで私なのよ！　ちゃんと見てたの？","な、なんで私が疑われんだよ！　ちゃんと見てたのか？",1],
+["うそでしょ、私!?　ないって！　信じて！","マジかよ、私!?　ねえって！　信じろって！",1],
+["〈〉、正直に言いなよ。狼でしょ？","〈〉、正直に言えよ。狼だろ？",1],
+["私は村人。断言する","私は村人だ。断言する",1],
+["見事だった。認めよう","見事だった。認めてやるよ",1],
+["私の発言、全部見返してみて","私の発言、全部見返してみろよ",1],
+["〈〉吊ろう！　外れたら謝る！","〈〉吊るぞ！　外れたら謝っから！",1],
+["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉、今日はずっと口数が少ねえ。私の中じゃ、〈〉が一番黒い。",1],
+["迷ってる余裕はない。占い師を順に処理していこう","迷ってる余裕はねえ。占い師を順に処理してくぞ",1],
+["時間がない。今日は〈〉に入れよう","時間がねえ。今日は〈〉に入れんぞ",1],
+["え？　あ、うん、そう、そうだよね","え？　あ、おう、そう、そうだよな",1],
+["むしろ怪しいのは〈〉のほうだと思う。理由も言える","むしろ怪しいのは〈〉のほうだろ。理由も言えるぜ",1],
+["〈〉、さっきから喋らなさすぎではないか？","〈〉、さっきから黙りすぎじゃねえか？",1],
+["〈〉は違うと思う。むしろ〈〉が怪しい","〈〉は違えと思う。むしろ〈〉が怪しいだろ",1],
+["〈〉が噛まれるのは分かっていた……あ、いや、予想していたという意味だ","〈〉が噛まれんのは分かってたし……あ、いや、予想してたって意味だよ",1],
+["自分では決められないので、今日は流れに乗る","自分じゃ決めらんねえから、今日は流れに乗るわ",1]]});
 HK.Load.toneData("sondai",{"F":[
 ["ちょっといい？〈〉の投票先、毎回いちばん安全なところを選んでる気がする。〈〉が白なら、それはそれで情報になる。","少しいいかね。〈〉の投票先は、毎回いちばん安全なところばかりだ。〈〉が白だというなら、それもまた情報というものだよ。",1],
 ["今のうちに言っておく。〈〉、〈〉が疑われたときだけ、やけに庇うよね。〈〉が白なら、それはそれで情報になる。","今のうちに言っておこうか。〈〉は、〈〉が疑われたときだけ、妙に庇い立てする。〈〉が白なら、それもまた情報というものだがね。",1],
@@ -2832,14 +2784,8 @@ HK.Load.toneData("sondai",{"F":[
 ["ひとつ引っかかってる。〈〉の投票先、毎回いちばん安全なところを選んでる気がする。〈〉の意見を聞きたい。","ひとつ気になることがあるのだがね。〈〉の投票先は、毎回いちばん安全なところばかりだ。〈〉の意見を聞かせたまえ。",1],
 ["信じてよかった……","信じてよかった……",1],
 ["待って、占い師は私。〈〉は人狼でした","待ちたまえ、占い師は私だ。〈〉は人狼だったよ",1],
-["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言おう。平和な朝の前、〈〉は護衛先を探るようなことを言っていた。私の見立てでは、〈〉が一番黒い。",1],
-["ちょっといい？〈〉の発言、昨日と今日で言ってることが逆になってる。俺の中では、〈〉が一番黒い。","少しいいかね。〈〉の発言、昨日と今日で逆になっている。私の見立てでは、〈〉が一番黒いのだよ。",1],
-["〈〉、今日はずっと口数が少ない。俺の中では、〈〉が一番黒い。","〈〉、今日はずっと口数が少ないではないか。私の見立てでは、〈〉が一番黒いのだよ。",1],
-["ここで割れるのが一番まずい。〈〉に揃えよう","ここで割れるのが一番まずいのだよ。〈〉に揃えたまえ",1],
-["……なんか、〈〉の方が気になる","……どうも、〈〉の方が気になるね",1],
-["〈〉、今日はずっと口数が少ない。〈〉の意見を聞きたい。","〈〉は、今日はずっと口数が少ないね。〈〉の意見を聞かせたまえ。",1],
-["〈〉は対抗が出た瞬間、どっちを信じるか即決した。根拠が薄い。俺の中では、〈〉が一番黒い。","〈〉は対抗が出た瞬間、どちらを信じるか即決した。根拠が薄い。私の見立てでは、〈〉が一番黒いのだよ。",1],
-["霊媒結果。〈〉――人狼でした","霊媒の結果だ。〈〉――人狼であった",1]]});
+["霊媒結果。〈〉――人狼でした","霊媒の結果だ。〈〉――人狼であった",1],
+["結論から言うと、平和な朝の前、〈〉は護衛先を探るようなことを言ってた。俺の中では、〈〉が一番黒い。","結論から言おう。平和な朝の前、〈〉は護衛先を探るようなことを言っていた。私の見立てでは、〈〉が一番黒い。",1]]});
 HK.Load.toneData("god",{"F":[
 ["むしろ怪しいのは〈〉のほうだと思う。理由も言える","むしろ怪しいのは〈〉のほうである。理由も示せるぞ",1],
 ["〈〉、さっきから喋らなさすぎではないか？","〈〉よ、先ほどから口数が少なすぎるのではないか？",1],
@@ -2857,4 +2803,4 @@ HK.Load.toneData("keigo_flat",{"F":[
 HK.Load.toneData("ronkyaku",{"F":[
 ["むしろ怪しいのは〈〉のほうだと思う。理由も言える","むしろ怪しいのは〈〉のほうだ。理由も示せるのだよ",1]]});
 });
-HK.Load.done('scen-jinro', '2ce03974a3', 1);
+HK.Load.done('scen-jinro', '57b06717ff', 1);

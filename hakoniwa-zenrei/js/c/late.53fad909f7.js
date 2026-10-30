@@ -416,7 +416,7 @@ return v.replace(/〈〉/g,function(){var n=names[Math.min(i,names.length-1)];i+
 });
 ;
 /* ==== js/tone-hero.js ==== */
-HK.Load.def(361,'js/tone-hero.js',function(){
+HK.Load.def(362,'js/tone-hero.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -613,7 +613,7 @@ HK.toneFinish('hero',hero);
 });
 ;
 /* ==== js/tone-genki.js ==== */
-HK.Load.def(362,'js/tone-genki.js',function(){
+HK.Load.def(363,'js/tone-genki.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -796,7 +796,7 @@ HK.toneFinish('genki',conv);
 });
 ;
 /* ==== js/tie-new-story.js ==== */
-HK.Load.def(363,'js/tie-new-story.js',function(){
+HK.Load.def(364,'js/tie-new-story.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -1055,6 +1055,17 @@ function pickTies(input,P){
 var all=(input.ties||[]).filter(function(t){return t&&P[t.a]&&P[t.b]&&t.a!==t.b;});
 return{all:all,use:all.filter(function(t){return USE.test(t.type)&&t.noev!=='off'&&holders(t,P).length>0;})};
 }
+var JR_DAY1= /投票|票を|票先|票が|矛盾|昨日|初日|吊ら|吊れ|処刑/;
+function jrDay1(S,label,TX){
+if(!TX|| !(S.scen&&S.scen.id==='jinro'&& /^1日目/.test(label||'')))return TX;
+var o={};
+Object.keys(TX).forEach(function(k){
+if(typeof TX[k]!=='string'||k==='cNPC'){o[k]=TX[k];return;}
+var a=TX[k].split('|').filter(function(t){return!JR_DAY1.test(t);});
+if(a.length)o[k]=a.join('|');
+});
+return o;
+}
 var BOX=TN.BOX={};
 if(ST&&ST.state&&ST.step){
 var st0=ST.state;
@@ -1067,7 +1078,7 @@ return S;
 var step0=ST.step;
 ST.step=function(S,label){
 var o=step0.apply(this,arguments);
-var TX=BOX[S.scen&&S.scen.id];
+var TX=jrDay1(S,label,BOX[S.scen&&S.scen.id]);
 if(TX&&S.tnTies&&S.tnTies.length&& !SKIP.test(label||'')&&(S.tnN||0)<6&&S.rng()<0.4){
 var live=S.P.filter(here);
 var c=choose(S,S.P,live,TX,S.rng);
@@ -1308,7 +1319,7 @@ cm2:'{a}は、{b}が仕事で無理をしていないか気づかった。「仲
 });
 ;
 /* ==== js/tips-scen-a.js ==== */
-HK.Load.def(364,'js/tips-scen-a.js',function(){
+HK.Load.def(365,'js/tips-scen-a.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,T=HK.TIPS_SCEN=HK.TIPS_SCEN||{};
@@ -1598,7 +1609,7 @@ T.ship={
 });
 ;
 /* ==== js/tips-scen-b.js ==== */
-HK.Load.def(365,'js/tips-scen-b.js',function(){
+HK.Load.def(366,'js/tips-scen-b.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,T=HK.TIPS_SCEN=HK.TIPS_SCEN||{};
@@ -1938,7 +1949,7 @@ T.jinro={
 });
 ;
 /* ==== js/tips-scen-c.js ==== */
-HK.Load.def(366,'js/tips-scen-c.js',function(){
+HK.Load.def(367,'js/tips-scen-c.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,T=HK.TIPS_SCEN=HK.TIPS_SCEN||{};
@@ -1994,7 +2005,7 @@ T.massage={
 });
 ;
 /* ==== js/tips-scen-d.js ==== */
-HK.Load.def(367,'js/tips-scen-d.js',function(){
+HK.Load.def(368,'js/tips-scen-d.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,T=HK.TIPS_SCEN=HK.TIPS_SCEN||{};
@@ -2251,7 +2262,7 @@ T.trial={
 });
 ;
 /* ==== js/export-out.js ==== */
-HK.Load.def(368,'js/export-out.js',function(){
+HK.Load.def(369,'js/export-out.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2681,7 +2692,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/ui-perzoom.js ==== */
-HK.Load.def(369,'js/ui-perzoom.js',function(){
+HK.Load.def(370,'js/ui-perzoom.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2865,7 +2876,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/event-catalog-ui.js ==== */
-HK.Load.def(370,'js/event-catalog-ui.js',function(){
+HK.Load.def(371,'js/event-catalog-ui.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -3071,4 +3082,4 @@ open(b.getAttribute('data-evcat'),b);
 HK.EvCatalog={open:open,close:close,btn:btn};
 })();
 });
-HK.Load.done('late', '58e417e237', 1);
+HK.Load.done('late', '53fad909f7', 1);

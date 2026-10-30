@@ -416,7 +416,7 @@ return v.replace(/〈〉/g,function(){var n=names[Math.min(i,names.length-1)];i+
 });
 ;
 /* ==== js/tone-hero.js ==== */
-HK.Load.def(550,'js/tone-hero.js',function(){
+HK.Load.def(552,'js/tone-hero.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -613,7 +613,7 @@ HK.toneFinish('hero',hero);
 });
 ;
 /* ==== js/tone-genki.js ==== */
-HK.Load.def(551,'js/tone-genki.js',function(){
+HK.Load.def(553,'js/tone-genki.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,V=HK&&HK.Voice;
@@ -796,7 +796,7 @@ HK.toneFinish('genki',conv);
 });
 ;
 /* ==== js/story-lewd.js ==== */
-HK.Load.def(552,'js/story-lewd.js',function(){
+HK.Load.def(554,'js/story-lewd.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,X=HK.Lewd,E=HK.Ero,TE=HK.ThickEro,R=HK.R18M;
@@ -1021,7 +1021,7 @@ return sayEv.apply(this,arguments);
 });
 ;
 /* ==== js/tie-new-story.js ==== */
-HK.Load.def(553,'js/tie-new-story.js',function(){
+HK.Load.def(555,'js/tie-new-story.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -1280,6 +1280,17 @@ function pickTies(input,P){
 var all=(input.ties||[]).filter(function(t){return t&&P[t.a]&&P[t.b]&&t.a!==t.b;});
 return{all:all,use:all.filter(function(t){return USE.test(t.type)&&t.noev!=='off'&&holders(t,P).length>0;})};
 }
+var JR_DAY1= /投票|票を|票先|票が|矛盾|昨日|初日|吊ら|吊れ|処刑/;
+function jrDay1(S,label,TX){
+if(!TX|| !(S.scen&&S.scen.id==='jinro'&& /^1日目/.test(label||'')))return TX;
+var o={};
+Object.keys(TX).forEach(function(k){
+if(typeof TX[k]!=='string'||k==='cNPC'){o[k]=TX[k];return;}
+var a=TX[k].split('|').filter(function(t){return!JR_DAY1.test(t);});
+if(a.length)o[k]=a.join('|');
+});
+return o;
+}
 var BOX=TN.BOX={};
 if(ST&&ST.state&&ST.step){
 var st0=ST.state;
@@ -1292,7 +1303,7 @@ return S;
 var step0=ST.step;
 ST.step=function(S,label){
 var o=step0.apply(this,arguments);
-var TX=BOX[S.scen&&S.scen.id];
+var TX=jrDay1(S,label,BOX[S.scen&&S.scen.id]);
 if(TX&&S.tnTies&&S.tnTies.length&& !SKIP.test(label||'')&&(S.tnN||0)<6&&S.rng()<0.4){
 var live=S.P.filter(here);
 var c=choose(S,S.P,live,TX,S.rng);
@@ -1533,7 +1544,7 @@ cm2:'{a}は、{b}が仕事で無理をしていないか気づかった。「仲
 });
 ;
 /* ==== js/tips-scen-a.js ==== */
-HK.Load.def(554,'js/tips-scen-a.js',function(){
+HK.Load.def(556,'js/tips-scen-a.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,T=HK.TIPS_SCEN=HK.TIPS_SCEN||{};
@@ -1802,7 +1813,7 @@ safe:[
 });
 ;
 /* ==== js/tips-scen-b.js ==== */
-HK.Load.def(555,'js/tips-scen-b.js',function(){
+HK.Load.def(557,'js/tips-scen-b.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,T=HK.TIPS_SCEN=HK.TIPS_SCEN||{};
@@ -2100,7 +2111,7 @@ safe:[]
 });
 ;
 /* ==== js/tips-scen-c.js ==== */
-HK.Load.def(556,'js/tips-scen-c.js',function(){
+HK.Load.def(558,'js/tips-scen-c.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,T=HK.TIPS_SCEN=HK.TIPS_SCEN||{};
@@ -2299,7 +2310,7 @@ safe:[]
 });
 ;
 /* ==== js/tips-scen-d.js ==== */
-HK.Load.def(557,'js/tips-scen-d.js',function(){
+HK.Load.def(559,'js/tips-scen-d.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,T=HK.TIPS_SCEN=HK.TIPS_SCEN||{};
@@ -2546,7 +2557,7 @@ sections:[
 });
 ;
 /* ==== js/attr-r18.js ==== */
-HK.Load.def(558,'js/attr-r18.js',function(){
+HK.Load.def(560,'js/attr-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -2845,7 +2856,7 @@ A.netFill=netFill;
 });
 ;
 /* ==== js/attr-race-r18.js ==== */
-HK.Load.def(559,'js/attr-race-r18.js',function(){
+HK.Load.def(561,'js/attr-race-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,A=HK&&HK.Attr;
@@ -3377,7 +3388,7 @@ return s;
 });
 ;
 /* ==== js/export-out.js ==== */
-HK.Load.def(560,'js/export-out.js',function(){
+HK.Load.def(562,'js/export-out.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -3807,7 +3818,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/ui-perzoom.js ==== */
-HK.Load.def(561,'js/ui-perzoom.js',function(){
+HK.Load.def(563,'js/ui-perzoom.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -3991,7 +4002,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 });
 ;
 /* ==== js/event-catalog-ui.js ==== */
-HK.Load.def(562,'js/event-catalog-ui.js',function(){
+HK.Load.def(564,'js/event-catalog-ui.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -4200,4 +4211,4 @@ open(b.getAttribute('data-evcat'),b);
 HK.EvCatalog={open:open,close:close,btn:btn};
 })();
 });
-HK.Load.done('late', '3472a9c0a8', 1);
+HK.Load.done('late', 'a3b33eb327', 1);
