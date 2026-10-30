@@ -195,7 +195,12 @@
 
     var parts = q.split(/([。！？!?…‥\n]+)/), bright = false, bang = false;
     parts.forEach(function (seg, i) { if (!(i % 2) && (UP.test(seg) || /(?<!あり)ませんよ$/.test(seg))) bright = true; });
-    if (!bright) return q;
+    /* 2026-10-30 第3回（TA）：明るい目印のない台詞も、問いは「？」、敬語の言い切り（打ち消し以外）は最後の文を「！」で締める（「何がですか」「もう止まってます」が素の敬語のままだった） */
+    if (!bright) {
+      if (/(?:ですか|ますか|でしょうか|でしたっけ)$/.test(q)) return q + '？';
+      if (q.replace(/[、。\s　]/g, '').length <= 30 && /(?:です|ます|ました|でした|ましょう|ください|くださいね|ですね|ますね|ですよ|ますよ)。?$/.test(q) && !/(?:ません|ないです|ませんし)。?$/.test(q)) return q.replace(/。?$/, '！');
+      return q;
+    }
     for (var i = 0; i < parts.length; i += 2) {
       var seg = parts[i], punct = parts[i + 1] || '';
       if (!seg || /[？?]/.test(punct)) continue;
