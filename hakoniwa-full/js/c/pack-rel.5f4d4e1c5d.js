@@ -7891,6 +7891,7 @@ return e;
 });
 var ST=HK.Story;
 function take(S,b){return function(){b.taken=true;b.takenAt=S.h;};}
+function jrLog(S,q,b,a,v){q.susLog=q.susLog||{};(q.susLog[b.i]=q.susLog[b.i]||[]).push({k:'sold',by:a,v:v,d:S.jrDay||0});}
 var SA={
 jashin:{
 sell:function(S,a,b){return b.curse==null?{t:b.name+'は村人に連れ去られた（生贄の候補）',gone:true,go:take(S,b)}:null;},
@@ -7900,9 +7901,9 @@ return{t:gone?b.name+'は逃げ遅れ、村人に連れ去られた':'',gone:gon
 }
 },
 jinro:{
-ok:function(S){return/昼/.test(S.label||'');},
-sell:function(S,a,b){return{t:b.name+'への疑いが一気に集まった',go:function(){S.P.forEach(function(q){if(q!==b&&q.alive&&q.role!=='wolf'&&q.sus)q.sus[b.i]=clamp((q.sus[b.i]==null?50:q.sus[b.i])+22,0,100);});}};},
-abandon:function(S,a,b){return{t:'',go:function(){if(a.sus)a.sus[b.i]=100;S.P.forEach(function(q){if(q!==b&&q!==a&&q.alive&&q.role!=='wolf'&&q.sus)q.sus[b.i]=clamp((q.sus[b.i]==null?50:q.sus[b.i])+8,0,100);});}};}
+ok:function(S){return/昼/.test(S.label||'')&& !/^1日目/.test(S.label||'');},
+sell:function(S,a,b){return{t:b.name+'への疑いが一気に集まった',go:function(){S.P.forEach(function(q){if(q!==b&&q.alive&&q.role!=='wolf'&&q.sus){q.sus[b.i]=clamp((q.sus[b.i]==null?50:q.sus[b.i])+22,0,100);if(q!==a)jrLog(S,q,b,a,22);}});}};},
+abandon:function(S,a,b){return{t:'',go:function(){if(a.sus)a.sus[b.i]=100;S.P.forEach(function(q){if(q!==b&&q!==a&&q.alive&&q.role!=='wolf'&&q.sus){q.sus[b.i]=clamp((q.sus[b.i]==null?50:q.sus[b.i])+8,0,100);jrLog(S,q,b,a,8);}});}};}
 },
 yakata:{
 sell:function(S,a,b){return{t:b.name+'への疑いが強まった',go:function(){b.m.sus=clamp(b.m.sus+25,0,100);}};},
@@ -11636,4 +11637,4 @@ RB0.EXTRA=RB0.EXTRA||[];
 HK.addTo(RB0.EXTRA,storyHook);
 })();
 });
-HK.Load.done('pack-rel', 'bfa997b00f', 1);
+HK.Load.done('pack-rel', '5f4d4e1c5d', 1);

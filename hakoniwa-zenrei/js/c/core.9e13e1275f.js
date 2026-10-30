@@ -4433,7 +4433,8 @@ var L=V.marksList(marks);
 if(!L.length|| !q)return q;
 var k=0;
 function pick(){var h=0,t=q+'#'+(k++);for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))>>>0;return L[h%L.length];}
-var out=q.replace(/([^。！!？?…‥]*?)([。！!]+)(?![？?])/g,function(m,body,p){
+var out=q.replace(/([^。！!？?…‥]*?)([。！!]+)(?![？?])/g,function(m,body,p,at){
+if(/[！!]/.test(p)&& !/。/.test(p)&&(body? /[っッ]$/.test(body): /[…‥]$/.test(q.slice(0,at))))return body+pick();
 if(!body|| /[？?…‥ー〜～っッ♡]$/.test(body))return m;
 return body+pick();
 });
@@ -21474,7 +21475,7 @@ t:L('投票の時間、{a}の手は{b}の名前を書きかけて止まった。
 lie:{
 tag:'見抜く',why:'「自分なら嘘をつくときにこうする」で見抜く',w:1.6,mag:18,
 when:function(S,a,b){return isW(b)&& !isW(a);},
-fx:function(S,a,b){if(a.sus)a.sus[b.i]=clamp((a.sus[b.i]||50)+18,0,100);},
+fx:function(S,a,b){if(a.sus){a.sus[b.i]=clamp((a.sus[b.i]||50)+18,0,100);a.susLog=a.susLog||{};(a.susLog[b.i]=a.susLog[b.i]||[]).push({k:'same',by:null,v:18,d:S.jrDay||0});}},
 t:L('{b}は弁明のあいだに、ほんの一瞬だけ左の耳たぶに触れた。{a}は息を止めた。それは、自分が嘘をつくときの癖だった。{a}「……今の、嘘だよね｜……今のは、嘘だな｜……今のは、嘘ですね」'+
 '|{a}「自分が人狼なら、まずそこで話を逸らす。あなたも同じことをした｜＝｜自分が人狼なら、まずそこで話を逸らします。あなたも同じことをしました」――{a}の指摘に、{b}は珍しく言葉に詰まった。'+
 '|{a}は{b}の話を聞きながら、自分ならどこで嘘をつくかを考えていた。答えは、{b}がいま言ったところと、ぴったり重なっていた。')
@@ -31317,10 +31318,21 @@ S.rbTies=(input.ties||[]).filter(function(t){return(t.type==='sibbad'||t.type===
 S.rbUsed={};
 return S;
 };
+var JR_DAY1= /投票|票を|票先|票が|矛盾|昨日|初日|吊ら|吊れ|処刑/;
+function jrDay1(S,label,TX){
+if(!TX|| !(S.scen&&S.scen.id==='jinro'&& /^1日目/.test(label||'')))return TX;
+var o={};
+Object.keys(TX).forEach(function(k){
+if(typeof TX[k]!=='string'||k==='cNPC'){o[k]=TX[k];return;}
+var a=TX[k].split('|').filter(function(t){return!JR_DAY1.test(t);});
+if(a.length)o[k]=a.join('|');
+});
+return o;
+}
 var step0=ST.step;
 ST.step=function(S,label){
 var o=step0(S,label);
-var TX=STORY[S.scen&&S.scen.id];
+var TX=jrDay1(S,label,STORY[S.scen&&S.scen.id]);
 if(TX&&S.rbTies&&S.rbTies.length&& !SKIP.test(label||'')&&(S.rbN||0)<5&&S.rng()<0.42){
 var c=choose(S,S.P,S.rbTies,TX,S.rng);
 if(c)ST.say(S,make(S,c,TX));
@@ -31416,4 +31428,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '8af08eaecd', 1);
+HK.Load.done('core', '9e13e1275f', 1);
