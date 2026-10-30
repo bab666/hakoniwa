@@ -5447,7 +5447,7 @@ var free=[],picked=[];
 info.forEach(function(o,i){if(!o.fixed){free.push(i);if(pick[i])picked.push(i);}});
 var casualN=picked.length+info.filter(function(o){return o.casual;}).length,politeN=free.length-picked.length;
 if(politeN+casualN>=2&& !casualN){
-var best= -1;free.forEach(function(i){if(best<0||info[i].pc>=info[best].pc)best=i;});
+var best= -1;free.forEach(function(i){if(best<0||info[i].pc>info[best].pc)best=i;});
 if(best>=0)pick[best]=true;
 }else if(politeN+casualN>=2&& !politeN&&picked.length){
 var lg= -1;picked.forEach(function(i){if(lg<0||info[i].len>info[lg].len)lg=i;});
@@ -6282,7 +6282,7 @@ T.addBuiltin([
 '[効果]','短くする=はい','前に……=はい','感嘆符を落とす=はい',
 '',
 '[口調 mixed]','名前=敬語まじりのため口','ベース=P',
-'[文末]','大丈夫です=大丈夫ですって／大丈夫です／大丈夫','なります=なります／なりますって','できます=できます／できますって','ますから=ますから／ますって','ですから=ですから／ですって',
+'[文末]','大丈夫です=大丈夫ですって／大丈夫です／大丈夫','なります=なります／なりますって','できます=できます／できますって',
 '[規則]','短い文はため口=6','ため口を混ぜる=0.45',
 '[語彙]','それでは=じゃあ','ですけど=ですけど','お声=声','お口=口','お顔=顔','お体=体','おっしゃって=言って','おっしゃる=言う','おっしゃい=言い','いらっしゃいます=います','いらっしゃる=いる','いらっしゃい=い','いたします=します','いたしま=しま','よろしければ=よければ','よろしいですか=いいですか','よろしいでしょうか=いいですか','よろしいのに=いいのに','お使いください=使ってください','お会いできて=会えて','おつらければ=つらかったら','でございます=です','ご覧になって=見て','なさって=して','ご無理=無理','お休みになって=休んで',
 '',
@@ -31304,4 +31304,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', '8f7af7c26c', 1);
+HK.Load.done('core', '8fa61a2213', 1);
