@@ -821,7 +821,7 @@ aphro:'媚薬を飲み切る',sake:'酒を飲み干す',spicy:'激辛ラーメ�
 };
 HK.ROOM_KINDS=K;
 function isGlob(T){return!!T&&(T.type==='consume'||T.type==='kill'||T.type==='task');}
-function isPairT(T){return!!T&&(T.type==='act'||T.type==='word'||T.type==='hurt'||T.type==='trio');}
+function isPairT(T){return!!T&&(T.type==='act'||T.type==='word'||T.type==='hurt');}
 var ALT={water:'sake',gasballoon:'balloon'};
 function fixKind(k){return K[k]?k:ALT[k]&&K[ALT[k]]?ALT[k]:'h';}
 function nOf(k,v){return Math.max(1,+v||1)*(K[k].mul||1);}
@@ -844,17 +844,30 @@ if(r.k==='praise')return'相手のいいところ'+n+'個';
 return(NOUN_N[r.k]||T.noun)+(n>1?n+T.unit+(T.type==='word'?'ずつ':''):'');
 }
 HK.roomLabel=function(env){return HK.roomLabelOf(env,rulesOf(env));};
-HK.roomLabelOf=function(env,r){
+function onlyRules(r){return r.some(function(x){var T=K[x.k];return!!T&&(T.type==='act'||T.type==='word');})&& !r.some(function(x){return K[x.k]&&K[x.k].type==='hurt';});}
+HK.roomOnlyRules=onlyRules;
+HK.roomLabelOf=function(env,r,o){
 if(env.label&&String(env.label).trim())return String(env.label).trim();
 if(r[0].k==='one')return'一人しか出られない部屋';
+var tri=env.multi==='only'&& !(o&&o.two)&&onlyRules(r)?'三人で':'';
 var s=r.length<2?K[r[0].k].fin(r[0].n)
 :env.order==='seq'?K[r[0].k].mid(r[0].n).replace(/て$/,'た').replace(/で$/,'だ')+'あとに、'+K[r[1].k].fin(r[1].n)
 :nounN(r[0])+'と'+nounN(r[1])+'、両方を済ませないと';
-return s+(oneWith(env)?'出られない部屋（ただし、出られるのは一人だけ）':allOutEnv(env)?'出られない部屋（ただし、条件を満たした人と一緒に、ほかの全員も出られる）':'出られない部屋');
+return tri+s+(oneWith(env)?'出られない部屋（ただし、出られるのは一人だけ）':allOutEnv(env)?'出られない部屋（ただし、条件を満たした人と一緒に、ほかの全員も出られる）':'出られない部屋');
 };
 HK.roomOnlyOne=function(env){return rulesOf(env)[0].k==='one'||oneWith(env);};
 HK.roomAllOut=allOutEnv;
 HK.roomRules=rulesOf;
+var MIG_K='hug';
+MIG_K='h';
+HK.roomEnvMigrate=function(env,inPlace){
+if(!env||typeof env!=='object'||(env.cond!=='trio3'&&env.cond2!=='trio3'))return env;
+var e=inPlace?env:JSON.parse(JSON.stringify(env));
+if(e.cond==='trio3')e.cond=MIG_K;
+if(e.cond2==='trio3'||e.cond2===e.cond)e.cond2='none';
+e.multi='only';
+return e;
+};
 var options=Object.keys(KLABEL).map(function(k){return{v:k,label:KLABEL[k]};});
 function addKind(k,def,label){
 if(K[k])return;
@@ -889,7 +902,7 @@ var T=K[rule.k];
 if(T.type==='consume'||T.type==='task')return[(ctx.flags.consumed[rule.k]||0),0];
 if(T.type==='kill')return[killCount(ctx),0];
 var p=prog(ctx,a,b);
-if(T.type==='act'||T.type==='hurt'||T.type==='trio')return[p.act[rule.k]||0,0];
+if(T.type==='act'||T.type==='hurt')return[p.act[rule.k]||0,0];
 if(T.type==='word')return[p.said[rule.k+a.i]||0,p.said[rule.k+b.i]||0];
 return[0,0];
 }
@@ -929,6 +942,7 @@ return'扉の紙は、今の'+(FL_NOUN[rule.k]||K[rule.k].noun)+'を数えなか
 function seqFlush(ctx,r,a,b){if(seqOn(ctx)&&r===ctx.rules[1])effOf(ctx,r,a,b);}
 function bumpAct(ctx,r,a,b,inc,to,cap){
 var p=prog(ctx,a,b);
+if(trioOnly(ctx)&& !ctx.flags.trioIn){HK.roomTrioLeak=(HK.roomTrioLeak||0)+1;return true;}
 if(seqWait(ctx,r,a,b)){p.pre=p.pre||{};p.pre[r.k]=(p.pre[r.k]||0)+(to!=null?to:inc||1);return false;}
 seqFlush(ctx,r,a,b);
 var v=to!=null?to:(p.act[r.k]||0)+(inc||1);
@@ -973,7 +987,7 @@ var T=K[r.k],v0=effOf(ctx,r,a,b)||[0,0];
 var p={act:{},said:{}};p.act[r.k]=v0[0];p.said[r.k+a.i]=v0[0];p.said[r.k+b.i]=v0[1];
 if(seqOn(ctx)&&r===ctx.rules[1]&& !ruleDone(ctx,ctx.rules[0],a,b)){out.push('そのあと'+(T.type==='consume'?T.item+'を'+r.n+T.unit:T.type==='kill'?'誰かの命':T.noun+(r.n>1?'を'+r.n+T.unit:'')));return;}
 if(T.type==='task'){out.push(T.left?T.left(globLeft(ctx,r)):T.noun+'があと'+globLeft(ctx,r)+T.unit);return;}
-if(T.type==='hurt'||T.type==='trio'){out.push(T.leftP?T.leftP(r.n-(p.act[r.k]||0),r.n):T.noun);return;}
+if(T.type==='hurt'){out.push(T.leftP?T.leftP(r.n-(p.act[r.k]||0),r.n):T.noun);return;}
 if(T.type==='act')out.push(T.noun+(r.n>1?'があと'+(r.n-(p.act[r.k]||0))+T.unit:''));
 else if(T.type==='word'&&T.mode==='both'){
 var who=[a,b].filter(function(c){return(p.said[r.k+c.i]||0)<r.n;}).map(function(c){return c.name;});
@@ -999,6 +1013,8 @@ if(seqOn(ctx)&&r===ctx.rules[1]&& !ruleDone(ctx,ctx.rules[0],a,b))return'（'+pa
 return'（'+pairTag(ctx,a,b)+K[r.k].noun+' '+cnt+'/'+r.n+(inc>1?'・まとめて'+inc+K[r.k].unit:'')+'）';
 }
 function hasPairRule(ctx){return ctx.rules.some(function(r){return isPairT(K[r.k]);});}
+function trioOnly(ctx){return!!(ctx&&ctx.flags&&ctx.flags.trioOnly);}
+HK.roomTrioOnly=trioOnly;
 function allOut(ctx){return!ctx.flags.isOne&& !ctx.flags.oneCond&&ctx.env.allout==='on';}
 var DOOR_LINE='条件を満たしたので扉が開いた。';
 function doorOpen(ctx,d){(ctx.flags.doorQ=ctx.flags.doorQ||[]).push(d);}
@@ -1401,6 +1417,7 @@ return s;
 },
 longRun:function(env){return+env.hours>48;},
 setup:function(ctx){
+ctx.env=HK.roomEnvMigrate(ctx.env);
 ctx.place='白い部屋';
 ctx.rules=rulesOf(ctx.env);
 ctx.flags.prog={};ctx.flags.consumed={};ctx.flags.drank={};
@@ -1469,7 +1486,7 @@ ctx.say({kind:'event',cat:'escape',actors:[a,b],text:waitNote(ctx,r,a,b),why:'�
 function countFlavor(ctx){
 var from=ctx.flags.scan||0,L=ctx.log;
 ctx.flags.scan=L.length;
-if(ctx.flags.isOne)return;
+if(ctx.flags.isOne||trioOnly(ctx))return;
 for(var i=from;i<L.length;i++){
 var e=L[i],ac=e.actors||[];
 if(ac.length!==2|| !e.text|| /扉|\d+\/\d+）/.test(e.text))continue;
@@ -2074,7 +2091,7 @@ return{text:ctx.t(ctx.pick(['{a}は長いため息をついた。「……わか
 });
 HK.SCENARIOS.whiteroom=scen;
 if(HK.SCEN_ORDER.indexOf('whiteroom')<0)HK.SCEN_ORDER.splice(1,0,'whiteroom');
-HK.RoomAPI={K:K,EV:EV,scen:scen,prog:prog,ruleDone:ruleDone,seqWait:seqWait,seqFlush:seqFlush,bumpAct:bumpAct,waitNote:waitNote,pairDone:pairDone,leftText:leftText,eager:eager,willing:willing,desperate:desperate,tieWall:tieWall,names:names,hasPairRule:hasPairRule,finishExit:finishExit,exitPair:exitPair,doorOpen:doorOpen,doorFlush:doorFlush,DOOR_LINE:DOOR_LINE,
+HK.RoomAPI={K:K,EV:EV,scen:scen,prog:prog,ruleDone:ruleDone,seqWait:seqWait,seqFlush:seqFlush,bumpAct:bumpAct,waitNote:waitNote,pairDone:pairDone,leftText:leftText,eager:eager,willing:willing,desperate:desperate,tieWall:tieWall,names:names,hasPairRule:hasPairRule,trioOnly:trioOnly,finishExit:finishExit,exitPair:exitPair,doorOpen:doorOpen,doorFlush:doorFlush,DOOR_LINE:DOOR_LINE,
 KLABEL:KLABEL,ITEM:ITEM,ACT_TEXT:ACT_TEXT,addKind:addKind,noteN:noteN,isGlob:isGlob,globLeft:globLeft,globDone:globDone,checkExit:checkExit,exitAll:exitAll,oneDoor:oneDoor,allOut:allOut,bringAlong:bringAlong,lastOf:lastOf,okSex:okSex,exclOther:exclOther,cntTag:cntTag};
 })();
 });
@@ -2467,10 +2484,14 @@ function kn(n){return['','一人','二人','三人','四人','五人','六人'][
 scen.env.splice(4,0,{id:'multi',label:'三人以上で一緒に満たす',type:'select',def:'open',options:[
 {v:'open',label:'最初から紙に書いてある'},
 {v:'note',label:'扉の紙の裏に但し書きがある（見つけたら使える）'},
-{v:'no',label:'認めない（二人ずつだけ）'}
-],desc:'「三人以上で同時にした場合、全員がそれぞれ満たしたものとみなす」。回数が一回でも、三人の場面一度で全員分が数えられます。三人ちょうどでエッチか媚薬の部屋なら、受けに回れる人が一人でもいれば三人の場面（3P）が起こります'});
+{v:'no',label:'認めない（二人ずつだけ）'},
+{v:'only',label:'三人の場面でだけ数える（三人で仲良く）'}
+],desc:'「三人以上で同時にした場合、全員がそれぞれ満たしたものとみなす」。回数が一回でも、三人の場面一度で全員分が数えられます。三人ちょうどでエッチか媚薬の部屋なら、受けに回れる人が一人でもいれば三人の場面（3P）が起こります。'+
+'「三人の場面でだけ数える」を選ぶと、二人の条件（エッチ・キス・ハグ・言葉など）は三人の場面でしか進まず、二人きりのエッチ・キスなどは起きません（三人以上のとき。二人しかいなければ二人ずつ。全年齢では三人で抱き合う場面で数えます）'});
 function multiOf(ctx){return ctx.env.multi||'open';}
-function allowed(ctx){return multiOf(ctx)!=='no'&& !ctx.flags.isOne&& !ctx.flags.trioRule&&A.hasPairRule(ctx);}
+function allowed(ctx){return multiOf(ctx)!=='no'&& !ctx.flags.isOne&&A.hasPairRule(ctx);}
+function only(ctx){return!!ctx.flags.trioOnly;}
+function hugOnly(ctx){return only(ctx)&& !ctx.rules.some(function(r){var T0=K[r.k];return T0.type==='act'&&T0.lvl>2;})&&ctx.rules.some(function(r){return K[r.k].type==='act';});}
 function isF(c){var P=HK.Pos;return!!(P&&P.isF(c));}
 function hardTop(c){var P=HK.Pos;return!!(c&&P&&P.hardTop(c));}
 function canBottom(c){var P=HK.Pos;return!P||P.canBottom(c);}
@@ -2596,13 +2617,13 @@ return sp;
 var setup0=scen.setup,phase0=scen.phase,finish0=scen.finish;
 scen.setup=function(ctx){
 setup0(ctx);
-ctx.flags.multiKnown=multiOf(ctx)==='open';
+ctx.flags.multiKnown=multiOf(ctx)==='open'||multiOf(ctx)==='only';
 ctx.flags.trios=[];ctx.flags.trioHL={};
 ctx.flags.trioRoll=null;
 };
 scen.phase=function(ctx,s,n){
 phase0(ctx,s,n);
-if(s===0&&ctx.flags.multiKnown&&allowed(ctx)&&ctx.present().length>=3)
+if(s===0&&ctx.flags.multiKnown&&allowed(ctx)&&ctx.present().length>=3&&multiOf(ctx)!=='only')
 ctx.say({text:'紙の一番下には、小さな字で但し書きがあった。「\u2060※三人以上で同時に行った場合、参加者全員がそれぞれ条件を満たしたものとみなす」'});
 };
 var FIND=L('{a}は扉の紙を何度も読み返しているうちに、裏面に小さな字の但し書きがあることに気づいた。「\u2060※三人以上で同時に行った場合、参加者全員がそれぞれ条件を満たしたものとみなす」|{a}は紙を照明に透かして、裏に印刷された一文を読み上げた。「\u2060三人以上で同時に行った場合、参加者全員が条件を満たしたものとみなす……だって」|{a}が紙の端をめくると、折り込まれていた部分に続きがあった。「\u2060※複数人での同時達成も可」――部屋の空気が、少し変わった。');
@@ -2649,7 +2670,7 @@ P.forEach(function(c){
 var g=[a,b,c];
 if(done3(ctx,g))return;
 if(pairsOf(g).some(function(p){return family(ctx,p[0],p[1]);}))return;
-if(g.some(function(x){return x.flags.trioNo;}))return;
+if(g.some(function(x){return x.flags.trioNo||(x.flags.trioNoTill!=null&&ctx.stepIndex<x.flags.trioNoTill);}))return;
 if(g.some(function(x){return exclBlock(ctx,x,g);}))return;
 var leftLov=function(x,o){var t=HK.Ties?HK.Ties.get(ctx,x,o):null;return(t&& /lover|fwb/.test(t.type))||ctx.pair(x,o).couple;};
 var holders=g.filter(function(x){return ctx.present().some(function(o){return g.indexOf(o)<0&&leftLov(x,o);});});
@@ -2677,6 +2698,10 @@ if(ctx.stepIndex>=ctx.stepsTotal*0.55&&g.every(function(x){return x.stress>45||x
 cands.push({kind:'late',h:g[0],v:0.7+ctx.stepIndex/ctx.stepsTotal});
 if(pairsOf(g).every(function(p){return A.willing(ctx,p[0],p[1],Math.min(lv,4));}))
 cands.push({kind:'warm',h:g[0],v:1.0});
+if(only(ctx)&&HK.RoomGames&&HK.RoomGames.onlyOk){
+var oc=HK.RoomGames.onlyOk(ctx,g);
+if(oc)cands.push({kind:oc.gr.length?'grudge':'warm',h:g[0],gr:oc.gr,v:1.7+ctx.stepIndex/Math.max(4,ctx.stepsTotal)*2+(ctx.stepIndex>=ctx.stepsTotal*0.7?2:0)});
+}
 cands.forEach(function(cd){
 cd.g=cd.h?[cd.h].concat(g.filter(function(x){return x!==cd.h;})):g;
 if(hasH(ctx)){var sh=shapeFor(ctx,cd.g,cd.kind);if(!sh)return;if(sh.hubOnly)cd.g=sh.sg;}
@@ -2728,6 +2753,24 @@ hug:L('{a}は{b}と{c}を、片腕ずつで抱き寄せた。二人は{a}の肩�
 hand:L('{a}は右手で{b}と、左手で{c}と手を繋いだ。真ん中の{a}だけが、二人の両方と繋がっていた。|{a}を真ん中に、三人は並んで座った。{a}の右手は{b}と、左手は{c}と繋がっていた。'),
 lap:L('{a}は{b}の膝に頭を乗せ、{c}の膝に脚を預けた。三人は、そのまましばらく黙っていた。')
 };
+var TRIO_SOFT={
+first:L('{a}が{b}と{c}に手を差し出した。三人は輪になって手をつなぎ、それから、誰からともなく身を寄せ合った。|{a}「三人で、だって｜三人で、だそうだ｜三人で、だそうです」{a}が両腕を広げると、{b}と{c}が照れくさそうにその中に入った。|三人は、どこに手を置けばいいか迷いながら、ぎこちなく抱き合った。{b}の肘が{c}の脇腹に当たって、三人そろって吹き出した。'),
+again:L('三人はもう一度輪になって、肩を寄せ合った。さっきより、ずっと自然だった。|{a}が「もう一回｜もう一回だ｜もう一回しましょう」と言うと、{b}と{c}は笑って、また腕を回した。|三人で抱き合うたびに、扉の紙の数字が一つずつ減っていった。{c}は、それを少しだけ惜しそうに見ていた。'),
+done:L('三人が抱き合ったまま、扉の紙の文字が淡く光った。|腕をほどいた三人は、顔を見合わせて小さく笑った。|三人の輪がほどけると、部屋の空気が少しだけ温かくなっていた。')
+};
+var LEAD_H=null;
+LEAD_H=L('扉の紙の「三人で仲良く」の意味を、三人はもう取り違えなかった。|{a}と{b}と{c}は、扉の紙をもう一度だけ見て、それから互いを見た。|三人は、誰からともなくベッドへ向かった。');
+function leadH(ctx,g,kind){
+if(!LEAD_H|| !only(ctx)||ctx.flags.trioLeadDone||HK.SAFE_ON|| !hasH(ctx)||kind==='grudge')return'';
+ctx.flags.trioLeadDone=true;
+return ctx.t(ctx.pick(LEAD_H),g[0],g[1],g[2]);
+}
+function exitG(ctx,g,text,why,night,kind){
+var hs=hugOnly(ctx),n0=(ctx.flags.trios||[]).length;
+var ex=T.exitGroup(ctx,g,text+(hs?ctx.t(ctx.pick(TRIO_SOFT.done),g[0],g[1],g[2]):''),why,night,kind);
+if(hs&&ctx.flags.trios&&ctx.flags.trios.length>n0)ctx.flags.trios.length=n0;
+return ex;
+}
 var OPEN={
 loveclash:L('{x}と{y}は、但し書きを読み終える前に{h}の両腕を掴んでいた。どちらも、手を離す気はなかった。{x}「{h}は私のだ｜{h}は私のものだ｜{h}は私のものです」{y}「最初から、私のだ｜最初から、私のものだ｜最初から、私のものです」|{h}が但し書きを読み上げると、{x}と{y}は同時に{h}を引き寄せようとして、互いの手がぶつかった。二人は睨み合い、それから同じことを考えた。三人でなら、相手に{h}を独り占めさせずに済む。|「三人で」と{h}が言い終わる前に、{x}が{h}の唇を塞いだ。{y}はその肩を掴んで{h}を自分の方へ向かせ、奪い返すように口づけた。どちらも、相手に一秒でも長く{h}を渡したくなかった。'),
 lovehub:L('{x}と{y}は但し書きを読んで、顔を見合わせた。どちらも{h}と特別な仲で、どちらも互いをよく知っていた。{x}「……{h}となら、三人でも大丈夫｜……{h}となら、三人でも大丈夫だ｜……{h}となら、三人でも大丈夫です」{y}も笑って頷いた。|{h}は{x}と{y}の手を、片方ずつ握った。「二人とも好き。それは、二人とももう知ってるよね｜二人とも好きだ。それは、二人とももう知っているだろう｜二人とも好きです。それは、二人とももう知っていますよね」――{x}と{y}は、照れくさそうに目を合わせた。仲のいい二人のあいだに、迷いはなかった。|{y}が{x}の肩を軽く叩いた。「今日は、一緒に{h}を大事にしよう｜＝｜今日は、一緒に{h}を大事にしましょう」{x}は「言われなくても｜言われるまでもない｜言われなくても、そのつもりです」と笑い返した。{h}は二人のやりとりを聞いて、顔を赤くした。'),
@@ -2939,6 +2982,11 @@ if(HK.TrioLines&&HK.TrioLines.OPEN)Object.keys(HK.TrioLines.OPEN).forEach(functi
 function scene(ctx,g,kind,first,nPresent,pre,force){
 var h=g[0],x=g[1],y=g[2],V=HK.Voice,pf=function(arr){return ctx.pick(arr);};
 var rk=pairRules(ctx),sex=force||rk.some(function(r){return r.k==='h';});
+if(!sex&&hugOnly(ctx)){
+var ts=ctx.t(ctx.pick(first?TRIO_SOFT.first:TRIO_SOFT.again),h,x,y);
+rk.forEach(function(r){if(K[r.k].type==='word'&&SOFT[r.k])ts+=ctx.t(ctx.pick(SOFT[r.k]),h,x,y);});
+return ts;
+}
 var sh=sex?pre||shapeFor(ctx,g,kind):null;
 var ap=sh?apartOf(g):[],rr0={h:h,x:x,y:y},okL=function(l,rr){return touchOK(l,rr||rr0,g,ap);};
 if(sh)ctx.flags.lastTrioPairs=pairsOf(g).filter(function(p){return okSex(p[0],p[1]);});
@@ -2962,14 +3010,20 @@ else if(hb&&SOFT_HUB[r.k])txt+=ctx.t(ctx.pick(SOFT_HUB[r.k]),hb,ob[0],ob[1]);
 return txt;
 }
 function count(ctx,g){
-var span=Math.max(3,ctx.stepsTotal*0.55);
+ctx.flags.trioIn=true;
+try{count0(ctx,g);}finally{ctx.flags.trioIn=false;}
+if(only(ctx))ctx.flags.trioSexN=(ctx.flags.trioSexN||0)+1;
+}
+function count0(ctx,g){
+var span=Math.max(3,ctx.stepsTotal*0.55),on=only(ctx);
 ctx.flags.trioWait=null;
 pairRules(ctx).forEach(function(r){
 var Tk=K[r.k];
+var inc1=on&&Tk.type==='act'?(r.n>3?Math.max(1,Math.round(r.n/span*(0.6+ctx.rng()*0.8))):1):0;
 pairsOf(g).forEach(function(pr){
 var p=A.prog(ctx,pr[0],pr[1]);
 if(Tk.type==='act'){
-var inc=r.n>3?Math.max(1,Math.round(r.n/span*1.2*(0.6+ctx.rng()*0.8)*(6-Tk.lvl)/3)):1;
+var inc=inc1||(r.n>3?Math.max(1,Math.round(r.n/span*1.2*(0.6+ctx.rng()*0.8)*(6-Tk.lvl)/3)):1);
 if(A.bumpAct){if(!A.bumpAct(ctx,r,pr[0],pr[1],inc)&& !ctx.flags.trioWait)ctx.flags.trioWait=[r,pr[0],pr[1]];}else p.act[r.k]=Math.min(r.n,(p.act[r.k]||0)+inc);
 }else if(A.seqWait&&A.seqWait(ctx,r,pr[0],pr[1])){
 p.pre=p.pre||{};p.pre[r.k]=(p.pre[r.k]||0)+1;
@@ -3118,6 +3172,7 @@ return HK.clamp(p,0.3,0.95);
 }
 function roll(ctx){
 var g=ctx.present();
+if(only(ctx)){ctx.flags.trioRoll='y';ctx.flags.trioProb=1;return true;}
 if(ctx.flags.trioRoll==null){
 if(g.length!==3)return false;
 var p=trioProb(ctx,g);
@@ -3225,11 +3280,11 @@ ctx.flags.trioCur={g:g.map(function(c){return c.i;}),kind:kind};
 g.forEach(function(c){c.flags.partner=null;});
 count(ctx,g);
 pairsOf(g).forEach(function(pr){ctx.mod2(pr[0],pr[1],{att:8,aff:5,trust:4},{att:8,aff:5,trust:4});if(okSex(pr[0],pr[1]))ctx.pair(pr[0],pr[1]).heatDone=true;});
-var text=turn+scene(ctx,go,kind,true,3,{sg:go,hubOnly:sh.hubOnly,sp:sp},!hasH(ctx));
-var why='三人の場面：'+KIND_WHY[kind]+infoWhy(ctx,sh)+'／三人になる確率 '+Math.round((ctx.flags.trioProb||0)*100)+'%（積極性・奔放・内気・CP・決め事・媚薬から）／但し書き：三人以上で同時なら全員分';
+var text=leadH(ctx,go,kind)+turn+scene(ctx,go,kind,true,3,{sg:go,hubOnly:sh.hubOnly,sp:sp},!hasH(ctx));
+var why='三人の場面：'+KIND_WHY[kind]+infoWhy(ctx,sh)+(only(ctx)?'／扉の紙：三人の場面でだけ数える':'／三人になる確率 '+Math.round((ctx.flags.trioProb||0)*100)+'%（積極性・奔放・内気・CP・決め事・媚薬から）／但し書き：三人以上で同時なら全員分');
 if(ctx.flags.lastTrioTags&&ctx.flags.lastTrioTags.length){why+='／見所：'+ctx.flags.lastTrioTags.join('・');ctx.flags.lastTrioTags=null;}
 var third=g.filter(function(c){return c!==a&&c!==b;});
-if(done3(ctx,g)){ctx.flags.trioCur=null;return T.exitGroup(ctx,g,text,why,hasH(ctx),kind);}
+if(done3(ctx,g)){ctx.flags.trioCur=null;return exitG(ctx,g,text,why,hasH(ctx),kind);}
 return{text:text+progText(ctx,g)+'扉はまだ開かない。',why:why,mag:30,with:third};
 }
 });
@@ -3267,14 +3322,15 @@ var pl=plan(ctx,a,b);
 ctx._trioPlan=pl;
 return!!pl;
 },
-w:function(ctx,a,b){var pl=plan(ctx,a,b);return pl?(0.6+pl.v*0.9)*(seqWaitAll(ctx,pl.g)?0.15:1):0;},
+w:function(ctx,a,b){var pl=plan(ctx,a,b);return pl?(0.6+pl.v*0.9)*(seqWaitAll(ctx,pl.g)?0.15:1)*(only(ctx)?Math.max(1,ctx.present().length/3):1):0;},
 run:function(ctx,a,b){
 var pl=plan(ctx,a,b);
 if(!pl)return{text:ctx.t('{a}と{b}は、紙の但し書きをもう一度読んだ。',a,b)};
 var g=pl.g;
 var refuser=g.filter(function(c){return c.tr.cp>0.72&&A.eager(ctx,c)<0.35&&pl.kind!=='late'&& !isLoveAny(pl.kind);})[0];
+if(refuser&&only(ctx)&&(hugOnly(ctx)||pl.kind==='grudge'||refuser.flags.trioRefused||ctx.stepIndex>=ctx.stepsTotal*0.35))refuser=null;
 if(refuser){
-refuser.flags.trioNo=true;
+if(only(ctx)){refuser.flags.trioNoTill=ctx.stepIndex+2;refuser.flags.trioRefused=true;}else refuser.flags.trioNo=true;
 g.forEach(function(c){if(c!==refuser)ctx.mod(refuser,c,{ten:6});});
 return{cat:'conflict',text:ctx.t(ctx.pick(['{a}は「三人で、なんて絶対に無理｜三人で、というのは絶対に無理だ｜三人で、なんて絶対に無理です」と首を振った。話は、そこで終わった。','{a}は但し書きの紙を裏返して、「見なかったことにする｜＝｜見なかったことにします」と言った。','{a}「私は、するなら一人とだけ。それは譲れない｜私は、するなら一人とだけだ。それは譲れない｜私は、するなら一人とだけです。それは譲れません」']),refuser),why:refuser.name+'のCP（'+Math.round(refuser.eg.CP)+'）：三人でという形には頷けなかった',mag:12,with:g.filter(function(c){return c!==refuser;})};
 }
@@ -3289,10 +3345,12 @@ g.forEach(function(c){c.flags.partner=null;});
 count(ctx,g);
 pairsOf(g).forEach(function(pr){ctx.mod2(pr[0],pr[1],{att:8,aff:5,trust:4},{att:8,aff:5,trust:4});});
 ctx.present().filter(function(o){return g.indexOf(o)<0;}).forEach(function(o){g.forEach(function(c){ctx.mod(o,c,{ten:3});});ctx.stress(o,5);});
-var text=turn+scene(ctx,g,pl.kind,true,ctx.present().length);
-var why='三人の場面：'+{loveclash:g[1].name+'と'+g[2].name+'はどちらも'+g[0].name+'の恋人で、どちらも'+g[0].name+'に執着していた。激しい取り合いになった',love:KIND_WHY.love,lovehub:g[0].name+'は'+g[1].name+'と'+g[2].name+'の両方と恋人（または友達以上恋人未満）で、'+g[1].name+'と'+g[2].name+'も仲がよい。円満な三人',hub:g[1].name+'と'+g[2].name+'がどちらも'+g[0].name+'に惹かれていた。'+g[0].name+'は選ばなかった',invite:g[1].name+'と'+g[2].name+'は、'+g[0].name+'を一人で残したくなかった',free:'三人とも積極的だった（'+g.map(function(c){return Math.round(A.eager(ctx,c)*100);}).join('・')+'）',late:'残り時間への焦り。三人なら一度で済む',warm:'三人とも、互いに打ち解けていた'}[pl.kind]+infoWhy(ctx,null)+'／但し書き：三人以上で同時なら全員分';
+var gsc=pl.kind==='grudge'&&hasH(ctx)?T.condScene(ctx,g,true,{kind:'grudge',gr:pl.gr||[]}):null;
+var text=leadH(ctx,g,pl.kind)+turn+(gsc?gsc.text:scene(ctx,g,pl.kind,true,ctx.present().length));
+var grW=pl.kind==='grudge'&&pl.gr&&pl.gr.length?pl.gr.map(function(p){return p[0].name+'と'+p[1].name+'（緊張 '+Math.round(Math.max(R(ctx,p[0],p[1]).ten,R(ctx,p[1],p[0]).ten))+'）';}).join('・')+'は不仲で張りつめたままだったが、焦り（'+pl.gr.map(function(p){return p[0].name+' '+Math.round(p[0].stress)+'・'+p[1].name+' '+Math.round(p[1].stress);}).join('／')+'）に押されて、もう一人がいる三人ならと割り切った':'';
+var why=gsc?'三人の場面：'+gsc.why+'／'+grW+'／扉の紙：三人の場面でだけ数える':'三人の場面：'+({loveclash:g[1].name+'と'+g[2].name+'はどちらも'+g[0].name+'の恋人で、どちらも'+g[0].name+'に執着していた。激しい取り合いになった',love:KIND_WHY.love,lovehub:g[0].name+'は'+g[1].name+'と'+g[2].name+'の両方と恋人（または友達以上恋人未満）で、'+g[1].name+'と'+g[2].name+'も仲がよい。円満な三人',hub:g[1].name+'と'+g[2].name+'がどちらも'+g[0].name+'に惹かれていた。'+g[0].name+'は選ばなかった',invite:g[1].name+'と'+g[2].name+'は、'+g[0].name+'を一人で残したくなかった',free:'三人とも積極的だった（'+g.map(function(c){return Math.round(A.eager(ctx,c)*100);}).join('・')+'）',late:'残り時間への焦り。三人なら一度で済む',warm:'三人とも、互いに打ち解けていた'}[pl.kind]||KIND_WHY[pl.kind]||'')+(grW?'／'+grW:'')+infoWhy(ctx,null)+(only(ctx)?'／扉の紙：三人の場面でだけ数える':'／但し書き：三人以上で同時なら全員分');
 if(ctx.flags.lastTrioTags&&ctx.flags.lastTrioTags.length){why+='／見所：'+ctx.flags.lastTrioTags.join('・');ctx.flags.lastTrioTags=null;}
-if(done3(ctx,g)){ctx.flags.trioCur=null;return T.exitGroup(ctx,g,text,why,hasH(ctx),pl.kind);}
+if(done3(ctx,g)){ctx.flags.trioCur=null;return exitG(ctx,g,text,why,hasH(ctx),pl.kind);}
 return{text:text+progText(ctx,g)+'扉はまだ開かない。',why:why,mag:30,with:g.filter(function(c){return c!==a&&c!==b;})};
 }
 });
@@ -3304,12 +3362,12 @@ if(!c)return false;
 if(!c.g.every(function(i){return free(ctx.chars[i]);})){ctx.flags.trioCur=null;return false;}
 return c.g.indexOf(a.i)>=0;
 },
-w:function(ctx){var c=ctx.flags.trioCur;return c&&seqWaitAll(ctx,c.g.map(function(i){return ctx.chars[i];}))?0.33:2.2;},
+w:function(ctx,a){var c=ctx.flags.trioCur;return c&&seqWaitAll(ctx,c.g.map(function(i){return ctx.chars[i];}))?0.33:only(ctx)?(2.6+ctx.stepIndex/Math.max(4,ctx.stepsTotal)*3+A.eager(ctx,a)+(ctx.stepIndex>=ctx.stepsTotal*0.7?2.5:0))*Math.max(1,ctx.present().length/3):2.2;},
 run:function(ctx,a){
 var c=ctx.flags.trioCur,g=c.g.map(function(i){return ctx.chars[i];});
 count(ctx,g);
 var text=scene(ctx,g,c.kind,false);
-if(done3(ctx,g)){ctx.flags.trioCur=null;return T.exitGroup(ctx,g,text,'三人で、条件の回数を重ねきった',hasH(ctx),c.kind);}
+if(done3(ctx,g)){ctx.flags.trioCur=null;return exitG(ctx,g,text,'三人で、条件の回数を重ねきった',hasH(ctx),c.kind);}
 return{text:text+progText(ctx,g),why:'三人で条件を重ねていく',mag:12,with:g.filter(function(x){return x!==a;})};
 }
 });
@@ -3326,6 +3384,30 @@ ctx.flags.lastTrioPairs=null;
 return r;
 };
 });
+var ONLY_OK={trio:1,trio_auto:1,trio_more:1,trio_heat:1,trio_persuade:1,trio_note:1};
+var ONLY_NO={doact:1,doword:1,group_h:1,speedrun:1,aphro_heat:1,jealous_claim:1,rs_dk_ntr:1,pick_one:1,decline_more:1};
+var ONLY_NC={trio:1,trio_auto:1,trio_more:1};
+function onlyBlock(e){return!!e&& !ONLY_OK[e.id]&&(!!ONLY_NO[e.id]|| !!e.sex);}
+if(HK.wrap&&HK.buildPool)HK.wrap(HK,'buildPool',function(bp0){return function(sc){
+var pool=bp0.apply(this,arguments);
+if(!sc||sc.id!=='whiteroom')return pool;
+var cx=HK._curCtx,on= !!(cx&&cx.flags&&cx.flags.trioOnly);
+if(!on)return pool;
+return pool.map(function(e){
+if(on&&e&&ONLY_NC[e.id]&& !e.nightCond){var nc=Object.create(e);nc.nightCond=true;return nc;}
+if(!onlyBlock(e))return e;
+var w=Object.create(e),w0=e.when;
+w.when=function(ctx){if(ctx&&ctx.flags&&ctx.flags.trioOnly)return false;return w0?w0.apply(this,arguments):true;};
+return w;
+});
+};});
+if(HK.wrap&&HK.Lewd&&HK.Lewd.norm)HK.wrap(HK.Lewd,'norm',function(n0){return function(id,env){
+if(id==='whiteroom'&&env&&HK.roomEnvMigrate){
+var S=HK.UI&&HK.UI.state?HK.UI.state():null;
+if(S&&S.env&&S.env.whiteroom===env)HK.roomEnvMigrate(env,true);
+}
+return n0.apply(this,arguments);
+};});
 T.bond=function(ctx,g){
 var ps=pairsOf(g),v=ps.map(function(pr){return Math.min(R(ctx,pr[0],pr[1]).aff+R(ctx,pr[0],pr[1]).att*0.6,R(ctx,pr[1],pr[0]).aff+R(ctx,pr[1],pr[0]).att*0.6);});
 var mn=Math.min.apply(null,v),av=v.reduce(function(s,x){return s+x;},0)/v.length;
@@ -5076,11 +5158,11 @@ var rest=G.here(ctx).filter(function(a){return a!==b&&a!==c&& !G.couple(ctx,a,b)
 var a=rest.sort(function(p,q){return(R(ctx,q,b).aff+R(ctx,q,c).aff)-(R(ctx,p,b).aff+R(ctx,p,c).aff);})[0];
 if(a&&ctx.rng()<0.5){
 ctx.mod(a,b,{aff:3});ctx.mod(a,c,{aff:3});ctx.stress(a,-4);
-ctx.pending.push({kind:'event',cat:'bond',actors:[a,b,c],text:ctx.t(ctx.pick(T.sendLead)+G.byPer(ctx,SEND,a),a,b,c),why:b.name+'と'+c.name+'が条件を満たして部屋を出た。残る'+a.name+'が送り出した（送り出し・仲良し）',mag:10,_rcA:a.i});
+ctx.pending.push({kind:'event',cat:'bond',sex:false,actors:[a,b,c],text:ctx.t(ctx.pick(T.sendLead)+G.byPer(ctx,SEND,a),a,b,c),why:b.name+'と'+c.name+'が条件を満たして部屋を出た。残る'+a.name+'が送り出した（送り出し・仲良し）',mag:10,_rcA:a.i});
 }
 var de=gonePair(ctx,i);
 if(de&&de.indexOf(b)<0&&de.indexOf(c)<0&&ctx.rng()<0.6)
-ctx.pending.push({kind:'event',cat:'bond',actors:[b,c],text:G.fill(ctx,ctx.pick(T.reunion),null,b,c,de[0],de[1]),why:'先に出た'+de[0].name+'と'+de[1].name+'が、外で'+b.name+'と'+c.name+'を待っていた（再会・仲良し）',mag:8});
+ctx.pending.push({kind:'event',cat:'bond',sex:false,actors:[b,c],text:G.fill(ctx,ctx.pick(T.reunion),null,b,c,de[0],de[1]),why:'先に出た'+de[0].name+'と'+de[1].name+'が、外で'+b.name+'と'+c.name+'を待っていた（再会・仲良し）',mag:8});
 }
 }
 var setup0=scen.setup;
@@ -5214,7 +5296,7 @@ function know(ctx,a,b){var pf=ctx.pair(a,b);pf.known=pf.known||{};return(pf.know
 function honneRule(ctx){return(ctx.rules||[]).filter(function(r){return r.k==='honne';})[0];}
 function countHonne(ctx,a,b,who){
 var r=honneRule(ctx),p=ctx.flags.prog&&ctx.flags.prog[a.i<b.i?a.i+'-'+b.i:b.i+'-'+a.i];
-if(!r|| !p)return false;
+if(!r|| !p||(HK.roomTrioOnly&&HK.roomTrioOnly(ctx)))return false;
 var k='honne'+who.i;
 if((p.said[k]||0)>=r.n)return false;
 p.said[k]=(p.said[k]||0)+1;
@@ -7903,8 +7985,6 @@ var t=c.tr,best='np',bv= -1;
 [['np',t.np],['fc',t.fc],['cold',t.cold||0],['ac',t.ac],['cp',t.cp]].forEach(function(x){if(x[1]>bv){bv=x[1];best=x[0];}});
 return best;
 }
-var softNow=false;
-function trioSoft(){return HK.SAFE_ON||softNow;}
 A.addKind('nyan',{type:'task',noun:'「にゃん」',unit:'回',goal:'「にゃん」と言う',
 fin:function(n){return'語尾に「にゃん」を付けて'+n+'回しゃべらないと';},mid:function(n){return'語尾に「にゃん」を付けて'+n+'回しゃべって';},
 nounN:function(n){return'「にゃん」'+n+'回';},left:function(x){return'「にゃん」があと'+x+'回';},last:function(){return'最後の「にゃん」が部屋に響いた';}},'「〜にゃん」と言う（部屋の全員で合計）');
@@ -7921,25 +8001,18 @@ A.addKind('hurt',{type:'hurt',noun:'傷つけること',unit:'回',goal:'相手�
 fin:function(n){return'相手を'+(n>1?n+'回':'')+'傷つけないと';},mid:function(n){return'相手を'+(n>1?n+'回':'')+'傷つけて';},
 nounN:function(n){return'相手を傷つけること'+(n>1?n+'回':'');},
 leftP:function(x,n){return n>1?'どちらかが傷つくことがあと'+x+'回':'どちらかが傷つくこと';}},'相手を傷つける（平手・つねる・言葉。どちらかが傷つけば満たす）');
-var TRIO_LABEL='三人で抱き合う（三人以上のとき）';
-TRIO_LABEL='三人で仲良くする（R18版では3P。三人以上のとき。全年齢モードでは三人で抱き合う）';
-A.addKind('trio3',{type:'trio',noun:'三人で',unit:'回',goal:'三人で',
-fin:function(n){return'三人で'+(n>1?n+'回':'')+(trioSoft()?'抱き合わないと':'仲良くしないと');},
-mid:function(n){return'三人で'+(n>1?n+'回':'')+(trioSoft()?'抱き合って':'仲良くして');},
-nounN:function(n){return'三人での'+(trioSoft()?'ハグ':'仲良し')+(n>1?n+'回':'');},
-leftP:function(x,n){return'三人で'+(trioSoft()?'抱き合うこと':'仲良くすること')+(n>1?'があと'+x+'回':'');}},TRIO_LABEL);
 A.noteN('くすぐりは「1」で10秒として数える');
 var INTRO={
 nyan:['扉の脇の壁には、数字のカウンターが埋め込まれていた。語尾に「にゃん」を付けてしゃべった回数を数えるらしい。表示は0/{N}。','扉の紙の横に、猫耳のカチューシャが人数分ぶら下がっていた。壁のカウンターには「0/{N}」と出ている。','扉の紙の下に、小さな字で注意書きがあった。誰が言っても、部屋の全員の合計で数えるという。壁のカウンターは0を示していた。'],
 roulette:['テーブルの上に、古びたリボルバーが一丁置かれていた。添えられたメモには、弾は空砲が一発、音が鳴った人の負け、負けた人は罰ゲーム、とある。','テーブルのリボルバーの横に、メモが一枚。空砲が一発だけ入っていること、そして罰ゲームは「扉の条件をもう一回」であることが書かれていた。','部屋の真ん中の小さなテーブルに、リボルバーが置かれていた。弾倉には、空砲が一発だけ。その重さに、誰もすぐには手を伸ばさなかった。'],
 tickle:['壁の高いところに、大きなタイマーが掛かっていた。誰かがくすぐられているあいだだけ進むらしい。表示は0/{N}秒。','部屋の隅に、羽根ぼうきが一本立てかけてあった。壁のタイマーは0/{N}秒を示している。','扉の紙の下に、小さな字で注意書きがあった。誰がくすぐられても、合計の秒数で数えるという。壁のタイマーは止まったままだ。'],
 balloon:['床一面に、色とりどりの風船が転がっていた。数えると、ちょうど{N}個。','天井から、たくさんの風船がぶら下がっていた。紐の先には、一つずつ番号札がついている。全部で{N}個。','部屋の半分が、膨らんだ風船で埋まっていた。歩くたびに、足元で風船がきゅっと鳴った。'],
-hurt:['扉の紙の下には、赤い字で注意書きがあった。傷つけ方は問わない、と。誰も、すぐには口を開かなかった。','扉の紙を読んだ全員の顔がこわばった。殴る必要はない。けれど、何もしないわけにはいかない。','扉の紙の条件の横に、小さな救急箱が置かれていた。それが、かえって気味が悪かった。'],
-trio3:['扉の紙の条件の横には、三つの丸を線でつないだ絵が描かれていた。','扉の紙には、三人が抱き合う簡単な絵が添えられていた。','扉の紙の「三人で」の字だけが、やけに大きく書かれていた。']
+hurt:['扉の紙の下には、赤い字で注意書きがあった。傷つけ方は問わない、と。誰も、すぐには口を開かなかった。','扉の紙を読んだ全員の顔がこわばった。殴る必要はない。けれど、何もしないわけにはいかない。','扉の紙の条件の横に、小さな救急箱が置かれていた。それが、かえって気味が悪かった。']
 };
-var INTRO_H=null,LEAD_H=null;
+var INTRO_T=['扉の紙の条件の横には、三つの丸を線でつないだ絵が描かれていた。','扉の紙には、三人が抱き合う簡単な絵が添えられていた。','扉の紙の「三人で」の字だけが、やけに大きく書かれていた。'];
+var INTRO_H=null;
 INTRO_H=['扉の紙の条件の下に、小さな字で但し書きがあった。三人そろって、仲良く。意味は分かるはず、と。','扉の紙の「三人で仲良く」の字の横に、ハートが三つ描かれていた。その意味を取り違える者はいなかった。','ベッドの脇には、三人で寝ても余るほど大きな毛布が畳んであった。扉の紙の「三人で」が、急に生々しく見えた。'];
-LEAD_H=['扉の紙の「三人で仲良く」の意味を、三人はもう取り違えなかった。','{a}と{b}と{c}は、扉の紙をもう一度だけ見て、それから互いを見た。','三人は、誰からともなくベッドへ向かった。'];
+var ONLY_NOTE='紙の一番下の小さな字は、「\u2060※三人以上で同時に行った場合に限り、条件を満たしたものとみなす」と念を押していた。二人だけで済ませても、扉は数えないらしい。';
 var TASK={};
 function by(ctx,k,c,n){var B=ctx.flags.taskBy=ctx.flags.taskBy||{};var m=B[k]=B[k]||{};m[c.i]=(m[c.i]||0)+n;}
 function scaleOf(ctx,r,span){return Math.max(1,Math.round(r.n/Math.max(4,ctx.stepsTotal*(span||0.7))));}
@@ -8034,6 +8107,7 @@ return A.willing(ctx,x,y,lv)||A.desperate(ctx,x,y,lv)||(lv<=2&&R(ctx,x,y).ten<50
 }
 function penAct(ctx,x){
 var out=null;
+if(ctx.flags.trioOnly)return null;
 ctx.rules.forEach(function(r){
 if(out||K[r.k].type!=='act')return;
 var cands=ctx.present().filter(function(y){return y!==x&&free(y)&&actOk(ctx,r,x,y);});
@@ -8210,13 +8284,13 @@ if(counted&&A.ruleDone(ctx,r,a,b))text+='扉はまだ開かない。'+a.name+'�
 return{text:text,why:why,mag:tier==='slap'?22:15};
 }
 });
-function trioRule(ctx){return ruleK(ctx,'trio3');}
+function hasH(ctx){return ctx.rules.some(function(r){return r.k==='h';});}
 function pairs3(g){return[[g[0],g[1]],[g[0],g[2]],[g[1],g[2]]];}
 function faith3(g){return!HK.Poly|| !HK.Poly.faithOk|| !HK._curCtx||HK.Poly.faithOk(HK._curCtx,g);}
 function hardOk(g){var T=HK.RoomTrio;return!!(T&&T.sexOk3&&T.sexOk3(g))&&faith3(g);}
 function faithOut(ctx,C){return C.filter(function(c){return c.faithful&&HK.Poly&&HK.Poly.faithOk&&C.some(function(o){return o!==c&& !HK.Poly.faithOk(ctx,[c,o]);});});}
 function direct(x,y){return!!(A.okSex&&A.okSex(x,y));}
-function soft(ctx){return!!ctx.flags.trioSoft||HK.SAFE_ON;}
+function soft(ctx){return!!ctx.flags.trioSoft||HK.SAFE_ON|| !hasH(ctx);}
 function exclOk(ctx,g){return g.every(function(x){return!g.some(function(y){return y!==x&&A.exclOther(ctx,x,y);});});}
 function readyPair(ctx,x,y,lv){return A.willing(ctx,x,y,lv)||A.desperate(ctx,x,y,lv);}
 function lateOk(ctx,x,y,late){return late&&R(ctx,x,y).ten<55&&R(ctx,y,x).ten<55&&[x,y].every(function(z){return z.stress>45||z.flags.resign||A.eager(ctx,z)>0.5;});}
@@ -8237,15 +8311,10 @@ var low=HK.Pos&&HK.Pos.libOf&&HK.Pos.libOf(z)==='low';
 return z.flags.resign||z.stress>(low?55:40)||A.eager(ctx,z)>(low?0.65:0.5);
 });
 }
-function pickTrio(ctx,a,b){
-var r=trioRule(ctx);
-if(!r)return null;
-var late=ctx.stepIndex>=ctx.stepsTotal*0.35;
-var cs=ctx.present().filter(function(c){return c!==a&&c!==b&&free(c);}),best=null,bv= -1e9;
-cs.forEach(function(c){
-var g=[a,b,c],gr=[];
-if(A.pairDone(ctx,a,b)&&A.pairDone(ctx,a,c)&&A.pairDone(ctx,b,c))return;
-if(!exclOk(ctx,g)||(HK.Poly&&HK.Poly.faithOk&& !HK.Poly.faithOk(ctx,g)))return;
+function onlyOk(ctx,g){
+if(!ctx.flags.trioOnly|| !g||g.length!==3)return null;
+var late=ctx.stepIndex>=ctx.stepsTotal*0.35,gr=[];
+if(!exclOk(ctx,g)||(HK.Poly&&HK.Poly.faithOk&& !HK.Poly.faithOk(ctx,g)))return null;
 var ok;
 if(soft(ctx))ok=pairs3(g).every(function(p){var x=p[0],y=p[1];return(R(ctx,x,y).ten<60&&R(ctx,y,x).ten<60&&R(ctx,x,y).trust> -30&&R(ctx,y,x).trust> -30)||(late&&x.stress>60&&y.stress>60);});
 else{
@@ -8259,82 +8328,38 @@ if(grudgeOk(ctx,x,y,late)){gr.push(p);return true;}
 return false;
 })&&(!gr.length||warm>0);
 }
-if(!ok)return;
-var v=pairs3(g).reduce(function(s,p){return s+R(ctx,p[0],p[1]).att+R(ctx,p[1],p[0]).att+R(ctx,p[0],p[1]).aff;},0)-gr.length*40;
-if(v>bv){bv=v;best=g;best.gr=gr;}
-});
-return best;
+return ok?{gr:gr}:null;
 }
-var TRIO_SOFT={
-first:['{a}が{b}と{c}に手を差し出した。三人は輪になって手をつなぎ、それから、誰からともなく身を寄せ合った。','{a}「三人で、だって｜三人で、だそうだ｜三人で、だそうです」{a}が両腕を広げると、{b}と{c}が照れくさそうにその中に入った。','三人は、どこに手を置けばいいか迷いながら、ぎこちなく抱き合った。{b}の肘が{c}の脇腹に当たって、三人そろって吹き出した。'],
-again:['三人はもう一度輪になって、肩を寄せ合った。さっきより、ずっと自然だった。','{a}が「もう一回｜もう一回だ｜もう一回しましょう」と言うと、{b}と{c}は笑って、また腕を回した。','三人で抱き合うたびに、扉の紙の数字が一つずつ減っていった。{c}は、それを少しだけ惜しそうに見ていた。'],
-done:['三人が抱き合ったまま、扉の紙の文字が淡く光った。','腕をほどいた三人は、顔を見合わせて小さく笑った。','三人の輪がほどけると、部屋の空気が少しだけ温かくなっていた。']
-};
-EV.push({
-id:'cond_trio',label:'三人で条件を満たそうとする',cat:'bond',scope:'pair',pri:true,
-when:function(ctx,a,b){return!!ctx.flags.trioRule&&ctx.stepIndex>=1&&free(a)&&free(b)&& !!pickTrio(ctx,a,b);},
-w:function(ctx,a){return 1.6+ctx.stepIndex/Math.max(4,ctx.stepsTotal)*2+A.eager(ctx,a)+(ctx.stepIndex>=ctx.stepsTotal*0.7?2:0);},
-run:function(ctx,a,b){
-var g=pickTrio(ctx,a,b),r=trioRule(ctx);
-if(!g)return null;
-var c=g[2],P=pairs3(g),first= !P.some(function(p){return(A.prog(ctx,p[0],p[1]).act.trio3||0)>0;});
-var hard= !soft(ctx),text='',why='',sex=false,waited=null;
-if(hard&&HK.RoomTrio&&HK.RoomTrio.condScene){
-var gr=g.gr||[];
-var sc=HK.RoomTrio.condScene(ctx,g,first,gr.length?{kind:'grudge',gr:gr}:null);
-if(sc){
-text=(first&&LEAD_H&& !gr.length?ctx.t(pickNew(ctx,LEAD_H),a,b,c):'')+sc.text;
-var wt=P.filter(function(p){return!direct(p[0],p[1]);});
-why='条件「三人で」：'+(wt.length?'中心の一人とだけ触れ合う三人（'+nm(g)+'。'+wt.map(function(p){return p[0].name+'と'+p[1].name;}).join('・')+'は直接は触れ合わない）。':'三組とも体の関係を持てる三人（'+nm(g)+'）。')+sc.why+
-(gr.length?'／'+gr.map(function(p){return p[0].name+'と'+p[1].name+'（緊張 '+Math.round(Math.max(R(ctx,p[0],p[1]).ten,R(ctx,p[1],p[0]).ten))+'）';}).join('・')+'は不仲で張りつめたままだったが、焦り（'+gr.map(function(p){return p[0].name+' '+Math.round(p[0].stress)+'・'+p[1].name+' '+Math.round(p[1].stress);}).join('／')+'）に押されて、もう一人がいる三人ならと割り切った':'');sex=true;
-ctx.flags.trioSexN=(ctx.flags.trioSexN||0)+1;
-P.forEach(function(p){if(direct(p[0],p[1]))ctx.pair(p[0],p[1]).night=true;ctx.pair(p[0],p[1]).heatDone=true;});
-}
-}
-if(!text){
-text=ctx.t(pickNew(ctx,first?TRIO_SOFT.first:TRIO_SOFT.again),a,b,c);
-why='条件「三人で」：'+nm(g)+'は、張りつめていない三人。三人で抱き合った';
-}
-var inc=r.n>3?Math.max(1,Math.round(r.n/Math.max(3,ctx.stepsTotal*0.55)*(0.6+ctx.rng()*0.8))):1;
-ctx.rules.forEach(function(q){
-var T=K[q.k];
-if(q!==r&& !(T.type==='act'&&(sex||T.lvl<=2)))return;
-P.forEach(function(p){if(!A.bumpAct(ctx,q,p[0],p[1],q===r?inc:1)&& !waited)waited=[q,p[0],p[1]];});
-});
-P.forEach(function(p){ctx.mod2(p[0],p[1],{att:sex?8:2,aff:4,trust:4},{att:sex?8:2,aff:4,trust:4});});
-if(waited)text+=A.waitNote(ctx,waited[0],waited[1],waited[2]);
-else if(r.n>1)text+='（三人で：'+P.map(function(p){return p[0].name+'×'+p[1].name+' '+(A.prog(ctx,p[0],p[1]).act.trio3||0)+'/'+r.n;}).join('・')+'）';
-var tps=sex?P.filter(function(p){return direct(p[0],p[1]);}):null;
-var all=P.every(function(p){return A.pairDone(ctx,p[0],p[1]);});
-if(all&&HK.RoomTrio&&HK.RoomTrio.exitGroup){
-if(!sex)text+=ctx.t(pickNew(ctx,TRIO_SOFT.done),a,b,c);
-var n0=(ctx.flags.trios||[]).length;
-var ex=HK.RoomTrio.exitGroup(ctx,g,text,why,sex,sex?'warm':'soft');
-if(!sex&&ctx.flags.trios&&ctx.flags.trios.length>n0)ctx.flags.trios.length=n0;
-ex.with=[c];if(sex){ex.sex=true;ex.cat='romance';ex.trioPairs=tps;}
-return ex;
-}
-if(!waited&&P.every(function(p){return A.ruleDone(ctx,r,p[0],p[1]);}))text+='扉はまだ開かない。残っているのは、'+A.leftText(ctx,a,b)+'。';
-return{cat:sex?'romance':'bond',sex:sex,lewd:sex?true:undefined,text:text,why:why,with:[c],mag:sex?30:14,trioPairs:tps};
-}
-});
 var setup0=scen.setup,phase0=scen.phase,finish0=scen.finish;
 scen.setup=function(ctx){
 setup0(ctx);
 if(ctx.rules.some(function(r){return K[r.k].aphro;})){ctx.flags.hasAphroRule=true;ctx.flags.romantic=true;}
-var tr=trioRule(ctx);
-ctx.flags.trioRule= !!tr;
-if(!tr)return;
-ctx.flags.romantic=true;
+if((ctx.env.multi||'open')!=='only'||ctx.flags.isOne|| !(HK.roomOnlyRules&&HK.roomOnlyRules(ctx.rules)))return;
 var C=ctx.chars.filter(function(c){return HK.State.here(c);});
 if(C.length<3){
 if(HK._trioPrev)HK._trioPrev.res={n:C.length,few:true};
-if(ctx.rules.some(function(q){return q.k==='hug';}))ctx.rules.splice(ctx.rules.indexOf(tr),1);else tr.k='hug';
-ctx.flags.trioRule=false;ctx.flags.trioFall='few';
-ctx.flags.trioLabel=HK.roomLabelOf(ctx.env,ctx.rules);
+ctx.flags.trioFall='few';
+ctx.flags.trioLabel=HK.roomLabelOf(ctx.env,ctx.rules,{two:true});
 return;
 }
-if(HK.SAFE_ON){ctx.flags.trioSoft=true;if(HK._trioPrev)HK._trioPrev.res={n:C.length,soft:true};return;}
+ctx.flags.trioOnly=true;
+ctx.flags.romantic=true;
+if(HK.SAFE_ON|| !hasH(ctx)){
+ctx.flags.trioSoft=true;
+var safeNg=false;
+if(HK.SAFE_ON&&hasH(ctx)){
+var any3=false;
+for(var a3=0;a3<C.length&& !any3;a3++)for(var b3=a3+1;b3<C.length&& !any3;b3++)for(var c3=b3+1;c3<C.length&& !any3;c3++)if(hardOk([C[a3],C[b3],C[c3]]))any3=true;
+if(!any3){
+safeNg=true;ctx.flags.trioFall='ngs';
+var hr0=ruleK(ctx,'h');
+if(hr0){if(ruleK(ctx,'hug'))ctx.rules.splice(ctx.rules.indexOf(hr0),1);else hr0.k='hug';}
+ctx.flags.trioLabel=HK.roomLabelOf(ctx.env,ctx.rules);
+}
+}
+if(HK._trioPrev)HK._trioPrev.res={n:C.length,soft:true,safe: !!HK.SAFE_ON,hug:safeNg};
+return;
+}
 var ng=[],okAny=false,okN=0,okList=[];
 for(var i=0;i<C.length;i++)for(var j=i+1;j<C.length;j++){
 if(!A.okSex(C[i],C[j]))ng.push([C[i],C[j]]);
@@ -8353,8 +8378,9 @@ if(HK._trioPrev)HK._trioPrev.res={n:C.length,okN:okN,tense:tense,trios:okList.ma
 odd:(function(){var n=0;for(var i=0;i<C.length;i++)for(var j=i+1;j<C.length;j++)if(!A.okSex(C[i],C[j])!== !!(HK.Pos.noSexInfo&&HK.Pos.noSexInfo(C[i],C[j],{ctx:ctx})))n++;return n;})()};
 if(!okAny){
 ctx.flags.trioSoft=true;ctx.flags.trioFall='ng';
-softNow=true;
-try{ctx.flags.trioLabel=HK.roomLabelOf(ctx.env,ctx.rules);}finally{softNow=false;}
+var hr=ruleK(ctx,'h');
+if(hr){if(ruleK(ctx,'hug'))ctx.rules.splice(ctx.rules.indexOf(hr),1);else hr.k='hug';}
+ctx.flags.trioLabel=HK.roomLabelOf(ctx.env,ctx.rules);
 }
 if(!ctx.flags.trioSoft&& !ctx.flags.trioNG)ctx.flags.trioSoft=true;
 };
@@ -8381,7 +8407,7 @@ if(st.length<bn){bn=st.length;best={g:g,st:st};}
 }
 if(!best)return'';
 var gr=best.st.some(function(p){return grudge(ctx,p[0],p[1]);});
-return'条件「三人で」：三人の場面にならなかった（'+nm(best.g)+'：'+(best.st.length?best.st.map(function(p){return stuckWhy(ctx,p[0],p[1]);}).join('。'):'三人がそろって踏み切る機会がないまま、時間が尽きた')+
+return'三人の場面でだけ数える：三人の場面にならなかった（'+nm(best.g)+'：'+(best.st.length?best.st.map(function(p){return stuckWhy(ctx,p[0],p[1]);}).join('。'):'三人がそろって踏み切る機会がないまま、時間が尽きた')+
 '。直し方：閉じ込められる時間を長くする・部屋の圧を上げる'+(gr?'・二人の関係の「不仲」を外す':'')+'）';
 }
 function whyNG(ctx,x,y){return(HK.Pos&&HK.Pos.whyNoSex&&HK.Pos.whyNoSex(x,y,{ctx:ctx}))||'受け攻めの組み合わせが成り立たない';}
@@ -8402,7 +8428,7 @@ var os=(ctx.flags.trioOut||[]).map(function(i){return ctx.chars[i].name;});
 var on=os.length?os.join('・')+'は、三人の場面に加わらない。':'';
 var fs=(ctx.flags.trioFaith||[]).map(function(i){return ctx.chars[i].name;});
 if(fs.length)on+=fs.join('・')+'は一途で、恋人でない人がいる三人には加わらない。';
-if(fall)return'扉の紙の条件「三人で仲良くしないと出られない」は、この部屋では成り立たなかった。'+on+(ps.length?ps.join('、')+'は体の関係を持てない組なので、二組以上が体の関係を持てる三人を選べない。':'二組以上が体の関係を持てる三人がいない。')+'紙の文字がにじんで、条件は「三人で抱き合う」に書き換わった。';
+if(fall)return'扉の紙の「'+String(ctx.flags.roomLabel||'').replace(/部屋$/,'')+'」は、この部屋では成り立たなかった。'+on+(ps.length?ps.join('、')+'は体の関係を持てない組なので、二組以上が体の関係を持てる三人を選べない。':'二組以上が体の関係を持てる三人がいない。')+'紙の文字がにじんで、条件は「三人で抱き合う」に書き換わった。';
 var ok=(ctx.flags.trioOkList||[]).filter(function(o){return o.hub!=null||o.tense.length;}),shown={};
 ok.slice(0,3).forEach(function(o){o.watch.forEach(function(p){shown[p[0]+'_'+p[1]]=1;});});
 var rest=(ctx.flags.trioNG||[]).filter(function(p){return!shown[p[0]+'_'+p[1]];}).map(function(p){var x=ctx.chars[p[0]],y=ctx.chars[p[1]];return x.name+'と'+y.name+'（'+whyNG(ctx,x,y)+'）';});
@@ -8414,12 +8440,14 @@ return'扉の紙の但し書き：'+on+(tl.length?tl.join('。')+'。'+(ok.lengt
 scen.phase=function(ctx,s,n){
 phase0(ctx,s,n);
 if(s!==0)return;
-if(ctx.flags.trioFall==='few')ctx.say({text:'扉の紙の条件は「三人で」だったが、部屋にいるのは'+ctx.chars.length+'人だけだった。三人そろわなければ、この条件は成り立たない。紙の文字がにじんで、条件は「ハグ」に書き換わった。'});
+if(ctx.flags.trioFall==='few')ctx.say({text:'扉の紙は「三人で」と求めていたが、部屋にいるのは'+ctx.chars.length+'人だけだった。三人そろわなければ、この数え方は成り立たない。紙の文字がにじんで、「三人で」の字が消えた。'});
 else if(ctx.flags.trioFall==='ng'&&NG_NOTE)ctx.say({text:NG_NOTE(ctx,true)});
+else if(ctx.flags.trioFall==='ngs')ctx.say({text:'扉の紙の「'+String(ctx.flags.roomLabel||'').replace(/部屋$/,'')+'」は、この顔ぶれでは成り立たなかった。紙の文字がにじんで、条件は「三人で抱き合う」に書き換わった。'});
 if(ctx.flags.trioLabel)ctx.flags.roomLabel=ctx.flags.trioLabel;
-if(ctx.flags.trioRule&& !ctx.flags.trioFall&&NG_NOTE){var nt=NG_NOTE(ctx,false);if(nt)ctx.say({text:nt});}
+if(ctx.flags.trioOnly&& !ctx.flags.trioFall&&NG_NOTE){var nt=NG_NOTE(ctx,false);if(nt)ctx.say({text:nt});}
+if(ctx.flags.trioOnly)ctx.say({text:ctx.pick(!soft(ctx)&&INTRO_H?INTRO_H:INTRO_T)+ONLY_NOTE});
 ctx.rules.forEach(function(r){
-var pool=r.k==='trio3'&& !soft(ctx)&&INTRO_H?INTRO_H:INTRO[r.k]||HK.RoomGames.INTRO[r.k];
+var pool=INTRO[r.k]||HK.RoomGames.INTRO[r.k];
 if(pool&&pool.length)ctx.say({text:fillN(ctx.pick(pool),r.n)});
 });
 };
@@ -8435,11 +8463,12 @@ notes(A.KLABEL[r.k].replace(/（.*$/,'')+'：'+Math.min(r.n,ctx.flags.consumed[r
 if(r.k==='roulette'&&ctx.flags.rrLose){var L0=ctx.flags.rrLose;notes('罰ゲーム：'+Object.keys(L0).map(function(i){return ctx.chars[i].name+' '+L0[i]+'回';}).join('・'));}
 });
 if(ctx.flags.hurtLog&&ctx.flags.hurtLog.length)notes('傷つけた：'+ctx.flags.hurtLog.map(function(h){return ctx.chars[h.a].name+'→'+ctx.chars[h.b].name+'（'+{word:'言葉',pinch:'つねる',slap:'平手'}[h.tier]+'）';}).join('、'));
-if(ctx.flags.trioFall==='few')notes('条件「三人で」：部屋に三人そろわなかったので、「ハグ」に替わった');
-if(ctx.flags.trioFall==='ng')notes('条件「三人で」：体の関係を持てる三人がいなかったので、「三人で抱き合う」に替わった');
-if(ctx.flags.trioRule&& !soft(ctx)&& !ctx.flags.trioFall&& !ctx.flags.trioSexN){var mn=missNote(ctx);if(mn)notes(mn);}
+if(ctx.flags.trioFall==='few')notes('三人の場面でだけ数える：部屋に三人そろわなかったので、二人ずつ数えた');
+if(ctx.flags.trioFall==='ngs')notes('三人の場面でだけ数える：三人の場面を組める三人がいなかったので、条件は「三人で抱き合う」に替わった');
+if(ctx.flags.trioFall==='ng')notes('三人の場面でだけ数える：体の関係を持てる三人がいなかったので、条件は「三人で抱き合う」に替わった');
+if(ctx.flags.trioOnly&& !soft(ctx)&& !ctx.flags.trioFall&& !ctx.flags.trioSexN){var mn=missNote(ctx);if(mn)notes(mn);}
 };
-HK.RoomGames={TASK:TASK,INTRO:{},addTask:function(k,H,intro){TASK[k]=H;if(intro)HK.RoomGames.INTRO[k]=intro;},free:free,topKey:topKey,scaleOf:scaleOf,fillN:fillN,pickNew:pickNew};
+HK.RoomGames={TASK:TASK,INTRO:{},addTask:function(k,H,intro){TASK[k]=H;if(intro)HK.RoomGames.INTRO[k]=intro;},free:free,topKey:topKey,scaleOf:scaleOf,fillN:fillN,pickNew:pickNew,onlyOk:onlyOk};
 })();
 });
 ;
@@ -8460,21 +8489,15 @@ return box.res||null;
 };
 function noteText(r){
 if(!r)return'';
-if(r.few)return'条件「三人で」は三人以上で成り立ちます。いまの参加者は'+r.n+'人なので、条件は「ハグ」に替わります（参加者を三人以上にすると使えます）。';
-if(r.soft)return'条件「三人で」は、三人そろって抱き合う場面になります。';
+if(r.few)return'「三人の場面でだけ数える」は三人以上で使えます。いまの参加者は'+r.n+'人なので、二人ずつ数えます（参加者を三人以上にすると使えます）。';
+if(r.soft&&r.hug)return'「三人の場面でだけ数える」：この顔ぶれでは三人の場面を組める三人がいないので、条件は「三人で抱き合う」に替わります。';
+if(r.soft)return r.safe?'「三人の場面でだけ数える」：条件は三人そろった場面でだけ進みます（ハグなどは三人で抱き合う場面）。':'「三人の場面でだけ数える」：条件は三人そろった場面でだけ進み、二人きりでは数えません。';
 var t='';
-t='三人の場面（3P）：この顔ぶれで成り立つ三人は '+r.okN+' 組'+(r.okN?'':'（成り立つ三人がいないので、条件は「三人で抱き合う」に替わります）')+'。';
-if(r.trios&&r.trios.length)t+=r.trios.slice(0,4).map(function(o){
-return o.names.join('・')+'：できる'+(o.hub?'（'+o.hub+'を真ん中に。'+o.watch.map(function(x){return x.a+'と'+x.b+'は直接は触れ合いません――'+x.t;}).join('。')+'）':'（三組とも触れ合えます）')+
-(o.tense.length?'。不仲の'+o.tense.map(function(x){return x.a+'と'+x.b;}).join('・')+'も、時間が経って焦りが溜まれば割り切って加わります':'');
+t='三人の場面：この顔ぶれで成り立つ三人は '+r.okN+' 組'+(r.okN?'':'（成り立つ三人がいないので、条件は「三人で抱き合う」に替わります）')+'。';
+if(r.okN&&r.trios&&r.trios.length)t+=r.trios.slice(0,4).map(function(o){
+return o.names.join('・')+(o.hub?'（'+o.hub+'を真ん中に。'+o.watch.map(function(x){return x.a+'と'+x.b;}).join('・')+'は直接は触れ合いません）':'（三組とも触れ合えます）')+
+(o.tense.length?'。不仲の'+o.tense.map(function(x){return x.a+'と'+x.b;}).join('・')+'は、焦りが溜まれば割り切って加わります':'');
 }).join('。')+'。'+(r.trios.length>4?'ほかに '+(r.trios.length-4)+' 組。':'');
-var shown={};
-(r.trios||[]).slice(0,4).forEach(function(o){o.watch.forEach(function(x){shown[x.a+'\u0001'+x.b]=1;});});
-var ng2=(r.ng||[]).filter(function(x){return!shown[x.a+'\u0001'+x.b];});
-if(ng2.length)t+=(r.okN?'体の関係にならない二人（三人の場面の可否は上のとおり）：':'体の関係を持てない組：')+ng2.map(function(x){return x.a+'と'+x.b+'（'+x.t+(x.fix?'。直し方：'+x.fix:'')+'）';}).join('、')+'。';
-if(r.tense&&r.tense.length){var tz=r.tense.filter(function(x){return x.avoid||x.low.length;});if(tz.length)t+=tz.map(function(x){return x.avoid?x.avoid+'は'+(x.avoid===x.a?x.b:x.a)+'を避けているので、この二人は三人の場面に加わりません（直し方：'+x.avoid+'が持つ側の「愛憎」を不仲に付ける、または不仲を外す）':'性欲「弱い」の'+x.low.join('・')+'は、不仲の相手と割り切るまでに強い焦りが要ります';}).join('。')+'。';}
-if(r.faith&&r.faith.length)t+='一途で恋人のいる人：'+r.faith.join('・')+'（恋人でない人がいる三人には加わりません。直し方：「一途」を外す）。';
-if(r.out&&r.out.length)t+='「三人の場面（3P）：しない」の人：'+r.out.join('・')+'（住人の欄で「する」にすると加わります）。';
 return t;
 }
 RG.noteText=noteText;
@@ -8482,11 +8505,12 @@ function noteHtml(r){
 if(!r)return'';
 var h='';
 var NB=HK.NgBand,notes=[];
-if(NB&& !r.few&& !r.soft&&((r.ng&&r.ng.length)||(r.faith&&r.faith.length)||(r.out&&r.out.length))){
+if(NB&& !r.few&& !r.soft&& !r.okN){
 if(r.faith&&r.faith.length)notes.push('一途で恋人のいる人：'+r.faith.join('・')+'（恋人でない人がいる三人には加わりません。直し方：「一途」を外す）');
 if(r.out&&r.out.length)notes.push('「三人の場面（3P）：しない」の人：'+r.out.join('・')+'（住人の欄で「する」にすると加わります）');
+if(r.tense&&r.tense.length)r.tense.filter(function(x){return x.avoid;}).forEach(function(x){notes.push(x.avoid+'は'+(x.avoid===x.a?x.b:x.a)+'を避けているので、この二人は三人の場面に加わりません（直し方：'+x.avoid+'が持つ側の「愛憎」を不仲に付ける、または不仲を外す）');});
 h=NB.html({title:r.ng&&r.ng.length?'体の関係にならない組':'三人の場面に加わらない人',rows:(r.ng||[]).map(function(x){return{a:x.a,b:x.b,t:x.t,fix:x.fix};}),notes:notes,
-lead:'三人の場面（3P）：この顔ぶれで成り立つ三人は '+r.okN+' 組'+(r.okN?'':'（成り立つ三人がいないので、条件は「三人で抱き合う」に替わります）')+'。'+(r.okN&&r.ng&&r.ng.length?'この組を含む三人は、二人の両方と持てる人を真ん中にしたときだけ成り立ちます。':''),
+lead:'三人の場面：この顔ぶれで成り立つ三人は 0 組です（成り立つ三人がいないので、条件は「三人で抱き合う」に替わります）。二組以上が体の関係を持てる三人がいると、三人の場面になります。',
 foot:'「○○の設定」を押すと、その人の設定が開きます（直すと、この表示も書き換わります）。'});
 }
 if(!h){var t=noteText(r);h=t?'<div class="desc trioinfo">'+HK.escape(t)+'</div>':'';}
@@ -8496,11 +8520,7 @@ RG.noteHtml=noteHtml;
 if(typeof document==='undefined'|| !document.addEventListener||typeof MutationObserver==='undefined')return;
 var timer=null,busy=false,lastKey='',lastText='';
 function schedule(){if(busy)return;clearTimeout(timer);timer=setTimeout(update,250);}
-function trioSel(){
-var ids=['env-cond','env-cond2'];
-for(var i=0;i<ids.length;i++){var s=document.getElementById(ids[i]);if(s&&s.value==='trio3')return s;}
-return null;
-}
+function trioSel(){var s=document.getElementById('env-multi');return s&&s.value==='only'?s:null;}
 function update(){
 try{
 var UI=HK.UI,S=UI&&UI.state?UI.state():null,old=document.getElementById('trio-note');
@@ -8535,7 +8555,7 @@ HK.Load.def(124,'js/room-noexit-note.js',function(){
 var HK=window.HK,A=HK&&HK.RoomAPI,scen=A&&A.scen;
 if(!scen)return;
 var K=A.K,NX=HK.RoomNoExit={};
-function isPairT(T){return!!T&&(T.type==='act'||T.type==='word'||T.type==='hurt'||T.type==='trio');}
+function isPairT(T){return!!T&&(T.type==='act'||T.type==='word'||T.type==='hurt');}
 function hereOf(ctx){return ctx.chars.filter(function(c){return HK.State&&HK.State.here?HK.State.here(c):c.alive!==false&& !c.out;});}
 function condName(ctx,r){
 var e=ctx.env||{},k1=e.cond||'h',lab=r.k==='kill'?(HK.SAFE_ON?'誰かを気絶させる':'誰かを殺す'):(A.KLABEL&&A.KLABEL[r.k])||r.k;
@@ -9033,6 +9053,7 @@ return typeof v==='object'?v.name:String(v);
 function nSent(s){return(String(s).replace(/「[^」]*」/g,'').match(/[。！？]/g)||[]).length;}
 function rulesOf(ctx){return Array.isArray(ctx.rules)?ctx.rules:[];}
 function ruleOf(ctx,k){return rulesOf(ctx).filter(function(r){return r.k===k;})[0]||null;}
+function onlyH(ctx){return!!(HK.roomTrioOnly&&HK.roomTrioOnly(ctx))&& !!ruleOf(ctx,'h');}
 function API(){return HK.RoomAPI;}
 function hCount(ctx,who){
 var A=API();if(!A|| !A.prog|| !ctx.flags|| !ctx.flags.prog)return 0;
@@ -9158,12 +9179,12 @@ var first= !(ag.n>0);
 if(kind==='trio'||kind==='rival'){
 if(kind==='rival'&&o.rv){
 m.k=o.rv.k;m.c=o.rv.c;m.u=o.rv.u;
-if(!first)againS(true);else if(o.ev==='cond_trio'||ruleOf(ctx,'trio3')){P(T.SIT.trio3);mat.push('条件「三人で」');}else sitFirst();
+if(!first)againS(true);else if(onlyH(ctx)){P(T.SIT.trio3);mat.push('三人の場面でだけ数える部屋');}else sitFirst();
 P(T.RIVAL);P(T.RIVAL2);mat.push('こじれた三人（'+o.rv.k.name+'と'+o.rv.u.name+'は不仲・'+o.rv.c.name+'は'+o.rv.u.name+'を想う）');
 }else if(!first)againS(true);
 else{
 var tr=o.trio||{};
-if(o.ev==='cond_trio'||ruleOf(ctx,'trio3')){P(T.TRIO.rule);mat.push('条件「三人で」');}
+if(onlyH(ctx)){P(T.TRIO.rule);mat.push('三人の場面でだけ数える部屋');}
 else{sitFirst();if(ctx.env&&(ctx.env.multi||'open')!=='no'){P(T.TRIO.clause);mat.push('但し書き：三人以上で同時なら全員分');}}
 if(tr.lovers){m.c=tr.lovers;P(T.TRIO.lovers);mat.push('恋人どうしが一人を迎える');}
 else if(tr.jeal){m.h=tr.jeal;P(T.TRIO.jeal);mat.push('取り合いの決着');}
@@ -9687,12 +9708,7 @@ HK.Load.def(388,'js/room-games-r18.js',function(){
 'use strict';
 var HK=window.HK,A=HK.RoomAPI,G=HK.RoomGames;
 if(!A|| !A.addKind|| !G)return;
-if(HK.SAFE_ON){
-var SL='三人で抱き合う（三人以上のとき）';
-A.KLABEL.trio3=SL;
-(A.scen.env||[]).forEach(function(e){if(e.id==='cond'||e.id==='cond2')(e.options||[]).forEach(function(o){if(o.v==='trio3')o.label=SL;});});
-return;
-}
+if(HK.SAFE_ON)return;
 var K=A.K,EV=A.EV,ITEM=A.ITEM;
 function R(ctx,a,b){return ctx.R(a,b);}
 var free=G.free,topKey=G.topKey;
@@ -9973,18 +9989,19 @@ ctx.act2({actors:[c],cat:'escape',text:ctx.t('{a}だけが、針の速さから�
 ;
 HK.Load.def(445.5,'tone:scen-whiteroom',function(){
 HK.Load.toneData("mixed",{"F":[
+["私のことは、道具だと思っていいよ。あなたが楽なら、それでいい","私のことは、道具だと思っていいですよ。あなたが楽なら、それでいい"],
 ["……今回だけ。それに、〈〉が隣にいるなら","……今回だけですよ。それに、〈〉さんが隣にいるなら",1],
-["聞こえてるなら返事して","聞こえてるなら返事してください。ねえってば",1]],
+["聞こえてるなら返事して","聞こえてるなら、返事してください。ねえってば",1]],
 "O":{
 "全員でここを出る":"全員でここを出ましょう。置いてくなんてなしだよ",
-"好きな食べ物って何？":"好きな食べ物って何ですか？　教えてよ",
-"…今。この状況":"…今です。この状況、そのものだよ",
+"好きな食べ物って何？":"好きな食べ物って、何？　教えてくださいよ",
+"…今。この状況":"…今。この状況、そのものですよ",
 "止まった。もう止まってる":"止まりました。もう止まってるって",
 "誰が飲むか、こんなもの":"誰が飲むもんですか、こんなもの。絶対いやだって",
 "動物で例えたら、自分は何だと思う？":"動物で例えたら、自分は何だと思います？",
 "もうちょっといる":"もうちょっといます。帰りたくないし",
 "私はこんなものに従う気はない":"私、こんなものに従う気はないです。誰が決めたの、これ",
-"ごめん。それは、まだ言えない":"すみません。それは、まだ言えない",
+"ごめん。それは、まだ言えない":"ごめん。それは、まだ言えないんです",
 "話し合ってたら日が暮れる":"話し合ってたら日が暮れますよ。さっさと決めよ",
 "私、こういうのは一人とだけって決めてる":"私、こういうのは一人とだけって決めてるんです",
 "さっきのも一回に入る？":"さっきのも一回に入ります？　ずるくない？",
@@ -10003,7 +10020,7 @@ HK.Load.toneData("mixed",{"F":[
 "…何するつもり？":"…何するつもりですか？　ちょっと怖いんだけど",
 "散歩。知らない道を歩くのが好きで":"散歩です。知らない道を歩くのが好きでさ",
 "寝てる。ひたすら寝てる":"寝てます。ひたすら寝てる、それだけ",
-"……ごめん、それはちょっと":"……ごめんなさい、それはちょっと無理かな",
+"……ごめん、それはちょっと":"……ごめん、それはちょっと無理です",
 "ふざけてる":"ふざけてますよね。笑えないんだけど",
 "どっちかを選んだら、もう一人を置いていくことになる":"どっちかを選んだら、もう一人を置いていくことになります。それは嫌だな",
 "嫌なら、私は他の方法を探す。時間はある":"嫌なら、私は他の方法を探します。時間はあるし",
@@ -10031,11 +10048,11 @@ HK.Load.toneData("mixed",{"F":[
 "お前に任せたら一生終わらない":"あなたに任せたら一生終わらないです。貸してよ",
 "嫌になったら私がすぐ止める":"嫌になったら私がすぐ止めます。安心してね",
 "今は何もしなくていい":"今は何もしなくていいです。休んでて",
-"……選べない。だったら、三人で":"……選べないです。だったら、三人でいいじゃん",
+"……選べない。だったら、三人で":"……選べない。だったら、三人でいいじゃないですか",
 "じゃあ、する？":"じゃあ、します？　私はいいよ",
 "これ書いた人、絶対モテない":"これ書いた人、絶対モテないですよ。センスないもん",
 "目線ください":"目線ください。こっち見てよ",
-"まだ、かもしれない":"まだ、かもしれないです。わかんないけどね",
+"まだ、かもしれない":"まだ、かも。わかんないですけど",
 "こっちも見て":"こっちも見てください。寂しいじゃん",
 "これが『しりとりしないと出られない部屋』だったら楽だった":"これが『しりとりしないと出られない部屋』だったら楽でしたね。ほんとにさ",
 "三人で、なんて絶対に無理":"三人で、なんて絶対に無理です。ありえないよ",
@@ -10065,7 +10082,7 @@ HK.Load.toneData("mixed",{"F":[
 "…覚えてない。泣き方を忘れたのかもしれない":"…覚えてないです。泣き方を忘れたのかもしれないね",
 "次は私、絶対に誰かに代わってもらう":"次は私、絶対に誰かに代わってもらいます。もう懲りたよ",
 "出たらこの話、一生ネタにしような":"出たらこの話、一生ネタにしましょうね。絶対だよ",
-"三人って、どこに手を置けばいいの":"三人って、どこに手を置けばいいんですか。わかんないよ",
+"三人って、どこに手を置けばいいの":"三人って、どこに手を置けばいいの？　わかんないですよ",
 "目を閉じてろ":"目を閉じててください。見ちゃだめだよ",
 "…ごめん、決めてるから":"…ごめんなさい、決めてるから",
 "〈〉が一人だけって決めてるのは知ってる。でも、三人なら早く出られる":"〈〉さんが一人だけって決めてるのは知ってます。でも、三人なら早く出られるよ",
@@ -10086,13 +10103,13 @@ HK.Load.toneData("mixed",{"F":[
 "…それ、今聞く？":"…それ、今聞きます？　空気読んでよ",
 "これで出られるんだよね":"これで出られるんですよね。ほんとだよね？",
 "これで一回":"これで一回です。あと何回だっけ",
-"…こういうの、使ったことある？":"…こういうの、使ったことあります？　私はないよ",
+"…こういうの、使ったことある？":"…こういうの、使ったことある？　私はないんですけど",
 "縛ってもいい？嫌なら言って":"縛ってもいいですか？嫌なら言ってね",
 "好き。……これでいい？":"好きです。……これでいい？",
 "もう、紙のことは考えなくていい":"もう、紙のことは考えなくていいです。忘れちゃおうよ",
 "……条件は、満たしたな":"……条件は、満たしましたね。これで出られるよ",
 "自分で脱ぐか、脱がされるか。選べ":"自分で脱ぐか、脱がされるか。選んでください。早くしてよ",
-"まだ出たくないな":"まだ出たくないです。もうちょっといようよ",
+"まだ出たくないな":"まだ出たくないなあ。もうちょっといましょうよ",
 "それは、答えたら負けな気がする":"それは、答えたら負けな気がします。言わないよ",
 "本当は私、最初に会ったときから気になってた":"本当は私、最初に会ったときから気になってたんです。気づいてた？",
 "誰かに飲ませるくらいなら、私が飲む":"誰かに飲ませるくらいなら、私が飲みます。貸してよ",
@@ -11089,4 +11106,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 ["止まった。もう止まっている","止まった。……もう、止まっているのだよ",1],
 ["この紙、誤字っていないか","この紙、誤字があるのではないかね",1]]});
 });
-HK.Load.done('scen-whiteroom', '34eaeae24c', 1);
+HK.Load.done('scen-whiteroom', '42e6809ffd', 1);
