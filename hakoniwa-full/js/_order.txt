@@ -526,6 +526,8 @@ tone js/tone-brush3d.js
 tone js/tone-brush3d-r18.js
 tone js/tone-brush4k.js
 tone js/tone-brush4k-r18.js
+tone js/tone-brush5.js
+tone js/tone-brush5-r18.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/omega-mob-r18.js @scen:omega
