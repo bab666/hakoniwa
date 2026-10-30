@@ -163,8 +163,37 @@
     return q.replace(/(話|出|返|離|渡|消|探|直|貸|回|隠|外|押|許|晒|殺|落と|起こ|鳴ら|揺ら|垂ら|漏ら)しやがれ/g, '$1せ').replace(/しやがれ/g, 'しろ')
       .replace(/([ぁ-ゖ一-鿿々])やがれ/g, function (m, c) { return YG_I2E[c] ? YG_I2E[c] : c + 'ろ'; });
   }
+  /* 強気・頼れる兄貴分（硬い常体のベース F から作る、ぶっきらぼう・さっぱりした口調）：書き言葉の「〜ている」「〜ていた」「〜ていない」「〜ていろ」を、
+     話し言葉の「〜てる」「〜てた」「〜てない」「〜てろ」に（「知っていた」→「知ってた」、「まだ終わっていない」→「まだ終わってない」、兄貴分の「終わっていねえ」→「終わってねえ」）。
+     「〜ていく」「〜ていい」「〜ていられない」と、「一人でいる」の「でいる」は触らない。厳格・冷静は硬い言い切りが個性なので当てない（2026-10-30 第3回（TD）） */
+  var TEIRU_CUT = { proud: 1, aniki: 1 };
+  function teiruCut(q) {
+    return q.replace(/(?:(?<=[んい])で|て)い(?=る|た|な[いくかけ]|ねえ|ても|[ろな](?=[。！？!?…‥、」]|$))/g, function (m) { return m.slice(0, -1); });
+  }
+  /* 男性の話し手（自動の態度口調）：書き下ろしの行・3本の台詞の辞書の出力に残った女性的な語尾（〜わよ・〜のよ・〜かしら・〜なさいよ・名詞＋よ・言い切りの「〜たの」）を男性の言い方に。
+     従来の言い換え（voice-tone.js の styleQuote）は同じことをしているが、書き下ろしの行と辞書の出力はそこを通らない（「俺が飲むわよ」「犬よ」「答えなさいよ」「知りたいの」。2026-10-30 第3回（TD））。
+     問い（？・何・どう・なんで など）の「〜の」はそのまま */
+  var MASC_FIX = { proud: 1, stern: 1, tsun: 1, gentle: 1, devoted: 1, cool: 1, free: 1, shy: 1 };
+  var NASAI = { '言い': '言え', '待ち': '待て', '答え': '答えろ', '見': '見ろ', '聞き': '聞け', '黙り': '黙れ', '来': '来い', '寝': '寝ろ', '食べ': '食べろ', '座り': '座れ', '話し': '話せ', '離し': '離せ', '出し': '出せ', '休み': '休め', '謝り': '謝れ', 'やめ': 'やめろ', '呼び': '呼べ', '飲み': '飲め', '決め': '決めろ', '覚え': '覚えろ', '考え': '考えろ', '頑張り': '頑張れ', '入れ': '入れろ', '開け': '開けろ', '教え': '教えろ', '見せ': '見せろ', '任せ': '任せろ', '読み': '読め', 'しゃんとし': 'しゃんとしろ', '笑い': '笑え', '起き': '起きろ', '泣き': '泣け', '止め': '止めろ' };
+  var NASAI_RE = new RegExp('(?:(' + Object.keys(NASAI).join('|') + ')|([一-鿿]{2})し|([てで]))なさい(よ(?:ね)?)?(?=[。！？!?…‥、」　っ]|$)', 'g');
+  var MF_END = '(?=[。！？!?…‥、」　]|$)';
+  function mascFix(q) {
+    var sent = function (str, off) { var a = str.slice(0, off); return a.slice(Math.max(a.lastIndexOf('。'), a.lastIndexOf('！'), a.lastIndexOf('？'), a.lastIndexOf('…')) + 1); };
+    return q.replace(NASAI_RE, function (m, v, kk, te, yo) { return (v ? NASAI[v] : kk ? kk + 'しろ' : te + 'ろ') + (yo ? 'よ' : ''); })
+      .replace(new RegExp('([うくすつぬむぶぐるたい])わよ' + MF_END, 'g'), '$1よ').replace(new RegExp('([一-鿿ァ-ヶーぁ-ゖ])わよ' + MF_END, 'g'), '$1だよ')
+      .replace(new RegExp('((?![見寝来出居得])[一-鿿ァ-ヶー]|だけ|ばかり|こと|はず)よ' + MF_END, 'g'), '$1だよ')
+      .replace(new RegExp('(な)?のよ' + MF_END, 'g'), function (m, na) { return na ? 'なんだよ' : 'んだよ'; })
+      .replace(new RegExp('かしら' + MF_END, 'g'), 'かな').replace(new RegExp('(だ|た|い|る)わね' + MF_END, 'g'), '$1な').replace(new RegExp('だわ' + MF_END, 'g'), 'だ')
+      .replace(/(たい|た|しい|好きな|嫌いな)の(?=[。！!…‥」]|$)/g, function (m, w, off, str) {
+        if (/^[…‥]*[？?]/.test(str.slice(off + m.length)) || /何|なに|なん|どう|誰|どこ|いつ|なぜ|どれ|どっち/.test(sent(str, off))) return m;
+        return w + 'んだ';
+      });
+  }
   V.genderEnd = function (q, who) {
     if (!q || !who) return q;
+    /* 自動の態度口調の仕上げ（2026-10-30 第3回（TD）。上の teiruCut・mascFix） */
+    if (TEIRU_CUT[who.tone]) q = teiruCut(q);
+    if (who.gender === 'm' && MASC_FIX[who.tone]) q = mascFix(q);
     var T = HK.TONES && HK.TONES[who.tone];
     if (T && T.neutral && who.gender !== 'f') {
       q = q.replace(/(^|[「、…‥\s])おや、あら(?:あら)?/g, '$1おや')
@@ -177,11 +206,12 @@
         .replace(new RegExp('(?:のよ|わよ)' + END, 'g'), 'んだよ')
         .replace(new RegExp('わね' + END, 'g'), 'ね');
     } else if (who.gender === 'f' && FEM_FIRM[who.tone]) {
-      q = q.replace(/じゃねえか/g, 'じゃない').replace(/じゃねえ(?=[…‥。！？!?、」♡よ]|$)/g, 'じゃない')
-        .replace(/([ぁ-ゖ])ねえ(?=[よか…‥。！？!?、」]|$)/g, '$1ない')
-        .replace(new RegExp('だぜ' + END, 'g'), 'だよ').replace(new RegExp('([ぁ-ゖ])ぜ' + END, 'g'), '$1よ')
+      /* 2026-10-30 第3回（TD）：「笑ってねえぞ」の「ねえ」も直す（ぞ・ぜの前）。「なぜ、」「まぜ」「かぜ」の「ぜ」は語尾として扱わない（「……なぜ、こうなった」が「……なよ、こうなった」になっていた） */
+      q = q.replace(/じゃねえか/g, 'じゃない').replace(/じゃねえ(?=[…‥。！？!?、」♡よぞぜ]|$)/g, 'じゃない')
+        .replace(/([ぁ-ゖ])ねえ(?=[よかぞぜ…‥。！？!?、」]|でしょ|が|$)/g, '$1ない').replace(/(何も|誰も|どこにも|しか)ねえ/g, '$1ない')
+        .replace(new RegExp('だぜ' + END, 'g'), 'だよ').replace(new RegExp('([ぁ-ゖ])(?<![なまか])ぜ' + END, 'g'), '$1よ')
         .replace(/だろうが(?=[…‥。！？!?、」]|$)/g, FEM_PLAIN[who.tone] ? 'だろう' : 'でしょう');
-      q = FEM_PLAIN[who.tone] ? plainYagare(q).replace(new RegExp('だぜ' + END, 'g'), 'だ').replace(new RegExp('([ぁ-ゖ])ぜ' + END, 'g'), '$1') : q.replace(/やがれ/g, 'なさい');
+      q = FEM_PLAIN[who.tone] ? plainYagare(q).replace(new RegExp('だぜ' + END, 'g'), 'だ').replace(new RegExp('([ぁ-ゖ])(?<![なまか])ぜ' + END, 'g'), '$1') : q.replace(/やがれ/g, 'なさい');
     }
     if (who.gender === 'f' && (!HK.toneAxis || (HK.toneAxis(who.tone) || {}).ending !== 'm')) q = femKiri(femSoft(q, who), who);
     if (who.gender === 'f' && FEM_PROUD[who.tone]) q = femProud(q);
@@ -215,7 +245,18 @@
       .replace(new RegExp('どうした' + '(?=[。？?」…‥]|$)', 'g'), 'どうしたの')
       .replace(new RegExp('([にで])いろ' + FP_END, 'g'), '$1いなさい')
       .replace(new RegExp('すんな' + FP_END, 'g'), 'しないで')
-      .replace(/(?<![じゃ])(いい|ない)か(?=[。？?」]|$)/g, '$1？').replace(/？[。？?]/g, '？');
+      .replace(/(?<![じゃ])(いい|ない)か(?=[。？?」]|$)/g, '$1？').replace(/？[。？?]/g, '？')
+      /* 2026-10-30 第3回（TD）：問いの「全員いるか。」「困るか？」「いつものか？」は「全員いる？」「困る？」「いつもの？」、「〜でしょう」は「〜でしょ」、
+         命令の「答えろよ」は「答えなさいよ」、念押しの「いいな？」は「いい？」（男性の言い方・敬語寄りの言い方を、強気な女性の話し言葉に） */
+      .replace(/(いる|困る|わかる|分かる|ある|できる|来る|知ってる|見える|聞こえる)か。(?=[^」])/g, '$1？　').replace(/(いる|困る|わかる|分かる|ある|できる|来る|知ってる|見える|聞こえる)か(?=[。？?」]|$)/g, '$1？').replace(/？[。？?]/g, '？')
+      .replace(/(?<=[ぁ-ゖ一-鿿])のか(?=[？?])/g, 'の')
+      .replace(/でしょう(?=[。！!？?…‥」、]|$)/g, 'でしょ')
+      .replace(/([えけげせてねべめれ]|見|寝|着)ろよ(?=[、。！!…‥」]|$)/g, '$1なさいよ')
+      .replace(/いいな？/g, 'いい？')
+      .replace(/するか(?=[？?])/g, 'する').replace(/(?<=[一-鿿])(?<![誰何])か(?=[？?])/g, '')
+      /* 「〜が」「〜てな」「〜ちまう」「もらうぞ」（男性的な接続・語尾）も */
+      .replace(/(る|た|ない)が(?=[、。！…‥」]|$)/g, '$1けど').replace(new RegExp('てな' + FP_END, 'g'), 'てね')
+      .replace(/ちま(う|った)/g, function (m, e) { return e === 'う' ? 'ちゃう' : 'ちゃった'; }).replace(new RegExp('(?<!ど)うぞ' + FP_END, 'g'), 'うわよ');
   }
   /* 女性の話し手（男性的な口調を選んでいない人。HK.toneAxis の ending が 'm' の口調＝ヤンキー・兄貴分・熱血などは除く）：
      掛け合いの元の文や言い換えに残った男性的な語尾・語を、女性の言い方にする（男性の台詞から女性的な語尾を外す規則の逆向き）。
