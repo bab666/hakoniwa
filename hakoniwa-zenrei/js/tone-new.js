@@ -110,6 +110,14 @@
     q = kudake(q);
     if (MOAN.test(q)) return q;
     q = q.replace(/ありがとうございま(?:す|した)/g, 'あざーす').replace(/すみません(?=[、。！!]|$)/g, 'さーせん').replace(/よろしくお願いします/g, 'よろしくでーす');
+    /* 2026-10-30 第3回（TB）：敬語の書き下ろしを借りた台詞の、改まった言い方・尊敬語・「〜ています」を、軽い「です・ます」に（ダウナー系チャラ男だけ） */
+    q = q.replace(/([てで])いらっしゃ(?:いま|る)/g, function (m, t) { return t + (/る$/.test(m) ? 'る' : 'ま'); }).replace(/いらっしゃいま/g, 'いま')
+      .replace(/何とお呼びすれば/g, 'なんて呼べば').replace(/お呼びすれば/g, '呼べば').replace(/お話しし/g, '話し').replace(/お名前/g, '名前').replace(/ご自分/g, '自分').replace(/お声/g, '声').replace(/お顔/g, '顔').replace(/お体/g, '体').replace(/素敵な/g, 'いい')
+      .replace(/お持ちしま/g, '持ちま').replace(/お気になさらず/g, '気にしないで').replace(/なさら(ない|なく)/g, 'し$1').replace(/拝見し/g, '見').replace(/お付き合いのことは置いておいて/g, '付き合うとかは置いといて').replace(/まいりません/g, 'いきません').replace(/よろしいでしょうか/g, 'いいですかー')
+      .replace(/([てで])いま(す|した|せん)/g, '$1ま$2').replace(/([てで])い(る|た)(?=[。、…！？!?]|$|ん|の|か|け|は|ら)/g, '$1$2').replace(/ておいて/g, 'といて')
+      .replace(/^では(?=[、あ-んア-ン一-鿿])/g, 'じゃ').replace(/([。　…])では、/g, '$1じゃ、').replace(/ではありません/g, 'じゃないです').replace(/のですが/g, 'んですけど').replace(/のでしたっけ/g, 'んでしたっけ').replace(/ですものね/g, 'ですもんね').replace(/(?<![もこ])のです/g, 'んです')
+      .replace(/少し/g, 'ちょっと').replace(/本当に/g, 'ほんと').replace(/どちらの/g, 'どっちの').replace(/どうして/g, 'なんで')
+      .replace(/どなたか/g, '誰か').replace(/いらっしゃいません/g, 'いません').replace(/お許しをいただけるなら/g, 'いいって言ってくれるなら').replace(/お許しいただけますか/g, 'いいですかー').replace(/なくて結構/g, 'なくていい').replace(/てくださって/g, 'てくれて');
     q = q.replace(/でしょうか(?=[。？?…」]|$)/g, 'ですかねー').replace(/ください(?=[。！!…」]|$)/g, 'くださいよー').replace(/てほしいです/g, 'てほしいなー、なんて').replace(/でほしいです/g, 'でほしいなー、なんて');
     q = bySent(q, function (s, p) {
       var P = p ? p.replace(/[！!]+(?=[？?])/g, '').replace(/[！!]+/g, '。') : '';
@@ -117,7 +125,7 @@
       if (/[？?]/.test(p)) return (/(ですか|ますか)$/.test(s) && lot(s, 2) ? s + 'ー' : s) + p;
       if (/(です|ます)よ$/.test(s)) return s + 'ー' + P;
       if (/(です|ます|ません)$/.test(s) && lot(s, 3)) return s + 'けど' + P;
-      if (/(です|ます)$/.test(s) && lot(s + 'y', 3)) return s + 'よー' + P;
+      if (/(です|ます)$/.test(s) && lot(s + 'y', 2)) return s + 'よー' + P;
       return s + P;
     });
     return q;
