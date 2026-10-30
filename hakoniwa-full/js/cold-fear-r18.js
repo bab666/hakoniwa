@@ -9,7 +9,7 @@
      恋愛・R18にしない相手・性行為の相手の固定・血縁・監禁中は越えない。迫る側が相手を避けている（HK.Avoid）・迫る側も相手に無関心・恐怖を抱く組では起きない。
      一回の箱庭で同じ組は一度まで。起きる見込みは組が初めて候補に上がったときに決める（ふつう 3 割・重い 5 割。迫る側に動機〔惹かれ 30 以上・嫌悪 50 以上・攻撃性が高い・執着〕がなければその 0.35 倍）
    ・文：性別の組（m＝攻めが男性の体／ff＝女性どうし／fm＝女性の攻めが男性に跨る）ごとの最中、受ける側の態度9種の一言（3本）と山場、男性向けは体の組（mv／ma／ff／fm）の最中と
-     HK.HateSex.Force の山場（態度9種）・果て・もう一度。喘ぎは ero-kit.js（嫌がる喘ぎ）。描写「ほのめかす」は暗転の一文、「短く」は三段だけ。
+     HK.HateSex.Force の山場（態度9種）・果て、濃いならもう一度（2026-10-29 担当NC：受けが求める形の Force.AGAIN をやめ、攻めからの二度目を嫌がるまま書く HK.HateSex.Refuse.again に）。喘ぎは ero-kit.js（嫌がる喘ぎ）。描写「ほのめかす」は暗転の一文、「短く」は三段だけ。
    ・きっかけの段（R.lead）：場面の記録の直前に、別の記録（tag「きっかけ」、理由「きっかけ：…」）で、迫った動機（惹かれ・嫌悪・執着・気性・怯え／無関心への苛立ち）・場・
      拒みきれなかった理由（恐怖で体がすくむ／油断と力の差）を 3 文以上で出す。出られない部屋で HK.SexLead が先に足したときは足さない
    ・記録：性的な場面の印（e.lewd）・理由に〔合意のない展開〕と「恐怖の変化：…」「無関心の変化：…」。この組は恋人・夜の関係にはならない（pf.night を立てない）
@@ -266,7 +266,7 @@
       var pe = HF.pick(ctx, HF.PEAK[ps] || HF.PEAK.gentle) + '{b}「{m2}」', fin = HF.pick(ctx, HF.FIN[sub]), bd = HF.pick(ctx, X.bodyEro[sub]);
       /* 無関心の側は怯えていない：怯えの言い回しを、拒み・睨みに置き換える */
       if (!fear) bd = String(bd).replace(/怯えた顔/g, '歪んだ顔').replace(/怯えて強ばっていた/g, '拒むように強ばっていた').replace(/怯える\{b\}/g, '睨み返す{b}');
-      var pe2 = short ? [open, line + bd, pe + fin] : [open, line, bd, crack, pe, fin].concat(Lw.high(env) ? [HF.pick(ctx, HF.AGAIN)] : [], [pk(ctx, after)]);
+      var pe2 = short ? [open, line + bd, pe + fin] : [open, line, bd, crack, pe, fin].concat(Lw.high(env) ? [HK.HateSex.Refuse ? HK.HateSex.Refuse.again(ctx, k) : HF.pick(ctx, HF.AGAIN)] : [], [pk(ctx, after)]);
       return HF.fill(ctx, J(pe2), T, H, true);
     }
     /* 山場：小説調は受ける側の態度9種（無関心の側は、合意のない場面の共通の山場 HK.TieMasterR18.X.peak があればそれ）、男性向けは性別の組ごとの擬音の段落 */

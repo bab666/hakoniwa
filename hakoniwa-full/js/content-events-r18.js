@@ -349,9 +349,13 @@
     w: function (ctx, a) { return 3 + (a.tr.aggr || 0) + (a.tr.impulse || 0) * 0.5; },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b), o = HS.order(ctx, a, b);
-      pf.ctHate = true; pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.hateSex = (pf.hateSex || 0) + 1; pf.hateSexAt = ctx.stepIndex;
-      ctx.mod2(a, b, { att: 10, aff: 3, ten: -2 }, { att: 10, aff: 3, ten: -2 });
-      var text = HS.scene(ctx, a, b, { place: ctx.t(pk(ctx, T.GOUKON_HATE), o[0], o[1]) });
+      pf.ctHate = true; pf.hateSex = (pf.hateSex || 0) + 1; pf.hateSexAt = ctx.stepIndex;
+      /* 受けの行き先（HS.outcome。2026-10-29 担当NC）：最後まで受け入れない回は、仲が深まる値の動きと夜の関係の印をやめて、嫌悪の向きに（HS.hurt） */
+      var oc = HS.outcome ? HS.outcome(ctx, a, b) : 'swept';
+      var sweep = function () { pf.night = true; pf.nights = (pf.nights || 0) + 1; ctx.mod2(a, b, { att: 10, aff: 3, ten: -2 }, { att: 10, aff: 3, ten: -2 }); };
+      if (oc !== 'refuse') sweep();
+      var text = HS.scene(ctx, a, b, { place: ctx.t(pk(ctx, T.GOUKON_HATE), o[0], o[1]), out: oc });
+      if (oc === 'refuse') { if (HS.refused(ctx, a, b)) HS.hurt(ctx, a, b); else sweep(); }
       return { cat: 'romance', sex: true, text: text, why: HS.why(ctx, a, b) + HS.shieldWhy(HS.lastShield) + '／合コンの帰り道／〔合意のない展開〕内容のスイッチ「合意のない展開」・展開：重い', mag: 28 };
     }
   });

@@ -133,6 +133,7 @@ js/trio4-talk-r18.js @scen:whiteroom
 js/room-left.js @scen:whiteroom
 js/room-cheer.js @scen:whiteroom
 js/hate-sex-r18.js
+js/hate-sex-refuse-r18.js
 js/hate-sex-room-r18.js @scen:whiteroom
 js/hate-love-r18.js @pack:rel
 js/hate-love-more-r18.js @pack:rel

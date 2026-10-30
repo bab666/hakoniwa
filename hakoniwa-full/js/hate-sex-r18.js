@@ -1,6 +1,8 @@
 /* 箱庭シミュレーター（R18版のみ）― 敵対している二人の強引なエッチ
    攻め（受け攻めの指定どおり。おまかせ・リバも含む。HK.Pos.order）が、受けを無理やりめに押し倒して始まる。
-   受けは口では嫌がるが、心も体もまんざらではない反応をして、最後は受けのほうからも求める（合意の場面として書く）
+   受けは口では嫌がるが、心も体もまんざらではない反応をして、最後は受けのほうからも求める（合意の場面として書く）。
+   2026-10-29（担当NC）：受けが攻めを強く嫌っている回は、最後まで受け入れない流れ（HS.outcome が 'refuse'。文は hate-sex-refuse-r18.js の HK.HateSex.Refuse）。
+     呼ぶ側は HS.outcome で行き先を先に決めて opt.out に渡し、'refuse' のときは「仲が深まる」値の動きをやめて HS.hurt（嫌悪の向き）にする
    ・使う箱庭：出られない部屋（このファイルで出来事を足す）・媚薬ロッカー（solo-locker.js の応じ方。HateSex.react）・
      オメガバース（omega-passion.js の「憎みながらの夜」）・ゾンビの街（solo-sit-night-r18.js の「敵対する二人の夜」）
    ・敵対：関係（ライバル・不仲・敵対）があるか、嫌悪レベル（hate-kit.js）が35以上。愛憎の二人は表の顔が嫌悪系のときだけ（下の 2026-10-29）。
@@ -491,6 +493,9 @@
       var o = HS.order(x, a, b), T = o[0], B = o[1], env = opt.env || x.env || {}, LW = HK.Lewd;
       var low = opt.low || (LW && LW.lv(env) === 'low'), short = LW && LW.short(env, x.rng), ero = LW && LW.ero(env), high = LW && LW.high(env);
       var k = kindOf(T, B), p = ps(B), tp = ps(T), out = [];
+      /* この回の受けの行き先（2026-10-29 担当NC）：'refuse'＝最後まで受け入れない（hate-sex-refuse-r18.js）／'swept'＝今までどおり流される */
+      var oc = HS.outcome(x, a, b, opt), RF = oc === 'refuse' && HS.Refuse ? HS.Refuse : null;
+      HS.lastOut = { x: x, T: T, B: B, out: 'swept', lv: hateLv(x, B, T) };
       var say = function (who, arr) { out.push('{' + who + '}' + pick(x, arr)); };   /* 表の台詞は「」込み */
       /* 愛憎（hate-love.js・hate-love-r18.js）：受けが持つなら、受けが挑発して攻めに無理矢理構わせる導入を足す。
          二度目から（夜・強引な場面が二回目以上）は腐れ縁の導入。事後は嫌悪と執着の混ざる文、受けのほうから求めるもう一度も出やすい */
@@ -511,10 +516,16 @@
       /* 愛憎の文は持つ側に（攻めの一言 LAST は攻めが持つとき、受けの事後 AFTER は受けが持つとき。2026-10-28 担当JD） */
       var lastL = function () { return lhT && x.rng() < 0.6 ? LHR.LAST[tp] : (lt ? LAST_L : LAST)[tp]; }, afterL = function () { return lhB && x.rng() < 0.6 ? LHR.AFTER[p] : AFTER[p]; };
       HS.lastShield = null;
+      if (low && RF) { HS.lastOut.out = 'refuse'; return fill(x, out.concat(RF.low(x, T, B, { k: k, p: p, tp: tp, lt: lt })).join(''), T, B, ero); }
       if (low) { out.push(pick(x, FADE)); say('a', lastL()); out.push(pick(x, afterL())); if (lh) out.push(pick(x, LHR.TAIL)); return fill(x, out.join(''), T, B, ero); }
       var sub = subOf(T, B, k);
       /* 庇い展開（2026-10-27）：第三者が割って入る（出られない部屋の条件のエッチ＝部屋の仕掛けの場面では起きない）。opt.noShield で止める */
       var sh = !opt.room && !opt.noShield ? HS.shield(x, T, B, { ero: ero, short: short }) : null;
+      /* 最後まで受け入れない回（庇い展開が入った回は今までどおり） */
+      if (RF && !sh) {
+        HS.lastOut.out = 'refuse';
+        return fill(x, out.concat(RF.parts(x, T, B, { k: k, p: p, tp: tp, lt: lt, sub: sub, ero: ero, short: short, high: high, STRIP: STRIP })).join(''), T, B, ero);
+      }
       if (sh) out.push(sh.open + sh.both);
       if (short) {
         /* 短く：口づけから繋がるまでは、繋がる段を一つだけ */
@@ -564,8 +575,9 @@
       var head = one ? B.name + 'は' + T.name + 'を嫌っていた（' + src + '）。' : T.name + 'と' + B.name + 'は敵対していた（' + src + '）。';
       var dw = HS.dirWhy(x, T, B);
       /* 出られない部屋の条件のエッチ（opt.room）は部屋の仕掛けの場面で、内容のスイッチ「合意のない展開」の場面ではない：「強引に」の言い方をせず、そう書く（2026-10-26） */
-      if (opt && opt.room) return head + '部屋の条件を満たすために、' + T.name + 'のほうから迫った。' + B.name + 'は口では嫌がったが、拒みきらなかった（部屋の条件の場面なので、内容のスイッチ「合意のない展開」に関わらず起きる）' + dw + lw + HS.noneWhy(x, T, B);
-      return head + T.name + 'が強引に迫り、' + B.name + 'は口では嫌がったが、拒みきらなかった' + dw + lw + HS.noneWhy(x, T, B);
+      var rf = HS.refused(x, T, B), ow = HS.outWhy(x, T, B), bw = rf ? B.name + 'は最後まで拒み続けた' : B.name + 'は口では嫌がったが、拒みきらなかった';
+      if (opt && opt.room) return head + '部屋の条件を満たすために、' + T.name + 'のほうから迫った。' + bw + '（部屋の条件の場面なので、内容のスイッチ「合意のない展開」に関わらず起きる）' + dw + lw + HS.noneWhy(x, T, B) + ow;
+      return head + T.name + 'が強引に迫り、' + bw + dw + lw + HS.noneWhy(x, T, B) + ow;
     },
     /* 向きの理由（2026-10-28 担当JD）：嫌悪が片方向の組・避けている人がいる組だけ「／向き：攻め＝○○（理由）・受け＝××（理由）」 */
     dirWhy: function (x, T, B) {
@@ -595,6 +607,50 @@
       if (o === a || o === b) return false;
       return [a, b].some(function (c) { var pf = x.pair ? x.pair(c, o) : null; return (pf && pf.couple) || tiesOf(x, c, o).some(function (t) { return /^(lover|mate|fated)$/.test(t.type); }); });
     });
+  };
+
+  /* ================= 受けの行き先（2026-10-29 担当NC。利用者の指示「嫌悪を得る展開になる時には合意ではない流れとしてください」） =================
+     HS.outcome(x, a, b, opt) → 'swept'（今までどおり：口では嫌がるが流される）か 'refuse'（嫌悪：最後まで受け入れない）。opt.out があればそれを返す。
+     ・'swept' のまま：全年齢・文の部品がない・内容のスイッチ「合意のない展開」が切（出られない部屋の条件の場面がスイッチ切で起きるとき）・
+       愛憎を持つ組（HK.LoveHate.any）・受けが攻めを想っている組（loves）
+     ・必ず 'refuse'：受け（HS.order の二人目）→攻めの嫌悪レベル 50 以上、または受けが嫌悪の関係（不仲・敵対の敵視する側）を持ち、受け→攻めの惹かれが 15 未満
+     ・それ以外：受けの態度（stern・cool・proud・polite は嫌悪に寄りやすく 0.36、free・devoted・shy は流されやすく 0.2、ほか 0.28）と惹かれ（15 から離れるほど上下）で 2〜4 割
+     乱数は「それ以外」の組だけで引く（ほかの組の結果の並びを変えない） */
+  function hateTieB(x, T, B) { return tiesOf(x, T, B).some(function (t) { var D = HK.TIES && HK.TIES[t.type]; return !!(D && D.hate) && (t.a === B.i || !t.cold); }); }
+  var REF_P = { stern: 0.36, cool: 0.36, proud: 0.36, polite: 0.36, free: 0.2, devoted: 0.2, shy: 0.2 };
+  HS.outcomeOf = function (x, a, b) {
+    var o = HS.order(x, a, b), T = o[0], B = o[1];
+    if (HK.SAFE_ON || !HS.Refuse || !T || !B) return { out: 'swept', why: '' };
+    if (HK.Content && !HK.Content.ok(x, 'force')) return { out: 'swept', why: 'スイッチ' };
+    if (HK.LoveHate && HK.LoveHate.any && HK.LoveHate.any(x, T, B)) return { out: 'swept', why: '愛憎' };
+    if (loves(x, B, T)) return { out: 'swept', why: '想い' };
+    var lv = hateLv(x, B, T), att = x.R ? x.R(B, T).att : 0;
+    if (lv >= 50 || (hateTieB(x, T, B) && att < 15)) return { out: 'refuse', why: '必ず', p: 1 };
+    var pr = Math.max(0.2, Math.min(0.4, (REF_P[ps(B)] || 0.28) + (15 - att) / 250));
+    return { out: '', p: pr };
+  };
+  HS.outcome = function (x, a, b, opt) {
+    if (opt && (opt.out === 'refuse' || opt.out === 'swept')) return opt.out;
+    var r = HS.outcomeOf(x, a, b);
+    return r.out || (x.rng() < r.p ? 'refuse' : 'swept');
+  };
+  /* 直前の HS.scene が、この二人で「最後まで受け入れない」流れを書いたか（庇い展開が入った回は 'swept' に戻る） */
+  HS.refused = function (x, a, b) {
+    var o = HS.lastOut;
+    return !!(o && o.x === x && o.out === 'refuse' && ((o.T === a && o.B === b) || (o.T === b && o.B === a)));
+  };
+  HS.outWhy = function (x, T, B) {
+    var o = HS.lastOut;
+    if (!o || o.x !== x || o.T !== T || o.B !== B) return '';
+    return o.out === 'refuse' ? '／受け：最後まで受け入れなかった（嫌悪 ' + Math.round(o.lv) + '）' : '／受け：流された';
+  };
+  /* 'refuse' の値の動き：受け→攻めは緊張 +12・好意 −8・信頼 −8（嫌悪レベルが上がる）、攻め→受けは惹かれ +4・緊張 +4、受けのストレス +12。恋人・夜の関係の印は付けない */
+  HS.hurt = function (x, a, b) {
+    var o = HS.lastOut, T = o && o.T, B = o && o.B;
+    if (!T || !B || !x.mod) return;
+    x.mod(B, T, { ten: 12, aff: -8, trust: -8 });
+    x.mod(T, B, { att: 4, ten: 4 });
+    if (x.stress) x.stress(B, 12);
   };
 
   /* ================= 庇い展開（2026-10-27 担当BM。round6 の利用者の指示 3・4・5） =================

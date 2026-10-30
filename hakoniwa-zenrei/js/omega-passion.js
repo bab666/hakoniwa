@@ -218,18 +218,23 @@
     w: function (ctx, a, b) { return (0.6 + (a.tr.impulse + b.tr.impulse) * 0.5 + ctx.env.heat / 200) * strifeK(ctx) * (!HK.SAFE_ON && HK.LoveHate && HK.HateSex ? HK.LoveHate.k(ctx, a, b) : 1); },
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b);
-      pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.hateNight = (pf.hateNight || 0) + 1; pf.lastHate = ctx.stepIndex;
-      ctx.mod2(a, b, { att: 8, aff: 3, ten: 2 }, { att: 8, aff: 3, ten: 2 });
+      pf.hateNight = (pf.hateNight || 0) + 1; pf.lastHate = ctx.stepIndex;
       /* R18版：攻めが強引に始め、受けは口では嫌がるがまんざらではない（hate-sex-r18.js。描写の設定もそちらで） */
       var HS = !HK.SAFE_ON && HK.HateSex;
+      if (HS) HS.lastOut = null;   /* 下の HS.refused（と omega-thick-scen.js）が、この回の場面だけを見るように */
+      /* 受けの行き先（HS.outcome。2026-10-29 担当NC）：敵対の強引な場面で、受けが最後まで受け入れない回（'refuse'）は、仲が深まる値の動きと夜の関係の印をやめて、嫌悪の向きに（HS.hurt） */
+      var oc = HS && HS.outcome && HS.hostile(ctx, a, b) ? HS.outcome(ctx, a, b) : 'swept';
+      var sweep = function () { pf.night = true; pf.nights = (pf.nights || 0) + 1; ctx.mod2(a, b, { att: 8, aff: 3, ten: 2 }, { att: 8, aff: 3, ten: 2 }); };
+      if (oc !== 'refuse') sweep();
       /* 敵対の強引な場面（嫌悪系の顔）だけ HS.scene。恋人・友人などに愛憎を重ねた合意の夜は、下の言い争いから始まる文に（2026-10-29 愛憎の改修） */
-      if (HS && HS.hostile(ctx, a, b)) {
-        var hs = HS.scene(ctx, a, b, {}), ob = HS.order(ctx, a, b), host = true;
+      if (HS && (oc === 'refuse' || HS.hostile(ctx, a, b))) {
+        var hs = HS.scene(ctx, a, b, { out: oc }), ob = HS.order(ctx, a, b), host = true, rf = oc === 'refuse' && HS.refused(ctx, a, b);
+        if (oc === 'refuse') { if (rf) HS.hurt(ctx, a, b); else sweep(); }
         /* 敵対の強引な場面は合意のない展開：理由に印（HK.Pos.FORCE_MARK）を付ける（性欲「なし」の人もこの場面には出るため。orient-audit.js の O6 が見る。2026-10-28 担当JA）。
            恋愛対象「なし」の人の印（HS.why の中の HK.Pos.noneWhy）がもう付いていれば足さない */
         var hw = host ? HS.why(ctx, a, b) : '憎みながら惹かれ合う（互いに惹かれと苛立ちを抱えている）／' + a.name + 'と' + b.name + 'の衝動性' + lhWhy(ctx, a, b), FMK = HK.Pos && HK.Pos.FORCE_MARK;
         if (host && FMK && hw.indexOf(FMK) < 0 && HK.Pos.forceOn && HK.Pos.forceOn(ctx)) hw += '／' + FMK + '内容のスイッチ「合意のない展開」';
-        return { text: fill(ctx, hs + ctx.pick(HN.end), ob[0], ob[1]), why: hw + (HS.shieldWhy ? HS.shieldWhy(HS.lastShield) : ''), mag: 28 };
+        return { text: fill(ctx, hs + ctx.pick(rf && HS.Refuse ? HS.Refuse.END : HN.end), ob[0], ob[1]), why: hw + (HS.shieldWhy ? HS.shieldWhy(HS.lastShield) : ''), mag: 28 };
       }
       var t = ctx.pick(HN.open) + ctx.pick(lewd(ctx) === 'low' || !HN.mid ? HN.low : HN.mid) + ctx.pick(HN.end);
       /* 受け攻め：抱く側を {a} に */
