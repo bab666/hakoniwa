@@ -242,6 +242,14 @@
       return fTop ? l.filter(function (x) { return !INS.test(x); }) : l;
     }
   };
+  /* いまの場面の攻め（top）は一回の結果の中だけのもの。回し始めるたびに空にし、終わったら元に戻す
+     （前に回した箱庭・前の回の攻めが残ると、読み込み順や先に選んだ箱庭で結果が変わる。chunk-regress の乱順で見つかった） */
+  if (HK.simulate && !HK.simulate._nmTop && HK.wrap) HK.wrap(HK, 'simulate', function (sim0) {
+    var f = function () { var sv = NM.top; NM.top = null; try { return sim0.apply(this, arguments); } finally { NM.top = sv; } };
+    for (var ks in sim0) if (Object.prototype.hasOwnProperty.call(sim0, ks)) f[ks] = sim0[ks];
+    f._nmTop = true;
+    return f;
+  });
   var V = HK.Voice, FIX = V ? (V.TONE_FIX = V.TONE_FIX || {}) : {};
   Object.keys(D).forEach(function (k) {
     /* 口調の言い換えで崩れないように、その口調の書き下ろしとして登録する */
