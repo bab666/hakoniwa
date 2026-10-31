@@ -281,6 +281,9 @@ js/rpg-special.js @scen:rpg
 js/pos-fm-tease.js @pack:rel
 js/pos-ff.js
 js/pos-lead-r18.js
+js/ero-initiative-text-r18.js
+js/ero-initiative-r18.js
+js/ero-initiative-ev-r18.js @pack:rel
 js/pos-fm.js
 js/pos-nogen.js
 js/persona-final.js
@@ -539,6 +542,7 @@ tone js/tone-brush7a-r18.js
 tone js/tone-brush7b.js
 tone js/tone-brush7b-r18.js
 tone js/tone-brush8a-r18.js
+tone js/tone-brush8b-r18.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/omega-mob-r18.js @scen:omega
