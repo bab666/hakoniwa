@@ -440,6 +440,8 @@
     if (lw) e.lewd = true;
     /* 夜の起こりやすさ 0 でも起きた場面（条件の夜・合意のない展開・モブ）は、止めなかった理由を理由の欄に添える（pos.js の HK.Pos.nightNote） */
     if (lw && HK.Pos && HK.Pos.nightNote) { var nn = HK.Pos.nightNote(this, o); if (nn) e.why = (e.why ? e.why + '／' : '') + nn; }
+    /* その時点で生きて場にいる人数（2026-10-31 担当CL。三人以上の配役で二人だけ残った回の第三者の文を外すのに使う。記録には残さない＝数えない印） */
+    if (this.chars && this.chars.length > 2) Object.defineProperty(e, '_here', { value: this.present().length, enumerable: false, writable: true });
     this.log.push(e);
     return e;
   };
@@ -1089,7 +1091,9 @@
     }
     pairs.sort(function (x, y) { return (y.surprise - x.surprise) || (y.intensity - x.intensity); });
     /* 二人だけの配役の記録から、居合わせた第三者の地の文（周りが割って入った など）を外す（mini.js の HK.dropBystand。出来事の文は say のあとで足されることがあるので、最後にまとめて。2026-10-31 担当RC） */
-    if (HK.dropBystand && C.length <= 2) ctx.log.forEach(function (e) { if (e && typeof e.text === 'string' && e.kind !== 'step' && e.kind !== 'phase') e.text = HK.dropBystand(null, e.text); });
+    /* 2026-10-31（担当CL）：三人以上の配役でも、閉じ込められた部屋（出られない部屋）で、ほかの住人が死亡・退場して生きて場にいるのが二人以下になったあとの記録は同じく外す（say が記録した人数 e._here） */
+    var sealedSc = ctx.scen && (ctx.scen.id === 'whiteroom' || ctx.scen.sealedRoom);
+    if (HK.dropBystand) ctx.log.forEach(function (e) { if (e && typeof e.text === 'string' && e.kind !== 'step' && e.kind !== 'phase' && (C.length <= 2 || (sealedSc && e._here != null && e._here <= 2))) e.text = HK.dropBystand(null, e.text); });
     var chars = C.map(function (c) { return charSummary(ctx, c); });
     if (HK.Emo) HK.Emo.summary(ctx, chars);   /* 気分の最終値・いちばん強かった気分・最期の言葉（emotion.js・epilogue.js） */
     return {

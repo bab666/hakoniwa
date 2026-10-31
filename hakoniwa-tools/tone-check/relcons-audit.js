@@ -16,7 +16,7 @@
        famout  … 他人行儀の文（会釈・どこに住んでいるのか・何の仕事 など）× 家族・夫婦
        known   … 昔からの知り合いの前提の文（久しぶり・卒業以来・昔から・あの頃・子どもの頃・家に帰ったら・また家で など）× 関係なし
        getknow … 初めて知り合う人への質問（子どもの頃の夢・好きな食べ物・どんな人がタイプ など）× 家族・夫婦・恋人
-       warmup  … 部屋で初めて打ち解けた前提の文（すっかり打ち解けた・仲間になった気がした・本当の名前を教えた など）× 家族・夫婦・恋人
+       warmup  … 部屋で初めて打ち解けた前提の文（すっかり打ち解けた・仲間になった気がした・本当の名前を教えた など。2026-10-31 担当CL：こんな場所でなければ話さなかった・誰にも話したことのない話だった・将来なりたいものを初めて も）× 家族・夫婦・恋人
        newcp   … 部屋で出会って付き合い始めた前提の文（馴れ初め・付き合い始め・改めて待ち合わせ など）× 家族・夫婦・恋人
        lover   … 恋人になる前の文（付き合ってほしい・恋人になって・初めて名前を呼ぶ）× 恋人・夫婦
        home    … 別々の家に帰る文（家まで送る・それぞれの家・上がっていく？・家に帰ったら会えない）× 夫婦
@@ -24,7 +24,8 @@
      出られない部屋だけの項目（配役 kill-none／kill-bad／kill-enemy／kill-worship：二人・「誰かを殺さないと出られない」・関係なし／不仲／敵対／執着（信仰）＋不仲。2026-10-31 利用者の報告）：
        sealmeet … 目覚めの区切りより後の、出会いの文（そこにいたのが・姿を見るなり・名前、なんて呼べばいい？・初めまして など）
        alone2   … 殺す条件で一人だけ出たのに、二人そろった前提の結末の文（互いに・二人は・肩がぶつからないように など）
-       bystand  … 二人きりの部屋の、居合わせた第三者の地の文（周りが割って入った・居合わせた人たち など）
+       bystand  … 二人きりの部屋（その時点で生きて場にいるのが二人以下）の、居合わせた第三者の地の文（周りが割って入った・居合わせた人たち など）。
+                  配役 byst3（三〜五人・不仲／敵対／執着・内容のスイッチぜんぶ）・各 N×4 回で、三人以上の配役で二人だけ残った回も見る（2026-10-31 担当CL）
        lovehate … 信仰される側が相手を不仲・敵対に置いているのに、受け入れ・大切にする・恋の文
      家族・恋人の恋愛／夜は orient・state で見ているので、ここでは数えない
    ・出られない部屋の結末の試し引き（opt.probe。既定で入）：結末の二人の層（HK.RoomEnd.layerOf）が呼ばれたとき、部屋の全部の組について別の乱数で層を 3 回ずつ引き直して、
@@ -89,6 +90,21 @@ const PASS = function* (HK, opt) {
         }
       }
     }
+    /* 三人以上の配役で二人だけ残る回（2026-10-31 担当CL）：三〜五人・不仲／敵対（と執着）の組・内容のスイッチをぜんぶ・部屋の条件を回す。
+       監禁・死亡・先に部屋を出る などで場にいるのが二人以下になったあとに、居合わせた第三者の文（bystand）が出ないか。各 N×4 回 */
+    if (sc === 'whiteroom') {
+      const K = HK.ROOM_KINDS || {}, CONDS = ['hug', 'praise', 'h', 'hand', 'love', 'kill', 'hurt', 'one', 'lap'].filter(k => K[k]);
+      for (let s = 0; s < N * 4; s++) {
+        const n = 3 + (s % 3), chars = [];
+        for (let i = 0; i < n; i++) chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, gender: (s + i) % 2 ? 'f' : 'm', calls: {}, loveNG: [] });
+        const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : ''); });
+        env.cond = CONDS[s % CONDS.length]; env.allout = (s >> 1) % 2 ? 'on' : 'off'; env.hours = [24, 48, 72][s % 3];
+        if (HK.Content) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
+        const ties = [{ a: 0, b: 1, type: 'bad' }, { a: 1, b: 2, type: 'enemy' }];
+        if (s % 4 === 0) ties.push({ a: 0, b: 2, type: 'yan' });
+        yield { sc, s, input: { scenId: sc, seed: 52000 + s * 11, env, chars, perChar: chars.map(() => ({ pick: {} })), ties }, meta: { cast: 'byst3', ties: ties.map(t => ({ a: t.a, b: t.b, type: t.type })) } };
+      }
+    }
   }
 };
 
@@ -110,8 +126,8 @@ const JUDGE = function (HK, opt) {
     famout: { re: /会釈|他人行儀に|どこに住んで|何の仕事を|お仕事は|ご職業/, bad: c => c === 'fam' || c === 'pfam' || c === 'spouse' },
     known: { re: /久しぶりに会(?!え)|久しぶりだな|久しぶり(?:だね|です|」)|卒業以来|卒業してから|何年ぶり|昔から(?:の知り合い|知って|変わらな|そうだ|こう)|あの頃(?:の二人|みたい)|(?:子ども|子供|幼い|小さい)(?:の)?頃から(?:知って|一緒|の仲|の付き合い|の知り合い|変わらな)|昔みたいに|相変わらず(?:だ|です|な)|家に帰ったら|また家で|うちに帰ったら|同じ家に帰/, bad: c => c === 'none' },
     lover: { re: /付き合って(?:ほしい|ください|くれ|みない|もらえ)|恋人になって(?:ほしい|ください|くれ)|初めて名前を呼/, bad: c => c === 'lover' || c === 'spouse' },
-    getknow: { re: /(?:子ども|子供)の頃の夢(?:って|は)|好きな食べ物(?:って|は)何|休みの日は何(?:して|を)|どんな人が(?:タイプ|好み)|どんな人に惹かれ|出身はどこ/, bad: c => c === 'fam' || c === 'pfam' || c === 'spouse' || c === 'lover' },
-    warmup: { re: /すっかり打ち解け|打ち解けていた|仲間になった気が|話すほど、相手の考え方|こんな顔で話す人だった|本当の名前を教え|名前を教え合|互いの連絡先を暗記/, bad: c => c === 'fam' || c === 'pfam' || c === 'spouse' || c === 'lover' },
+    getknow: { re: /(?:子ども|子供)の頃の夢(?:って|は)|好きな食べ物(?:って|は)何|休みの日は何(?:して|を)|どんな人が(?:タイプ|好み)|どんな人に惹かれ|出身はどこ|家族は何人|(?:きょうだい|兄弟)(?:、|は)いる|ご兄弟は/, bad: c => c === 'fam' || c === 'pfam' || c === 'spouse' || c === 'lover' },
+    warmup: { re: /すっかり打ち解け|打ち解けていた|仲間になった気が|話すほど、相手の考え方|こんな顔で話す人だった|本当の名前を教え|名前を教え合|互いの連絡先を暗記|こんな場所でなければ、?話さなかった|誰にも話したことのない話だった|将来なりたいものを初めて|ルーツや好みがわかり/, bad: c => c === 'fam' || c === 'pfam' || c === 'spouse' || c === 'lover' },
     newcp: { re: /馴れ初め|付き合い始めた(?:という|らしい|って)|付き合うことになっ|二人が付き合い|恋人(?:になった|同士になった|どうしになった)|改めて待ち合わせ|それからも会うようになっ|初めてのデート|条件(?:じゃ|で)なくても、またしたい/, bad: c => c === 'lover' || c === 'spouse' || c === 'fam' },
     home: { re: /家まで送|それぞれの家|別々の家|上がっていく|家に帰ったら会えな|家の前で別れ|うちに来(?:て|い)|うちにいらして|一番近い[^。]{0,8}の部屋|次の約束を口に/, bad: c => c === 'spouse' },
     workq: { re: /どこで働い|何の仕事を|お仕事は|ご職業|職場はどこ/, bad: c => c === 'work' }
@@ -210,8 +226,10 @@ const JUDGE = function (HK, opt) {
             let m;
             /* 出会いの文 × 目覚めの区切りより後（最初から同じ部屋にいる） */
             if (!end && e.step >= 1 && (m = sen.match(SEALMEET))) hit('sealmeet', e, sen, m[0]);
-            /* 二人きり（生きて場にいるのが二人以下）に、居合わせた第三者の地の文 */
-            if (chars.length <= 2 && sen.indexOf('「') < 0 && (m = sen.match(BYST))) hit('bystand', e, sen, m[0]);
+            /* 二人きり（生きて場にいるのが二人以下）に、居合わせた第三者の地の文。2026-10-31（担当CL）：配役の人数ではなく、その時点で生きて場にいる人数で数える
+               （死亡の記録で減らし、記録の数えない印 e._here（engine.js の say が書く、その時点の present() の人数）があれば小さいほう。三人以上の配役で二人だけ残った回も見る） */
+            const here = Math.min(nPresent, e._here != null ? e._here : Infinity);
+            if (here <= 2 && sen.indexOf('「') < 0 && (m = sen.match(BYST))) hit('bystand', e, sen, m[0]);
             /* 二人そろった前提の結末 × 片方が死んだ（一人で出た） */
             if (end && run.meta.kill && Object.keys(dead).length && chars.length - Object.keys(dead).length === 1 && sen.indexOf('「') < 0 && !/最期|遺し|亡骸|動かなくなった/.test(sen) && (m = sen.match(ALONE2))) hit('alone2', e, sen, m[0]);
           });
@@ -272,7 +290,7 @@ function print(r, errors, o) {
     r.ex[k].slice(0, SAMPLES).forEach(x => console.log('    ' + x));
   });
   console.log('== 箱庭・配役ごと（none 関係なし／known 全員知り合い／mix 混在） ==');
-  Object.keys(r.sc).forEach(sc => console.log(sc.padEnd(10) + ['none', 'known', 'mix', 'kill-none', 'kill-bad', 'kill-enemy', 'kill-worship'].filter(c => c.indexOf('kill') < 0 || r.sc[sc][c] != null).map(c => ' ' + c + ' ' + String(r.sc[sc][c] || 0).padStart(4)).join('')));
+  Object.keys(r.sc).forEach(sc => console.log(sc.padEnd(10) + ['none', 'known', 'mix', 'kill-none', 'kill-bad', 'kill-enemy', 'kill-worship', 'byst3'].filter(c => !/kill|byst/.test(c) || r.sc[sc][c] != null).map(c => ' ' + c + ' ' + String(r.sc[sc][c] || 0).padStart(4)).join('')));
   const tot = Object.keys(r.items).reduce((s, k) => s + r.items[k], 0);
   console.log('合計 ' + tot + ' 件／' + r.runs + ' 回');
   if (o.json) fs.writeFileSync(o.json, JSON.stringify(r, null, 1));
