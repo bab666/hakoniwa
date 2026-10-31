@@ -372,6 +372,7 @@ tone js/tone-brush9a.js
 tone js/tone-brush9b.js
 tone js/tone-brush9c.js
 tone js/tone-brush9d.js
+tone js/tone-brush9e.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/incidents-social.js @pack:rel
