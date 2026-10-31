@@ -200,6 +200,25 @@
       .replace(/^([一-鿿]{1,3})$/, function (m, w) { return ask && /^(本当|平気|大丈夫|無事|本気|正気)$/.test(w) ? w + 'か' : m; });
   }
 
+  /* ---------- 冷静の短い返事・相づち（2026-10-31 CL） ----------
+     冷静（cool・calm・cool_soft。persona が cool）の 1 本の台詞の砕けた相づち・短い返事を、落ち着いた形に。厳格（sternShort）ほど硬くしない（丁寧でも命令でもない）。
+     「そっか」→「そうか」、「うん、わかった」→「ああ、わかった」、「まじで？」→「本当に？」、「かもね」→「かもしれない」、「行こっか」→「行こうか」、「わかんない」→「分からない」、「いいよ、イって」→「いい、イって」。
+     女性は「ええ」「そう」「そうなの」（「ああ」「そうか」にしない） */
+  var COOL_HEAD = [[/^うん(?:、うん)?(?=[、…‥]|$)/, function (f) { return f ? 'ええ' : 'ああ'; }], [/^ううん(?=[、…‥]|$)/, 'いや'], [/^そっか(?=[、…‥]|$)/, function (f) { return f ? 'そう' : 'そうか'; }],
+    [/^え、(?:まじ|マジ)(?:で)?$/, '本当に'], [/^(?:まじ|マジ)(?:で)?$/, '本当に'], [/^ほんと(?:に)?$/, '本当に'], [/^いいよ、(?=そのまま|イ|いいよ|好きに)/, 'いい、'],
+    [/(^|、)そうなんだ$/, function (f, m, p) { return p + (f ? 'そうなの' : 'そうなのか'); }], [/^おはよ$/, 'おはよう'], [/^だいじょぶ$/, '大丈夫'], [/^ありがとね$/, 'ありがとう'], [/^それな$/, 'そうだな'], [/^はいはい$/, '分かった'],
+    [/^だね$/, function (f) { return f ? 'そうね' : 'そうだな'; }], [/^なるほどね$/, 'なるほど'],
+    [/([ころよそもぼごとの])っか$/, '$1うか'], [/^(行こ|帰ろ|寝よ|始めよ|やろ|戻ろ|休も|探そ|出よ)$/, '$1う']];
+  function coolShort(b, f) {
+    for (var i = 0; i < COOL_HEAD.length; i++) {
+      var r = COOL_HEAD[i][1];
+      b = b.replace(COOL_HEAD[i][0], typeof r === 'function' ? function () { return r.apply(null, [f].concat([].slice.call(arguments))); } : r);
+    }
+    b = b.replace(/わかんな(?=い|かった|く)/g, '分からな');
+    if (b.replace(/[…‥、\s　]/g, '').length > 12) return b;
+    return b.replace(/(?:かもね|かもな|かも)$/, 'かもしれない');
+  }
+
   /* ---------- 一文ごとの整形 ---------- */
   function sentence(s0, who, ask, h, term) {
     var mode = who.persona, f = who.gender === 'f';
@@ -409,6 +428,9 @@
     if (mode === 'cool') {
       /* 冷静は敬語を使わず、語尾も淡々と */
       q = V.casualQuote(q).replace(/じゃん(?=[。！？…、」]|$)/g, 'じゃないか').replace(/でしょ(?=[。！？…、」]|$)/g, 'だろう').replace(/ちょうだい(?=[。！？…、」]|$)/g, 'くれ');
+      /* 2026-10-31（CL）：短い返事・相づちの砕けた形を落ち着いた形に（文ごと。頭の「……」はそのまま） */
+      var cf = who.gender === 'f';
+      q = q.split(/([。！？!?\n]+)/).map(function (seg, i) { if (i % 2) return seg; var ld = (seg.match(/^[…‥・、\s　]+/) || [''])[0], tl = (seg.match(/[っッー〜～…♡♪、]+$/) || [''])[0]; if (seg.length <= ld.length + tl.length) return seg; return ld + coolShort(seg.slice(ld.length, seg.length - tl.length), cf) + tl; }).join('');
       /* 助けを呼ぶ・危険を知らせる叫びは、冷静な人でも「！」を残す */
       if (/誰か|助け|逃げ|危な|伏せ|出して|やめろ|止まれ|離れろ|火事|来るな/.test(q)) return q;
       return q.replace(/！+(?=[？?])/g, '').replace(/！+[　 ]*(?=.)/g, '。').replace(/[！!]+$/, '').replace(/。。+/g, '。');
