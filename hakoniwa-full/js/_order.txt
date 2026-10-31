@@ -543,6 +543,7 @@ tone js/tone-brush7b.js
 tone js/tone-brush7b-r18.js
 tone js/tone-brush8a-r18.js
 tone js/tone-brush8b-r18.js
+tone js/tone-brush8d-r18.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/omega-mob-r18.js @scen:omega
@@ -611,6 +612,12 @@ late js/attr-r18.js
 late js/attr-race-r18.js
 # 前立腺・結腸・乳首・喉奥の段（共通の山場の差し込み口 raceWeave／ロッカーの racePlay を包む。attr-race-r18.js の後）
 late js/ero-play-r18.js
+# 物語型（邪神村・吹雪の館・宇宙船・人狼）・合意のない喉奥と結腸（敵対・恐怖の強引な夜）・媚薬ロッカーの三人以上に、プレイの段と能動性の型を取り付ける（ero-play-r18.js の後。箱庭ごとの文は各 scen。担当E3b）
+late js/story-ero3-r18.js
+js/jashin-ero3-r18.js @scen:jashin
+js/yakata-ero3-r18.js @scen:yakata
+js/ship-ero3-r18.js @scen:ship
+js/jinro-ero3-r18.js @scen:jinro
 late js/export-out.js
 late js/ui-perzoom.js
 # 出来事の一覧の画面（ボタンと窓。データは pack-catalog）
