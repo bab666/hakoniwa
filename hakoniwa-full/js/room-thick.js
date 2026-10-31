@@ -110,6 +110,8 @@
     polite: L('{b}は乱れた髪を手櫛で整え、「お水を、いただけますか」と訊いた。|{b}は身支度を終えると、{a}に向かって小さく頭を下げた。|{b}は{a}の隣で背筋を伸ばして座り直し、それから少しだけ{a}の肩にもたれた。')
   };
   function psOf(c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || c.persona || 'gentle'; }
+  /* 夜の性格で態度を選んだ人は、相手 o に対してその態度（attr.js の HK.Attr.psNight） */
+  function psN(c, o) { var b = psOf(c); return HK.Attr && HK.Attr.psNight ? HK.Attr.psNight(c, o, b) : b; }
   /* 点検用（文の数え直し） */
   LW.THICK = { ROOM: ROOM, ROOM_FM: ROOM_FM, MID_FM: MID_FM, APHRO: APHRO, REPEAT: REPEAT, SPEED: SPEED, FF_TOY: FF_TOY, AFTER: AFTER, OPEN_PS: OPEN_PS, PEAK_PS: PEAK_PS, AFTER_PS: AFTER_PS };
 
@@ -224,7 +226,8 @@
     o = o || {};
     if (HK.SAFE_ON || !A || !B) return '';
     if (o.p != null && ctx.rng() >= o.p) return '';
-    var tb = TOPR[psOf(A)] || TOPR.gentle, key = stage === 'start' ? (mode === 'des' || mode === 'aphro' ? 'des' : 'will') : stage;
+    /* 夜の性格で選んだ態度があれば、その態度の台詞（attr.js の HK.Attr.psNight。2026-10-31 担当E4） */
+    var tb = TOPR[psN(A, B)] || TOPR.gentle, key = stage === 'start' ? (mode === 'des' || mode === 'aphro' ? 'des' : 'will') : stage;
     var own = (tb[key] || []).filter(function (l) { return !(o.closed && TOP_CLOSED.test(l)); });
     var E = HK.EroTop, night = HK.Attr && HK.Attr.nightOf ? HK.Attr.nightOf(A, B) : '', s = '';
     /* 事後の一言が問いなら、受けの返事を続ける（共通の表は after-reply-r18.js が HK.EroTop.say の中で、白い部屋の表はここで。仕方なく＝des は甘めでもドライの返事） */
@@ -265,7 +268,7 @@
     var pick = function (arr) { return ctx.pick(arr); };
     var tools = !!(ctx.flags && ctx.flags.toolbox), riba = P && P.bothRiba && P.bothRiba(A, B), MUT = P && P.MUTUAL_RE;
     var noMut = function (l) { return riba || !MUT || !MUT.test(l); };
-    var ps = psOf(B);
+    var ps = psN(B, A);
     var head = rough && HK.TL ? A.name + 'は' + B.name + 'の手首を掴んで、ベッドへ乱暴に押し倒した。' + HK.TL.line(A, 'H_ROUGH', B) : '';
     var open;
     if (opt.toolText) open = head + opt.toolText.replace(/――$/, '') + (ff && ctx.rng() < 0.5 ? pick(FF_TOY.filter(noMut)) : '');

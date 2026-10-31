@@ -110,7 +110,10 @@
   function omTop(ctx, T, U, stage, kind, p) {
     if (HK.SAFE_ON || !T || !U) return '';
     if (p != null && ctx.rng() >= p) return '';
-    var ps = (HK.personaOf ? HK.personaOf(T) : T.persona) || 'gentle', tb = TOPO[ps] || TOPO.gentle, own;
+    var ps = (HK.personaOf ? HK.personaOf(T) : T.persona) || 'gentle', tb, own;
+    /* 夜の性格で選んだ態度があれば、その態度の台詞（attr.js の HK.Attr.psNight。2026-10-31 担当E4） */
+    if (HK.Attr && HK.Attr.psNight) ps = HK.Attr.psNight(T, U, ps);
+    tb = TOPO[ps] || TOPO.gentle;
     if (kind === 'hate' && stage !== 'mid') own = (HATE_TOP[ps] || HATE_TOP.gentle)[stage];
     else if (kind === 'affair' && stage !== 'mid') own = AFF_TOP[stage];
     else if (kind === 'heat' && stage === 'start') own = tb.heat;

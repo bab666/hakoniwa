@@ -401,7 +401,8 @@
   };
   T.foreGroup = function (st) { return st === 'rough' || st === 'tease' ? 'dom' : st === 'playful' ? 'play' : 'soft'; };
   T.forePool = function (mode, a, b, st) { var k = T.foreKind(mode, a, b), F0 = T.FORE[k]; return Array.isArray(F0) ? F0 : F0[T.foreGroup(st)] || F0.soft; };
-  function psOf(c) { return (HK.personaOf ? HK.personaOf(c) : c.persona) || c.persona || 'gentle'; }
+  /* 夜の性格で選んだ態度があれば、その態度（attr.js の HK.Attr.psNight。相手は組み立て中の二人から。2026-10-31 担当E4） */
+  function psOf(c) { var b = (HK.personaOf ? HK.personaOf(c) : c.persona) || c.persona || 'gentle'; return HK.Attr && HK.Attr.psNight ? HK.Attr.psNight(c, null, b) : b; }
   /* again … この回で同じ二人が二度目以降なら、前より早く崩れる文（REACT_AGAIN） */
   T.react = function (pick, b, again) { var ps = psOf(b), R = again ? T.REACT_AGAIN : T.REACT; return pick(R[ps] || R.gentle); };
   /* 口調ごとの喘ぎ（novel-moan-tone.js：最中・果てる）を、態度の喘ぎに足して使う。
@@ -449,7 +450,7 @@
     /* 一回の結果の中で同じ文（反応・喘ぎ・場所の一文など）を繰り返さない（ero-kit.js の HK.Ero.freshPick） */
     var pick = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(opt.rng, opt.pick) : opt.pick, a = opt.a, b = opt.b, st = opt.style || 'gentle';
     /* 夜の性格（attr.js）：サド＝荒い・意地悪＝焦らす・甘々＝優しい・恥じらい＝不慣れ の型を、気質から決めた型より優先する */
-    if (HK.Attr && HK.Attr.styleFor) st = HK.Attr.styleFor(HK.Attr.nightOf(a, b), st);
+    if (HK.Attr && HK.Attr.styleFor) st = HK.Attr.styleFor((HK.Attr.nightKey || HK.Attr.nightOf)(a, b), st);
     if (HK.NovelMoan) HK.NovelMoan.top = a;
     /* 性器なしの人がいる組（pos-nogen.js）：受けが none なら口まで、攻めが none なら指と玩具だけ */
     if (HK.NoGen && HK.NoGen.on(a, b)) { var ng = HK.NoGen.scene({ pick: opt.pick, rng: opt.rng, a: a, b: b, open: opt.open, after: opt.after || false }); return { text: ng.text, hard: false, jealous: false, mode: ng.mode }; }

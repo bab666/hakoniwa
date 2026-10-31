@@ -57,6 +57,8 @@
   }
   function stageOf(st) { st = ALIAS[st] || st; return STAGES.indexOf(st) >= 0 ? st : 'mid'; }
   function psOf(c, opt) { var p = (opt && opt.persona) || (HK.personaOf ? HK.personaOf(c) : c && c.persona); return PS9.indexOf(p) >= 0 ? p : 'gentle'; }
+  /* 夜の性格で態度を選んだ人は、相手 o に対してその態度（attr.js の HK.Attr.psNight。opt.persona の指定が優先。2026-10-31 担当E4） */
+  function psN(c, o, opt) { var b = psOf(c, opt); if (opt && opt.persona) return b; var v = HK.Attr && HK.Attr.psNight ? HK.Attr.psNight(c, o, b) : b; return PS9.indexOf(v) >= 0 ? v : b; }
   function trOf(c) { return (c && c.tr) || (HK.traits ? HK.traits((c && c.eg) || { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 }) : {}); }
   function nm(c) { return String((c && c.name) || ''); }
   function pairId(a, b) { return [nm(a), nm(b)].sort().join('\u0001'); }
@@ -135,7 +137,7 @@
   };
   function add(w, o, k) { Object.keys(o).forEach(function (f) { if (w[f] != null) w[f] += o[f] * k; }); }
   F.weights = function (S, top, bot, opt, R) {
-    var pa = psOf(top, opt), pb = psOf(bot), ta = trOf(top), tb = trOf(bot);
+    var pa = psN(top, bot, opt), pb = psN(bot, top), ta = trOf(top), tb = trOf(bot);
     R = R || relOf(S, top, bot, opt);
     var w = { sweet: 1.2, dry: 0.35, deal: 0.35, rough: 0 };
     add(w, PS_W[pa], 1); add(w, PS_W[pb], 0.6);
@@ -291,7 +293,7 @@
   /* 攻めの一言（「…」だけ。言わないときは ''） */
   F.line = function (S, top, bot, stage, fl, opt) {
     var D = HK.EROFLAVOR; if (!D || (fl !== 'dry' && fl !== 'deal')) return '';
-    var st = stageOf(stage), ps = psOf(top, opt), T = (fl === 'dry' ? D.DRY : D.DEAL)[ps] || (fl === 'dry' ? D.DRY : D.DEAL).gentle;
+    var st = stageOf(stage), ps = psN(top, bot, opt), T = (fl === 'dry' ? D.DRY : D.DEAL)[ps] || (fl === 'dry' ? D.DRY : D.DEAL).gentle;
     var base = (T && T[st]) || [], rk = F.relKey(S, top, bot, opt), RL = (fl === 'dry' ? D.REL_DRY : D.REL_DEAL)[rk.rel];
     /* 主従・上司と部下の台詞は、攻めが主・上司のときだけ */
     if (RL && (rk.rel === 'master' || rk.rel === 'boss') && rk.dir && rk.dir !== (rk.top === nm(top) ? 'a' : 'b')) RL = null;

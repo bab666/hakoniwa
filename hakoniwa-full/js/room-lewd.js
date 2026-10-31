@@ -181,7 +181,7 @@
     var HKr = HK.HateKit, rough = HKr ? HKr.forcer(ctx, A, B) : null;
     if (rough && rough === B && !fx) { var sw = A; A = B; B = sw; }
     /* 夜の性格（attr.js）：サド＝荒い・意地悪＝焦らす・甘々＝優しい・恥じらい＝不慣れ の型を、気質から決めた型より優先する */
-    var st = rough ? 'rough' : HK.Attr && HK.Attr.styleFor ? HK.Attr.styleFor(HK.Attr.nightOf(A, B), styleOf(ctx, A, mode)) : styleOf(ctx, A, mode);
+    var st = rough ? 'rough' : HK.Attr && HK.Attr.styleFor ? HK.Attr.styleFor((HK.Attr.nightKey || HK.Attr.nightOf)(A, B), styleOf(ctx, A, mode)) : styleOf(ctx, A, mode);
     var lew = [];
     var roughLine = rough && HK.TL ? A.name + 'は' + B.name + 'の手首を掴んで、ベッドへ乱暴に押し倒した。' + HK.TL.line(A, 'H_ROUGH', B) : '';
     if (HK.Pos && HK.Pos.ff(A, B)) return ffScene(ctx, A, B, mode, opt, st, roughLine);

@@ -253,7 +253,7 @@
   X.scene = function (opt) {
     var pick = E.freshPick(opt.S, opt.pick), a = opt.a, b = opt.b, mode = opt.mode || X.mode(a, b);
     /* 夜の性格（attr.js）の型を、気質から決めた型より優先する */
-    var st0 = HK.Attr && HK.Attr.styleFor ? HK.Attr.styleFor(HK.Attr.nightOf(a, b), opt.style || 'gentle') : (opt.style || 'gentle'), g = X.group(st0, mode), out = [];
+    var st0 = HK.Attr && HK.Attr.styleFor ? HK.Attr.styleFor((HK.Attr.nightKey || HK.Attr.nightOf)(a, b), opt.style || 'gentle') : (opt.style || 'gentle'), g = X.group(st0, mode), out = [];
     var TS = HK.ThickSex;
     /* 性器なしの人がいる組（pos-nogen.js）：口まで／指と玩具だけ */
     if (HK.NoGen && HK.NoGen.on(a, b)) { E.pairNight(opt.S, a, b); var ng = HK.NoGen.scene({ S: opt.S, pick: opt.pick, rng: opt.rng || (opt.S && opt.S.rng), a: a, b: b, ero: true, open: opt.open, after: opt.after || false }); return { text: X.fill(opt.S, ng.text, a, b), mode: ng.mode }; }
