@@ -90,6 +90,8 @@
     handG: L('{a}は{b}の手を取って扉を抜け、{R}もそのあとに続いた。|{R}が先に出て、{a}と{b}は手を繋いだまま最後に扉を抜けた。|{a}と{b}が手を繋いで先に出ると、{R}も黙ってあとに続いた。'),
     silent: L('{G}は互いに目を合わせないまま、黙って外へ出た。|誰も口をきかなかった。{G}は、一度も振り返らずに外へ出た。|{G}は、肩がぶつからないように間を空けて、無言で外へ出た。'),
     silent2: L('{a}が先に出て、{b}は少し間を置いてから、無言であとに続いた。|{a}と{b}は、どちらも相手を見ないまま、黙って扉を抜けた。|{a}は{b}より先に出ようとして、扉の前で肩がぶつかった。どちらも、何も言わなかった。'),
+    /* 殺す条件で一人だけ生き残って出る（2026-10-31 担当RC。「{G}は互いに目を合わせないまま」が一人に当たっていた） */
+    alone: L('{G}は、床に倒れた相手から目を逸らして、一人で扉を抜けた。|{G}は、ふらつく足で立ち上がり、誰もいなくなった部屋を一度も振り返らずに外へ出た。|{G}は、自分の手についたものを服で拭ってから、黙って外へ出た。'),
     calm: L('{G}は顔を見合わせてから、外へ出た。|{G}は、白い部屋を一度だけ振り返ってから扉を抜けた。|{G}は、拍子抜けするほどあっさりと外へ出た。|{G}は、誰からともなく小さく笑って、外へ出た。')
   };
   /* 何もしていないのに一緒に出た人（全員で出られる部屋。{L}＝一緒に出た人、{G}＝扉を開けた人）。
@@ -139,6 +141,8 @@
     /* 腐れ縁（愛憎の二人で、体の関係か強い絡みがあった。2026-10-29 担当C。調査の気づき 12）。kusare＝双方、kusare1＝{a} だけが持つ（{a}＝愛憎を持つ側） */
     kusare: L('{a}と{b}は、扉を出たところで「これで清々した｜これで清々した｜これで清々しました」と同時に言い、同時に顔をしかめた。帰る方向は、なぜか同じだった。|{a}と{b}は、連絡先を交換しなかった。それでも一週間後、二人は同じ店で鉢合わせて、また口喧嘩を始めた。|外に出た{a}と{b}は、駅までずっと言い争っていた。改札の前で、どちらからともなく「じゃあ、また｜じゃあ、またな｜では、またお会いしましょう」と言った。|{a}は{b}に「二度と会いたくない｜二度と会いたくない｜二度と会いたくありません」と言い、{b}は「こっちの台詞｜こちらの台詞だ｜こちらの台詞です」と返した。二人が次に会ったのは、三日後だった。'),
     kusare1: L('{a}は扉を出るなり、{b}に背を向けた。けれど角を曲がる前に一度だけ振り返り、{b}がまだそこにいるのを確かめた。|{a}は「せいせいした｜せいせいした｜せいせいしました」と吐き捨てて歩き出した。その夜、{a}は{b}の名前を検索しかけて、乱暴にスマホを伏せた。|{b}は何事もなかったように帰っていった。{a}だけが、その背中に向かって聞こえないほどの悪態をつき、それから長いあいだ立ち尽くしていた。|{a}は{b}の連絡先を消そうとして、指を止めた。嫌いな相手の番号を、なぜ消せないのか、{a}自身にも分からなかった。'),
+    /* 殺す条件で一人だけ生き残った（{G}＝一人） */
+    kill1: L('{G}は外に出ても、しばらく自分の手を見つめていた。白い部屋に置いてきたものの重さだけが、帰り道について来た。|{G}は、この話を誰にもしないと、一人で決めた。誰に話しても、あの部屋の空気は伝わらない気がした。|{G}は、駅までの道を一人で歩いた。足音が一人分しかないことに、何度も気づかされた。'),
     kill: L('{G}は、外に出ても誰も口をきかなかった。白い部屋に置いてきたものの重さだけが、帰り道について来た。|{G}は、二度とこの話をしないと約束して別れた。|{G}は、扉の外で一度だけ振り返った。そこにはもう、壁しかなかった。')
   };
   /* r18:begin */
@@ -333,7 +337,7 @@
      この扉で部屋の動きが終わるとき（全員が出た など）は呼ばれない（最後の「結末」の段に任せる） */
   RE.exitOf = function (ctx, g, ex) { return exitLine(ctx, g); };
   RE.groupOf = function (ctx, g, ex, kill) {
-    var pool = kill ? PAIR.kill : PAIR.group;
+    var pool = kill ? (g && g.length === 1 ? PAIR.kill1 : PAIR.kill) : PAIR.group;
     /* 全員が知り合いの組には「全員の連絡先」のような初対面の文を使わない（mini.js の HK.relGroupFits） */
     var f = HK.relGroupFits ? pool.filter(function (t) { return HK.relGroupFits(ctx, g, t); }) : pool;
     return fill(ctx.pick(f.length ? f : pool), { G: nm(g) });
@@ -381,7 +385,7 @@
       if (fresh.length === 1) {
         var e0 = fresh[0], g0 = membersOf(ctx, e0);
         if (kill && e0.group) parts.push({ t: ctx.pick(KILL_PAUSE), o: 4 });
-        parts.push({ t: kill && e0.group ? fill(ctx.pick(EXIT.silent), { G: nm(g0) }) : RE.exitOf(ctx, g0, e0), o: 0 });
+        parts.push({ t: kill && e0.group ? fill(ctx.pick(g0.length === 1 ? EXIT.alone : EXIT.silent), { G: nm(g0) }) : RE.exitOf(ctx, g0, e0), o: 0 });
       } else if (fresh.length > 1) {
         var byL = [], lab = {};
         fresh.forEach(function (e) { var k = seqLabel(e.label); if (lab[k] == null) { lab[k] = byL.length; byL.push({ l: k, g: [] }); } byL[lab[k]].g.push(membersOf(ctx, e)); });
@@ -395,7 +399,13 @@
       /* 一人だけ先に出て、残った人があとから出た */
       real.filter(function (e) { return e.stay != null && C[e.stay].out; }).slice(0, 1).forEach(function (e) { parts.push({ t: fill(ctx.pick(FIRST), { a: C[e.a].name, b: C[e.stay].name }), o: 5 }); });
       /* 外の情景・取り残された人 */
-      if (!P.length) { title = C.length === 2 ? '二人とも部屋を出た' : '全員が部屋を出た'; parts.push({ t: freshScene(ctx, SCENE), alt: freshScene(ctx, SCENE1, true), o: 6 }); }
+      /* 殺す条件などで死んだ人がいるときは「二人とも・全員が出た」にしない。一人だけ出たなら、全員・二人の情景も使わない（2026-10-31 担当RC） */
+      var dead = C.filter(function (c) { return c.alive === false; });
+      if (!P.length) {
+        title = dead.length ? nm(out) + (out.length === 1 ? 'だけが部屋を出た' : 'が部屋を出た') : C.length === 2 ? '二人とも部屋を出た' : '全員が部屋を出た';
+        var one1 = out.length === 1, sc1 = function (l) { var f = one1 ? l.filter(function (t) { return !/全員|二人|最後の一人/.test(t); }) : l; return f.length ? f : l; };
+        parts.push({ t: freshScene(ctx, sc1(SCENE)), alt: freshScene(ctx, sc1(SCENE1), true), o: 6 });
+      }
       else if (left.length) { title = nm(left) + 'が取り残された'; parts.push({ t: fill(ctx.pick(SOME), { L: nm(left) }), o: 0 }); }
       else title = nm(stayed) + 'が自分から残った';
       if (stayed.length) parts.push({ t: fill(ctx.pick(STAYED), { S: nm(stayed) }), o: 2 });

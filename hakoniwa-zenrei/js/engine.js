@@ -1088,6 +1088,8 @@
       });
     }
     pairs.sort(function (x, y) { return (y.surprise - x.surprise) || (y.intensity - x.intensity); });
+    /* 二人だけの配役の記録から、居合わせた第三者の地の文（周りが割って入った など）を外す（mini.js の HK.dropBystand。出来事の文は say のあとで足されることがあるので、最後にまとめて。2026-10-31 担当RC） */
+    if (HK.dropBystand && C.length <= 2) ctx.log.forEach(function (e) { if (e && typeof e.text === 'string' && e.kind !== 'step' && e.kind !== 'phase') e.text = HK.dropBystand(null, e.text); });
     var chars = C.map(function (c) { return charSummary(ctx, c); });
     if (HK.Emo) HK.Emo.summary(ctx, chars);   /* 気分の最終値・いちばん強かった気分・最期の言葉（emotion.js・epilogue.js） */
     return {

@@ -21,6 +21,11 @@
        lover   … 恋人になる前の文（付き合ってほしい・恋人になって・初めて名前を呼ぶ）× 恋人・夫婦
        home    … 別々の家に帰る文（家まで送る・それぞれの家・上がっていく？・家に帰ったら会えない）× 夫婦
        workq   … 仕事を尋ねる文（どこで働いているのか・何の仕事）× 同僚・上司・先輩後輩
+     出られない部屋だけの項目（配役 kill-none／kill-bad／kill-enemy／kill-worship：二人・「誰かを殺さないと出られない」・関係なし／不仲／敵対／執着（信仰）＋不仲。2026-10-31 利用者の報告）：
+       sealmeet … 目覚めの区切りより後の、出会いの文（そこにいたのが・姿を見るなり・名前、なんて呼べばいい？・初めまして など）
+       alone2   … 殺す条件で一人だけ出たのに、二人そろった前提の結末の文（互いに・二人は・肩がぶつからないように など）
+       bystand  … 二人きりの部屋の、居合わせた第三者の地の文（周りが割って入った・居合わせた人たち など）
+       lovehate … 信仰される側が相手を不仲・敵対に置いているのに、受け入れ・大切にする・恋の文
      家族・恋人の恋愛／夜は orient・state で見ているので、ここでは数えない
    ・出られない部屋の結末の試し引き（opt.probe。既定で入）：結末の二人の層（HK.RoomEnd.layerOf）が呼ばれたとき、部屋の全部の組について別の乱数で層を 3 回ずつ引き直して、
      関係のある組に合わない文を同じ項目で数える（例の頭に「結末の試し引き」。実際の回の乱数・記録は変えない） */
@@ -70,6 +75,20 @@ const PASS = function* (HK, opt) {
         yield { sc, s, input: { scenId: sc, seed: 31000 + s * 7 + (cast === 'known' ? 1 : cast === 'mix' ? 2 : 0), env, chars, perChar: chars.map(() => ({ pick: {} })), ties }, meta: { cast, ties: ties.map(t => ({ a: t.a, b: t.b, type: t.type })) } };
       }
     }
+    /* 出られない部屋の「誰かを殺さないと出られない」・二人きり（2026-10-31 利用者の報告）：関係なし／不仲／敵対／執着（信仰）＋不仲 で各 N×2 回 */
+    if (sc === 'whiteroom' && (HK.ROOM_KINDS || {}).kill) {
+      const KC = { 'kill-none': [], 'kill-bad': [{ a: 0, b: 1, type: 'bad' }], 'kill-enemy': [{ a: 0, b: 1, type: 'enemy' }], 'kill-worship': [{ a: 0, b: 1, type: 'worship' }, { a: 0, b: 1, type: 'bad' }] };
+      for (const cast of Object.keys(KC)) {
+        for (let s = 0; s < N * 2; s++) {
+          const chars = [];
+          for (let i = 0; i < 2; i++) chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, gender: (s + i) % 2 ? 'f' : 'm', calls: {}, loveNG: [] });
+          const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : ''); });
+          env.cond = 'kill'; env.hours = [10, 24, 48][s % 3];
+          const ties = KC[cast];
+          yield { sc, s, input: { scenId: sc, seed: 47000 + s * 13, env, chars, perChar: chars.map(() => ({ pick: {} })), ties }, meta: { cast, kill: true, ties: ties.map(t => ({ a: t.a, b: t.b, type: t.type })) } };
+        }
+      }
+    }
   }
 };
 
@@ -97,6 +116,15 @@ const JUDGE = function (HK, opt) {
     home: { re: /家まで送|それぞれの家|別々の家|上がっていく|家に帰ったら会えな|家の前で別れ|うちに来(?:て|い)|うちにいらして|一番近い[^。]{0,8}の部屋|次の約束を口に/, bad: c => c === 'spouse' },
     workq: { re: /どこで働い|何の仕事を|お仕事は|ご職業|職場はどこ/, bad: c => c === 'work' }
   };
+  /* 閉じ込められた部屋の項目（2026-10-31 利用者の報告：殺さないと出られない部屋の二人） */
+  const SEALMEET = /初めまして|はじめまして|名前、なん(?:て|と)呼べば|なんとお呼びすれば|名前(?:くらい)?(?:を)?教え合|の姿を見(?:て|るなり|つけて)、|に気づくと、(?:まっすぐ|表情を消|さりげなく)|を見るなり、露骨|そこにいたのが|と目が合うと、聞こえよがし|同じ部屋に.{1,8}がいると気づ|合流した|久しぶりに会/;
+  const ALONE2 = /互いに|二人(?:は|で|とも|の|並んで)|肩がぶつからないように|顔を見合わせ|約束して別れ|それぞれの帰り道/;
+  const BYST = /周り(?:が|は|の誰か|の人|のほう)|居合わせた人|周囲(?:が|の人)/;
+  const LOVEW = /大事にしたい|受け取ると決め|拒まずに受け取|両手を握|崇めるだけじゃ足りな|に、触れたい|愛して(?:い|る)|を見る目が少し変わった|どうしてそこまでしてくれる|許された喜び|役目を正式に任せる/;
+  RULES.sealmeet = { extra: true };
+  RULES.alone2 = { extra: true };
+  RULES.bystand = { extra: true };
+  RULES.lovehate = { extra: true };
   const BIG = /^(?:step|phase|intro)$/;
   const out = { items: {}, ex: {}, sc: {}, cast: {}, runs: 0, err: [], dump: {}, dumpN: 0 };
   Object.keys(RULES).forEach(k => { out.items[k] = 0; out.ex[k] = []; });
@@ -153,7 +181,8 @@ const JUDGE = function (HK, opt) {
           if (!grp) return;
           if (DUMP) { const pr0 = []; for (let i = 0; i < grp.length; i++) for (let j = i + 1; j < grp.length; j++) pr0.push(clsOf(grp[i], grp[j])); let sn = sen.replace(/[\n\t]/g, ' '); names.forEach(nm => { sn = sn.split(nm).join('〇'); }); const dk = sc + '\t' + [...new Set(pr0)].sort().join(',') + '\t' + sn; if (out.dump[dk]) out.dump[dk].n++; else if (out.dumpN++ < 200000) out.dump[dk] = { n: 1, why: (e.why || '').slice(0, 40) }; }
           Object.keys(RULES).forEach(k => {
-            const R = RULES[k], m = sen.match(R.re);
+            const R = RULES[k]; if (R.extra) return;
+            const m = sen.match(R.re);
             if (!m) return;
             const pr = []; for (let i = 0; i < grp.length; i++) for (let j = i + 1; j < grp.length; j++) pr.push(clsOf(grp[i], grp[j]));
             if (!pr.length || !pr.every(c => R.bad(c))) return;
@@ -163,6 +192,37 @@ const JUDGE = function (HK, opt) {
           });
         });
       });
+      /* 閉じ込められた部屋（出られない部屋）の項目 */
+      if (sc === 'whiteroom') {
+        const hit = (k, e, sen, m) => { out.items[k]++; S[cast]++; if (out.ex[k].length < 400) out.ex[k].push(sc + ' ' + cast + '#' + run.s + ' 「' + m + '」 ' + (e.label || '') + '／' + (e.why || '').slice(0, 40) + ' | ' + sen.replace(/\n/g, ' ').slice(0, 220)); };
+        const dead = {}; let step0 = null;
+        const ties2 = run.meta.ties;
+        /* 信仰される側（b）が信仰する側（a）を不仲・敵対に置いている組 */
+        const lh = ties2.filter(t => t.type === 'worship').filter(w => ties2.some(t => (t.type === 'bad' || t.type === 'enemy') && ((t.a === w.a && t.b === w.b) || (t.a === w.b && t.b === w.a))));
+        let nPresent = chars.length;
+        (res.log || []).forEach(e => {
+          if (!e) return;
+          if (e.kind === 'death') { /* 死亡の記録の actors は、死んだ人と手を下した人の両方。死んだ人は文の頭の名前 */ names.forEach((nm, i) => { if (String(e.text || '').indexOf(nm) === 0) dead[i] = 1; }); nPresent--; return; }
+          if (!e.text || BIG.test(e.kind || '')) return;
+          const ac = [...new Set((e.actors || []).map(x => typeof x === 'number' ? x : x && x.i).filter(x => x != null))];
+          const end = /^結末/.test(e.why || '');
+          split(e.text).forEach(sen => {
+            let m;
+            /* 出会いの文 × 目覚めの区切りより後（最初から同じ部屋にいる） */
+            if (!end && e.step >= 1 && (m = sen.match(SEALMEET))) hit('sealmeet', e, sen, m[0]);
+            /* 二人きり（生きて場にいるのが二人以下）に、居合わせた第三者の地の文 */
+            if (chars.length <= 2 && sen.indexOf('「') < 0 && (m = sen.match(BYST))) hit('bystand', e, sen, m[0]);
+            /* 二人そろった前提の結末 × 片方が死んだ（一人で出た） */
+            if (end && run.meta.kill && Object.keys(dead).length && chars.length - Object.keys(dead).length === 1 && sen.indexOf('「') < 0 && !/最期|遺し|亡骸|動かなくなった/.test(sen) && (m = sen.match(ALONE2))) hit('alone2', e, sen, m[0]);
+          });
+          /* 愛の文 × 信仰される側が不仲・敵対を置いている組 */
+          lh.forEach(w => {
+            if (ac.indexOf(w.a) < 0 || ac.indexOf(w.b) < 0) return;
+            const m = String(e.text).match(LOVEW);
+            if (m || e.cat === 'romance') hit('lovehate', e, String(e.text), m ? m[0] : 'romance');
+          });
+        });
+      }
       /* 結末の試し引き：二人の組がはっきりしているので、文ごとに名前を探さずにその組で判定する */
       const seen = {};
       ((cur && cur.probe) || []).forEach(p => {
@@ -171,7 +231,8 @@ const JUDGE = function (HK, opt) {
         split(p.t).forEach(sen => {
           if (DUMP) { let sn = sen.replace(/[\n\t]/g, ' '); names.forEach(nm => { sn = sn.split(nm).join('〇'); }); const dk = sc + '\t' + c + '\t' + sn; if (out.dump[dk]) out.dump[dk].n++; else if (out.dumpN++ < 200000) out.dump[dk] = { n: 1, why: '結末の試し引き' }; }
           Object.keys(RULES).forEach(k => {
-            const R = RULES[k], m = sen.match(R.re);
+            const R = RULES[k]; if (R.extra) return;
+            const m = sen.match(R.re);
             if (!m || !R.bad(c)) return;
             const key = k + '|' + p.a + '-' + p.b + '|' + sen;
             if (seen[key]) return; seen[key] = 1;
@@ -197,7 +258,11 @@ const LABEL = {
   warmup: '家族・夫婦・恋人が、部屋で初めて打ち解けた前提の文（すっかり打ち解けた・仲間になった気がした・本当の名前を教えた など）',
   newcp: '恋人・夫婦・家族に、部屋で出会って付き合い始めた前提の文（馴れ初め・付き合い始め・改めて待ち合わせ など）',
   home: '夫婦に別々の家に帰る文（家まで送る・上がっていく？ など）',
-  workq: '同じ職場の組に仕事を尋ねる文'
+  workq: '同じ職場の組に仕事を尋ねる文',
+  sealmeet: '出られない部屋で、目覚めの区切りより後に出会いの文（そこにいたのが・姿を見るなり・名前、なんて呼べばいい？ など）',
+  alone2: '出られない部屋の殺す条件で一人だけ出たのに、二人そろった前提の結末の文（互いに・二人は・肩がぶつからないように など）',
+  bystand: '二人きりの部屋に、居合わせた第三者の地の文（周りが割って入った・居合わせた人たち など）',
+  lovehate: '信仰される側が相手を不仲・敵対に置いているのに、受け入れ・大切にする・恋の文'
 };
 function print(r, errors, o) {
   const WHY = !!o.why, SAMPLES = o.samples || (WHY ? 400 : 3);
@@ -207,7 +272,7 @@ function print(r, errors, o) {
     r.ex[k].slice(0, SAMPLES).forEach(x => console.log('    ' + x));
   });
   console.log('== 箱庭・配役ごと（none 関係なし／known 全員知り合い／mix 混在） ==');
-  Object.keys(r.sc).forEach(sc => console.log(sc.padEnd(10) + ['none', 'known', 'mix'].map(c => ' ' + c + ' ' + String(r.sc[sc][c] || 0).padStart(4)).join('')));
+  Object.keys(r.sc).forEach(sc => console.log(sc.padEnd(10) + ['none', 'known', 'mix', 'kill-none', 'kill-bad', 'kill-enemy', 'kill-worship'].filter(c => c.indexOf('kill') < 0 || r.sc[sc][c] != null).map(c => ' ' + c + ' ' + String(r.sc[sc][c] || 0).padStart(4)).join('')));
   const tot = Object.keys(r.items).reduce((s, k) => s + r.items[k], 0);
   console.log('合計 ' + tot + ' 件／' + r.runs + ' 回');
   if (o.json) fs.writeFileSync(o.json, JSON.stringify(r, null, 1));

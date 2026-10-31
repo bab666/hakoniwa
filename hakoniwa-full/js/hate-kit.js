@@ -13,6 +13,7 @@
    ■ 狭い場所（媚薬ロッカーなど）：物語型の S に hkSpace: 'cramped' を付けると、嫌がらせ・無視・衝突・避ける・歩み寄りの地の文を
      狭い場所用（NC・AVC：肩を押しのける・背中を向ける・息を殺す・壁を蹴る など）にする。席・皿・荷物・周りの人・歩いて離れる文は使わない
    台詞は tone-lines.js・tone-lines-hate.js（口調ごとの書き下ろし） */
+/* @event-ok 閉じ込められた部屋・二人きりの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK, clamp = HK.clamp;
@@ -304,11 +305,11 @@
       if (opt.kinds !== 'love') return true;
       return H.stance(ctx, b, a) === 'love' || hasT(ctx, a, b, LOVE_T);
     }
-    /* 最初に顔を合わせたとき（ゾンビは、同じエリアで出会ったとき：zombie-core.js から H.meet を呼ぶ） */
+    /* 最初に顔を合わせたとき（ゾンビは、同じエリアで出会ったとき：zombie-core.js から H.meet を呼ぶ）。opt.atStart：最初から同じ場所に閉じ込められている箱庭（出られない部屋）は、最初の区切りだけ */
     /* 出来事の表への追加は HK.addTo（分割読み込みで、組み込みが箱庭の本体より後になっても、元のファイルの順に並ぶ） */
     if (opt.meet !== false) HK.addTo(scen.events, {
       id: 'hk_meet', label: '敵視する相手と顔を合わせる', cat: 'conflict', scope: 'pair',
-      when: function (ctx, a, b) { var pf = ctx.pair(a, b); return !(pf.hkMet && pf.hkMet[a.i]) && H.level(ctx, a, b) >= 35 && okKinds(ctx, a, b); },
+      when: function (ctx, a, b) { var pf = ctx.pair(a, b); if (opt.atStart && ctx.stepIndex > 0) return false; return !(pf.hkMet && pf.hkMet[a.i]) && H.level(ctx, a, b) >= 35 && okKinds(ctx, a, b); },
       w: function (ctx, a, b) { return 6 * W * H.drive(a, 'hater'); },
       run: function (ctx, a, b) { var pf = ctx.pair(a, b); (pf.hkMet = pf.hkMet || {})[a.i] = 1; var r = H.meet(ctx, a, b, opt.place ? opt.place(ctx, a) : ''); return { text: r.text, why: r.why, mag: r.mag, cat: r.cat, with: r.with }; }
     });
