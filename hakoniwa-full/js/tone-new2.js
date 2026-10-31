@@ -51,7 +51,7 @@
     /* 喘ぎは言い回しを変えず、「……」だけ半分に（二つ目・四つ目…を外す） */
     if (MOAN.test(q)) return dots(q, function (k) { return k % 2 === 1; });
     q = q.replace(/([てで])い(る|た|な)/g, '$1$2').replace(/ではない/g, 'じゃない').replace(/(?<=[ぁ-ん])のだ(?=[。、！？!?…‥」よね]|$)/g, 'んだ')
-      .replace(/^([…‥]*)そうか。/, '$1そう、').replace(/^([…‥]*)そうか$/, '$1そっか').replace(/する必要がある/g, 'したほうがいい').replace(/必要がある/g, 'ほうがいい');
+      .replace(/^([…‥]*)そうか。/, '$1そう、').replace(/^([…‥]*)そうか$/, '$1そう').replace(/する必要がある/g, 'したほうがいい').replace(/必要がある/g, 'ほうがいい');
     q = bySent(q, function (s, tl, pun, last) {
       var ask = /[？?]/.test(pun);
       s = s.replace(/だぜ$/, 'だよ').replace(/(?<=[ぁ-ん])ぜ$/, 'よ').replace(/(?<!どう)ぞ$/, 'よ').replace(/(?<![まやだ])だな$/, 'だね').replace(/よな$/, 'よね').replace(/からな$/, 'からね').replace(/(?<=[いた])(?<!みたい)な$/, 'ね')
@@ -71,6 +71,9 @@
       if (/(?<![まやだ]|ん|の)だ$/.test(s) && s.length > 2) return (lot(s, 2) ? s.replace(/だ$/, 'だね') : /[一-鿿ァ-ヶー々]だ$/.test(s) ? s.replace(/だ$/, '') : s) + tl + pun;
       if (/んだ$/.test(s)) return (lot(s, 2) ? s + 'よ' : s) + tl + pun;
       if (/と思う$/.test(s)) return (lot(s, 3) ? s : s + 'よ') + tl + pun;
+      /* 2026-10-31（CL）：あいさつ・お礼には足さない（「おはようよ」「ありがとうよ」にしない）。「わかった」は「よ」だけ（「わかったね」は相手に言う形になる） */
+      if (/(?:おはよう|ありがとう|おめでとう|おやすみ|こんばんは|こんにちは)$/.test(s)) return s + tl + pun;
+      if (/(?:わかった|分かった)$/.test(s)) return (lot(s, 6) ? s : s + 'よ') + tl + pun;
       if (/(?:[るうくすつむぶぐ]|た|い)$/.test(s) && s.length > 2) return (lot(s, 6) ? s : s + (lot(s + 'y', 2) ? 'よ' : 'ね')) + tl + pun;
       if (/[一-鿿ァ-ヶー々]$/.test(s) && s.length > 1) return (lot(s, 5) ? s : s + 'だね') + tl + pun;
       return s + tl + pun;

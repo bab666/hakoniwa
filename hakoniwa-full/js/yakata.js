@@ -778,7 +778,8 @@
     if (!opts.length) return;
     var o = HK.weighted(rng, opts, function (x) { return x[3]; }), a = o[0], b = o[1], k = o[2];
     var pin = (k === 'confess' || k === 'pine') && pining(S, a, b) && B.pconfess;
-    var m = { a: a.name, b: b.name, v: last ? last.v.name : '' }, t = F(pk(S, k === 'confess' && pin ? B.pconfess : B[k]), m), why = '';
+    /* 二人の関係に合わない文（家族・夫婦・恋人に「誰にも話したことのない昔の話」など。mini.js の HK.relFilter）は外す（2026-10-31 担当CL） */
+    var m = { a: a.name, b: b.name, v: last ? last.v.name : '' }, bl = k === 'confess' && pin ? B.pconfess : B[k], bf = HK.relFilter ? HK.relFilter(S, bl, a, b) : bl, t = F(pk(S, bf && bf.length ? bf : bl), m), why = '';
     if (k === 'pine') { setRel(S, a, b, 0.05); why = '両片想い：どちらも、相手は自分を何とも思っていないと思い込んでいる'; }
     if (k === 'talk') { setRel(S, a, b, 0.15, '打ち解けた'); why = '夜の語らいで、距離が縮まった'; }
     if (k === 'protect') { setRel(S, a, b, 0.2, '信頼', a); b.m.fear = clamp(b.m.fear - 12, 0, 100); why = a.name + 'は怯える' + b.name + 'を放っておけなかった（NP）'; }
