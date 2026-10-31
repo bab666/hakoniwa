@@ -14,7 +14,10 @@
      E2  気分の一句（HK.Emo の句）が、一つの区切りの中に二度出た（emo-audit の E2）
      E4  全年齢で「火照り」の句／値（emo-audit の E4。置き換え漏れは T1）
      D2・D4 日常の場面（daily-kit.js）の場所と時間帯の矛盾・家族の日常が恋愛になった（daily-audit）。D3（置き換え漏れ）は T1 に、
-         D5（その場にいない人）は state の S1・S25・S26 にまとめた。D1（同じ日常の文の重複の割合）は参考 */
+         D5（その場にいない人）は state の S1・S25・S26 にまとめた。D1（同じ日常の文の重複の割合）は参考
+   パス noname（2026-10-31 担当JN。既定の一式に入れた）：名前の無い住人（name が空・無い）を含む配役で全箱庭を回し、T1（undefined・{b} の残り）と
+     シミュレーションの失敗を見る。ほかのパスは住人にいつも名前を付けるので、名前が欠けた配役（点検の道具・外から渡した配役）で
+     「undefined「……」」が出ていたのを T1 が拾えなかった（engine.js の HK.nameInput で「名無し」を付けて直した） */
 'use strict';
 const JUDGE = function (HK, opt) {
   const SAFE = !!HK.SAFE_ON;
@@ -128,7 +131,8 @@ const JUDGE = function (HK, opt) {
     after() { curRun = null; },
     end(run, res) {
       const sc = run.sc, s = run.s, scen = HK.SCENARIOS[sc], env = run.input.env || {}, chars = run.input.chars || [];
-      const names = chars.map(c => c.name), P4 = P4of(names);
+      /* 名前の無い住人（パス noname）は、engine.js の HK.nameInput が付けた名前（結果の chars）で読む */
+      const names = chars.map((c, i) => (c && typeof c.name === 'string' && c.name.trim()) ? c.name : ((res.chars || [])[i] || {}).name).filter(n => typeof n === 'string' && n), P4 = P4of(names);
       out.runs++;
       const L = res.log || [];
       /* ---- text-audit の T1〜T10（T4・T6・T7 を除く） ---- */
@@ -268,4 +272,27 @@ function summarize(r) {
   return { items, ex, info: { 回: r.runs, '性的な場面': i.lewdEv, '参考 A>P': i.AP, '日常の行': i.dailyLines, '参考 日常の重複': i.dailyDup }, err: 0 };
 }
 const LABEL = { T1: '置き換え漏れ（{a}・undefined など）', T2: '空の記録', T3: 'かぎかっこ・！？の重なり', T5: '全年齢で性的な語', T8: '迷宮の語がほかの箱庭に', T9: 'その箱庭だけの語がほかの箱庭に', T10: '体の語の印の残り', P1: '文頭の句読点', P2: '画面の行頭の句読点', P3: '句読点の重なり', P4: '文頭の台詞のあとの句点', P5: '句点のすぐあとの記号', FI: '指の段落の次にいきなり挿入', E1: '悲しみの深い人が恋愛の主役', E2: '気分の一句が同じ区切りに二度', E4: '気分の句の置き換え漏れ・全年齢の火照り', D2: '日常の場所と時間帯の矛盾', D4: '家族の日常が恋愛に' };
-module.exports = { passes: {}, judges: { misc: JUDGE }, summarize, LABEL };
+/* ---------- パス noname（ページの中）：opt = { N, only } ----------
+   全箱庭 × N 回。人数は箱庭の範囲で 4〜5 人、最後の一人の名前を空（偶数回）・無し（奇数回）に、4 人以上なら後ろから 3 人目も空白だけにする。
+   関係は名前の無い人を含む不仲・敵対（敵視の出来事の「〇〇「そっちこそ……」」の経路）と、ライバル */
+const PASS = function* (HK, opt) {
+  const N = opt.N || 2, only = opt.only || null;
+  const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];
+  for (const sc of Object.keys(HK.SCENARIOS)) {
+    if (only && only.indexOf(sc) < 0) continue;
+    const scen = HK.SCENARIOS[sc];
+    for (let s = 0; s < N; s++) {
+      const n = Math.max(scen.minCast || 1, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 5 - (s % 2)));
+      const chars = [];
+      for (let i = 0; i < n; i++) chars.push({ name: NAMES[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, gender: (s + i) % 2 ? 'f' : 'm', calls: {}, loveNG: [] });
+      if (s % 2) delete chars[n - 1].name; else chars[n - 1].name = '';
+      if (n >= 4) chars[n - 3].name = '　';
+      const env = {}; (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
+      const ties = [];
+      const add = (a, b, type) => { if (a !== b && a < n && b < n && a >= 0 && b >= 0) ties.push({ a, b, type }); };
+      add(n - 2, n - 1, 'enemy'); add(n - 1, 0, 'bad'); add(n - 3, n - 2, 'bad'); add(0, 1, 'rival');
+      yield { sc, s, input: { scenId: sc, seed: 61000 + s * 13, env, chars, perChar: chars.map(() => ({ pick: {} })), ties }, meta: { cast: 'noname' } };
+    }
+  }
+};
+module.exports = { passes: { noname: PASS }, judges: { misc: JUDGE }, summarize, LABEL };
