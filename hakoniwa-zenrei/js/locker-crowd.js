@@ -492,7 +492,8 @@
     var keys = ['heat', 'reason', 'plea', 'esc'];
     S.cj = 0; S.cw = 0; S.blessed = {};
     /* ロッカー割り：大きなロッカー（三人ずつ）か、二人ずつ。余りは一人 */
-    var lay = env.layout && env.layout !== 'random' ? env.layout : rng() < 0.5 ? 'big' : 'split';
+    /* おまかせは大きなロッカー（三人ずつ）6 割・二人ずつ 4 割（2026-10-31 担当LK3：半々だと三人のロッカーができる回が少なく、三人の場面が出られない部屋より起きにくかった） */
+    var lay = env.layout && env.layout !== 'random' ? env.layout : rng() < 0.6 ? 'big' : 'split';
     var pool = P.slice(), lockers = [];
     for (var i = pool.length - 1; i > 0; i--) { var j = rng.int(i + 1), tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp; }
     while (pool.length) { var k = lay === 'big' ? (pool.length === 4 ? 3 : Math.min(3, pool.length)) : (pool.length === 1 ? 1 : 2); lockers.push({ m: pool.splice(0, k), lv: -1, n: lockers.length + 1 }); }
@@ -582,7 +583,8 @@
     /* ロッカーごとの「その後」 */
     lockers.forEach(function (Lk) {
       if (Lk.m.length < 2 || Lk.lv < 0) return;
-      if (bedR && bedR.Lk === Lk) return;
+      /* ベッドへ行った人のいるロッカー（別のロッカーから加わった一人のロッカーも。locker-trio-bed.js の joinOf）は、その後の一言を出さない */
+      if (bedR && (bedR.Lk === Lk || Lk.m.some(function (p) { return bedR.who.indexOf(p) >= 0; }))) return;
       if (Lk.m.length === 3 && Lk.trioIn) {
         var tq = Lk.trioNames;
         /* 恋人どうしがそろった三人は、恋人たちの組として記録する（poly.js） */
@@ -949,8 +951,11 @@
     if (urge < 0.36 + rng() * 0.3) return;
     if (t3) {
       /* 応じるか：愛憎を持つ側は口では嫌がりながら応じやすい（+0.25）。敵対する相手に強引に引き寄せられた側も、熱が回っていれば拒みきらない */
-      var willing = others.every(function (p) { return p.m.heat / 100 + p.tr.np * 0.15 + p.tr.fc * 0.15 - p.m.reason / 160 + relW(S, p, lead, 'acc') * 0.5 + (lhHas(S, p, lead) ? 0.25 : 0) + (S.nK > 1 ? (S.nK - 1) * 0.25 : 0) > 0.3 || (hostOk(S, lead, p) && hostTop(S, lead, p) === lead && p.m.heat >= 15); });
-      if (!willing) { holdPair(S, lead, others[0], '同じロッカーの' + names(others) + 'の気持ちが、まだ追いついていなかった'); return; }
+      /* 一度「気持ちが追いつかない」で止まった三人は、次に誘われたとき気持ちが追いつきやすい（1 回ごとに +0.12、上限 +0.36。2026-10-31 担当LK3：
+         三人のロッカーで 3P にならなかった回の大半がこの一度きりの見送りで、出られない部屋より三人の場面が起きにくかった。門（trioOk）は変えない） */
+      var askW = Math.min(0.36, (Lk.ask || 0) * 0.12);
+      var willing = others.every(function (p) { return p.m.heat / 100 + p.tr.np * 0.15 + p.tr.fc * 0.15 - p.m.reason / 160 + relW(S, p, lead, 'acc') * 0.5 + (lhHas(S, p, lead) ? 0.25 : 0) + (S.nK > 1 ? (S.nK - 1) * 0.25 : 0) + askW > 0.3 || (hostOk(S, lead, p) && hostTop(S, lead, p) === lead && p.m.heat >= 15); });
+      if (!willing) { Lk.ask = (Lk.ask || 0) + 1; holdPair(S, lead, others[0], '同じロッカーの' + names(others) + 'の気持ちが、まだ追いついていなかった'); return; }
       var lvMax = Math.min(LK.MAXLV || 4, 4), step = heat >= 80 ? 3 : heat >= 60 ? 2 : 1, nx = Math.min(Lk.lv + step, lvMax >= 2 ? 2 : lvMax);
       if (Lk.trioSex) {
         /* 三人の場面のあと：名残だけ */

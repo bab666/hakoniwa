@@ -190,12 +190,18 @@
     /* 「厚く」でなければ、始まりと最初の二人の最中も削ってよい文（三人の場面の量を下げた。2026-10-28 担当KF） */
     put('fore', ST.fmt(pick(S, TB.STRIP), vv), sh3 ? 3 : 2);
     put('fore', ST.fmt(pick(S, TB.OPEN[sp.p]), vv), th3 ? 1 : 2);
-    var used = {};
+    var used = {}, nUsed = {};
     prs.forEach(function (z, i) {
       var k = tpKey(api, z[0], z[1]), pool = TB.TP[k].filter(function (l) { return !used[l]; }), l = pick(S, pool.length ? pool : TB.TP[k]);
       used[l] = 1;
       put(i ? 'mid' : 'in', ST.fmt(l, { a: z[0].name, b: z[1].name, c: z[2].name }), i === 0 && th3 ? 1 : i <= 1 ? 2 : 3);
       if (i === 0) put('in', ST.fmt(pick(S, (sp.p === 'oneTwo' ? TB.TOP : TB.TOP1)[ps(z[0])]), { a: z[0].name }), 3);
+      /* 夜の性格（locker-night.js の LK.nightLine）：ロッカーの中の三人の場面（locker-crowd.js の trioScene）と同じく、攻め→受けの deep の一文。
+         同じ人の同じ役（攻め／受け）は一度だけ（2026-10-31 担当LK3：別のロッカーから加わる三人のベッドが増えたので、夜の性格の出方をロッカーの中とそろえる） */
+      if (!LK.nightLine || /^ng/.test(k) || (nUsed['a' + z[0].i] && nUsed['b' + z[1].i])) return;
+      var mo = api.modeOf(z[0], z[1]), nr = LK.nightLine(S, z[0], z[1], 'deep', { mode: mo === 'ins' ? 'mf' : mo, only: nUsed['a' + z[0].i] ? 'bot' : nUsed['b' + z[1].i] ? 'top' : undefined });
+      if (!nr || !nr.text) return;
+      put('mid', nr.text, 3); nUsed['a' + z[0].i] = nUsed['b' + z[1].i] = true;
     });
     /* 受けの山場（態度9種）：二人から同時に求められる人（twoOne の {u}・sandwich の {m}・三人とも組める oneTwo と輪はどちらか） */
     var hr = sp.p === 'twoOne' ? sp.u : sp.p === 'sandwich' ? sp.m : sp.p === 'ring' ? rng.pick(m3) : !sp.hub ? rng.pick([sp.m, sp.u]) : null;
@@ -272,6 +278,18 @@
       } else if (m.length === 2 && P.length === 3 && hotPair(S, api, m[0], m[1])) c = { k: 'pair', Lk: Lk, m: m, hv: hv };
       if (c && (!best || c.hv > best.hv)) best = c;
     });
+    /* 四人以上で三人のロッカーの組が無いとき（二人ずつのロッカー・三人のロッカーで三人の組が成り立たない回）：ベッドへ行ける二人に、
+       別のロッカーの一人が加われる組（三人とも組める三人：api.trioOk）があれば、その二人を候補にする。加わる人がいなければ今までどおり何もしない
+       （四人以上の回に二人きりのベッドは足さない）。2026-10-31 担当LK3：二人ずつのロッカーの回は 3P が起きる道が無く、出られない部屋より起きにくかった */
+    var joinOf = function (m2) {
+      return P.filter(function (p) { return m2.indexOf(p) < 0 && p.m.heat >= 55 && !(p.L && p.L.refusedHard) && api.trioOk(S, [m2[0], m2[1], p]); })
+        .sort(function (a, b) { return b.m.heat - a.m.heat; })[0] || null;
+    };
+    if (!best && P.length >= 4) lockers.forEach(function (Lk) {
+      var m = Lk.m, hv = avg(m);
+      if (Lk.refusedHard || m.length !== 2 || !hotPair(S, api, m[0], m[1]) || !joinOf(m)) return;
+      if (!best || hv > best.hv) best = { k: 'pair', Lk: Lk, m: m, hv: hv, joinOnly: true };
+    });
     if (!best) return null;
     var m = best.m;
     /* 起こりやすさ：二人のときと同じ 0.85 に、性欲の強さの倍率（HK.Pos.libMul）。理性の残った人がいれば、踏みとどまることも（愛憎のある組は踏みとどまりにくい） */
@@ -290,12 +308,15 @@
       if (kind === 'eager' && !sp.h) { var qq = m.slice().sort(function (a, b) { return (b.m.reason + b.tr.ac * 20) - (a.m.reason + a.tr.ac * 20); })[0]; if (rng() < 0.3 + qq.tr.ac * 0.3) { kind = 'quiet'; q = qq; } }
       return { Lk: best.Lk, who: m, labels: trioBed(S, api, sp, kind, how, q) };
     }
-    var cc = P.filter(function (p) { return m.indexOf(p) < 0; })[0];
+    /* 加わる一人：三人の回は残りの一人、四人以上の回は別のロッカーのいちばん熱い一人（joinOf） */
+    var cc = P.length === 3 ? P.filter(function (p) { return m.indexOf(p) < 0; })[0] : best.joinOnly ? joinOf(m) : null, m3j = cc ? [m[0], m[1], cc] : null;
     /* 二人＋一人（別のロッカーだった一人）：三人とも組める三人で、熱があって乗り気なら加わる */
-    if (cc && best.Lk.m.length === 2 && cc.m.heat >= 55 && api.trioOk(S, P) && cc.m.heat / 100 + cc.tr.fc * 0.2 + cc.tr.np * 0.1 - cc.m.reason / 160 + (m.some(function (p) { return api.interest(S, cc, p) || api.lhHas(S, cc, p); }) ? 0.25 : 0) > 0.35 && rng() < 0.6) {
-      var sp2 = api.trioShape(S, P);
-      if (sp2) return { Lk: best.Lk, who: P.slice(), labels: trioBed(S, api, ringOf(S, sp2, P), 'join', how, cc) };
+    if (cc && best.Lk.m.length === 2 && cc.m.heat >= 55 && api.trioOk(S, m3j) && cc.m.heat / 100 + cc.tr.fc * 0.2 + cc.tr.np * 0.1 - cc.m.reason / 160 + (m.some(function (p) { return api.interest(S, cc, p) || api.lhHas(S, cc, p); }) ? 0.25 : 0) > 0.35 && rng() < 0.6) {
+      var sp2 = api.trioShape(S, m3j);
+      if (sp2) return { Lk: best.Lk, who: m3j, labels: trioBed(S, api, ringOf(S, sp2, m3j), 'join', how, cc) };
     }
+    /* 四人以上の回は、加わる人がいなければ二人きりのベッドにしない（今までどおり） */
+    if (best.joinOnly) return null;
     /* ほかに恋人のいる人の二人は、二人きりのベッドへは行かない */
     if (loyalOut(S, api, m[0], m[1]) || !LK.bed) return null;
     return { Lk: best.Lk, who: m.slice(), labels: pairBed(S, api, best.Lk, m, how, cc) };

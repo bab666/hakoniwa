@@ -561,6 +561,7 @@ tone js/tone-brush10e.js
 tone js/tone-brush10e-r18.js
 tone js/tone-brush10f.js
 tone js/tone-brush10f-r18.js
+tone js/tone-brush-lk3-r18.js
 tone js/tone-brush10h.js
 late js/tone-hero.js
 late js/tone-genki.js
