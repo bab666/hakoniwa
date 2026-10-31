@@ -40,6 +40,8 @@ const PASSES = {
   loveflag: { tool: 'loveflag', id: 'loveflag', opt: { N: 24 }, lewd: 'direct', est: 30, out: m => 'loveflag-' + m },
   seg: { tool: 'seg', id: 'seg', opt: { N: 10 }, lewd: '', est: 12, out: m => 'seg-' + m },
   qa: { tool: 'qa', id: 'qa', opt: { N: 12 }, lewd: '', est: 14, modes: ['r18', 'zen'], out: m => 'qa-' + m },
+  /* 名前の無い住人を含む配役（2026-10-31 担当JN。audit/misc.js のパス noname。判定は misc だけ） */
+  noname: { tool: 'misc', id: 'noname', opt: { N: 2 }, lewd: '', est: 3, out: m => 'noname-' + m },
   /* 追加の配役パス（--extra） */
   sexgate: { tool: 'sexgate', id: 'sexgate', opt: { N: 24, cond: TOOLS.sexgate.COND }, lewd: 'direct', est: 165, modes: ['r18'], extra: true, out: () => 'sexgate-r18' },
   feud: { tool: 'feud', id: 'feud', opt: { N: 24 }, lewd: '', est: 28, modes: ['r18', 'zen'], extra: true, out: m => 'feud-' + m },
@@ -49,7 +51,7 @@ const PASSES = {
   /* 知らない人どうし／知り合いどうし／混在 と関係に合わない文（2026-10-31 担当RC。relcons-audit.js） */
   relcons: { tool: 'relcons', id: 'relcons', opt: { N: 24 }, lewd: '', est: 55, extra: true, out: m => 'relcons-' + m }
 };
-const DEFAULT = ['orient', 'pos', 'pos-hot', 'pos-ffhot', 'state', 'loveflag', 'seg', 'qa'];
+const DEFAULT = ['orient', 'pos', 'pos-hot', 'pos-ffhot', 'state', 'loveflag', 'seg', 'qa', 'noname'];
 /* 判定：cross＝ほかのパスの回にも当てる。modes＝当てるモード */
 const JUDGES = {
   orient: { cross: true, opt: () => ({ why: true }) },

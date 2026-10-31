@@ -42,6 +42,7 @@ hakoniwa-tools/tone-check/
 | loveflag | 24 | ○ | ○ | ○ | loveflag・misc |
 | seg | 10 | ○ | ○ | ○ | seg・misc |
 | qa | 12 | ○ | | ○ | qa（比率の参考）・misc |
+| noname（2026-10-31 担当JN。名前が空・無い住人を含む 4〜6 人・不仲／敵対の配役で全箱庭。audit/misc.js のパス） | 2 | ○ | ○ | ○ | misc（T1 の undefined・{b} の残りと、シミュレーションの失敗） |
 | **追加**：sexgate（性欲「強い」・10 の関係） | 24 | ○ | | | sexgate |
 | **追加**：feud（不仲の組） | 24 | ○ | | ○ | feud |
 | **追加**：group（三人以上の恋愛） | 40 | ○ | | ○ | group |

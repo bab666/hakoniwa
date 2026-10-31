@@ -620,7 +620,26 @@
     o.ties = HK.fearTies ? HK.fearTies(ts) : ts;
     return o;
   };
+  /* 名前の無い住人（name が空・無い）には「名無し」「名無し2」…を付けた写しで回す（2026-10-31 担当JN）。
+     画面の名簿は ui.js の normChar で必ず名前を付けるが、点検の道具・外から渡した配役で名前が欠けると、
+     文に「undefined「……」」「{b}」が残っていた。名前のある住人の配役はそのまま（写さない）。渡された input・住人は書き換えない */
+  HK.nameInput = function (input) {
+    var cs = (input && input.chars) || [];
+    /* 空白だけの名前も無いものとみなす（外側の包み voice-seg.js が空白を私用領域の文字にしてから来るので、戻して見る） */
+    var NS = HK.NameSafe, has = function (c) { return typeof c.name === 'string' && !!(NS && NS.dec ? NS.dec(c.name) : c.name).trim(); };
+    if (!cs.some(function (c) { return c && !has(c); })) return input;
+    var used = {}; cs.forEach(function (c) { if (c && has(c)) used[c.name] = 1; });
+    var o = {}; for (var k in input) o[k] = input[k];
+    o.chars = cs.map(function (c) {
+      if (!c || has(c)) return c;
+      var x = {}; for (var k2 in c) x[k2] = c[k2];
+      var n = 1, nm = '名無し'; while (used[nm]) nm = '名無し' + (++n);
+      used[nm] = 1; x.name = nm; return x;
+    });
+    return o;
+  };
   HK.simulate = function (input) {
+    input = HK.nameInput(input);
     var sc0 = HK.SCENARIOS[input.scenId];
     if (sc0 && sc0.simulate) return sc0.simulate(HK.fearInput(input));
     var ctx = new Ctx(input), scen = ctx.scen, rng = ctx.rng;
