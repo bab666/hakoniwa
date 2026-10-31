@@ -301,7 +301,7 @@
   /* ---------- 共通の部品の包み ---------- */
   function installEP() {
     var E = EP();
-    if (!E || !E.weave || E.weave._e3) return;
+    if (!E || !E.weave || E.weave._e3b) return;
     E.SCEN.jashin = 1; E.SCEN.yakata = 1; E.SCEN.ship = 1; E.SCEN.jinro = 1;
     HK.wrap(E, 'weave', function (w0) {
       var f = function (arr, T, U, idx, o) {
@@ -310,20 +310,20 @@
         if (plan && before && !plan.force && MY[RUN.scen]) { try { epOwn(arr, before, T, U, plan, o); } catch (e) { log({ kind: 'err', err: String(e && e.stack || e) }); } }
         return plan;
       };
-      f._e3 = true;
+      f._e3b = true;
       return cp(f, w0);
     });
   }
   function installIni() {
     var I = INI();
-    if (!I || !I.apply || I.apply._e3) return;
+    if (!I || !I.apply || I.apply._e3b) return;
     HK.wrap(I, 'apply', function (a0) {
       var f = function (text, pl) {
         var res = a0.apply(this, arguments);
         if (typeof res !== 'string' || res === text || !MY[RUN.scen]) return res;
         try { return iniOwn(text, fiFix(text, res), pl); } catch (e) { log({ kind: 'err', err: String(e && e.stack || e) }); return res; }
       };
-      f._e3 = true;
+      f._e3b = true;
       return cp(f, a0);
     });
   }
@@ -339,7 +339,7 @@
   }
   function installRW() {
     var A = HK.Attr;
-    if (!A || !A.raceWeave || A.raceWeave._e3) return;
+    if (!A || !A.raceWeave || A.raceWeave._e3b) return;
     HK.wrap(A, 'raceWeave', function (rw0) {
       var f = function (arr, T, U, pick, idx, o) {
         var r = rw0.apply(this, arguments);
@@ -351,7 +351,7 @@
         } catch (e) { log({ kind: 'err', err: String(e && e.stack || e) }); }
         return r;
       };
-      f._e3 = true;
+      f._e3b = true;
       return cp(f, rw0);
     });
   }
@@ -405,22 +405,29 @@
     if (scen === 'jinro') return blockFore(S, T, U, mode, mood, t);
     return t;
   }
+  /* r18-thick.js の体位表で oral の印のあるもの（口・指と舌）。表が読めなければ既定の二つ */
+  var ORAL = { kuchi: 1, yubi: 1 };
+  function oralIds() { var D = HK.R18M_DATA; if (D && D.POS) D.POS.forEach(function (p) { if (p && p.oral) ORAL[p.id] = 1; }); }
   function installStory() {
+    oralIds();
     var R = HK.R18M, RT = HK.R18Thick;
-    if (R && R.sex && !R._e3) {
-      R._e3 = true;
+    if (R && R.sex && !R._e3b) {
+      R._e3b = true;
       HK.wrap(R, 'sex', function (sex0) {
         return cp(function (S, x, y, opt) {
           if (HK.SAFE_ON || !MY[RUN.scen] || RUN.scen === 'ship') return sex0.apply(this, arguments);
           var prev = CUR; CUR = { S: S, mood: (opt && opt.mood) || '' };
-          var t;
+          var t, n0 = S && S.r18Pos ? S.r18Pos.length : 0;
           try { t = sex0.apply(this, arguments); } finally { CUR = prev; }
+          /* 口・指だけの体位（r18-thick.js の oral の体位）の回は、繋がる書き方の型の段を差さない */
+          var np = S && S.r18Pos && S.r18Pos.length > n0 ? S.r18Pos[S.r18Pos.length - 1] : '';
+          if (np && ORAL[np]) return t;
           try { return story(S, x, y, opt, t, false); } catch (e) { log({ kind: 'err', err: String(e && e.stack || e) }); return t; }
         }, sex0);
       });
     }
-    if (RT && RT.ff && !RT._e3) {
-      RT._e3 = true;
+    if (RT && RT.ff && !RT._e3b) {
+      RT._e3b = true;
       HK.wrap(RT, 'ff', function (ff0) {
         return cp(function (S, x, y, opt) {
           if (HK.SAFE_ON || !NAME_SCEN[RUN.scen]) return ff0.apply(this, arguments);
@@ -437,8 +444,8 @@
   var MK1 = '⁣E3T⁣', MK2 = '⁣E3C⁣';
   function installHate() {
     var HS = HK.HateSex;
-    if (!HS || !HS.scene || HS._e3) return;
-    HS._e3 = true;
+    if (!HS || !HS.scene || HS._e3b) return;
+    HS._e3b = true;
     HK.wrap(HS, 'scene', function (sc0) {
       return cp(function (x, a, b, opt) {
         if (HK.SAFE_ON || !HS.order || !HS.INSERT || !HS.BODY) return sc0.apply(this, arguments);
@@ -466,8 +473,8 @@
   /* ---------- 恐怖・無関心の力ずくの夜（HK.ColdFear.R18.scene。出られない部屋の cf_room_r18 を含む） ---------- */
   function installCold() {
     var CF = HK.ColdFear, R = CF && CF.R18;
-    if (!R || !R.scene || R._e3) return;
-    R._e3 = true;
+    if (!R || !R.scene || R._e3b) return;
+    R._e3b = true;
     HK.wrap(R, 'scene', function (sc0) {
       return cp(function (ctx, T, H) {
         var r = sc0.apply(this, arguments);
@@ -529,8 +536,8 @@
   function lockMode(T, U) { return isF(T) ? (isF(U) ? 'ff' : 'fm') : 'mf'; }
   function installLocker() {
     var T3 = HK.Trio3;
-    if (!T3 || T3._e3 || !T3.pairTalk || !T3.begin) return;
-    T3._e3 = true;
+    if (!T3 || T3._e3b || !T3.pairTalk || !T3.begin) return;
+    T3._e3b = true;
     /* 同じロッカーの二人が繋がっているあいだ（locker-crowd.js の contTurn が一度だけ呼ぶ。声を殺す hush の呼び出し） */
     HK.wrap(T3, 'pairTalk', function (p0) {
       return cp(function (S, top, bot, o) {
@@ -551,8 +558,8 @@
         if (HK.SAFE_ON || !c || typeof c.text !== 'function' || !crowd(S)) return c;
         var tx0 = c.text;
         c.text = function () {
-          if (!this._e3) {
-            this._e3 = true;
+          if (!this._e3b) {
+            this._e3b = true;
             try {
               var e = this.E && this.E[0], T = e && e[0], U = e && e[1];
               if (T && U && !hardTopU(T, U) && !noGen(T, U)) {
@@ -568,7 +575,7 @@
     });
   }
 
-  /* 物語型の箱庭では、場面の部品（エンジン型の ctx）が無いので、HK.EroTop.relOf(null, …) は前に回した別の箱庭の ctx を引いてしまう（回をまたいで結果が変わる）。
+  /* 物語型の箱庭・媚薬ロッカーでは、場面の部品（エンジン型の ctx）が無いので、HK.EroTop.relOf(null, …) は前に回した別の箱庭の ctx を引いてしまう（回をまたいで結果が変わる）。
      物語型の回では、入力の関係（恋人・つがい・夫婦・本命＝lover、セフレ＝casual）から決める */
   var REL_L = { lover: 1, mate: 1, fated: 1, spouse: 1, honmei: 1 }, REL_C = { fwb: 1 };
   function storyRel(a, b) {
@@ -578,17 +585,41 @@
   }
   function installRel() {
     var ET = HK.EroTop;
-    if (!ET || !ET.relOf || ET._e3) return;
-    ET._e3 = true;
+    if (!ET || !ET.relOf || ET._e3b) return;
+    ET._e3b = true;
     HK.wrap(ET, 'relOf', function (r0) {
       return cp(function (S, a, b) {
         if (!S && MY[RUN.scen] && !HK.SAFE_ON) return a && b && a.i != null && b.i != null ? storyRel(a, b) : '';
+        /* 媚薬ロッカー（ctx の無い箱庭）も、前に回した箱庭の ctx を引かない（一つの箱庭だけを回したときと同じ ''） */
+        if (!S && RUN.scen === 'locker') return '';
         return r0.apply(this, arguments);
       }, r0);
     });
   }
+  /* 物語型の記録の仕上げ：差した段（プレイの段・型の段・箱庭の段）が記録の中でほかの段と並んだ結果、「指で責める段 → いきなり繋がる段」になったら、
+     指を抜く一文を足す（型の段の入れ替え（二度目）が事後の前に入り、その後ろに「もう一度」の段が続く場合など。点検 misc の FI） */
+  var FI_PULL2 = '濡れた指が、そっと抜かれた。';
+  function fiWhole(t) {
+    if (typeof t !== 'string' || t.indexOf('\n') < 0) return t;
+    var parts = t.split(/(\n+)/), idx = [], hit = false;
+    for (var i = 0; i < parts.length; i += 2) if (parts[i].trim()) idx.push(i);
+    for (var k = 0; k + 1 < idx.length; k++) if (fiOpen(parts[idx[k]]) && fiIns(parts[idx[k + 1]])) { parts[idx[k]] += FI_PULL2; hit = true; }
+    return hit ? parts.join('') : t;
+  }
+  function installSay() {
+    var ST = HK.Story;
+    if (!ST || !ST.say || ST._e3b) return;
+    ST._e3b = true;
+    HK.wrap(ST, 'say', function (s0) {
+      return cp(function (S, o) {
+        if (!HK.SAFE_ON && o && typeof o.text === 'string' && MY[RUN.scen] && (o.kind === 'climax' || o.lewd)) { try { o.text = fiWhole(o.text); } catch (e) { /* そのまま */ } }
+        return s0.apply(this, arguments);
+      }, s0);
+    });
+  }
   function install() {
     USED = {};
+    installSay();
     installRel();
     installEP(); installIni(); installRW(); installStory(); installHate(); installCold(); installLocker();
   }
