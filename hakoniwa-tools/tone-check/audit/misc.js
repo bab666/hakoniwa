@@ -25,7 +25,7 @@ const JUDGE = function (HK, opt) {
   /* text-audit の hit と同じ形（k, 箱庭, 回, 文） */
   function hit(k, sc, s, t) { out.n[k]++; if (out.ex[k].length < 4) out.ex[k].push(sc + '#' + s + '（' + (curRun ? curRun.pass : '') + '） | ' + String(t).replace(/\n/g, ' ').slice(0, 240)); }
   /* ---- text-audit ---- */
-    const LMK = /\{(?:男性器|亀頭|女性器|陰核|ナカ|胸|乳首|尻|後ろ|精液|愛液|股間)\}/;
+    const LMK = /\{(?:男性器|亀頭|女性器|陰核|ナカ|胸|乳首|尻|後ろ|精液|愛液|股間|前立腺|結腸)\}/;
     /* T9：その箱庭にしかないはずの語が、ほかの箱庭の文に出た（出られない部屋の前提の文の混入など）。語の右は、出てもよい箱庭 */
     const FOREIGN = [
       [/脱出の条件|部屋の条件|出られない部屋|木箱の道具/, ['whiteroom']],

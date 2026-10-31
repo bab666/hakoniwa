@@ -538,6 +538,7 @@ tone js/tone-brush7a.js
 tone js/tone-brush7a-r18.js
 tone js/tone-brush7b.js
 tone js/tone-brush7b-r18.js
+tone js/tone-brush8a-r18.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/omega-mob-r18.js @scen:omega
@@ -604,6 +605,8 @@ late js/tips-scen-c.js
 late js/tips-scen-d.js
 late js/attr-r18.js
 late js/attr-race-r18.js
+# 前立腺・結腸・乳首・喉奥の段（共通の山場の差し込み口 raceWeave／ロッカーの racePlay を包む。attr-race-r18.js の後）
+late js/ero-play-r18.js
 late js/export-out.js
 late js/ui-perzoom.js
 # 出来事の一覧の画面（ボタンと窓。データは pack-catalog）
