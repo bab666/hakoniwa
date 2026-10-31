@@ -2873,12 +2873,13 @@ var lustP=tier==='casual'&& !!(HK.FreeSex&&HK.FreeSex.lust&&HK.FreeSex.lust(S,a,
 if(tier==='casual'&&w>=0.6&& !lustP)return;
 if(tier==='again'&&x.ref>=2&&w<0.55)return;
 var hostL=lustP&&HK.FreeSex.kind(S,a,b)==='host';
-if(tier==='casual'&& !(w>0.25||hostL||(w> -0.25&&rng()<lowP)))return;
-cand.push({a:a,b:b,w:w,tier:tier,x:x,hostL:hostL});
+var feelK=HK.Pos.feelK?HK.Pos.feelK(a,b):1;
+if(tier==='casual'&& !(w>0.25||hostL||feelK>1||(w> -0.25&&rng()<lowP)))return;
+cand.push({a:a,b:b,w:w,tier:tier,x:x,hostL:hostL,feelK:feelK});
 });
 });
 if(!cand.length)return;
-var c=HK.weighted(rng,cand,function(o){return(o.tier==='love'?1.3+o.w:o.tier==='again'?1.5+Math.max(0,o.w)*0.5:0.3+Math.max(0,o.hostL?Math.max(o.w,0.8):o.w)*0.6)*(HK.State.freeSex&&HK.State.freeSex(S,o.a,o.b)?HK.FreeSex.factor(S,o.a,o.b,true):1)*(HK.Pos.libMul?HK.Pos.libMul([o.a,o.b]):1);});
+var c=HK.weighted(rng,cand,function(o){return(o.tier==='love'?1.3+o.w:o.tier==='again'?1.5+Math.max(0,o.w)*0.5:0.3+Math.max(0,o.hostL?Math.max(o.w,0.8):o.w)*0.6)*(HK.State.freeSex&&HK.State.freeSex(S,o.a,o.b)?HK.FreeSex.factor(S,o.a,o.b,true):1)*(HK.Pos.libMul?HK.Pos.libMul([o.a,o.b]):1)*(o.feelK||1);});
 var a=c.a,b=c.b,tier=c.tier,x=c.x;
 if(HK.Pos.reasonP&&rng()>HK.Pos.reasonP(S,a,b))return;
 var free=tier!=='love'&& !!(HK.State.freeSex&&HK.State.freeSex(S,a,b));
@@ -3591,8 +3592,8 @@ actions:[],goals:[],events:[]
 HK.SCENARIOS.ship=scen;
 var at=HK.SCEN_ORDER.indexOf('island');
 if(HK.SCEN_ORDER.indexOf('ship')<0)HK.SCEN_ORDER.splice(at>=0?at+1:HK.SCEN_ORDER.length,0,'ship');
-var W={lover:1,mate:1,fated:1,almost:0.8,fwb:0.45,sibling:0.8,sibprot:0.95,sibclose:0.9,parent:0.95,pparent:0.9,best:0.75,buddy:0.8,childhood:0.7,friend:0.5,mentor:0.6,master:0.6,teacher:0.5,senpai:0.4,colleague:0.3,classmate:0.4,boss:0.45,benefactor:0.6,relative:0.6,worship:0.85,fond:0.55,blind:0.75,acq:0.1,ex:0.3,rival: -0.3,enemy: -0.7,sibbad: -0.15,bad: -0.4};
-var LOVE= /^(lover|mate|fated|almost|fwb|crush)$/,FAMILY= /^(sibling|sibprot|sibclose|sibbad|parent|pparent)$/;
+var W={lover:1,mate:1,fated:1,almost:0.8,fwb:0.45,sibling:0.8,sibprot:0.95,sibclose:0.9,twin:0.9,parent:0.95,pparent:0.9,best:0.75,buddy:0.8,childhood:0.7,friend:0.5,mentor:0.6,master:0.6,teacher:0.5,senpai:0.4,colleague:0.3,classmate:0.4,boss:0.45,benefactor:0.6,relative:0.6,worship:0.85,fond:0.55,blind:0.75,acq:0.1,ex:0.3,rival: -0.3,enemy: -0.7,sibbad: -0.15,bad: -0.4};
+var LOVE= /^(lover|mate|fated|almost|fwb|crush)$/,FAMILY= /^(sibling|sibprot|sibclose|twin|sibbad|parent|pparent)$/;
 function rk(a,b){return a.i<b.i?a.i+'-'+b.i:b.i+'-'+a.i;}
 function ties(S,a,b){return S.ties.filter(function(t){return(t.a===a.i&&t.b===b.i)||(t.a===b.i&&t.b===a.i);});}
 function bond(S,a,b){
@@ -4243,7 +4244,7 @@ outburst(S);
 function relmap(S){
 var P=S.P,edges=[],seen={};
 function add(a,b,label,cls,dir){var k=rk(P[a],P[b])+label;if(seen[k])return;seen[k]=1;edges.push({a:a,b:b,label:label,cls:cls,dir:dir});}
-var CLS={lover:'love',sibbad:'enemy',bad:'enemy',mate:'love',fated:'love',almost:'love',fwb:'night',crush:'pine',enemy:'enemy',rival:'enemy',ex:'obsess',buddy:'partner',best:'friend',friend:'friend',childhood:'friend',sibling:'guard',sibprot:'guard',sibclose:'guard',parent:'guard',pparent:'guard',master:'partner',mentor:'partner',teacher:'partner',senpai:'friend',colleague:'friend',classmate:'friend',boss:'partner',benefactor:'guard',relative:'guard',worship:'guard',fond:'friend',blind:'guard',acq:'none'};
+var CLS={lover:'love',sibbad:'enemy',bad:'enemy',mate:'love',fated:'love',almost:'love',fwb:'night',crush:'pine',enemy:'enemy',rival:'enemy',ex:'obsess',buddy:'partner',best:'friend',friend:'friend',childhood:'friend',sibling:'guard',sibprot:'guard',sibclose:'guard',twin:'guard',parent:'guard',pparent:'guard',master:'partner',mentor:'partner',teacher:'partner',senpai:'friend',colleague:'friend',classmate:'friend',boss:'partner',benefactor:'guard',relative:'guard',worship:'guard',fond:'friend',blind:'guard',acq:'none'};
 var parted={};(S.exes||[]).forEach(function(j){if(!lover(S,P[j[0]],P[j[1]]))parted[rk(P[j[0]],P[j[1]])]=1;});
 S.ties.forEach(function(t){if(parted[rk(P[t.a],P[t.b])]&& /^(lover|mate|fated)$/.test(t.type))return;var lab=HK.tieLabel?HK.tieLabel(t):HK.TIES&&HK.TIES[t.type]?HK.TIES[t.type].label:t.type;add(t.a,t.b,lab,CLS[t.type]||'friend',t.type==='crush'||(HK.TIES&&HK.TIES[t.type]&&HK.TIES[t.type].dir)?t.a:null);});
 var hasLove={};
@@ -5048,7 +5049,7 @@ return true;
 });
 ;
 /* ==== js/ship-xeno-thick.js ==== */
-HK.Load.def(505,'js/ship-xeno-thick.js',function(){
+HK.Load.def(506,'js/ship-xeno-thick.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,SH=HK.SHIP,X2=SH&&SH.X2;
@@ -5180,7 +5181,7 @@ X.hugeAct=X.hugeAct.concat([
 });
 ;
 /* ==== js/ship-ero3-r18.js ==== */
-HK.Load.def(516,'js/ship-ero3-r18.js',function(){
+HK.Load.def(517,'js/ship-ero3-r18.js',function(){
 (function(){
 'use strict';
 var HK=window.HK;
@@ -5248,7 +5249,7 @@ mm:L('{a}は{b}の作業着をはだけさせ、冷気にぴんと勃った{乳�
 })();
 });
 ;
-HK.Load.def(516.5,'tone:scen-ship',function(){
+HK.Load.def(517.5,'tone:scen-ship',function(){
 HK.Load.toneData("mixed",{"F":[
 ["どうせなら、誰かと飲みたかったんだ","どうせなら、誰かと飲みたかったんです。……一人だと、つまんないし",1],
 ["ここで喧嘩して、誰が得するの？","ここで喧嘩して、誰が得するの？　……ね、やめましょう",1],
@@ -5611,4 +5612,4 @@ HK.Load.toneData("ronkyaku",{"F":[
 HK.Load.toneData("chara_down",{"F":[
 ["一年、よく持ちこたえましたね。私の自慢の船員たちです","一年、よく持ちこたえましたねー。私の自慢の船員たちですよ、ほんと",1]]});
 });
-HK.Load.done('scen-ship', 'a6a0bbcb99', 1);
+HK.Load.done('scen-ship', '5927a6dcaf', 1);
