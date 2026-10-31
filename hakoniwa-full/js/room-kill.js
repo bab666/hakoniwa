@@ -425,7 +425,7 @@
   }
 
   /* ---------- 出来事 ---------- */
-  var TAGS = ['death', 'cruel', 'violence'];
+  var TAGS = ['death', 'cruel'];
   /* rk_duel：殺し合い（双方に殺意） */
   ev({
     id: 'rk_duel', label: '憎み合う二人が命がけで争う', tie: '-', tags: TAGS, cat: 'combat', dk: 'kill', scope: 'pair', pri: true,

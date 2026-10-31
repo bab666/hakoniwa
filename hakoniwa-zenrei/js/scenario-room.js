@@ -1385,7 +1385,7 @@
   /* 誰かを殺さないと出られない（全年齢版・全年齢モードは、気絶させる）。ドライで攻撃的な人ほど踏み切り、優しい人・相手を想う人は踏みとどまる */
   function killRule(ctx) { return ctx.rules.filter(function (r) { return r.k === 'kill'; })[0]; }
   EV.push({
-    id: 'cond_kill', label: '条件のために一人を襲う（抜け駆け）', tags: ['death', 'cruel', 'violence'], cat: 'betray', dk: 'kill', scope: 'pair', pri: true,
+    id: 'cond_kill', label: '条件のために一人を襲う（抜け駆け）', tags: ['death', 'cruel'], cat: 'betray', dk: 'kill', scope: 'pair', pri: true,
     /* 憎悪を持っても殺さない相手（attr.js の HK.Attr.spare）には、この出来事を選ばない（文を先に書いてから kill を呼ぶ作りなので、選ぶ段階で外す。全年齢の「気絶させる」も同じ） */
     when: function (ctx, a, b) { var r = killRule(ctx); return !!r && !globDone(ctx, r) && ctx.stepIndex > 0 && !a.flags.down && !b.flags.knocked && b.alive !== false && a.stress > (HK.RoomKill ? HK.RoomKill.gate(ctx, a, b) : 40) && !(HK.Attr && HK.Attr.spare && HK.Attr.spare(ctx, b, a)); },
     /* 殺意（憎悪・敵対・不仲・負の好意・緊張・恨み・怒り）と残り時間を、重み・踏み切り・焦りの門に入れ、庇い死・返り討ちに分ける：room-kill.js の HK.RoomKill（2026-10-31 担当KR） */
