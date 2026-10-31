@@ -112,7 +112,7 @@
     var line = parts.join('。') + '。' + cook.name + (help ? 'と' + help.who.name : '') + 'が「' + dish + '」を作った。' + (D.season ? '味付けは' + D.season + '。' : '') + D.taste;
     if (q >= 3 && P.length > 2 && rng() < 0.6) {
       var fan = ctx.most(ctx.others(cook), function (c) { return c.tr.fc + c.tr.warmth; });
-      line += fan.name + '「' + pk(ctx, ['おかわり！', 'ねえ、これ帰ってからも作って', '料理人だったの？', 'もう帰らなくていいかも']) + '」';
+      line += fan.name + '「' + pk(ctx, ['おかわり！', 'ねえ、これ帰ってからも作って｜なあ、これは帰ってからも作ってくれ｜あの、これ、帰ってからも作ってください', '料理人だったの？', 'もう帰らなくていいかも｜もう帰らなくてもいいかもしれない｜もう帰らなくていいかもしれません']) + '」';
     }
     if (help) ctx.act2({ actors: [help.who, cook], cat: help.cat, fx: help.fx, text: help.text, why: help.why + (help.dq > 0 ? '（料理の出来が上がった）' : help.dq < 0 ? '（料理の出来が下がった）' : ''), mag: 6 });
     ctx.act2({ actors: [cook], cat: q >= 2 ? 'bond' : 'help', fx: fx, text: line, why: cook.name + 'の料理 ' + sk(ctx, cook, 'cook') + '・食材「' + best.name + '」', mag: q * 3 });
@@ -297,3 +297,4 @@
     }
   ]);
 })();
+/* @event-ok 台詞を3本に（口調直し第8回） */
