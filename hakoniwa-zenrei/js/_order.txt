@@ -105,6 +105,7 @@ js/room-games.js @scen:whiteroom
 js/room-trio-note.js @scen:whiteroom
 js/room-noexit-note.js @scen:whiteroom
 js/room-pressure.js @scen:whiteroom
+js/room-kill.js @scen:whiteroom
 js/trap-open-room.js @scen:whiteroom
 js/scenario-trial.js @scen:trial
 js/ego-image.js

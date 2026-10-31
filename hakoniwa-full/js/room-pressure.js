@@ -420,7 +420,7 @@
     hard: L('{b}は硬い顔で言った。「怖がってても、時間は止まらないよ｜怖がっていても、時間は止まらない｜怖がっていても、時間は止まりません」{a}は返事ができなかった。|{b}は扉の紙を見上げたまま言った。「決めないと。誰かが、決めないと｜決めないと。誰かが、決めなければ｜決めないと。誰かが、決めなければいけません」その声は、ひどく冷たく聞こえた。')
   };
   ev({
-    id: 'rp_dread', label: '危ない条件の時間切れが迫り恐怖が高まる', tie: '-', tags: ['violence'], cat: 'solo', scope: 'pair', pri: true,
+    id: 'rp_dread', label: '危ない条件の時間切れが迫り恐怖が高まる', tie: '-', tags: ['death'], cat: 'solo', scope: 'pair', pri: true,
     when: function (ctx, a, b) {
       var dk = dreadKind(ctx);
       if (!dk || !stageOf(ctx) || !here(ctx, a) || !here(ctx, b) || doneOf(ctx, a) || !cool(ctx, 'dread', [a], 2)) return false;
