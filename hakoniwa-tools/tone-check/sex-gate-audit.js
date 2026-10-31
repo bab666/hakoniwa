@@ -105,7 +105,7 @@ function verdict(r, show) {
     }
     if (c.j >= MIN && c.i === 0) { v += '／不具合（理性で止まった）'; if (bad.indexOf(id) < 0) bad.push(id); }
     /* 気持ちの関係の列：付けない組の 85% を下回ったら不具合（しづらくしない原則。比べる側が MIN_B 件以上あるときだけ） */
-    [['g', 'e'], ['k', 'b'], ['l', 'b'], ['m', 'b']].forEach(([x, y]) => { if (c[x] != null && c[y] >= MIN_B && c[x] < c[y] * 0.85) { v += '／不具合：' + x + '=' + Math.round(c[x] / c[y] * 100) + '%（' + y + ' 比）'; if (bad.indexOf(id) < 0) bad.push(id); } });
+    [['g', 'e'], ['k', 'b'], ['l', 'b'], ['m', 'b']].forEach(([x, y]) => { if (c[x] != null && c[y] >= MIN_B && Math.round(c[x] / c[y] * 100) < 85) {   /* 表示と同じ四捨五入で比べる（84.8% を「85%／不具合」と出さない。2026-10-31） */ v += '／不具合：' + x + '=' + Math.round(c[x] / c[y] * 100) + '%（' + y + ' 比）'; if (bad.indexOf(id) < 0) bad.push(id); } });
     if (c.j > 0) v += '／理性 高÷低 ' + Math.round(c.i / c.j * 100) + '%';
     /* 恐怖の列（2026-10-30 担当FS）：スイッチ切の恐怖の夜・固定を越えた恐怖の夜・恐れられる側の性欲「なし」での恐怖の夜は 1 件でも不具合 */
     const fz = [];

@@ -335,12 +335,13 @@
         var tier = lv ? 'love' : x && x.n >= 1 ? 'again' : 'casual';
         /* 「恋愛：なし」の二人・敵対や不仲の二人（free-sex.js の HK.FreeSex.lust。2026-10-28 担当MC）は、体だけの夜（導入に「恋人にはならない」一文）なので、深い仲でも勢いの夜にしてよい */
         var lustP = tier === 'casual' && !!(HK.FreeSex && HK.FreeSex.lust && HK.FreeSex.lust(S, a, b));
+        /* 気持ちの関係（愛憎・劣等感・優越）の二人（pos.js の HK.Pos.feelK＞1）：衝動が勝つので、関係の近さの足切り（初めての夜・二度目以降とも）を通し、重みにも倍率を掛ける
+           （劣等感は信頼が育ちにくく、近さの足切りで友人の組より夜が減っていた。2026-10-31 利用者の指示「重みを上げよう」） */
+        var feelK = HK.Pos.feelK ? HK.Pos.feelK(a, b) : 1;
         if (tier === 'casual' && w >= 0.6 && !lustP) return;
-        if (tier === 'again' && x.ref >= 2 && w < 0.55) return;
+        if (tier === 'again' && x.ref >= 2 && w < 0.55 && !(feelK > 1)) return;
         /* 敵対・不仲の二人は、関係の近さが低くても止めない（表面上の嫌悪。重みは関係の近さを高め（0.8）として見て、HK.Pos.hostK で下げる。二度目の夜の重みが積み重なって、友人の 4 割を切らないように） */
         var hostL = lustP && HK.FreeSex.kind(S, a, b) === 'host';
-        /* 気持ちの関係（愛憎・劣等感・優越）の二人（pos.js の HK.Pos.feelK＞1）：衝動が勝つので、関係の近さが低くても止めず、重みにも倍率を掛ける（劣等感は信頼が育ちにくく、近さの足切りで友人の組より夜が減っていた。2026-10-31 利用者の指示「重みを上げよう」） */
-        var feelK = HK.Pos.feelK ? HK.Pos.feelK(a, b) : 1;
         if (tier === 'casual' && !(w > 0.25 || hostL || feelK > 1 || (w > -0.25 && rng() < lowP))) return;
         cand.push({ a: a, b: b, w: w, tier: tier, x: x, hostL: hostL, feelK: feelK });
       });
