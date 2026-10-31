@@ -378,7 +378,7 @@
     S.solved = true; S.partial = partial;
     /* 読み解くのは、縛られて閉じ込められた人・連れ去られた人でない人（いなければ生きている人から。2026-10-28） */
     var lead = who || S.P.filter(function (q) { return alive(q) && !q.bound && !q.taken; }).concat(S.P.filter(alive)).sort(function (a, b) { return (a.bound || a.taken ? 1 : 0) - (b.bound || b.taken ? 1 : 0) || skill(b, 'lore') - skill(a, 'lore'); })[0];
-    var o = ST.say(S, { actors: lead ? [lead] : [], tag: '対抗策', text: (lead ? lead.name + 'は集めた手がかりを並べ、顔を上げた。「分かった。この村の神は――' + S.G.name + 'だ｜＝｜分かりました。この村の神は――' + S.G.name + 'です」' : '手がかりがそろった。この村の神は、' + S.G.name + 'だ。') + '対抗策は、' + S.G.sol + '。' + (partial ? '（手がかりは一つ足りない。推測で補った）' : ''), why: partial ? '手がかり ' + S.found.length + '/' + S.G.clues.length + '。' + (lead ? lead.name + 'の知識で残りを推し量った' : '') : '手がかりが全部そろった', mag: 36 });
+    var o = ST.say(S, { actors: lead ? [lead] : [], tag: '対抗策', text: (lead ? lead.name + 'は集めた手がかりを並べ、顔を上げた。「分かった。この村の神の正体を、今から言う｜＝｜分かりました。この村の神の正体を、今から言います」　告げられた名は――' + S.G.name + '。' : '手がかりがそろった。この村の神は、' + S.G.name + 'だ。') + '対抗策は、' + S.G.sol + '。' + (partial ? '（手がかりは一つ足りない。推測で補った）' : ''), why: partial ? '手がかり ' + S.found.length + '/' + S.G.clues.length + '。' + (lead ? lead.name + 'の知識で残りを推し量った' : '') : '手がかりが全部そろった', mag: 36 });
     ST.key(S, o, '対抗策が判明');
   }
 
