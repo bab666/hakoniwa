@@ -32,6 +32,10 @@
     ':root:not([data-palette="full"]){--rm-cond:var(--ai);--rm-dg:var(--ai);--rm-lead:var(--ai);--rm-door:var(--ai);--rm-end:var(--ai);--rm-note:var(--ai)}' +
     '[data-k="cond"],[data-rm="cond"]{--rk:var(--rm-cond)}[data-k="dg"]{--rk:var(--rm-dg)}[data-k="lead"],[data-rm="lead"]{--rk:var(--rm-lead)}[data-k="door"],[data-rm="door"]{--rk:var(--rm-door)}' +
     '[data-k="end"],[data-rm="end"],[data-k="rule"],[data-rm="rule"]{--rk:var(--rm-end)}[data-k="note"],[data-rm="note"]{--rk:var(--rm-note)}' +
+    /* 殺し（2026-10-31 担当KR）：誰かを殺す（全年齢は気絶させる）条件の出来事。理由の頭「［殺し合い］」などから。赤（藍のみ・キャラ色は藍の太い線） */
+    ':root{--rm-kill:#C92A2A}:root[data-theme="gray"]{--rm-kill:#B02525}@media (prefers-color-scheme: dark){:root:not([data-theme="light"],[data-theme="gray"]){--rm-kill:#FF8787}}:root[data-theme="dark"]{--rm-kill:#FF8787}' +
+    ':root:not([data-palette="full"]){--rm-kill:var(--ai)}[data-k="kill"],[data-rm="kill"]{--rk:var(--rm-kill)}' +
+    ':root:not([data-palette="full"]) .tl .stepblk ol>.ev[data-rm="kill"]:not([data-hot]){--hbl:3px;border-left-width:3px}' +
     /* 札：Mono 10px の小さな四角（ほかの札 .goalb・.markb と同じ寸法）。文字は種類の色を藍に寄せて 4.5:1 以上に */
     '.rmb{--rk-ink:var(--ink);display:inline-block;font-family:var(--f-num);font-size:10px;font-weight:600;letter-spacing:.08em;line-height:1.6;padding:0 6px;margin-right:6px;vertical-align:2px;border:1px solid var(--rk,var(--ink));border-radius:2px;color:var(--rk-ink);background:var(--paper);white-space:nowrap}' +
     '.rmb[data-k="note"]{border-style:dashed}' +
@@ -67,7 +71,10 @@
     '}' +
     '@media print{.tl .stepblk ol>.ev[data-rm]:not([data-hot]),.ev .evdg,.rmb{background:none!important}.roomcnt[style*="--rp"]{background:none!important;border:1px solid #A3A9B3}}';
   var RM_DOOR = /^条件を満たしたので扉が開いた/, RM_WAIT = /数えなかった|数えてもらえない|あとから数える/;
-  var RM_NAME = { cond: '条件', lead: 'きっかけ', door: '脱出', end: '結末', rule: '部屋の条件', note: '注意', dg: 'まとめて' };
+  var RM_NAME = { cond: '条件', lead: 'きっかけ', door: '脱出', end: '結末', rule: '部屋の条件', note: '注意', dg: 'まとめて', kill: '殺し' };
+  /* 殺しの種類（room-kill.js の理由の頭「［殺し合い］」など）。全年齢は「気絶」の札 */
+  var RM_KILL = /^［(抜け駆け|殺し合い|つかみ合い|相打ち|庇い死|乱闘|返り討ち|復讐|踏みとどまり)］/;
+  function rmKillName() { return HK.SAFE_ON ? '気絶' : RM_NAME.kill; }
   /* 回数の表示「（○○ n/m）」から条件の名前を取る（組の頭「A×Bの」・三人の「：A×B」は落とす） */
   function rmNoun(tag) {
     var m = /^（(.*?) ?\d+\/\d+/.exec(tag), s = m ? m[1] : '';
@@ -87,6 +94,8 @@
       return I.k ? I : null;
     }
     if (e.tag === 'きっかけ') { I.k = 'lead'; chip('lead', RM_NAME.lead); }
+    var km = RM_KILL.exec(String(e.why || ''));
+    if (km) { I.k = I.k || 'kill'; chip('kill', rmKillName() + '：' + km[1]); }
     var tags = t.match(ROOMCNT_RE) || [];
     tags.forEach(function (tag) {
       var n = rmNoun(tag), d = /・まとめて(\d+[^（）<>・]{0,3})/.exec(tag);
@@ -618,10 +627,10 @@
       var I = rmInfo(e, res, inEnd);
       if (I) { if (I.k) seen[I.k] = 1; if (I.dg) seen.dg = 1; I.chips.forEach(function (c) { seen[c[0]] = 1; }); }
     });
-    var ks = ['cond', 'dg', 'lead', 'note', 'door', 'end'].filter(function (k) { return seen[k]; });
+    var ks = ['cond', 'dg', 'lead', 'kill', 'note', 'door', 'end'].filter(function (k) { return seen[k]; });
     if (!ks.length) return '';
     return '<span class="hotleg rmleg" role="note" aria-label="記録の札の見分け方"><span class="hkl">札</span>' + ks.map(function (k) {
-      return '<span class="rmb" data-k="' + k + '">' + esc(RM_NAME[k]) + '</span>';
+      return '<span class="rmb" data-k="' + k + '">' + esc(k === 'kill' ? rmKillName() : RM_NAME[k]) + '</span>';
     }).join('') + '</span>';
   }
 

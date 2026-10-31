@@ -303,6 +303,7 @@ js/cold-fear.js @pack:rel
 js/cold-fear-r18.js @pack:rel
 js/cold-fear-room-r18.js @scen:whiteroom
 js/room-pressure.js @scen:whiteroom
+js/room-kill.js @scen:whiteroom
 js/room-stamina-r18.js @scen:whiteroom
 js/esteem-text.js @pack:rel
 js/esteem.js @pack:rel
