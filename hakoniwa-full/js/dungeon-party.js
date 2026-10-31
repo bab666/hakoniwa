@@ -124,7 +124,7 @@
     S.cnt.assault++; r.assault++; r.trust -= 20; r.ten += 25;
     if (stop > 0.75) {
       var by = third && third.tr.np + third.tr.cp > b.tr.cp ? third : null;
-      sayAs(S, a, { kind: 'ev', tag: '仲間の暴走', text: t2(S, '堕ちかけた{a}が、{b}を床に押し倒した。', a, b) + (by ? by.name + 'が' + a.name + 'を引き剥がした。「しっかりしろ！迷宮に呑まれるな！」' : t2(S, pk(S, ['{b}は{a}の頬を張った。「目を覚まして！」', '{b}は{a}の手首をねじり上げた。「…それ以上やったら、置いていく」']), a, b)), why: a.name + 'の堕ち度 ' + Math.round(a.corrupt) + '・昂り。' + (by ? by.name + 'が止めた' : b.name + 'が拒んだ') });
+      sayAs(S, a, { kind: 'ev', tag: '仲間の暴走', text: t2(S, '堕ちかけた{a}が、{b}を床に押し倒した。', a, b) + (by ? by.name + 'が' + a.name + 'を引き剥がした。「しっかりして！　迷宮に呑まれないで！｜しっかりしろ！迷宮に呑まれるな！｜しっかりしてください！　迷宮に呑まれないで！」' : t2(S, pk(S, ['{b}は{a}の頬を張った。「目を覚まして！」', '{b}は{a}の手首をねじり上げた。「…それ以上やったら、置いていくよ｜…それ以上やったら、置いていく｜…それ以上やったら、置いていきます」']), a, b)), why: a.name + 'の堕ち度 ' + Math.round(a.corrupt) + '・昂り。' + (by ? by.name + 'が止めた' : b.name + 'が拒んだ') });
       a.reason += 6;
       if (by) rel(S, by, b).trust += 10;
     } else {
@@ -154,7 +154,7 @@
     var o = opts[rng.int(opts.length)];
     var text, why = a.name + 'のNP（' + Math.round(a.eg.NP) + '）';
     if (o === 'herb') { a.items.splice(a.items.indexOf('herb'), 1); b.pleasure -= 40; b.reason += 14; text = '{a}は自分の鎮静の薬草を、{b}の口に押し込んだ。「噛んで。苦いけど、効くから」'; }
-    else if (o === 'hand') { a.reason += 2; b.reason += 4; r.att += 3; text = pk(S, ['{a}は{b}の手を握った。「自分の名前、言える？」{b}は震える声で、ちゃんと答えた。', '{a}と{b}は手を繋いだまま進んだ。指先の温度が、正気をつなぎとめていた。', '{a}は{b}の額に自分の額をつけた。「大丈夫。一緒に帰る」']); }
+    else if (o === 'hand') { a.reason += 2; b.reason += 4; r.att += 3; text = pk(S, ['{a}は{b}の手を握った。「自分の名前、言える？」{b}は震える声で、ちゃんと答えた。', '{a}と{b}は手を繋いだまま進んだ。指先の温度が、正気をつなぎとめていた。', '{a}は{b}の額に自分の額をつけた。「大丈夫。一緒に帰ろう｜大丈夫。一緒に帰る｜大丈夫です。一緒に帰りましょう」']); }
     else if (o === 'warn') { S.mapFloor = S.floor; text = pk(S, ['{a}が{b}の肩を掴んで止めた。「待って、そこの床、色が違う」', '{a}は先に立って、罠のありそうな場所を一つずつ指で示した。']); why = a.name + 'の慎重さ'; }
     else if (o === 'carry') { b.hp += 20; text = '{a}は足元のおぼつかない{b}に肩を貸した。「重くない？」「重い。でも置いてかない」'; }
     else { b.reason += 4; text = pk(S, ['{a}「帰ったら、何食べたい？」{b}「…普通のご飯」二人は少し笑った。', '{a}は{b}に、地上で待っている人の話をさせた。{b}の目に、少し光が戻った。', '{a}「ここで見たことは、全部忘れよう。お互いに」{b}は小さく頷いた。']); }
@@ -230,3 +230,4 @@
     });
   };
 })();
+/* @event-ok 台詞を3本に（口調直し第7回） */
