@@ -100,8 +100,13 @@ const PAGE = function ({ N, only, WHY, NAMES0, PROBE }) {
       const sp = diffSpans(a, b), nms = spansOf(b, words);
       sp.forEach((d, di) => {
         /* 前後 6字以内に、名前に触れないほかの違いがある（段落ごと別の文になった）なら、名前の壊れではなく文の選び方の違い */
-        const nameish = e => nms.some(x => e.b0 <= x[1] && e.b1 >= x[0]);
-        const lone = (!sp[di - 1] || d.b0 - sp[di - 1].b1 >= 6 || nameish(sp[di - 1])) && (!sp[di + 1] || sp[di + 1].b0 - d.b1 >= 6 || nameish(sp[di + 1]));
+        /* 隣の違いが名前に触れていても、長い違い（双子の回と別の文になった段。「胸の姿を見かけると…」→「重力の揺らぎを…」）なら、名前どうしの並びとは見ない
+           （2026-10-31 担当TE2：船の「飯→一度」「僕田→疲れ」は、別の文の頭の字がたまたま名前の位置に並んだもので、言い換えの壊れではなかった） */
+        const nameish = e => (e.a1 - e.a0) <= 8 && (e.b1 - e.b0) <= 8 && nms.some(x => e.b0 <= x[1] && e.b1 >= x[0]);
+        /* 違いの後ろ 20 字が、本番と双子でほとんど別の文（2 字の並びの重なりが 3 割未満）なら、段ごと別の文になったもの */
+        const bi = s => { const r = new Set(); for (let i = 0; i + 1 < s.length; i++) r.add(s.substr(i, 2)); return r; };
+        const sameAfter = () => { const x = bi(a.slice(d.a1, d.a1 + 20)), y = bi(b.slice(d.b1, d.b1 + 20)); if (y.size < 4) return true; let c = 0; y.forEach(k => { if (x.has(k)) c++; }); return c / y.size >= 0.3; };
+        const lone = sameAfter() && (!sp[di - 1] || d.b0 - sp[di - 1].b1 >= 6 || nameish(sp[di - 1])) && (!sp[di + 1] || sp[di + 1].b0 - d.b1 >= 6 || nameish(sp[di + 1]));
         const ctx = () => b.slice(Math.max(0, d.b0 - 30), d.b0) + '【' + b.slice(d.b0, d.b1) + '→' + a.slice(d.a0, d.a1) + '】' + b.slice(d.b1, d.b1 + 20);
         const as = a.slice(d.a0, d.a1), bs = b.slice(d.b0, d.b1);
         /* 名前の中に触れる（名前の字の一部だけが変わった）、または名前がまるごと別の短い語になった：一部 */
