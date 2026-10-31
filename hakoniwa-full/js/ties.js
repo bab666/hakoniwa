@@ -852,8 +852,8 @@
     return d ? Math.max(k, d === 'both' ? 1 : 0.85) : k;
   };
   /* 気持ちの関係の衝動の倍率（利用者の指示 2026-10-29「愛憎・劣等感・優越はエッチをしづらくしない。むしろ衝動性を増して手を出しやすく」）。
-     愛憎：双方 1.3・片方 1.3（表の関係が敵対・不仲なら片方は 1.1）、劣等感 1.2（縋る・見返したい）、優越 1.3（支配したい）。同じ二人では大きいほう */
-  HK.FEEL_IMP = { lovehate: 1.3, lovehateHost1: 1.1, inferior: 1.3, superior: 1.3 };
+     愛憎：双方 1.3・片方 1.3（表の関係が敵対・不仲なら片方は 1.1）、劣等感 1.45（縋る・見返したい。2026-10-31：宇宙船で友人の組より起きにくくなった（sexgate 82%）ので 1.3 から上げた。利用者の指示「重みを上げよう」）、優越 1.3（支配したい）。同じ二人では大きいほう */
+  HK.FEEL_IMP = { lovehate: 1.3, lovehateHost1: 1.1, inferior: 1.45, superior: 1.3 };
   HK.feelImpK = function (list, x, y) {
     var k = 1, d = lhPair(list, x, y), host = (list || []).some(function (u) { return u && HK.HOST_TIE_RE.test(u.type) && ((u.a === x && u.b === y) || (u.a === y && u.b === x)); });
     if (d) k = Math.max(k, d !== 'both' && host ? HK.FEEL_IMP.lovehateHost1 : HK.FEEL_IMP.lovehate);

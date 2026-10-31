@@ -339,14 +339,16 @@
         if (tier === 'again' && x.ref >= 2 && w < 0.55) return;
         /* 敵対・不仲の二人は、関係の近さが低くても止めない（表面上の嫌悪。重みは関係の近さを高め（0.8）として見て、HK.Pos.hostK で下げる。二度目の夜の重みが積み重なって、友人の 4 割を切らないように） */
         var hostL = lustP && HK.FreeSex.kind(S, a, b) === 'host';
-        if (tier === 'casual' && !(w > 0.25 || hostL || (w > -0.25 && rng() < lowP))) return;
-        cand.push({ a: a, b: b, w: w, tier: tier, x: x, hostL: hostL });
+        /* 気持ちの関係（愛憎・劣等感・優越）の二人（pos.js の HK.Pos.feelK＞1）：衝動が勝つので、関係の近さが低くても止めず、重みにも倍率を掛ける（劣等感は信頼が育ちにくく、近さの足切りで友人の組より夜が減っていた。2026-10-31 利用者の指示「重みを上げよう」） */
+        var feelK = HK.Pos.feelK ? HK.Pos.feelK(a, b) : 1;
+        if (tier === 'casual' && !(w > 0.25 || hostL || feelK > 1 || (w > -0.25 && rng() < lowP))) return;
+        cand.push({ a: a, b: b, w: w, tier: tier, x: x, hostL: hostL, feelK: feelK });
       });
     });
     if (!cand.length) return;
     /* 「誰とでも可」の人と固定外の相手・恋愛対象「なし」の人（HK.State.freeSex。free-sex.js）：体だけの夜。固定した恋人が船にいれば ×0.3。
        性欲の強さ（HK.Pos.libMul。既定は 1）は、どの組の重みにも掛ける */
-    var c = HK.weighted(rng, cand, function (o) { return (o.tier === 'love' ? 1.3 + o.w : o.tier === 'again' ? 1.5 + Math.max(0, o.w) * 0.5 : 0.3 + Math.max(0, o.hostL ? Math.max(o.w, 0.8) : o.w) * 0.6) * (HK.State.freeSex && HK.State.freeSex(S, o.a, o.b) ? HK.FreeSex.factor(S, o.a, o.b, true) : 1) * (HK.Pos.libMul ? HK.Pos.libMul([o.a, o.b]) : 1); });
+    var c = HK.weighted(rng, cand, function (o) { return (o.tier === 'love' ? 1.3 + o.w : o.tier === 'again' ? 1.5 + Math.max(0, o.w) * 0.5 : 0.3 + Math.max(0, o.hostL ? Math.max(o.w, 0.8) : o.w) * 0.6) * (HK.State.freeSex && HK.State.freeSex(S, o.a, o.b) ? HK.FreeSex.factor(S, o.a, o.b, true) : 1) * (HK.Pos.libMul ? HK.Pos.libMul([o.a, o.b]) : 1) * (o.feelK || 1); });
     var a = c.a, b = c.b, tier = c.tier, x = c.x;
     /* 理性で踏みとどまる（pos.js の HK.Pos.reasonP：理性がふつうより高い二人は 0.61〜1 の見込みでしか進まない。酒・媚薬・もう夜を過ごした、で効きが弱まる。2026-10-28 担当MC） */
     if (HK.Pos.reasonP && rng() > HK.Pos.reasonP(S, a, b)) return;
