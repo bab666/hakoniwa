@@ -222,6 +222,7 @@ js/esteem-text.js @pack:rel
 js/esteem.js @pack:rel
 js/solo-saimin-data.js @scen:saimin
 js/solo-saimin.js @scen:saimin
+js/saimin-note.js @scen:saimin
 js/solo-locker-data.js
 js/solo-locker-more.js @scen:locker
 js/solo-locker-bed.js @scen:locker

@@ -322,6 +322,7 @@ js/solo-saimin-data.js @scen:saimin
 js/solo-saimin-more.js @scen:saimin
 js/solo-saimin-sex.js @scen:saimin
 js/solo-saimin.js @scen:saimin
+js/saimin-note.js @scen:saimin
 js/solo-variety-data.js
 js/solo-variety-more.js @scen:variety
 js/solo-variety-plus.js @scen:variety
