@@ -65,3 +65,53 @@
     return v.replace(/〈〉/g, function () { var n = names[Math.min(i, names.length - 1)]; i++; return n || ''; });
   };
 })();
+/* 置き場の印で引く（2026-10-31 担当TE2）：モブの呼び名・数の入る台詞を、書き下ろしの 1 行で全部の呼び名・数に当てる
+   ・引く順：①元の台詞（上の包みまで＝そのままの鍵・〈〉・頭の「…」・ゆるい鍵）で引けなかったときだけ、
+     ②モブの呼び名の印（mob.js の「\u2063呼び名\u2063」「\u2063呼び名\u2061」）と「あなた」を〈相手〉にした鍵
+     （{you} は相手がモブなら印、住人なら「あなた」になる。solo-saimin.js・solo-massage.js など）、
+     ③それでもなければ、さらに数（算用数字・全角数字の連なり、漢数字〇一二三四五六七八九十百千の連なり）を〈数〉にした鍵で、①と同じ引き方をする。
+     住人の名前の中の漢数字（「一花」など）は数にしない。その口調の表（TONE_FIX・OVR）に〈相手〉・〈数〉の鍵が 1 つも無ければ②③は試さない。
+   ・引けたら、書き下ろしの〈相手〉を元の印（呼び名ごと。あとで tone-plus.js の V.mobAddr が話し手の二人称・名前に替える）に、〈数〉を元の数に、
+     出てきた順に戻す（書き下ろしの側の数が多ければ最後のものを繰り返す）。
+   ・既存の行（呼び名・数を直接書いた鍵）は①で先に当たるので、結果は変わらない。決まりは docs/reports/2026-10-25/tone-engine-design.md の 22 章 */
+(function () {
+  'use strict';
+  var HK = window.HK, V = HK && HK.Voice;
+  if (!V || !V.overrideFor) return;
+  var MOB_RE = /\u2063[^\u2063\u2061]*[\u2063\u2061]|あなた/g, NUM_RE = /[0-9０-９]+|[〇一二三四五六七八九十百千]+/g, NUM_TEST = /[0-9０-９〇一二三四五六七八九十百千]/;
+  var PH = {};
+  function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  /* その口調の表に〈相手〉・〈数〉の鍵があるか（表が増えたら作り直す。HK.Load.gen は load.js） */
+  function phOf(tone) {
+    var gk = String(HK.LATE_READY) + ':' + (HK.Load ? HK.Load.gen : 0), c = PH[tone];
+    if (c && c.gk === gk) return c;
+    c = PH[tone] = { gk: gk, mob: false, num: false };
+    [V.TONE_FIX && V.TONE_FIX[tone], V.OVR && V.OVR[tone]].forEach(function (T) {
+      if (T) for (var k in T) { if (k.indexOf('〈相手〉') >= 0) c.mob = true; if (k.indexOf('〈数〉') >= 0) c.num = true; }
+    });
+    return c;
+  }
+  /* 住人の名前の外だけ、数を〈数〉に */
+  function numKey(q, people, nums) {
+    var ns = (people || []).map(function (p) { return p.name; }).filter(Boolean).sort(function (a, b) { return b.length - a.length; });
+    var parts = ns.length ? q.split(new RegExp('(' + ns.map(esc).join('|') + ')')) : [q];
+    return parts.map(function (s, i) { return i % 2 ? s : s.replace(NUM_RE, function (m) { nums.push(m); return '〈数〉'; }); }).join('');
+  }
+  function put(v, ph, list) { var i = 0; return v.split(ph).reduce(function (a, s) { var x = list[Math.min(i, list.length - 1)]; i++; return a + (x != null ? x : '') + s; }); }
+  var of1 = V.overrideFor;
+  V.overrideFor = function (q, who, people) {
+    var r = of1.apply(this, arguments);
+    if (r != null || !who || typeof q !== 'string') return r;
+    var hasMob = q.indexOf('\u2063') >= 0 || q.indexOf('あなた') >= 0, hasNum = NUM_TEST.test(q);
+    if (!hasMob && !hasNum) return r;
+    var c = phOf(who.tone);
+    if (!c.mob && !c.num) return r;
+    var mobs = [], q2 = hasMob ? q.replace(MOB_RE, function (m) { mobs.push(m); return '〈相手〉'; }) : q, v = null, nums = [];
+    if (mobs.length && c.mob) v = of1.call(this, q2, who, people);
+    if (v == null && c.num) { var q3 = numKey(q2, people, nums); if (nums.length) v = of1.call(this, q3, who, people); }
+    if (v == null) return r;
+    if (mobs.length && v.indexOf('〈相手〉') >= 0) v = put(v, '〈相手〉', mobs);
+    if (nums.length && v.indexOf('〈数〉') >= 0) v = put(v, '〈数〉', nums);
+    return v;
+  };
+})();
