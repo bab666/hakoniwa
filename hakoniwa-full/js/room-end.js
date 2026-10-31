@@ -36,7 +36,7 @@
   var OUT_T = {
     spouse: ['lover', '伴侶', 0], lover: ['lover', '恋人', 1], fiance: ['lover', '許嫁', 2],
     best: ['friend', '親友', 3], buddy: ['friend', '相棒', 4], childhood: ['friend', '幼馴染', 5], friend: ['friend', '友人', 6],
-    sibclose: ['family', 'きょうだい', 7], sibling: ['family', 'きょうだい', 7], sibprot: ['family', 'きょうだい', 7],
+    sibclose: ['family', 'きょうだい', 7], twin: ['family', 'きょうだい', 7], sibling: ['family', 'きょうだい', 7], sibprot: ['family', 'きょうだい', 7],
     parent: ['family', '家族', 8], pparent: ['family', '家族', 8], stepsib: ['family', 'きょうだい', 9], relative: ['family', '親族', 9]
   };
   function outsideOf(input) {
@@ -163,7 +163,7 @@
     if (HK.Ties && HK.Ties.hostile && (HK.Ties.hostile(ctx, a, b) || HK.Ties.hostile(ctx, b, a)) && v.aff < 30) return true;
     return v.ten >= 50 && v.aff < 15;
   }
-  function isClose(ctx, a, b) { return ['best', 'buddy', 'childhood', 'sibclose'].some(function (t) { return tieHas(ctx, a, b, t); }); }
+  function isClose(ctx, a, b) { return ['best', 'buddy', 'childhood', 'sibclose', 'twin'].some(function (t) { return tieHas(ctx, a, b, t); }); }
   function isLove(ctx, a, b) { var pf = ctx.pair(a, b), v = avgR(ctx, a, b); return !!pf.couple || (v.att > 45 && v.aff > 35); }
   /* 腐れ縁（2026-10-29 担当C）：愛憎（気持ちの関係。HK.LoveHate）の二人で、恋人になっていない・殺していない、
      体の関係（夜・敵対の強引な場面）か強い絡み（構う・嫉妬・挑発×2 が合わせて 3 回以上。hate-love.js の結末「腐れ縁（愛憎）」と同じ条件）があった。

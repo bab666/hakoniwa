@@ -316,7 +316,7 @@
     }
   };
   TL.KG = KG;
-  var KG_GRP = { parent: 'parent', pparent: 'parent', sibling: 'sib', sibprot: 'sib', relative: 'rel', benefactor: 'bene' };
+  var KG_GRP = { parent: 'parent', pparent: 'parent', sibling: 'sib', sibprot: 'sib', twin: 'sib', relative: 'rel', benefactor: 'bene' };
   function kgRoles(ctx, a, b) {
     if (!b || !here(a) || !here(b) || ctx.pair(a, b).couple) return null;
     var l = all(ctx, a, b);

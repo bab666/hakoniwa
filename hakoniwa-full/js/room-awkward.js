@@ -24,9 +24,9 @@
     colleague: 'work', boss: 'work', senpai: 'work', classmate: 'school', teacher: 'rank', mentor: 'rank',
     friend: 'friend', best: 'friend', buddy: 'friend', childhood: 'friend', almost: 'friend', acq: 'friend', noobs: 'friend',
     rival: 'rival', ex: 'ex',
-    parent: 'family', pparent: 'family', sibling: 'family', sibprot: 'family', sibclose: 'family', sibbad: 'family', stepsib: 'family', relative: 'family'
+    parent: 'family', pparent: 'family', sibling: 'family', sibprot: 'family', sibclose: 'family', twin: 'family', sibbad: 'family', stepsib: 'family', relative: 'family'
   };
-  var FAM = { parent: 1, pparent: 1, sibling: 1, sibprot: 1, sibclose: 1, sibbad: 1, stepsib: 1, relative: 1 };
+  var FAM = { parent: 1, pparent: 1, sibling: 1, sibprot: 1, sibclose: 1, twin: 1, sibbad: 1, stepsib: 1, relative: 1 };
   var TIE_LIST = Object.keys(GRP).join(',');
   /* 二人の関係のまとまり（起きない組は null） */
   function grpOf(ctx, a, b) {

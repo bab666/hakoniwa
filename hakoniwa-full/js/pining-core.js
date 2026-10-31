@@ -8,7 +8,7 @@
   if (HK.simulate && !HK.simulate._pining) {
     var sim0 = HK.simulate;
     HK.simulate = function (input) {
-      if (input && input.ties && input.ties.some(function (t) { return t && ((t.type === 'crush' && t.cold === 'mutual') || t.type === 'spouse' || t.type === 'stepsib'); })) {
+      if (input && input.ties && input.ties.some(function (t) { return t && ((t.type === 'crush' && t.cold === 'mutual') || t.type === 'spouse' || t.type === 'stepsib' || t.type === 'twin'); })) {
         var o = {}; for (var k in input) o[k] = input[k];
         o.ties = HK.Ties.expand(input.ties);
         arguments[0] = o;

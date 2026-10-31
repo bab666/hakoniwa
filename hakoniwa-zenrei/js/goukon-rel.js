@@ -29,7 +29,7 @@
     classmate: 'pal', friend: 'pal', best: 'pal', childhood: 'pal', acq: 'pal', colleague: 'pal', buddy: 'pal', comrade: 'pal',
     parent: 'parent', pparent: 'parent',
     /* 兄弟（不仲）は、張り合う・突っぱねる台詞（foe）にする（2026-10-28 担当MH。不仲の組が仲良く見えないように） */
-    sibling: 'sib', sibclose: 'sib', sibbad: 'foe', sibprot: 'sib', relative: 'sib',
+    sibling: 'sib', sibclose: 'sib', twin: 'sib', sibbad: 'foe', sibprot: 'sib', relative: 'sib',
     boss: 'boss', mentor: 'boss', teacher: 'boss', senpai: 'boss', master: 'boss',
     lover: 'love', mate: 'love', fated: 'love', fiance: 'love',
     ex: 'ex', fwb: 'fwb', crush: 'crush', honmei: 'crush', almost: 'crush',

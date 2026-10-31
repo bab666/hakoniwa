@@ -32,8 +32,8 @@
   function keyOf(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
 
   /* ======================= 不仲の種類 ======================= */
-  var BOSS = /^(mentor|master|boss|teacher)$/, SIBT = /^(sibling|stepsib|sibprot)$/;
-  var WARMT = /^(lover|spouse|mate|fated|almost|best|friend|buddy|childhood|sibclose|fiance|honmei|fwb)$/;
+  var BOSS = /^(mentor|master|boss|teacher)$/, SIBT = /^(sibling|stepsib|sibprot|twin)$/;
+  var WARMT = /^(lover|spouse|mate|fated|almost|best|friend|buddy|childhood|sibclose|twin|fiance|honmei|fwb)$/;
   /* 関係の一覧（エンジン型の ctx.tiesAll の中身か、物語型の入力の ties）から、ai の側から見た不仲の種類 */
   function kindsOf(l, ai) {
     var k = { any: false, sib: false, warm: false, t: null };

@@ -3,15 +3,15 @@
    ・一定の確率で、記憶を失ったまま参加する人がいる。記憶が戻ると、本当の理由が分かる（村の出身・前の祭りの生き残り・仲間を誘い込んだ手先…）
    ・名探偵は、仲間の死や村の殺人事件を推理で解く。ポンコツ探偵は、的外れな推理で邪魔をする（たまに当たる） */
 /* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
-/* @event scen=jashin id=js_rel cat=help tie=lover,mate,fated,almost,fwb,sibling,sibprot,sibclose,sibbad,parent,pparent,relative,best,buddy,childhood,friend,mentor,master,teacher,senpai,colleague,classmate,boss,enemy tags=death label=関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う） */
+/* @event scen=jashin id=js_rel cat=help tie=lover,mate,fated,almost,fwb,sibling,sibprot,sibclose,twin,sibbad,parent,pparent,relative,best,buddy,childhood,friend,mentor,master,teacher,senpai,colleague,classmate,boss,enemy tags=death label=関係で変わる行動（かばう・見捨てる・助けに行く・身代わり・後を追う） */
 /* @event scen=jashin id=js_amnesia cat=solo label=記憶喪失（記憶が戻ると本当の理由が分かる） */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, clamp = HK.clamp, T = JS && JS.RELT;
   if (!ST || !JS || !T) return;
 
-  var LOVE = 'lover,mate,fated,almost,fwb', FAMILY = 'sibling,sibprot,sibclose,sibbad,parent,pparent,relative', CLOSE = 'best,buddy,childhood,friend,mentor,master,teacher,senpai,colleague,classmate,boss,benefactor,worship,fond,blind', BAD = 'enemy,rival,bad';
-  var W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, classmate: 0.4, boss: 0.45, benefactor: 0.6, relative: 0.6, worship: 0.85, fond: 0.55, blind: 0.75, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7 , sibbad: -0.15, bad: -0.4 };
+  var LOVE = 'lover,mate,fated,almost,fwb', FAMILY = 'sibling,sibprot,sibclose,twin,sibbad,parent,pparent,relative', CLOSE = 'best,buddy,childhood,friend,mentor,master,teacher,senpai,colleague,classmate,boss,benefactor,worship,fond,blind', BAD = 'enemy,rival,bad';
+  var W = { lover: 1, mate: 1, fated: 1, almost: 0.8, fwb: 0.45, sibling: 0.8, sibprot: 0.95, sibclose: 0.9, twin: 0.9, parent: 0.95, pparent: 0.9, best: 0.75, buddy: 0.8, childhood: 0.7, friend: 0.5, mentor: 0.6, master: 0.6, teacher: 0.5, senpai: 0.4, colleague: 0.3, classmate: 0.4, boss: 0.45, benefactor: 0.6, relative: 0.6, worship: 0.85, fond: 0.55, blind: 0.75, acq: 0.1, ex: 0.3, rival: -0.3, enemy: -0.7 , sibbad: -0.15, bad: -0.4 };
   function inList(t, l) { return l.split(',').indexOf(t) >= 0; }
   function tiesOf(S, a, b) { return (S.ties || []).filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); }); }
   /* a から b への近さ（-1〜1）。片想いは想う側からだけ強い */

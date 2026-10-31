@@ -120,7 +120,7 @@
   var OFF = ['激辛のスナック', 'ブラックの缶コーヒー', '梅干し味の飴', '酢昆布', 'わさび味のおせんべい', 'ミントのガム', '青汁の粉末', 'ゴーヤのチップス'];
 
   /* ======================= 関係 ======================= */
-  var KIN = ['sibling', 'sibprot', 'sibclose', 'stepsib', 'relative', 'parent', 'pparent'];
+  var KIN = ['sibling', 'sibprot', 'sibclose', 'twin', 'stepsib', 'relative', 'parent', 'pparent'];
   var RANK = { lover: 0, honmei: 1, crush: 2, best: 3, kin: 4 };
   function closeOf(ctx, o, t) {
     var pf = ctx.pair(o, t), T = HK.Ties, r = R(ctx, o, t), rom = ctx.romanceOk([o, t]);

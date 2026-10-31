@@ -150,7 +150,7 @@
       /* 家族で「恋愛：あり」（ties.js の HK.tieFamLove）の二人が恋人になっていれば（惹かれ合っていれば）、恋人どうしの再会にする */
       if (HK.tieFamLove && HK.tieFamLove(t) && (ctx.pair(a, b).couple || (ra.att > 45 && rb.att > 40))) return 'lover';
       if (ty === 'sibprot') return first ? 'protA' : 'protB';
-      if (ty === 'sibclose') return 'sibclose';
+      if (ty === 'sibclose' || ty === 'twin') return 'sibclose';
       if (ty === 'teacher') return first ? 'teacherA' : 'teacherB';
       if (ty === 'mentor') return first ? 'mentorA' : 'mentorB';
       if (ty === 'pparent' && (ctx.pair(a, b).couple || (ra.att > 45 && rb.att > 40))) return 'lover';
@@ -169,9 +169,9 @@
     if (ra.aff + rb.aff > 40) return 'good';
     return 'new';
   }
-  var MOOD = { protA: 'joy', protB: 'joy', sibclose: 'joy', teacherA: 'joy', teacherB: 'joy', mentorA: 'joy', mentorB: 'joy', lover: 'joy', fwb: 'shy', almost: 'shy', crushA: 'shy', crushB: 'joy', crushM: 'shy', ex: 'shy', parent: 'joy', child: 'joy', sibling: 'joy', best: 'joy', childhood: 'joy', buddy: 'joy', friend: 'joy', colleague: 'joy', senpaiA: 'joy', senpaiB: 'joy', masterA: 'joy', masterB: 'joy', rival: 'tense', enemy: 'tense', acq: 'joy', spark: 'shy', good: 'joy', bad: 'tense', new: null, classmate: 'joy', bossA: 'joy', bossB: 'joy', worshipA: 'joy', worshipB: 'joy', beneA: 'joy', beneB: 'joy', relative: 'joy', yanA: 'shy', yanB: null };
+  var MOOD = { protA: 'joy', protB: 'joy', sibclose: 'joy', twin: 'joy', teacherA: 'joy', teacherB: 'joy', mentorA: 'joy', mentorB: 'joy', lover: 'joy', fwb: 'shy', almost: 'shy', crushA: 'shy', crushB: 'joy', crushM: 'shy', ex: 'shy', parent: 'joy', child: 'joy', sibling: 'joy', best: 'joy', childhood: 'joy', buddy: 'joy', friend: 'joy', colleague: 'joy', senpaiA: 'joy', senpaiB: 'joy', masterA: 'joy', masterB: 'joy', rival: 'tense', enemy: 'tense', acq: 'joy', spark: 'shy', good: 'joy', bad: 'tense', new: null, classmate: 'joy', bossA: 'joy', bossB: 'joy', worshipA: 'joy', worshipB: 'joy', beneA: 'joy', beneB: 'joy', relative: 'joy', yanA: 'shy', yanB: null };
   var FX = {
-    protA: [12, 10, 0, 0], protB: [12, 10, 0, 0], sibclose: [12, 12, 0, 0], teacherA: [8, 10, 0, 0], teacherB: [8, 10, 0, 0], mentorA: [8, 12, 0, 0], mentorB: [10, 14, 0, 0],
+    protA: [12, 10, 0, 0], protB: [12, 10, 0, 0], sibclose: [12, 12, 0, 0], twin: [12, 12, 0, 0], teacherA: [8, 10, 0, 0], teacherB: [8, 10, 0, 0], mentorA: [8, 12, 0, 0], mentorB: [10, 14, 0, 0],
     lover: [12, 10, 8, 0], fwb: [8, 6, 8, 0], almost: [10, 8, 10, 0], crushA: [8, 6, 10, 0], crushB: [8, 8, 4, 0], crushM: [8, 6, 10, 0], ex: [6, 4, 6, 4], parent: [12, 10, 0, 0], child: [12, 10, 0, 0], sibling: [10, 10, 0, 2],
     best: [12, 12, 0, 0], childhood: [10, 10, 2, 0], buddy: [8, 14, 0, 0], friend: [8, 8, 0, 0], colleague: [6, 8, 0, 0], senpaiA: [8, 8, 0, 0], senpaiB: [8, 10, 2, 0], masterA: [6, 8, 0, 0], masterB: [8, 12, 0, 0],
     rival: [3, 5, 2, 4], enemy: [0, -2, 0, 8], acq: [5, 5, 0, 0], spark: [6, 4, 8, 0], good: [8, 8, 0, 0], bad: [0, 0, 0, 6], new: [3, 5, 0, 0],

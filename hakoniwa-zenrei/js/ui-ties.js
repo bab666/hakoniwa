@@ -79,7 +79,9 @@
   /* 選択肢（「自動」は今の既定が分かる形）。short：狭い欄（関係の一覧）向けの短い形「自動（あり）」 */
   function loveOpts(t, short) {
     var v = loveVal(t), o = function (id, label) { return '<option value="' + id + '"' + (v === id ? ' selected' : '') + '>' + esc(label) + '</option>'; }, d = loveDef(t) === 'no' ? 'なし' : 'あり';
-    return o('', '恋愛：自動（' + (short ? d : 'この関係は恋愛' + d) + '）') + o('ok', '恋愛：あり') + o('no', '恋愛：なし');
+    /* 双子（loveLock）は「恋愛：あり」を選べない（2026-10-31） */
+    var lk = !!(t && HK.TIES[t.type] && HK.TIES[t.type].loveLock);
+    return o('', '恋愛：自動（' + (short ? d : 'この関係は恋愛' + d) + '）') + (lk ? '' : o('ok', '恋愛：あり')) + o('no', '恋愛：なし');
   }
   /* attr：欄の属性（id・data-* など）。title に自動のときの説明 */
   function loveSel(t, attr, short) { return '<select ' + attr + ' aria-label="恋愛" title="' + esc(loveHelp(t)) + '">' + loveOpts(t, short) + '</select>'; }

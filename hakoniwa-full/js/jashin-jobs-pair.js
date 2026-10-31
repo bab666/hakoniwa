@@ -109,7 +109,7 @@
   function tiesOf(S, a, b) { return (S.ties || []).filter(function (t) { return (t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i); }); }
   var CAT = {
     fear: 'fear,abuse', apathy: 'apathy', love: 'lover,mate,fated,spouse,almost', fiance: 'fiance',
-    family: 'parent,pparent,sibprot,sibling,sibclose,sibbad,relative,stepsib', bad: 'enemy,rival,bad',
+    family: 'parent,pparent,sibprot,sibling,sibclose,twin,sibbad,relative,stepsib', bad: 'enemy,rival,bad',
     blind: 'blind,worship,yan,fond', lead: 'boss,mentor,teacher,senpai,master', crush: 'crush,honmei', ex: 'ex',
     close: 'best,buddy,childhood,friend,comrade,colleague,classmate,benefactor'
   };

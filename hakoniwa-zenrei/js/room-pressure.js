@@ -43,7 +43,7 @@
   function pk(ctx, arr) { return ctx.pick(arr); }
 
   /* 家族・恋愛にしない組 */
-  var LOVE_T = { lover: 1, spouse: 1, mate: 1, fated: 1, fiance: 1, honmei: 1 }, FAM_T = { sibling: 1, parent: 1, pparent: 1, sibprot: 1, sibclose: 1, sibbad: 1, stepsib: 1, relative: 1 };
+  var LOVE_T = { lover: 1, spouse: 1, mate: 1, fated: 1, fiance: 1, honmei: 1 }, FAM_T = { sibling: 1, parent: 1, pparent: 1, sibprot: 1, sibclose: 1, twin: 1, sibbad: 1, stepsib: 1, relative: 1 };
   var HATE_T = { enemy: 1, rival: 1, bad: 1 }, RANK_T = { master: 1, boss: 1, teacher: 1, mentor: 1, senpai: 1 }, FRIEND_T = { friend: 1, best: 1, childhood: 1, classmate: 1, colleague: 1, buddy: 1, acq: 1, almost: 1 };
   function tieTy(ctx, a, b) { var t = HK.Ties && HK.Ties.get ? HK.Ties.get(ctx, a, b) : null; return t ? t.type : ''; }
   function isFam(ctx, a, b) { return !!(ctx.pair(a, b).kin || FAM_T[tieTy(ctx, a, b)]); }

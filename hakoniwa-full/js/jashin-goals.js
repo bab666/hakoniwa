@@ -180,7 +180,7 @@
     if (HK.SameStory && HK.SameStory.spare) others = HK.SameStory.spare(S, p, others);
     if (!others.length) return;
     var en = others.filter(function (q) { return bond(S, p, q) < -0.15; })[0];
-    var fam = others.filter(function (q) { return hasTie(S, p, q, 'mate,parent,sibling,lover'); })[0];
+    var fam = others.filter(function (q) { return hasTie(S, p, q, 'mate,parent,sibling,twin,lover'); })[0];
     var why, t;
     if (en) { t = en; why = 'grudge'; }
     else if (p.tr.ac > 0.6 && p.tr.np < 0.5) { t = rng.pick(others); why = 'despair'; }

@@ -371,6 +371,7 @@ tone js/tone-brush7b.js
 tone js/tone-brush9a.js
 tone js/tone-brush9b.js
 tone js/tone-brush9c.js
+tone js/tone-brush9d.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/incidents-social.js @pack:rel
@@ -390,6 +391,7 @@ js/zombie-reunion.js @scen:zombie
 js/zombie-rel.js @scen:zombie
 js/rel-bad-engine.js @pack:rel
 js/sib-feud.js @pack:rel
+js/rel-twin.js @pack:rel
 js/jashin-fx-b.js @scen:jashin
 js/jashin-place.js @scen:jashin
 js/jinro-data.js @scen:jinro

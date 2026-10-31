@@ -675,7 +675,7 @@
     if (pf.couple || has(/^(lover|spouse|honmei|mate|fated)$/)) return 'lover';
     if (has(/^crush$/) || (r.att || 0) >= 45) return 'crush';
     if (has(/^(rival|enemy|bad)$/) || hateLv(x, C, B) >= 35) return 'enemy';
-    if (has(/^(friend|best|buddy|childhood|colleague|classmate|senpai|sibprot|sibclose|almost)$/) || (r.aff || 0) >= 25) return 'friend';
+    if (has(/^(friend|best|buddy|childhood|colleague|classmate|senpai|sibprot|sibclose|twin|almost)$/) || (r.aff || 0) >= 25) return 'friend';
     return 'none';
   }
   var SH_W = { lover: 1, fixed: 1, crush: 0.85, friend: 0.65, enemy: 0.2, none: 0.12 };

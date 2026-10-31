@@ -151,7 +151,7 @@
     if ((pf.couple || tieFrom(ctx, o, x, /^(?:lover|spouse|mate|fated)$/)) && love2(o, x)) return { k: 'lover', s: 100 };
     if (obs(ctx, o, x) >= 35 || (HK.Obsess && HK.Obsess.yanTie && HK.Obsess.yanTie(ctx, o, x))) return { k: 'obsess', s: 90 };
     if (tieFrom(ctx, o, x, /^(?:honmei|crush)$/) && HK.canLove(o, x)) return { k: 'crush', s: 80 };
-    if (tieFrom(ctx, o, x, /^(?:best|buddy|childhood|sibclose|sibling|sibprot|parent|pparent|mentor|master|benefactor)$/)) return { k: 'friend', s: 70 };
+    if (tieFrom(ctx, o, x, /^(?:best|buddy|childhood|sibclose|twin|sibling|sibprot|parent|pparent|mentor|master|benefactor)$/)) return { k: 'friend', s: 70 };
     if (r.aff >= 45 && r.trust >= 25) return { k: r.att >= 50 && love2(o, x) ? 'crush' : 'friend', s: 40 + Math.min(40, r.aff - 45 + r.trust / 3) };
     return null;
   }

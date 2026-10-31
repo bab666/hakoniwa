@@ -24,9 +24,9 @@
 /* @event scen=locker id=lkm_rank_press cat=bond tie=senpai,mentor,teacher,boss,benefactor,master label=立場のある二人：近すぎる距離に戸惑う */
 /* @event scen=locker id=lkm_rank_steps cat=bond tie=senpai,mentor,teacher,boss,benefactor,master label=立場のある二人：見られたら立場がないと焦る */
 /* @event scen=locker id=lkm_rank_vent cat=bond tie=senpai,mentor,teacher,boss,benefactor,master label=立場のある二人：外気を譲る・意地を張る */
-/* @event scen=locker id=lkm_fam_press cat=bond tie=sibling,sibprot,sibclose,sibbad,stepsib,relative,parent,pparent label=家族：昔の隠れんぼを思い出す */
-/* @event scen=locker id=lkm_fam_steps cat=bond tie=sibling,sibprot,sibclose,sibbad,stepsib,relative,parent,pparent label=家族：足音から家族をかばう */
-/* @event scen=locker id=lkm_fam_vent cat=bond tie=sibling,sibprot,sibclose,sibbad,stepsib,relative,parent,pparent label=家族：外気を分ける・言い合う */
+/* @event scen=locker id=lkm_fam_press cat=bond tie=sibling,sibprot,sibclose,twin,sibbad,stepsib,relative,parent,pparent label=家族：昔の隠れんぼを思い出す */
+/* @event scen=locker id=lkm_fam_steps cat=bond tie=sibling,sibprot,sibclose,twin,sibbad,stepsib,relative,parent,pparent label=家族：足音から家族をかばう */
+/* @event scen=locker id=lkm_fam_vent cat=bond tie=sibling,sibprot,sibclose,twin,sibbad,stepsib,relative,parent,pparent label=家族：外気を分ける・言い合う */
 /* @event scen=locker id=lkm_heavy_press cat=conflict tie=yan,worship,blind,fond,abuse label=想いの重い二人：触れ合う距離に揺れる */
 /* @event scen=locker id=lkm_heavy_steps cat=conflict tie=yan,worship,blind,fond,abuse label=想いの重い二人：足音から相手を隠す */
 /* @event scen=locker id=lkm_heavy_vent cat=conflict tie=yan,worship,blind,fond,abuse label=想いの重い二人：外気を捧げる・拒まれる */
@@ -393,6 +393,8 @@
     w: '{u}と{d}は、数を数えながら交代した。子どもの頃の遊びの続きのようだった。|{d}が先を譲ると、{u}は笑った。{u}「借りにしとく｜借りにしておく｜借りにしておきます」――そう言って、{u}は先に隙間に顔を寄せた。',
     r: '{d}は、{u}が最近自分に隠しごとをしていると気づいていた。隙間の前で、つい問い詰めてしまった。|{u}は、{d}に恋人ができたらしいと聞いて、なぜか落ち着かなかった。'
   });
+  /* 双子（2026-10-31）は親友のようなきょうだいの文を使う（双子専用の場面は rel-twin.js） */
+  R.twin = R.sibclose;
   D('sibbad', 'cold', {
     p: '口をきくのも久しぶりの{rel}が、肩をくっつけて押し込められていた。{u}も{d}も、互いの存在を無視しようと必死だった。|{d}が少し身じろぎしただけで、{u}は舌打ちをした。子どもの頃から、この{rel}は隣にいるだけで喧嘩になった。',
     s: '足音が近づくと、{u}と{d}は同時に、相手に黙れと目で凄んだ。こんなときまで、二人の息は悪い方に揃っていた。|{u}は、{d}と一緒にいるところを家族に見られたら、また仲良くしろと言われるのが嫌だった。',
@@ -503,7 +505,7 @@
 
   /* ================= 仕組み ================= */
   /* 関係の強い順（一つ目を 7 割、二つ目を 3 割で使う） */
-  var PRI = ['mate', 'fated', 'spouse', 'spouseC', 'lover', 'fiance', 'abuse', 'master', 'honmei', 'worship', 'blind', 'yan', 'fwb', 'ex', 'crush', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'apathy', 'fear', 'senpai', 'mentor', 'teacher', 'benefactor', 'boss', 'fond', 'colleague', 'classmate', 'comrade', 'friend', 'acq', 'stepsib', 'relative', 'pparent', 'parent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'noobs', 'same'];
+  var PRI = ['mate', 'fated', 'spouse', 'spouseC', 'lover', 'fiance', 'abuse', 'master', 'honmei', 'worship', 'blind', 'yan', 'fwb', 'ex', 'crush', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'apathy', 'fear', 'senpai', 'mentor', 'teacher', 'benefactor', 'boss', 'fond', 'colleague', 'classmate', 'comrade', 'friend', 'acq', 'stepsib', 'relative', 'pparent', 'parent', 'sibprot', 'sibling', 'sibclose', 'twin', 'sibbad', 'noobs', 'same'];
   var TAG = { press: '押し合う二人', steps: '外の足音', ventW: '外気を分け合う', ventR: '外気の取り合い' };
   var TMPW = { cp: 'CP（仕切る）', np: 'NP（気づかう）', a: 'A（冷静に考える）', fc: 'FC（おどける）', ac: 'AC（遠慮する）', dry: 'ドライ（動じない）' };
   /* 想いを向ける側が話す関係（恋の台詞は想う側の口から。隙間の場面は除く） */

@@ -131,7 +131,7 @@
   var STEER = L('{o}は、その言葉を疑わなかった。|{o}は頷き、調べる手を止めた。');
 
   /* ---------- 二人の関係を読む ---------- */
-  var LOVE = /^(lover|mate|fated|spouse|fiance|almost)$/, FAM = /^(sibling|sibprot|sibclose|parent|pparent|stepsib|relative)$/, ELDER = /^(parent|pparent|sibprot)$/,
+  var LOVE = /^(lover|mate|fated|spouse|fiance|almost)$/, FAM = /^(sibling|sibprot|sibclose|twin|parent|pparent|stepsib|relative)$/, ELDER = /^(parent|pparent|sibprot)$/,
     LEAD = /^(boss|master|mentor|teacher|senpai)$/, BAD = /^(enemy|bad|rival|ex|sibbad)$/, BLIND = /^(blind|worship|yan|fond)$/, CLOSE = /^(best|buddy|childhood|friend|classmate|colleague|comrade|benefactor)$/;
   var KN = { first: '初対面', close: '親しい', love: '恋人・許嫁', family: '家族', lead: '上下の関係', rival: '敵対・張り合う', blind: '盲信・執着', fear: '恐怖', cold: '無関心' };
   function relOf(S, x, y) {

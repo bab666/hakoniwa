@@ -88,7 +88,7 @@
   D.label = function (ctx, c) { var id = D.at(ctx, c), s = id && D.spot(id); return s ? s.label : ''; };
 
   /* ======================= 関係と気分 ======================= */
-  var FAM = { sibling: 'sib', sibprot: 'sib', sibclose: 'sib', sibbad: 'sib', parent: 'parent', pparent: 'parent', relative: 'rel' };
+  var FAM = { sibling: 'sib', sibprot: 'sib', sibclose: 'sib', twin: 'sib', sibbad: 'sib', parent: 'parent', pparent: 'parent', relative: 'rel' };
   function famTie(ctx, a, b) {
     if (!HK.Ties || !HK.Ties.all) return null;
     var l = HK.Ties.all(ctx, a, b);

@@ -13,7 +13,7 @@
 /* @event scen=whiteroom id=to_room_rival cat=bond tie=rival label=閉じ込められた直後：ライバルと脱出を競う */
 /* @event scen=whiteroom id=to_room_rank cat=bond tie=senpai,mentor,teacher,boss,benefactor label=閉じ込められた直後：目上の人と一緒で緊張する */
 /* @event scen=whiteroom id=to_room_master cat=bond tie=master,abuse label=閉じ込められた直後：従う側が主の指示を待つ */
-/* @event scen=whiteroom id=to_room_kin cat=bond tie=parent,pparent,sibling,sibprot,sibclose,stepsib,relative label=閉じ込められた直後：家族と気安く声をかけ合う */
+/* @event scen=whiteroom id=to_room_kin cat=bond tie=parent,pparent,sibling,sibprot,sibclose,twin,stepsib,relative label=閉じ込められた直後：家族と気安く声をかけ合う */
 /* @event scen=whiteroom id=to_room_avoid cat=conflict tie=fear,apathy,bad,enemy,crush,yan,abuse label=閉じ込められた直後：苦手な相手と一緒で憂鬱になる */
 /* @event scen=whiteroom id=to_room_obsess cat=bond tie=yan,worship,blind label=閉じ込められた直後：想う相手をじっと見つめる */
 /* @event scen=whiteroom id=to_room_emo cat=bond tie=- label=閉じ込められた直後：相手への気持ちで動揺・安心する */

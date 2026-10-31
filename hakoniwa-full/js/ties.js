@@ -30,6 +30,9 @@
     sibprot: { mods: { att: 0.06, trust: 1.15 }, effect: '兄姉が弟妹を我が子のように守ろうとする。恋愛にはならない', label: '兄弟（庇護）', dir: true, roleA: '兄姉', roleB: '弟妹', like: 'parent', ab: { aff: 50, trust: 32, ten: 5 }, ba: { aff: 35, trust: 45, ten: 10 }, pol: 1, chem: 0.03, pull: 1.8, family: true, biasA: { help: 2, conflict: 1.25, romance: 0.05, combat: 0.15, betray: 0.2 }, biasB: { help: 1.3, conflict: 1.3, romance: 0.05, combat: 0.3, betray: 0.3 } },
     sibclose: { mods: { att: 0.08, trust: 1.3, ten: 0.75 }, effect: '親友や幼馴染のように仲のいいきょうだい。気安く、助け合う。恋愛にはならない', label: '兄弟（親友のよう）', like: 'sibling', ab: { aff: 45, trust: 50, ten: 3 }, pol: 2, chem: 0.05, pull: 1.9, family: true, bias: { help: 1.7, bond: 1.6, conflict: 1.0, romance: 0.1, combat: 0.25, betray: 0.3 } },
     sibbad: { mods: { att: 0.08, aff: 0.8, ten: 1.25 }, effect: '血はつながっているが反りが合わないきょうだい。顔を合わせれば口喧嘩。それでも、いざとなると見捨てきれない（信頼は底をつかない）。恋愛にはならない', label: '兄弟（不仲）', like: 'sibling', ab: { aff: -8, trust: 12, ten: 32 }, pol: -1, chem: 0.05, fric: 1.25, pull: 1.8, family: true, bias: { conflict: 1.9, help: 1.1, bond: 0.75, romance: 0.1, combat: 0.7, betray: 0.8 } },
+    /* 双子（2026-10-31 担当TW。利用者の指示「兄弟をベースに、関係性に双子を追加」）：兄弟と同じ家族（like: 'sibling'。兄弟の出来事がそのまま通る）で、恋愛にはならない。
+       初期値は兄弟より好意・信頼が高く、緊張は低め（兄弟と親友のような兄弟の中間〜以上）。loveLock：「恋愛：あり」を選べない（HK.Ties.expand が外す）。双子専用の場面は rel-twin.js */
+    twin: { mods: { att: 0.08, trust: 1.25, ten: 0.85 }, effect: '同じ日に生まれたきょうだい。言わなくても通じ合い、相手の不調に誰より先に気づく。周りに比べられることも多い。恋愛にはならない', label: '双子', like: 'sibling', ab: { aff: 42, trust: 52, ten: 5 }, pol: 2, chem: 0.05, pull: 2.0, family: true, loveLock: true, bias: { help: 1.8, bond: 1.7, conflict: 1.1, romance: 0.1, combat: 0.25, betray: 0.25 } },
     bad: { mods: { aff: 0.75, trust: 0.8, ten: 1.15 }, effect: '気が合わず、何かと衝突する（敵対ほど強い嫌悪ではない）。いがみ合いながらも、きっかけがあれば打ち解けることもある。相手の気持ちを選ぶと一方的な敵視にもできる。嫌悪が強まれば敵対と同じ振る舞いに。愛憎（〇〇だけ／××だけ／双方）を選ぶと、持つ側は嫌いながらも相手を気にして構い、相手がほかの人と親しくすると嫉妬する', label: '不仲', dir: true, roleA: '敵視する側', roleB: '相手', hate: 1, ab: { aff: -18, trust: -8, ten: 34 }, pol: -1, fric: 1.25, pull: 1.4, bias: { conflict: 1.6, help: 0.7, bond: 0.75, romance: 0.6, combat: 1.1, betray: 1.15 } },
     yan: { mods: { att: 1.25, ten: 1.1 }, effect: '執着する側は、相手が誰かと親しくするたびに嫉妬し、執着を深めていく。深まると監視・束縛・恋敵への敵意に変わり、R18版では監禁・恋敵への危害・心中まで暴走することがある（全年齢版ではほのめかす程度）', label: '執着（ヤンデレ）', dir: true, roleA: '執着する側', roleB: '執着される側', ab: { aff: 30, att: 55, trust: -5, ten: 10 }, ba: { aff: 5 }, pol: 0, chem: 1.3, pull: 2, biasA: { romance: 1.6, conflict: 1.2 }, obsess: true },
     noobs: { mods: {}, effect: 'この二人のあいだでは、嫉妬も執着も生まれない（ほかの関係に重ねて使う）', label: '執着なし', ab: {}, pol: 0, pull: 0, noObsess: true },
@@ -215,7 +218,7 @@
     bad: { label: '仲：不仲（口論・無視が多い。和解することも）', short: '不仲', ab: { aff: -14, ten: 18, trust: -6 }, bias: { conflict: 1.5, help: 0.8, bond: 0.7 } }
   };
   HK.KIN_GRADE_ORDER = ['', 'good', 'bad'];
-  HK.KIN_GRADE_RE = /^(parent|pparent|sibling|sibprot|stepsib|relative|benefactor)$/;
+  HK.KIN_GRADE_RE = /^(parent|pparent|sibling|sibprot|twin|stepsib|relative|benefactor)$/;
   /* 元恋人のそれぞれの気持ち（元恋人の欄 feel＝{a} の、feelB＝{b} の。許嫁の気持ちと同じ形）。空欄＝気まずい（今までどおり） */
   HK.EX_FEEL = {
     '': { label: '気まずい', short: '' },
@@ -257,7 +260,7 @@
       fiance: [{ f: 'feel', who: 'a', map: HK.FIANCE_FEEL, order: HK.FIANCE_FEEL_ORDER, aria: '一人目の気持ち' }, { f: 'feelB', who: 'b', map: HK.FIANCE_FEEL, order: HK.FIANCE_FEEL_ORDER, aria: '二人目の気持ち' }]
     };
     /* きょうだいの上下（兄弟（庇護）は向きで決まるので付けない） */
-    if (/^(sibling|sibclose|sibbad|stepsib)$/.test(type)) X[type] = [{ f: 'elder', map: HK.SIB_ELDER, order: HK.SIB_ELDER_ORDER, aria: '上下', names: true }];
+    if (/^(sibling|sibclose|sibbad|twin|stepsib)$/.test(type)) X[type] = [{ f: 'elder', map: HK.SIB_ELDER, order: HK.SIB_ELDER_ORDER, aria: '上下', names: true }];
     /* 関係の層の選択肢（2026-10-26）：気持ちの重さ（恋人・夫婦・本命）・家族の仲・元恋人の気持ち・過去・出来事のオフ */
     var LW = { f: 'heavy', map: HK.LOVE_WEIGHT, order: HK.LOVE_WEIGHT_ORDER, aria: '気持ちの重さ' };
     if (/^(lover|spouse)$/.test(type)) X[type] = [LW];
@@ -480,14 +483,14 @@
   };
   var HATE_WORDS = [[/一方的|片思いならぬ|相手は気にして(?:い)?ない|相手は気づいて(?:い)?ない|なんとも思って(?:い)?ない/, 'none'], [/相手はふつう|相手は普通/, 'normal'], [/相手は友(?:達|人)だと|友達だと思って/, 'friend'], [/相手は(?:好き|愛して|惚れて)|片想いされ|好かれて/, 'love']];
   var COLD_WORDS = [[/両片想い|両片思い|実は相手も/, 'mutual'], [/脈なし|眼中に|相手にされ|興味がない|興味なし/, 'none'], [/友達としか|友達止まり|異性として見|恋愛対象外|対象外/, 'friend'], [/苦手|嫌われ|避けられ|避けて/, 'dislike'], [/他に好き|ほかに好き|別に好き|好きな人がいる/, 'other']];
-  HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'classmate', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'stepsib', 'relative', 'parent', 'pparent', 'teacher', 'mentor', 'boss', 'benefactor', 'crush', 'yan', 'worship', 'bad', 'rival', 'enemy', 'lover', 'spouse', 'honmei', 'fwb', 'ex', 'abuse', 'fated', 'mate', 'master', 'noobs'];
+  HK.TIE_ORDER = ['acq', 'friend', 'colleague', 'senpai', 'buddy', 'childhood', 'classmate', 'almost', 'best', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'twin', 'stepsib', 'relative', 'parent', 'pparent', 'teacher', 'mentor', 'boss', 'benefactor', 'crush', 'yan', 'worship', 'bad', 'rival', 'enemy', 'lover', 'spouse', 'honmei', 'fwb', 'ex', 'abuse', 'fated', 'mate', 'master', 'noobs'];
   HK.TIE_ORDER.splice(HK.TIE_ORDER.indexOf('worship') + 1, 0, 'fond', 'blind');
   HK.TIE_ORDER.splice(HK.TIE_ORDER.indexOf('enemy') + 1, 0, 'apathy', 'fear', 'lovehate', 'inferior', 'superior');
   HK.TIE_ORDER.splice(HK.TIE_ORDER.indexOf('spouse') + 1, 0, 'fiance');
   /* 設定画面の関係の選択肢のまとまり（選びやすさのため。表に載っていない関係は「そのほか」）。並びは TIE_ORDER のまま */
   HK.TIE_GROUPS = [
     { id: 'stance', label: '立場・つながり', ids: ['acq', 'friend', 'best', 'buddy', 'childhood', 'classmate', 'colleague', 'senpai', 'boss', 'teacher', 'mentor', 'master', 'rival'] },
-    { id: 'family', label: '家族・血縁', ids: ['sibling', 'sibprot', 'sibclose', 'sibbad', 'stepsib', 'parent', 'pparent', 'relative'] },
+    { id: 'family', label: '家族・血縁', ids: ['sibling', 'sibprot', 'sibclose', 'sibbad', 'twin', 'stepsib', 'parent', 'pparent', 'relative'] },
     { id: 'feeling', label: '気持ち（執着・恩・片想いなど）', ids: ['crush', 'honmei', 'yan', 'worship', 'fond', 'blind', 'benefactor', 'bad', 'enemy', 'apathy', 'fear', 'lovehate', 'inferior', 'superior', 'abuse', 'noobs'] },
     { id: 'love', label: '恋愛・夫婦の状態', ids: ['almost', 'lover', 'spouse', 'fiance', 'fwb', 'ex', 'mate', 'fated'] }
   ];
@@ -508,6 +511,7 @@
   /* 文字から関係の種類を推定（長い語から順に照合） */
   var ALIAS = [
     ['一方的な敬愛', 'fond'], ['敬愛', 'fond'], ['陰ながら慕う', 'fond'], ['盲信', 'blind'], ['盲目的に信じ', 'blind'],
+    ['双子の兄弟', 'twin'], ['双子の姉妹', 'twin'], ['双子の兄妹', 'twin'], ['双子の姉弟', 'twin'], ['双子のきょうだい', 'twin'], ['双子の兄', 'twin'], ['双子の姉', 'twin'], ['双子の弟', 'twin'], ['双子の妹', 'twin'], ['双生児', 'twin'], ['双子', 'twin'], ['ふたご', 'twin'],
     ['きょうだい（不仲）', 'sibbad'], ['兄弟姉妹（不仲）', 'sibbad'], ['兄弟（不仲）', 'sibbad'], ['姉妹（不仲）', 'sibbad'], ['不仲なきょうだい', 'sibbad'], ['不仲な兄弟', 'sibbad'], ['仲の悪いきょうだい', 'sibbad'], ['仲の悪い兄弟', 'sibbad'], ['兄弟（仲が悪い）', 'sibbad'], ['姉妹（仲が悪い）', 'sibbad'],
     ['執着なし', 'noobs'], ['嫉妬しない', 'noobs'], ['執着（信仰）', 'worship'], ['信仰', 'worship'], ['崇拝', 'worship'], ['心酔', 'worship'], ['ヤンデレ', 'yan'], ['執着', 'yan'],
     ['同級生', 'classmate'], ['クラスメイト', 'classmate'], ['同窓', 'classmate'], ['上司と部下', 'boss'], ['上司', 'boss'], ['部下', 'boss'], ['恩人', 'benefactor'], ['命の恩人', 'benefactor'],
@@ -643,7 +647,7 @@
       if (lhW && types.indexOf('lovehate') < 0) types.push('lovehate');
       /* 「上下」だけ書いたら、兄弟姉妹として読む */
       if (elW && !types.length) types.unshift('sibling');
-      if (elW && elW !== 'auto' && types.length && !types.some(function (x) { return /^(sibling|sibclose|sibbad|stepsib)$/.test(x); })) warn.push((i + 1) + '行目の「上下」は、兄弟姉妹・兄弟（親友のよう）・兄弟（不仲）・義理のきょうだいにだけ付けられます（兄弟（庇護）は向きで上下が決まります）');
+      if (elW && elW !== 'auto' && types.length && !types.some(function (x) { return /^(sibling|sibclose|sibbad|twin|stepsib)$/.test(x); })) warn.push((i + 1) + '行目の「上下」は、兄弟姉妹・兄弟（親友のよう）・兄弟（不仲）・双子・義理のきょうだいにだけ付けられます（兄弟（庇護）は向きで上下が決まります）');
       /* 「兄弟で不仲」のように二つ書いたら、きょうだい（不仲）にまとめる */
       if (types.indexOf('bad') >= 0 && types.indexOf('sibling') >= 0) types = types.filter(function (x) { return x !== 'bad'; }).map(function (x) { return x === 'sibling' ? 'sibbad' : x; });
       /* 「親子で不仲」「恩人 不仲」のように家族の層の関係と不仲を書いたら、その関係の仲：不仲にまとめる（2026-10-26） */
@@ -694,7 +698,7 @@
             if (lhId === 'b') { nt.a = b; nt.b = a; }
             if (lhId === 'both') nt.cold = 'both';
           }
-          if (elW && elW !== 'auto' && /^(sibling|sibclose|sibbad|stepsib)$/.test(ty)) {
+          if (elW && elW !== 'auto' && /^(sibling|sibclose|sibbad|twin|stepsib)$/.test(ty)) {
             var elId = elW;
             if (elW === 'name') { var enA = (names.filter(function (x) { return x.id === a; })[0] || {}).n, enB = (names.filter(function (x) { return x.id === b; })[0] || {}).n; elId = elName === enA ? 'a' : elName === enB ? 'b' : ''; if (!elId && !elWarned && !found.some(function (f) { return (names.filter(function (x) { return x.id === f.id; })[0] || {}).n === elName; })) { elWarned = true; warn.push((i + 1) + '行目の「上下:' + elName + '」は、この行の住人の名前ではないので、上下は自動（年齢）のままにしました'); } }
             if (elId) nt.elder = elId;
@@ -735,7 +739,7 @@
   /* ---------- エンジンへの適用 ----------
      同じ二人に複数の関係（セフレ＋片想い など）を重ねられる。
      get() は代表の関係（PRIO の先頭に近いもの）を返し、has() で個々の関係を調べる */
-  var PRIO = ['mate', 'fated', 'abuse', 'lover', 'fiance', 'parent', 'pparent', 'sibprot', 'sibling', 'sibclose', 'sibbad', 'relative', 'master', 'worship', 'mentor', 'teacher', 'benefactor', 'boss', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'classmate', 'friend', 'acq', 'honmei', 'noobs'];
+  var PRIO = ['mate', 'fated', 'abuse', 'lover', 'fiance', 'parent', 'pparent', 'sibprot', 'twin', 'sibling', 'sibclose', 'sibbad', 'relative', 'master', 'worship', 'mentor', 'teacher', 'benefactor', 'boss', 'fwb', 'ex', 'crush', 'yan', 'almost', 'best', 'buddy', 'childhood', 'rival', 'enemy', 'bad', 'senpai', 'colleague', 'classmate', 'friend', 'acq', 'honmei', 'noobs'];
   PRIO.splice(PRIO.indexOf('worship') + 1, 0, 'blind', 'fond');
   PRIO.splice(PRIO.indexOf('crush'), 0, 'fear');
   PRIO.splice(PRIO.indexOf('bad') + 1, 0, 'apathy');
@@ -774,14 +778,14 @@
   var LOVE_TIE_RE = /^(lover|mate|fated|spouse|abuse|crush|almost|fwb|ex|honmei|yan|fiance)$/;
   HK.LOVE_TIE_RE = LOVE_TIE_RE;
   HK.tieLoveDefault = function (t) { var D = t && T[t.type]; if (!D) return 'ok'; if (t.type === 'worship' && t.cold === 'dominate') return 'ok'; return D.loveDef === 'no' ? 'no' : 'ok'; };
-  HK.tieLoveOK = function (t) { if (!t) return true; if (t.love === 'no') return false; if (t.love === 'ok') return true; return HK.tieLoveDefault(t) === 'ok'; };
+  HK.tieLoveOK = function (t) { if (!t) return true; if (t.love === 'no') return false; if (t.love === 'ok' && !(T[t.type] && T[t.type].loveLock)) return true; return HK.tieLoveDefault(t) === 'ok'; };
   HK.tieLoveHelp = function (t) {
     var D = t && T[t.type]; if (!D) return '';
     var d = HK.tieLoveDefault(t) === 'ok';
     return '自動：この関係は恋愛' + (d ? 'あり' : 'なし') + (!d && D.loveSoft ? '（恋人・片想いなどの関係を重ねればあり）' : !d && D.family ? '（R18にもしない）' : '');
   };
   /* 既定が「なし」の関係で「あり」を選んだか（既定が「あり」の関係の 'ok' は、自動と同じに扱う） */
-  function loveOn(t) { var D = T[t.type]; return t.love === 'ok' && !!D && D.loveDef === 'no'; }
+  function loveOn(t) { var D = T[t.type]; return t.love === 'ok' && !!D && D.loveDef === 'no' && !D.loveLock; }
   HK.tiesLove = function (list) {
     var l = (list || []).filter(function (t) { return t && T[t.type]; }), i;
     if (!l.length) return true;
@@ -897,6 +901,14 @@
         delete y.past; delete y.pastB; if (x.pastB) y.past = x.pastB; if (x.past) y.pastB = x.past;
         if (!(ties || []).some(function (u) { return u && u.type === 'crush' && u.a === y.a && u.b === y.b; })) out.push(y);
       });
+      /* 双子（2026-10-31）：「恋愛：あり」は選べない（家族の恋愛・R18の経路を通さない）。同じ二人に兄弟（兄弟姉妹・庇護・親友のよう・不仲・義理）と双子の両方は持てない：後から付けたほうを残す */
+      var SIBK = /^(sibling|sibprot|sibclose|sibbad|twin|stepsib)$/, seenS = {};
+      out = out.slice().reverse().filter(function (u) {
+        if (!u || !(SIBK.test(u.type) || (u.type === 'relative' && u.step))) return true;
+        var ks = Math.min(u.a, u.b) + '-' + Math.max(u.a, u.b), tw = u.type === 'twin' ? 't' : 's';
+        if (seenS[ks] && seenS[ks] !== tw) return false;
+        seenS[ks] = tw; return true;
+      }).reverse().map(function (u) { if (u && u.type === 'twin' && u.love === 'ok') { var c2 = {}; for (var kc2 in u) if (kc2 !== 'love') c2[kc2] = u[kc2]; return c2; } return u; });
       /* 同じ向きの劣等感と優越は両方は持てない：後から付けたほうを残す（2026-10-29） */
       var seenE = {};
       out = out.slice().reverse().filter(function (u) {
@@ -1011,7 +1023,7 @@
         if (t.type === 'yan') o.sub = xf.sub || '';
         if (t.type === 'enemy') o.grade = xf.grade || '';
         /* きょうだいの上下の欄（義理のきょうだいは親族＋step に開いているので、元の t の値を見る） */
-        if (/^(sibling|sibclose|sibbad)$/.test(t.type) || (t.type === 'relative' && t.step)) { var el0 = t.elder; if (el0 && HK.SIB_ELDER[el0]) o.elder = el0; }
+        if (/^(sibling|sibclose|sibbad|twin)$/.test(t.type) || (t.type === 'relative' && t.step)) { var el0 = t.elder; if (el0 && HK.SIB_ELDER[el0]) o.elder = el0; }
         /* きょうだい：二人の性別・年齢から決めた関係名（「姉弟（庇護）」など。sib-word.js）を覚えておく（HK.tieLabel が使う） */
         if (HK.Sib && HK.Sib.isSibTie(o)) o.sibLab = HK.Sib.tieLabel(o, A, B) || '';
         if (t.type === 'benefactor') o.feel = xf.feel || 'thanks';
@@ -1252,7 +1264,7 @@
     },
     /* 「守りたい相手」の候補（恋人・親子・親友・主従・片想いなど） */
     focusFor: function (ctx, a) {
-      var best = null, bv = 0, PRI = { lover: 5, parent: 5, pparent: 5, sibprot: 5, crush: 4, best: 4, master: 4, mentor: 3, almost: 3, sibling: 3, sibclose: 3, teacher: 2, childhood: 2, fwb: 2, friend: 1, colleague: 1, buddy: 4, senpai: 2, fiance: 3, comrade: 1 };
+      var best = null, bv = 0, PRI = { lover: 5, parent: 5, pparent: 5, sibprot: 5, crush: 4, best: 4, master: 4, mentor: 3, almost: 3, sibling: 3, sibclose: 3, twin: 4, teacher: 2, childhood: 2, fwb: 2, friend: 1, colleague: 1, buddy: 4, senpai: 2, fiance: 3, comrade: 1 };
       var L0 = [];
       Object.keys(ctx.tiesAll || {}).forEach(function (k) { L0 = L0.concat(ctx.tiesAll[k]); });
       L0.forEach(function (t) {

@@ -177,7 +177,7 @@
   var REL_G = {
     colleague: 'work', boss: 'work', senpai: 'work',
     classmate: 'school', teacher: 'school', mentor: 'school',
-    parent: 'family', pparent: 'family', sibling: 'family', sibprot: 'family', sibclose: 'family', sibbad: 'family', stepsib: 'family', relative: 'family',
+    parent: 'family', pparent: 'family', sibling: 'family', sibprot: 'family', sibclose: 'family', twin: 'family', sibbad: 'family', stepsib: 'family', relative: 'family',
     enemy: 'hostile', rival: 'hostile', bad: 'hostile',
     friend: 'friend', best: 'friend', buddy: 'friend', childhood: 'friend', almost: 'friend',
     ex: 'ex', fwb: 'fwb', acq: 'stranger', noobs: 'stranger',

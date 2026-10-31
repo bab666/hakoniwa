@@ -231,7 +231,7 @@
      ・友達の前提（ずっと友達・友達のまま・友達に戻れない など）は、家族（親子・擬似親子・きょうだい・親族）か恋人どうしの組には使わない
      ・「付き合ってもいない」の前提は、恋人どうし（箱庭の中で恋人になった組・恋人の関係）には使わない */
   var FRIEND_TXT = /ずっとも|ずっと友|友達(?:じゃ|では|で|に|の)(?:いられ|戻れ|まま)|友人(?:では|で|に|の)(?:いられ|戻れ|まま)/, UNPAIRED_TXT = /付き合って(?:も)?いない|付き合ってない/;
-  var FAM_TIES = ['parent', 'pparent', 'sibling', 'sibprot', 'sibclose', 'sibbad', 'stepsib', 'relative'], LOVE_TIES = ['lover', 'spouse', 'mate', 'fiance', 'fated'];
+  var FAM_TIES = ['parent', 'pparent', 'sibling', 'sibprot', 'sibclose', 'twin', 'sibbad', 'stepsib', 'relative'], LOVE_TIES = ['lover', 'spouse', 'mate', 'fiance', 'fated'];
   function tieAny(ctx, a, b, l) { return !!(HK.Ties && HK.Ties.has && ctx.ties) && l.some(function (t) { return HK.Ties.has(ctx, a, b, t); }); }
   function relFits(ctx, t, a, b) {
     if (!b) return true;

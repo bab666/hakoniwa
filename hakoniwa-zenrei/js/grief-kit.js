@@ -28,7 +28,7 @@
 
   /* ---------- 関係の深さ（o から見た v） ---------- */
   var TIE_W = {
-    lover: 60, mate: 65, fated: 55, parent: 60, pparent: 55, sibprot: 60, sibclose: 55, sibling: 45, best: 50, buddy: 45,
+    lover: 60, mate: 65, fated: 55, parent: 60, pparent: 55, sibprot: 60, sibclose: 55, twin: 55, sibling: 45, best: 50, buddy: 45,
     childhood: 42, almost: 40, mentor: 35, teacher: 30, master: 30, friend: 22, senpai: 15, colleague: 12, ex: 18, fwb: 12, acq: 5, rival: 8,
     relative: 35, classmate: 16, boss: 20, benefactor: 22, worship: 22, fond: 26, blind: 34
   };
@@ -39,6 +39,7 @@
       case 'fated': return '運命の相手';
       case 'parent': case 'pparent': return '家族';
       case 'sibprot': case 'sibclose': case 'sibling': return 'きょうだい';
+      case 'twin': return '双子のきょうだい';
       case 'best': return '親友';
       case 'buddy': return '相棒';
       case 'childhood': return '幼なじみ';
@@ -352,7 +353,7 @@
      ・死ネタの重さ「穏やか」では、期間を一段短くし、場面を減らす
      ・亡くなった人は主語・話し手にしない（名前は「〇〇の」「〇〇を」の形と、台詞の中だけ）。遺体には触れない（遺体の残らない死でも同じ文で使える：遺品と名前だけ）
      ・一日の区切りの数：opt.perDay、なければ単位が「日」の箱庭の perUnit（なければ 1）。単位が日でない箱庭（月など）は、区切りの数で数える */
-  var MOURN_CLOSE = /^(?:lover|spouse|fiance|honmei|mate|fated|parent|pparent|sibprot|sibclose|sibling|stepsib|relative|best)$/;
+  var MOURN_CLOSE = /^(?:lover|spouse|fiance|honmei|mate|fated|parent|pparent|sibprot|sibclose|twin|sibling|stepsib|relative|best)$/;
   var MOURN_FRIEND = /^(?:friend|buddy|childhood|almost|mentor|teacher|senpai|colleague|classmate|comrade|boss|benefactor|crush|yan|worship|fond|blind|master|acq)$/;
   var MOURN_NO = /^(?:apathy|enemy|bad|sibbad|abuse|fear)$/;
   var MOURN_KIND_NAME = { close: '恋人・家族・親友', friend: '友人・仲間', acq: '顔見知り' };

@@ -86,7 +86,7 @@
   }
 
   /* ---------- 守る人（b を想う c）：恋人・親子・バディ・親友・信仰・恩人・主従・庇護など、または好意と信頼が高い ---------- */
-  var SYM = { lover: 1, spouse: 1, mate: 1, fiance: 1, fated: 1, best: 1, buddy: 1, childhood: 0.6, sibling: 0.7, sibclose: 0.9 };
+  var SYM = { lover: 1, spouse: 1, mate: 1, fiance: 1, fated: 1, best: 1, buddy: 1, childhood: 0.6, sibling: 0.7, sibclose: 0.9, twin: 1 };
   var DIR_A = { parent: 1, pparent: 1, sibprot: 1, worship: 1, fond: 0.7, blind: 0.9, crush: 0.8, honmei: 0.9, yan: 0.9, mentor: 0.6, benefactor: 0.6 };
   var DIR_B = { master: 1, benefactor: 0.9, mentor: 0.6 };
   function roleOf(t, c) { var D = TIES[t.type] || {}; return D.dir ? (t.a === c.i ? D.roleA : D.roleB) : D.label; }
