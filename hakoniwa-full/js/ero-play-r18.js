@@ -33,31 +33,14 @@
   EP.SCEN = { whiteroom: 1, locker: 1, omega: 1, goukon: 1, island: 1, zombie: 1 };
   EP.log = null;
   var ATTS = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite'];
-  var KINDS = ['sadist', 'maso', 'mean', 'sweet', 'shy'];
 
-  /* ---------- 夜の性格の二軸（E4 の窓口が無いときは同じ意味の代替） ---------- */
-  function kindOf(a, b) {
-    var A = HK.Attr;
-    if (A.nightKind) return A.nightKind(a, b) || '';
-    var v = A.nightOf ? A.nightOf(a, b) : '';
-    return KINDS.indexOf(v) >= 0 ? v : '';
-  }
-  function attOf(a, b) {
-    var A = HK.Attr;
-    if (A.nightAtt) { var w = A.nightAtt(a, b); if (ATTS.indexOf(w) >= 0) return w; }
-    var v = A.nightOf ? A.nightOf(a, b) : '';
-    if (ATTS.indexOf(v) >= 0) return v;
-    var p = HK.personaOf ? HK.personaOf(a) : a && a.persona;
-    return ATTS.indexOf(p) >= 0 ? p : 'gentle';
-  }
-  /* 相手に合わせる（相手の嗜好に付き合っている）：E4 の窓口 HK.Attr.nightAccom。無ければ生の値が 'match' */
-  function accomOf(a, b) {
-    var A = HK.Attr;
-    if (HK.SAFE_ON || !a) return false;
-    if (A.nightAccom) return !!A.nightAccom(a, b);
-    var v = (b && b.i != null && a.nightFor && a.nightFor[b.i]) || a.night || (a.src && a.src.night) || '';
-    return v === 'match' && !!kindOf(a, b);
-  }
+  /* ---------- 夜の性格の二軸（attr.js の窓口。仕様は docs/reports/2026-10-31/night-attitude.md） ---------- */
+  /* 夜の性格の種類：sadist／maso／mean／sweet／shy／''（態度の値を選んだ人・おまかせは ''） */
+  function kindOf(a, b) { var A = HK.Attr; return (A.nightKind && A.nightKind(a, b)) || ''; }
+  /* 態度：夜の性格で選んだ態度か、気質から（9 種） */
+  function attOf(a, b) { var A = HK.Attr, w = A.nightAtt ? A.nightAtt(a, b) : ''; return ATTS.indexOf(w) >= 0 ? w : 'gentle'; }
+  /* 相手に合わせる（本人は乗り気でなくても、相手の嗜好に付き合っている） */
+  function accomOf(a, b) { var A = HK.Attr; return !HK.SAFE_ON && !!(A.nightAccom && A.nightAccom(a, b)); }
   EP.kindOf = kindOf; EP.attOf = attOf; EP.accomOf = accomOf;
   /* 攻めの進め方の列：夜の性格の種類（sadist・mean・sweet・shy）か、態度 */
   function mKey(T, U) { var k = kindOf(T, U); return k && k !== 'maso' ? k : attOf(T, U); }
@@ -346,7 +329,7 @@
     pros: '{後ろ}の奥の弱いところを、{a}に暴いてもらうこと',
     colon: 'いつもは届かない奥の奥まで、{a}に満たされること',
     nip: '{乳首}を、{a}にじっくり責めてもらうこと',
-    throat: '{a}の{男性器}を、喉の奥まで受け入れること'
+    throat: '{a}の{男性器}を、喉の奥まで咥え込むこと'
   };
   var WHY = {
     sadist: L('{a}の中で、{b}をもっと乱れさせたいという欲が、静かに頭をもたげた。|{a}は、{b}が崩れていく顔をもっと見たくなった。'),
@@ -567,9 +550,10 @@
     var x = plan.init === 'b' ? '{b}' : (src === 'lib' && plan.lx === U ? '{b}' : '{a}');
     var t = pickF(R, WHY[src]).replace(/\{x\}/g, x);
     if (plan.force) return t;
-    if (plan.accT) t = pickF(R, ACCOM.whyT);
-    var want = (plan.init === 'b' ? WANT_B : WANT_A)[key];
-    t += pickF(R, plan.init === 'b' ? ASK_B : ASK_A).replace('{want}', want);
+    var want = (plan.init === 'b' ? WANT_B : WANT_A)[key], ask = pickF(R, plan.init === 'b' ? ASK_B : ASK_A).replace('{want}', want);
+    /* 攻めが付き合う：受けが求め、攻めが「望んでいるから」応える順に */
+    if (plan.accT) t = plan.init === 'b' ? ask + pickF(R, ACCOM.whyT) : pickF(R, ACCOM.whyT) + ask;
+    else t += ask;
     if (plan.accU) t += pickF(R, ACCOM.whyU);
     return t;
   }
@@ -634,7 +618,7 @@
     var Q = P();
     EP.log.push({
       scen: RUN.scen, t: T.name, u: U.name, keys: plan ? plan.keys.slice() : [], init: plan ? plan.init : '', why: plan ? plan.why.slice() : [], force: !!(plan && plan.force),
-      kT: kindOf(T, U), kU: kindOf(U, T), aT: attOf(T, U), aU: attOf(U, T), mode: o.mode, combo: combo(T, U, o.mode), ero: !!o.ero, src: o.src || '',
+      kT: kindOf(T, U), kU: kindOf(U, T), aT: attOf(T, U), aU: attOf(U, T), accT: accomOf(T, U), accU: accomOf(U, T), mode: o.mode, combo: combo(T, U, o.mode), ero: !!o.ero, src: o.src || '',
       anat: plan ? plan.keys.every(function (k) { return anatOk(k, T, U, o.mode); }) : true,
       uHasF: hasF(U), uHasM: hasM(U), tHasM: hasM(T), hardTopU: !!(Q && Q.hardTop && Q.hardTop(U, T)),
       trig: built ? built.fore.concat(built.mid).length > 0 : false,
