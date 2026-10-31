@@ -7,6 +7,8 @@
   'use strict';
   var HK = window.HK = window.HK || {};
   var M = HK.ScenMeta = {
+    /* R18版にしかない箱庭（全年齢版には本体がない）。一覧のカードを成人向けの色（ピンク）にする（ui.js の cardOf。2026-10-31 利用者の指示） */
+    r18only: ['dungeon', 'hole', 'kaihen', 'succubus', 'variety'],
     /* 人数・R18 を外すと何も残らないキャッチコピーの代わり */
     kicker: { dungeon: '罠・探索', massage: 'あやしい施術', hole: '壁の穴・放置', kaihen: '日常のずれ', succubus: '夜の街・比べられる', saimin: 'いたずら', variety: 'テレビ番組・対決', locker: '密室', futari: '同居・デート' },
     /* 一覧カードの短い説明（20〜28字・1文。2026-10-27 に短くした。スマホでも2列で約3行に収まるように）。R18版と全年齢版で違うものは［全年齢, R18版］ */

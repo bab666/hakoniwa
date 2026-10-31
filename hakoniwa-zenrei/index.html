@@ -89,6 +89,8 @@
   --kill: #4B1F1F; --partner: #2C7D61; --friend: #3F7F8B; --guard: #4A5A9C;
   /* R-18 は色の面を使わず、枠線とモノスペースのタグで示す */
   --adult-bg: var(--paper); --adult-line: var(--line2); --adult-tag: var(--ai); --adult-tag-ink: var(--paper);
+  /* R18版にしかない箱庭のカード（.scen.r18only）：成人向けのピンク（2026-10-31 利用者の指示） */
+  --r18only-bg: #FDF1F5; --r18only-line: #E9A9C0;
   /* 派閥の色（view-map.js） */
   --fc0: #e8590c; --fc1: #1c7ed6; --fc2: #2b8a3e; --fc3: #ae3ec9; --fc4: #c92a2a; --fc5: #0c8599;
   --p0: #c0392b; --p1: #2471a3; --p2: #1e8449; --p3: #9a6f00; --p4: #7d3c98; --p5: #b0498a;
@@ -103,6 +105,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"], [data-theme="gray"]) {
     --ai: #BAC4DA; --paper: #111217;   /* 担当JG（2026-10-28）：黒版のまぶしさを抑える（前は #C9D4EC／#0A0B0F、本文 13.2:1 → 10.7:1） */
+    --r18only-bg: #2A1820; --r18only-line: #6E3A4E;
     --k-muted2: 78%; --k-muted: 72%; --k-mid: 68%; --k-line2: 32%; --k-line: 17%; --k-soft: 12%; --k-bg1: 5%;
     --hot: #FF5C7A;
     --love: #EC7A9C; --pine: #E39AB5; --night: #C597DE; --obsess: #A98BE0; --enemy: #E57A62;
@@ -116,6 +119,7 @@
 }
 :root[data-theme="dark"] {
   --ai: #BAC4DA; --paper: #111217;   /* 担当JG（2026-10-28）：黒版のまぶしさを抑える（前は #C9D4EC／#0A0B0F、本文 13.2:1 → 10.7:1） */
+  --r18only-bg: #2A1820; --r18only-line: #6E3A4E;
   --k-muted2: 78%; --k-muted: 72%; --k-mid: 68%; --k-line2: 32%; --k-line: 17%; --k-soft: 12%; --k-bg1: 5%;
   --hot: #FF5C7A;
   --love: #EC7A9C; --pine: #E39AB5; --night: #C597DE; --obsess: #A98BE0; --enemy: #E57A62;
@@ -129,6 +133,7 @@
 /* グレー（data-theme="gray"）：端末が暗い設定でも「自動」の黒にしない（上の :not(…, [data-theme="gray"])。:not に並べて書くのは、詳しさを上げて「藍のみ」の規則に勝たないように）。以前の版に近い落ち着いたグレーの紙。文字は藍のまま、面・罫線は紙に藍を混ぜて少し暗いグレー。まぶしさを抑える（本文・補助の文字は 4.5:1 以上） */
 :root[data-theme="gray"] {
   --paper: #E9EBEE;
+  --r18only-bg: #F3E3E9; --r18only-line: #D59DB3;
   --k-muted2: 80%; --k-muted: 74%; --k-mid: 72%; --k-line2: 30%; --k-line: 16%; --k-soft: 9%; --k-bg1: 4%;
   --hot: #C11F38;
   color-scheme: light;
@@ -881,6 +886,8 @@ button:where(:not([class])):focus-visible { outline: 2px solid var(--ink); outli
 .scen .ftag:hover, .scen .ftag:focus-visible { border-color: var(--ink); color: var(--ink); outline: none; }
 .scen.adult { background: var(--adult-bg); border-color: var(--adult-line); }
 .scen.adult.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--bg1); }
+.scen.r18only { background: var(--r18only-bg); border-color: var(--r18only-line); }
+.scen.r18only.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--r18only-bg); }
 /* 箱庭カードの R18 の札：重要の赤（--hot。黒版は #FF5C7A、色の量「藍のみ」では藍に落ちる）。文字と細い枠を赤に */
 .r18tag { display: inline-block; padding: 0 5px; margin-left: 2px; border: 1px solid var(--hot); border-radius: 2px; background: none; color: var(--hot); font-family: var(--f-num); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; line-height: 1.5; }
 .site-foot .updated { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
@@ -1136,7 +1143,7 @@ details.zmap > summary:hover { background: var(--bg1); }
 
 <script>window.HK_SAFE_BUILD = 1;</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"477822f1cf","api":1,"build":"zenrei","core":"js/c/core.a72c29c715.js",
+<script>window.HK_MANIFEST={"v":"e90c5ddce2","api":1,"build":"zenrei","core":"js/c/core.5e6dd137bd.js",
 "chunks":{
   "late":{"src":"js/c/late.32a61f6c67.js","br":90272,"deps":[]},
   "pack-rel":{"src":"js/c/pack-rel.b86f513a2b.js","br":239056,"deps":[]},
@@ -1218,7 +1225,7 @@ details.zmap > summary:hover { background: var(--bg1); }
   "rpg":{"id":"rpg","name":"ダンジョンRPG","kicker":"パーティ・冒険","desc":"パーティを組んでダンジョンへ。階ごとにランダムな戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、誰が宝箱に手を伸ばし、どこで引き返すのか。地下30階の主を倒せば踏破、引き返せば帰還、全員倒れれば全滅。","solo":true,"minCast":1,"maxCast":6,"unit":"階","castHint":"1〜6人のパーティで潜ります。職業は「おまかせ」ならエゴグラムから決まります。前に出るか、宝箱を開けるか、引き返すかは気質の数値で決まります。踏破できるのは一割ほど。多くは途中で引き返します。","env":[{"id":"floors","label":"目標の階層"},{"id":"danger","label":"魔物の強さ"},{"id":"loot","label":"お宝の多さ"},{"id":"retreat","label":"撤退"}],"stats":[{"id":"str","label":"腕っぷし"},{"id":"luck","label":"運"},{"id":"int","label":"知能"}],"perFields":[{"id":"job","label":"職業","auto":"おまかせ（エゴグラムから）","options":[{"id":"warrior","label":"戦士"},{"id":"mage","label":"魔法使い"},{"id":"priest","label":"僧侶"},{"id":"thief","label":"盗賊"},{"id":"hunter","label":"狩人"},{"id":"bard","label":"吟遊詩人"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"パーティでダンジョンに潜り、いくら持ち帰れるか。","descLong":"パーティを組んでダンジョンへ。階ごとに戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、どこで引き返し、いくら持ち帰れるか。"},"tags":["relSome","race","job","undead","death"],"chunks":["scen-rpg"]},
   "jinro":{"id":"jinro","name":"人狼","kicker":"ゲーム・推理","desc":"住人どうしで人狼ゲーム。配役は人狼・狩人・占い師・霊媒師・村人からランダム。人狼は性格で戦法（騙り・潜伏・仲間切り・庇い合い）を選び、村は仕切り役しだいで方針（ローラー・真贋の見極め・グレー吊り）が変わる。信頼と協力、そして裏切り。知能は性格とは別に決まる。","solo":true,"minCast":4,"maxCast":15,"unit":"日","castHint":"4〜15人。配役の数は環境値で決めます（人狼は全体の半分未満に自動で調整）。ゲームなので、襲う相手や投票先は既存の関係と関係なく、推理と立ち回りで決まります。","env":[{"id":"wolves","label":"人狼の数"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"lovemode","label":"好意モード"},{"id":"prize","label":"賞品"},{"id":"prizeText","label":"賞品（自由に書く）"}],"stats":[{"id":"int","label":"知能"},{"id":"poker","label":"ポーカーフェイス"}],"perFields":[{"id":"role","label":"配役","auto":"ランダム","options":[{"id":"wolf","label":"人狼"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"vill","label":"村人"}]}],"card":{"desc":"住人どうしの人狼ゲーム、騙りと推理と裏切り。","descLong":"住人どうしで人狼ゲーム。人狼は性格で騙りや潜伏を選び、村は仕切り役しだいで方針が変わる。信頼と協力、そして裏切り。"},"tags":["relSome","night","race","death"],"chunks":["scen-jinro"]}},
 "tones":{"auto":["aniki","proud","stern","tsun","gentle","devoted","cool","free","shy","polite"],"pack":{"mixed":"tone-mixed","cool_soft":"tone-cool-soft","boku_n":"tone-boku-n","noja":"tone-noja","kansai":"tone-kansai","mukuchi":"tone-mukuchi","gentleman":"tone-gentleman","ane":"tone-ane","calm":"tone-calm","chara":"tone-chara","darui":"tone-darui","devoted_p":"tone-devoted-p","genki":"tone-genki","gentle_n":"tone-gentle-n","gyaru":"tone-gyaru","hero":"tone-hero","kohai":"tone-kohai","mystic":"tone-mystic","ojou":"tone-ojou","tsun_n":"tone-tsun-n","usan":"tone-usan","yankee":"tone-yankee","sondai":"tone-sondai","god":"tone-god","darui_lite":"tone-darui-lite","keigo_sarc":"tone-keigo-sarc","keigo_bossy":"tone-keigo-bossy","keigo_flat":"tone-keigo-flat","keigo_twist":"tone-keigo-twist","mukuchi_ne":"tone-mukuchi-ne","otaku":"tone-otaku","ronkyaku":"tone-ronkyaku","chara_down":"tone-chara-down","flat_plain":"tone-flat-plain","tame":"tone-tame","tsun_soft":"tone-tsun-soft","gentle_m":"tone-gentle-m","honwaka":"tone-honwaka","darui_talk":"tone-darui-talk"}}};</script>
-<script src="js/c/core.a72c29c715.js"></script>
+<script src="js/c/core.5e6dd137bd.js"></script>
 <!-- scripts:end -->
 
 </body></html>
