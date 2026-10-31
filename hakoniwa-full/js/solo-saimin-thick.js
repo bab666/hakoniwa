@@ -282,6 +282,8 @@
     /* 口で尽くしている側は声を出せないので、尽くされる側（{T}）の声を添える */
     if (!E && T4 && T4.SUB2) pe = (kb === 'kneel' || kb === 'lick' ? '{T}「' + pk(R, noIn((T4.DOM && T4.DOM[spT]) || T4.SUB2[spT] || T4.SUB2.gentle)) + '」' : '{B}「' + pk(R, noIn(T4.SUB2[spB] || T4.SUB2.gentle)) + '」') + pe;
     out.push(pe);
+    /* プレイの段・能動性の型・催眠専用の段を差す口（solo-ero3-r18.js の HK.SoloEro3。段落は［体］［暗示の言葉と声］［律動］［崩れ方］［絶頂］。2026-10-31 担当E3a） */
+    if (SM.ero3) out = SM.ero3(S, p, ro, out, E) || out;
     var t = out.join('\n\n');
     if (E) {
       t = t.replace(/\{mB([012])\}/g, function (m, n) { return moan(R, B, +n, false); })

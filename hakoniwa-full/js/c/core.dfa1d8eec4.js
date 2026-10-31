@@ -27204,7 +27204,7 @@ var PS=['proud','stern','tsun','gentle','devoted','cool','free','shy','polite'];
 var PL=HK.PosLead={NARR:NARR,SAY:SAY,log:null};
 PL.of=function(T,U){
 if(HK.SAFE_ON|| !T|| !U||T===U|| !P.leadOf)return'';
-var v=P.leadOf(U)||P.leadOf(T);
+var v=P.leadOf(U);
 return v==='sasoi'||v==='osoi'?v:'';
 };
 function anyLead(x,y){return!HK.SAFE_ON&& !!(P.leadOf&&(P.leadOf(x)||P.leadOf(y)));}
@@ -44108,7 +44108,7 @@ return saved.length?function(){saved.forEach(function(s){s[0].fp=s[1];});}:null;
 });
 ;
 /* ==== js/rel-bad-story.js ==== */
-HK.Load.def(505,'js/rel-bad-story.js',function(){
+HK.Load.def(512,'js/rel-bad-story.js',function(){
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story;
@@ -44290,4 +44290,4 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
-HK.Load.done('core', 'aeb7e802c8', 1);
+HK.Load.done('core', 'dfa1d8eec4', 1);

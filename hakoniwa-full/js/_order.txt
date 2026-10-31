@@ -543,6 +543,7 @@ tone js/tone-brush7b.js
 tone js/tone-brush7b-r18.js
 tone js/tone-brush8a-r18.js
 tone js/tone-brush8b-r18.js
+tone js/tone-brush8c-r18.js
 tone js/tone-brush8d-r18.js
 late js/tone-hero.js
 late js/tone-genki.js
@@ -585,12 +586,20 @@ js/solo-succubus-types.js @scen:succubus
 js/solo-succubus-ero.js @scen:succubus
 js/solo-saimin-ero.js @scen:saimin
 js/solo-saimin-thick.js @scen:saimin
+js/saimin-ero3-r18.js @scen:saimin
 js/solo-variety-extra.js @scen:variety
 js/solo-erotic-more-a.js @scen:kaihen
 js/solo-erotic-more-a-succubus.js @scen:succubus
 js/solo-erotic-more-b.js @scen:saimin
 js/solo-erotic-more-b-variety.js @scen:variety
 js/solo-variety-thick.js @scen:variety
+# 一人用の箱庭の専用の段（文の表だけ。差し込みは late の solo-ero3-r18.js。2026-10-31 担当E3a）
+js/massage-ero3-r18.js @scen:massage
+js/hole-ero3-r18.js @scen:hole
+js/dungeon-ero3-r18.js @scen:dungeon
+js/kaihen-ero3-r18.js @scen:kaihen
+js/succubus-ero3-r18.js @scen:succubus
+js/variety-ero3-r18.js @scen:variety
 js/jashin-fx-b.js @scen:jashin
 js/jashin-place.js @scen:jashin
 js/ship-xeno-thick.js @scen:ship
@@ -612,6 +621,8 @@ late js/attr-r18.js
 late js/attr-race-r18.js
 # 前立腺・結腸・乳首・喉奥の段（共通の山場の差し込み口 raceWeave／ロッカーの racePlay を包む。attr-race-r18.js の後）
 late js/ero-play-r18.js
+# 一人用の箱庭（催眠・マッサージ・遮断穴・ダンジョン・常識改変・サキュバス・バラエティ）の山場に、プレイの段・能動性の型・箱庭専用の段を差す（ero-play-r18.js・ero-initiative-r18.js の後）
+late js/solo-ero3-r18.js
 # 物語型（邪神村・吹雪の館・宇宙船・人狼）・合意のない喉奥と結腸（敵対・恐怖の強引な夜）・媚薬ロッカーの三人以上に、プレイの段と能動性の型を取り付ける（ero-play-r18.js の後。箱庭ごとの文は各 scen。担当E3b）
 late js/story-ero3-r18.js
 js/jashin-ero3-r18.js @scen:jashin
