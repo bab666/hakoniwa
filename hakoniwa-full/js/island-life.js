@@ -7,6 +7,8 @@
   function R(ctx, a, b) { return ctx.R(a, b); }
   function names(list) { return list.map(function (c) { return c.name; }).join('・'); }
   function pk(ctx, arr) { return arr[ctx.rng.int(arr.length)]; }
+  /* 料理を褒める住人の一言（3 本。base-lint が行の中の「」を 1 つの台詞と読むので外に出す） */
+  var FAN_CHEER = ['おかわり！｜おかわりだ！｜おかわり、ください！', 'ねえ、これ帰ってからも作って｜なあ、これは帰ってからも作ってくれ｜あの、これ、帰ってからも作ってください', '料理人だったの？｜料理人だったのか？｜料理人だったんですか？', 'もう帰らなくていいかも｜もう帰らなくてもいいかもしれない｜もう帰らなくていいかもしれません'];
   function sk(ctx, c, id) { return ctx.stat(c, id); }
 
   /* ---------- 得意分野 ---------- */
@@ -112,7 +114,7 @@
     var line = parts.join('。') + '。' + cook.name + (help ? 'と' + help.who.name : '') + 'が「' + dish + '」を作った。' + (D.season ? '味付けは' + D.season + '。' : '') + D.taste;
     if (q >= 3 && P.length > 2 && rng() < 0.6) {
       var fan = ctx.most(ctx.others(cook), function (c) { return c.tr.fc + c.tr.warmth; });
-      line += fan.name + '「' + pk(ctx, ['おかわり！', 'ねえ、これ帰ってからも作って', '料理人だったの？', 'もう帰らなくていいかも']) + '」';
+      line += fan.name + '「' + pk(ctx, FAN_CHEER) + '」';
     }
     if (help) ctx.act2({ actors: [help.who, cook], cat: help.cat, fx: help.fx, text: help.text, why: help.why + (help.dq > 0 ? '（料理の出来が上がった）' : help.dq < 0 ? '（料理の出来が下がった）' : ''), mag: 6 });
     ctx.act2({ actors: [cook], cat: q >= 2 ? 'bond' : 'help', fx: fx, text: line, why: cook.name + 'の料理 ' + sk(ctx, cook, 'cook') + '・食材「' + best.name + '」', mag: q * 3 });
@@ -297,3 +299,4 @@
     }
   ]);
 })();
+/* @event-ok 台詞を3本に（口調直し第8回） */
