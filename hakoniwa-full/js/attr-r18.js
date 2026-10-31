@@ -122,37 +122,114 @@
   };
   A.NIGHT_POOLS = { TOP: TOP, BOT: BOT, TOP_E: TOP_E, BOT_E: BOT_E };
 
+  /* ---------- 相手に合わせる（match）で、相手の嗜好に付き合う人の一文（2026-10-31 利用者の補足。担当E4） ----------
+     本人はそこまで乗り気でなくても、相手の望む役を引き受ける。内心は本人の態度（A.nightAtt：選んだ態度か気質）のまま、終わったあとに一言。
+     ACC_WANT：相手の夜の性格（{p}＝相手）ごとの「相手が求めているもの」の一文。ACC_TOP／ACC_BOT：付き合う人が攻め（{a}）／受け（{b}）のときの、態度 9 種の一文。
+     体の部位・挿入の向きは書かない（男×女・女×女・女攻め×男のどの組でも成り立つ書き方）。台詞は 3 本（くだけた常体｜硬い常体｜敬語） */
+  var ACC_WANT = {
+    maso: '{p}が求めているのは、少し手荒に扱われることだった。',
+    sadist: '{p}が求めているのは、思うままに責め立てることだった。',
+    mean: '{p}が求めているのは、意地悪くからかって焦らすことだった。',
+    shy: '{p}が求めているのは、恥じらうところを意地悪く暴かれることだった。',
+    sweet: '{p}が求めているのは、とろけるほど甘やかし合うことだった。'
+  };
+  var ACC_TOP = {
+    proud: '{a}は乗り気ではなかったが、主導権まで渡すつもりはないという顔で、その望みに付き合ってやった。事が済むと、{a}は乱れた前髪をかき上げた。{a}「……これで満足かよ｜……これで満足か｜……これで満足ですか」',
+    stern: '{a}は小さく息をつき、務めを果たすような律儀さで、慣れない役を最後まで引き受けた。終わったあと、{a}は姿勢を正して{b}を見た。{a}「……これでいいのか｜……これで良いのだな｜……これでよろしいですか」',
+    tsun: '{a}は「別にしたいわけじゃない」と顔に書いたまま、それでも{b}の望みどおりに動いた。終わったあと、{a}はそっぽを向いた。{a}「……あなたがしてほしいって言うから、付き合っただけだからね｜……あなたが望んだから付き合っただけだ。勘違いするな｜……あなたが望んだから付き合っただけです。勘違いしないでください」',
+    gentle: '{a}は少し困ったように笑い、それでも{b}の望みを叶えてやりたくて、慣れない役を引き受けた。終わったあと、{a}は{b}の髪をそっと撫でた。{a}「……これで満足？　つらくなかった？｜……これで満足か。つらくなかったか｜……これで満足ですか。つらくありませんでしたか」',
+    devoted: '{a}は自分の好みは脇に置いて、{b}が喜ぶならと、一所懸命にその役を務めた。終わったあと、{a}はおずおずと{b}の顔をうかがった。{a}「……ちゃんとできてた？｜……ちゃんとできていたか｜……ちゃんとできていましたか」',
+    cool: '{a}は表情ひとつ変えず、{b}の反応を確かめながら、求められた役を淡々とこなした。終わったあと、{a}は静かに{b}を見下ろした。{a}「……これで満足？｜……これで満足か｜……これで満足ですか」',
+    free: '{a}は「まあ、たまにはいいか」と肩をすくめて、{b}の望みに乗ってみせた。終わったあと、{a}は笑って{b}の頬をつついた。{a}「で、これで満足？｜で、これで満足か｜それで、これで満足ですか」',
+    shy: '{a}は真っ赤になって目を泳がせながらも、{b}の望みだからと、ぎこちなくその役を引き受けた。終わったあと、{a}は両手で顔を覆った。{a}「……こ、これで満足？｜……こ、これで満足か｜……こ、これで満足ですか」',
+    polite: '{a}は内心の戸惑いを丁寧な物腰の下に隠し、{b}の望みに最後まで付き合った。終わったあと、{a}は乱れた襟を直して小さく頭を下げた。{a}「……これで、満足してもらえた？｜……これで、満足してもらえたか｜……これで、ご満足いただけましたか」'
+  };
+  var ACC_BOT = {
+    proud: '{b}は本意ではなかったが、{a}の望みに付き合ってやることにした。組み敷かれても、目だけは最後まで負けていなかった。終わったあと、{b}は息を整えて{a}を睨んだ。{b}「……これで満足かよ｜……これで満足か｜……これで満足ですか」',
+    stern: '{b}は唇を引き結び、それが{a}の望みならと、己を律したままその役を受け入れた。終わったあと、{b}は乱れた息を静かに整えた。{b}「……これで気が済んだか｜……これで気が済んだか｜……これで気が済みましたか」',
+    tsun: '{b}は「仕方なく付き合ってあげるだけ」という顔を崩さないまま、{a}の望むとおりに身を委ねた。終わったあと、{b}は枕に顔を押しつけた。{b}「……今日だけだからね｜……今日だけだ｜……今日だけですからね」',
+    gentle: '{b}は少し戸惑いながらも、{a}がそうしたいならと、柔らかく笑ってその役を受け入れた。終わったあと、{b}は{a}の背中をそっと撫でた。{b}「……これで満足？｜……これで満足か｜……これで満足ですか」',
+    devoted: '{b}は自分の好みよりも{a}の望みを選び、懸命にその役に応えた。終わったあと、{b}は息を切らしたまま{a}を見上げた。{b}「……満足、してくれた？｜……満足、してくれたか｜……満足、していただけましたか」',
+    cool: '{b}は醒めた目のまま、{a}の望む役を引き受けた。熱に呑まれても、頭のどこかは冷静なままだった。終わったあと、{b}は乱れた髪を払った。{b}「……これで満足？｜……これで満足か｜……これで満足ですか」',
+    free: '{b}は「付き合ってあげる」と笑って、{a}の望みに軽やかに乗った。終わったあと、{b}は{a}の胸に頬杖をついた。{b}「ねえ、これで満足？｜で、これで満足か｜それで、これで満足ですか」',
+    shy: '{b}は耳まで赤くしながらも、{a}の望みだからと、震える体でその役を受け入れた。終わったあと、{b}はシーツに顔を埋めた。{b}「……こ、これで満足？｜……こ、これで満足か｜……こ、これで満足ですか」',
+    polite: '{b}は戸惑いを穏やかな微笑みの下に隠し、{a}の望みに最後まで付き合った。終わったあと、{b}は乱れた息のまま小さく頭を下げた。{b}「……満足、してもらえた？｜……満足、してもらえたか｜……ご満足、いただけましたか」'
+  };
+  A.ACCOM_POOLS = { WANT: ACC_WANT, TOP: ACC_TOP, BOT: ACC_BOT };
+  /* 付き合う人 who（role 'a'＝攻め／'b'＝受け）の一文（{a}{b} のまま）を [始まりのあとに置く部分, 事後に置く部分（「終わったあと」「事が済むと」から）] で。
+     相手の夜の性格が分からなければ ['', ''] */
+  function accText(who, other, role) {
+    var pk = A.nightKind(other, who), at = A.nightAtt(who, other), w = ACC_WANT[pk], P = role === 'a' ? ACC_TOP : ACC_BOT;
+    if (!w) return ['', ''];
+    var t = P[at] || P.gentle, i = t.search(/終わったあと|事が済むと/);
+    return [w.replace(/\{p\}/g, role === 'a' ? '{b}' : '{a}') + (i > 0 ? t.slice(0, i) : t), i > 0 ? t.slice(i) : ''];
+  }
+  /* 点検・ほかの場面用：付き合う一文の全体（{a}{b} のまま） */
+  A.accomText = function (T, U, role) { var r = role === 'b' ? accText(U, T, 'b') : accText(T, U, 'a'); return r[0] + r[1]; };
+
   /* 夜の性格の一文（{a}{b} のまま）。T＝攻め・U＝受け、mode：mf／fm／ff。どちらにも夜の性格がなければ、乱数を使わずに '' */
   /* only：'top'＝攻めの文だけ／'bot'＝受けの文だけ（三人の場面で、受けの崩れ方を攻めごとに繰り返さないために） */
   A.nightText = function (T, U, mode, pick, ero, only) {
     if (!T || !U || HK.SAFE_ON) return '';
     var nt = only === 'bot' ? '' : A.nightOf(T, U), nb = only === 'top' ? '' : A.nightOf(U, T);
-    if (!TOP[nt] && !BOT[nb]) return '';
+    /* 相手に合わせて付き合っている人（A.nightAccom）は、役の一文の代わりに「付き合う」一文（乱数は使わない。態度と相手の夜の性格で決まる） */
+    var at = !!nt && A.nightAccom(T, U), ab = !!nb && A.nightAccom(U, T);
+    if (!TOP[nt] && !BOT[nb] && !at && !ab) return '';
     /* 受けが攻め指定の組（向きの決まらない組）には足さない（自分で攻めを選んだ人を受けにしない） */
     if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(U, T)) return '';
     var m = mode === 'ff' || mode === 'fm' ? mode : 'mf', out = '', labels = [];
-    if (TOP[nt]) { out += pick(((ero ? TOP_E : TOP)[nt] || TOP[nt])[m]); labels.push(T.name + '＝' + NAME[nt] + (A.STYLE[nt] ? '（抱き方：' + (STYLE_JP[A.STYLE[nt]] || A.STYLE[nt]) + '）' : '')); if (A.log) A.log.push({ who: T.name, role: 'a', night: nt, a: T.name, b: U.name }); }
-    if (BOT[nb]) { out += pick(((ero ? BOT_E : BOT)[nb] || BOT[nb])[m]); labels.push(U.name + '＝' + NAME[nb]); if (A.log) A.log.push({ who: U.name, role: 'b', night: nb, a: T.name, b: U.name }); }
-    if (out) mark(out, labels);
+    var ta = at ? accText(T, U, 'a') : ['', ''], tb = ab ? accText(U, T, 'b') : ['', ''], aft = '';
+    /* 事後の一言（「終わったあと…」）は、記録の終わりに足す（tag。記録に差し込んだ一文が見つかったとき） */
+    var nm = function (t) { return t.replace(/\{a\}/g, T.name).replace(/\{b\}/g, U.name); };
+    aft = nm(ta[1]) + nm(tb[1]); ta = ta[0]; tb = tb[0];
+    if (ta) { out += ta; labels.push(T.name + '＝相手に合わせる（' + U.name + 'の' + NAME[A.nightKind(U, T)] + 'に付き合う）'); if (A.log) A.log.push({ who: T.name, role: 'a', night: nt, accom: true, a: T.name, b: U.name }); }
+    else if (TOP[nt]) { out += pick(((ero ? TOP_E : TOP)[nt] || TOP[nt])[m]); labels.push(T.name + '＝' + NAME[nt] + (A.STYLE[nt] ? '（抱き方：' + (STYLE_JP[A.STYLE[nt]] || A.STYLE[nt]) + '）' : '')); if (A.log) A.log.push({ who: T.name, role: 'a', night: nt, a: T.name, b: U.name }); }
+    if (tb) { out += tb; labels.push(U.name + '＝相手に合わせる（' + T.name + 'の' + NAME[A.nightKind(T, U)] + 'に付き合う）'); if (A.log) A.log.push({ who: U.name, role: 'b', night: nb, accom: true, a: T.name, b: U.name }); }
+    else if (BOT[nb]) { out += pick(((ero ? BOT_E : BOT)[nb] || BOT[nb])[m]); labels.push(U.name + '＝' + NAME[nb]); if (A.log) A.log.push({ who: U.name, role: 'b', night: nb, a: T.name, b: U.name }); }
+    if (out) mark(out, labels, aft, [nm(ta), nm(tb)].filter(Boolean));
     return out;
   };
   /* 記録の理由書きに「夜の性格：〇〇＝サド（抱き方：荒い）」を足す（利用者が、夜の性格が効いたことを確かめられるように）。
      差し込んだ文の、名前の印を含まない一片で記録を見つける */
   var NAME = {}; A.NIGHT.forEach(function (x) { NAME[x[0]] = x[1]; });
-  var STYLE_JP = { rough: '荒い', tease: '焦らす', gentle: '優しい', clumsy: '不慣れ' };
+  var STYLE_JP = { rough: '荒い', tease: '焦らす', gentle: '優しい', clumsy: '不慣れ', playful: '戯れる', clinical: '淡々と' };
   var marks = [];
   /* いま組み立てている山場の二人（喘ぎの呼び出しに渡す夜の性格の相手を引くため） */
   var pairNow = null;
-  function mark(text, labels) {
+  /* いま組み立てている山場の二人のうち、c の相手（attr.js の A.psNight が相手を引くのに使う）。組み立て中でなければ null */
+  A.pairNow = function (c) {
+    if (!pairNow || !c) return null;
+    if (pairNow[0] === c || (pairNow[0] && pairNow[0].name === c.name)) return pairNow[1];
+    if (pairNow[1] === c || (pairNow[1] && pairNow[1].name === c.name)) return pairNow[0];
+    return null;
+  };
+  /* 山場の組み立て中（pairNow）は、HK.personaOf（態度の表を引く関数）が、夜の性格で態度を選んだ二人にはその態度を返す（2026-10-31 担当E4）。
+     選んでいない人・組み立て中でないときは今までどおり（既定の出力は変わらない） */
+  if (HK.personaOf && !HK.personaOf._night) HK.wrap(HK, 'personaOf', function (po0) {
+    var f = function (c) {
+      if (pairNow && c && !HK.SAFE_ON) { var b = A.pairNow(c); if (b) { var v = A.nightAttSet(c, b); if (v) return v; } }
+      return po0.apply(this, arguments);
+    };
+    f._night = true;
+    return f;
+  });
+  function mark(text, labels, aft, accs) {
     var frag = text.split(/\{[a-zA-Z]+\}|\n/).filter(function (x) { return x.length >= 8; }).sort(function (x, y) { return y.length - x.length; })[0];
     if (!frag) return;
-    marks.push({ frag: frag.slice(0, 24), label: labels.join('・'), n: 0 });
+    marks.push({ frag: frag.slice(0, 24), label: labels.join('・'), n: 0, after: aft || '', accs: accs || [] });
     if (marks.length > 12) marks.shift();
   }
   function tag(o) {
     if (!marks.length || !o || typeof o.text !== 'string') return;
     for (var i = 0; i < marks.length; i++) {
-      if (o.text.indexOf(marks[i].frag) >= 0) { o.why = (o.why ? o.why + '／' : '') + '夜の性格：' + marks[i].label; marks.splice(i, 1); return; }
+      if (o.text.indexOf(marks[i].frag) >= 0) {
+        o.why = (o.why ? o.why + '／' : '') + '夜の性格：' + marks[i].label;
+        /* 相手に合わせて付き合った人の、事後の一言（記録の終わりに） */
+        /* 付き合う一文は乱数で選ばないので、山場の組み立てと包みの両方が入れると同じ文が二度出る：二度目を消す */
+        marks[i].accs.forEach(function (a) { var j = o.text.indexOf(a), k = j >= 0 ? o.text.indexOf(a, j + a.length) : -1; if (k >= 0) o.text = o.text.slice(0, k) + o.text.slice(k + a.length); });
+        if (marks[i].after) o.text = o.text.replace(/\s+$/, '') + (o.text.indexOf('\n\n') >= 0 ? '\n\n' : '') + marks[i].after;
+        marks.splice(i, 1); return;
+      }
     }
     marks.forEach(function (x) { x.n++; });
     marks = marks.filter(function (x) { return x.n < 6; });
@@ -190,7 +267,8 @@
     var sc0 = obj.scene;
     obj.scene = function (opt) {
       if (!opt || !opt.a || !opt.b) return sc0.apply(this, arguments);
-      var nt = A.nightOf(opt.a, opt.b), nb = A.nightOf(opt.b, opt.a);
+      /* 夜だけの性格か、夜の性格で選んだ態度（A.nightKey）。どちらも無ければ今までどおり */
+      var nt = A.nightKey(opt.a, opt.b), nb = A.nightKey(opt.b, opt.a);
       if (!nt && !nb) return sc0.apply(this, arguments);
       var o = {}; Object.keys(opt).forEach(function (k) { o[k] = opt[k]; });
       o.style = A.styleFor(nt, opt.style);
@@ -211,7 +289,7 @@
   var R = HK.R18M, cur = null;
   if (HK.FF && HK.FF.styleOf && !HK.FF.styleOf._attr) {
     var so0 = HK.FF.styleOf;
-    HK.FF.styleOf = function (a) { var b = so0.apply(this, arguments); return cur && a === cur[0] ? A.styleFor(A.nightOf(cur[0], cur[1]), b) : b; };
+    HK.FF.styleOf = function (a) { var b = so0.apply(this, arguments); return cur && a === cur[0] ? A.styleFor(A.nightKey(cur[0], cur[1]), b) : b; };
     HK.FF.styleOf._attr = true;
   }
   if (R && R.isStrong && !R.isStrong._attr) {
@@ -224,7 +302,7 @@
       if (!x || !y || HK.SAFE_ON) return sx0.apply(this, arguments);
       var od = HK.Pos ? HK.Pos.order(x, y, [x, y]) : [x, y], T = od[0], U = od[1];
       var nt = A.nightOf(T, U), nb = A.nightOf(U, T);
-      if (!nt && !nb) return sx0.apply(this, arguments);
+      if (!nt && !nb && !A.nightAttSet(T, U) && !A.nightAttSet(U, T)) return sx0.apply(this, arguments);
       var o = {}; Object.keys(opt || {}).forEach(function (k) { o[k] = opt[k]; });
       /* 甘々の攻め：その場の勢いの夜は、恋人の夜の書き方に */
       if (nt === 'sweet' && (!o.mood || o.mood === 'plain')) o.mood = 'love';
@@ -245,7 +323,7 @@
     var f = function (T, U, o) {
       if (!T || !U || !o) return tb0.apply(this, arguments);
       var nt = A.nightOf(T, U), nb = A.nightOf(U, T);
-      if (!nt && !nb) return tb0.apply(this, arguments);
+      if (!nt && !nb && !A.nightAttSet(T, U) && !A.nightAttSet(U, T)) return tb0.apply(this, arguments);
       var kd = TK.kind(T, U, o.flav), o2 = {};
       Object.keys(o).forEach(function (k) { o2[k] = o[k]; });
       if (nt === 'sadist' && kd !== 'ff' && kd !== 'ride') o2.rough = true;

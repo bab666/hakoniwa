@@ -34,6 +34,8 @@ function inPage() {
     P.order = function (a, b) { const r = o0.apply(this, arguments); if (SA.ord && r && r[0] && r[1] && r[0].name && r[1].name) SA.ord.push([r[0].name, r[1].name]); return r; };
     P.order._sa = true;
   }
+  /* 喘ぎの相手の名前（ctx.partner／ctx.top、包みの外の o.top、小説調の山場の攻め、組み立て中の二人）。分からなければ '' */
+  SA.ptOf = (who, ctx, up) => { const c = ctx && typeof ctx === 'object' ? ctx : {}; const p = c.partner || c.top || (up && up.topW) || (HK.NovelMoan && HK.NovelMoan.top !== who && HK.NovelMoan.top) || (A && A.pairNow && A.pairNow(who)); return p && p.name ? p.name : ''; };
   if (M && M.pick && !M.pick._sa) {
     const pk0 = M.pick;
     M.pick = function (S, who, key, ctx) {
@@ -41,14 +43,14 @@ function inPage() {
       if (SA.moan && who && who.name) {
         const up = SA.moanCtx[SA.moanCtx.length - 1] || {};
         SA.moan.push({ who: who.name, key: key, out: typeof out === 'string' ? out : '', src: M.lastSrc || '', tone: M.toneOf ? M.toneOf(who) : '',
-          night: (ctx && ctx.night) || up.night || '', top: !!((ctx && ctx.top) || up.top) });
+          night: (ctx && ctx.night) || up.night || '', top: !!((ctx && ctx.top) || up.top), ps: M.psOf ? M.psOf(who, ctx) : '', pt: SA.ptOf(who, ctx, up) });
       }
       return out;
     };
     M.pick._sa = true;
     const say0 = M.say;
-    M.say = function (S, who, kind, o) { SA.moanCtx.push({ night: o && o.night, top: o && o.top }); try { return say0.apply(this, arguments); } finally { SA.moanCtx.pop(); } };
-    if (HK.Ero && HK.Ero.moan) { const em0 = HK.Ero.moan; HK.Ero.moan = function (S, who, st, ctx) { SA.moanCtx.push({ night: ctx && typeof ctx === 'object' && ctx.night, top: ctx && typeof ctx === 'object' && ctx.top }); try { return em0.apply(this, arguments); } finally { SA.moanCtx.pop(); } }; }
+    M.say = function (S, who, kind, o) { SA.moanCtx.push({ night: o && o.night, top: o && o.top, topW: o && typeof o === 'object' ? o.top : null }); try { return say0.apply(this, arguments); } finally { SA.moanCtx.pop(); } };
+    if (HK.Ero && HK.Ero.moan) { const em0 = HK.Ero.moan; HK.Ero.moan = function (S, who, st, ctx) { SA.moanCtx.push({ night: ctx && typeof ctx === 'object' && ctx.night, top: ctx && typeof ctx === 'object' && ctx.top, topW: ctx && typeof ctx === 'object' ? ctx.top : null }); try { return em0.apply(this, arguments); } finally { SA.moanCtx.pop(); } }; }
   }
   /* ---- 文の判定 ---- */
   const MALE = P.MALE_RE;
@@ -275,6 +277,13 @@ const PROBES = String.raw`
   add({ id: 'night.moan', group: '夜の性格', label: '夜の性格（マゾの受け）を喘ぎの呼び出しに渡している割合', type: 'cnt', mod: X => { set(X, 0, { pos: 'bottom', night: 'maso' }); set(X, 1, { gender: 'm', pos: 'top' }); },
     /* 喘ぎのエンジン（HK.Moan.pick）に届いた呼び出しのうち、夜の性格（night）が入っていたもの。attr-r18.js の HK.Attr.moanLog（無い版は、包みの外から見た ctx.night） */
     judge: R => { const ms = (R.mlog || R.moan).filter(m => m.who === X0); if (!ms.length) return { should: 0 }; return { should: ms.length, hit: ms.filter(m => m.night === 'maso').length, ex: R.mlog ? '' : '相手を渡す ' + ms.filter(m => m.top).length + '/' + ms.length }; } });
+  /* 夜の性格で態度を選んだ人（2026-10-31 担当E4）：喘ぎの態度（HK.Moan.psOf）がその態度になっている割合。相手に合わせる人は、付き合う一文が入ったか */
+  const attJ = (ps, onlyY) => (R) => { const ms = R.moan.filter(m => m.who === X0 && (!onlyY || m.pt === Y0)); if (!ms.length) return { should: 0 }; const bad = ms.find(m => m.ps !== ps); return { should: ms.length, hit: ms.filter(m => m.ps === ps).length, ex: bad ? bad.ps + '：' + bad.out : '' }; };
+  add({ id: 'night.att.stern.b', group: '夜の性格', label: '夜の性格：厳格（受け）→喘ぎが厳格の表から出る割合', type: 'cnt', mod: X => { set(X, 0, { pos: 'bottom', night: 'stern', tone: 'free' }); set(X, 1, { gender: 'm', pos: 'top' }); }, judge: attJ('stern') });
+  add({ id: 'night.att.proud', group: '夜の性格', label: '夜の性格：強気（攻め）→喘ぎ・攻めの声が強気の表から出る割合', type: 'cnt', mod: X => { set(X, 0, { pos: 'top', night: 'proud', tone: 'shy' }); set(X, 1, { pos: 'bottom' }); }, judge: attJ('proud') });
+  add({ id: 'night.att.devoted.for', group: '夜の性格', label: '相手ごとの夜の性格（この相手には健気・受け）→その相手との喘ぎが健気の表から出る割合', type: 'cnt', mod: X => { set(X, 0, { pos: 'bottom', tone: 'proud', nightFor: { 1: 'devoted' } }); set(X, 1, { gender: 'm', pos: 'top' }); }, judge: attJ('devoted', true) });
+  add({ id: 'night.accom', group: '夜の性格', label: '夜の性格：相手に合わせる（相手はマゾ）→付き合う一文', type: 'dir', mod: X => { set(X, 0, { pos: 'top', night: 'match' }); set(X, 1, { pos: 'bottom', night: 'maso' }); },
+    judge: R => { const rs = H.sexPair(R); if (!rs.length) return { should: 0 }; const nm = R.names[0]; return { should: 1, hit: R.att.some(g => g.who === nm && g.accom) || rs.some(r => r.why.indexOf(nm + '＝相手に合わせる') >= 0) ? 1 : 0, ex: H.ex(rs[0]) }; } });
   /* ===== 夜の主導 ===== */
   const leadJ = (ld, re) => (R) => { const rs = H.sexPair(R); if (!rs.length) return { should: 0 }; const lg = R.lead.some(g => g.b === X0 && g.lead === ld); const tx = !re || rs.some(r => re.test(r.t)); return { should: 1, hit: lg && tx ? 1 : 0, ex: H.ex(rs[0]) }; };
   add({ id: 'lead.sasoi', group: '夜の主導', label: '夜の主導：誘い受け（受け）', type: 'dir', mod: X => { set(X, 0, { pos: 'bottom', lead: 'sasoi' }); set(X, 1, { gender: 'm', pos: 'top' }); }, judge: leadJ('sasoi') });

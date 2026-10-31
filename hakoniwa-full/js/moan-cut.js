@@ -77,7 +77,8 @@
     var f = function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     return f;
   }
-  function psLine(who) { var p = who && (HK.personaOf ? HK.personaOf(who) : who.persona); return PS9.indexOf(p) >= 0 ? p : 'gentle'; }
+  /* 夜の性格で選んだ態度があれば、その態度（moan-engine.js の HK.Moan.nightAtt。2026-10-31 担当E4） */
+  function psLine(who, cx) { var p = who && ((M.nightAtt && M.nightAtt(who, cx)) || (HK.personaOf ? HK.personaOf(who) : who.persona)); return PS9.indexOf(p) >= 0 ? p : 'gentle'; }
   function clamp(v) { return Math.max(0, Math.min(1, v)); }
   function wpick(r, w) { var ks = Object.keys(w).filter(function (k) { return w[k] > 0; }), sum = 0; ks.forEach(function (k) { sum += w[k]; }); if (!ks.length) return ''; var x = r() * sum; for (var i = 0; i < ks.length; i++) { x -= w[ks[i]]; if (x < 0) return ks[i]; } return ks[ks.length - 1]; }
   function stageOf(st) { st = ALIAS[st] || st; return STG.indexOf(st) >= 0 ? st : 'mid'; }
@@ -92,7 +93,7 @@
     if (!who) return 0.5;
     /* 相手が渡されていなければ、夜の性格は住人全体の設定から（HK.NovelMoan.top の残りを相手にしない） */
     var cx = ctx && (ctx.partner || ctx.top || ctx.night) ? ctx : Object.assign({}, ctx || {}, { partner: NOBODY });
-    var v = M.TILT[psLine(who)], nt = M.nightOf ? M.nightOf(who, cx) : '';
+    var v = M.TILT[psLine(who, cx)], nt = M.nightOf ? M.nightOf(who, cx) : '';
     if (nt && NIGHT_TILT[nt] != null && !(nt === 'maso' && role === 'top')) v += NIGHT_TILT[nt];
     if (role !== 'top' && I.fallenOf(who)) v -= 0.2;
     return clamp(v);
@@ -293,7 +294,7 @@
   /* 一場面の言葉責め・焦らしの回数を決める（5-1） */
   function planOf(S, sc, o) {
     if (sc.plan) return sc.plan;
-    var r = rngOf(S), top = sc.top, bot = sc.bot, nt = M.nightOf ? M.nightOf(top, { partner: bot }) : '', ps = psLine(top), frc = forceOf(o);
+    var r = rngOf(S), top = sc.top, bot = sc.bot, nt = M.nightOf ? M.nightOf(top, { partner: bot }) : '', ps = psLine(top, { partner: bot }), frc = forceOf(o);
     var pz, pj, cz = 1, cj = 1;
     if (nt === 'sadist') { pz = 0.7; pj = 0.3; cz = 2; }
     else if (nt === 'mean') { pz = 0.5; pj = 0.7; cj = 2; }
@@ -377,7 +378,7 @@
     var fal = I.fallenOf(bot);
     if (fal && rate > 0) rate = ro === 'more' ? 0.2 : 0.1;
     if (sc.ret >= max || !(rate > 0) || r() >= rate) return '';
-    var ps = psLine(bot), base = RET_W[ps] || RET_W.gentle, tl = M.tilt(bot, { partner: top }, 'bot'), up = 1 + (tl - 0.5), dn = 1 + (0.5 - tl);
+    var ps = psLine(bot, { partner: top }), base = RET_W[ps] || RET_W.gentle, tl = M.tilt(bot, { partner: top }, 'bot'), up = 1 + (tl - 0.5), dn = 1 + (0.5 - tl);
     var w = { a0: base[0] * up, a1: base[1] * dn, a2: base[2] * dn, a3: base[3] * up };
     if (forceOf(o)) w.a0 *= 1.5;
     if (fal) { w.a0 = 0; w.a1 = 0; if (!w.a2 && !w.a3) w.a2 = 1; }

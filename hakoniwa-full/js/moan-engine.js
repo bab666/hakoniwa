@@ -144,16 +144,46 @@
     if (v === 'match') { var pv = (p && ((p.nightFor && who.i != null && p.nightFor[who.i]) || p.night)) || raw(cp, cw); v = (A && A.MATCH && A.MATCH[pv]) || ''; }
     return NIGHT_PS[v] ? v : '';
   };
+  /* 夜の性格で選んだ態度（強気・厳格など。attr.js の HK.Attr.nightAttSet。2026-10-31 担当E4）：選んでいれば、その態度を声の基盤にする（気質の態度・喘ぎの口調の態度より優先）。
+     相手の引き方は M.nightOf と同じ。住人の写しに夜の性格を持たない箱庭では、入力の住人（M.nmap）の値で解く。選んでいなければ '' */
+  M.nightAtt = function (who, ctx) {
+    if (!who || HK.SAFE_ON) return '';
+    var A = HK.Attr;
+    if (!A || !A.nightAttSet) return '';
+    var p = (ctx && typeof ctx === 'object' && (ctx.partner || ctx.top)) || (HK.NovelMoan && HK.NovelMoan.top && HK.NovelMoan.top !== who ? HK.NovelMoan.top : null) || (A.pairNow ? A.pairNow(who) : null);
+    var v = A.nightAttSet(who, p);
+    if (v || !M.nmap) return v;
+    var NG = HK.NameGuard, pl = function (n) { return n && NG && NG.stack.length ? NG.decAll(n) : n; };
+    var cw = who.name ? M.nmap[pl(who.name)] : null, cp = p && p.name ? M.nmap[pl(p.name)] : null;
+    if (!cw) return '';
+    var raw = function (c, o) { return c ? ((o && c.nightFor && c.nightFor[o.i]) || c.night || '') : ''; };
+    return A.nightAttRaw ? A.nightAttRaw(raw(cw, cp), cw.night || '') : '';
+  };
+  /* 相手に合わせる（match）で相手の嗜好に付き合っているか（attr.js の HK.Attr.nightAccom）：付き合っているあいだも、声の基盤は本人の態度のまま */
+  M.nightAccom = function (who, ctx) {
+    if (!who || HK.SAFE_ON) return false;
+    var A = HK.Attr;
+    if (!A || !A.nightAccom) return false;
+    var p = (ctx && typeof ctx === 'object' && (ctx.partner || ctx.top)) || (HK.NovelMoan && HK.NovelMoan.top && HK.NovelMoan.top !== who ? HK.NovelMoan.top : null);
+    if (p && A.nightAccom(who, p)) return true;
+    if (!M.nmap) return false;
+    var NG = HK.NameGuard, pl = function (n) { return n && NG && NG.stack.length ? NG.decAll(n) : n; };
+    var cw = who.name ? M.nmap[pl(who.name)] : null, cp = p && p.name ? M.nmap[pl(p.name)] : null;
+    var nf = cw && cp && cw.nightFor ? cw.nightFor[cp.i] : '';
+    return !!(cw && cp && (nf || cw.night) === 'match' && M.nightOf(who, ctx));
+  };
   /* 夜の性格があるときの声の基盤：住人の設定（⚙の c.moanOpt.night。'off'＝口調の態度のまま・態度の鍵。2026-10-29 利用者の要望「サドだけど冷静／サドだけど強気」）＞ 全体の「喘ぎ声の調整」＞ NIGHT_PS */
   function psOf(who, ctx) {
     var nt = M.nightOf(who, ctx);
+    /* 相手に合わせて付き合っている人（match）は、役は相手に合わせても声は本人の態度のまま（2026-10-31 利用者の補足。担当E4） */
+    if (nt && M.nightAccom(who, ctx)) return M.nightAtt(who, ctx) || psBase(who);
     if (nt) {
       var own = M.optOf(who).night;
       if (own === 'off') return psBase(who);
       if (own) return own;
       var c = cc(), np = c && c.night[nt]; if (np === 'off') return psBase(who); return np || NIGHT_PS[nt];
     }
-    return psBase(who);
+    return M.nightAtt(who, ctx) || psBase(who);
   }
   function psBase(who) {
     var mt = moanToneOf(who);
@@ -722,7 +752,7 @@
   /* 小説調の態度の表を引く態度（thick-sex.js・r18-thick.js の元の表）：夜の性格（高度設定の夜の性格→声の基盤を含む）か喘ぎの口調があればその態度、なければ ''（呼ぶ側の態度のまま） */
   M.novelPs = function (who, ctx) {
     if (!who || HK.SAFE_ON) return '';
-    return M.nightOf(who, ctx) || moanToneOf(who) ? psOf(who, ctx) : '';
+    return M.nightOf(who, ctx) || M.nightAtt(who, ctx) || moanToneOf(who) ? psOf(who, ctx) : '';
   };
 
   /* 箱庭を回しているあいだだけ、住人の名前 → 喘ぎの口調 の対応表を置く（設定した人がいなければ空のまま） */
