@@ -76,6 +76,9 @@
     '{a}「明日の会議、この声で出ることになる｜明日の会議は、この声で出ることになるな｜明日の会議、この声で出ることになりますね」{b}はかすれた声で笑った。帰り道、二人は自販機の前で同じ牛乳を選び、仕事の愚痴を言いながら飲み干した。翌朝、二人の声はそろってかすれていた。');
   CL.eat.family = L('{a}と{b}は、帰り道でずっと舌を出していた。家に着くなり、二人は冷蔵庫の牛乳を取り合った。その晩の夕飯は、二人とも辛いものには箸を伸ばさなかった。|' +
     '外に出ると、{b}が{a}に水を差し出した。{a}「家で辛いものを出したら、怒るからね｜家で辛いものを出したら、怒るからな｜家で辛いものを出したら、怒りますからね」{b}「しばらくは、甘口のカレーにしよう｜しばらくは、甘口のカレーにしよう｜しばらくは、甘口のカレーにしましょう」二人は家に着くまで、ラーメンの話を一度もしなかった。その夜の食卓には、牛乳が二本並んでいた。');
+  /* 学校（同級生・教師と生徒・師弟）：これまで職場の表（会議・社内・上司と部下）に落ちていたので、学校の表を足す（2026-10-31 担当RC） */
+  CL.eat.school = L('外に出た{a}と{b}は、真っ赤な唇のまま顔を見合わせて吹き出した。{a}「このことは、みんなには内緒で｜このことは、皆には内緒だ｜このことは、皆さんには内緒でお願いします」{b}「言えるわけない｜言えるわけがない｜言えるわけがありません」次に顔を合わせたとき、二人は目が合うたびに口元を押さえた。|' +
+    '{a}と{b}は、帰り道の自販機で冷たい飲み物を二本買った。辛さで涙目になった顔は、学校で見るどの顔とも違っていた。次に会った日、二人のあいだには、ほかの誰も知らない笑いの種がひとつ増えていた。');
   CL.eat.hostile = L('外に出た{a}と{b}は、口を押さえたまま睨み合った。どちらが先に音を上げたかで、まだ張り合っているらしかった。二人は水を奪い合うようにして飲み、反対の方向へ歩いていった。|' +
     '{a}「あなたより一杯多く食べた｜あなたより一杯多く食べた｜あなたより一杯多くいただきました」{b}「数え間違い｜数え間違いだ｜数え間違いです」言い争いながら駅に着いた二人は、ホームの端と端に立って、同じ牛乳をあおっていた。外に出ても、二人の張り合いは少しも収まらなかった。結局、決着は次に持ち越された。');
   CL.eat.stranger = L('外に出た{a}と{b}は、赤い顔のまま、なんとなく同じ自販機の前に立った。{b}が二本目の水を{a}に渡すと、{a}は小さく礼を言った。名前のほかに知ったことは、相手の辛さへの弱さだけだった。|' +
@@ -87,6 +90,8 @@
     '{a}「部屋でのことは、社内では一切なかったことに｜部屋でのことは、社内では一切なかったことにしろ｜部屋でのことは、社内では一切なかったことにしましょう」{b}「了解。……にゃ、いや、了解｜了解した。……にゃ、いや、了解だ｜了解です。……にゃ、いえ、了解です」二人は咳払いをして、同時に反対方向を向いた。その日から、二人のあいだでだけ通じる咳払いが一つ増えた。それが何の合図なのか、職場の誰も知らない。');
   CL.nyan.family = L('{a}と{b}は、帰り道でずっと黙っていた。家に着いてからも、二人は部屋の中の語尾の話だけは一度もしなかった。それでも次の家族の集まりで、{b}が猫の置物を{a}の前にそっと置いた。|' +
     '{a}「……あのことは、家では言わないで｜……あのことは、家では言うな｜……あのことは、家では言わないでください」{b}「言えるわけない｜言えるわけがない｜言えるわけがありません」それきり二人は口をつぐみ、帰りの道で口数が少ないまま家に着いた。家の明かりが見えても、二人の足取りは重かった。家族の誰にも、あの部屋のことは話さなかった。');
+  CL.nyan.school = L('外に出た{a}と{b}は、猫耳のカチューシャを外して、しばらく黙っていた。{b}「……このことは、絶対に誰にも言わないで｜……このことは、絶対に誰にも言うな｜……このことは、絶対に誰にも言わないでください」{a}は真顔で頷いた。けれど次に顔を合わせた日、{a}の語尾には小さく「＠＠にゃ」が混ざりかけた。|' +
+    '{a}と{b}は、扉の外で顔を見合わせると、同時に目を逸らした。顔見知りの前で「＠＠にゃん」と言い続けたことが、今になって恥ずかしくなった。それでも別れ際、{b}は小さく手を振って、聞こえないくらいの声で鳴き真似をした。');
   CL.nyan.hostile = L('外に出るなり、{a}は誰かに言ったら許さないという顔で{b}を睨んだ。{b}は鼻で笑い、聞こえるか聞こえないかの声で「＠＠にゃん」と言った。{a}の怒鳴り声を背に、{b}は振り返りもせず歩き去った。|' +
     '{a}と{b}は、外に出てからも、どちらが多く「＠＠にゃん」と言ったかで揉めていた。言い争いの途中で、{a}の口から語尾が一つこぼれた。二人は同時に黙り込み、背を向けたまま別れた。');
   CL.nyan.stranger = L('外に出た{a}と{b}は、猫耳のカチューシャをそっと外して、扉のあった場所に置いた。目が合うと、二人とも気まずそうに笑った。それきり、二人がまた会うことはなかった。|' +
@@ -106,6 +111,8 @@
     '{a}は帰り道、{b}に言われた自分のいいところを、一つずつ思い出していた。どれも、自分では気づいていなかったことだった。翌日、{a}は少しだけ背筋を伸ばして歩いた。');
   CL.word.work = L('{a}と{b}は、外に出ると何事もなかったように「＠＠お疲れさまでした」と言い合った。月曜の職場で、{b}は{a}の書類の誤字をいつもより優しく指摘した。部屋で聞いた本音のことは、どちらも口にしなかった。|' +
     '{a}「部屋で言ったことは、評価には関係ないから｜部屋で言ったことは、評価には関係ない｜部屋で申し上げたことは、評価には関係ありませんから」{b}「分かってる。でも、覚えておく｜分かっている。だが、覚えておく｜分かっています。でも、覚えておきます」次の週から、二人の打ち合わせは少しだけ短くなった。上司と部下の顔に戻っても、聞いてしまった本音は消えなかった。部屋の外で、二人はそれをそっとしまっておくことにした。');
+  CL.word.school = L('{a}と{b}は、外に出ると少しだけ気まずそうに笑った。いつも顔を合わせている相手に、本当のことを面と向かって言うのは、思っていたより照れくさかった。次に会ったとき、二人はいつもより少しだけ長く話しこんだ。|' +
+    '{a}「部屋で言ったこと、取り消さないから｜部屋で言ったことは、取り消さない｜部屋で言ったことは、取り消しませんから」{b}「分かってる。私も｜分かっている。私もだ｜分かっています。私もです」二人は並んで駅まで歩いた。知っているつもりだった相手の知らなかった一面が、帰り道のあいだずっと胸に残っていた。');
   CL.word.family = L('{a}と{b}は、帰りの道で口数が少なかった。家族に面と向かって本当のことを言うのは、思っていたより照れくさかった。家に着く直前、{b}がぽつりと言った。{b}「さっきの、本当だから｜さっきのは、本当だ｜さっきのは、本当ですから」|' +
     '外に出た{a}は、{b}の顔をまともに見られなかった。{b}も同じだった。それでもその晩、二人は久しぶりに同じ食卓で遅くまで話しこんだ。');
   CL.word.cold = L('外に出た{a}と{b}は、部屋で吐き出した本音を拾い直すこともなく別れた。言うべきことは言った、という顔だった。二人の間に残ったのは、すっきりしたような、ひりつくような沈黙だった。|' +
@@ -227,6 +234,13 @@
   /* 二人の締めの文（null なら今までの層） */
   function vary(ctx, x, y, ex) {
     if (blocked(ctx)) return null;
+    /* 二人の関係に合わない文（初対面の文・連絡先・家まで送る など。mini.js の HK.relFilter）は外す。全部外れたら、関係ごとの層（room-end.js の RE.relPool）か、今までの層へ（2026-10-31 担当RC） */
+    function P(l) {
+      var f = l && HK.relFilter ? HK.relFilter(ctx, l, x, y) : l;
+      if (f && f.length) return ctx.pick(f);
+      var rp = l && l.length && RE.relPool ? RE.relPool(ctx, x, y, warm(avg(ctx, x, y)) ? 'friend' : 'far') : null;
+      return rp && rp.length ? ctx.pick(rp) : null;
+    }
     var k0 = RE.kindOf ? RE.kindOf(ctx, x, y) : '';
     if (k0 === 'kusare' || k0 === 'kusare1') return null;
     var th = theme(ctx), rom = romance(ctx, x, y), body = bodyOf(ctx, x, y), g = relG(ctx, x, y), v = avg(ctx, x, y), pf = ctx.pair(x, y), awk = pf.awk || '';
@@ -234,25 +248,30 @@
     /* セフレ：恋人になっていなければ、好意がよほど育っていない限り恋愛のない組として書く（体の距離は近いが、気持ちは育ちにくい関係） */
     if (g === 'fwb' && rom === 'bud' && v.aff < 50) rom = '';
     if (rom) {
-      if (awk === 'sweet' && rom === 'bud' && ctx.rng() < 0.7) return pick(ctx, CL.awk.sweet);
-      if (body && !HK.SAFE_ON && CL.love.h) return pick(ctx, body === 'heat' && CL.love.heat ? CL.love.heat : CL.love.h);
-      return pick(ctx, th !== 'h' && CL.love[th] || CL.love.other);
+      if (awk === 'sweet' && rom === 'bud' && ctx.rng() < 0.7) return P(CL.awk.sweet);
+      if (body && !HK.SAFE_ON && CL.love.h) return P(body === 'heat' && CL.love.heat ? CL.love.heat : CL.love.h);
+      /* もとからの恋人・夫婦は、部屋で恋が始まった前提の文（馴れ初め・改めて待ち合わせ など）を外す。条件の主題の表に合う文が無ければ、関係ごとの層 */
+      var lc = HK.relClass ? HK.relClass(ctx, x, y) : 'none';
+      if ((lc === 'spouse' || lc === 'lover') && th === 'other' && RE.relPool) return P(RE.relPool(ctx, x, y, 'love'));
+      return P(th !== 'h' && CL.love[th] || CL.love.other);
     }
     if (!g && !body) return null;
-    if (body && !HK.SAFE_ON && CL.dry) return pick(ctx, CL.dry[g || 'stranger'] || CL.dry.stranger);
-    if (awk === 'dry' && ctx.rng() < 0.6) return pick(ctx, CL.awk.dry);
+    if (body && !HK.SAFE_ON && CL.dry) return P(CL.dry[g || 'stranger'] || CL.dry.stranger);
+    if (awk === 'dry' && ctx.rng() < 0.6) return P(CL.awk.dry);
     if (touch && !(actN(ctx, x, y, th) || (th === 'hug' && actN(ctx, x, y, 'lap')))) return null;
     if (touch) {
       var tg = g === 'fwb' ? 'friend' : g === 'lover' ? 'friend' : g || 'stranger';
-      return pick(ctx, CL.touch[tg] || CL.touch.stranger);
+      return P(CL.touch[tg] || CL.touch.stranger);
     }
-    var r5 = rel5(g);
-    if (th === 'eat') return pick(ctx, CL.eat[r5]);
-    if (th === 'nyan') return pick(ctx, CL.nyan[r5]);
-    if (th === 'drink') return pick(ctx, warm(v) ? CL.drink.warm : CL.drink.cold);
-    if (th === 'game') return pick(ctx, warm(v) ? CL.game.warm : CL.game.cold);
-    if (th === 'hurt') return pick(ctx, warm(v) ? CL.hurt.warm : CL.hurt.cold);
-    if (th === 'word') return pick(ctx, r5 === 'work' ? CL.word.work : r5 === 'family' ? CL.word.family : warm(v) ? CL.word.warm : CL.word.cold);
+    var r5 = rel5(g), r5s = g === 'school' ? 'school' : r5;
+    if (th === 'eat') return P(CL.eat[r5s] || CL.eat[r5]);
+    if (th === 'nyan') return P(CL.nyan[r5s] || CL.nyan[r5]);
+    if (th === 'drink') return P(warm(v) ? CL.drink.warm : CL.drink.cold);
+    if (th === 'game') return P(warm(v) ? CL.game.warm : CL.game.cold);
+    if (th === 'hurt') return P(warm(v) ? CL.hurt.warm : CL.hurt.cold);
+    /* 職場の言葉の表のうち「上司と部下・評価」の文は、上司と部下の二人だけ */
+    var boss = HK.Ties && HK.Ties.has && HK.Ties.has(ctx, x, y, 'boss');
+    if (th === 'word') return P(g === 'school' ? CL.word.school : r5 === 'work' ? CL.word.work.filter(function (t) { return boss || !/上司と部下|評価には/.test(t); }) : r5 === 'family' ? CL.word.family : warm(v) ? CL.word.warm : CL.word.cold);
     return null;
   }
   RE.vary = { CL: CL, romance: romance, relG: relG, theme: theme, bodyOf: bodyOf };
@@ -289,7 +308,8 @@
       if (kill || blocked(ctx) || !g || g.length < 3) return orig.apply(this, arguments);
       var th = theme(ctx), sex = !HK.SAFE_ON && CL.group.h && pairsOf(g).some(function (p) { return bodyOf(ctx, p[0], p[1]); });
       var pool = sex ? CL.group.h : th === 'eat' ? CL.group.eat : th === 'nyan' ? CL.group.nyan : th === 'drink' ? CL.group.drink : th === 'game' ? CL.group.game : th === 'hand' || th === 'hug' || th === 'kiss' ? CL.group.touch : CL.group.other;
-      return fill(ctx.pick(pool), { G: nm(g) });
+      var gf = HK.relGroupFits ? pool.filter(function (t) { return HK.relGroupFits(ctx, g, t); }) : pool;
+      return fill(ctx.pick(gf.length ? gf : pool), { G: nm(g) });
     };
   });
 })();

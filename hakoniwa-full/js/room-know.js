@@ -3,6 +3,7 @@
    ・答えるかどうかは、相手の正直さ・信頼・質問の深さ・聞き方で決まる。答えてもらえないと気まずくなる
    ・答えられなかった質問に、あとから自分で答えに来ることもある
    ・条件に「本音を打ち明け合う」があれば、深い質問への答えは本音として数える */
+/* @event-ok 関係ごとの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK, scen = HK.SCENARIOS && HK.SCENARIOS.whiteroom;
@@ -83,8 +84,10 @@
       var rng = ctx.rng, k = know(ctx, a, b), rab = R(ctx, a, b), rba = R(ctx, b, a);
       /* 打ち解けているほど深い質問をする */
       var depthMax = rba.trust > 30 || rab.aff > 35 ? 2 : rba.trust > 8 ? 1 : 0;
-      var pool = Q.filter(function (q, i) { return !k[i] && q[2] <= depthMax && (!q[3] || HK.canLove(a, b) || q[2] < 2); });
-      if (!pool.length) pool = Q.filter(function (q, i) { return !k[i]; });
+      /* 家族・夫婦・もとからの恋人には、初めて知り合う人への質問（好きな食べ物・休みの日・子どもの頃の夢・どんな人がタイプ）をしない（2026-10-31 担当RC。mini.js の HK.relFilter） */
+      var fits = function (q) { return !HK.relFilter || HK.relFilter(ctx, [q[0]], a, b).length > 0; };
+      var pool = Q.filter(function (q, i) { return !k[i] && q[2] <= depthMax && (!q[3] || HK.canLove(a, b) || q[2] < 2) && fits(q); });
+      if (!pool.length) pool = Q.filter(function (q, i) { return !k[i] && fits(q); });
       if (!pool.length) return null;
       var q = ctx.pick(pool), qi = Q.indexOf(q);
       var soft = (a.tr.np + a.tr.warmth) / 2;

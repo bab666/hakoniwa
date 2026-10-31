@@ -2,7 +2,7 @@
    使い方:
      node hakoniwa-tools/tone-check/audit-all.js                       # 既定の一式（R18版・全年齢モード・全年齢版。2 本並べて約 4 分）
      node hakoniwa-tools/tone-check/audit-all.js --modes=r18           # モードを絞る（r18,safe,zen）
-     node hakoniwa-tools/tone-check/audit-all.js --extra=sexgate,feud,group,state-hot,name  # 追加の配役パスも回す（--extra=all で全部）
+     node hakoniwa-tools/tone-check/audit-all.js --extra=sexgate,feud,group,state-hot,name,relcons  # 追加の配役パスも回す（--extra=all で全部）
      node hakoniwa-tools/tone-check/audit-all.js --only-extra --extra=group             # 追加の配役パスだけ
      node hakoniwa-tools/tone-check/audit-all.js --print=出力のフォルダ                 # 今までの道具の形の出力もパスごとに書く（単独実行の出力と同じになる）
      node hakoniwa-tools/tone-check/audit-all.js --cross                                # 判定をほかのパスの回にも当てる（調べもの用。誤判定を含む。下の注）
@@ -23,12 +23,12 @@ const misc = require('./audit/misc.js');
 const TOOLS = {
   orient: require('./orient-audit.js'), pos: require('./pos-audit.js'), state: require('./state-audit.js'), loveflag: require('./love-flag-audit.js'),
   seg: require('./seg-audit.js'), qa: require('./qa-audit.js'), sexgate: require('./sex-gate-audit.js'), feud: require('./feud-audit.js'), group: require('./group-audit.js'),
-  name: require('./name-audit.js'),
+  name: require('./name-audit.js'), relcons: require('./relcons-audit.js'),
   misc
 };
 const MODS = Object.keys(TOOLS).map(k => TOOLS[k]);
 /* 判定の名前（まとめの見出し） */
-const JNAME = { orient: '恋愛対象', pos: '受け攻め・体の語', state: '状態', loveflag: '恋愛：なし', seg: '台詞の区分', qa: '問いと返事', sexgate: '性的な出来事の門', feud: '不仲の組', group: '複数人の恋愛', name: '名前の言い換え', misc: '文の崩れ' };
+const JNAME = { orient: '恋愛対象', pos: '受け攻め・体の語', state: '状態', loveflag: '恋愛：なし', seg: '台詞の区分', qa: '問いと返事', sexgate: '性的な出来事の門', feud: '不仲の組', group: '複数人の恋愛', name: '名前の言い換え', relcons: '展開の不整合', misc: '文の崩れ' };
 
 /* ---------- パス（配役の決め方）：今までの道具の既定の回数と同じ。est は 1 回分の目安の秒数（ページの割り振りに使う） ---------- */
 const PASSES = {
@@ -45,7 +45,9 @@ const PASSES = {
   feud: { tool: 'feud', id: 'feud', opt: { N: 24 }, lewd: '', est: 28, modes: ['r18', 'zen'], extra: true, out: m => 'feud-' + m },
   group: { tool: 'group', id: 'group', opt: { N: 40 }, lewd: '', est: 24, modes: ['r18', 'zen'], extra: true, out: m => 'group-' + m },
   'state-hot': { tool: 'state', id: 'state', opt: { N: 24, hot: true }, lewd: 'direct', est: 66, extra: true, out: m => 'state-hot-' + m },
-  name: { tool: 'name', id: 'name', opt: { N: 6 }, lewd: '', est: 22, extra: true, out: m => 'name-' + m }
+  name: { tool: 'name', id: 'name', opt: { N: 6 }, lewd: '', est: 22, extra: true, out: m => 'name-' + m },
+  /* 知らない人どうし／知り合いどうし／混在 と関係に合わない文（2026-10-31 担当RC。relcons-audit.js） */
+  relcons: { tool: 'relcons', id: 'relcons', opt: { N: 24 }, lewd: '', est: 55, extra: true, out: m => 'relcons-' + m }
 };
 const DEFAULT = ['orient', 'pos', 'pos-hot', 'pos-ffhot', 'state', 'loveflag', 'seg', 'qa'];
 /* 判定：cross＝ほかのパスの回にも当てる。modes＝当てるモード */
@@ -60,7 +62,8 @@ const JUDGES = {
   sexgate: { cross: false, opt: () => ({ cond: TOOLS.sexgate.COND }) },
   feud: { cross: false, opt: () => ({}) },
   group: { cross: false, opt: () => ({}) },
-  name: { cross: false, opt: () => ({}) }
+  name: { cross: false, opt: () => ({}) },
+  relcons: { cross: false, opt: () => ({}) }
 };
 const MODE = { r18: { name: 'R18版', build: 'full', mode: 'r18' }, safe: { name: '全年齢モード', build: 'full', mode: 'safe' }, zen: { name: '全年齢版', build: 'zen', mode: '' } };
 

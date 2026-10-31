@@ -4,6 +4,7 @@
    ・緊迫感：失踪・死・殺人事件・刻限の近さ・村人の敵意で上がる。上がるほど、生きて帰りたい人は自分の目標を後回しにして、
      村からの脱出や村の秘密を暴くことを優先する（生還を望まない目標＝儀式で別の神を呼ぶ・神を見る・自暴自棄の殺人は、ほとんど揺るがない）
    ・怖さが限界に近いときは、目標の行動を控える */
+/* @event-ok 関係ごとの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, clamp = HK.clamp;
@@ -83,13 +84,14 @@
   }
 
   /* ---------- 恋人を作る ---------- */
+  /* もとから恋人・夫婦・番・婚約者の相手には「付き合ってほしい」と告白しない（2026-10-31 担当RC。展開の不整合の点検 relcons で、夫婦の相手に告白していた） */
   function love(S, p, h, live) {
     var rng = S.rng;
     if (rng() > 0.5 * (ST.romK ? ST.romK(S) : 1)) return false;
     var L0 = p.love || (p.love = { t: null, pt: 0, tries: 0 });
     if (L0.done) return false;
     if (!L0.t || !al(L0.t)) {
-      var cs = live.filter(function (q) { return q !== p && !q.bound && canLove(p, q) && !(HK.Avoid && HK.Avoid.of(S, p, q)) && (!HK.Poly || HK.Poly.storyCan(S, p, q)) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && HK.tieNoLove(t); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
+      var cs = live.filter(function (q) { return q !== p && !q.bound && canLove(p, q) && !(HK.Avoid && HK.Avoid.of(S, p, q)) && (!HK.Poly || HK.Poly.storyCan(S, p, q)) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && (HK.tieNoLove(t) || /^(?:lover|spouse|mate|fiance)$/.test(t.type)); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
       if (!cs.length) return false;
       L0.t = HK.weighted(rng, cs, function (q) { return 1 + Math.max(0, bond(S, p, q)) * 2 + q.tr.warmth; }); L0.pt = 0;
       ST.sayB(S, { actors: [p, L0.t], tag: '恋', text: F(pk(S, T.LOVE_PICK), { a: p.name, b: L0.t.name }), why: p.name + 'の目標は「恋人を作る」（FC・NP・衝動）' }, p.name + 'は' + L0.t.name + 'が気になっていた');

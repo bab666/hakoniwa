@@ -1,5 +1,6 @@
 /* 箱庭シミュレーター: 甘い恋だけでなく「セフレ」に落ち着く流れ（全箱庭共通。クラスメイトとバトルロワイヤルは除く）
    一線を越えたあと、恋人にならずに体の関係だけを続けるかどうかを、二人の気質で決める */
+/* @event-ok 関係ごとの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -36,7 +37,10 @@
   F.offerText = function (ctx, a, b) {
     var k = a.tr.cold > 0.6 ? 'cold' : a.tr.fc > 0.6 ? 'fc' : a.tr.ac > 0.6 ? 'ac' : a.tr.cp > 0.6 ? 'cp' : a.tr.np > 0.6 ? 'np' : ctx.rng.pick(['cold', 'fc']);
     var pb = (b && b.persona) || (HK.personaOf && HK.personaOf(b)) || 'gentle';
-    return ctx.t(ctx.pick(F.OFFER[k]), a, b).replace(/\{light\}/g, LIGHT[pb] || '軽いね');
+    /* もとからの知り合い（友人・同僚など）には「連絡先を交換した」の文を使わない（2026-10-31 担当RC。mini.js の HK.relFilter） */
+    var pool = HK.relFilter && b ? HK.relFilter(ctx, F.OFFER[k], a, b) : F.OFFER[k];
+    if (!pool.length) pool = F.OFFER.cold;
+    return ctx.t(ctx.pick(pool), a, b).replace(/\{light\}/g, LIGHT[pb] || '軽いね');
   };
   /* 部屋を出たあと・店を出たあとなど、一度きりの夜のあとの後日談 */
   F.after = function (ctx, a, b) {

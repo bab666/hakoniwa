@@ -1,4 +1,5 @@
 /* 箱庭診断: 合コンの話題（100）と王様ゲームの命令（100） */
+/* @event-ok 関係ごとの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -66,12 +67,19 @@
     if (P.length < 2) return;
     ctx.flags.usedTopics = ctx.flags.usedTopics || {};
     var a = ctx.most(P, function (c) { return c.tr.fc * 0.5 + c.tr.lead * 0.4 + c.tr.warmth * 0.3 + (c.flags.drunk || 0) / 150 + rng() * 0.6; });
-    var cand = TOPICS.filter(function (T) { return !ctx.flags.usedTopics[T.t]; });
+    /* 連絡先の交換・ご飯の誘い・出身や子どもの頃の夢のような初対面の話題は、その話題が合う相手（家族・恋人・夫婦なら初めて訊くはずのない話題は外す）が
+       同じ席にいるときだけ（2026-10-31 担当RC。mini.js の HK.relClass・HK.relTextFits） */
+    var fitsOf = function (T) { return P.filter(function (c) { return c !== a && (!HK.REL_TXT || !HK.REL_TXT.ANY.test(T.q) || HK.relTextFits(HK.relClass(ctx, a, c), T.q)); }); };
+    var cand = TOPICS.filter(function (T) { return !ctx.flags.usedTopics[T.t] && fitsOf(T).length > 0; });
+    if (!cand.length) return;
     var T = HK.weighted(rng, cand, function (x) { return 0.3 + interest(a, x, ctx); });
     ctx.flags.usedTopics[T.t] = 1;
     var scores = P.map(function (c) { return { c: c, v: interest(c, T, ctx) }; }).sort(function (x, y) { return y.v - x.v; });
     var avg = scores.reduce(function (s, x) { return s + x.v; }, 0) / scores.length + (ctx.env.mood - 50) / 250;
     var fan = scores[0].c === a && scores[1] ? scores[1].c : scores[0].c;
+    /* 初対面の話題に乗るのは、その話題が合う相手（家族・同僚などが先に乗ると、知っている相手に連絡先を訊くことになる） */
+    var okF = fitsOf(T);
+    if (okF.indexOf(fan) < 0) fan = scores.filter(function (x) { return okF.indexOf(x.c) >= 0; })[0].c;
     var cold = scores[scores.length - 1].c === a ? scores[scores.length - 2].c : scores[scores.length - 1].c;
     var mine = T.risk && P.some(function (c) { return c !== a && (c.tr.cp > 0.65 || c.tr.jealous > 0.65); }) && rng() < 0.45;
     if (mine) cold = ctx.most(ctx.others(a), function (c) { return c.tr.cp + c.tr.jealous; });

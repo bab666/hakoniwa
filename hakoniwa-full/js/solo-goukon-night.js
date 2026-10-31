@@ -5,6 +5,7 @@
    厚い版の始まりは、関係ごとの文に、一段落版の書き出し（繋がる前まで）と、女性どうし・女性が攻めの専用の文を足して選ぶ。
    受けの態度（persona 9種）ごとに、始まり・果てた直後・事後の様子を一文ずつ添える。
    全年齢版では読み込まれず（ビルドで外れる）、R18版でも「全年齢モード」のときは使わない。登場人物はすべて成人として扱う */
+/* @event-ok 関係ごとの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -328,7 +329,9 @@
     var pool = ff ? FF[k] : N[k].filter(noTop);
     var short = LW ? LW.short(ctx.env, rng) : false, ero = LW && LW.ero(ctx.env) && HK.ThickEro, high = LW && LW.high(ctx.env);
     /* 余韻：受けの態度ごとの様子か、果てたあとの一文（行き先の文と同じ書き出しは重ねない）＋夜のあとの行き先 */
-    var endT = out && END[out] ? pk(END[out]) : '';
+    /* もとからの知り合い（友人・同僚など）の二人には「連絡先だけは交換した」の文を使わない（2026-10-31 担当RC。mini.js の HK.relFilter） */
+    var endL = out && END[out] ? (HK.relFilter ? HK.relFilter(ctx, END[out], a, b) : END[out]) : null;
+    var endT = endL ? pk(endL.length ? endL : END[out]) : '';
     var af = AFTER.filter(function (l) { return !(/^果てたあと/.test(l) && /^果てたあと/.test(endT)) && !(out === 'keep' && /また会える|帰るタイミング/.test(l)) && !(out === 'lover' && /帰るタイミング/.test(l)); });
     var glow = rng() < 0.55 ? pk(AFTER_PS[ps] || AFTER_PS.gentle) : rng() < 0.6 && af.length ? pk(af) : '';
     if (!endT && !glow) glow = pk(AFTER);

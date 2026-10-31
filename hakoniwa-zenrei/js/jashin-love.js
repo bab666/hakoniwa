@@ -5,6 +5,7 @@
    jashin-goals.js の act を包む。目標が「恋人を作る」でない人には何もしない */
 /* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
 /* @event scen=jashin id=js_love cat=romance tie=lover label=恋人を作る（吊り橋・告白・恋人どうしの場面） */
+/* @event-ok 関係ごとの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK, ST = HK.Story, JS = HK.JASHIN, clamp = HK.clamp;
@@ -107,8 +108,9 @@
   }
 
   /* 気になる相手を決める（jashin-goals.js の love と同じ選び方） */
+  /* もとから恋人・夫婦・番・婚約者の相手は「気になる相手」に選ばない（告白で「付き合ってほしい」になるため。2026-10-31 担当RC） */
   function pickTarget(S, p, live) {
-    var L0 = p.love, cs = live.filter(function (q) { return q !== p && !q.bound && al(q) && !(HK.Avoid && HK.Avoid.of(S, p, q)) && HK.canLove(p, q) && HK.canLove(q, p) && (!HK.Poly || HK.Poly.storyCan(S, p, q)) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && HK.tieNoLove(t); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
+    var L0 = p.love, cs = live.filter(function (q) { return q !== p && !q.bound && al(q) && !(HK.Avoid && HK.Avoid.of(S, p, q)) && HK.canLove(p, q) && HK.canLove(q, p) && (!HK.Poly || HK.Poly.storyCan(S, p, q)) && !(S.ties || []).some(function (t) { return ((t.a === p.i && t.b === q.i) || (t.a === q.i && t.b === p.i)) && (HK.tieNoLove(t) || /^(?:lover|spouse|mate|fiance)$/.test(t.type)); }) && !(L0.no && L0.no.indexOf(q.i) >= 0); });
     if (!cs.length) return null;
     var b = HK.weighted(S.rng, cs, function (q) { return 1 + Math.max(0, bond(S, p, q)) * 2 + q.tr.warmth; });
     L0.pt = 0;

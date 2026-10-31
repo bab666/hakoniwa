@@ -5,6 +5,7 @@
    {x}=一人目の役 {y}=二人目の役 {place}=店などの場所 */
 /* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
 /* @event-table scen=omega path=OMEGA.JOB_PAIRS label=職業×職業の出来事 pair=1 note=JOB_PAIR_RULES の26組（omega-jobs-pair2.js）を含む */
+/* @event-ok 関係ごとの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK, OM = HK.OMEGA;
@@ -187,7 +188,8 @@
 
   function stage(ctx, x, y, st) {
     var pf = ctx.pair(x, y), r1 = ctx.R(x, y), r2 = ctx.R(y, x);
-    if (!st.n) return 'meet';
+    /* もとから関係のある二人（家族・恋人・友人・同僚など。知人を除く）は「出会い」から始めない（2026-10-31 担当RC。mini.js の HK.relClass） */
+    if (!st.n && !(HK.relClass && !/^(?:none|weak)$/.test(HK.relClass(ctx, x, y)))) return 'meet';
     if (pf.couple) return ctx.rng() < 0.6 ? 'love' : 'work';
     if (Math.max(r1.ten, r2.ten) > 45 && ctx.rng() < 0.6) return 'clash';
     if (r1.att > 30 && r2.att > 25 && ctx.rng() < 0.55) return 'close';
@@ -204,7 +206,8 @@
       st.n = (st.n || 0) + 1;
       var fx = { meet: [{ trust: 3 }, { trust: 3 }], work: [{ trust: 4, aff: 2 }, { trust: 4, aff: 3 }], close: [{ att: 6, aff: 3 }, { att: 6, aff: 3 }], love: [{ att: 4, aff: 4 }, { att: 4, aff: 4 }], clash: [{ ten: 8, aff: -3 }, { ten: 8, aff: -3 }] }[k];
       ctx.mod2(x, y, fx[0], fx[1]);
-      var t = ctx.pick(D[k]).replace(/\{x\}/g, x.name).replace(/\{y\}/g, y.name).replace(/\{place\}/g, r.id === 'serv' ? place(x) : '').replace(/\{jx\}/g, OM.jobName(x)).replace(/\{jy\}/g, OM.jobName(y)).replace(/\{fx\}/g, OM.fieldOf ? OM.fieldOf(ctx, x) : '').replace(/\{fy\}/g, OM.fieldOf ? OM.fieldOf(ctx, y) : '');
+      var dl = HK.relFilter ? HK.relFilter(ctx, D[k], x, y) : D[k];
+      var t = ctx.pick(dl.length ? dl : D[k]).replace(/\{x\}/g, x.name).replace(/\{y\}/g, y.name).replace(/\{place\}/g, r.id === 'serv' ? place(x) : '').replace(/\{jx\}/g, OM.jobName(x)).replace(/\{jy\}/g, OM.jobName(y)).replace(/\{fx\}/g, OM.fieldOf ? OM.fieldOf(ctx, x) : '').replace(/\{fy\}/g, OM.fieldOf ? OM.fieldOf(ctx, y) : '');
       var cat = { meet: 'bond', work: 'bond', close: 'romance', love: 'romance', clash: 'conflict' }[k];
       return { cat: cat, text: t, why: D.label + '（' + x.name + '・' + OM.jobName(x) + '／' + y.name + '・' + OM.jobName(y) + '）' + { meet: '：出会い', work: '：仕事の場で', close: '：惹かれ合う（惹かれ ' + Math.round(ctx.R(x, y).att) + '）', love: '：恋人どうし', clash: '：ぶつかる（緊張 ' + Math.round(Math.max(ctx.R(x, y).ten, ctx.R(y, x).ten)) + '）' }[k], mag: k === 'close' || k === 'love' || k === 'clash' ? 16 : 8 };
     }
