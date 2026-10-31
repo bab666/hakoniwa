@@ -6,7 +6,7 @@
 (function () {
   var V = HK.Voice, FIX = V.TONE_FIX = V.TONE_FIX || {};
   [
-    "yankee\tあれから、本当に調子いいんだ\tあれから、マジで調子いいんだよな",
+    "yankee\tあれから、本当に調子がいい\tあれから、マジで調子いいんだよな",
     "gentleman\t陛下。本日のお茶をお持ちいたしました\t陛下。今日のお茶を持ってきたよ",
     "free\t陛下。本日のお茶をお持ちいたしました\t陛下！　今日のお茶、持ってきたよ！"
   ].forEach(function (row) { var c = row.split('\t'); (FIX[c[0]] = FIX[c[0]] || {})[c[1]] = c[2]; });
