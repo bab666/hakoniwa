@@ -147,13 +147,14 @@
       var t = fill(ctx.pick(LV.leaveSelf), m);
       a.z.area = na; a.z.path.push(na);
       ctx.mod(b, a, { aff: 10 });
-      Z.later(ctx, function () { lostReact(ctx, a, b); });
+      Z.later(ctx, function () { lostReact(ctx, a, b); }, [a, b]);
       return { text: t, why: a.name + 'は恋人の' + b.name + 'のために、黙って姿を消した（NP・CP' + (a.hp < 45 ? '・怪我' : '') + '）', mag: 30 };
     }
   });
   /* 置いていかれた恋人の反応 */
   function lostReact(ctx, a, b) {
-    if (!b.alive || b.out) return;
+    /* 姿を消した本人がもう亡くなっていれば、「いなくなったことに気づく」場面は出さない（亡くなった知らせは別に出る） */
+    if (!b.alive || b.out || !a.alive) return;
     ctx.stress(b, 22);
     var t = fill(ctx.pick(LV.found), { a: a.name, b: b.name });
     if (b.goal.id !== 'chaos' && b.tr.np + b.tr.impulse > 0.9) { b.focus = a; if (b.goal.id !== 'protect') { b.goal = Z.scen.goals.filter(function (g) { return g.id === 'protect'; })[0] || b.goal; } }
@@ -161,7 +162,7 @@
   }
   /* 咬まれて黙って消えるときの文（zombie-core から呼ぶ） */
   Z.loveLeave = function (ctx, c, lover) {
-    Z.later(ctx, function () { lostReact(ctx, c, lover); });
+    Z.later(ctx, function () { lostReact(ctx, c, lover); }, [c, lover]);
     return fill(ctx.pick(LV.leaveBit), { a: c.name, b: lover.name });
   };
 
