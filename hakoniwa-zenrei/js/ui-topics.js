@@ -179,6 +179,7 @@
     if (sync() && UI().save) UI().save();
     el.outerHTML = bodyHtml();
     var num = document.getElementById('tp-num'); if (num) num.textContent = list().length + '/' + T.MAX;
+    var tn = document.querySelector('#cpane-topics .uitn'); if (tn) tn.textContent = list().length;   /* 住人タブの節の切替の数（2026-11-01 担当UA） */
     var nb = document.getElementById('tpbulk'); if (nb && bv) nb.value = bv;
     if (focusSel) { var f = document.querySelector(focusSel); if (f) { try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); } } }
   }
@@ -353,6 +354,8 @@
   function open(id) {
     var by = byId();
     if (id && by[id]) { NEW.scope = 'char'; NEW.a = id; }
+    /* 住人タブの節の切替を「話題」に（ui-shell.js。2026-11-01 担当UA） */
+    if (HK.Shell) HK.Shell.setPane('topics');
     if (!document.getElementById('tp-sec')) { if (UI().refresh) UI().refresh(); } else redraw();
     var go = function () {
       var el = document.getElementById('tp-h'), fd = document.getElementById('fold-tp-h');
@@ -415,7 +418,7 @@
 
   HK.TopicsUI = {
     html: html, redraw: redraw, onField: onField, onAct: onAct, sync: sync, syncSave: syncSave, renameGroup: renameGroup,
-    gearHtml: gearHtml, countFor: countFor, open: open, exportTo: exportTo, importFrom: importFrom,
+    gearHtml: gearHtml, countFor: countFor, open: open, count: function () { return list().length; }, exportTo: exportTo, importFrom: importFrom,
     /* 点検・試験用：一括入力の読み取り（画面と同じ）・追加の行の選択 */
     parse: parseBulk, add: function (o) { Object.keys(o || {}).forEach(function (k) { NEW[k] = o[k]; }); return add(); }, newState: function () { return NEW; }
   };
