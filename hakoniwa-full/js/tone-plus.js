@@ -535,8 +535,9 @@
   };
 
   /* 呼び方を決めてある相手（関係ごとの呼び方 calls、または敬称の設定 call）に向けた台詞では、二人称（あなた・お前・君…）を呼び方に置き換え、
-     名前も二人称も出てこない台詞には、ときどき（台詞ごとに決まった三つに一つ）呼びかけとして頭に呼び方を足す。
-     喘ぎ（♡・言葉にならない声）・短い台詞・すでに名前のある台詞には足さない。to＝台詞の相手（voice.js の addresseeOf） */
+     名前も二人称も出てこない台詞には、「ここぞ」の文（引き止め・警告・懇願・告白・怒り・別れ・救助など。下の KOKOZO）だけ、ときどき（台詞ごとに決まった四つに一つ。二人きりなら八つに一つ）
+     呼びかけとして頭に呼び方を足す（2026-11-01 担当NC：三つに一つ・ふつうの頼みや誘いにも足していたのを絞った）。
+     喘ぎ（♡・言葉にならない声）・短い台詞（10 字以下）・すでに名前のある台詞には足さない。to＝台詞の相手（voice.js の addresseeOf） */
   var YOU_W = /(?:あなた|あんた|お前|おまえ|てめえ|貴様|おぬし|そなた|お主)(?!さん|方|様|たち|達|ら)|(?:きみ|(?<![大姫主父母諸細若暴ァ-ヶー一-鿿A-Za-z])君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なら|だけ|自身|こそ))/;
   function hashS(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
   /* どもり（「あ、あなた」「お、お前」「き、君」）の二人称を呼び方にするときは、どもりの頭の音も呼び方の頭の音にする（「み、ミナト」「た、鷹野さん」）。
@@ -567,16 +568,63 @@
     return CALL_IMP.test(s1) && !CALL_NOT_IMP.test(s1);
   }
   V.callable = callable;
+  /* 「ここぞ」の呼びかけ（2026-11-01 担当NC。利用者の指示「名前の呼びかけは『ここぞ』というときになるよう減らしたい」）：
+     頭に呼び方を足すのは、本当に相手を呼び止める・訴える文だけ。ふつうの頼み・誘い・命令（「こっち来て」「手伝って」「行こう」）・返事・相づち・説明には足さない。
+       stop 引き止め・制止（待って・行かないで・やめて）／warn 警告（逃げて・危ない・伏せろ）／plea 懇願・救助（お願い・助けて・しっかりして・死なないで）／
+       confess 告白（好きだ・愛してる）／anger 怒り（許さない・ふざけるな）／farewell 別れ（さよなら・元気で）／rescue 名指しの気づかい・問いただし（大丈夫か・無事か）／
+       attn 聞いてほしい（聞いて・話がある・こっちを見て）
+     性的な場面（voice.js の V._lewdEv）では、山場の懇願・告白（plea・confess）だけ。喘ぎ（♡・小さい母音・っ、）は今までどおり足さない */
+  var KOKOZO = {
+    /* 最初の文の、最初の読点までがまるごとこの形（「待って、まだ話は終わってない」。「止めてほしくなったら」「やめておけ」は除く） */
+    stop: /^(?:ちょっと|ねえ|おい|お)?[、…‥]*(?:待って|待て|待ちなさい|待ってくれ|待ってください|行かないで|行くな|置いていかないで|置いて行かないで|やめて|やめろ|やめなさい|やめてくれ|やめてください|止めて|止めろ|止まれ|離さないで|離して|離せ)(?:よ|ってば|ば)?$/,
+    attn: /^(?:ねえ|おい)?[、…‥]*(?:聞いて|聞け|聞いてくれ|聞いてください|聞いてほしい|こっちを見て|こっち見て|こっちを見ろ|目を逸らさないで)(?:よ|くれ)?$/,
+    /* 文ごと（どの文でも） */
+    warn: CALL_WARN,
+    plea: /^(?:お願い|頼む|頼みます|頼むから)(?:だから|です|します|ですから)?(?:[、…‥]|$)|助けて|見捨てないで|死なないで|死ぬな|目を開け|(?:しっかり(?:して|しろ|しなさい)|起きて|信じて|許して|戻ってきて|戻って来て|返事を?して|一緒にいて|そばにいて|消えないで)(?:よ|くれ|ください|ほしい)?$|行かせない/,
+    confess: /(?:^|[、…‥\s])(?:ずっと|本当に|ほんとに|前から|もう)?(?:大好き|好き|愛してる|愛して(?:い)?ます)(?:だ|です|なの|なんだ|なんです|だった|でした|だよ|だから)?(?:よ|ね)?$/,
+    anger: /許さない|許さねえ|許せない|ふざけるな|ふざけないで|ふざけんな|いい加減にし|どういうつもり|何のつもり|なんのつもり/,
+    farewell: /さよなら|さようなら|元気で(?:ね|な|いて)?$|忘れないで|また会おう|また会える/,
+    rescue: /大丈夫か|大丈夫ですか|大丈夫[？?]$|無事か|無事[？?]$|怪我は|生きてる(?:の|か)?[？?]?$/,
+    talk: /話がある(?:んだ|の|んです)?$/
+  };
+  var LEWD_OK = { plea: 1, confess: 1 }, HEAD_K = { stop: 1, attn: 1 };
+  /* 台詞の文（。！？まで）のどれかが「ここぞ」なら、その種類（なければ ''）。引き止め・聞いてほしいは最初の文の頭、警告は最初の文だけ見る */
+  function kokozo(q, lewd) {
+    var ss = (String(q).replace(/^[…‥\s　]+/, '').match(/[^。！？!?]+[。！？!?]*/g) || []).map(function (x) { return x.replace(/^[…‥\s　、]+/, '').replace(/[。…‥っッ〜ー～♡\s　、]+$/, ''); }).filter(Boolean);
+    if (!ss.length || CALL_NO_HEAD.test(ss[0])) return '';
+    var head = ss[0].split('、')[0].replace(/[！？!?。…‥っッ〜ー～♡\s　]+$/, '');
+    for (var i = 0; i < ss.length; i++) for (var k in KOKOZO) {
+      if (lewd && !LEWD_OK[k]) continue;
+      if (HEAD_K[k]) { if (!i && KOKOZO[k].test(head)) return k; continue; }
+      if (i && k === 'warn') continue;
+      var x = k === 'rescue' ? ss[i] : ss[i].replace(/[！？!?]+$/, '');
+      if (KOKOZO[k].test(x)) return k;
+    }
+    return '';
+  }
+  V.kokozo = kokozo;
+  /* 記録（e.callAdded）に載せる名前は、伏せ字（HK.NameGuard）を戻した字で */
+  function plainNm(s) { var NG = HK.NameGuard; return (NG && NG.stack.length ? NG.decAll(String(s || '')) : String(s || '')).replace(/\u2064/g, ''); }
   V.callAddress = function (q, who, to, raw) {
     if (!who || !to || to === who || !to.name || !(who.call || (who.calls && who.calls[to.name]))) return q;
     /* 相手がモブなら、呼び方を決めていない限り二人称のまま（V.mobAddr） */
     if ((to.mob && !(who.calls && who.calls[to.name])) || String(raw || '').indexOf('\u2063') >= 0) return q;
     var c = V.callFor(who, to);
-    if (!c || q.indexOf(to.name) >= 0 || q.indexOf(c) >= 0) return q;
+    if (!c) return q;
+    /* 呼んだ組（話し手>相手）：同じ記録では一人一度・ひとつ前の記録で呼んだ相手には足さない（voice.js の V._callLast・V._callPrev） */
+    var sk = plainNm(who.name) + '>' + plainNm(to.name), scene = V._callScene;
+    var called = function () { if (V._callLast) V._callLast[sk] = 1; if (scene) scene[who.name] = sk; };
+    if (q.indexOf(to.name) >= 0 || q.indexOf(c) >= 0) {
+      /* 文にもとからある呼びかけ（「ミナト、」「……ミナトさん！」）も、呼んだものとして覚える */
+      if (new RegExp('(?:^|[…‥、。！？!?\\s])(?:' + esc(c) + '|' + esc(to.name) + ')[^、。！？!?…‥]{0,3}?[、！？!?…‥]').test(q)) called();
+      return q;
+    }
     /* 自分で決めた二人称（you）も、呼び方を決めた相手には名前で */
     var yw = who.you ? new RegExp(who.you.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=[はがもをにとで、。！？…」のって]|$)') : null;
     if (YOU_W.test(q) || (yw && yw.test(q))) {
       var ym = q.match(YOU_W) || (yw && q.match(yw));
+      if (V._callAdd) V._callAdd.push({ k: V._callK, w: plainNm(who.name), t: plainNm(to.name), y: 1 });
+      if (/^[、！？!?…‥]/.test(q.slice(ym.index + ym[0].length))) called();
       return stutterTo(q.slice(0, ym.index), ym[0], c, to) + c + q.slice(ym.index + ym[0].length);
     }
     var body = q.replace(/[…‥、。！？!?っッ〜ー♡\s]/g, '');
@@ -588,14 +636,20 @@
     if (/^[…‥\s]*(?:先生|師匠|先輩|兄さん|姉さん|兄ちゃん|姉ちゃん|母さん|父さん|お母さん|お父さん|隊長|団長|社長|部長|課長|店長|博士|教授|閣下|殿下|陛下|お嬢様|坊ちゃん|旦那|親方|隊員|諸君|みんな|皆|お前ら|お前たち|君たち|あなたたち)[、。！？!?…]/.test(q)) return q;
     /* 息づかい（は、ぁ・っ、・小さい母音）の混じる台詞と、問いへの短い答え（「〜こと」「〜とか」で終わる）には足さない */
     if (/[ぁぃぅぇぉ]|っ、|ッ、/.test(q) || /(?:こと|もの|とか|かな)[。…]*$/.test(q)) return q;
-    if (/♡/.test(q) || body.length < 7 || /^[ぁ-ゖァ-ヶ]{0,4}[ッっ]?$/.test(body) || hashS(HK.NameGuard && HK.NameGuard.stack.length ? HK.NameGuard.decAll(String(raw || q) + who.name) : String(raw || q) + who.name) % 3) return q;
-    /* 頭に名前を足すのは、相手に向かって呼びかける文（命令・頼み・懇願・引き止め・誘い・警告。「ローリッツ、私から離れるな」「待って」「来てください」）だけ。
-       言い返し・返事・反応・説明（「別に頼んでいない」「意外ですね」「うん」）には足さない。同じ場面（文ひとつ）では一人一度まで（2026-10-29 利用者の指示「名前も呼ばなくていい」「呼びかけなら構わないが、ほどほどに」） */
-    if (!callable(q)) return q;
-    var sk = who.name + '>' + to.name, scene = V._callScene;
-    if (scene && scene[who.name]) return q;
-    if (scene) scene[who.name] = sk;
+    /* 短い台詞（10 字以下）には足さない。頻度は「ここぞ」の文でも、台詞ごとに決まった四つに一つ。
+       二人きりの出来事（登場人物 2 人。voice.js の V._actN）では、さらにその半分（八つに一つ）。
+       （「ここぞ」の文は台詞行の 0.2% ほど（call-audit.js の計測）なので、六つに一つでは呼びかけがほとんど出なくなる。2026-11-01 担当NC） */
+    if (/♡/.test(q) || body.length <= 10) return q;
+    var h = hashS(HK.NameGuard && HK.NameGuard.stack.length ? HK.NameGuard.decAll(String(raw || q) + who.name) : String(raw || q) + who.name);
+    if (h % 4 || (V._actN === 2 && Math.floor(h / 4) % 2)) return q;
+    /* 頭に名前を足すのは「ここぞ」の文（上の KOKOZO）だけ。言い返し・返事・反応・説明（「別に頼んでいない」「意外ですね」「うん」）・ふつうの頼みには足さない。
+       同じ場面（文ひとつ）では一人一度まで、ひとつ前の記録で同じ相手を呼んでいたら足さない
+       （2026-10-29 利用者の指示「名前も呼ばなくていい」「呼びかけなら構わないが、ほどほどに」・2026-11-01「名前の呼びかけは『ここぞ』というときに」） */
+    if (!kokozo(q, V._lewdEv)) return q;
+    if ((scene && scene[who.name]) || (V._callPrev && V._callPrev[sk])) return q;
+    called();
     var m = q.match(/^([…‥\s]*)/);
+    if (V._callAdd) V._callAdd.push({ k: V._callK, w: plainNm(who.name), t: plainNm(to.name) });
     return m[1] + c + '、' + q.slice(m[1].length);
   };
 

@@ -1,3 +1,4 @@
+/* @event-ok 名前の呼びかけを減らした（2026-11-01 担当NC） */
 /* 箱庭診断: クラスメイトの先生（担任・副担任。何人でも）と、先生と生徒のイベント
    先生は生徒の輪（派閥・いじめ・テスト）には入らず、毎月いくつかの場面で受け持ちの生徒と関わる。
    先生と生徒の間に恋愛は起きない（惹かれは育たない）。
@@ -65,7 +66,7 @@
     } },
     { id: 'rumor', w: function () { return 0.35; }, run: function (ctx, t) {
       var s = ctx.most(ctx.present(), function (c) { return c.tr.fc * 0.5 + c.tr.jealous * 0.3 + ctx.rng() * 0.4; });
-      ctx.act2({ actors: [s, t], cat: 'bond', fx: function () { ctx.present().forEach(function (c) { ctx.stress(c, -2); }); }, text: T(ctx, pk(ctx, ['「{a}先生、指輪してたらしいよ｜{a}先生が、指輪をしていたらしい｜{a}先生、指輪をしていたらしいですよ」{b}の一言で、教室が朝から大騒ぎになった。', '{b}が「{a}先生が駅前でケーキを三つ買ってた｜{a}先生が駅前でケーキを三つ買っていた｜{a}先生が駅前でケーキを三つ買っていました」と報告した。誰と食べたのか、クラス会議が開かれた。', '{b}は{a}の昔の卒業アルバムを図書室で見つけた。髪型について、学年中に情報が回った。']), t, s), why: 'クラスの噂好き（' + s.name + 'のFC）' });
+      ctx.act2({ actors: [s, t], cat: 'bond', fx: function () { ctx.present().forEach(function (c) { ctx.stress(c, -2); }); }, text: T(ctx, pk(ctx, ['「{a}先生って、指輪してたらしいよ｜{a}先生が、指輪をしていたらしい｜{a}先生って、指輪をしていたらしいですよ」{b}の一言で、教室が朝から大騒ぎになった。', '{b}が「{a}先生が駅前でケーキを三つ買ってた｜{a}先生が駅前でケーキを三つ買っていた｜{a}先生が駅前でケーキを三つ買っていました」と報告した。誰と食べたのか、クラス会議が開かれた。', '{b}は{a}の昔の卒業アルバムを図書室で見つけた。髪型について、学年中に情報が回った。']), t, s), why: 'クラスの噂好き（' + s.name + 'のFC）' });
     } },
     { id: 'sick', w: function (ctx, t) { return t.flags.sick ? 0 : 0.25; }, run: function (ctx, t) {
       t.flags.sick = true;
