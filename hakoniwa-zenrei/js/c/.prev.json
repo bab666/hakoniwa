@@ -11,7 +11,7 @@
   "scen-whiteroom": "scen-whiteroom.afd517e2ad.js",
   "scen-trial": "scen-trial.82d44a8016.js",
   "scen-omega": "scen-omega.9256008d9d.js",
-  "scen-massage": "scen-massage.1e082f7c8a.js",
+  "scen-massage": "scen-massage.f5fbea4459.js",
   "scen-zombie": "scen-zombie.ebdb2d74c6.js",
   "scen-rpg": "scen-rpg.ea44c8c8b8.js",
   "scen-saimin": "scen-saimin.d0cadcdef8.js",
@@ -64,7 +64,7 @@
   "tone-yankee": "tone-yankee.3a9741ee38.js"
  },
  "prev": {
-  "core": "core.8a9fdbd124.js",
+  "core": "core.e3f3f43174.js",
   "late": "late.3015a3624c.js",
   "pack-rel": "pack-rel.53638287d7.js",
   "scen-goukon": "scen-goukon.8d36171851.js",
