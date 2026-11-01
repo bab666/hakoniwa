@@ -756,9 +756,9 @@
   };
 
   /* 箱庭を回しているあいだだけ、住人の名前 → 喘ぎの口調 の対応表を置く（設定した人がいなければ空のまま） */
-  if (HK.simulate && !HK.simulate._moanTone) {
-    var simM = HK.simulate;
-    HK.simulate = function (input) {
+  if (HK.simulate && !HK.simulate._moanTone) HK.wrap(HK, 'simulate', function (simM) {
+    /* 分割読み込み：このファイルは喘ぎのかたまり pack-lewd（中核のあと）にあるので、包みは HK.wrap で書く（素の代入だと、後から来るかたまりの HK.wrap（safe-room.js など）の並べ直しが切れる） */
+    var f = function (input) {
       var prev = M.map, mp = null;
       var nmp = null;
       ((input && input.chars) || []).forEach(function (c, i) {
@@ -775,9 +775,10 @@
       ((input && input.chars) || []).forEach(function (c) { if (c && c.name) (M.chars = M.chars || {})[plainName(c.name)] = c; });
       try { return simM.apply(this, arguments); } finally { M.map = prev; M.nmap = prevN; M._fitLeave(prevF); M.own = prevO; M.chars = prevC; }
     };
-    for (var km in simM) if (Object.prototype.hasOwnProperty.call(simM, km)) HK.simulate[km] = simM[km];
-    HK.simulate._moanTone = true;
-  }
+    for (var km in simM) if (Object.prototype.hasOwnProperty.call(simM, km)) f[km] = simM[km];
+    f._moanTone = true;
+    return f;
+  });
   /* 台詞の仕上げ（voice.js の processResult。persona-final.js が箱庭のあとに呼ぶ）のあいだも、住人の欄の辞書・区分を名前で引けるように
      （利用者の行を区分で直さない M.isUser と、住人の区分の M.fit のため） */
   var VO = HK.Voice;

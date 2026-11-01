@@ -162,9 +162,10 @@
     }, LAST);
   }
   /* 包むのは最初のシミュレーションの前（r18-thick.js は後から読む。attr-r18.js の夜の性格の包みより外側にして、主導の文を夜の性格の文より先に置く） */
-  if (HK.simulate && !HK.simulate._lead) {
-    var sim0 = HK.simulate;
-    HK.simulate = function () { install(); return sim0.apply(this, arguments); };
-    HK.simulate._lead = true;
-  }
+  if (HK.simulate && !HK.simulate._lead) HK.wrap(HK, 'simulate', function (sim0) {
+    /* 分割読み込み：このファイルは喘ぎのかたまり pack-lewd（中核のあと）にあるので、包みは HK.wrap で書く（素の代入だと、後から来るかたまりの HK.wrap（safe-room.js など）の並べ直しが切れる） */
+    var f = function () { install(); return sim0.apply(this, arguments); };
+    f._lead = true;
+    return f;
+  });
 })();
