@@ -6,7 +6,7 @@
      node hakoniwa-tools/tone-check/tone-feel.js hakoniwa-full --tones=kansai,sondai --why   # 口調を絞り、違和感の台詞を頻度順に
      node hakoniwa-tools/tone-check/tone-feel.js hakoniwa-zenrei                     # 全年齢版（ページは無印。内容のスイッチは全年齢版にあるものだけ）
    ほかの指定：--N=24（箱庭ごとの回数）、--seeds=2000,21001（最初が「直すときに見た種」、残りが「見ていない種」）、--mode=r18|safe（R18版のページの hash。既定 r18）、
-              --tie=twin（話し手と相手に関係を配役する。2026-10-31 双子の点検用）、--why（違和感の台詞を口調ごとに 30 件。--why=100 で件数）、--json=出力.json、--base=基準.json（悪化した口調を出す）、--jobs=2（ページを何本並べるか）
+              --topics（見本の話題を入れて回す。話題の文の台詞も集める）、--tie=twin（話し手と相手に関係を配役する。2026-10-31 双子の点検用）、--why（違和感の台詞を口調ごとに 30 件。--why=100 で件数）、--json=出力.json、--base=基準.json（悪化した口調を出す）、--jobs=2（ページを何本並べるか）
    ・台詞の集め方は口調直しの trace.js と同じ：話し手（ハルカ）の口調を固定し、相手はおまかせ。エゴグラム 6 種・男女半々・受け攻め半々・3 回に 1 回は恋人。
      自動の態度口調（proud など HK.PERSONA の 9 種）は、口調を「おまかせ」にして、その口調になるエゴグラムを 8 種探して使う（丁寧 polite だけは口調を設定。TD の作り方）。
      環境は既定値で、恋愛・夜・媚薬・発情などの上限があるものは上限、内容のスイッチは force 以外ぜんぶ。喘ぎ（♡・小さい母音を含む 14 字未満）は数えない。
@@ -61,7 +61,7 @@ function collectInPage(a) {
       (scen.env || []).forEach(e => { if (e.max != null && /romance|love|night|lewd|heat|aphro|dose|pleasure/.test(e.id)) env[e.id] = e.max; });
       if (HK.Content) env.ct = HK.Content.TAGS.map(t => t.id).filter(t => t !== 'force').join(',');
       let R; runs++;
-      try { R = HK.simulate({ scenId: sc, seed: SEED + s * 7, env, chars, ties: a.tie ? [{ a: 0, b: 1, type: a.tie }] : s % 3 === 0 ? [{ a: 0, b: 1, type: 'lover' }] : [], perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })) }); } catch (e) { errs.push(sc + '/' + (SEED + s * 7) + ':' + e.message); continue; }
+      try { R = HK.simulate({ scenId: sc, seed: SEED + s * 7, env, chars, ties: a.tie ? [{ a: 0, b: 1, type: a.tie }] : s % 3 === 0 ? [{ a: 0, b: 1, type: 'lover' }] : [], perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })), topics: a.topics || undefined }); } catch (e) { errs.push(sc + '/' + (SEED + s * 7) + ':' + e.message); continue; }
       bySc[sc]++;
       (R.log || []).forEach(e => { (e.seg || []).forEach(g2 => {
         if ((g2.t === 'l' || g2.t === 'e') && g2.who === 0) {
@@ -132,6 +132,8 @@ async function waitReady(page) {
   const o = {
     scen: String(arg('scen', DEF_SCEN.join(','))).split(',').filter(Boolean),
     tie: String(arg('tie', '') || ''),
+    /* --topics：住人を問わない見本の話題（audit/topics-sample.js の ALL）を入れて回す（話題の文の台詞も集める。2026-11-01 担当TB） */
+    topics: arg('topics', false) ? require('./audit/topics-sample.js').ALL : null,
     N: Math.max(1, +arg('N', 24) || 24),
     seeds: String(arg('seeds', '2000,21001')).split(',').map(Number).filter(x => x > 0),
     jobs: Math.max(1, +arg('jobs', 2) || 1),
@@ -159,7 +161,7 @@ async function waitReady(page) {
         if (!fresh) { await ob.page.goto(buildUrl(dir, mode)); await waitReady(ob.page); }
         fresh = false;
         const n0 = ob.errors.length;
-        const res = await ob.page.evaluate(collectInPage, { tone: t, auto: AUTO.indexOf(t) >= 0 || info.persona.indexOf(t) >= 0 && !JUDGE[t], scen: o.scen, N: o.N, seeds: o.seeds, tie: o.tie });
+        const res = await ob.page.evaluate(collectInPage, { tone: t, auto: AUTO.indexOf(t) >= 0 || info.persona.indexOf(t) >= 0 && !JUDGE[t], scen: o.scen, N: o.N, seeds: o.seeds, tie: o.tie, topics: o.topics });
         res.pageErr = ob.errors.slice(n0);
         res.pageErr.forEach(e => pageErr.push(t + ': ' + e));
         results[t] = judgeTone(res, o.seeds);

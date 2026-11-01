@@ -4,6 +4,7 @@
      node hakoniwa-tools/tone-check/audit-all.js --modes=r18           # モードを絞る（r18,safe,zen）
      node hakoniwa-tools/tone-check/audit-all.js --extra=sexgate,feud,group,state-hot,name,relcons  # 追加の配役パスも回す（--extra=all で全部）
      node hakoniwa-tools/tone-check/audit-all.js --only-extra --extra=group             # 追加の配役パスだけ
+     （既定の一式と --extra=relcons には、見本の話題を入れた回 topics-state・topics-seg・topics-relcons も入る。audit/topics-sample.js）
      node hakoniwa-tools/tone-check/audit-all.js --print=出力のフォルダ                 # 今までの道具の形の出力もパスごとに書く（単独実行の出力と同じになる）
      node hakoniwa-tools/tone-check/audit-all.js --cross                                # 判定をほかのパスの回にも当てる（調べもの用。誤判定を含む。下の注）
    ほかの指定：--jobs=1（ページを 1 枚ずつ。既定 2）、--scale=0.5（回数を一律に何倍にするか。seed の範囲が変わるので、件数は単独実行と比べられない）、
@@ -49,9 +50,14 @@ const PASSES = {
   'state-hot': { tool: 'state', id: 'state', opt: { N: 24, hot: true }, lewd: 'direct', est: 66, extra: true, out: m => 'state-hot-' + m },
   name: { tool: 'name', id: 'name', opt: { N: 6 }, lewd: '', est: 22, extra: true, out: m => 'name-' + m },
   /* 知らない人どうし／知り合いどうし／混在 と関係に合わない文（2026-10-31 担当RC。relcons-audit.js） */
-  relcons: { tool: 'relcons', id: 'relcons', opt: { N: 24 }, lewd: '', est: 55, extra: true, out: m => 'relcons-' + m }
+  relcons: { tool: 'relcons', id: 'relcons', opt: { N: 24 }, lewd: '', est: 55, extra: true, out: m => 'relcons-' + m },
+  /* 見本の話題を入れた回（2026-11-01 担当TB。audit/topics-sample.js）：同じ配役に話題（js/topics.js）を足して、話題の文を状態・台詞の区分・文の崩れ・展開の不整合の判定に当てる。
+     話題があると回の中身が変わるので、元のパスとは別に回す（元のパスの件数は変わらない）。topics-relcons は --extra=relcons のときにいっしょに回す */
+  'topics-state': { tool: 'state', id: 'state', opt: { N: 6, topics: true }, lewd: 'direct', est: 17, out: m => 'topics-state-' + m },
+  'topics-seg': { tool: 'seg', id: 'seg', opt: { N: 4, topics: true }, lewd: '', est: 5, out: m => 'topics-seg-' + m },
+  'topics-relcons': { tool: 'relcons', id: 'relcons', opt: { N: 6, topics: true }, lewd: '', est: 14, extra: true, out: m => 'topics-relcons-' + m }
 };
-const DEFAULT = ['orient', 'pos', 'pos-hot', 'pos-ffhot', 'state', 'loveflag', 'seg', 'qa', 'noname'];
+const DEFAULT = ['orient', 'pos', 'pos-hot', 'pos-ffhot', 'state', 'loveflag', 'seg', 'qa', 'noname', 'topics-state', 'topics-seg'];
 /* 判定：cross＝ほかのパスの回にも当てる。modes＝当てるモード */
 const JUDGES = {
   orient: { cross: true, opt: () => ({ why: true }) },
@@ -174,6 +180,8 @@ function report(sums, o) {
     onlyExtra: has('only-extra'), compat: has('compat'), cross: has('cross'), print: arg('print', ''), jobs: Math.max(1, +arg('jobs', 2) || 1), scale: +arg('scale', 1) || 1,
     json: arg('json', ''), info: has('info'), noMisc: has('no-misc')
   };
+  /* 展開の不整合（relcons）を回すときは、見本の話題を入れた回（topics-relcons）もいっしょに回す */
+  if (o.extra.indexOf('relcons') >= 0 && o.extra.indexOf('topics-relcons') < 0) o.extra.push('topics-relcons');
   const bad = o.extra.filter(p => !PASSES[p] || !PASSES[p].extra);
   if (bad.length) { console.error('知らない追加のパス：' + bad.join(',') + '（使えるもの：' + Object.keys(PASSES).filter(p => PASSES[p].extra).join(',') + '）'); process.exit(2); }
   const T0 = Date.now();
