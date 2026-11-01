@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.994f8255fe.js",
+  "core": "core.174ba5b4ad.js",
   "late": "late.81423fbe63.js",
   "pack-rel": "pack-rel.5a91447e88.js",
   "pack-lewd": "pack-lewd.6ae72193f7.js",
@@ -72,8 +72,8 @@
   "tone-yankee": "tone-yankee.f39472c9b6.js"
  },
  "prev": {
-  "core": "core.2593e60e64.js",
-  "late": "late.cae32f6891.js",
+  "core": "core.994f8255fe.js",
+  "late": "late.81423fbe63.js",
   "pack-rel": "pack-rel.5a91447e88.js",
   "pack-lewd": "pack-lewd.6ae72193f7.js",
   "scen-goukon": "scen-goukon.5d4a30df40.js",
@@ -613,8 +613,8 @@
    8674
   ],
   "js/ui-box-style.js": [
-   25829,
-   5023
+   25877,
+   5032
   ],
   "js/ui-box-draw.js": [
    8621,

@@ -206,7 +206,8 @@
       V + ' .bxsel .tags,' + V + ' .bxsel .bxuses,' + V + ' .bxsel .note,' + V + ' .bxsel-a .tipscen{display:none}' +
       V + ' .bxsel-a{flex:0 0 auto;max-width:none}' +
       V + ' .bxsel-a .bxchg{height:40px;padding:0 14px;font-size:13px}' + V + ' .bxsel-a .bxchg svg,' + V + ' .bxsel-a .bxlong{display:none}' +
-      V + ' .bxtabs{flex-direction:column;align-items:stretch;gap:8px}' +
+      /* 折り返しのある縦の flex は、行の幅が中身（切替の札の全幅）になって画面からはみ出すので、スマホでは折り返さない */
+      V + ' .bxtabs{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:8px}' + V + ' .bxtabs-a{flex-wrap:wrap}' +
       V + ' .bxk .bxadn{display:none}' + V + ' .bxpick-h{flex-wrap:nowrap}' + V + ' .bxx{flex:none}' +
       V + ' .bxtabs>*{min-width:0}' +
       V + ' .bxtl{flex-wrap:nowrap;min-width:0;gap:6px;overflow-x:auto;padding:0;background:none;border-radius:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}' +
