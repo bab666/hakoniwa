@@ -248,6 +248,34 @@
   function after1(text, ins) { if (!ins) return text; var i = text.indexOf('\n\n'); return i < 0 ? text + '\n\n' + ins : text.slice(0, i) + '\n\n' + ins + text.slice(i); }
   var PEAK = /果て(?:た|る|て)|達し(?:た|て)|絶頂|最後の一押し|頂へ|頂に/;
   function fragOf(s) { return String(s || '').split(/\{[^}]*\}|\n/).filter(function (x) { return x.length >= 6; }).sort(function (x, y) { return y.length - x.length; })[0] || ''; }
+  /* 喘ぎ・台詞だけの段落（{mU1}・{climax}・「名前「……」」など。地の文が名前ほどしか残らない） */
+  function voiceOnly(p) { return String(p).replace(/「[^」]*」/g, '').replace(/\{[^}]*\}/g, '').replace(/[\s⁠―…・、。！？!?♡〜～ー]/g, '').length <= 8; }
+  /* 本文の段落（区切りの改行の位置 sep と、段落の頭 b）を lim の手前まで */
+  function parasBefore(t, lim) {
+    var P = [{ sep: -1, b: 0 }], re = /\n+/g, m;
+    while ((m = re.exec(t)) && m.index < lim) P.push({ sep: m.index, b: m.index + m[0].length });
+    P.forEach(function (p, k) { p.s = t.slice(p.b, k + 1 < P.length ? P[k + 1].sep : lim); });
+    return P;
+  }
+  /* at の手前の、喘ぎ・台詞だけでない段落（指を抜く一文を置くかを見る） */
+  function prevNarr(t, at) {
+    var P = parasBefore(t, at);
+    for (var k = P.length - 1; k >= 0; k--) if (P[k].s.trim() && !voiceOnly(P[k].s)) return P[k].s.replace(/「[^」]*」/g, '');
+    return '';
+  }
+  /* 果てる段の直前が喘ぎ・台詞だけの段なら、そこは山場の途中（高まる段 → 頂の喘ぎ → 果てる段。宇宙船・オメガバースの厚い山場など）。
+     体位を変える段を頂の喘ぎと果てる段のあいだに差さないよう、喘ぎの段と、その前の高まる段の手前までさかのぼる。
+     さかのぼるのは、高まる段より前にもう繋がっている（女性どうしは指・舌で触れている）段があるときだけ（高まる段が最初の挿入なら、元の位置のまま。
+     2026-11-01 担当SF：宇宙船の sexgate の配役で、芽を指で捏ねる頂の段のすぐ次に「深く繋がり直した」が来た（点検 misc の FI）） */
+  var CONN = /繋が|挿|貫|押し入|腰を(?:沈め|落と|揺ら|振|打ちつけ|押しつけ|進め)|沈め|突き|奥|深いところ|押し上げ|呑み込|揺さぶ|律動|刻み/;
+  function beforeClimax(t, cut, mode) {
+    var P = parasBefore(t, cut), k = P.length - 1;
+    while (k >= 0 && (!P[k].s.trim() || voiceOnly(P[k].s))) k--;
+    if (k === P.length - 1 || k < 2) return cut;
+    var re = mode === 'ff' ? /指|舌/ : CONN;
+    for (var i = 0; i < k; i++) if (!voiceOnly(P[i].s) && re.test(P[i].s.replace(/「[^」]*」/g, ''))) return P[k].sep;
+    return cut;
+  }
   /* o = { anchor: 感じていく段の文、after: 事後の文（本文の末尾）、pos: 'last'（果てる段の前＝最後の段の前） } */
   I.apply = function (text, pl, o) {
     if (!pl || typeof text !== 'string') return text;
@@ -274,12 +302,16 @@
           var nx = t.indexOf('\n', mm.index + mm[0].length), para = t.slice(mm.index + mm[0].length, nx < 0 ? t.length : nx);
           if (k3 >= 2 && PEAK.test(para.replace(/「[^」]*」/g, ''))) { cut = mm.index; break; }
         }
-        if (cut >= 0) at = cut;
+        if (cut >= 0) at = beforeClimax(t, cut, pl.mode);
         else { var b1 = t.lastIndexOf('\n\n', lim - 1); at = b1 >= 0 ? b1 : t.length; }
       }
-      /* 直前の段落が指で責めている段（指を抜く言葉がない）で、差す段が繋がる書き方なら、先に指を抜く一文を置く（点検 misc の FI） */
-      var p0 = t.slice(0, at).replace(/\n+$/, '').lastIndexOf('\n'), prev = t.slice(p0 >= 0 ? p0 + 1 : 0, at).replace(/「[^」]*」/g, '');
-      if (pl.mode !== 'ff' && /指(?:を|が|で)/.test(prev) && !/指を[^。]{0,8}(?:抜|引き抜|離)|指が[^。]{0,6}(?:抜け|抜か|離れ)/.test(prev) && /繋が|挿|腰を沈め|突き入れ|貫|満たし/.test(pp.mid)) pp.mid = '{a}は濡れた指を、ゆっくりと引き抜いた。' + pp.mid;
+      /* 直前の地の文の段落（喘ぎ・台詞だけの段は飛ばす）が指で責めている段（指を抜く言葉がない）で、差す段が繋がる書き方なら、先に指を抜く一文を置く（点検 misc の FI）。
+         芽・胸の先を指でいじっていただけ（中に沈めていない）なら「離す」 */
+      var prev = prevNarr(t, at);
+      if (pl.mode !== 'ff' && /指(?:を|が|で)/.test(prev) && !/指を[^。]{0,8}(?:抜|引き抜|離)|指が[^。]{0,6}(?:抜け|抜か|離れ)/.test(prev) && /繋が|挿|腰を沈め|突き入れ|貫|満たし/.test(pp.mid)) {
+        var inside = /指(?:を|が)[^。]{0,12}(?:ねじ込|挿れ|挿し|差し入れ|入れ|沈め|埋め|潜り込|滑り込|突き入れ)|指で[^。]{0,10}(?:掻き回|かき回|ほぐ)|指(?:を|が)[^。]{0,8}(?:曲げ|抜き差し|出し入れ)|中の指|内側を指/.test(prev);
+        pp.mid = (inside ? '{a}は濡れた指を、ゆっくりと引き抜いた。' : '{a}は濡れた指を、そっと離した。') + pp.mid;
+      }
       t = t.slice(0, at) + '\n\n' + pp.mid + t.slice(at);
     }
     if (pp.lead) t = after1(t, pp.lead);
