@@ -184,7 +184,7 @@
     return '<div class="gearrow">' + rows + '</div>' + (sc.length ? '<details class="gego" style="margin-top:6px"><summary>1〜5 の意味</summary><ul>' + sc.map(function (g) { return '<li><b>' + h.esc(g.label) + '</b>：' + h.esc(g.d) + '</li>'; }).join('') + '</ul></details>' : '');
   };
   SH.scope = function () {
-    return '効く箱庭：' + SH.shown().map(function (g) { return g.label + '（' + SH.where(g).join('・') + '）'; }).join('、') + '。箱庭の「住人ごとの初動と目標」の表と同じ値で、どちらで変えても揃います。';
+    return '効く箱庭：' + SH.shown().map(function (g) { return g.label + '（' + SH.where(g).join('・') + '）'; }).join('、') + '。箱庭の「参加者と初動」の表と同じ値で、どちらで変えても揃います。';
   };
   /* 住人の行の要約（決めた項目だけ） */
   SH.summary = function (c) {
