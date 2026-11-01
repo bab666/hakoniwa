@@ -19,7 +19,7 @@
 <title>箱庭シミュレーター</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <script>
-/* 表示の切り替え（色の量 data-palette：mono 藍のみ／chars キャラ色／full フル、白黒 data-theme：auto 端末に合わせる／light／gray／dark。ヘッダーの丸を三分割したボタン（白・グレー・黒。選んでいる区画の下に印、自動は「A」）で 自動→白→グレー→黒 と巡る）。見た目だけで結果には影響しない。鍵：hakoniwa-z:palette・hakoniwa-z:theme（描く前に付けて、ちらつかないように） */
+/* 表示の切り替え（色の量 data-palette：mono 単色／chars キャラ色／full フル、白黒 data-theme：auto 端末に合わせる／light／gray／dark。ヘッダーの丸を三分割したボタン（白・グレー・黒。選んでいる区画の下に印、自動は「A」）で 自動→白→グレー→黒 と巡る）。見た目だけで結果には影響しない。鍵：hakoniwa-z:palette・hakoniwa-z:theme（描く前に付けて、ちらつかないように） */
 (function () {
   var P = 'hakoniwa-z:', R = document.documentElement, PAL = ['mono', 'chars', 'full'], THM = ['auto', 'light', 'gray', 'dark'];
   function get(k, ok, d) { try { var v = window.localStorage.getItem(P + k); return ok.indexOf(v) >= 0 ? v : d; } catch (e) { return d; } }
@@ -69,7 +69,7 @@
 </script>
 <style>
 /* 一色＋白のミニマル UI（2026-10-27）：UI の色は藍（--ai）一色と紙（--paper）。文字＝藍 100%、補助＝68%、罫線＝14%、面＝4〜9%。
-   黒版は藍と紙と比率を差し替えるだけ。「色の量」（html の data-palette：mono 藍のみ／chars キャラ色／full フル）で、
+   黒版は藍と紙と比率を差し替えるだけ。「色の量」（html の data-palette：mono 単色／chars キャラ色／full フル）で、
    住人のイメカラ・関係・重要な出来事の色を出すかを切り替える（どの段階でも、関係は塗り・輪郭・破線でも見分けられる）。
    ※ --c は住人のイメカラ（.av などに JS が付ける）に使っているので、藍は --ai と呼ぶ */
 :root {
@@ -84,7 +84,7 @@
   --sand: var(--bg1); --sand-line: var(--line2); --tray: var(--ai);
   --warn: var(--ai); --warn-line: var(--line2); --warn-ink: var(--ai); --odd: var(--ai); --none: var(--muted);
   --hot: #D7263D;
-  /* 関係・出来事の色（「フル」のとき。藍のみ・キャラ色では藍に落とす） */
+  /* 関係・出来事の色（「フル」のとき。単色・キャラ色では藍に落とす） */
   --love: #B83F66; --pine: #C5698B; --night: #9550AD; --obsess: #6F48A8; --enemy: #B0442F;
   --kill: #4B1F1F; --partner: #2C7D61; --friend: #3F7F8B; --guard: #4A5A9C;
   /* R-18 は色の面を使わず、枠線とモノスペースのタグで示す */
@@ -130,7 +130,7 @@
   --sel-arrow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23BAC4DA' stroke-width='1.5'/></svg>");
   color-scheme: dark;
 }
-/* グレー（data-theme="gray"）：端末が暗い設定でも「自動」の黒にしない（上の :not(…, [data-theme="gray"])。:not に並べて書くのは、詳しさを上げて「藍のみ」の規則に勝たないように）。以前の版に近い落ち着いたグレーの紙。文字は藍のまま、面・罫線は紙に藍を混ぜて少し暗いグレー。まぶしさを抑える（本文・補助の文字は 4.5:1 以上） */
+/* グレー（data-theme="gray"）：端末が暗い設定でも「自動」の黒にしない（上の :not(…, [data-theme="gray"])。:not に並べて書くのは、詳しさを上げて「単色」の規則に勝たないように）。以前の版に近い落ち着いたグレーの紙。文字は藍のまま、面・罫線は紙に藍を混ぜて少し暗いグレー。まぶしさを抑える（本文・補助の文字は 4.5:1 以上） */
 :root[data-theme="gray"] {
   --paper: #E9EBEE;
   --r18only-bg: #F3E3E9; --r18only-line: #D59DB3;
@@ -152,7 +152,7 @@
   :root[data-theme="dark"] { --muted2: #959DAF; --muted: #8B92A3; --mid: #848B9C; --line2: #474B55; --line: #2E3038; --accent-soft: #25272E; --bg1: #191B21; }
   :root[data-theme="gray"] { --muted2: #404B5F; --muted: #4D576A; --mid: #515B6D; --line2: #AAAFB8; --line: #C7CBD1; --accent-soft: #D6D9DE; --bg1: #E1E3E7; }
 }
-/* 色の量：藍のみ（イメカラ・関係・出来事も藍）／キャラ色（イメカラだけ） */
+/* 色の量：単色（イメカラ・関係・出来事も藍）／キャラ色（イメカラだけ） */
 :root[data-palette="mono"], :root[data-palette="chars"] {
   --love: var(--ai); --pine: var(--ai); --night: var(--ai); --obsess: var(--ai); --enemy: var(--muted2);
   --kill: var(--ai); --partner: var(--mid); --friend: var(--ai); --guard: var(--ai);
@@ -481,7 +481,7 @@ table.per td:nth-child(2) b { white-space: nowrap; overflow: hidden; text-overfl
 .runbar .btn:focus-visible { outline-color: var(--paper); }
 .runbar input { width: 110px; }
 /* ── 担当IA（2026-10-28）：参加表の縮尺と表の形（ui-perzoom.js）・PC の「箱庭を動かす」の浮いたボタン ──
-   参加表の上の「表示：縮尺 [−] 100% [＋] 全体を表示｜表の形：積む／並べる」。押している札は藍の塗り（藍のみでも塗りと輪郭で分かる）。
+   参加表の上の「表示：縮尺 [−] 100% [＋] 全体を表示｜表の形：積む／並べる」。押している札は藍の塗り（単色でも塗りと輪郭で分かる）。
    縮尺は表（table.per）だけに zoom（--pz）。zoom の無いブラウザは transform（.pz-tf。余白は JS が詰める）。
    スマホ（〜760px・指で触る画面）は、触った・選んだ入力欄（.pz-focus。ui-perzoom.js）だけ文字を 16px ÷ 縮尺にして、実際の大きさを 16px 以上に（iOS の自動ズームを避ける。
    ほかの欄は表といっしょに縮むので、全体を表示しても縮図のまま一覧できる）。
@@ -528,7 +528,19 @@ html body #view-box .perzoom[data-form="stack"] + .tblhint, html body #view-box 
 @media print { .runfab, .perzoom { display: none !important; } }
 
 /* 結果 */
-.resulthead { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+/* 結果の見出し（view.js・solo-story-kit.js・dungeon-view.js の .resulthead）：題名・メタ（シード・経過・結末の一行）・箱庭の注記を左、ボタンの行（別の運命で動かす／コピー／条件を変える）を右上に置く。
+   ボタンの行の位置を結末の文の長さに左右させない（「別の運命で動かす」を連打しても同じ場所に留まり、マウスを動かさずに次も押せるように。
+   以前は flex の折り返しで、メタが長い回だけボタンの行が下の段の左端へ飛び、スマホ幅ではメタの行数の分だけ上下にずれていた）。
+   左の div は display: contents にして、題名・メタ・注記を格子に直接並べる。スマホ幅（760px 以下）は 1 列で、題名→ボタンの行→メタ・注記の順（ボタンより上は毎回同じ題名だけ） */
+.resulthead { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: start; }
+.resulthead > div:first-child { display: contents; }
+.resulthead > div:first-child > * { grid-column: 1; min-width: 0; }
+.resulthead > .spacer { display: none; }
+.resulthead > .row { grid-column: 2; grid-row: 1 / span 3; justify-content: flex-end; }
+@media (max-width: 760px) {
+  .resulthead { grid-template-columns: minmax(0, 1fr); }
+  .resulthead > .row { grid-column: 1; grid-row: 2; justify-content: flex-start; margin: 10px 0 8px; }
+}
 .resulthead h2 { font-family: var(--f-body); font-size: 28px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.25; margin: 0; }
 .resulthead .meta { color: var(--muted); font-size: 12.5px; font-family: var(--f-num); }
 .trayfig { margin: 14px 0 0; }
@@ -551,7 +563,7 @@ html body #view-box .perzoom[data-form="stack"] + .tblhint, html body #view-box 
 .pcard.sur { border-color: var(--odd); border-style: dashed; }
 .pcard .hd { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pcard .nm { font-weight: 700; }
-/* 関係ラベル：色相だけでなく、塗り・輪郭・破線で区別（色の量が「藍のみ／キャラ色」なら色は藍に落ちる） */
+/* 関係ラベル：色相だけでなく、塗り・輪郭・破線で区別（色の量が「単色／キャラ色」なら色は藍に落ちる） */
 .lbl { display: inline-flex; align-items: center; gap: 5px; min-height: 22px; padding: 0 9px; border-radius: 3px; border: 1px solid transparent; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.4; white-space: nowrap; color: var(--paper); }
 .lbl.love { background: var(--love); }
 .lbl.obsess { background: var(--obsess); box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--obsess); margin: 0 3px; }
@@ -611,7 +623,7 @@ html body #view-box .perzoom[data-form="stack"] + .tblhint, html body #view-box 
 .fgroup.lone { border-style: dashed; color: var(--muted); }
 .fhist { list-style: none; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px dashed var(--line); display: grid; gap: 4px; font-size: 13px; }
 .fhist .st { font-family: var(--f-num); font-size: 11px; color: var(--muted2); display: inline-block; min-width: 72px; }
-/* ── 担当HX（2026-10-28）：関係図の時点のチップ（最終／開始時／転機）と、派閥の見分け（番号ごとの形の印・藍のみ／キャラ色では線の形） ── */
+/* ── 担当HX（2026-10-28）：関係図の時点のチップ（最終／開始時／転機）と、派閥の見分け（番号ごとの形の印・単色／キャラ色では線の形） ── */
 /* 関係図の見出しの右に時点のチップ（view-map.js の HK.MapView.atBar）。文字は data-l から出す（見出しの文字＝折りたたみの鍵を「関係図」のまま保つため。読み上げは aria-label） */
 h2.sec.mapsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
 .mapat { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: var(--f-body); letter-spacing: 0; }
@@ -628,7 +640,7 @@ h2.sec.mapsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10
 .fgroup.fg { border-color: var(--fc); }
 .kcell { position: relative; }
 .kcell .kfm { position: absolute; left: 3px; top: 3px; line-height: 0; font-style: normal; }
-/* 藍のみ・キャラ色（派閥の色が藍に落ちる）：囲み・枠・縁を番号ごとの線の形と塗りの濃さで描き分ける */
+/* 単色・キャラ色（派閥の色が藍に落ちる）：囲み・枠・縁を番号ごとの線の形と塗りの濃さで描き分ける */
 :root[data-palette="mono"] .fhull, :root[data-palette="chars"] .fhull { stroke-width: 1.8; stroke-opacity: .85; stroke-dasharray: none; fill: color-mix(in srgb, var(--ai) 9%, transparent); }
 :root[data-palette="mono"] .fhull.fp1, :root[data-palette="chars"] .fhull.fp1 { stroke-dasharray: 6 3; fill: color-mix(in srgb, var(--ai) 5%, transparent); }
 :root[data-palette="mono"] .fhull.fp2, :root[data-palette="chars"] .fhull.fp2 { stroke-dasharray: 0.1 4; stroke-linecap: round; stroke-width: 2.4; fill: color-mix(in srgb, var(--ai) 13%, transparent); }
@@ -669,7 +681,7 @@ h2.sec.mapsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10
 /* 時系列（仕様 6）：左 88px にターン番号（Mono 14px／600）と局面名（11px 藍 68%）、右に1本の細いレール（左罫線）と出来事ごとの 7px の点。
    通常の出来事は藍の単色、種類の札（.c）は Mono 10px の藍 26% の枠だけで色を付けない。会話は吹き出しにせず「」の引用（.q 500）と小さなアバター。
    転機・情事・死亡だけ --hot：view.js が .hot を付ける（ひとり用の記録 #dgtl・#sttl は 転機 .key・絶頂 .climax・死 .death）。
-   点は 11px の赤丸＋薄い赤の輪、ターン番号・札（赤の塗り＋紙の文字）・死亡の † を赤に。本文は藍の 700（赤くしない。名前はふだんの色のまま）。補足（.why）は藍 68% のまま。「藍のみ」では --hot が藍 */
+   点は 11px の赤丸＋薄い赤の輪、ターン番号・札（赤の塗り＋紙の文字）・死亡の † を赤に。本文は藍の 700（赤くしない。名前はふだんの色のまま）。補足（.why）は藍 68% のまま。「単色」では --hot が藍 */
 .tlbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
 .tlbar .chip .hotdot { margin-right: 2px; }
 .tlsep { flex: none; width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
@@ -708,7 +720,7 @@ h2.sec .hotleg { display: inline-flex; align-items: center; gap: 6px; margin-lef
 /* ── 担当HZ（2026-10-28）：重要な出来事の細い枠と、フルでは種類ごとの薄い背景 ── */
 /* view.js（evLi・HK.View.hotKindSolo）が重要な出来事の li に data-hot（death 死亡／lewd 情事／turn 転機／goal 目標／trouble トラブル）を付ける。
    どの色の量でも細い枠（角丸 4px）で囲む。左の点の位置は変えない（枠の分だけ左へ出すので、点は --hfx と左の線の太さ --hbl で戻す）。
-   藍のみ・キャラ色：色は使わず線の種類で分ける（死亡＝藍の実線 2px／転機＝藍の実線 1px／情事＝破線／目標＝二重線／トラブル＝点線）。
+   単色・キャラ色：色は使わず線の種類で分ける（死亡＝藍の実線 2px／転機＝藍の実線 1px／情事＝破線／目標＝二重線／トラブル＝点線）。
    フル：種類ごとの色（--hot-○○）を紙に混ぜた薄い背景と、左の縁 3px。本文は藍の太字のまま（白・グレー・黒で 4.5:1 以上）。印刷は背景を消してグレーの線の種類だけ */
 :root { --hot-death: #D7263D; --hot-lewd: #8E44AD; --hot-turn: #E8590C; --hot-goal: #D9A400; --hot-trouble: #0C8599; --hk-mix: 10%; --hk-leg: 28%; }
 :root[data-theme="gray"] { --hot-death: #C11F38; --hot-lewd: #7D3C98; --hot-turn: #C9500C; --hot-goal: #B8860B; --hot-trouble: #0B7285; --hk-mix: 14%; --hk-leg: 32%; }
@@ -729,7 +741,7 @@ h2.sec .hotleg { display: inline-flex; align-items: center; gap: 6px; margin-lef
 :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot]:is(.hot, #dgtl .key, #dgtl .climax, #dgtl .death, #sttl .key, #sttl .climax, #sttl .death)::before { left: calc(-1 * var(--rail) - 6px + var(--hfx) - var(--hbl)); top: 12px; }
 /* 出られない部屋の「条件達成」の左罫は、枠と重ならないように外す（枠の種類が目標を示す） */
 :is(#tl, #dgtl, #sttl, .tl) .ev.goal[data-hot] .evb { border-left: 0; padding-left: 0; }
-/* 藍のみ・キャラ色：線の種類 */
+/* 単色・キャラ色：線の種類 */
 :root:not([data-palette="full"]) :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="death"] { --hbl: 2px; border: 2px solid var(--ink); }
 :root:not([data-palette="full"]) :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="turn"] { border-color: var(--ink); }
 :root:not([data-palette="full"]) :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="lewd"] { border: 1px dashed var(--ink); }
@@ -829,7 +841,7 @@ h2.sec .hotleg { flex-wrap: wrap; gap: 4px 10px; }
 .support { margin: 12px 0 8px; }
 .ctbox { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; }
 
-/* キャラアイコン：イメカラ（--c）の輪と薄い面（16%）。画像があれば画像＋外の輪。「藍のみ」では --c が藍に落ちる */
+/* キャラアイコン：イメカラ（--c）の輪と薄い面（16%）。画像があれば画像＋外の輪。「単色」では --c が藍に落ちる */
 .av { --k: var(--c); display: inline-flex; align-items: center; justify-content: center; flex: none; border-radius: 50%; overflow: hidden; vertical-align: middle; position: relative;
   background: var(--paper); background: color-mix(in srgb, var(--k) 16%, var(--paper)); color: var(--k);
   box-shadow: inset 0 0 0 1.5px var(--k); font-weight: 700; line-height: 1; letter-spacing: 0; }
@@ -888,7 +900,7 @@ button:where(:not([class])):focus-visible { outline: 2px solid var(--ink); outli
 .scen.adult.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--bg1); }
 .scen.r18only { background: var(--r18only-bg); border-color: var(--r18only-line); }
 .scen.r18only.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--r18only-bg); }
-/* 箱庭カードの R18 の札：重要の赤（--hot。黒版は #FF5C7A、色の量「藍のみ」では藍に落ちる）。文字と細い枠を赤に */
+/* 箱庭カードの R18 の札：重要の赤（--hot。黒版は #FF5C7A、色の量「単色」では藍に落ちる）。文字と細い枠を赤に */
 .r18tag { display: inline-block; padding: 0 5px; margin-left: 2px; border: 1px solid var(--hot); border-radius: 2px; background: none; color: var(--hot); font-family: var(--f-num); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; line-height: 1.5; }
 .site-foot .updated { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
 .scen.r18link { color: inherit; text-decoration: none; border-style: dashed; cursor: default; }
@@ -1022,7 +1034,7 @@ details.zmap > summary:hover { background: var(--bg1); }
     --p6: #117a8b !important; --p7: #a04000 !important; --p8: #4a5a9c !important; --p9: #5d7a14 !important; --p10: #8e3b5b !important; --p11: #2e6f5a !important;
     color-scheme: light !important;
   }
-  /* 関係・派閥・重要の色は「フル」のときだけ明るい紙の色に戻す（藍のみ・キャラ色は上の規則が藍に落とす） */
+  /* 関係・派閥・重要の色は「フル」のときだけ明るい紙の色に戻す（単色・キャラ色は上の規則が藍に落とす） */
   :root:not([data-palette="mono"], [data-palette="chars"]) {
     --love: #B83F66; --pine: #C5698B; --night: #9550AD; --obsess: #6F48A8; --enemy: #B0442F;
     --kill: #4B1F1F; --partner: #2C7D61; --friend: #3F7F8B; --guard: #4A5A9C;
@@ -1099,7 +1111,7 @@ details.zmap > summary:hover { background: var(--bg1); }
         <a class="chip-link" href="https://docs.google.com/document/d/1o6UgdEEMXhUEZeODa3pWeVgMBlIEBi-cyktbtUmSNe0/edit?tab=t.0" target="_blank" rel="noopener">更新履歴</a>
         <button type="button" class="chip-link" data-act="notice-open" aria-haspopup="dialog" aria-controls="notice">注意事項</button>
         <span class="navsep" aria-hidden="true"></span>
-        <div class="uiseg" role="group" aria-label="色の量"><button type="button" data-pal="mono" aria-pressed="false">藍のみ</button><button type="button" data-pal="chars" aria-pressed="false">キャラ色</button><button type="button" data-pal="full" aria-pressed="true">フル</button></div><button type="button" class="btn icon thmbtn" data-thmcycle title="白／グレー／黒：自動（端末に合わせる）。押すと 自動→白→グレー→黒 の順に切り替え" aria-label="白／グレー／黒の切り替え（いま：自動）"><svg class="tz" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path class="tz-w" d="M7.67 1.9A7 7 0 0 0 7.67 15.1z"/><path class="tz-g" d="M7.67 1.9A7 7 0 0 1 12.33 1.9V15.1A7 7 0 0 1 7.67 15.1z"/><path class="tz-k" d="M12.33 1.9A7 7 0 0 1 12.33 15.1z"/><path class="tz-o" d="M7.67 1.9V15.1M12.33 1.9V15.1"/><circle class="tz-o" cx="10" cy="8.5" r="7"/><rect class="tz-mk" data-k="light" x="3.3" y="17.2" width="4" height="2.4" rx=".7"/><rect class="tz-mk" data-k="gray" x="8" y="17.2" width="4" height="2.4" rx=".7"/><rect class="tz-mk" data-k="dark" x="12.7" y="17.2" width="4" height="2.4" rx=".7"/></svg></button><button type="button" class="btn icon fntbtn" data-fntcycle data-now="gothic" title="書体：明朝体／ゴシック（いま：ゴシック）。押すと明朝体に切り替え" aria-label="書体の切り替え（いま：ゴシック）"><span class="fz" aria-hidden="true">文</span></button>
+        <div class="uiseg" role="group" aria-label="色の量"><button type="button" data-pal="mono" aria-pressed="false">単色</button><button type="button" data-pal="chars" aria-pressed="false">キャラ色</button><button type="button" data-pal="full" aria-pressed="true">フル</button></div><button type="button" class="btn icon thmbtn" data-thmcycle title="白／グレー／黒：自動（端末に合わせる）。押すと 自動→白→グレー→黒 の順に切り替え" aria-label="白／グレー／黒の切り替え（いま：自動）"><svg class="tz" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path class="tz-w" d="M7.67 1.9A7 7 0 0 0 7.67 15.1z"/><path class="tz-g" d="M7.67 1.9A7 7 0 0 1 12.33 1.9V15.1A7 7 0 0 1 7.67 15.1z"/><path class="tz-k" d="M12.33 1.9A7 7 0 0 1 12.33 15.1z"/><path class="tz-o" d="M7.67 1.9V15.1M12.33 1.9V15.1"/><circle class="tz-o" cx="10" cy="8.5" r="7"/><rect class="tz-mk" data-k="light" x="3.3" y="17.2" width="4" height="2.4" rx=".7"/><rect class="tz-mk" data-k="gray" x="8" y="17.2" width="4" height="2.4" rx=".7"/><rect class="tz-mk" data-k="dark" x="12.7" y="17.2" width="4" height="2.4" rx=".7"/></svg></button><button type="button" class="btn icon fntbtn" data-fntcycle data-now="gothic" title="書体：明朝体／ゴシック（いま：ゴシック）。押すと明朝体に切り替え" aria-label="書体の切り替え（いま：ゴシック）"><span class="fz" aria-hidden="true">文</span></button>
       </nav>
     </div>
     <div class="row" id="topmeta"></div>
@@ -1143,9 +1155,9 @@ details.zmap > summary:hover { background: var(--bg1); }
 
 <script>window.HK_SAFE_BUILD = 1;</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"c8c4140904","api":1,"build":"zenrei","core":"js/c/core.fe04f5af8d.js",
+<script>window.HK_MANIFEST={"v":"c973bfa9c9","api":1,"build":"zenrei","core":"js/c/core.fe04f5af8d.js",
 "chunks":{
-  "late":{"src":"js/c/late.5def7d0ab8.js","br":109800,"deps":[]},
+  "late":{"src":"js/c/late.d0234367df.js","br":109797,"deps":[]},
   "pack-rel":{"src":"js/c/pack-rel.410b52dc31.js","br":248716,"deps":[]},
   "scen-goukon":{"src":"js/c/scen-goukon.d43f86006b.js","br":75987,"deps":["pack-rel"]},
   "scen-classroom":{"src":"js/c/scen-classroom.4cbcdfb34c.js","br":98748,"deps":["pack-rel"]},
