@@ -217,7 +217,7 @@
       if (!o || !o.alive) return false;
       var yes = ctx.R(o, c).att + ctx.R(o, c).aff > 70;
       ctx.act2({ actors: [c, o], cat: 'romance', fx: function () { ctx.mod2(c, o, { att: 10, aff: 10 }, { att: yes ? 15 : 5, aff: 12 }); if (yes) ctx.pair(c, o).couple = true; }, text: fill(ctx.pick(L('{a}は咬み跡を見せてから、{b}に向き直った。「言わずに終わるのは、嫌だから。……ずっと好きだった｜言わずに終わるのは、嫌だ。……ずっと好きだった｜言わずに終わるのは、嫌ですから。……ずっと好きでした」|「どうせもうすぐ、私は私じゃなくなる。だから言う。{b}、好きだ｜どうせもうすぐ、私は私ではなくなる。だから言う。{b}、好きだ｜どうせもうすぐ、私は私じゃなくなります。だから言います。{b}、好きです」')), { a: c.name, b: o.name }) + (yes ? fill(ctx.pick(L('{b}は何も言わずに{a}を抱きしめた。「……遅いよ。私も｜……遅い。私もだ｜……遅いですよ。私もです」|{b}は泣きながら{a}に口づけた。咬み跡のことなど、どうでもよかった。')), { a: c.name, b: o.name }) : fill(ctx.pick(L('{b}は言葉を失って、ただ{a}の手を握った。|{b}は「ごめん｜すまない｜すみません」と言いかけて、やめた。代わりに、最後まで隣に座っていた。')), { a: c.name, b: o.name })), why: why + '／' + o.name + 'への惹かれ ' + Math.round(ctx.R(c, o).att), mag: 38 });
-      Z.later(ctx, function () { if (c.alive && Z.groupReaction) Z.groupReaction(ctx, c); });
+      Z.later(ctx, function () { if (c.alive && Z.groupReaction) Z.groupReaction(ctx, c); }, [c]);
       return true;
     }
     if (pick === 'video') {

@@ -192,7 +192,7 @@
     if (bz.bitten && bz.aware && !bz.hiding && close && rng() < 0.7) {
       extra += fill(ctx.pick(STATE.bitten), m); mood = 'grief'; ctx.stress(a, 25);
       why += '／' + b.name + 'はすでに咬まれていた';
-      Z.later(ctx, function () { if (b.alive && !b.out && Z.groupReaction) Z.groupReaction(ctx, b); });
+      Z.later(ctx, function () { if (b.alive && !b.out && Z.groupReaction) Z.groupReaction(ctx, b); }, [b]);
     } else if (bz.bitten && bz.hiding) {
       if (a.tr.a + a.tr.caution * 0.5 > 0.7 + rng() * 0.5) { extra += fill(ctx.pick(STATE.bandageSee), m); ctx.pair(a, b).zsuspect = true; why += '／' + a.name + 'は' + b.name + 'の傷に引っかかった（A・慎重さ）'; }
       else if (close) extra += fill(ctx.pick(STATE.bandageMiss), m);

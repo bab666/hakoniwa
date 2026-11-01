@@ -233,6 +233,30 @@ const PASS = function* (HK, opt) {
         yield { sc, s, input: { scenId: sc, seed: 7000 + s, env, chars, perChar, ties }, meta: { kind: 'dz' } };
       }
     }
+    /* S1・S25〜S30（追加の回。2026-11-01 担当ZB）：ゾンビの街を、飢え・咬み傷・絶望で人が次々に亡くなる配役で NZ 回（N/2、4 回以上）回す。
+       6〜10 人・体力と運の低い人を混ぜ・恋人と片想いの組・10 日・ゾンビ多め・発症は遅め・NPC 多め・救助なし・展開と死ネタの重さ「重い」。
+       飢えで倒れた・群れに呑まれた・咬まれて離れた人が、そのあとの後から起きる出来事（ゾンビの街の Z.later：咬み跡を見つけられた人への仲間の反応・
+       姿を消した恋人に気づく場面・治療薬の噂など）に生きている人として出ないかを見る（ふつうの回・死の回の配役では、飢えで亡くなる人がほとんど出ないため） */
+    const NZ = Math.max(4, Math.round(N / 2));
+    if (HK.SCENARIOS.zombie && (!only || only.indexOf('zombie') >= 0)) {
+      const scZ = HK.SCENARIOS.zombie, NAMESZ = NAMES.concat(['タクミ', 'サクラ']);
+      /* 奇数回は、街の生存者（NPC）の名前の表と同じ名前の住人にする（住人と同じ名前の迷子の子・自衛官などが出ると、亡くなった住人が出てきたように読める。4回に1回は海外の街） */
+      const NPCN = { jp: ['ミウ', 'ソウタ', 'ハルト', 'ユイ', '田所', '井上', 'リク', '佐伯', 'コハル', '宮下'], us: ['リリー', 'ノア', 'マイク', 'ジェシカ', 'エマ', 'ダニエル', 'ミア', 'サラ', 'ベン', 'トニー'] };
+      for (let s = 0; s < NZ; s++) {
+        const n = 6 + (s % 5), chars = [], perChar = [], reg = s % 4 === 3 ? 'us' : 'jp', NM = s % 2 ? NPCN[reg] : NAMESZ;
+        for (let i = 0; i < n; i++) {
+          chars.push({ name: NM[i], eg: { CP: (s * 7 + i * 5) % 21, NP: (s * 3 + i * 11) % 21, A: (s * 13 + i * 3) % 21, FC: (s * 5 + i * 7) % 21, AC: (s * 11 + i * 3) % 21 }, memo: '', gender: (i + s) % 2 ? 'f' : 'm', likes: '', tone: '', fp: '', pos: ['top', 'bottom', '', 'riba'][(i + s) % 4], posLike: '', color: '', call: '', calls: {}, loveLock: '', loveNG: [], noR18: false, sexLock: '' });
+          perChar.push({ action: ['loot', 'hole', 'seek', 'auto', 'info', 'hunt'][(i + s) % 6], goal: 'auto', stats: (i + s) % 3 === 0 ? { hp: 1, luck: 1 } : (i + s) % 3 === 1 ? { hp: 2, luck: 3 } : {}, weapon: '', pick: {}, role: '' });
+        }
+        const ties = [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: s % 2 ? 'lover' : 'crush' }, { a: 4, b: 5, type: s % 3 ? 'friend' : 'lover' }];
+        const env = {}; (scZ.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
+        env.region = reg; env.days = 10; env.outbreak = [70, 90, 100, 60][s % 4]; env.turn = [10, 30, 50][s % 3]; env.npc = 100; env.end = s % 3 === 2 ? 'heli' : 'none';
+        env.heavy = 'dark'; env.death = 'dark';
+        if (HOT) (scZ.env || []).forEach(e => { if (e.max != null && /lewd|lust|ev$/.test(e.id)) env[e.id] = e.max; });
+        if (HK.Content && HK.Content.TAGS) env.ct = s % 4 === 0 ? '' : HK.Content.TAGS.map(t => t.id).join(',');
+        yield { sc: 'zombie', s, input: { scenId: 'zombie', seed: 7700 + s, env, chars, perChar, ties }, meta: { kind: 'dz' } };
+      }
+    }
     /* S32（追加の回。2026-10-28 担当KA）：蘇る箱庭（HK.Special.SCENES）を、住人の大半が不死・吸血鬼の配役で NI 回（N/2、4 回以上）ずつ回す。
        特殊役職の不死・体の特徴の不死・吸血鬼（不死あり）・吸血鬼（不死を外した＝蘇らない）を混ぜ、展開と死ネタの重さ「重い」・危険の設定を上げる。
        蘇る人の遺言（S32）と、その回の S1〜S30 も数える */
@@ -583,7 +607,7 @@ const JUDGE = function (HK, opt) {
     const DZ = {
       /* 正当に亡くなった人に触れる札・理由（弔い・事件・推理・ゾンビ化など） */
       TAG: /弔|追悼|回想|遺体|墓|形見|遺品|蘇生|復活|最期|発見|結末|その後|喪|悲しみ|悼|ループ|夢|幻|霊|遺言|死|全滅|殉|犠牲|葬|埋葬|供養|祈り|後日|継承|処刑|襲撃|生贄|真相|推理|事件|捜査|検死|告発|裁判|投票|遺留|手紙|再会|帰還|生還|救出|解放|ゾンビ|噛|咬|感染|転化|隠滅|偽装|工作|手がかり|取り調べ|証言|占い|CO|成り代わり|違和感|おかっぱの子|予言|grief|mourn|memory|death/,
-      WHY: /弔|悼|悲しみ|喪|死|遺体|最期|ゾンビ|蘇|復活|ループ|失った|亡くし|形見|遺品|成り代わ/,
+      WHY: /弔|悼|悲しみ|喪|死|遺体|最期|ゾンビにな|ゾンビ化|ゾンビだった|蘇|復活|ループ|失った|亡くし|形見|遺品|成り代わ/,
       /* 文の除外：亡くなったことそのもの・弔い・回想・遺体・名前を呼ぶ・仮定・関係節 */
       SENT: /答えなかった|答えない|返事|途切れ|うめき|いた頃|知らない|逝|越えられ|最後に言った|身に起き|置き手紙|置いては帰れ|だったもの|死|亡|遺体|亡骸|遺品|形見|墓|弔|供養|冥福|祈|分まで|分も|思い出|面影|生前|かつて|あの(?:時|とき|日|夜|頃)|幻|夢|幽霊|霊|声が聞こえ|名を|名前|呼ん|呼び|叫|最期|遺言|遺し|残した|手紙|日記|書き置き|写真|記憶|覚えて|いない|いなくな|戻らない|戻ってこな|帰らない|帰ってこな|失っ|喪|悼|仇|殺|犠牲|骨|灰|塵|消え|ゾンビ|噛|咬|感染|蘇|甦|生き返|目を開け|起き上が|息を吹き返|冷た|動かな|横たわ|助けられなかった|守れなかった|いたら|いれば|だったら|生きて|代わりに|言っていた|言ってた|口癖|教えてくれた|くれた|だった|ていた|はずの|はずだった|穴|落ち|呑|攫|連れ去|血|倒れ|息|脈|胸に|抱え|運|埋|焼|燃|葬|棺|花を|手を合わせ|涙|泣|嗚咽|ループ|巻き戻|やり直|時間が戻|戻った|戻って|帰って|帰還|再会|会えた|見つけ|見つか|助け出|救出|解放|逃げ出|抜け出/,
       SPK: /幻|夢|声が聞こえ|記憶|思い出|生前|遺言|最期|手紙|録音|書き置き|日記|かつて|あの(?:時|とき|日)|言っていた|言ってた|口癖|霊|幽霊|ループ|蘇|生き返|起き上が|目を開け|ていた|ていました/,
@@ -672,6 +696,14 @@ const JUDGE = function (HK, opt) {
             if (A.indexOf(i) >= 0 && !mournE && kind !== 'phase' && e.cat !== 'phase') {
               const pos0 = t.indexOf(name);
               if (pos0 < 0 ? !DZ.SENT.test(t) : (A[0] === i && !DZ.SENT.test(dzSent(t, pos0)))) hit('S26', name + ' [' + tag + '/' + kind + '] ' + (A[0] === i ? '主役' : '名前の出ない相手') + ' | ' + t.slice(0, 140));
+              /* 相手（二人目以降）として名前つきで出た：名前の出る文がどれも、亡くなったこと・弔い・回想などに触れていない（2026-11-01 担当ZB。
+                 ゾンビの街の「咬み跡を見つけられた人への仲間の反応」が、その人が群れに呑まれたあとに出ていた。「の・を・に」で名前が出る文は S25 の主語の判定に掛からない）。
+                 エンジン型だけ（物語型の札は亡くなった人を登場人物に入れたまま悔いや仇討ちを書くので、数えない） */
+              else if (pos0 >= 0 && A[0] !== i && !dz.S) {
+                const ss = []; let p1 = -1;
+                while ((p1 = t.indexOf(name, p1 + 1)) >= 0) ss.push(dzSent(t, p1));
+                if (ss.every(s => !DZ.SENT.test(s) && !dzRel(name, s))) hit('S26', name + ' [' + tag + '/' + kind + '] 名前の出る相手 | ' + ss[0].slice(0, 140));
+              }
             }
             let pos = -1, spk = false;
             while ((pos = t.indexOf(name, pos + 1)) >= 0) {

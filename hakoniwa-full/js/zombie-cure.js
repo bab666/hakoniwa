@@ -279,7 +279,7 @@
     run: function (ctx, a, b) {
       b.z.know.cure = true;
       var o = targetOf(ctx, b);
-      if (o) Z.later(ctx, function () { startQuest(ctx, b, o, true); });
+      if (o) Z.later(ctx, function () { startQuest(ctx, b, o, true); }, [b]);
       return { text: ctx.t('{a}は{b}に、治療薬の噂を伝えた。「' + Z.an(ctx, ctx.zb.cure.area) + 'にあるらしい。本当かどうかは分からないけど｜' + Z.an(ctx, ctx.zb.cure.area) + 'にあるらしい。本当かどうかは分からないが｜本当かどうかは分かりませんが、' + Z.an(ctx, ctx.zb.cure.area) + 'にあるらしいです」', a, b), why: '噂が人づてに広まった' };
     }
   });
