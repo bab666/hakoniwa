@@ -285,7 +285,7 @@
       '<div class="gearrow">' + sexSel + '<label title="恋人ができたら、その恋人がいる間は、ほかの人と恋愛・夜の場面になりません（浮気しない）。恋人がいないうちは、ふつうに恋をします"><input type="checkbox" data-gf="faithful"' + (c.faithful ? ' checked' : '') + '> 一途（恋人ができたら、ほかの人に惹かれない・浮気しない）</label></div>' + r18Row +
       lockBox + sexBox + ngRow + '</div>' +
       /* ⑤相手ごとの設定：関係・呼び方・二人称/一人称・受け攻め・夜の性格・同一人物（闇堕ちVer） */
-      '<div class="gearsec"><h3>相手ごとの設定' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + nkRow + (rel || '<p class="gearhint">まだ相手ごとの設定はありません。下の「相手」と「関係」を選んで追加してください（関係を付けずに、受け攻めや呼び方だけを決めることもできます）。</p>') + addable + '</div>';
+      '<div class="gearsec"><h3>相手ごとの設定' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + (HK.TopicsUI ? HK.TopicsUI.gearHtml(c) : '') + nkRow + (rel || '<p class="gearhint">まだ相手ごとの設定はありません。下の「相手」と「関係」を選んで追加してください（関係を付けずに、受け攻めや呼び方だけを決めることもできます）。</p>') + addable + '</div>';
   }
   function render() {
     var c = byId(cur);
@@ -348,6 +348,8 @@
     if (act === 'close') close();
     /* 「口調・喘ぎをより細かく設定する」：窓を閉じて、住人タブの節をこの住人にして開く（ui-voice.js） */
     else if (act === 'tovoice') { var vid = c.id; close(); if (HK.VoiceSet) HK.VoiceSet.open(vid); }
+    /* 「話題の節へ」：窓を閉じて、住人タブの「話題」の節へ（追加の行をこの住人にしておく。ui-topics.js） */
+    else if (act === 'totopic') { var tid = c.id; close(); if (HK.TopicsUI) HK.TopicsUI.open(tid); }
     else if (act === 'tdel') { if (HK.tiePastMoveOut) HK.tiePastMoveOut(s.ties, s.ties[+b.dataset.k]); /* 組の過去は残る関係へ移す */ s.ties.splice(+b.dataset.k, 1); changed(true); }
     else if (act === 'tadd' || act === 'tnew') {
       var oid = act === 'tadd' ? b.dataset.o : (ov.querySelector('[data-gf="newo"]') || {}).value;

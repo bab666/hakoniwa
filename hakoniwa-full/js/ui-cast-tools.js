@@ -192,6 +192,8 @@
     [St.grpHide, St.grpComrade].forEach(function (m) { if (m && m[o]) { m[n] = 1; delete m[o]; } });
     if (St.randFrom === o) St.randFrom = n;
     if (HK.CastPages && HK.CastPages.renameGroup) HK.CastPages.renameGroup(o, n);
+    /* 話題のグループ（ui-topics.js）も新しい名前に */
+    if (HK.TopicsUI) HK.TopicsUI.renameGroup(o, n);
     redraw(); toast('グループ「' + o + '」を「' + n + '」にしました（' + mem2.length + '人）');
   }
 

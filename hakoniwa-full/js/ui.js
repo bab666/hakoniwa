@@ -289,6 +289,18 @@
     /* 箱庭ごとに入っていた共通の能力値・欄を住人へ移す（shared-stats.js） */
     if (HK.Shared) S0.chars.forEach(function (c) { HK.Shared.migrate(c, S0.per[c.id]); });
     normRefs(S0);
+    /* 話題（住人タブ「話題」の節。topics.js の HK.Topics.norm で 1 件ずつ整え、壊れたものは捨てる。上限まで・同じ id は先勝ち。消えた住人の話題は外す） */
+    S0.topics = (function () {
+      var out = [], seen = {}, ids = {};
+      S0.chars.forEach(function (c) { ids[c.id] = 1; });
+      (Array.isArray(S0.topics) ? S0.topics : []).forEach(function (t) {
+        if (out.length >= (HK.Topics ? HK.Topics.MAX : 0)) return;
+        var o = HK.Topics.norm(t);
+        if (!o || seen[o.id] || (o.scope === 'char' && !ids[o.a]) || (o.scope === 'pair' && !(ids[o.a] && ids[o.b]))) return;
+        seen[o.id] = 1; out.push(o);
+      });
+      return out;
+    })();
     return S0;
   }
   /* 旧データの特殊役職「吸血鬼」を種族の吸血鬼に移す（special.js。箱庭ごとの欄からは外した） */
@@ -589,6 +601,7 @@
       (CP ? CP.castHtml() : '<div class="cast" id="castlist">' + S.chars.map(function (c, i) { var h = resRow(c, i); return grpHidden(c) ? h.replace('<div class="res"', '<div class="res" hidden style="display:none"') : h; }).join('') + '</div>') +
       (S.chars.length >= MAX ? '<p class="hint" id="castfull" style="color:var(--warn)">住人が上限の' + MAX + '人まで登録されています。追加・複製するには、誰かを削除してください。</p>' : '') +
       (CT ? CT.bottom() : '') + (HK.VoiceSet ? HK.VoiceSet.html() : '') +   /* 口調・喘ぎの設定（全体／住人。ui-voice.js。2026-10-28 担当LA） */
+      (HK.TopicsUI ? HK.TopicsUI.html() : '') +   /* 話題（出来事の文に時々出る語。ui-topics.js。2026-11-01 担当TA） */
       tiesSection() +
       '<div class="row" style="margin-top:20px"><span class="spacer"></span><button class="btn primary" data-act="tobox">箱庭を選ぶ</button></div>';
     $('#view-cast').innerHTML = html;
@@ -794,6 +807,8 @@
       teacher: R.teacher && idx[R.teacher] != null ? idx[R.teacher] : null,
       /* グループごとの「仲間」（書き出す住人のグループだけ） */
       grpComrade: (function () { var m = {}, any = false; Object.keys(R.grpComrade || {}).forEach(function (g) { if (R.grpComrade[g] && R.chars.some(function (c) { return (only ? idx[c.id] != null : true) && inGrp(c, g); })) { m[g] = 1; any = true; } }); return any ? m : undefined; })(),
+      /* 話題（ui-topics.js。住人は番号。一部だけのときは、その人たちとそのグループの話題だけ） */
+      topics: HK.TopicsUI ? HK.TopicsUI.exportTo(R, ref, idx, only) : undefined,
       /* 内容のスイッチ（R18版）も一緒に書き出す（全員を書き出すときだけ） */
       ct: !only && !HK.SAFE_ON && R.glob && R.glob.ct && Object.keys(R.glob.ct).length ? R.glob.ct : undefined
     };
@@ -904,6 +919,8 @@
     if (replace) S.grpComrade = {};
     if (data.grpComrade && typeof data.grpComrade === 'object' && !Array.isArray(data.grpComrade)) { S.grpComrade = S.grpComrade || {}; Object.keys(data.grpComrade).forEach(function (g) { if (data.grpComrade[g] && String(g).trim()) S.grpComrade[String(g).trim().slice(0, 40)] = 1; }); }
     if (data.teacher != null && map[data.teacher]) S.teacher = map[data.teacher];
+    /* 話題（古い JSON にはない。置き換えで JSON に話題があれば、今の話題と入れ替える） */
+    if (HK.TopicsUI) HK.TopicsUI.importFrom(data, ref, replace && Array.isArray(data.topics));
     if (HK.Adv) HK.Adv.importFrom(data);
     if (data.ct && typeof data.ct === 'object' && !HK.SAFE_ON && HK.Content) { S.glob = S.glob || {}; S.glob.ct = {}; HK.Content.TAGS.forEach(function (t) { if (data.ct[t.id]) S.glob.ct[t.id] = 1; }); }
     /* 恋愛相手の固定と呼び方は、全員を読み込んでから番号を住人に戻す */
@@ -1255,7 +1272,8 @@
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
-          var o = { name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' ? c.sexLock : c.sexLock === 'pick' || c.sexLock === 'pickMob' ? lockIdx(c.sexLocks) : '', sexLockMob: c.sexLock === 'pickMob' && idList(c.sexLocks).length > 0, loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          /* id・group：話題（topics.js）が住人・住人どうし・グループの話題を引くのに使う */
+          var o = { id: c.id, group: c.group || '', name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' ? c.sexLock : c.sexLock === 'pick' || c.sexLock === 'pickMob' ? lockIdx(c.sexLocks) : '', sexLockMob: c.sexLock === 'pickMob' && idList(c.sexLocks).length > 0, loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
           /* 喘ぎの口調（R18版。全年齢モードでは渡さない） */
           if (!HK.SAFE_ON) ['moanTone', 'moanDict', 'moanDictT', 'moanFit'].forEach(function (k) { if (c[k]) o[k] = c[k]; });
           /* ♡喘ぎを外した人（R18版。外したときだけ渡す。voice.js の V.unheart） */
@@ -1288,6 +1306,14 @@
           }
         }
         return HK.tiePastCompact ? HK.tiePastCompact(out) : out;   /* 組の過去は一組に一か所（ties.js） */
+      })(),
+      /* 話題（ui-topics.js）：全体・グループはそのまま、箱庭ごとは今の箱庭のものだけ、住人・住人どうしは配役にいる人のものだけ */
+      topics: (function () {
+        var J = {};
+        castFor(S.scenId).forEach(function (c) { J[c.id] = 1; });
+        return (S.topics || []).filter(function (t) {
+          return t.scope === 'all' || t.scope === 'group' || (t.scope === 'scen' && t.scen === S.scenId) || (t.scope === 'char' && J[t.a]) || (t.scope === 'pair' && J[t.a] && J[t.b]);
+        }).map(function (t) { return { id: t.id, scope: t.scope, scen: t.scen, group: t.group, a: t.a, b: t.b, kind: t.kind, word: t.word, note: t.note }; });
       })()
     };
   }
@@ -1535,6 +1561,8 @@
     if (t.dataset.tab) { setTab(t.dataset.tab, true); return; }
     var act = t.dataset.act, row = t.closest('.res');
     if (act && act.indexOf('adv:') === 0) { if (HK.Adv) HK.Adv.onAct(act, t); return; }
+    /* 話題の節（ui-topics.js） */
+    if (act && act.indexOf('tp:') === 0) { if (HK.TopicsUI) HK.TopicsUI.onAct(act, t); return; }
     switch (act) {
       /* 環境値：初期値に戻す／ランダムに決める（文字の項目はそのまま） */
       case 'envreset': case 'envrand': (function () {
@@ -1581,7 +1609,7 @@
       case 'del':
         S.chars = S.chars.filter(function (c) { return c.id !== row.dataset.id; });
         S.chars.forEach(function (x) { x.loveLock = idList(x.loveLock).filter(function (k) { return k !== row.dataset.id; }); x.sexLocks = idList(x.sexLocks).filter(function (k) { return k !== row.dataset.id; }); if ((x.sexLock === 'pick' || x.sexLock === 'pickMob') && !x.sexLocks.length) x.sexLock = ''; if (x.loveNG) x.loveNG = x.loveNG.filter(function (k) { return k !== row.dataset.id; }); if (x.calls) delete x.calls[row.dataset.id]; if (x.keigo) delete x.keigo[row.dataset.id]; });
-        cleanTies(); save(); renderCast(); break;
+        cleanTies(); if (HK.TopicsUI) HK.TopicsUI.sync(); save(); renderCast(); break;
       case 'tieadd':
         if (S.chars.length < 2) return;
         S.ties = S.ties || [];
@@ -1745,11 +1773,13 @@
   function onField(ev) {
     var t = ev.target, f = t.dataset ? t.dataset.f : null;
     if (!f) return;
+    /* 話題の節の欄（ui-topics.js。保存はそちらで） */
+    if (f === 'topic') { if (HK.TopicsUI) HK.TopicsUI.onField(t, ev); return; }
     var row = t.closest('.res'), c;
     if (row) c = S.chars.filter(function (x) { return x.id === row.dataset.id; })[0];
     if (f === 'name' && c) { c.name = t.value.trim() || '名無し'; S.sample = false; }
     else if (f === 'memo' && c) c.memo = t.value;
-    else if (f === 'group' && c) { c.group = t.value.trim().slice(0, 40); }
+    else if (f === 'group' && c) { c.group = t.value.trim().slice(0, 40); if (ev.type === 'change' && HK.TopicsUI) { save(); HK.TopicsUI.syncSave(); } }
     else if (f === 'tags' && c) { c.tags = t.value.trim().slice(0, 80); }
     else if (f === 'tone' && c) {
       c.tone = (HK.toneValid ? HK.toneValid(t.value) : HK.PERSONA[t.value]) ? t.value : '';
