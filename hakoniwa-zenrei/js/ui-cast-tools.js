@@ -102,16 +102,30 @@
   function full() { return P ? S().chars.length >= P.max : false; }
   function split(where) {
     var dis = full() ? ' disabled title="住人が上限まで登録されています"' : '', pri = where === 'top' ? ' primary' : '';
-    return '<span class="csplit" data-where="' + where + '"><button type="button" class="btn small' + pri + '" data-act="add"' + dis + '>' + PLUS + '1 人追加</button>' +
-      '<button type="button" class="btn small' + pri + ' csplit-c" data-ct="addmenu" aria-haspopup="menu" aria-expanded="false" aria-label="ほかの足し方（10 人・ランダム・診断・名簿）" title="ほかの足し方">' + CHEV + '</button></span>';
+    return '<span class="csplit" data-where="' + where + '"><button type="button" class="btn' + pri + '" data-act="add"' + dis + '>' + PLUS + '住人を追加</button>' +
+      '<button type="button" class="btn' + pri + ' csplit-c" data-ct="addmenu" aria-haspopup="menu" aria-expanded="false" aria-label="ほかの足し方（10 人・ランダム・サンプルから・複製・診断・名簿）" title="ほかの足し方">' + CHEV + '</button></span>';
   }
-  function head(n) {
-    return '<h2 class="sec casthead">住人<span class="num ctn">' + n + ' / ' + (P ? P.max : '') + '</span>' + (HK.Tips ? HK.Tips.btn('cast') : '') +
-      '<span class="cthacts">' + split('top') +
-      '<button type="button" class="btn small ctdata' + (attn() ? ' attn' : '') + '" data-ct="data" aria-haspopup="dialog" aria-controls="castdata" title="' + (attn() ? '保存フォルダの確認が要ります' : '書き出し・読み込み・別の端末へ・保存フォルダ') + '">データ' + CHEV + '</button></span></h2>' +
-      '<p class="hint ctlead">≡ をドラッグで並び替え、左の丸でアイコンを設定できます。グループをつけると、箱庭でまとめて選べます。</p>';
+  /* 見出し（2026-11-01 担当UA：見本 01）：「住人 n / 上限 人」と、右に節の切替「住人一覧｜口調の全体設定｜話題 n｜関係 n」（切り替えは ui-shell.js）。
+     h2.sec にしない（ui-fold.js の折りたたみに入れない）。o：{ topics: 話題の数, ties: 関係の数, pane: 今の節 } */
+  var PANE_TABS = [['list', '住人一覧'], ['voice', '口調の全体設定'], ['topics', '話題'], ['ties', '関係']];
+  function head(n, o) {
+    o = o || {};
+    var cnt = { topics: o.topics, ties: o.ties };
+    return '<div class="uihead"><div class="uittl"><h2 class="uih1" id="casthead">住人</h2><span class="uicnt num">' + n + ' / ' + (P ? P.max : '') + ' 人</span>' + (HK.Tips ? HK.Tips.btn('cast') : '') + '</div>' +
+      '<div class="uitabs" role="tablist" aria-label="住人タブの中">' + PANE_TABS.map(function (t) {
+        var on = (o.pane || 'list') === t[0];
+        return '<button type="button" role="tab" id="cpane-' + t[0] + '" data-uipane="' + t[0] + '" aria-selected="' + on + '"' + (on ? '' : ' tabindex="-1"') + '>' +
+          (t[0] === 'voice' ? '<span class="uitl">' + t[1] + '</span><span class="uits">口調</span>' : t[1]) + (cnt[t[0]] != null ? ' <span class="uitn num">' + cnt[t[0]] + '</span>' : '') + '</button>';
+      }).join('') + '</div></div>';
   }
-  function bottom() { return '<div class="row addrow ctbottom" data-where="bottom">' + split('bottom') + '</div>'; }
+  /* 道具の帯の右：「診断結果をまとめて取り込む」（取り込みの欄を開け閉め。ui-shell.js）「データ ▾」（ダイアログ）「＋住人を追加 ▾」（分割ボタン） */
+  var DOC = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 2.5h7l3 3v8H3z M5.5 7h5 M5.5 9.5h5 M5.5 12h3"/></svg>';
+  function actions() {
+    return '<span class="ctacts"><button type="button" class="btn uiimpbtn" data-uia="imp" aria-controls="castimp" aria-expanded="false">' + DOC + '<span>診断結果をまとめて取り込む</span></button>' +
+      '<button type="button" class="btn ctdata' + (attn() ? ' attn' : '') + '" data-ct="data" aria-haspopup="dialog" aria-controls="castdata" title="' + (attn() ? '保存フォルダの確認が要ります' : '書き出し・読み込み・別の端末へ・保存フォルダ') + '">データ' + CHEV + '</button>' +
+      split('top') + '</span>';
+  }
+  function bottom() { return ''; }
 
   /* ---------- ツールバーの部品（ui-cast-pages.js の castParts が差し込む） ---------- */
   function chips() {
@@ -205,6 +219,8 @@
     return it('add', '1 人追加') +
       it('add10', '10 人追加', '名前とエゴグラムが仮の住人を、上限' + (P ? '（' + P.max + '人）' : '') + 'までの範囲で10人まとめて足します') +
       (HK.RandChar ? it('randadd', 'ランダムで 1 人追加', '名前・性別・エゴグラム・口調・年齢・職業・体格・身長・種族' + (HK.SAFE_ON ? '' : '・夜の性格') + 'を乱数で決めた住人を1人足します（足したあとで自由に直せます）') : '') +
+      (P && P.sampleLeft && P.sampleLeft() ? it('addsample', 'サンプルの住人から足す', 'サンプルの住人（朝霧・鷹野 など）のうち、まだいない人を足します', '<span class="ctmn">' + P.sampleLeft() + ' 人</span>') : '') +
+      (S().chars.length ? '<label class="ctmsel"><span>住人を複製する</span><select id="dupfrom" aria-label="複製する住人"' + dis + '><option value="">選ぶ…</option>' + S().chars.slice(0, 1000).map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>'; }).join('') + '</select></label>' : '') +
       '<hr>' + it('quiz', '質問に答えて診断して追加', '「ふたりのエゴグラム」と同じ25問に答えて、エゴグラムを出して住人にします', '<span class="ctmn">25 問</span>') +
       '<button type="button" role="menuitem" class="ctmi" data-ct="paste" title="「住人をまとめて登録」の欄へ移ります">名簿を貼り付けて取り込む</button>' +
       (HK.RandChar ? '<hr><label class="ctmsel"><span>追加時の名前（ランダムで足すとき）</span><select id="randstyle" data-f="randstyle" aria-label="ランダムで足す住人の名前の雰囲気">' +
@@ -234,6 +250,7 @@
   }
   /* 名簿を貼り付けて取り込む：上の「住人をまとめて登録」の欄へ（節を閉じていれば開く） */
   function toPaste() {
+    if (HK.Shell && HK.Shell.pane() !== 'list') HK.Shell.setPane('list');
     var b = document.getElementById('bulk');
     if (!b) return;
     var d = b.closest('details'); if (d && !d.open) d.open = true;
@@ -346,6 +363,8 @@
       var v = t.value;
       if (v === 'reg') fire('sortreg'); else if (v === 'grp') fire('sortgrp'); else if (v === 'name') sortName();
     } else if (t.id === 'randstyle') rs = t.value;
+    /* 「＋住人を追加 ▾」の「住人を複製する」：選んだ住人を複製（ui.js の行の「複製する」と同じ） */
+    else if (t.id === 'dupfrom' && t.value) { var v2 = t.value; closeMenu(); if (P.dup) P.dup(v2); }
   });
   document.addEventListener('keydown', function (ev) {
     if (menu && !menu.hidden) {
@@ -377,7 +396,7 @@
   HK.CastTools = {
     /* ui.js から：S（住人の状態を返す関数）・max（上限）・io（「名簿・JSON」の欄に渡す { jp, pick }） */
     bind: function (ctx) { P = ctx; },
-    head: head, bottom: bottom, chips: chips, sortSel: sortSel, foldBtns: foldBtns, grpTools: grpTools, mark: mark,
+    head: head, bottom: bottom, actions: actions, chips: chips, sortSel: sortSel, foldBtns: foldBtns, grpTools: grpTools, mark: mark,
     /* 住人タブを描き直したあと（ui.js の renderCast）：ダイアログを開いていれば中身を描き直す。メニューの位置も合わせる */
     after: function () { mark(); if (isOpen()) paint(); place(); },
     /* ダイアログの中身だけを描き直す（開いていなければ false：呼んだ側が住人タブを描き直す） */

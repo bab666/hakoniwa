@@ -562,23 +562,57 @@
   function gsel(c, f, list, pre) {
     return '<select id="' + pre + '-' + c.id + '" data-f="' + f + '" data-id="' + c.id + '" aria-label="' + esc(c.name) + (f === 'gender' ? 'の性別' : 'の恋愛対象') + '">' + list.map(function (o) { return '<option value="' + o[0] + '"' + ((c[f] || '') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
   }
+  /* 住人の行（2026-11-01 担当UA：参考デザインの見本 01・03 の表の形）。
+     列：並び替えのつまみ｜住人（アイコンの丸・名前・5文字コード・性格の型）｜CP NP A FC AC の小さな札（押すと編集）｜口調・性別｜グループ・タグ・メモ｜操作（設定・⋯）。
+     欄の id・data-f は今までどおり（入力の処理 onField・refreshRow はそのまま）。スマホ幅（〜599px）は 1 行に「丸・名前・コード・一行の要約・›・⋯」（index.html の CSS） */
+  var DOTS = '<svg width="12" height="16" viewBox="0 0 12 16" aria-hidden="true" focusable="false"><g fill="currentColor"><circle cx="4" cy="4" r="1.3"/><circle cx="8" cy="4" r="1.3"/><circle cx="4" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="4" cy="12" r="1.3"/><circle cx="8" cy="12" r="1.3"/></g></svg>';
+  var GEAR_SVG = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M6.8 3.1L7.0 1.4L9.0 1.4L9.2 3.1L10.6 3.7L12.0 2.6L13.4 4.0L12.3 5.4L12.9 6.8L14.6 7.0L14.6 9.0L12.9 9.2L12.3 10.6L13.4 12.0L12.0 13.4L10.6 12.3L9.2 12.9L9.0 14.6L7.0 14.6L6.8 12.9L5.4 12.3L4.0 13.4L2.6 12.0L3.7 10.6L3.1 9.2L1.4 9.0L1.4 7.0L3.1 6.8L3.7 5.4L2.6 4.0L4.0 2.6L5.4 3.7Z"/><circle cx="8" cy="8" r="2.1"/></svg>';
+  var MORE_SVG = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><g fill="currentColor"><circle cx="3.5" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="12.5" cy="8" r="1.4"/></g></svg>';
+  var CHEV_R = '<svg width="10" height="14" viewBox="0 0 10 14" aria-hidden="true" focusable="false"><path d="M3 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+  var MI = {
+    dup: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5"/><path d="M2 9.5V3a1 1 0 0 1 1-1h6.5"/></svg>',
+    icon: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><circle cx="7" cy="7" r="5.5"/><path d="M7 4.5v5 M4.5 7h5"/></svg>',
+    up: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M7 12V2 M3.5 5.5L7 2l3.5 3.5"/></svg>',
+    down: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M7 2v10 M3.5 8.5L7 12l3.5-3.5"/></svg>',
+    del: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M2.5 4h9 M5.5 4V2.5h3V4 M3.5 4l.7 8h5.6l.7-8"/></svg>'
+  };
+  /* 口調・性別の列の 2 行目（性別・恋愛対象・受け攻め。決めていなければ「性別：おまかせ」） */
+  function rowSex(c) {
+    var b = [], g = { m: '男性', f: '女性', x: 'その他' }[c.gender], l = { m: '対象：男性', f: '対象：女性', both: '対象：男女両方', none: '対象：なし' }[c.likes];
+    b.push(g || '性別：おまかせ'); if (l) b.push(l);
+    if (c.pos) b.push({ top: '攻め', bottom: '受け', riba: 'リバ' }[c.pos] || '');
+    return b.filter(Boolean).join('・');
+  }
   function resRow(c, i) {
+    var nm = esc(c.name), full = S.chars.length >= MAX, mid = 'rm-' + c.id;
+    var menu = '<div class="rmenu" id="' + mid + '" role="menu" aria-label="' + nm + 'の操作" hidden>' +
+      '<button type="button" role="menuitem" data-act="dup"' + (full ? ' disabled title="住人が上限の' + MAX + '人まで登録されているので、複製できません"' : ' title="この住人の設定をすべて写した住人を、すぐ下に足します（関係と、ほかの住人を指す設定は写しません）"') + '>' + MI.dup + '複製する</button>' +
+      '<button type="button" role="menuitem" data-act="iconpick">' + MI.icon + 'アイコンを' + (c.icon ? '変える' : '設定する') + '</button>' +
+      (c.icon ? '<button type="button" role="menuitem" data-act="icondel">' + MI.icon + 'アイコンを外す</button>' : '') +
+      '<button type="button" role="menuitem" data-act="mvup">' + MI.up + '並び順を一つ上へ</button>' +
+      '<button type="button" role="menuitem" data-act="mvdown">' + MI.down + '並び順を一つ下へ</button>' +
+      '<hr><button type="button" role="menuitem" class="danger" data-act="del" data-ask="1">' + MI.del + '削除する…</button></div>';
+    var tw = HK.egoToneWord ? HK.egoToneWord(c) : '';
     return '<div class="res" data-id="' + c.id + '">' +
-      '<button type="button" class="draghandle" aria-label="' + esc(c.name) + 'を並び替える（ドラッグ、または上下の矢印キー）" title="ドラッグで並び替え（上下キーでも動かせます）">≡</button>' +
-      '<span class="avset">' + '<button type="button" class="avbtn" data-act="iconpick" aria-label="' + esc(c.name) + 'のアイコンを' + (c.icon ? '変える' : '設定する') + '" title="アイコンを' + (c.icon ? '変える' : '設定する') + '">' + HK.Icons.html(c.name, i, 44) + (c.icon ? '' : '<i class="avplus" aria-hidden="true">＋</i>') + '</button>' +
-      (c.icon ? '<button type="button" class="avdel" data-act="icondel" aria-label="' + esc(c.name) + 'のアイコンを外す" title="アイコンを外す">×</button>' : '') + '</span>' +
-      '<div class="who"><input type="text" id="nm-' + c.id + '" data-f="name" value="' + esc(c.name) + '" aria-label="名前" maxlength="24">' +
-      '<div class="codeline"><input type="text" class="code" id="cd-' + c.id + '" data-f="code" value="' + HK.toCode(c.eg) + '" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="5文字コード（CP NP A FC AC）"><span class="ty" title="' + esc(HK.egoType(c.eg).label) + '">' + esc(HK.egoType(c.eg).label) + '</span>' + (HK.egoTypeName ? '<span class="egatt egname" title="エゴグラムから見た性格の型。「設定」の「この住人の傾向」に説明があります">' + esc(HK.egoTypeName(c)) + '</span>' : '') + (HK.egoToneWord ? '<span class="egatt egtone" title="この住人の口調（台詞の話し方）。おまかせだとエゴグラムから決まります">' + esc(HK.egoToneWord(c)) + '</span>' : '') + '</div></div>' +
-      '<div class="ego">' + HK.FACTORS.map(function (k) {
-        return '<label title="' + esc(HK.FACTOR_FULL[k]) + '">' + k + '<input type="number" id="eg-' + c.id + '-' + k + '" inputmode="decimal" min="0" max="20" step="1" data-f="eg" data-k="' + k + '" value="' + c.eg[k] + '"></label>';
+      '<button type="button" class="draghandle" aria-label="' + nm + 'を並び替える（ドラッグ、または上下の矢印キー）" title="ドラッグで並び替え（上下キーでも動かせます）">' + DOTS + '</button>' +
+      '<div class="rwho"><span class="avset">' + '<button type="button" class="avbtn" data-act="iconpick" aria-label="' + nm + 'のアイコンを' + (c.icon ? '変える' : '設定する') + '" title="アイコンを' + (c.icon ? '変える' : '設定する') + '">' + HK.Icons.html(c.name, i, 40) + '</button>' +
+      (c.icon ? '<button type="button" class="avdel" data-act="icondel" aria-label="' + nm + 'のアイコンを外す" title="アイコンを外す">×</button>' : '') + '</span>' +
+      '<div class="who"><input type="text" id="nm-' + c.id + '" data-f="name" value="' + nm + '" aria-label="名前" maxlength="24" title="名前（押すと書き換えられます）">' +
+      '<div class="codeline"><input type="text" class="code" id="cd-' + c.id + '" data-f="code" value="' + HK.toCode(c.eg) + '" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="5文字コード（CP NP A FC AC）" title="5文字コード（CP NP A FC AC の順に A〜D）">' +
+      (HK.egoTypeName ? '<span class="egatt egname" title="エゴグラムから見た性格の型。「設定」の「この住人の傾向」に説明があります">' + esc(HK.egoTypeName(c)) + '</span>' : '') +
+      '<span class="ty" title="' + esc(HK.egoType(c.eg).label) + '">' + esc(HK.egoType(c.eg).label) + '</span></div>' +
+      '<div class="rsub">' + esc(tw.replace(/^口調：/, '')) + (tw ? '・' : '') + esc(rowSex(c)) + '</div></div></div>' +
+      '<div class="ego" role="group" aria-label="' + nm + 'のエゴグラム（0〜20）">' + HK.FACTORS.map(function (k) {
+        return '<label title="' + esc(HK.FACTOR_FULL[k]) + '（押すと書き換えられます）"><span class="egk">' + k + '</span><input type="number" id="eg-' + c.id + '-' + k + '" inputmode="decimal" min="0" max="20" step="1" data-f="eg" data-k="' + k + '" value="' + c.eg[k] + '"></label>';
       }).join('') + '</div>' +
-      '<div class="gwrap">' + egoGraph(c.eg, i) + '</div>' +
-      '<button class="btn ghost small" data-act="del" aria-label="' + esc(c.name) + 'を削除">削除</button>' +
-      '<div class="memo"><input type="text" class="grp" id="gp-' + c.id + '" data-f="group" value="' + esc(c.group || '') + '" placeholder="グループ（任意・読点やカンマで複数）" maxlength="40" list="grplist" aria-label="' + esc(c.name) + 'のグループ" title="同じグループ名をつけた住人は、箱庭でまとめて選んだり、並び替えたり、一覧で絞り込んだりできます。読点（、）かカンマで区切ると複数のグループに入れられます（例：生徒会、2年A組）">' +
-        '<input type="text" class="tags" id="tg-' + c.id + '" data-f="tags" value="' + esc(c.tags || '') + '" placeholder="タグ（任意・読点やカンマで複数）" maxlength="80" list="taglist" aria-label="' + esc(c.name) + 'のタグ" title="グループとは別に付ける目印です。住人の一覧で探したり、「タグで絞り込む」で絞り込んだりできます（結果には影響しません）。読点（、）かカンマで区切ると複数付けられます"><input type="text" id="mm-' + c.id + '" data-f="memo" value="' + esc(c.memo) + '" placeholder="メモ（任意・結果には影響しません）" maxlength="80">' +
-      '<span class="gearpair" style="display:inline-flex;gap:6px;align-items:center;flex:0 0 auto"><button type="button" class="btn small gearbtn" data-act="gear" aria-label="' + esc(c.name) + 'の設定（口調・呼び方・関係など）" title="口調・一人称・呼び方・性別・恋愛・イメージカラー・関係をまとめて設定"><span class="gearic" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M6.8 3.1L7.0 1.4L9.0 1.4L9.2 3.1L10.6 3.7L12.0 2.6L13.4 4.0L12.3 5.4L12.9 6.8L14.6 7.0L14.6 9.0L12.9 9.2L12.3 10.6L13.4 12.0L12.0 13.4L10.6 12.3L9.2 12.9L9.0 14.6L7.0 14.6L6.8 12.9L5.4 12.3L4.0 13.4L2.6 12.0L3.7 10.6L3.1 9.2L1.4 9.0L1.4 7.0L3.1 6.8L3.7 5.4L2.6 4.0L4.0 2.6L5.4 3.7Z"/><circle cx="8" cy="8" r="2.1"/></svg></span>設定</button>' +
-      '<button type="button" class="btn small ghost" data-act="dup"' + (S.chars.length >= MAX ? ' disabled title="住人が上限の' + MAX + '人まで登録されているので、複製できません"' : ' title="この住人の設定をすべて写した住人を、すぐ下に足します（関係と、ほかの住人を指す設定は写しません）"') + ' aria-label="' + esc(c.name) + 'を複製">複製</button></span>' +
-      '<span class="csum">' + (HK.UI && HK.UI.summary ? HK.UI.summary(c) : '') + '</span></div>' +
+      '<div class="rtone">' + (tw ? '<span class="egtone" title="この住人の口調（台詞の話し方）。おまかせだとエゴグラムから決まります">' + esc(tw) + '</span>' : '') + '<span class="rsex">' + esc(rowSex(c)) + '</span></div>' +
+      '<div class="gwrap" aria-hidden="true">' + egoGraph(c.eg, i) + '</div>' +
+      '<div class="memo"><div class="memo1"><input type="text" class="grp" id="gp-' + c.id + '" data-f="group" value="' + esc(c.group || '') + '" placeholder="＋グループ" maxlength="40" list="grplist" aria-label="' + nm + 'のグループ" title="同じグループ名をつけた住人は、箱庭でまとめて選んだり、並び替えたり、一覧で絞り込んだりできます。読点（、）かカンマで区切ると複数のグループに入れられます（例：生徒会、2年A組）">' +
+        '<input type="text" class="tags" id="tg-' + c.id + '" data-f="tags" value="' + esc(c.tags || '') + '" placeholder="＋タグ" maxlength="80" list="taglist" aria-label="' + nm + 'のタグ" title="グループとは別に付ける目印です。住人の一覧で探したり、「タグで絞り込む」で絞り込んだりできます（結果には影響しません）。読点（、）かカンマで区切ると複数付けられます"></div>' +
+        '<input type="text" class="mm" id="mm-' + c.id + '" data-f="memo" value="' + esc(c.memo) + '" placeholder="メモ（任意・結果には影響しません）" maxlength="80" aria-label="' + nm + 'のメモ">' +
+      '<span class="csum" hidden>' + (HK.UI && HK.UI.summary ? HK.UI.summary(c) : '') + '</span></div>' +
+      '<div class="ract"><button type="button" class="btn small gearbtn" data-act="gear" aria-label="' + nm + 'の設定（口調・プロフィール・恋愛・相手ごとの設定など）" title="口調・一人称・呼び方・性別・恋愛・イメージカラー・関係をまとめて設定"><span class="gearic" aria-hidden="true">' + GEAR_SVG + '</span><span class="gbl">設定</span><span class="gchev" aria-hidden="true">' + CHEV_R + '</span></button>' +
+      '<button type="button" class="btn small icon rmore" data-uimenu aria-haspopup="menu" aria-expanded="false" aria-controls="' + mid + '" aria-label="' + nm + 'のほかの操作（複製・アイコン・並び順・削除）">' + MORE_SVG + '</button>' + menu + '</div>' +
       '</div>';
   }
 
@@ -587,25 +621,37 @@
   function sortByReg() { var idx = {}; S.chars.forEach(function (c, i) { idx[c.id] = i; }); S.chars.sort(function (a, b) { return ((a.reg || 0) - (b.reg || 0)) || (idx[a.id] - idx[b.id]); }); }
   /* ランダムで1人追加：名前の雰囲気（ui-rand.js の HK.RandChar）。このページを開いているあいだだけ覚える */
   var randStyle = '';
+  /* 住人タブ（2026-11-01 担当UA：見本 01・03）：見出し（住人 n / 上限）と節の切替「住人一覧｜口調の全体設定｜話題 n｜関係 n」（ui-cast-tools.js の head）。
+     節は [data-pane] の箱に分けて全部描き、選んでいない節は hidden（切り替えは ui-shell.js が描き直さずに行う）。
+     住人一覧：道具の帯（探す・グループ・並び・取り込み・データ・＋住人を追加。ui-cast-pages.js／ui-cast-tools.js）→ 取り込みの欄（折りたたみ。ui-import.js）→
+     サンプルの案内 → 表（ui-cast-pages.js）。いちばん下に次の段階へのカード。スマホ幅は下に固定の「取り込み」「＋住人を追加」 */
   function renderCast() {
-    var CT = HK.CastTools;
+    var CT = HK.CastTools, SH = HK.Shell, pane = SH ? SH.pane() : 'list', full = S.chars.length >= MAX;
+    var P = function (k, inner) { return '<div class="uipane" data-pane="' + k + '"' + (k === pane ? '' : ' hidden') + '>' + inner + '</div>'; };
+    var nTopic = HK.TopicsUI && HK.TopicsUI.count ? HK.TopicsUI.count() : ((S.topics || []).length);
+    var imp = HK.CastImport ? '<details class="uicard uiimp" id="castimp"' + (HK.CastImport.hasText && HK.CastImport.hasText() ? ' open' : '') + '><summary class="uiimphd"><span>診断結果をまとめて取り込む</span><span class="uiimpsub">診断結果の文章をそのまま貼るだけ。複数行を一度に読み込めます。</span></summary>' + HK.CastImport.html({ full: full }) + '</details>' : '';
+    var sample = S.sample && !(SH && SH.sampleHidden()) ? '<div class="uinote" id="samplebar" role="status"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4.5 M8 4.6v.1"/></svg>' +
+      '<span class="uinote-t">いま並んでいるのはサンプルの住人です。自分のキャラクターに置き換えてください。</span>' +
+      '<button type="button" class="btn small" data-act="sampleclear">サンプルを全員消す</button><button type="button" class="btn small icon ghost" data-uia="samplehide" aria-label="この案内を閉じる">×</button></div>' : '';
+    var list =
+      /* 道具の帯・グループごとの節（見出しに「仲間とみなす」）・ページ送り・表（ui-cast-pages.js）。絞り込みで隠した住人・折りたたんだ節・ほかのページの住人は描かない */
+      (CP ? CP.castHtml(imp + sample) : imp + sample + '<div class="cast" id="castlist">' + S.chars.map(function (c, i) { var h = resRow(c, i); return grpHidden(c) ? h.replace('<div class="res"', '<div class="res" hidden style="display:none"') : h; }).join('') + '</div>') +
+      (full ? '<p class="hint" id="castfull" style="color:var(--warn)">住人が上限の' + MAX + '人まで登録されています。追加・複製するには、誰かを削除してください。</p>' : '');
     var html =
-      /* 住人をまとめて登録（描画は ui-import.js。ボタンの処理はこのファイルの onClick）。書き出し・読み込み・別の端末へ・保存フォルダは「データ」ダイアログ（ui-cast-tools.js） */
-      (HK.CastImport ? HK.CastImport.html({ full: S.chars.length >= MAX }) : '') +
-      /* 見出し行「住人 n / 上限 ？」＋「1 人追加 ▾」「データ ▾」＋1行のヒント（ui-cast-tools.js） */
-      (CT ? CT.head(S.chars.length) : '<h2 class="sec">住人　<span class="num">' + S.chars.length + '/' + MAX + '</span></h2>') +
-      (S.sample ? '<p class="sample-note">いま並んでいるのはサンプルの住人です。自分のキャラクターに置き換えてください。</p>' : '') +
+      (CT ? CT.head(S.chars.length, { topics: nTopic, ties: (S.ties || []).length, pane: pane }) : '<h2 class="sec">住人　<span class="num">' + S.chars.length + '/' + MAX + '</span></h2>') +
       '<input type="file" id="iconfile" accept="image/*" hidden>' +
       '<datalist id="grplist">' + groupsOf().map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>' +
-      /* ツールバー・グループごとの節（見出しに「仲間とみなす」）・ページ送り（ui-cast-pages.js）。絞り込みで隠した住人・折りたたんだ節・ほかのページの住人は描かない */
-      (CP ? CP.castHtml() : '<div class="cast" id="castlist">' + S.chars.map(function (c, i) { var h = resRow(c, i); return grpHidden(c) ? h.replace('<div class="res"', '<div class="res" hidden style="display:none"') : h; }).join('') + '</div>') +
-      (S.chars.length >= MAX ? '<p class="hint" id="castfull" style="color:var(--warn)">住人が上限の' + MAX + '人まで登録されています。追加・複製するには、誰かを削除してください。</p>' : '') +
-      (CT ? CT.bottom() : '') + (HK.VoiceSet ? HK.VoiceSet.html() : '') +   /* 口調・喘ぎの設定（全体／住人。ui-voice.js。2026-10-28 担当LA） */
-      (HK.TopicsUI ? HK.TopicsUI.html() : '') +   /* 話題（出来事の文に時々出る語。ui-topics.js。2026-11-01 担当TA） */
-      tiesSection() +
-      '<div class="row" style="margin-top:20px"><span class="spacer"></span><button class="btn primary" data-act="tobox">箱庭を選ぶ</button></div>';
-    $('#view-cast').innerHTML = html;
-    if (CP) CP.after($('#view-cast'));
+      P('list', list) +
+      P('voice', HK.VoiceSet ? HK.VoiceSet.html() : '') +   /* 口調の全体設定（口調・喘ぎの設定。全体／住人。ui-voice.js。2026-10-28 担当LA） */
+      P('topics', HK.TopicsUI ? HK.TopicsUI.html() : '') +   /* 話題（出来事の文に時々出る語。ui-topics.js。2026-11-01 担当TA） */
+      P('ties', tiesSection()) +
+      '<div class="uinext"><span>住人がそろったら、次は放り込む箱庭を選びます。</span><button class="btn primary" data-act="tobox">箱庭を選ぶ<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7h8 M8 4l3 3-3 3"/></svg></button></div>' +
+      '<div class="uimobar" role="group" aria-label="住人の登録"><button type="button" class="btn" data-uia="imp" data-only-open aria-controls="castimp"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M3 2.5h7l3 3v8H3z M5.5 7h5 M5.5 9.5h5 M5.5 12h3"/></svg>取り込み</button>' +
+      '<button type="button" class="btn primary" data-act="add"' + (full ? ' disabled' : '') + '><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 2v10 M2 7h10"/></svg>住人を追加</button></div>';
+    var host = $('#view-cast');
+    host.innerHTML = html;
+    host.setAttribute('data-castpane', pane);
+    if (CP) CP.after(host);
     if (CT) CT.after(); if (HK.VoiceSet) HK.VoiceSet.after();
   }
 
@@ -1606,7 +1652,32 @@
         if (f10) { f10.focus(); f10.select(); }
         break;
       case 'dup': if (row) dupRes(row.dataset.id); break;
+      /* 「＋住人を追加 ▾」の「サンプルの住人から足す」：まだいないサンプルの住人を、上限までの範囲で足す */
+      case 'addsample': (function () {
+        var add = sampleLeft().slice(0, Math.max(0, MAX - S.chars.length)), first = null;
+        if (!add.length) { toast('サンプルの住人はみんな登録されています'); return; }
+        add.forEach(function (c) { var nc = mk(c); S.chars.push(nc); if (!first) first = nc; });
+        if (CP) CP.reveal(first.id);
+        save(); renderCast(); toast('サンプルの住人を' + add.length + '人足しました');
+      })(); break;
+      /* 住人の行の「⋯」の「並び順を一つ上へ／下へ」（ドラッグ・上下キーと同じ。同じ節で一つ上・下に見えている人と入れ替える） */
+      case 'mvup': case 'mvdown': if (row) (function () {
+        var id = row.dataset.id, i = S.chars.map(function (c) { return c.id; }).indexOf(id), d = act === 'mvup' ? -1 : 1;
+        var to = CP ? CP.step(id, d) : i + d;
+        if (to >= 0 && to < S.chars.length) { moveChar(id, to); toast('並び順を変えました'); } else toast(d < 0 ? 'いちばん上です' : 'いちばん下です');
+      })(); break;
+      /* サンプルの案内の「サンプルを全員消す」：サンプルの住人（と、その関係）を消して、取り込みの欄を開く */
+      case 'sampleclear':
+        if (!S.sample) return;
+        S.chars = []; S.sample = false;
+        cleanTies(); if (HK.TopicsUI) HK.TopicsUI.sync(); save(); renderCast();
+        (function () { var d = document.getElementById('castimp'); if (d) d.open = true; })();
+        toast('サンプルの住人を消しました。「＋住人を追加」か「診断結果をまとめて取り込む」で登録してください');
+        break;
       case 'del':
+        if (!row) return;
+        /* 「⋯」のメニューの「削除する…」は確かめてから */
+        if (t.dataset.ask && !window.confirm('「' + ((S.chars.filter(function (c) { return c.id === row.dataset.id; })[0] || {}).name || '') + '」を削除しますか？（関係・この人を指す設定も消えます）')) return;
         S.chars = S.chars.filter(function (c) { return c.id !== row.dataset.id; });
         S.chars.forEach(function (x) { x.loveLock = idList(x.loveLock).filter(function (k) { return k !== row.dataset.id; }); x.sexLocks = idList(x.sexLocks).filter(function (k) { return k !== row.dataset.id; }); if ((x.sexLock === 'pick' || x.sexLock === 'pickMob') && !x.sexLocks.length) x.sexLock = ''; if (x.loveNG) x.loveNG = x.loveNG.filter(function (k) { return k !== row.dataset.id; }); if (x.calls) delete x.calls[row.dataset.id]; if (x.keigo) delete x.keigo[row.dataset.id]; });
         cleanTies(); if (HK.TopicsUI) HK.TopicsUI.sync(); save(); renderCast(); break;
@@ -2005,8 +2076,10 @@
     document.body.appendChild(d);
   })();
   HK.UI.save = save; HK.UI.renderCast = renderCast; HK.UI.cleanTies = cleanTies; HK.UI.toast = toast;
-  if (CP) CP.bind({ S: function () { return S; }, grpList: grpList, grpHidden: grpHidden, groupsOf: groupsOf, resRow: resRow, renderCast: renderCast, boxRedraw: boxRedraw });
-  if (HK.CastTools) HK.CastTools.bind({ S: function () { return S; }, max: MAX, io: function () { return { jp: jpOpen, pick: pickPanel() }; } });
+  if (CP) CP.bind({ max: MAX, S: function () { return S; }, grpList: grpList, grpHidden: grpHidden, groupsOf: groupsOf, resRow: resRow, renderCast: renderCast, boxRedraw: boxRedraw });
+  /* サンプルの住人のうち、まだいない人（名前で見る）。「＋住人を追加 ▾」の「サンプルの住人から足す」 */
+  function sampleLeft() { var have = {}; S.chars.forEach(function (c) { have[c.name] = 1; }); return SAMPLE.filter(function (c) { return !have[c.name]; }); }
+  if (HK.CastTools) HK.CastTools.bind({ S: function () { return S; }, max: MAX, io: function () { return { jp: jpOpen, pick: pickPanel() }; }, sampleLeft: function () { return sampleLeft().length; }, dup: function (id) { dupRes(id); } });
   HK.UI.refresh = function () { setTab(tab); };
   HK.UI.autoTone = autoTone;
   /* 書き出し・読み込み・入力の組み立て（点検・往復の試験から呼ぶ。画面の操作と同じ関数） */

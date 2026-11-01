@@ -127,6 +127,8 @@
 
   /* ---------- 設定の窓 ---------- */
   var cur = null, ov = null, opener = null, egoOpen = true;
+  /* 今の節（2026-11-01 担当UA）。前後の住人へ移っても同じ節のまま（続けて同じ欄を決めやすいように） */
+  var gsec = 'tone';
   /* 折りたたみ（恋愛相手の固定・性行為の相手・恋愛にしない相手）の開閉。窓を開いているあいだだけ覚える。基本は閉じる */
   var openMap = {};
   /* 住人が多いとき（61人以上）は、閉じている一覧の中身（住人を並べたチェック）を DOM に作らず、開いたときに入れる（lazyIn。住人1000人で窓を開くのが重かった） */
@@ -259,41 +261,118 @@
     var newoAll = others.map(function (o) { return opt(o.id, o.name, ''); }).join(''), newoLz = others.length && lazyMany && HK.CastPages && HK.CastPages.lazyAttr;
     var addable = others.length ? '<div class="gearrow"><label>相手 <select data-gf="newo" aria-label="関係の相手"' + (newoLz ? HK.CastPages.lazyAttr(newoAll) + '>' + opt(others[0].id, others[0].name, '') : '>' + newoAll) + '</select></label>' +
       '<label>関係 <select data-gf="newt" aria-label="関係の種類">' + typeOpts('friend') + opt('', '（関係は付けずに相手ごとの設定だけ）', 'friend') + (HK.Attr && HK.Attr.sameForHtml ? opt('__same', '同一人物（別の世界・別の時間の自分）', 'friend') : '') + '</select></label>' + (function () { var gm = groupMates(c); return gm.length ? '<label title="' + esc('同じグループ（' + grpsOf(c).join('・') + '）の全員に、選んだ関係を付けます：' + gm.map(function (o) { return o.name; }).join('・') + '。向きのある関係は、' + c.name + 'が左（上司・先輩・師匠など）になります') + '"><input type="checkbox" data-gf="newgrp"> グループの全員と（' + gm.length + '人）</label>' : ''; })() + '<button type="button" class="btn small" data-gact="tnew">追加</button></div>' : '<p class="gearhint">ほかの住人がいません。</p>';
-    return '<div class="gearhd">' + HK.Icons.html(c.name, s.chars.indexOf(c), 36) + '<h2 id="geartitle">' + esc(c.name) + 'の設定</h2><button type="button" class="btn small" data-gact="close">閉じる</button></div>' +
-      /* 固定の説明は各節の ？（TIPS）に置き、ここには選んだものによって変わる説明（口調・関係・この住人の傾向）だけを出す */
-      (HK.egoDesc ? '<details class="gego"' + (egoOpen ? ' open' : '') + '><summary>この住人の傾向<span class="gegc">' + esc(HK.toCode(c.eg)) + '・' + esc(HK.egoAttWord(c)) + '</span></summary><ul id="egodesc">' + HK.egoDesc(c).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul></details>' : '') +
-      /* ①口調：口調〜語尾の設定（かんたん）の欄（ui-voice.js の VS.basicHtml を「口調・喘ぎの設定」と共用）と、そこでだけ決める欄の要約・「口調・喘ぎをより細かく設定する」のボタン */
-      (function () {
-        var VS = HK.VoiceSet, ms = VS && VS.moreSum ? VS.moreSum(c) : '';
-        return '<div class="gearsec" data-vroot><h3>口調' + (HK.Tips ? HK.Tips.btn('gear-talk') : '') + '</h3>' + (VS && VS.basicHtml ? VS.basicHtml(c) : '') +
-          '<p class="gearhint">口調の辞書・呼び方・敬語などのほかの欄は「' + esc(VS ? VS.LABEL : '口調の設定') + '」で決めます' + (ms ? '（いま：' + esc(ms) + '）' : '') + '。</p>' +
-          '<div class="gearrow"><button type="button" class="btn small" data-gact="tovoice">' + esc(VS ? VS.MORE : '口調をより細かく設定する') + '</button></div></div>';
-      })() +
-      /* ②プロフィール：性別・誕生月・年齢・お酒・恋愛対象・色 */
-      '<div class="gearsec"><h3>プロフィール' + (HK.Tips ? HK.Tips.btn('gear-profile') : '') + '</h3><div class="gearrow"><label>性別 ' + selOf('gender', GENDERS, c.gender) + '</label>' +
+    /* 2026-11-01 担当UA（参考デザインの見本 02・04）：窓の頭（アイコン・「○○の設定」・コードと型・前後の住人・×）、左に節の目次（未設定／設定済みの札と一行の要約）、
+       右に 1 節ずつ（今の節だけを出し、ほかの節は hidden。欄・data-gf は今までどおり全部 DOM にある）、足に「変えた内容はすぐに保存されます」「次の節」「閉じる」。
+       節：口調・プロフィール・体と設定・箱庭の能力（あれば）・恋愛（R18版は恋愛と夜）・相手ごとの設定（R18版は喘ぎ：口調の全体設定への案内） */
+    var VS = HK.VoiceSet, ms = VS && VS.moreSum ? VS.moreSum(c) : '';
+    var secs = [];
+    var gego = HK.egoDesc ? '<details class="gego"' + (egoOpen ? ' open' : '') + '><summary>この住人の傾向<span class="gegc">' + esc(HK.toCode(c.eg)) + '・' + esc(HK.egoAttWord(c)) + '</span></summary><ul id="egodesc">' + HK.egoDesc(c).map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul></details>' : '';
+    /* ①口調：口調〜語尾の設定（かんたん）の欄（ui-voice.js の VS.basicHtml を「口調の全体設定」と共用）と、そこでだけ決める欄の要約・「口調の全体設定で開く」の案内 */
+    secs.push({ k: 'tone', name: '口調', tip: 'gear-talk', desc: '空欄の欄は、口調に合わせて自動で決まります。', vroot: true,
+      set: !!(c.tone || c.fp || c.you || c.fpAngry || c.fpLover || c.marks || c.toneCustom || c.yomi || (c.ending && Object.keys(c.ending).length) || ms),
+      sum: c.tone ? toneLabel(c.tone) : 'おまかせ（' + UI.autoTone(c) + '）',
+      html: (VS && VS.basicHtml ? VS.basicHtml(c) : '') +
+        '<div class="ggo"><span>口調の辞書・呼び方・敬語は「口調の全体設定」で、この住人を選んで決めます' + (ms ? '（いま：' + esc(ms) + '）' : '') + '。</span>' +
+        '<button type="button" class="btn ghost small ggolink" data-gact="tovoice">口調の全体設定で開く<svg width="10" height="14" viewBox="0 0 10 14" aria-hidden="true"><path d="M3 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button></div>' });
+    /* ②プロフィール：性別（4 つのセグメント）・恋愛対象・誕生月・年齢・お酒・色。この住人の傾向（エゴグラムの説明）も */
+    secs.push({ k: 'profile', name: 'プロフィール', tip: 'gear-profile', desc: '性別・恋愛対象・誕生月・年齢・お酒・イメージカラー。空欄のままでも進めます。',
+      set: !!(c.gender || c.likes || c.bmonth || c.age || c.alcohol || c.color),
+      sum: [c.gender ? lab(GENDERS, c.gender) : '性別おまかせ', c.likes ? '対象：' + lab(LIKES, c.likes) : ''].filter(Boolean).join('・'),
+      html: '<div class="gearrow gtwo"><div class="gfield gwide"><span class="glab" id="glab-gender">性別</span><div class="gseg" role="radiogroup" aria-labelledby="glab-gender">' +
+          GENDERS.map(function (g) { return '<label><input type="radio" name="gf-gender" data-gf="gender" value="' + g[0] + '"' + ((c.gender || '') === g[0] ? ' checked' : '') + '><span>' + esc(g[1]) + '</span></label>'; }).join('') + '</div></div>' +
         '<label>恋愛対象 ' + selOf('likes', LIKES, c.likes) + '</label>' +
         '<label>誕生月 ' + selOf('bmonth', [['', '決めない']].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (m) { return [String(m), m + '月']; })), c.bmonth || '') + '</label>' +
         '<label>年齢 <input type="number" data-gf="age" min="1" max="150" value="' + esc(c.age || '') + '" placeholder="決めない" style="width:5em"></label>' +
         '<label title="酒の強さ。合コン・出られない部屋の酒・オメガバースの飲みの場面・邪神村の歓迎の宴や御神酒などで、酔いやすさや振る舞いが変わります。おまかせは気質から決まります">お酒 ' + selOf('alcohol', [['', 'おまかせ'], ['1', '弱い'], ['2', 'やや弱い'], ['3', 'ふつう'], ['4', '強い'], ['5', 'ザル']], c.alcohol || '') + '</label></div>' +
-      '<div class="gearrow"><label><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> イメージカラーは自動（並び順の色）</label><label>色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div></div>' +
-      /* ③体と設定：体格・種族・心の強さ・好物（R18版：胸・性器・性器の呼び方）。同一人物は⑤相手ごとの設定の行に */
-      '<div class="gearsec"><h3>体と設定' + (HK.Tips ? HK.Tips.btn('gear-body') : '') + '</h3>' + (HK.Attr ? HK.Attr.gearHtml(c, others, { esc: esc, opt: opt, selOf: selOf }) : '') + partRow + '</div>' +
-      /* ③'箱庭の能力：箱庭をまたいで共通の能力値・欄（体力・運・推理力・特殊役職 など。shared-stats.js） */
-      (HK.Shared && HK.Shared.shown().length ? '<div class="gearsec"><h3>箱庭の能力' + (HK.Tips ? HK.Tips.btn('gear-ab') : '') + '</h3>' + HK.Shared.gearHtml(c, { esc: esc, opt: opt }) + '</div>' : '') +
-      /* ④恋愛（R18版は恋愛と夜）：受け攻め・恋愛相手の固定・一途・恋愛にしない相手（R18：性行為の相手の固定・R18に参加しない・夜の性格・ふたなり など） */
-      '<div class="gearsec"><h3>' + (HK.SAFE_ON ? '恋愛' : '恋愛と夜') + (HK.Tips ? HK.Tips.btn('gear-love') : '') + '</h3>' +
-      '<div class="gearrow"><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
+        '<div class="gcolor"><span class="gcsw" style="background:' + esc(c.color || 'var(--p' + (s.chars.indexOf(c) % 30) + ')') + '" aria-hidden="true"></span><span class="gct"><b>イメージカラー</b><span>' + (c.color ? esc(c.color) : '自動（並び順の色）') + '</span></span>' +
+        '<label class="gcauto"><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> 自動</label><label class="gcpick">色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div>' + gego });
+    /* ③体と設定：体格・種族・心の強さ・好物（R18版：胸・性器・性器の呼び方）。同一人物は⑤相手ごとの設定の行に */
+    var bodySum = HK.Attr && HK.Attr.summary ? HK.Attr.summary(c, byId) : [];
+    secs.push({ k: 'body', name: '体と設定', tip: 'gear-body', desc: '体格・種族・心の強さ・好物など。決めなければ、箱庭がおまかせで決めます。',
+      set: !!(bodySum.length || partRow && (c.partWords || c.partM || c.partF)), sum: bodySum.slice(0, 3).join('・'),
+      html: (HK.Attr ? HK.Attr.gearHtml(c, others, { esc: esc, opt: opt, selOf: selOf }) : '') + partRow });
+    /* ③'箱庭の能力：箱庭をまたいで共通の能力値・欄（体力・運・推理力・特殊役職 など。shared-stats.js） */
+    if (HK.Shared && HK.Shared.shown().length) {
+      var abSum = HK.Shared.summary ? HK.Shared.summary(c) : [];
+      secs.push({ k: 'ab', name: '箱庭の能力', tip: 'gear-ab', desc: '箱庭をまたいで使う能力値です。空なら気質から決まります。', set: !!abSum.length, sum: abSum.slice(0, 2).join('・'),
+        html: HK.Shared.gearHtml(c, { esc: esc, opt: opt }) });
+    }
+    /* ④恋愛（R18版は恋愛と夜）：受け攻め・恋愛相手の固定・一途・恋愛にしない相手（R18：性行為の相手の固定・R18に参加しない・夜の性格・ふたなり など） */
+    var loveSet = !!(c.pos || c.faithful || (c.loveLock || []).length || (c.loveNG || []).length || c.sexLock || c.noR18 || c.trio || c.libido || c.sexLikes || c.night || c.futa || c.posNpc || c.daku || c.heart === false);
+    secs.push({ k: 'love', name: HK.SAFE_ON ? '恋愛' : '恋愛と夜', tip: 'gear-love', desc: '受け攻め・恋愛相手の固定・一途など。決めなければ、気質と相性で決まります。',
+      set: loveSet, sum: [c.pos ? lab(POS, c.pos) : '', c.faithful ? '一途' : '', namesOf(c.loveLock).length ? '固定：' + namesOf(c.loveLock).join('・') : ''].filter(Boolean).join('・'),
+      html: '<div class="gearrow"><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
         nightRow + '</div>' +
-      '<div class="gearrow">' + sexSel + '<label title="恋人ができたら、その恋人がいる間は、ほかの人と恋愛・夜の場面になりません（浮気しない）。恋人がいないうちは、ふつうに恋をします"><input type="checkbox" data-gf="faithful"' + (c.faithful ? ' checked' : '') + '> 一途（恋人ができたら、ほかの人に惹かれない・浮気しない）</label></div>' + r18Row +
-      lockBox + sexBox + ngRow + '</div>' +
-      /* ⑤相手ごとの設定：関係・呼び方・二人称/一人称・受け攻め・夜の性格・同一人物（闇堕ちVer） */
-      '<div class="gearsec"><h3>相手ごとの設定' + (HK.Tips ? HK.Tips.btn('gear-ties') : '') + '</h3>' + (HK.TopicsUI ? HK.TopicsUI.gearHtml(c) : '') + nkRow + (rel || '<p class="gearhint">まだ相手ごとの設定はありません。下の「相手」と「関係」を選んで追加してください（関係を付けずに、受け攻めや呼び方だけを決めることもできます）。</p>') + addable + '</div>';
+        '<div class="gearrow">' + sexSel + '<label title="恋人ができたら、その恋人がいる間は、ほかの人と恋愛・夜の場面になりません（浮気しない）。恋人がいないうちは、ふつうに恋をします"><input type="checkbox" data-gf="faithful"' + (c.faithful ? ' checked' : '') + '> 一途（恋人ができたら、ほかの人に惹かれない・浮気しない）</label></div>' + r18Row +
+        lockBox + sexBox + ngRow });
+    /* ⑤相手ごとの設定：関係・呼び方・二人称/一人称・受け攻め・夜の性格・同一人物（闇堕ちVer） */
+    var nTie = tiesOf(c).length;
+    secs.push({ k: 'ties', name: '相手ごとの設定', tip: 'gear-ties', desc: 'ほかの住人との関係・呼び方・この人にだけ変える設定です。',
+      set: !!(rel || (c.noKillFor || []).length), sum: nTie ? '関係 ' + nTie + '件' : rel ? '呼び方など' : '',
+      html: (HK.TopicsUI ? HK.TopicsUI.gearHtml(c) : '') + nkRow + (rel || '<p class="gearhint">まだ相手ごとの設定はありません。下の「相手」と「関係」を選んで追加してください（関係を付けずに、受け攻めや呼び方だけを決めることもできます）。</p>') + addable });
+    /* r18:begin */
+    /* ⑥喘ぎ（R18版）：辞書・声の区分は「口調の全体設定」でこの住人を選んで決める（ui-gear-moan.js）。ここは要約と案内だけ */
+    if (!HK.SAFE_ON) {
+      var mSum = [];
+      if (c.moanTone) mSum.push('喘ぎの口調：' + toneLabel(c.moanTone));
+      if (HK.LATE_READY !== false && HK.GearMoan && HK.GearMoan.summary) mSum = mSum.concat(HK.GearMoan.summary(c));
+      secs.push({ k: 'moan', name: '喘ぎ', tip: '', desc: '夜の場面の喘ぎの口調・辞書・声の区分です。空なら口調から決まります。', set: !!mSum.length, sum: mSum.slice(0, 2).join('・'),
+        html: (mSum.length ? '<p class="gearhint">いま：' + esc(mSum.join('・')) + '</p>' : '') +
+          '<div class="ggo"><span>喘ぎの口調・辞書・声の区分は「口調の全体設定」で、この住人を選んで決めます。</span>' +
+          '<button type="button" class="btn ghost small ggolink" data-gact="tovoice">口調の全体設定で開く<svg width="10" height="14" viewBox="0 0 10 14" aria-hidden="true"><path d="M3 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button></div>' });
+    }
+    /* r18:end */
+    if (!secs.some(function (x) { return x.k === gsec; })) gsec = secs[0].k;
+    var at = 0; secs.forEach(function (x, j) { if (x.k === gsec) at = j; });
+    var nx = secs[at + 1] || null;
+    var idx = s.chars.indexOf(c), pv = s.chars[idx - 1] || null, nv = s.chars[idx + 1] || null;
+    var CHL = '<svg width="10" height="14" viewBox="0 0 10 14" aria-hidden="true"><path d="M7 2L2 7l5 5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+    var CHR = '<svg width="10" height="14" viewBox="0 0 10 14" aria-hidden="true"><path d="M3 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+    var X = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8 M10 2l-8 8" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>';
+    var ty = HK.egoTypeName ? HK.egoTypeName(c) : HK.egoType(c.eg).label;
+    var tl = c.tone ? toneLabel(c.tone) : UI.autoTone(c);
+    return '<div class="gearhd"><button type="button" class="gback" data-gact="close" aria-label="閉じる">' + CHL + '</button>' + HK.Icons.html(c.name, idx, 44) +
+      '<div class="ghtt"><h2 id="geartitle">' + esc(c.name) + 'の設定</h2><div class="ghsub"><span class="ghcode num">' + esc(HK.toCode(c.eg)) + '</span>' + esc(ty) + (tl && tl !== ty ? '・' + esc(tl) : '') + '</div></div>' +
+      '<div class="gnav" role="group" aria-label="ほかの住人の設定へ"><button type="button" data-gact="prev"' + (pv ? ' aria-label="前の住人（' + esc(pv.name) + '）の設定へ"' : ' disabled') + '>' + CHL + '<span>前の住人</span></button>' +
+        '<button type="button" data-gact="next"' + (nv ? ' aria-label="次の住人（' + esc(nv.name) + '）の設定へ"' : ' disabled') + '><span>次の住人' + (nv ? '（' + esc(nv.name) + '）' : '') + '</span>' + CHR + '</button></div>' +
+      '<button type="button" class="gx" data-gact="close" aria-label="閉じる">' + X + '</button></div>' +
+      '<div class="gearmain"><nav class="geartoc" aria-label="設定の節">' + secs.map(function (x) {
+        return '<button type="button" data-gact="sec" data-sec="' + x.k + '"' + (x.k === gsec ? ' aria-current="true"' : '') + '><span class="gtn">' + esc(x.name) + '<span class="gtb' + (x.set ? ' on' : '') + '">' + (x.set ? '設定済み' : '未設定') + '</span></span>' +
+          '<span class="gts">' + esc(x.sum || '') + '</span></button>';
+      }).join('') + '</nav>' +
+      '<div class="gearpane">' + secs.map(function (x) {
+        return '<section class="gearsec" data-sec="' + x.k + '"' + (x.vroot ? ' data-vroot' : '') + (x.k === gsec ? '' : ' hidden') + ' aria-labelledby="gsh-' + x.k + '"><h3 id="gsh-' + x.k + '">' + esc(x.name) + (HK.Tips && x.tip ? HK.Tips.btn(x.tip) : '') + '</h3>' +
+          (x.desc ? '<p class="gsecdesc">' + esc(x.desc) + '</p>' : '') + x.html + '</section>';
+      }).join('') +
+      '<div class="gearfoot"><span class="gsaved"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>変えた内容はすぐに保存されます</span>' +
+        '<span class="gfbtns"><button type="button" class="btn" data-gact="sec" data-sec="' + (nx ? nx.k : '') + '" data-scroll="1"' + (nx ? '' : ' hidden') + '>次の節：' + (nx ? esc(nx.name) : '') + '</button><button type="button" class="btn primary" data-gact="close">閉じる</button></span></div>' +
+      '</div></div>';
+  }
+  function showSec(k, focus) {
+    if (!ov) return;
+    var box = ov.querySelector('.gearbox'), secs = box.querySelectorAll('.gearsec[data-sec]'), list = [];
+    Array.prototype.forEach.call(secs, function (x) { list.push(x.getAttribute('data-sec')); });
+    if (list.indexOf(k) < 0) return;
+    gsec = k;
+    Array.prototype.forEach.call(secs, function (x) { x.hidden = x.getAttribute('data-sec') !== k; });
+    Array.prototype.forEach.call(box.querySelectorAll('.geartoc [data-gact="sec"]'), function (b) { if (b.getAttribute('data-sec') === k) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+    /* 足の「次の節」 */
+    var nb = box.querySelector('.gearfoot [data-gact="sec"]'), at = list.indexOf(k), nk = list[at + 1];
+    var nm = nk ? (box.querySelector('#gsh-' + nk) || {}).firstChild : null;
+    if (nb && nk) { nb.setAttribute('data-sec', nk); nb.textContent = '次の節：' + (nm ? nm.textContent : ''); nb.hidden = false; }
+    else if (nb) nb.hidden = true;
+    var pane = box.querySelector('.gearpane'); if (pane) pane.scrollTop = 0;
+    ov.scrollTop = 0;
+    if (focus) { var h = box.querySelector('#gsh-' + k); if (h) { h.tabIndex = -1; try { h.focus({ preventScroll: true }); } catch (e) { h.focus(); } } }
+    /* 口調の台詞の見本（見えている箱だけ切り替わる） */
+    if (HK.VoiceSet && HK.VoiceSet.sampleTick) HK.VoiceSet.sampleTick();
   }
   function render() {
     var c = byId(cur);
     if (!c) { close(); return; }
-    var box = ov.querySelector('.gearbox'), y = ov.scrollTop;
+    var box = ov.querySelector('.gearbox'), y = ov.scrollTop, pn = box.querySelector('.gearpane'), py = pn ? pn.scrollTop : 0;
     box.innerHTML = body(c);
+    pn = box.querySelector('.gearpane'); if (pn) pn.scrollTop = py;
     /* 住人が多いとき（61人以上）：住人を選ぶ欄に「名前で探す」、住人を並べたチェックの一覧に「名前で絞り込む」を添える（ui-cast-pages.js） */
     if (HK.CastPages) HK.CastPages.after(box);
     /* ①口調の台詞の見本を切り替える（ui-voice.js） */
@@ -321,7 +400,7 @@
     ov.hidden = false;
     document.body.style.overflow = 'hidden';
     render();
-    var f = ov.querySelector('select,input,button'); if (f) f.focus();
+    var f = ov.querySelector('.gearsec:not([hidden]) select, .gearsec:not([hidden]) input, .gx'); if (f) try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); }
   }
   function close() {
     if (ov) ov.hidden = true;
@@ -348,6 +427,13 @@
     if (!c) return;
     s.ties = s.ties || [];
     if (act === 'close') close();
+    /* 節の切替（目次・「次の節」）：描き直さずに hidden を付け替える（2026-11-01 担当UA） */
+    else if (act === 'sec') showSec(b.dataset.sec, !!b.dataset.scroll);
+    /* 前の住人・次の住人：同じ節のまま、その住人の設定へ */
+    else if (act === 'prev' || act === 'next') {
+      var i2 = s.chars.indexOf(c), to2 = s.chars[i2 + (act === 'prev' ? -1 : 1)];
+      if (to2) { open(to2.id, to2.id); var nb = ov.querySelector('[data-gact="' + act + '"]'); if (nb && !nb.disabled) nb.focus(); }
+    }
     /* 「口調・喘ぎをより細かく設定する」：窓を閉じて、住人タブの節をこの住人にして開く（ui-voice.js） */
     else if (act === 'tovoice') { var vid = c.id; close(); if (HK.VoiceSet) HK.VoiceSet.open(vid); }
     /* 「話題の節へ」：窓を閉じて、住人タブの「話題」の節へ（追加の行をこの住人にしておく。ui-topics.js） */
