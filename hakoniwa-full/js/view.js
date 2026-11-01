@@ -9,12 +9,31 @@
   var LINE_DASH = { enemy: '5 4', kill: '6 4', night: '2 4' };
   /* 凡例の並びと名前（恋人と執着は同じ線） */
   var LEG = [['love', '恋人・執着'], ['partner', '相棒'], ['friend', '友人'], ['pine', '片想い'], ['guard', '守護'], ['enemy', '敵対'], ['kill', '殺害'], ['night', '一夜']];
-  var tl = { who: [], keyOnly: false, cat: 'all', lewd: false };
+  /* 関係図の右の「表示する線」の種類（線の cls をまとめる。気まずい・破局なども cls は enemy）と、図に描いた本数（mapSvg が数える） */
+  var KGRP = { love: 'love', obsess: 'love', pine: 'pine', friend: 'friend', partner: 'partner', guard: 'guard', enemy: 'enemy', kill: 'kill', night: 'night', none: 'none' };
+  var KNAME = [['love', '恋人・執着'], ['pine', '片想い'], ['friend', '友人'], ['partner', '相棒'], ['guard', '守護'], ['enemy', '気まずい・敵対'], ['kill', '殺害'], ['night', '一夜'], ['none', 'そのほか']];
+  var mapCnt = {};
+  var tl = { who: [], keyOnly: false, cat: 'all', lewd: false, off: {} };
   var lastRes = null, lastHost = null, lastOpts = null;
+  /* ---------- 結果の画面の並び（2026-11-01 担当UC。参考デザインの「経過と結末」：頭＋切替「結末｜経過｜関係図｜二人ずつ｜住人ごと」。表示だけで、記録・結果は変えない） ----------
+     rv.tab（今の切替）・fs（経過の文字の大きさ s/m/l）・why（理由を表示）・open（区切りを全部開く）は画面の設定としてブラウザに残す（新しい鍵 hakoniwa:rv。今までの鍵は変えない）。
+     sec（区切りごとの開け閉め）・pair（選んだ組）・who（選んだ住人）・off（関係図で隠す線の種類）・lab（線の名前を全部出す）・line（選んだ線）・side（スマホの絞り込みの開閉）は結果ごと。
+     見た目は js/ui-result-style.js（--ui-* の変数）。一人用・ダンジョン（solo-story-kit.js・dungeon-view.js）も V.head・V.shell で同じ頭と切替を使う */
+  var RV_KEY = 'hakoniwa:rv';
+  var rv = (function () {
+    var o = {};
+    try { o = JSON.parse(window.localStorage.getItem(RV_KEY) || '{}') || {}; } catch (e) { o = {}; }
+    return { tab: typeof o.tab === 'string' ? o.tab : 'end', fs: /^[sml]$/.test(o.fs || '') ? o.fs : 'm', why: o.why !== false, open: !!o.open, sec: {}, pair: null, who: null, off: {}, lab: false, line: null, side: false, plist: 'all' };
+  })();
+  function rvSave() { try { window.localStorage.setItem(RV_KEY, JSON.stringify({ tab: rv.tab, fs: rv.fs, why: rv.why, open: rv.open })); } catch (e) { /* 残せなくても表示はできる */ } }
+  /* 結果が変わったら、結果ごとの選択を戻す */
+  function rvFresh() { rv.sec = {}; rv.pair = null; rv.who = null; rv.off = {}; rv.lab = false; rv.line = null; rv.side = false; rv.plist = 'all'; }
 
   function pc(i) { return 'var(--p' + (i % 30) + ')'; }
   function dot(i) { return '<span class="dot" style="background:' + pc(i) + '"></span>'; }
   function av(res, i, size, extra) { var c = res.chars[i]; return c ? HK.Icons.html(c.name, i, size, extra) : ''; }
+  /* 住人の名前（住人の色） */
+  function nmc(res, i) { var c = res.chars[i]; return c ? '<span class="name" style="color:' + pc(i) + '">' + esc(c.name) + '</span>' : ''; }
 
   /* ---------- 記録の札と段の見た目（担当W3 2026-10-30。表示だけで記録・文は変えない） ----------
      出られない部屋（whiteroom）の記録の li に data-rm（種類）を付け、頭に小さな札（.rmb）を置く。種類は記録の印と本文の形から表示側で決める：
@@ -326,9 +345,14 @@
     var labSkip = 0;
     var labFs = big ? 11 : 12;
     var linePts = [];
+    mapCnt = {};
     pairs.forEach(function (p, ei) {
       var fromI = p.a, toI = p.b;
       if (p.dir != null && p.dir === p.b) { fromI = p.b; toI = p.a; }
+      /* 線の種類（右の「表示する線」で隠す）と、押したときの二人（元の番号） */
+      var kg = KGRP[p.cls] || 'none', oa = orig(p.a), ob = orig(p.b);
+      var hitA = ' data-k="' + kg + '" data-act="mapline" data-a="' + oa + '" data-b="' + ob + '"';
+      var selL = rv.line && ((rv.line.a === oa && rv.line.b === ob) || (rv.line.a === ob && rv.line.b === oa));
       var from = pos[fromI], to = pos[toI];
       var c = route(from, to, LY, fromI, toI, boxes);
       /* 丸の縁から縁まで（曲げた線は、制御点の方向で縁を決める） */
@@ -346,19 +370,24 @@
       for (var lk = 1; lk < 24; lk++) { var lp = qpt(s0, c, s1, lk / 24); lp.e = ei; linePts.push(lp); }
       var faded = focus != null && p.a !== focus && p.b !== focus;
       /* 間引いた線は、細い点線だけ（ラベル・矢印なし） */
-      if (faint.indexOf(p) >= 0) { edges += '<path d="M' + s0.x.toFixed(1) + ',' + s0.y.toFixed(1) + ' Q' + c.x.toFixed(1) + ',' + c.y.toFixed(1) + ' ' + s1.x.toFixed(1) + ',' + s1.y.toFixed(1) + '" fill="none" class="efaint" style="stroke:var(' + CLS_VAR[p.cls] + ');stroke-width:1;opacity:' + (faded ? 0.08 : 0.32) + '" stroke-dasharray="2 4"/>'; return; }
+      if (faint.indexOf(p) >= 0) { edges += '<path d="M' + s0.x.toFixed(1) + ',' + s0.y.toFixed(1) + ' Q' + c.x.toFixed(1) + ',' + c.y.toFixed(1) + ' ' + s1.x.toFixed(1) + ',' + s1.y.toFixed(1) + '" fill="none" class="efaint" data-k="' + kg + '" style="stroke:var(' + CLS_VAR[p.cls] + ');stroke-width:1;opacity:' + (faded ? 0.08 : 0.32) + '" stroke-dasharray="2 4"/>'; return; }
       var wdt = LINE_W[p.cls] || 1.2, dash = LINE_DASH[p.cls];
       var col = 'var(' + CLS_VAR[p.cls] + ')';
       var straight = Math.abs(c.x - (from.x + to.x) / 2) < 0.5 && Math.abs(c.y - (from.y + to.y) / 2) < 0.5;
       var d = straight ? 'M' + s0.x.toFixed(1) + ',' + s0.y.toFixed(1) + ' L' + s1.x.toFixed(1) + ',' + s1.y.toFixed(1)
         : 'M' + s0.x.toFixed(1) + ',' + s0.y.toFixed(1) + ' Q' + c.x.toFixed(1) + ',' + c.y.toFixed(1) + ' ' + s1.x.toFixed(1) + ',' + s1.y.toFixed(1);
-      edges += '<path d="' + d + '" fill="none" class="rl ' + p.cls + '" style="stroke:' + col + ';stroke-width:' + wdt + ';opacity:' + (faded ? 0.15 : 0.9) + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + (p.dir != null ? ' marker-end="url(#ar-' + p.cls + ')"' : '') + '/>';
+      mapCnt[kg] = (mapCnt[kg] || 0) + 1;
+      /* 押しやすいように、透明の太い線を下に敷く（押すと右に二人の説明。選んだ線は太く） */
+      edges += '<path d="' + d + '" fill="none" class="rlhit"' + hitA + ' style="stroke:transparent;stroke-width:12;pointer-events:stroke;cursor:pointer"/>';
+      edges += '<path d="' + d + '" fill="none" class="rl ' + p.cls + (selL ? ' sel' : '') + '"' + hitA + ' style="stroke:' + col + ';stroke-width:' + wdt + ';opacity:' + (faded ? 0.15 : 0.9) + ';cursor:pointer"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + (p.dir != null ? ' marker-end="url(#ar-' + p.cls + ')"' : '') + '/>';
       /* 殺害：線の中ほどに × */
       if (p.cls === 'kill') {
         var xm = qpt(s0, c, s1, 0.5);
-        edges += '<path d="M' + (xm.x - 5).toFixed(1) + ',' + (xm.y - 5).toFixed(1) + ' L' + (xm.x + 5).toFixed(1) + ',' + (xm.y + 5).toFixed(1) + ' M' + (xm.x + 5).toFixed(1) + ',' + (xm.y - 5).toFixed(1) + ' L' + (xm.x - 5).toFixed(1) + ',' + (xm.y + 5).toFixed(1) + '" fill="none" class="rx" style="stroke:' + col + ';stroke-width:2.2;stroke-linecap:round;opacity:' + (faded ? 0.15 : 1) + '"/>';
+        edges += '<path d="M' + (xm.x - 5).toFixed(1) + ',' + (xm.y - 5).toFixed(1) + ' L' + (xm.x + 5).toFixed(1) + ',' + (xm.y + 5).toFixed(1) + ' M' + (xm.x + 5).toFixed(1) + ',' + (xm.y - 5).toFixed(1) + ' L' + (xm.x - 5).toFixed(1) + ',' + (xm.y + 5).toFixed(1) + '" fill="none" class="rx" data-k="' + kg + '" style="stroke:' + col + ';stroke-width:2.2;stroke-linecap:round;opacity:' + (faded ? 0.15 : 1) + '"/>';
         xmarks.push({ x1: xm.x - 7, x2: xm.x + 7, y1: xm.y - 7, y2: xm.y + 7 });
       }
+      /* 線の名前：既定では友人などの弱い線の名前は出さない（右の「線の名前を全部出す」で全部。選んだ人・選んだ線の名前は出す） */
+      if (!rv.lab && (p.cls === 'friend' || p.cls === 'none') && !selL && !(focus != null && (p.a === focus || p.b === focus))) return;
       /* ラベル：線の上で、丸・名前・ほかのラベルと重ならない場所を探す */
       var txt = p.name + (p.surprise ? '＊' : ''), lw = tw(txt, labFs) + 8, lh = labFs + 6;
       var best = null, bo = 1e9, shortEdge = Math.sqrt(Math.pow(s1.x - s0.x, 2) + Math.pow(s1.y - s0.y, 2)) < lw + 18;
@@ -381,9 +410,9 @@
         return false;
       });
       /* ほかのラベルとどうしても重なるときは、弱いほうのラベルを省く（線は残す） */
-      if (MV && placed.some(function (o) { return overlap(best, o) > 0; })) { labSkip++; return; }
+      if (MV && !rv.lab && placed.some(function (o) { return overlap(best, o) > 0; })) { labSkip++; return; }
       placed.push(best);
-      labels += '<text x="' + best.cx.toFixed(1) + '" y="' + (best.cy + labFs * 0.36).toFixed(1) + '" text-anchor="middle" class="elab" style="fill:' + col + ';opacity:' + (faded ? 0.2 : 1) + '">' + esc(txt) + '</text>';
+      labels += '<text x="' + best.cx.toFixed(1) + '" y="' + (best.cy + labFs * 0.36).toFixed(1) + '" text-anchor="middle" class="elab' + (selL ? ' sel' : '') + '"' + hitA + ' style="fill:' + col + ';opacity:' + (faded ? 0.2 : 1) + ';cursor:pointer">' + esc(txt) + '</text>';
     });
     var st8 = nodeStates(res);
     var nodes = R.chars.map(function (c, k) {
@@ -480,35 +509,54 @@
   /* 札（組の見出し）に出す関係名 */
   function tieChip(t, res) { return (HK.Sib && HK.Sib.resLabel(t, res)) || t.label; }
 
-  function pairCard(p, res) {
-    var A = res.chars[p.a], B = res.chars[p.b], L = res.log;
+  /* ---------- 二人ずつ（見本 13）：左に組の一覧、右に選んだ組のカード（中身は今までの組のカードと同じ：結末の一文・相性予想・根拠・推移・最終の値・決め手の場面） ---------- */
+  function pairGroup(p) { return { love: 'love', obsess: 'love', pine: 'love', night: 'love', friend: 'friend', partner: 'friend', guard: 'friend', enemy: 'enemy', kill: 'enemy' }[p.cls] || 'other'; }
+  function pairDetail(p, res) {
+    if (!p) return '';
+    var L = res.log;
     /* 見出しの二人は攻め×受けの順（pair-name.js） */
     var po = HK.pairIdx ? HK.pairIdx(res, p) : [p.a, p.b];
     var tieLabel = p.tie ? tieName(p.tie, res) : '';
-    var pred = p.tie
-      ? (p.surprise ? 'もともと<b>「' + esc(tieLabel) + '」</b>だったのに「' + esc(p.name) + '」に変わった。' : 'もともと：<b>' + esc(tieLabel) + '</b>　相性予想：' + esc(p.base.kindLabel))
-      : p.surprise
-      ? '相性予想は<b>「' + esc(p.base.kindLabel) + '」</b>だったのに「' + esc(p.name) + '」に落ち着いた。'
-      : '相性予想：<b>' + esc(p.base.kindLabel) + '</b>';
-    var notes = p.base.notes.length ? '<br>' + p.base.notes.map(esc).join('／') : '';
     var tp = turnOf(p, res), tk = sparkTurn(p, res);
     var keys = p.key.map(function (n) {
       var e = L[n];
       /* エロシーンは概要だけ（全文は経過で読める） */
       var body = HK.lewdEvent && HK.lewdBrief && HK.lewdEvent(e) ? '<span class="brief">' + esc(HK.lewdBrief(e)) + '</span>' : paint(e.text, res);
-      return '<li' + (n === tp ? ' class="hot"' : '') + '><span class="st">' + (tno(e.step) ? '<b class="tn">' + tno(e.step) + '</b>' : '') + esc(e.label) + '</span>' + body + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</li>';
+      return '<li' + (n === tp ? ' class="hot"' : '') + '><span class="st">' + (tno(e.step) ? '<b class="tn">' + tno(e.step) + '</b>' : '') + esc(e.label) + (n === tp ? '・転機' : '') + '</span>' + body + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</li>';
     }).join('');
     var r = p.rel;
-    return '<article class="pcard' + (p.surprise ? ' sur' : '') + '">' +
-      '<div class="hd"><span class="avpair">' + av(res, po[0], 34) + av(res, po[1], 34) + '</span><span class="nm">' + esc(res.chars[po[0]].name) + ' × ' + esc(res.chars[po[1]].name) + '</span>' + (p.tie ? '<span class="tiechip">' + esc(tieChip(p.tie, res)) + ' →</span>' : '') + '<span class="lbl ' + p.cls + '">' + esc(p.name) + '</span>' + (p.surprise ? '<span class="surtag">意外</span>' : '') + '</div>' +
-      '<div class="txt">' + paint(p.text, res) + '</div>' +
-      '<div class="pred">' + pred + notes + '</div>' +
-      spark(p, res) +
-      '<div class="sparkleg"><span style="color:' + pc(p.a) + '">― ' + esc(A.name) + '→' + esc(B.name) + ' 好意</span><span style="color:' + pc(p.b) + '">― ' + esc(B.name) + '→' + esc(A.name) + ' 好意</span><span style="color:var(--enemy)">┄ 緊張</span>' + (tk ? '<span class="sparkhot">● ' + tno(tk.e.step) + ' 転機</span>' : '') + '</div>' +
-      '<div class="nums">' + esc(A.name) + '→ 好意' + r.ab.aff + ' 信頼' + r.ab.trust + ' 惹かれ' + r.ab.att + ' 緊張' + r.ab.ten + '<br>' + esc(B.name) + '→ 好意' + r.ba.aff + ' 信頼' + r.ba.trust + ' 惹かれ' + r.ba.att + ' 緊張' + r.ba.ten + '</div>' +
-      (keys ? '<ul class="keys">' + keys + '</ul>' : '') +
-      '<div><button class="btn small" data-act="pairfilter" data-a="' + p.a + '" data-b="' + p.b + '">この二人の経過を見る</button></div>' +
-      '</article>';
+    var vrow = function (x, y, v) { return '<tr><th scope="row">' + nmc(res, x) + '→' + nmc(res, y) + '</th><td>' + v.aff + '</td><td>' + v.trust + '</td><td>' + v.att + '</td><td>' + v.ten + '</td></tr>'; };
+    var pred = p.tie ? '<p class="pred">もともと<b>「' + esc(tieLabel) + '」</b>' + (p.surprise ? 'だったのに「' + esc(p.name) + '」に変わった。' : 'の二人。') + '</p>' : '';
+    return '<article class="rvcard pcard rvpd' + (p.surprise ? ' sur' : '') + '">' +
+      '<div class="hd"><span class="avpair">' + av(res, po[0], 40) + av(res, po[1], 40) + '</span><span class="nm">' + nmc(res, po[0]) + ' × ' + nmc(res, po[1]) + '</span>' + (p.tie ? '<span class="tiechip">' + esc(tieChip(p.tie, res)) + ' →</span>' : '') + '<span class="lbl ' + p.cls + '">' + esc(p.name) + '</span>' + (p.surprise ? '<span class="surtag">意外</span>' : '') + '</div>' +
+      '<div class="txt">' + paint(p.text, res) + '</div>' + pred +
+      '<div class="rvcmp"><div class="rvcmpb"><span class="k">エゴグラムの相性予想</span><b>' + esc(p.base.kindLabel) + '</b></div><div class="rvcmpb rvres' + (p.surprise ? ' odd' : '') + '"><span class="k">箱庭での結末</span><b>' + esc(p.name) + '</b></div></div>' +
+      (p.base.notes.length ? '<h4 class="rvh4">予想の根拠</h4><ul class="rvul">' + p.base.notes.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '') +
+      '<h4 class="rvh4">気持ちの動き</h4>' + spark(p, res) +
+      '<div class="sparkleg"><span style="color:' + pc(p.a) + '">― ' + esc(res.chars[p.a].name) + '→' + esc(res.chars[p.b].name) + ' 好意</span><span style="color:' + pc(p.b) + '">― ' + esc(res.chars[p.b].name) + '→' + esc(res.chars[p.a].name) + ' 好意</span><span style="color:var(--enemy)">┄ 緊張</span>' + (tk ? '<span class="sparkhot">● ' + tno(tk.e.step) + ' 転機</span>' : '') + '</div>' +
+      '<h4 class="rvh4">最終の値</h4><div class="rvtblw"><table class="rvvals"><thead><tr><th></th><th>好意</th><th>信頼</th><th>惹かれ</th><th>緊張</th></tr></thead><tbody>' + vrow(p.a, p.b, r.ab) + vrow(p.b, p.a, r.ba) + '</tbody></table></div>' +
+      (keys ? '<h4 class="rvh4">二人の主な場面</h4><ul class="keys">' + keys + '</ul>' : '') +
+      '<div class="rvmore"><button type="button" class="rvlink" data-act="pairfilter" data-a="' + p.a + '" data-b="' + p.b + '">この二人の経過をすべて読む ›</button></div></article>';
+  }
+  /* 一覧の並び：意外な組を先に、あとは今までどおり（他人のままは数だけ） */
+  function pairList(res) {
+    return res.pairs.filter(function (p) { return p.surprise; }).concat(res.pairs.filter(function (p) { return !p.surprise && p.label !== 'strangers'; })).slice(0, 400);
+  }
+  function pairPane(res) {
+    var list = pairList(res), strangers = res.pairs.filter(function (p) { return !p.surprise && p.label === 'strangers'; }).length;
+    if (!list.length) return '<div class="rvcard rvempty"><p>この回は、どの二人も「他人のまま」でした' + (strangers ? '（' + strangers + '組）' : '') + '。</p></div>';
+    var sel = rv.pair != null && res.pairs[rv.pair] && list.indexOf(res.pairs[rv.pair]) >= 0 ? res.pairs[rv.pair] : list[0];
+    var cnt = { all: list.length, sur: 0, love: 0, friend: 0, enemy: 0, other: 0 };
+    var items = list.map(function (p) {
+      var g = pairGroup(p), k = res.pairs.indexOf(p), po = HK.pairIdx ? HK.pairIdx(res, p) : [p.a, p.b];
+      cnt[g]++; if (p.surprise) cnt.sur++;
+      return '<li data-g="' + g + (p.surprise ? ' sur' : '') + '"><button type="button" class="rvpi" data-act="rvpair" data-p="' + k + '" aria-current="' + (p === sel) + '"><span class="avpair">' + av(res, po[0], 26) + av(res, po[1], 26) + '</span><span class="rvpn">' + esc(res.chars[po[0]].name) + ' × ' + esc(res.chars[po[1]].name) + '</span><span class="rvpr"><span class="rvrel ' + p.cls + '">' + esc(p.name) + '</span>' + (p.surprise ? '<span class="rvodd">意外</span>' : '') + '</span></button></li>';
+    }).join('');
+    var pills = [['all', 'すべて'], ['sur', '意外'], ['love', '恋愛'], ['friend', '友人・相棒'], ['enemy', '対立']].filter(function (x) { return x[0] === 'all' || cnt[x[0]]; }).map(function (x) {
+      return '<button type="button" class="rvpill" data-act="rvplf" data-f="' + x[0] + '" aria-pressed="' + (rv.plist === x[0]) + '">' + x[1] + '<small>' + cnt[x[0]] + '</small></button>';
+    }).join('');
+    return '<div class="rvgrid rvg-pair"><aside class="rvcard rvlist" aria-label="組の一覧"><div class="rvpills" role="group" aria-label="組の絞り込み">' + pills + '</div><ul class="rvplist" data-f="' + esc(rv.plist) + '">' + items + '</ul>' +
+      (strangers ? '<p class="rvfootnote">ほかに「他人のまま」の組が ' + strangers + '組</p>' : '') + '</aside><div class="rvmain" id="rvpairdet">' + pairDetail(sel, res) + '</div></div>';
   }
 
   function tieNotes(c, res) {
@@ -520,20 +568,38 @@
 
   /* 結果の箱庭。セーブを開くとき、一覧に出していない箱庭（scenario-futari.js の SCENARIOS_HIDDEN）や今は無い箱庭の結果でも落ちないように */
   function scenOf(res) { return HK.SCENARIOS[res.scenId] || (HK.SCENARIOS_HIDDEN || {})[res.scenId] || { id: res.scenId, name: String(res.scenId || '箱庭'), env: [], stats: [] }; }
-  function charCard(c, res) {
+  /* ---------- 住人ごと（見本 14）：左に住人の一覧、右に選んだ住人のカード（中身は今までの住人のカードと同じ：結末・気分・気質・初動・目標・読み解き・らしくない瞬間） ---------- */
+  function charDetail(c, res) {
+    if (!c) return '';
     var stats = Object.keys(c.stats || {}).map(function (k) {
       var def = (scenOf(res).stats || []).filter(function (s) { return s.id === k; })[0];
       return (def ? def.label : k) + c.stats[k];
     }).join('・');
-    var odd = c.odd.map(function (n) {
+    /* 気質と口調（engine.js の type「BDACD（A優位…）・口調「強気」」を二つの行に） */
+    var tm = /^([\s\S]*?)・口調「([\s\S]*)」$/.exec(c.type || ''), typ = tm ? tm[1] : c.type, tone = tm ? tm[2] : '';
+    var rows = [['気質', typ], ['口調', tone], ['初動', c.action], ['目標', c.goal], ['数値', stats], ['武器', c.weapon]].filter(function (x) { return x[1]; });
+    var notes = tieNotes(c, res).concat(c.notes || []);
+    var odd = (c.odd || []).map(function (n) {
       var e = res.log[n];
-      return '<div class="oddl">らしくない瞬間　<span class="nums">' + esc(e.label) + '</span>　' + paint(e.text, res) + '</div>';
+      return e ? '<li><span class="st">' + esc(e.label) + '</span>' + paint(e.text, res) + '</li>' : '';
     }).join('');
-    return '<article class="ccard"><div class="hd">' + av(res, c.i, 40, c.alive === false ? 'gone' : '') + '<span class="nm">' + esc(c.name) + '</span><span class="fate ' + fateCls(c.fate) + '">' + esc(c.fate) + '</span></div>' +
-      (c.fateNote ? '<div class="sub">' + paint(c.fateNote, res) + '</div>' : '') +
-      (HK.Emo && HK.Emo.html ? HK.Emo.html(c) : '') +
-      '<div class="sub">' + esc(c.type) + '　初動「' + esc(c.action) + '」　目標「' + esc(c.goal) + '」' + (stats ? '　' + esc(stats) : '') + (c.weapon ? '　武器「' + esc(c.weapon) + '」' : '') + '</div>' +
-      '<ul>' + tieNotes(c, res).concat(c.notes).map(function (t) { return '<li>' + paint(t, res) + '</li>'; }).join('') + '</ul>' + odd + '</article>';
+    var n = res.chars.length, prev = (c.i - 1 + n) % n, next = (c.i + 1) % n;
+    var emo = HK.Emo && HK.Emo.html ? HK.Emo.html(c) : '';
+    return '<article class="rvcard ccard rvcd">' +
+      '<div class="hd">' + av(res, c.i, 52, c.alive === false ? 'gone' : '') + '<div class="rvcdn"><span class="nm" style="color:' + pc(c.i) + '">' + esc(c.name) + '</span><span class="fate ' + fateCls(c.fate) + '">' + esc(c.fate) + '</span></div>' +
+      (n > 1 ? '<span class="rvnav"><button type="button" class="btn small" data-act="rvwho" data-i="' + prev + '" aria-label="' + esc('前の住人（' + res.chars[prev].name + '）') + '" title="' + esc(res.chars[prev].name) + '">‹</button><button type="button" class="btn small" data-act="rvwho" data-i="' + next + '" aria-label="' + esc('次の住人（' + res.chars[next].name + '）') + '" title="' + esc(res.chars[next].name) + '">›</button></span>' : '') + '</div>' +
+      (c.fateNote ? '<p class="rvlead">' + paint(c.fateNote, res) + '</p>' : '') +
+      '<div class="rvbox">' + (emo ? '<div class="rvemo"><div class="k">気分</div>' + emo + '</div>' : '') + (rows.length ? '<dl class="rvdl">' + rows.map(function (x) { return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>'; }).join('') + '</dl>' : '') + '</div>' +
+      (notes.length ? '<h4 class="rvh4">読み解き</h4><ul class="rvul">' + notes.map(function (t) { return '<li>' + paint(t, res) + '</li>'; }).join('') + '</ul>' : '') +
+      (odd ? '<h4 class="rvh4">らしくない瞬間 <small>' + c.odd.length + '回</small></h4><ul class="keys rvoddl">' + odd + '</ul>' : '') +
+      '<div class="rvmore"><button type="button" class="rvlink" data-act="rvwholog" data-i="' + c.i + '">' + esc(c.name) + 'の場面だけを経過で読む ›</button></div></article>';
+  }
+  function whoPane(res) {
+    var sel = rv.who != null && res.chars[rv.who] ? rv.who : 0;
+    var list = res.chars.map(function (c) {
+      return '<li><button type="button" class="rvpi" data-act="rvwho" data-i="' + c.i + '" aria-current="' + (c.i === sel) + '">' + av(res, c.i, 30, c.alive === false ? 'gone' : '') + '<span class="rvpn"><b>' + esc(c.name) + '</b><small>' + esc(c.fate) + '</small></span></button></li>';
+    }).join('');
+    return '<div class="rvgrid rvg-who"><aside class="rvcard rvlist" aria-label="住人の一覧"><ul class="rvplist rvwlist">' + list + '</ul></aside><div class="rvmain" id="rvwhodet">' + charDetail(res.chars[sel], res) + '</div></div>';
   }
 
   /* ---------- 時系列 ---------- */
@@ -542,8 +608,10 @@
     res.pairs.forEach(function (p) { p.key.forEach(function (n) { s[n] = 1; }); });
     return s;
   }
-  function timeline(res) {
-    var ks = keySet(res), H = hotInfo(res), groups = [], cur = null, inEnd = false;
+  /* 経過の区切り（絞り込みのあとの出来事）。目次と本文で同じものを使う */
+  function tlActive() { return !!(tl.who.length || tl.keyOnly || tl.lewd || tl.cat !== 'all' || Object.keys(tl.off).some(function (k) { return tl.off[k]; })); }
+  function tlGroups(res) {
+    var ks = keySet(res), H = hotInfo(res), groups = [], cur = null;
     /* 似た派閥の出来事が続くときは畳む（factions.js の HK.Factions.foldSet。表示だけ。人で絞り込んでいるときは畳まない） */
     var fold = res.factions && HK.Factions && HK.Factions.foldSet && !tl.who.length ? HK.Factions.foldSet(res) : null;
     res.log.forEach(function (e, li) {
@@ -555,20 +623,42 @@
       }
       if (tl.keyOnly && !(ks[e.n] || e.kind === 'death' || e.odd || e.mag >= 25 || e.goal || e.goalExit || (e.mark && e.mark.length) || isHot(e, H))) return;
       if (tl.cat !== 'all' && e.cat !== tl.cat && e.kind !== 'death') return;
+      /* 種類（右の☑）：外した種類の出来事は出さない（死亡はいつも出す） */
+      if (e.kind === 'event' && tl.off[e.cat]) return;
       /* エロシーンだけ：場面の前振りの段（R18版の出られない部屋。sex-lead-r18.js の e.tag 'きっかけ'）は、次の場面と一緒に出す */
       if (tl.lewd && !HK.lewdEvent(e) && !(e.tag === 'きっかけ' && HK.lewdEvent(res.log[li + 1] || {}))) return;
       if (fold && fold[e.n] && !isHot(e, H)) { if (!cur.fold) { cur.fold = { fold: [] }; cur.items.push(cur.fold); } cur.fold.fold.push(e); return; }
       cur.items.push(e);
     });
-    var html = groups.filter(function (g) { return g.items.length; }).map(function (g) {
-      /* 左の列：ターン番号（Mono）と局面名。重要な出来事のある区切りは番号を赤に */
-      var tn = tno(g.step), gh = g.items.some(function (e) { return !e.fold && isHot(e, H); });
-      var when = '<div class="when' + (gh ? ' hot' : '') + '">' + (tn ? '<span class="tn">' + tn + '</span>' + (g.label ? '<span class="ph">' + esc(g.label) + '</span>' : '') : esc(g.label)) + '</div>';
+    var gs = groups.filter(function (g) { return g.items.length; });
+    var seen = {};
+    gs.forEach(function (g, k) {
+      /* 区切りの鍵（同じ番号の区切りが続く箱庭もあるので、2つめからは印を足す） */
+      var key = g.step != null ? 's' + g.step : 'x' + k;
+      seen[key] = (seen[key] || 0) + 1;
+      g.key = seen[key] > 1 ? key + '-' + seen[key] : key;
+      g.hot = g.items.some(function (e) { return !e.fold && isHot(e, H); });
+      g.n = g.items.reduce(function (m, e) { return m + (e.fold ? e.fold.length : 1); }, 0);
+    });
+    return { ks: ks, H: H, groups: gs };
+  }
+  /* 区切りの開け閉め：押して変えたものはそのまま。ほかは「区切りを全部開く」か、最初の区切り、絞り込み中なら開く */
+  function secOpen(g, k) { return rv.sec[g.key] != null ? rv.sec[g.key] : (rv.open || k === 0 || tlActive()); }
+  function secName(g) { return (tno(g.step) ? tno(g.step) + ' ' : '') + (g.label || ''); }
+  function timeline(res, G) {
+    G = G || tlGroups(res);
+    var ks = G.ks, H = G.H, gs = G.groups, inEnd = false;
+    var html = gs.map(function (g, k) {
+      /* 区切りのカードの頭：ターン番号（Mono）と局面名、重要の札と件数、畳む／開く */
+      var tn = tno(g.step), open = secOpen(g, k), nx = gs[k + 1];
+      var when = '<div class="when' + (g.hot ? ' hot' : '') + '">' + (tn ? '<span class="tn">' + tn + '</span>' + (g.label ? '<span class="ph">' + esc(g.label) + '</span>' : '') : '<span class="ph">' + esc(g.label) + '</span>') +
+        '<span class="rvsecm">' + (g.hot ? '<span class="rvimp">重要</span>' : '') + '<span class="rvsecn">' + g.n + '件</span></span>' +
+        '<button type="button" class="rvfoldbtn" data-act="rvfold" data-s="' + g.key + '" aria-expanded="' + open + '">' + (open ? '畳む' : '開く') + '</button></div>';
       inEnd = !!g.end;
-      return '<div class="stepblk' + (gh ? ' hasHot' : '') + '">' + when + '<ol>' + g.items.map(function (e) {
+      return '<div class="stepblk' + (g.hot ? ' hasHot' : '') + (open ? '' : ' rvfold') + '" id="rvs-' + g.key + '" data-s="' + g.key + '">' + when + '<ol>' + g.items.map(function (e) {
         if (e.fold) return '<li class="ev phase facfold"><details><summary style="cursor:pointer;color:var(--muted);font-size:12px">似た派閥の動き ' + e.fold.length + '件（続くので畳んでいます）</summary><ol style="padding-bottom:0">' + e.fold.map(evLi).join('') + '</ol></details></li>';
         return evLi(e);
-      }).join('') + '</ol></div>';
+      }).join('') + '</ol>' + (nx ? '<div class="rvnext"><button type="button" class="rvlink" data-act="rvjump" data-s="' + nx.key + '">次の区切り：' + esc(secName(nx)) + ' ›</button></div>' : '') + '</div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
     function evLi(e) {
@@ -592,24 +682,43 @@
       var pw = paraWrap(body, rm && rm.dg);
       body = pw.html;
       if (rm) chip = rm.chips.concat(rm.dg && !pw.dg ? [['dg', rm.dg]] : []).map(function (c) { return '<span class="rmb" data-k="' + c[0] + '">' + esc(c[1]) + '</span>'; }).join('') + chip;
-      return '<li class="' + cls + (avs ? ' hasav' : '') + (talk ? ' talk' : '') + '"' + (hk ? ' data-hot="' + hk + '"' : '') + (rm && rm.k ? ' data-rm="' + rm.k + '"' : '') + '>' + avs + '<div class="evb">' + chip + body + (e.odd ? '<span class="oddb">らしくない</span>' : '') + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+      /* 出来事の頭の行：重要の札（種類つき）・節目などの札・種類・らしくない */
+      var imp = hk ? '<span class="rvimp" data-hot="' + hk + '" title="' + esc(HOT_TIP[hk] || '') + '">重要' + (HOT_NAME[hk] ? '・' + esc(HOT_NAME[hk]) : '') + '</span>' : '';
+      var head = imp + chip + (e.odd ? '<span class="oddb">らしくない</span>' : '');
+      return '<li class="' + cls + (avs ? ' hasav' : '') + (talk ? ' talk' : '') + '" data-n="' + e.n + '"' + (hk ? ' data-hot="' + hk + '"' : '') + (rm && rm.k ? ' data-rm="' + rm.k + '"' : '') + '>' + avs + '<div class="evb">' + (head ? '<div class="evh">' + head + '</div>' : '') + body + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
     }
   }
+  /* 目次（区切り。押すとその区切りを開いて移る） */
+  function toc(res, G) {
+    G = G || tlGroups(res);
+    if (!G.groups.length) return '';
+    return '<div class="rvtoct">目次</div><ol>' + G.groups.map(function (g) {
+      return '<li><button type="button" class="rvtocb' + (g.hot ? ' hot' : '') + '" data-act="rvjump" data-s="' + g.key + '">' + (tno(g.step) ? '<span class="tn">' + tno(g.step) + '</span>' : '') + '<span class="lb">' + esc(g.label || '―') + '</span><span class="n">' + g.n + '</span></button></li>';
+    }).join('') + '</ol>';
+  }
+  /* 右の絞り込み（見本 09）：人で絞る・種類・重要な場面だけ・理由を表示・区切りを全部開く・文字の大きさ。
+     人・重要・エロシーンは今までどおり data-act（ui.js）と aria-pressed（export-out.js が印刷の前に外して戻す）。種類・理由・全部開く・文字は role の checkbox／switch／radio */
   function tlBar(res) {
     var who = res.chars.map(function (c) {
-      return '<button class="chip whochip" data-act="who" data-i="' + c.i + '" aria-pressed="' + (tl.who.indexOf(c.i) >= 0) + '">' + av(res, c.i, 20) + esc(c.name) + '</button>';
+      return '<button type="button" class="rvwhob" data-act="who" data-i="' + c.i + '" aria-pressed="' + (tl.who.indexOf(c.i) >= 0) + '" title="' + esc(c.name) + '">' + av(res, c.i, 30) + '<span class="rvsr">' + esc(c.name) + '</span></button>';
     }).join('');
-    var cats = ['all', 'romance', 'bond', 'help', 'conflict', 'combat', 'betray', 'solo', 'escape'];
-    var used = {};
-    res.log.forEach(function (e) { used[e.cat] = 1; });
-    var sel = '<select id="tlcat" aria-label="種類で絞り込む">' + cats.filter(function (c) { return c === 'all' || used[c]; }).map(function (c) {
-      return '<option value="' + c + '"' + (tl.cat === c ? ' selected' : '') + '>' + (c === 'all' ? 'すべての種類' : HK.CAT_NAME[c]) + '</option>';
-    }).join('') + '</select>';
-    var all = !tl.keyOnly && !tl.lewd && tl.cat === 'all';
-    return '<div class="tlbar" role="group" aria-label="時系列の絞り込み"><button class="chip" data-act="tlall" aria-pressed="' + all + '">すべて</button>' +
-      '<button class="chip" data-act="keyonly" aria-pressed="' + tl.keyOnly + '" title="転機・死亡・関係の節目・決め手など、重要な出来事だけ"><i class="hotdot" aria-hidden="true"></i>重要のみ</button>' + sel +
-      (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="lewdonly" aria-pressed="' + !!tl.lewd + '">エロシーンだけ</button>' : '') +
-      '<span class="tlsep" aria-hidden="true"></span>' + who + (tl.who.length ? '<button class="btn small ghost" data-act="whoclear">絞り込みを解除</button>' : '') + '</div>';
+    var cats = ['romance', 'bond', 'help', 'conflict', 'combat', 'betray', 'solo', 'escape'], used = {};
+    res.log.forEach(function (e) { if (e.kind === 'event') used[e.cat] = 1; });
+    var catBox = cats.filter(function (c) { return used[c]; }).map(function (c) {
+      return '<button type="button" role="checkbox" class="rvchk" data-act="rvcat" data-c="' + c + '" aria-checked="' + !tl.off[c] + '"><i aria-hidden="true"></i><span>' + esc(HK.CAT_NAME[c] || c) + '</span></button>';
+    }).join('');
+    var sw = function (act, on, label, title, pressed) {
+      return '<button type="button" class="rvsw" data-act="' + act + '" ' + (pressed ? 'aria-pressed' : 'role="switch" aria-checked') + '="' + !!on + '"' + (title ? ' title="' + esc(title) + '"' : '') + '><span>' + label + '</span><i aria-hidden="true"></i></button>';
+    };
+    var fsb = [['s', '小'], ['m', '中'], ['l', '大']].map(function (x) { return '<button type="button" role="radio" data-act="rvfs" data-v="' + x[0] + '" aria-checked="' + (rv.fs === x[0]) + '">' + x[1] + '</button>'; }).join('');
+    return '<div class="rvcard rvrailin">' +
+      '<div class="rvrs"><div class="rvrt">人で絞る</div><div class="rvwhos" role="group" aria-label="人で絞る">' + who + '</div>' + (tl.who.length ? '<button type="button" class="rvlink small" data-act="whoclear">人の絞り込みを外す</button>' : '') + '</div>' +
+      (catBox ? '<div class="rvrs"><div class="rvrt">種類</div><div class="rvcats" role="group" aria-label="種類">' + catBox + '</div></div>' : '') +
+      '<div class="rvrs rvsws">' + sw('keyonly', tl.keyOnly, '<i class="hotdot" aria-hidden="true"></i>重要な場面だけ', '転機・死亡・関係の節目・決め手など、重要な出来事だけ', true) +
+      (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? sw('lewdonly', tl.lewd, 'エロシーンだけ', '', true) : '') +
+      sw('rvwhy', rv.why, '理由を表示', '出来事の下に「理由：…」を出す') + sw('rvopen', rv.open, '区切りを全部開く', '畳んだ区切りも、はじめから開いておく') + '</div>' +
+      '<div class="rvrs"><div class="rvrt">文字の大きさ</div><div class="rvseg" role="radiogroup" aria-label="文字の大きさ">' + fsb + '</div></div>' +
+      (tlActive() ? '<div class="rvrs"><button type="button" class="btn small ghost" data-act="rvreset">絞り込みをすべて外す</button></div>' : '') + '</div>';
   }
 
   /* 見出しの横の凡例：この結果に出る重要な出来事の種類だけ（情事は R18 版で全年齢モードでないときだけ） */
@@ -635,55 +744,207 @@
   }
 
   /* ---------- 全体 ---------- */
-  V.resetFilter = function () { tl = { who: [], keyOnly: false, cat: 'all', lewd: false }; };
+  V.resetFilter = function () { tl = { who: [], keyOnly: false, cat: 'all', lewd: false, off: {} }; };
 
-  V.render = function (host, res, opts) {
-    var fresh = res && res !== lastRes;
-    lastRes = res; lastHost = host; lastOpts = opts || {};
-    if (fresh && !res.solo) { var sc0 = HK.SCENARIOS[res.scenId]; if (sc0 && sc0.longRun && sc0.longRun(res.env)) tl.keyOnly = true; }
-    if (!res) { host.innerHTML = emptyState(lastOpts); return; }
-    if (res.solo && HK.DView) { HK.DView.render(host, res, lastOpts, historyBlock(lastOpts.history || [])); return; }
-    var scen = scenOf(res);
-    var envChips = (scen.env || []).concat(HK.GLOBAL_ENV || []).map(function (e) {
-      var v = (res.env || {})[e.id];
+  /* 結果の頭（見本 09・10。一人用・ダンジョンも使う）：小さく「箱庭・人数・シード」、大きく結末の一文。右に「条件を変える」「保存・共有▾」「別の運命で動かす」。
+     ボタンの行は格子の右の列に置き、結末の文の長さで位置が動かない（ui-result-style.js。スマホ幅はメタ1行と題名2行の高さを決めて、その下に置く）。
+     「保存・共有」の中身（共有の札・セーブ・PDF など）は ui.js の renderResult・export-out.js が #rvmenu に差し込む */
+  var IC_SHARE = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 9V1.8M4.2 4.4L7 1.6l2.8 2.8M2.5 8.5v3.5h9V8.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  V.head = function (o) {
+    return '<div class="resulthead rvhead"><div><div class="meta rvmeta">' + o.meta + '</div><h2 class="rvtitle">' + o.title + '</h2>' + (o.note ? '<div class="meta scnote">' + esc(o.note) + '</div>' : '') + '</div><span class="spacer"></span>' +
+      '<div class="row rvbtns"><button type="button" class="btn" data-act="gobox">条件を変える</button>' +
+      '<span class="rvsave"><button type="button" class="btn" data-act="rvmenu" aria-haspopup="true" aria-expanded="false" aria-controls="rvmenu">' + IC_SHARE + '保存・共有<i class="rvcaret" aria-hidden="true"></i></button>' +
+      '<span class="rvmenu" id="rvmenu" role="group" aria-label="保存・共有" hidden><span class="rvmrow"><button type="button" class="btn" data-act="copytext">結果をテキストでコピー</button></span></span></span>' +
+      '<button type="button" class="btn primary" data-act="reroll">' + esc(o.reroll || '別の運命で動かす') + '</button></div></div>';
+  };
+  /* 切替と中身の枠。tabs：[{ k, label, n（添える数）, html }]。今の切替は rv.tab（無い切替なら最初） */
+  V.shell = function (o) {
+    var ks = o.tabs.map(function (t) { return t.k; }), cur = ks.indexOf(rv.tab) >= 0 ? rv.tab : ks[0];
+    return '<div class="rvw" data-rv="' + cur + '" data-fs="' + rv.fs + '" data-why="' + (rv.why ? 1 : 0) + '" data-side="' + (rv.side ? 1 : 0) + '">' + o.head +
+      '<div class="rvtabs" role="tablist" aria-label="結果の表示">' + o.tabs.map(function (t) {
+        return '<button type="button" role="tab" class="rvtab" id="rvt-' + t.k + '" data-act="rvtab" data-k="' + t.k + '" aria-selected="' + (t.k === cur) + '" aria-controls="rvp-' + t.k + '" tabindex="' + (t.k === cur ? 0 : -1) + '">' + esc(t.label) + (t.n ? '<small>' + esc(t.n) + '</small>' : '') + '</button>';
+      }).join('') + '</div>' +
+      o.tabs.map(function (t) { return '<section class="rvpane" id="rvp-' + t.k + '" data-pane="' + t.k + '" role="tabpanel" aria-labelledby="rvt-' + t.k + '"' + (t.k === cur ? '' : ' hidden') + '>' + t.html + '</section>'; }).join('') +
+      (o.foot ? '<div class="rvfoot">' + o.foot + '</div>' : '') + '</div>';
+  };
+  /* 「この回の条件（n 項目・初期値から m か所）」の折りたたみ。初期値から変えた札は濃く */
+  V.cond = function (defs, env) {
+    var n = 0, ch = 0;
+    var chips = (defs || []).map(function (e) {
+      var v = (env || {})[e.id];
       if (e.r18 && HK.SAFE_ON) return '';   /* R18版だけの環境値（夜の起こりやすさ）は全年齢モードでは出さない */
       var shown = e.type === 'select' ? ((e.options || []).filter(function (o) { return o.v === v; })[0] || {}).label : v + (e.unit || '');
       /* その設定ができる前にセーブした結果（値が無い・今は無い選択肢）は、その欄を出さない */
       if (v == null || shown == null) return '';
-      return '<span class="chip">' + esc(e.label) + '：' + esc(shown) + '</span>';
+      n++;
+      var d = e.def != null ? e.def : e.type === 'select' && e.options && e.options[0] ? e.options[0].v : null, on = d != null && String(d) !== String(v);
+      if (on) ch++;
+      return '<span class="chip' + (on ? ' rvon' : '') + '"' + (on ? ' title="初期値から変えた条件"' : '') + '>' + esc(e.label) + '：' + esc(shown) + '</span>';
     }).join('');
+    if (!n) return '';
+    return '<details class="rvcard rvcond"><summary><b>この回の条件</b><small>' + n + '項目・初期値から' + ch + 'か所</small></summary><div class="uses">' + chips + '</div>' + (ch ? '<p class="rvfootnote">濃い札が、初期値から変えた条件です。</p>' : '') + '</details>';
+  };
+  /* 頭の題名：結末の一文の最初の文（かぎかっこの中の句点では切らない）。全文は「結末」のカードに */
+  function firstSentence(s) {
+    s = String(s || '');
+    var d = 0;
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i);
+      if ('「『（(【'.indexOf(ch) >= 0) d++;
+      else if ('」』）)】'.indexOf(ch) >= 0) d = Math.max(0, d - 1);
+      else if (d === 0 && '。！？'.indexOf(ch) >= 0) return i + 1 < s.length && i >= 5 ? s.slice(0, i + 1) : s;
+    }
+    return s;
+  }
+  function unitOf(res, scen) { return Math.ceil(res.stepCount / (scen.perUnit || 1)) + (scen.unit === '月' ? 'か月' : scen.unit === '日' ? '日' : scen.unit === '時間' ? '時間' : '区切り') + '経過'; }
+
+  V.render = function (host, res, opts) {
+    var fresh = res && res !== lastRes;
+    lastRes = res; lastHost = host; lastOpts = opts || {};
+    if (fresh) rvFresh();
+    if (fresh && !res.solo) { var sc0 = HK.SCENARIOS[res.scenId]; if (sc0 && sc0.longRun && sc0.longRun(res.env)) tl.keyOnly = true; }
+    if (!res) { host.innerHTML = emptyState(lastOpts); return; }
+    if (res.solo && HK.DView) { HK.DView.render(host, res, lastOpts, historyBlock(lastOpts.history || [])); return; }
+    var scen = scenOf(res);
+    var E = HK.Endings ? HK.Endings.build(res) : null;
     var sur = res.pairs.filter(function (p) { return p.surprise; });
-    var rest = res.pairs.filter(function (p) { return !p.surprise; });
-    var strangers = rest.filter(function (p) { return p.label === 'strangers'; }).length;
-    rest = rest.filter(function (p) { return p.label !== 'strangers'; });
-    if (sur.length > 12 && !lastOpts.showAll) sur = sur.slice(0, 12);
-    var limit = lastOpts.showAll ? Math.min(rest.length, 120) : (res.chars.length > 12 ? 9 : 6);
-    var html =
-      '<div class="resulthead"><div><h2>' + esc(scen.name) + '</h2><div class="meta">シード <span class="num">' + res.seed + '</span>　' + Math.ceil(res.stepCount / (scen.perUnit || 1)) + esc(scen.unit === '月' ? 'か月' : scen.unit === '日' ? '日' : scen.unit === '時間' ? '時間' : '区切り') + '経過' + (res.outcome ? '　' + esc(res.outcome) : '') + '</div>' + (scen.note ? '<div class="meta scnote">' + esc(scen.note) + '</div>' : '') + '</div><span class="spacer"></span>' +
-      '<div class="row"><button class="btn primary" data-act="reroll">別の運命で動かす</button><button class="btn" data-act="copytext">結果をテキストでコピー</button><button class="btn" data-act="gobox">条件を変える</button></div></div>' +
-      endingBlock(res) +
-      '<div class="uses" style="margin-top:12px">' + envChips + '</div>' +
-      (HK.MapView ? HK.MapView.classChart(res) : '') +
-      '<h2 class="sec mapsec">関係図' + (HK.MapView && HK.MapView.atBar ? HK.MapView.atBar(res) : '') + '</h2><figure class="trayfig">' + (function () { var sv = mapSvg(res); return (HK.MapView ? '<div id="mapbar">' + HK.MapView.bar(res) + '</div>' : '') + '<div class="tray" id="map">' + sv + '</div>'; })() + '<figcaption><div class="maplegs">' + mapLegend(res) + '</div><div class="mapcap"><span>住人の丸を押すと、その人の経過に絞り込めます。＊は意外な組み合わせ。矢印は気持ちや行為の向き。</span><span>砂箱 57×72×7cm</span></div></figcaption></figure>' +
-      factionBlock(res) +
-      (sur.length ? '<h2 class="sec">意外な組み合わせ</h2><p class="hint">エゴグラム上の相性予想と、箱庭での結末が食い違ったペアです。解釈の掘りどころ。</p><div class="cards">' + sur.map(function (p) { return pairCard(p, res); }).join('') + '</div>' : '') +
-      '<h2 class="sec">関係の結末</h2><div class="cards">' + rest.slice(0, limit).map(function (p) { return pairCard(p, res); }).join('') + '</div>' +
-      (rest.length > limit ? '<div class="more"><button class="btn" data-act="showall">残り' + (rest.length - limit) + '組を表示</button></div>' : '') +
-      (strangers ? '<p class="hint" style="margin-top:8px">ほかに「他人のまま」の組が' + strangers + '組あります。住人の丸を押すと、その人の関係だけを図で追えます。</p>' : '') +
-      '<h2 class="sec">住人ごとの読み解き</h2><div class="cards">' + res.chars.map(function (c) { return charCard(c, res); }).join('') + '</div>' +
-      '<h2 class="sec" id="tlhead">時系列' + hotLegend(res) + '</h2>' + (scen.longRun && scen.longRun(res.env) ? '<p class="hint">長期間のため、最初は重要な出来事だけの短縮版で表示しています。「すべて」を押すと全部見られます。</p>' : '') + '<div id="tlbar">' + tlBar(res) + '</div><div class="tl" id="tl">' + timeline(res) + '</div>' +
-      historyBlock(lastOpts.history || []);
-    host.innerHTML = html;
+    var nEv = res.log.filter(function (e) { return e.kind !== 'step'; }).length;
+    /* 頭の題名：結果の一行（res.outcome。「合コンは終電で解散 ― …」）。無ければ結末の文の最初の文 */
+    var hl = res.outcome || (E && E.headline ? firstSentence(E.headline) : '');
+    var meta = esc(scen.name) + '・' + res.chars.length + '人・シード <span class="num">' + res.seed + '</span>・' + esc(unitOf(res, scen));
+    host.innerHTML = V.shell({
+      head: V.head({ meta: meta, title: hl ? paint(hl, res) : esc(scen.name), note: scen.note }),
+      tabs: [
+        { k: 'end', label: '結末', html: endPane(res, scen, E) },
+        { k: 'log', label: '経過', n: nEv + '件', html: logPane(res, scen) },
+        { k: 'map', label: '関係図', html: mapPane(res) },
+        { k: 'pair', label: '二人ずつ', n: sur.length ? '意外 ' + sur.length : '', html: pairPane(res) },
+        { k: 'who', label: '住人ごと', html: whoPane(res) }
+      ],
+      foot: historyBlock(lastOpts.history || [])
+    });
   };
 
+  /* ---------- 結末の切替（見本 10） ---------- */
+  function endPane(res, scen, E) {
+    var lines = res.pairs.filter(function (p) { return p.label !== 'strangers'; }).length;
+    var main = endingBlock(res, E) + duoBlock(res) + afterBlock(res) + V.cond((scen.env || []).concat(HK.GLOBAL_ENV || []), res.env);
+    var side = surBlock(res) + pineBlock(res) +
+      '<button type="button" class="rvcard rvmaplink" data-act="rvtab" data-k="map"><b>関係図を見る</b><small>線 ' + lines + '本</small></button>';
+    return '<div class="rvgrid rvg-end"><div class="rvmain">' + main + '</div><aside class="rvside">' + side + '</aside></div>';
+  }
+  /* 主な組：恋人の組を先に、あとは関係の強い順に4組まで（組の一文と関係の札。押すと「二人ずつ」で開く） */
+  function duoBlock(res) {
+    var ps = res.pairs.filter(function (p) { return p.label !== 'strangers' && p.cls !== 'none'; }).sort(function (a, b) { return ((b.label === 'lovers') - (a.label === 'lovers')) || (b.intensity - a.intensity); }).slice(0, 4);
+    if (!ps.length) return '';
+    return '<h3 class="rvsech">主な組</h3><div class="rvduo">' + ps.map(function (p) {
+      var po = HK.pairIdx ? HK.pairIdx(res, p) : [p.a, p.b];
+      return '<button type="button" class="rvcard rvduoc" data-act="rvpair" data-p="' + res.pairs.indexOf(p) + '"><span class="rvduoh"><span class="avpair">' + av(res, po[0], 30) + av(res, po[1], 30) + '</span><b class="rvduon">' + esc(res.chars[po[0]].name) + ' × ' + esc(res.chars[po[1]].name) + '</b><span class="lbl ' + p.cls + '">' + esc(p.name) + '</span></span>' +
+        '<small class="rvduos">' + (p.tie ? 'もともと「' + esc(tieChip(p.tie, res)) + '」' : '相性予想：' + esc(p.base.kindLabel)) + (p.surprise ? '・意外' : '') + '</small><span class="rvduot">' + paint(p.text, res) + '</span></button>';
+    }).join('') + '</div>';
+  }
+  /* それぞれのその後：住人ごとの結末と一文（押すと「住人ごと」で開く） */
+  function afterBlock(res) {
+    return '<section class="rvcard rvafter"><h3 class="rvh3">それぞれのその後</h3><ul class="rvaft">' + res.chars.map(function (c) {
+      return '<li><button type="button" class="rvaftb" data-act="rvwho" data-i="' + c.i + '">' + av(res, c.i, 32, c.alive === false ? 'gone' : '') + '<span class="rvaftt"><span class="rvaftn"><b style="color:' + pc(c.i) + '">' + esc(c.name) + '</b><span class="fate ' + fateCls(c.fate) + '">' + esc(c.fate) + '</span></span>' + (c.fateNote ? '<span class="rvaftx">' + paint(c.fateNote, res) + '</span>' : '') + '</span></button></li>';
+    }).join('') + '</ul></section>';
+  }
+  function surBlock(res) {
+    var sur = res.pairs.filter(function (p) { return p.surprise; });
+    if (!sur.length) return '';
+    return '<section class="rvcard rvsidec"><h3 class="rvh3">意外な組み合わせ</h3><p class="rvsub">相性予想と結末が食い違った二人</p><ul class="rvsl">' + sur.slice(0, 8).map(function (p) {
+      var po = HK.pairIdx ? HK.pairIdx(res, p) : [p.a, p.b];
+      return '<li><button type="button" data-act="rvpair" data-p="' + res.pairs.indexOf(p) + '"><span class="rvslh"><b>' + esc(res.chars[po[0]].name) + ' × ' + esc(res.chars[po[1]].name) + '</b><span class="rvrel ' + p.cls + '">' + esc(p.name) + '</span></span><small>予想は「' + esc(p.base.kindLabel) + '」</small></button></li>';
+    }).join('') + '</ul>' + (sur.length > 8 ? '<button type="button" class="rvlink" data-act="rvtab" data-k="pair">ほか' + (sur.length - 8) + '組は「二人ずつ」で ›</button>' : '') + '</section>';
+  }
+  function pineBlock(res) {
+    var ps = res.pairs.filter(function (p) { return p.label === 'oneway' && p.dir != null && res.chars[p.dir]; });
+    if (!ps.length) return '';
+    return '<section class="rvcard rvsidec"><h3 class="rvh3">片想いのまま</h3><ul class="rvsl rvpine">' + ps.slice(0, 12).map(function (p) {
+      var to = p.dir === p.a ? p.b : p.a;
+      return '<li><button type="button" data-act="rvpair" data-p="' + res.pairs.indexOf(p) + '">' + nmc(res, p.dir) + '<span class="rvarr" aria-label="から">→</span>' + nmc(res, to) + '</button></li>';
+    }).join('') + '</ul>' + (ps.length > 12 ? '<p class="rvfootnote">ほか' + (ps.length - 12) + '組</p>' : '') + '</section>';
+  }
+
+  /* ---------- 経過の切替（見本 09・11）：左に目次、中央に区切りのカード、右に絞り込み ---------- */
+  function logPane(res, scen) {
+    var G = tlGroups(res);
+    return '<div class="rvgrid rvg-log"><nav class="rvtoc" id="rvtoc" aria-label="目次">' + toc(res, G) + '</nav>' +
+      '<div class="rvmain"><div class="rvloghd"><h2 class="sec rvh2" id="tlhead">経過' + hotLegend(res) + '</h2><button type="button" class="btn small rvsidebtn" data-act="rvside" aria-expanded="' + rv.side + '" aria-controls="tlbar">絞り込み・文字</button></div>' +
+      (scen.longRun && scen.longRun(res.env) ? '<p class="hint">長期間のため、最初は重要な出来事だけの短縮版で表示しています。「重要な場面だけ」を外すと全部見られます。</p>' : '') +
+      '<div class="tl" id="tl">' + timeline(res, G) + '</div></div>' +
+      '<aside class="rvside rvrail" id="tlbar" aria-label="経過の絞り込み">' + tlBar(res) + '</aside></div>';
+  }
+
+  /* ---------- 関係図の切替（見本 12）：図（view-map.js の時点・絞り込み・派閥の囲みはそのまま）と、右に「表示する線」「選んだ線」 ---------- */
+  function lineSample(k) {
+    var cls = k === 'none' ? 'none' : k, w = LINE_W[cls] || 1.2, col = 'var(' + (CLS_VAR[cls] || '--none') + ')', dash = LINE_DASH[cls];
+    var ln = '<line x1="1" y1="5" x2="' + (k === 'pine' ? 21 : 25) + '" y2="5" style="stroke:' + col + ';stroke-width:' + w + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
+    if (k === 'pine') ln += '<path d="M17,1.5 L22,5 L17,8.5" fill="none" style="stroke:' + col + ';stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round"/>';
+    if (k === 'kill') ln += '<path d="M9.5,1.5 L16.5,8.5 M16.5,1.5 L9.5,8.5" fill="none" style="stroke:' + col + ';stroke-width:1.6;stroke-linecap:round"/>';
+    return '<svg class="rvls" width="26" height="10" viewBox="0 0 26 10" aria-hidden="true">' + ln + '</svg>';
+  }
+  function offStr() { return Object.keys(rv.off).filter(function (k) { return rv.off[k]; }).join(' '); }
+  function mapTotal() { var t = 0; Object.keys(mapCnt).forEach(function (k) { t += mapCnt[k]; }); return t; }
+  function mapInfo(res) {
+    var who = tl.who.filter(function (i) { return res.chars[i]; }).map(function (i) { return res.chars[i].name; });
+    return '<span>線 ' + mapTotal() + '本' + (who.length ? '・選んだ人：' + esc(who.join('・')) : '') + '</span>' + (who.length || rv.line ? '<button type="button" class="btn small" data-act="rvmapclear">選択を外す</button>' : '');
+  }
+  /* 図で押した線の組（時点の組と、結末の組） */
+  function linePair(res) {
+    if (!rv.line) return null;
+    var hit = function (p) { return (p.a === rv.line.a && p.b === rv.line.b) || (p.a === rv.line.b && p.b === rv.line.a); };
+    var R0 = atOf(res), at = R0.pairs.filter(hit)[0] || null, fin = res.pairs.filter(hit)[0] || null;
+    return at || fin ? { at: at || fin, fin: fin } : null;
+  }
+  function mapSide(res) {
+    var rows = KNAME.filter(function (x) { return mapCnt[x[0]]; }).map(function (x) {
+      return '<button type="button" role="checkbox" class="rvchk rvmapk" data-act="rvmapk" data-k="' + x[0] + '" aria-checked="' + !rv.off[x[0]] + '"><i aria-hidden="true"></i>' + lineSample(x[0]) + '<span class="rvmk">' + esc(x[1]) + '</span><small>' + mapCnt[x[0]] + '</small></button>';
+    }).join('');
+    var lab = '<button type="button" role="checkbox" class="rvchk rvmapk" data-act="rvmaplab" aria-checked="' + rv.lab + '"><i aria-hidden="true"></i><span class="rvmk">線の名前を全部出す</span></button>';
+    var L = linePair(res), sel;
+    if (L) {
+      var sp = L.at, fp = L.fin || L.at, po = HK.pairIdx && L.fin ? HK.pairIdx(res, fp) : [sp.a, sp.b], k = L.fin ? res.pairs.indexOf(L.fin) : -1;
+      sel = '<div class="rvsub">選んだ線</div><div class="rvslh"><b>' + nmc(res, po[0]) + ' × ' + nmc(res, po[1]) + '</b><span class="lbl ' + sp.cls + '">' + esc(sp.name) + (sp.surprise ? '・意外' : '') + '</span></div>' +
+        (fp.text ? '<p class="rvslt">' + paint(fp.text, res) + (fp.base ? '相性予想は「' + esc(fp.base.kindLabel) + '」だった。' : '') + '</p>' : '') +
+        (k >= 0 ? '<button type="button" class="rvlink" data-act="rvpair" data-p="' + k + '">二人ずつで詳しく見る ›</button>' : '');
+    } else sel = '<div class="rvsub">選んだ線</div><p class="rvfootnote">図の線を押すと、ここに二人の説明が出ます。</p>';
+    return (rows ? '<section class="rvcard rvsidec"><h3 class="rvh3">表示する線</h3><div class="rvmapks">' + rows + lab + '</div></section>' : '') + '<section class="rvcard rvsidec rvselline">' + sel + '</section>';
+  }
+  function wrapCard(h) { return h ? '<section class="rvcard rvsec2">' + h + '</section>' : ''; }
+  function mapPane(res) {
+    var MV = HK.MapView, sv = mapSvg(res);
+    return '<div class="rvgrid rvg-map"><div class="rvmain"><section class="rvcard rvmapcard"><div class="rvmaphd">' + (MV && MV.atBar ? MV.atBar(res) : '') + '<span class="rvmapinfo" id="rvmapinfo">' + mapInfo(res) + '</span></div>' +
+      '<figure class="trayfig">' + (MV ? '<div id="mapbar">' + MV.bar(res) + '</div>' : '') + '<div class="tray" id="map" data-off="' + offStr() + '">' + sv + '</div>' +
+      '<figcaption><div class="maplegs">' + mapLegend(res) + '</div><div class="mapcap"><span>丸を押すとその人の線だけ濃くなり、経過もその人に絞り込みます。線を押すと右に二人の説明が出ます。＊は意外な組み合わせ。矢印は気持ちや行為の向き。</span><span>砂箱 57×72×7cm</span></div></figcaption></figure></section>' +
+      wrapCard(MV ? MV.classChart(res) : '') + wrapCard(factionBlock(res)) + '</div>' +
+      '<aside class="rvside" id="rvmapside">' + mapSide(res) + '</aside></div>';
+  }
+  /* 図と右の欄だけ描き直す（線を押した・線の名前を全部出す） */
+  function refreshMap() {
+    if (!lastRes || !lastHost || lastRes.solo) return;
+    var m = lastHost.querySelector('#map');
+    if (!m) return;
+    m.innerHTML = mapSvg(lastRes);
+    var mb = lastHost.querySelector('#mapbar'), ms = lastHost.querySelector('#rvmapside'), mi = lastHost.querySelector('#rvmapinfo');
+    if (mb && HK.MapView) mb.innerHTML = HK.MapView.bar(lastRes);
+    if (ms) ms.innerHTML = mapSide(lastRes);
+    if (mi) mi.innerHTML = mapInfo(lastRes);
+  }
+
   V.refreshTimeline = function () {
-    if (!lastRes || !lastHost) return;
-    var m = lastHost.querySelector('#map'), b = lastHost.querySelector('#tlbar'), t = lastHost.querySelector('#tl');
+    if (!lastRes || !lastHost || lastRes.solo) return;
+    var m = lastHost.querySelector('#map'), b = lastHost.querySelector('#tlbar'), t = lastHost.querySelector('#tl'), tc = lastHost.querySelector('#rvtoc');
     if (m) m.innerHTML = mapSvg(lastRes);
     var mb = lastHost.querySelector('#mapbar');
     if (mb && HK.MapView) mb.innerHTML = HK.MapView.bar(lastRes);
+    var G = b || t || tc ? tlGroups(lastRes) : null;
     if (b) b.innerHTML = tlBar(lastRes);
-    if (t) t.innerHTML = timeline(lastRes);
+    if (t) t.innerHTML = timeline(lastRes, G);
+    if (tc) tc.innerHTML = toc(lastRes, G);
+    var ms = lastHost.querySelector('#rvmapside'), mi = lastHost.querySelector('#rvmapinfo');
+    if (ms && m) ms.innerHTML = mapSide(lastRes);
+    if (mi && m) mi.innerHTML = mapInfo(lastRes);
   };
   V.toggleWho = function (i) {
     var k = tl.who.indexOf(i);
@@ -695,23 +956,153 @@
   V.toggleLewd = function () { tl.lewd = !tl.lewd; V.refreshTimeline(); };
   V.setCat = function (c) { tl.cat = c; V.refreshTimeline(); };
   /* 「すべて」：種類・重要のみ・エロシーンだけを外す（住人の絞り込みはそのまま） */
-  V.showAllKinds = function () { tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; V.refreshTimeline(); };
+  V.showAllKinds = function () { tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; tl.off = {}; V.refreshTimeline(); };
+
+  /* ---------- 切替・操作（このファイルで受ける。ui.js の data-act の switch には無い名前だけ） ---------- */
+  function rvHost() { return document.getElementById('view-result'); }
+  function rvWrap() { var h = rvHost(); return h ? h.querySelector('.rvw') : null; }
+  /* 切替を出す。tabs の位置より下まで読み進めていたら、切替の位置まで戻す */
+  V.showTab = function (k, noScroll) {
+    var w = rvWrap(), pane = w && w.querySelector('#rvp-' + k);
+    if (!pane) return false;
+    rv.tab = k; rvSave();
+    w.setAttribute('data-rv', k);
+    Array.prototype.forEach.call(w.querySelectorAll('.rvpane'), function (p) { p.hidden = p.getAttribute('data-pane') !== k; });
+    Array.prototype.forEach.call(w.querySelectorAll('.rvtab'), function (b) { var on = b.getAttribute('data-k') === k; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
+    if (!noScroll) {
+      var tb = w.querySelector('.rvtabs'), top = tb ? tb.getBoundingClientRect().top + window.pageYOffset - 8 : 0;
+      if (tb && window.pageYOffset > top) window.scrollTo(0, top);
+    }
+    return true;
+  };
+  V.tab = function () { return rv.tab; };
+  function menu(open) {
+    var w = rvWrap(), b = w && w.querySelector('[data-act="rvmenu"]'), m = w && w.querySelector('#rvmenu');
+    if (!b || !m) return;
+    if (open == null) open = m.hidden;
+    m.hidden = !open;
+    b.setAttribute('aria-expanded', String(open));
+  }
+  function setSec(el, open) {
+    el.classList.toggle('rvfold', !open);
+    var b = el.querySelector('.when .rvfoldbtn');
+    if (b) { b.setAttribute('aria-expanded', String(open)); b.textContent = open ? '畳む' : '開く'; }
+    rv.sec[el.getAttribute('data-s')] = open;
+  }
+  function jump(key) {
+    var h = rvHost(), el = h && h.querySelector('#rvs-' + key);
+    if (!el) return;
+    setSec(el, true);
+    el.scrollIntoView({ block: 'start' });
+  }
+  /* 出来事 n へ（「転機：… を経過で読む」）。絞り込みで隠れていれば絞り込みを外す */
+  function gotoEv(n) {
+    if (!V.showTab('log', true)) return;
+    var h = rvHost(), q = '#tl li.ev[data-n="' + n + '"]', li = h.querySelector(q);
+    if (!li) { tl.who = []; tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; tl.off = {}; V.refreshTimeline(); li = h.querySelector(q); }
+    if (!li) return;
+    var sb = li.closest('.stepblk'), d = li.closest('details');
+    if (sb) setSec(sb, true);
+    if (d) d.open = true;
+    li.classList.add('rvflash');
+    setTimeout(function () { li.classList.remove('rvflash'); }, 1800);
+    li.scrollIntoView({ block: 'center' });
+  }
+  function pickPair(k) {
+    var res = lastRes;
+    if (!res || res.solo || !res.pairs[k]) return;
+    rv.pair = k;
+    V.showTab('pair');
+    var h = rvHost(), d = h.querySelector('#rvpairdet'), ul = h.querySelector('.rvplist[data-f]');
+    if (d) d.innerHTML = pairDetail(res.pairs[k], res);
+    if (ul) {
+      var li = ul.querySelector('[data-act="rvpair"][data-p="' + k + '"]');
+      /* 一覧を絞っていて隠れる組なら「すべて」に戻す */
+      if (li && rv.plist !== 'all' && getComputedStyle(li.parentNode).display === 'none') plf('all');
+      Array.prototype.forEach.call(ul.querySelectorAll('[data-act="rvpair"]'), function (b) { b.setAttribute('aria-current', String(+b.getAttribute('data-p') === k)); });
+      if (li && li.scrollIntoView && ul.scrollHeight > ul.clientHeight) { var r = li.getBoundingClientRect(), u = ul.getBoundingClientRect(); if (r.top < u.top || r.bottom > u.bottom) ul.scrollTop += r.top - u.top - 40; }
+    }
+    if (d && window.innerWidth <= 760) d.scrollIntoView({ block: 'start' });
+  }
+  function plf(f) {
+    rv.plist = f;
+    var h = rvHost(), ul = h && h.querySelector('.rvplist[data-f]');
+    if (ul) ul.setAttribute('data-f', f);
+    if (h) Array.prototype.forEach.call(h.querySelectorAll('[data-act="rvplf"]'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-f') === f)); });
+  }
+  function pickWho(i) {
+    var res = lastRes;
+    if (!res || res.solo || !res.chars[i]) return;
+    rv.who = i;
+    V.showTab('who');
+    var h = rvHost(), d = h.querySelector('#rvwhodet');
+    if (d) d.innerHTML = charDetail(res.chars[i], res);
+    Array.prototype.forEach.call(h.querySelectorAll('.rvwlist [data-act="rvwho"]'), function (b) { b.setAttribute('aria-current', String(+b.getAttribute('data-i') === i)); });
+  }
+  function wrapAttr(k, v) { var w = rvWrap(); if (w) w.setAttribute(k, v); }
   document.addEventListener('click', function (ev) {
-    var t = ev.target && ev.target.closest && ev.target.closest('[data-act="tlall"]');
-    if (t && lastRes) V.showAllKinds();
+    var t = ev.target && ev.target.closest && ev.target.closest('[data-act]');
+    /* 保存・共有の窓：外を押したら閉じる */
+    var mw = rvWrap(), mm = mw && mw.querySelector('#rvmenu');
+    if (mm && !mm.hidden && !(ev.target.closest && ev.target.closest('.rvsave'))) menu(false);
+    if (!t) return;
+    var a = t.getAttribute('data-act');
+    if (a === 'tlall') { if (lastRes) V.showAllKinds(); return; }
+    if (a.indexOf('rv') !== 0 && a !== 'mapline') return;
+    switch (a) {
+      case 'rvtab': ev.preventDefault(); V.showTab(t.getAttribute('data-k')); break;
+      case 'rvmenu': menu(); break;
+      case 'rvfold': var sb = t.closest('.stepblk'); if (sb) setSec(sb, sb.classList.contains('rvfold')); break;
+      case 'rvjump': jump(t.getAttribute('data-s')); break;
+      case 'rvgoto': gotoEv(+t.getAttribute('data-n')); break;
+      case 'rvcat': var c = t.getAttribute('data-c'); tl.off[c] = !tl.off[c]; V.refreshTimeline(); break;
+      case 'rvwhy': rv.why = !rv.why; rvSave(); wrapAttr('data-why', rv.why ? 1 : 0); t.setAttribute('aria-checked', String(rv.why)); break;
+      case 'rvopen': rv.open = !rv.open; rv.sec = {}; rvSave(); V.refreshTimeline(); break;
+      case 'rvfs':
+        rv.fs = t.getAttribute('data-v') || 'm'; rvSave(); wrapAttr('data-fs', rv.fs);
+        Array.prototype.forEach.call(t.parentNode.querySelectorAll('[data-act="rvfs"]'), function (b) { b.setAttribute('aria-checked', String(b === t)); });
+        break;
+      case 'rvside': rv.side = !rv.side; wrapAttr('data-side', rv.side ? 1 : 0); t.setAttribute('aria-expanded', String(rv.side)); break;
+      case 'rvreset': tl.who = []; tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; tl.off = {}; V.refreshTimeline(); break;
+      case 'rvpair':
+        if (t.hasAttribute('data-p')) pickPair(+t.getAttribute('data-p'));
+        break;
+      case 'rvplf': plf(t.getAttribute('data-f') || 'all'); break;
+      case 'rvwho': pickWho(+t.getAttribute('data-i')); break;
+      case 'rvwholog': V.showTab('log', true); V.setWho([+t.getAttribute('data-i')]); var th = rvHost().querySelector('#tlhead'); if (th) th.scrollIntoView({ block: 'start' }); break;
+      case 'mapline':
+        var na = +t.getAttribute('data-a'), nb = +t.getAttribute('data-b');
+        rv.line = rv.line && rv.line.a === na && rv.line.b === nb ? null : { a: na, b: nb };
+        refreshMap(); break;
+      case 'rvmapk':
+        var k = t.getAttribute('data-k'); rv.off[k] = !rv.off[k]; t.setAttribute('aria-checked', String(!rv.off[k]));
+        var mp = rvHost().querySelector('#map'); if (mp) mp.setAttribute('data-off', offStr());
+        break;
+      case 'rvmaplab': rv.lab = !rv.lab; refreshMap(); break;
+      case 'rvmapclear': rv.line = null; V.setWho([]); break;
+    }
+  });
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') { var mw = rvWrap(), mm = mw && mw.querySelector('#rvmenu'); if (mm && !mm.hidden) { menu(false); var b = mw.querySelector('[data-act="rvmenu"]'); if (b) b.focus(); } return; }
+    /* 切替は左右の矢印でも移れる */
+    var t = ev.target;
+    if (!(t && t.classList && t.classList.contains('rvtab')) || (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft')) return;
+    var all = Array.prototype.slice.call(t.parentNode.querySelectorAll('.rvtab')), i = all.indexOf(t), nx = all[(i + (ev.key === 'ArrowRight' ? 1 : all.length - 1)) % all.length];
+    if (nx) { ev.preventDefault(); V.showTab(nx.getAttribute('data-k'), true); nx.focus(); }
   });
 
   /* ---------- 結末 ---------- */
-  function endingBlock(res) {
+  /* 結末の一文のカード（見本 10）：結末の文・数の小箱・「転機：T03 … を経過で読む ›」・箱庭ごとの結末の行（形はそのまま） */
+  function endingBlock(res, E) {
     if (!HK.Endings) return '';
-    var E = HK.Endings.build(res);
+    E = E || HK.Endings.build(res);
     /* 体の関係にならない組の但し書き（出られない部屋）：見出しのすぐ下に帯で（ui-env.js の HK.NgBand.ending。記録を読むだけ） */
     var ngb = HK.NgBand && HK.NgBand.ending ? HK.NgBand.ending(res, E) : '';
-    /* 全体の転機（いちばん大きい組の転機）を概要の最後に赤で */
+    /* 全体の転機（いちばん大きい組の転機）：押すと経過のその出来事へ */
     var top = hotInfo(res).top, te = top != null ? res.log[top] : null;
-    var tst = te && tno(te.step) ? '<div class="tpstat"><dt>転機</dt><dd class="hot">' + tno(te.step) + '</dd>' + (te.label ? '<dd class="tplab">' + esc(te.label) + '</dd>' : '') + '</div>' : '';
-    return '<section class="ending" aria-label="結末"><div class="eyebrow">結末</div><p class="ehead">' + paint(E.headline, res) + '</p>' +
-      (E.stats.length || tst ? '<dl class="estats">' + E.stats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(s[1]) + '</dd></div>'; }).join('') + tst + '</dl>' : '') + ngb +
+    var turn = te && tno(te.step) ? '<button type="button" class="rvlink rvturn" data-act="rvgoto" data-n="' + top + '"><span class="hot">転機：' + tno(te.step) + '</span>' + (te.label ? '<span>' + esc(te.label) + '</span>' : '') + 'を経過で読む ›</button>' : '';
+    return '<section class="ending rvcard rvending" aria-label="結末"><p class="ehead">' + paint(E.headline, res) + '</p>' +
+      (E.stats.length ? '<dl class="estats">' + E.stats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(s[1]) + '</dd></div>'; }).join('') + '</dl>' : '') + turn + ngb +
       (E.lines.length ? '<ul class="elines">' + E.lines.map(function (l) { return '<li>' + paint(l, res) + '</li>'; }).join('') + '</ul>' : '') +
       (HK.Epilogue && HK.Epilogue.html ? HK.Epilogue.html(E, res, paint) : '') + (E.after || '') + '</section>';
   }
@@ -755,16 +1146,17 @@
   }
 
   function emptyState() {
-    return '<div class="empty panel"><div class="t">箱庭はまだ空っぽです</div><p>住人と箱庭を選んで「箱庭を動かす」を押すと、ここに関係図・ペアごとの結末・時系列が並びます。</p><button class="btn primary" data-act="run">いまの条件で動かす</button></div>' + historyBlock(lastOpts.history || []);
+    return '<div class="empty panel rvcard rvemptyc"><div class="t">箱庭はまだ空っぽです</div><p>住人と箱庭を選んで「箱庭を動かす」を押すと、ここに結末・経過・関係図・二人ずつ・住人ごとの結果が並びます。</p><button class="btn primary" data-act="run">いまの条件で動かす</button></div>' + historyBlock(lastOpts.history || [], true);
   }
 
-  function historyBlock(h) {
+  /* これまでの箱庭（履歴）：カードの折りたたみ。開くと動かしたときの結果をそのまま表示する（ui.js の histOpen。説明と「結果なし」の印は ui.js の histDeco が足す） */
+  function historyBlock(h, open) {
     if (!h.length) return '';
-    return '<h2 class="sec">これまでの箱庭</h2><p class="hint">同じ条件とシードで再現します。名簿は書き換えません。</p><div class="hist">' + h.map(function (it, k) {
+    return '<details class="rvcard rvhist"' + (open ? ' open' : '') + '><summary><b>これまでの箱庭</b><small>' + h.length + '件</small></summary><p class="hint">同じ条件とシードで再現します。名簿は書き換えません。</p><div class="hist">' + h.map(function (it, k) {
       var d = new Date(it.t);
       var when = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
       return '<button class="btn" data-act="hist" data-k="' + k + '"><span class="when">' + when + '</span><b>' + esc(it.scenName) + '</b><span>' + esc(it.names) + '</span><span class="nums">シード ' + it.seed + '</span>' + (it.summary ? '<span class="hint" style="margin:0">' + esc(it.summary) + '</span>' : '') + '</button>';
-    }).join('') + '</div>';
+    }).join('') + '</div></details>';
   }
 
   /* テキスト書き出し */

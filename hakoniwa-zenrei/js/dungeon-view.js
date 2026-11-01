@@ -149,18 +149,31 @@
       if (v == null || shown == null) return '';
       return chip(e.label + '：' + shown);
     }).join('');
-    host.innerHTML =
+    var P = [
       '<div class="resulthead"><div><h2>' + esc(S.name) + '</h2><div class="meta">シード <span class="num">' + res.seed + '</span>　' + (res.meta ? esc(res.meta) : esc(res.themeLabel) + '　' + res.stepCount + '部屋　主：' + esc(res.boss) + (res.mids.length ? '　番人：' + esc(res.mids.join('・')) : '')) + '</div></div><span class="spacer"></span>' +
-      '<div class="row"><button class="btn primary" data-act="reroll">別の運命で挑む</button><button class="btn" data-act="copytext">結果をテキストでコピー</button><button class="btn" data-act="gobox">条件を変える</button></div></div>' +
-      endingBlock(res) +
-      '<div class="uses" style="margin-top:12px">' + envChips + '</div>' +
+      '<div class="row"><button class="btn primary" data-act="reroll">別の運命で挑む</button><button class="btn" data-act="copytext">結果をテキストでコピー</button><button class="btn" data-act="gobox">条件を変える</button></div></div>',
+      endingBlock(res),
+      '<div class="uses" style="margin-top:12px">' + envChips + '</div>',
       '<h2 class="sec">理性と堕ちの推移</h2>' + gauge(res) +
       (res.party ? '<div class="cards" style="margin-top:12px">' + res.heroes.map(function (h) { return heroCard(res, h); }).join('') + '</div>' :
       '<div class="cards" style="margin-top:12px">' + heroCard(res, res.hero) +
-      '<div class="ccard"><div class="hd"><span class="nm" style="font-size:16px">開発度</span><span class="nums">' + (res.hero.hardTop ? '攻めの挑戦者は罠や魔物に責められないので、開発度は伸びない' : '罠や魔物に責められた部位ほど伸び、次から感じやすくなる') + '</span></div>' + devBars(res.hero) + '</div></div>') +
-      '<h2 class="sec">足りなかったもの・効いたもの</h2><ul class="dgadvice">' + res.advice.map(function (a) { return '<li>' + paint(a, res) + '</li>'; }).join('') + '</ul>' +
-      '<h2 class="sec" id="tlhead">探索の記録' + (HK.View && HK.View.hotLegendSolo ? HK.View.hotLegendSolo(res) : '') + '</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button>' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="dglewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + '</div><div class="tl" id="dgtl">' + timeline(res) + '</div>' + /* r18:ok */
-      (histHtml || '');
+      '<div class="ccard"><div class="hd"><span class="nm" style="font-size:16px">開発度</span><span class="nums">' + (res.hero.hardTop ? '攻めの挑戦者は罠や魔物に責められないので、開発度は伸びない' : '罠や魔物に責められた部位ほど伸び、次から感じやすくなる') + '</span></div>' + devBars(res.hero) + '</div></div>'),
+      '<h2 class="sec">足りなかったもの・効いたもの</h2><ul class="dgadvice">' + res.advice.map(function (a) { return '<li>' + paint(a, res) + '</li>'; }).join('') + '</ul>',
+      '<h2 class="sec" id="tlhead">探索の記録' + (HK.View && HK.View.hotLegendSolo ? HK.View.hotLegendSolo(res) : '') + '</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button>' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="dglewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + '</div><div class="tl" id="dgtl">' + timeline(res) + '</div>', /* r18:ok */
+      histHtml || ''
+    ];
+    /* 頭と切替は経過と結末（view.js の V.head・V.shell）と同じ部品で「結末｜探索の記録」（2026-11-01 担当UC。表示だけ） */
+    var HV = HK.View;
+    if (HV && HV.head && HV.shell) {
+      host.innerHTML = HV.shell({
+        head: HV.head({ meta: esc(S.name) + '・シード <span class="num">' + res.seed + '</span>・' + (res.meta ? esc(res.meta) : esc(res.themeLabel) + '・' + res.stepCount + '部屋・主：' + esc(res.boss) + (res.mids.length ? '・番人：' + esc(res.mids.join('・')) : '')), title: esc(res.ending.title), reroll: '別の運命で挑む' }),
+        tabs: [
+          { k: 'end', label: '結末', html: P[1] + (HV.cond ? HV.cond(S.env, res.env) : P[2]) + '<section class="rvcard rvsec2">' + P[3] + '</section><section class="rvcard rvsec2">' + P[4] + '</section>' },
+          { k: 'log', label: '探索の記録', n: res.log.filter(function (e) { return e.kind !== 'step'; }).length + '件', html: '<div class="rvsolo">' + P[5] + '</div>' }
+        ],
+        foot: P[6]
+      });
+    } else host.innerHTML = P.join('');
   };
   DV.toggleKey = function () {
     keyOnly = !keyOnly;
