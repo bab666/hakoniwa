@@ -23,7 +23,7 @@
       L.push('--p' + i + ':hsl(' + h + ' 55% 38%)');
       D.push('--p' + i + ':hsl(' + h + ' 65% 70%)');
     }
-    /* 色の量が「藍のみ」のときは住人の色も藍に（index.html の :root[data-palette="mono"] は --p0〜--p11。図や札は 30 色で回すので --p29 まで） */
+    /* 色の量が「単色」のときは住人の色も藍に（index.html の :root[data-palette="mono"] は --p0〜--p11。図や札は 30 色で回すので --p29 まで） */
     var M = []; for (var j = 12; j < 30; j++) M.push('--p' + j + ':var(--ai)!important');
     var css = ':root{' + L.join(';') + '}@media (prefers-color-scheme: dark){:root:not([data-theme="light"], [data-theme="gray"]){' + D.join(';') + '}}:root[data-theme="dark"]{' + D.join(';') + '}:root[data-palette="mono"]{' + M.join(';') + '}' +
       /* 住人が多いとき（最大 MAX 人）の一覧：画面の外の行は描画を後回しにする（対応していないブラウザでは何もしない） */

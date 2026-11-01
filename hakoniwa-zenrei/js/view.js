@@ -22,7 +22,7 @@
        door 扉が開いた区切りの行＝藍／end 結末の段＝藍の灰／rule 最初の扉の紙＝藍の灰／note 順番待ちで数えなかった注記＝黄（札だけ）。
        まとめて進んだ回のダイジェスト（本文の最後の段）は灰青の囲み（.evdg）と「まとめて n 回」の見出し。
      重要な出来事の枠（data-hot：情事・目標など）が付いた行は、その枠と背景のまま札だけ足す（R18 の色付き・目標の色とぶつけない）。
-     色の量「フル」は種類の色の薄い背景と左の縁 3px、藍のみ・キャラ色は藍の左の線の種類（実線・破線・二重・点線）と面の色 --bg1。印刷は背景を消して線と札だけ。
+     色の量「フル」は種類の色の薄い背景と左の縁 3px、単色・キャラ色は藍の左の線の種類（実線・破線・二重・点線）と面の色 --bg1。印刷は背景を消して線と札だけ。
      段の見た目（全箱庭）：長い文の段落（HK.fmtLong の空行）を段にして間を空け、名前「…」だけの段は左に細い線を引いて地の文と分ける */
   var RM_CSS =
     ':root{--rm-cond:#2F9E44;--rm-dg:#5C7CA3;--rm-lead:#D9822B;--rm-door:#364FC7;--rm-end:#16233B;--rm-note:#B38600;--rm-mix:8%;--rm-chip:12%}' +
@@ -32,7 +32,7 @@
     ':root:not([data-palette="full"]){--rm-cond:var(--ai);--rm-dg:var(--ai);--rm-lead:var(--ai);--rm-door:var(--ai);--rm-end:var(--ai);--rm-note:var(--ai)}' +
     '[data-k="cond"],[data-rm="cond"]{--rk:var(--rm-cond)}[data-k="dg"]{--rk:var(--rm-dg)}[data-k="lead"],[data-rm="lead"]{--rk:var(--rm-lead)}[data-k="door"],[data-rm="door"]{--rk:var(--rm-door)}' +
     '[data-k="end"],[data-rm="end"],[data-k="rule"],[data-rm="rule"]{--rk:var(--rm-end)}[data-k="note"],[data-rm="note"]{--rk:var(--rm-note)}' +
-    /* 殺し（2026-10-31 担当KR）：誰かを殺す（全年齢は気絶させる）条件の出来事。理由の頭「［殺し合い］」などから。赤（藍のみ・キャラ色は藍の太い線） */
+    /* 殺し（2026-10-31 担当KR）：誰かを殺す（全年齢は気絶させる）条件の出来事。理由の頭「［殺し合い］」などから。赤（単色・キャラ色は藍の太い線） */
     ':root{--rm-kill:#C92A2A}:root[data-theme="gray"]{--rm-kill:#B02525}@media (prefers-color-scheme: dark){:root:not([data-theme="light"],[data-theme="gray"]){--rm-kill:#FF8787}}:root[data-theme="dark"]{--rm-kill:#FF8787}' +
     ':root:not([data-palette="full"]){--rm-kill:var(--ai)}[data-k="kill"],[data-rm="kill"]{--rk:var(--rm-kill)}' +
     ':root:not([data-palette="full"]) .tl .stepblk ol>.ev[data-rm="kill"]:not([data-hot]){--hbl:3px;border-left-width:3px}' +
@@ -191,7 +191,7 @@
   function lewdHot(e) { return !HK.SAFE_ON && !!HK.lewdEvent && HK.lewdEvent(e); }
   function isHot(e, H) { return e.kind === 'death' || !!(e.mark && e.mark.length) || !!H.tp[e.n] || lewdHot(e); }
   /* 重要な出来事の種類（担当HZ 2026-10-28。表示だけ）：死亡＞情事＞転機＞目標＞トラブル の順で一つに決める。li に hot-○○ と data-hot を付け、
-     index.html の時系列の節が細い枠（藍のみ・キャラ色は線の種類、フルは種類ごとの薄い背景と左の縁）を描く。.hot（赤の点・太字）は今までどおり 死亡・情事・転機 だけ */
+     index.html の時系列の節が細い枠（単色・キャラ色は線の種類、フルは種類ごとの薄い背景と左の縁）を描く。.hot（赤の点・太字）は今までどおり 死亡・情事・転機 だけ */
   var HOT_ORDER = ['death', 'lewd', 'turn', 'goal', 'trouble'];
   var HOT_NAME = { death: '死亡', turn: '転機', goal: '目標', trouble: 'トラブル' };
   var HOT_TIP = { death: '死亡・全滅・陥落', turn: '組の転機・関係の節目（付き合い始めた・別れた など）', goal: '条件達成・扉が開いた・脱出・勝利など、箱庭の目標', trouble: '襲撃・故障・危機などの大きなトラブル' };
@@ -222,7 +222,7 @@
     if (e.trouble) return 'trouble';
     return 'turn';
   };
-  /* 時系列の見出しの凡例：その結果に出る種類だけ。フルは色の小さな四角、藍のみ・キャラ色は線の種類の見本（index.html の .hotleg .hk） */
+  /* 時系列の見出しの凡例：その結果に出る種類だけ。フルは色の小さな四角、単色・キャラ色は線の種類の見本（index.html の .hotleg .hk） */
   function hotLegendOf(seen) {
     var ks = HOT_ORDER.filter(function (k) { return seen[k] && HOT_NAME[k]; });
     if (!ks.length) return '';
