@@ -1,7 +1,7 @@
 /* 箱庭シミュレーター ui: 住人タブ「話題」の節（2026-11-01 担当TA）
    ・利用者が登録した語（S.topics。1件の形と整え方は topics.js の HK.Topics）を、範囲ごとの見出しでまとめて描く。行の中で種類・語・補足を直接直せる
      範囲：全体／箱庭ごと（箱庭タブと同じ名前・同じ絞り方の HK.SCEN_ORDER）／グループ（住人のグループ名。自由入力も可）／住人／住人どうし（順不同）
-   ・追加の行（範囲→対象→種類→語→補足→追加）と、一括入力（1行1件「範囲｜種類｜語｜補足」）。件数が多いとき（30件超）は範囲ごとに折りたたむ
+   ・追加の行（範囲→対象→種類→語→補足→追加）と、一括入力（1行1件『範囲｜種類｜語｜補足』）。件数が多いとき（30件超）は範囲ごとに折りたたむ
      （開いた見出しは表示用の保存 hakoniwa:topicfold。全年齢版は hakoniwa-z:topicfold）
    ・住人が消えたら、その人の話題（住人・住人どうし）を消す。グループの名前を変えたら追随し、グループが無くなったら、そのグループの話題を消す（sync）
    ui.js の renderCast が HK.TopicsUI.html() を「口調・喘ぎの設定」と「住人どうしの既存の関係」のあいだに置き、欄の入力（data-f="topic"）と
@@ -169,7 +169,7 @@
       '<div class="tpbox">' + newHtml() + '<div class="tplist" id="tplist">' + listHtml() + '</div>' +
       '<div class="tpbulk"><textarea id="tpbulk" rows="3" data-f="topic" data-p="bulk" placeholder="' + esc(BULK_PH) + '" aria-label="話題をまとめて登録"></textarea>' +
       '<div class="row" style="margin-top:6px"><button class="btn" data-act="tp:import">まとめて読み込む</button><span class="tpbn" id="tpbulkn"></span>' +
-      '<span class="fmt">1行に1件、「範囲｜種類｜語｜補足」（補足は省けます）。範囲は「全体」「箱庭:出られない部屋」「グループ:3年A組」、住人の名前（「朝霧」）、二人なら「朝霧×鷹野」。種類は' + esc(T.KINDS.map(function (k) { return k[1]; }).join('・')) + '。区切りは ｜ か | かタブ。</span></div>' +
+      '<span class="fmt">1行に1件、『範囲｜種類｜語｜補足』（補足は省けます）。範囲は「全体」「箱庭:出られない部屋」「グループ:3年A組」、住人の名前（「朝霧」）、二人なら「朝霧×鷹野」。種類は' + esc(T.KINDS.map(function (k) { return k[1]; }).join('・')) + '。区切りは ｜ か | かタブ。</span></div>' +
       '<ul class="warn" id="tpwarns" hidden></ul></div></div></div>';
   }
   function redraw(focusSel) {
