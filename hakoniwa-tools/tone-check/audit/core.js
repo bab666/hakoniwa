@@ -10,6 +10,7 @@
    ・1 枚のページで、複数のパスを順に回せる。判定の工場は 1 ページに 1 回だけ作り、パスをまたいで数え続ける */
 'use strict';
 const { openBuild } = require('../lib.js');
+const TOPICS = require('./topics-sample.js');
 
 /* ---------- ページの中：1 パスを回す ---------- */
 const RUN = function (plan) {
@@ -36,6 +37,8 @@ const RUN = function (plan) {
     /* 判定を当てる：自分のパス（own）は全部、ほかのパスは判定の accept（なければ当てる）で決める */
     const on = act.filter(o => o.own || !o.x.accept || o.x.accept(run));
     if (run.special) { on.forEach(o => call(o, 'special', run)); continue; }
+    /* 見本の話題（audit/topics-sample.js）：話題の文も検査に当たるように、パスの opt.topics が真のときだけ入れる（audit-all.js の topics-* のパス。ほかのパスの回は変えない） */
+    if (run.input && plan.pass.opt && plan.pass.opt.topics && A.topicsFor) { try { A.topicsFor(run.input); } catch (e) { A.jerr.push('見本の話題: ' + String(e).slice(0, 200)); } }
     on.forEach(o => call(o, 'begin', run));
     let res;
     try { res = HK.simulate(run.input); }
@@ -63,7 +66,7 @@ async function inject(page, mods) {
     Object.keys(m.fns || {}).forEach(id => parts.push('A.F[' + JSON.stringify(id) + '] = (' + m.fns[id].toString() + ');'));
   });
   const src = '(function () { var A = window.__AUD; if (!A) { A = window.__AUD = { P: {}, J: {}, F: {}, inst: {}, jerr: [], mode0: window.HK && window.HK.LewdWords ? window.HK.LewdWords.MODE : null }; }\n' +
-    'var P = A.P, J = A.J;\n' + parts.join('\n') + '\nA.run = (' + RUN.toString() + ');\nA.finish = (' + FINISH.toString() + ');\n})()';
+    'var P = A.P, J = A.J;\n' + parts.join('\n') + '\nA.topicsFor = (' + TOPICS.ADD.toString() + ');\nA.run = (' + RUN.toString() + ');\nA.finish = (' + FINISH.toString() + ');\n})()';
   await page.evaluate(src);
 }
 

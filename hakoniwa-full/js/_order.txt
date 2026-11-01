@@ -35,6 +35,7 @@ js/ego-desc.js
 js/ties.js
 js/poly.js
 js/events-common.js
+js/topics.js
 js/persona.js
 js/tie-rel.js
 js/rel-at.js @pack:rel
