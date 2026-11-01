@@ -234,7 +234,7 @@
       if (HK.SAFE_ON) list = list.filter(function (r) { return !r.r18; });
       var shown = list.filter(function (r) { return !filter || r.scenId === filter; });
       host.innerHTML =
-        '<div class="savehead"><h2>セーブデータ</h2>' +
+        '<div class="savehead"><h2>セーブデータ' + (list.length ? ' <small class="hint" style="font-weight:400">' + list.length + '件</small>' : '') + '</h2>' +
         '<p class="hint">「経過と結末」で「この結果をセーブ」を押すと、ここに残ります。保存先はこのブラウザの中だけなので、大事な結果はJSONで書き出して保管してください。</p>' +
         '<div class="row saverow">' +
         '<button class="btn small" data-sv="importfile">JSONを読み込む</button>' +
@@ -252,13 +252,13 @@
     return '<li class="saveitem' + (okr ? '' : ' noresult') + '" data-id="' + esc(r.id) + '">' +
       '<div class="savemain"><div class="savetop"><span class="savescen">' + esc(r.scenName) + '</span><span class="savedate">' + esc(fmtDate(r.at)) + '</span></div>' +
       '<input type="text" class="savename" data-sv="name" value="' + esc(r.name) + '" placeholder="名前を付ける（任意）" maxlength="40" aria-label="セーブデータの名前">' +
-      '<p class="savetitle">' + esc(r.title) + '</p>' +
+      '<p class="savetitle">' + esc(r.title || res.outcome || '') + '</p>' +   /* 題が空の記録は、結果の一行を出すだけ（記録は書き換えない） */
       '<p class="savecast">' + esc(r.names) + (seedOf(r) != null ? '　<span class="saveseed">シード ' + esc(seedOf(r)) + '</span>' : '') + '</p>' +
       '<p class="savever hint small" style="margin:2px 0 0">保存時の版：' + esc(VM.label(r.ver || res.ver, r.at)) + '</p>' +
       (advLabel(r.adv) ? '<p class="saveadv hint small" style="margin:2px 0 0">' + esc(advLB()) + '：' + esc(advLabel(r.adv)) + '</p>' : '') +
       (okr ? '' : '<p class="savelost hint small" style="margin:2px 0 0;color:var(--hot,#B4232A)">結果が残っていないため開けません（保存時の版でのみ再現できます）</p>') + '</div>' +
       '<div class="saveact">' +
-      (okr ? '<button class="btn small" data-sv="open">開く</button>' : '') +
+      (okr ? '<button class="btn small primary" data-sv="open">開く</button>' : '') +
       (!okr && inp.scenId && Array.isArray(inp.chars) && (HK.SCENARIOS[inp.scenId] || (HK.Load && HK.Load.info && HK.Load.info(inp.scenId))) ? '<button class="btn small ghost" data-sv="copycond" title="住人・環境・シードを箱庭タブに写す（自動では動かしません）">条件を箱庭タブに写す</button>' : '') +
       '<button class="btn small ghost" data-sv="export">JSON</button>' +
       '<button class="btn small ghost" data-sv="del" aria-label="削除">削除</button></div></li>';

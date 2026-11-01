@@ -303,16 +303,29 @@
       if (v == null || shown == null) return '';
       return '<span class="chip">' + esc(e.label) + '：' + esc(shown) + '</span>';
     }).join('');
-    host.innerHTML =
+    var ending = '<section class="ending rvcard rvending" aria-label="結末"><p class="ehead">' + paint(E.title, res) + '</p>' +
+      (res.estats.length ? '<dl class="estats">' + res.estats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(s[1]) + '</dd></div>'; }).join('') + '</dl>' : '') +
+      (E.lines.length ? '<ul class="elines">' + E.lines.map(function (l) { return '<li>' + paint(l, res) + '</li>'; }).join('') + '</ul>' : '') + '</section>';
+    var cards = '<h2 class="sec">住人ごとの推移</h2><div class="cards">' + res.heroes.map(function (h) { return card(res, h); }).join('') + '</div>';
+    var log = '<h2 class="sec" id="tlhead">記録' + (HK.View && HK.View.hotLegendSolo ? HK.View.hotLegendSolo(res) : '') + '</h2><div id="stbar">' + bar(res) + '</div><div class="tl" id="sttl">' + timeline(res) + '</div>';
+    var HV = HK.View;
+    /* 頭と切替は経過と結末（view.js の V.head・V.shell）と同じ部品で「結末｜記録」（2026-11-01 担当UC。表示だけ） */
+    if (HV && HV.head && HV.shell) {
+      var nEv = res.log.filter(function (e) { return e.kind !== 'step'; }).length, rt = table(res), rs = relSvg(res);
+      host.innerHTML = HV.shell({
+        head: HV.head({ meta: esc(S.name) + '・' + res.heroes.length + '人・シード <span class="num">' + res.seed + '</span>・' + esc(res.meta), title: paint(E.title, res), note: S.note }),
+        tabs: [
+          { k: 'end', label: '結末', html: ending + (HV.cond ? HV.cond(S.env, res.env) : '<div class="uses" style="margin-top:12px">' + envChips + '</div>') + (rt ? '<section class="rvcard rvsec2">' + rt + '</section>' : '') },
+          { k: 'log', label: '記録', n: nEv + '件', html: '<div class="rvsolo">' + log + '</div>' },
+          rs ? { k: 'map', label: '関係図', html: '<section class="rvcard rvsec2">' + rs + '</section>' } : null,
+          { k: 'who', label: '住人ごと', html: cards }
+        ].filter(Boolean),
+        foot: histHtml || ''
+      });
+    } else host.innerHTML =
       '<div class="resulthead"><div><h2>' + esc(S.name) + '</h2><div class="meta">シード <span class="num">' + res.seed + '</span>　' + esc(res.meta) + '</div>' + (S.note ? '<div class="meta scnote">' + esc(S.note) + '</div>' : '') + '</div><span class="spacer"></span>' +
       '<div class="row"><button class="btn primary" data-act="reroll">別の運命で動かす</button><button class="btn" data-act="copytext">結果をテキストでコピー</button><button class="btn" data-act="gobox">条件を変える</button></div></div>' +
-      '<section class="ending" aria-label="結末"><div class="eyebrow">結末</div><p class="ehead">' + paint(E.title, res) + '</p>' +
-      (res.estats.length ? '<dl class="estats">' + res.estats.map(function (s) { return '<div><dt>' + esc(s[0]) + '</dt><dd>' + esc(s[1]) + '</dd></div>'; }).join('') + '</dl>' : '') +
-      (E.lines.length ? '<ul class="elines">' + E.lines.map(function (l) { return '<li>' + paint(l, res) + '</li>'; }).join('') + '</ul>' : '') + '</section>' +
-      '<div class="uses" style="margin-top:12px">' + envChips + '</div>' +
-      table(res) + relSvg(res) +
-      '<h2 class="sec">住人ごとの推移</h2><div class="cards">' + res.heroes.map(function (h) { return card(res, h); }).join('') + '</div>' +
-      '<h2 class="sec" id="tlhead">記録' + (HK.View && HK.View.hotLegendSolo ? HK.View.hotLegendSolo(res) : '') + '</h2><div id="stbar">' + bar(res) + '</div><div class="tl" id="sttl">' + timeline(res) + '</div>' + (histHtml || '');
+      ending + '<div class="uses" style="margin-top:12px">' + envChips + '</div>' + table(res) + relSvg(res) + cards + log + (histHtml || '');
     if (!host._stBound) {
       host._stBound = true;
       host.addEventListener('click', function (ev) {

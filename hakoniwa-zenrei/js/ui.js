@@ -1823,8 +1823,10 @@
   function renderResult() {
     var host = $('#view-result');
     V.render(host, result, { history: hist, showAll: showAll }); shownRes = result;   /* 描けた結果（「この結果をセーブ」はこれを残す。HK.UIres.shown） */
-    if (result && HK.Share) { var hd = host.querySelector('.resulthead'); if (hd && !host.querySelector('#sharebar')) hd.insertAdjacentHTML('afterend', HK.Share.bar()); }
-    /* 結果のセーブ（saves.js） */
+    /* 共有の札（share-card.js）と結果のセーブ（saves.js）は、頭の「保存・共有▾」の中（view.js の #rvmenu。2026-11-01 担当UC）。無い頭（古い形）なら今までどおり見出しの下 */
+    var menu = host.querySelector('#rvmenu');
+    if (result && HK.Saves && !host.querySelector('#savebtn')) { if (menu) menu.insertAdjacentHTML('beforeend', HK.Saves.button()); }
+    if (result && HK.Share) { var hd = host.querySelector('.resulthead'); if (!host.querySelector('#sharebar')) { if (menu) menu.insertAdjacentHTML('beforeend', HK.Share.bar()); else if (hd) hd.insertAdjacentHTML('afterend', HK.Share.bar()); } }
     if (result && HK.Saves && !host.querySelector('#savebtn')) { var sb = host.querySelector('#sharebar') || host.querySelector('.resulthead'); if (sb) sb.insertAdjacentHTML('afterend', HK.Saves.button()); }
     /* 履歴から開いたときの知らせと、履歴の一覧の説明 */
     histDeco(host); if (HK.SavesAdv) HK.SavesAdv.deco(host, result, opened, hist);   /* 保存時の高度設定の要約・「条件を箱庭タブに写す」「高度設定を写す」 */
@@ -2093,6 +2095,7 @@
       case 'dgkey': if (HK.DView) HK.DView.toggleKey(); break;
       case 'dglewd': if (HK.DView && HK.DView.toggleLewd) HK.DView.toggleLewd(); break;
       case 'pairfilter':
+        if (V.showTab) V.showTab('log', true);   /* 「この二人の経過をすべて読む」：経過の切替へ */
         V.setWho([+t.dataset.a, +t.dataset.b]);
         var h = document.getElementById('tlhead');
         if (h) h.scrollIntoView({ block: 'start' });
