@@ -690,6 +690,8 @@
     /* 場面（この文ひとつ）ごとの覚え：ひねくれ敬語の「〜よ？」を続けない（tone-engine.js の T.scene）・呼びかけの名前を続けない（tone-plus.js の callAddress） */
     if (HK.Tone) HK.Tone.scene = {};
     V._callScene = {};
+    /* qn … この文のいちばん外側の「」の番号（区分 _sq・e.seg の台詞の並びと同じ）。呼びかけを足した台詞の記録（e.callAdded）に使う */
+    var qn = -1;
     for (var i = 0; i < text.length; i++) {
       var ch = text[i];
       if (ch === '（' && depth === 0) {
@@ -702,7 +704,7 @@
           i = close; continue;
         }
       }
-      if (ch === '「') { if (depth === 0) start = i; depth++; }
+      if (ch === '「') { if (depth === 0) { start = i; qn++; } depth++; }
       else if (ch === '」' && depth > 0) {
         depth--;
         if (depth === 0 && start >= 0) {
@@ -779,6 +781,7 @@
             if (YOU_ST.test(q0)) q = fixYouStutter(q);
             if (V.applyCalls) q = V.applyCalls(q, who, people);
             /* 呼び方を決めてある相手に向けた台詞は、二人称を呼び方にし、ときどき呼びかけを足す（tone-plus.js の callAddress） */
+            V._callK = qn; V._actN = Array.isArray(actors) ? actors.length : 0;
             if (V.callAddress && !nounQ) q = V.callAddress(q, who, addresseeOf(text, start, i + 1, q, who, people, actors), q0);
             /* ♡を外す（「♡喘ぎ」を外した人・全体の「全員なし」。性的な場面の台詞と、喘ぎらしい台詞だけ）：語尾の記号より前に（♡で終わる文にも記号が付くように。V.unheart） */
             if (V._heartEv != null && !nounQ && V.hasHeart(q) && (V._heartEv || mq) && V.heartOff(who)) q = V.unheart(q);
@@ -1074,16 +1077,25 @@
     V._keepHeart = !HK.SAFE_ON && !!(input.env && input.env.style === 'ero');
     var hOff = people.some(function (p) { return p.noHeart; }) || V.heartOff(null);
     /* 記録ごとに、「」の区分と話し手を V._segBuf に集め、voice-seg.js（HK.Seg.keep）に渡す（e.seg は、ほかの仕上げがすべて済んでから作る） */
+    /* 呼びかけの覚え（tone-plus.js の callAddress）：_callLast＝いま整えている記録で名前を呼んだ組（話し手>相手）、_callPrev＝ひとつ前の記録の組。
+       _callAdd＝この記録で呼びかけを足した台詞（点検 call-audit.js が読む。e.callAdded は数え上げない属性で、保存・表示には出ない） */
+    V._callLast = {}; V._callPrev = {};
     (res.log || []).forEach(function (e) {
       if (!e || typeof e.text !== 'string') return;
       var buf = V._segBuf = [];
+      V._callPrev = V._callLast; V._callLast = {}; V._callAdd = [];
+      /* 性的な場面の記録か（呼びかけを足すのは、山場の懇願・告白だけにする） */
+      V._lewdEv = !HK.SAFE_ON && !!(HK.lewdEvent && HK.lewdEvent(e));
       /* 状況で変わる一人称（怒ったとき・恋人ができてから。voice-fp.js）：この記録の間だけ、話し手の一人称を差し替える */
       var fpBack = V.fpSwap ? V.fpSwap(people, e) : null;
       /* ♡を外す人がいれば、この記録が性的な場面か（V.unheart を当てる範囲。外す人がいなければ null で、何もしない） */
       V._heartEv = hOff ? !!(HK.lewdEvent && HK.lewdEvent(e)) : null;
-      try { e.text = V.nestQuote(f(e.text, e.actors)); } finally { V._segBuf = null; V._heartEv = null; if (fpBack) fpBack(); }
+      try { e.text = V.nestQuote(f(e.text, e.actors)); } finally { V._segBuf = null; V._heartEv = null; V._lewdEv = false; if (fpBack) fpBack(); }
+      if (V._callAdd.length) Object.defineProperty(e, 'callAdded', { value: V._callAdd, configurable: true, writable: true, enumerable: false });
+      V._callAdd = null;
       if (HK.Seg && HK.Seg.keep) HK.Seg.keep(e, buf);
     });
+    V._callLast = V._callPrev = null;
     var E = res.ending || res.end;
     if (E) {
       if (Array.isArray(E.lines)) E.lines = E.lines.map(function (l) { return typeof l === 'string' ? f(l) : l; });
