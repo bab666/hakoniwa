@@ -11,7 +11,7 @@
    ・邪神村では、特殊役職でなくても全員が発狂しうる（jashin.js）
    箱庭ごとの違いは「アダプター」A で受け取る（各箱庭の組み込み側で作る）：
      A = { rng, all, alive(p), here(p), say(o), hp(p), setHp(p, v), full(p), stress(p), addStress(p, v), rel(a, b),
-           nowH, r18, revive(p), kill(p, how, text, by), zombie(p), lewd, near(a, b)?, reviveText(p)?, relMod(b, a, how)? }
+           nowH, r18, revive(p), kill(p, how, text, by), zombie(p), lewd, near(a, b)?, reviveText(p)?, reviveAdd(p)?（蘇りの文に添える一文）, relMod(b, a, how)? }
      rel(a, b) は a から見た b：{ love: 恋仲か, w: -1〜1 の好意 }。say(o) は { actors, tag, text, why, mag, key } */
 (function () {
   'use strict';
@@ -229,7 +229,7 @@
       wit.forEach(function (q) { A.addStress(q, 8); });
       /* 蘇りの地の文（箱庭の reviveText か REVIVE）＋目撃者の様子＋本人の一言（SP.reviveLine。殺した相手か目撃者への一言つき） */
       var line = SP.reviveLine(A, p, k, w), acts = [p].concat(w ? [w] : []).concat(k ? [k] : []);
-      var o = A.say({ actors: acts, tag: '蘇生', text: ((A.reviveText && A.reviveText(p)) || fmt(pick(A, REVIVE[p.spec]), { a: p.name })) + (w ? fmt(pick(A, WITNESS), { a: p.name, b: w.name }) : '') + line, why: SP.LABEL[p.spec] + '：死んでも、傷が回復して体力満タンで蘇る（' + p.spRev + '回目）。蘇った一言は' + ({ matter: '当たり前に受け入れる', weary: '疎む', scared: '怯える・戸惑う', jest: '軽口' })[SP.reviveMood(p, p.spRev)] + '（態度・口調と回数から）' + (k ? '。殺した' + k.name + 'が目の前にいる' : ''), mag: 30, key: p.spRev === 1 ? p.name + 'が蘇った' : '' });
+      var o = A.say({ actors: acts, tag: '蘇生', text: ((A.reviveText && A.reviveText(p)) || fmt(pick(A, REVIVE[p.spec]), { a: p.name })) + (A.reviveAdd ? A.reviveAdd(p) || '' : '') + (w ? fmt(pick(A, WITNESS), { a: p.name, b: w.name }) : '') + line, why: SP.LABEL[p.spec] + '：死んでも、傷が回復して体力満タンで蘇る（' + p.spRev + '回目）。蘇った一言は' + ({ matter: '当たり前に受け入れる', weary: '疎む', scared: '怯える・戸惑う', jest: '軽口' })[SP.reviveMood(p, p.spRev)] + '（態度・口調と回数から）' + (k ? '。殺した' + k.name + 'が目の前にいる' : ''), mag: 30, key: p.spRev === 1 ? p.name + 'が蘇った' : '' });
       out.push(p);
     });
     return out;

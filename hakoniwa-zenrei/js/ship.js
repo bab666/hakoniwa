@@ -278,11 +278,15 @@
       if (rng() < 0.22 + env.danger / 100 * 0.35) trouble(S);
       doom(S, m);
       crisis(S);
+      /* 星の生命体の取引：体を貸せば、死んだ船員を生き返らせる（ship-deal.js。死者のいる月に 10%・一度まで）と、持ち帰った特徴の一文 */
+      if (SH.DEAL) { SH.DEAL.month(S); SH.DEAL.tick(S); }
       shipLife(S);
       /* 執着（ヤンデレ。obsess-story.js） */
       if (HK.Obsess && HK.Obsess.storyTick) { var ob = HK.Obsess.storyTick(S, live(S), { rate: 0.3 }); if (ob) { ST.say(S, { actors: ob.actors, tag: ob.tag, kind: ob.kind, text: ob.text, why: ob.why, mag: ob.mag }); setRel(S, ob.actors[0], ob.actors[1], 0.04); mark(S, ob.actors[0], ob.actors[1], 'jealous'); } }
       if (R18ON && r18on(S)) nightR18(S);
       upkeep(S, m);
+      /* 「ほかに：」の短い一行は、その月のうちに亡くなった人が主語の行を落とす（月末の消耗などで、まとめる前に亡くなった人を生きている扱いで書かない） */
+      if (S.short && S.short.length) S.short = S.short.filter(function (x) { return (x.a || []).every(function (q) { var p = typeof q === 'number' ? S.P[q] : q; return !p || p.alive !== false; }); });
       ST.flushShort(S, 'ほかに：');
       ST.snap(S, keys);
     }
@@ -397,8 +401,13 @@
     S.ship.morale = clamp(S.ship.morale - 6, 0, 100);
     /* 残りが二人以下なら、死に至るほどの事故は起きにくい（全滅は大きなトラブルの doom で） */
     if (rng() < (0.06 + S.env.danger / 100 * 0.32) * (live(S).length <= 2 ? 0.35 : live(S).length === 3 ? 0.7 : 1) * HK.Dark.f(S, 'kill')) {
-      var v = rng.pick(live(S)), w = live(S).filter(function (q) { return q !== v; })[0];
-      return die(S, v, tr.name + 'で', t + F(tr.ng, { a: fx.name }) + F(tr.death, { v: v.name, w: w ? w.name : '仲間' }));
+      /* 船内での感染症：その病への耐性のある人（一度その病で死んで生き返った人）は、死の候補から外す（候補がいなければ、死なずに寝込むだけ） */
+      var vp = tr.id === 'plague' ? live(S).filter(function (q) { return !immune(q, 'plague'); }) : live(S);
+      if (vp.length) {
+        var v = rng.pick(vp), w = live(S).filter(function (q) { return q !== v; })[0];
+        if (tr.id === 'plague') v.dzDied = 'plague';
+        return die(S, v, tr.name + 'で', t + F(tr.ng, { a: fx.name }) + F(tr.death, { v: v.name, w: w ? w.name : '仲間' }));
+      }
     }
     ST.say(S, { actors: [fx], tag: '故障：' + tr.name, trouble: true, text: t + F(tr.ng, { a: fx.name }), why: '修理に失敗（' + ({ hull: '船体', power: '動力', o2: '生命維持', food: '食料', crew: '全員の体力' }[tr.stat] || '') + 'が減った）', mag: 22 });
   }
@@ -431,7 +440,9 @@
       S.doom = null; S.doomDone = true; a.cnt.fix++;
       S.ship.morale = clamp(S.ship.morale + 12, 0, 100);
       L0.forEach(function (q) { if (q !== a) setRel(S, q, a, 0.1); stress(q, -8); });
-      var o1 = ST.say(S, { actors: [a], tag: '危機を回避：' + D.d.name, kind: 'climax', trouble: true, text: F(pk(S, D.d.ok), { a: a.name, x: x }), why: a.name + 'の' + SKJ + 'の腕（' + Math.round(skill(a, D.d.skill) * 100) + '）' + (help ? '・手伝える仲間 ' + help + '人' : '') + '（成功の見込み ' + Math.round(ch * 100) + '%）', mag: 40 });
+      /* 未知のウイルスの伝染を食い止めた：熱をくぐり抜けた全員に、そのウイルスへの耐性 */
+      var imV = D.d.id === 'virus' && SH.C && SH.C.IMMUNE_VIRUS ? L0.filter(function (q) { return setImmune(q, 'virus'); }) : [];
+      var o1 = ST.say(S, { actors: [a], tag: '危機を回避：' + D.d.name, kind: 'climax', trouble: true, text: F(pk(S, D.d.ok), { a: a.name, x: x }) + (imV.length ? F(pk(S, SH.C.IMMUNE_VIRUS), { n: names(imV) }) : ''), why: a.name + 'の' + SKJ + 'の腕（' + Math.round(skill(a, D.d.skill) * 100) + '）' + (help ? '・手伝える仲間 ' + help + '人' : '') + '（成功の見込み ' + Math.round(ch * 100) + '%）', mag: 40 });
       ST.key(S, o1, a.name + 'が' + D.d.name + 'を食い止めた');
       return;
     }
@@ -444,7 +455,7 @@
     var all = L0.slice();
     var o2 = ST.say(S, { actors: all.map(function (q) { return q; }), tag: '全滅：' + D.d.name, kind: 'climax', trouble: true, doom: D.d.id, text: F(pk(S, D.d.ng), { a: a.name, x: x }) + F(pk(S, D.d.end), { n: names(all), x: x }), why: '二度目も食い止められなかった（成功の見込み ' + Math.round(ch * 100) + '%）', mag: 70 });
     ST.key(S, o2, D.d.name + 'で全滅');
-    all.forEach(function (q) { q.alive = false; q.fate = '死亡（' + m + 'か月目・' + D.d.name + '）'; S.deaths.push(q); });
+    all.forEach(function (q) { q.alive = false; q.fate = '死亡（' + m + 'か月目・' + D.d.name + '）'; S.deaths.push(q); if (D.d.id === 'virus') q.dzDied = 'virus'; });
     S.doom = null; S.doomDone = true; S.wipeBy = D.d;
     if (SH.AFTER) SH.AFTER.wipe(S, m);
   }
@@ -490,9 +501,31 @@
       if (rng() < 0.45) nurse(S, sk);
     }
   }
+  /* ---------- 病への耐性（2026-11-01 担当SX） ----------
+     死にかけた人（重い段階 inf>=3 から治療で治った・段階 2 以上で峠を越えて持ち直した）と、その病で死んで生き返った人（不死・吸血鬼の蘇り・
+     星の生命体の取引）は、その病に二度とかからない（感染・うつる・船内での感染症の死の候補から外す）。軽い段階で治ったときは耐性なし。
+     病の id：星の感染症は 'inf:' + 病のもと（生命体の名）、船内での感染症（故障の表 plague）は 'plague'、未知のウイルスの伝染（DOOM の virus）は 'virus'。
+     死んだときの病は p.dzDied に覚えておき、生き返るとき（SH.reviveBody）に耐性に変える */
+  function dzOf(src) { return 'inf:' + (src || '星の生き物'); }
+  function immune(p, id) { return !!(p && id && p.immune && p.immune[id]); }
+  function setImmune(p, id) { if (!p || !id || immune(p, id)) return false; (p.immune = p.immune || {})[id] = 1; return true; }
+  /* 生き返った体を整える：死んだ病への耐性を付け、病の段階を消す（体は元どおりになる）。耐性が付いたら真（p._immNew に病の id） */
+  function reviveBody(S, p) {
+    var id = p.dzDied, got = !!(id && setImmune(p, id));
+    p.inf = 0; p.dzDied = null; p.abTalk = false;
+    if (got) p._immNew = id;
+    return got;
+  }
+  /* 生き返った直後の一文（蘇りの文に添える。全滅のあとの「ひとりの船」のウイルスは、目覚めの文 wakeBy が受け持つ） */
+  function reviveImmText(S, p) {
+    var id = p._immNew; p._immNew = null;
+    if (!id || !SH.C || !SH.C.IMMUNE_REV || (S.after && id === 'virus')) return '';
+    return F(pk(S, SH.C.IMMUNE_REV), { a: p.name });
+  }
+  SH.reviveBody = reviveBody; SH.reviveImmText = reviveImmText; SH.immune = immune;
   /* ---------- 星での危機：感染症・研究のための誘拐・遭難 ---------- */
   function infect(S, a, src) {
-    if (!SH.C || !a || a.inf || !alive(a)) return;
+    if (!SH.C || !a || a.inf || !alive(a) || immune(a, dzOf(src))) return;
     a.inf = 1; a.infSrc = src; stress(a, 10); a.cnt.inf = (a.cnt.inf || 0) + 1;
     ST.say(S, { actors: [a], tag: '感染症', text: F(pk(S, SH.C.INF_START), { a: a.name, x: src }), why: src + 'の調査で、未知の病原体に感染した', mag: 26 });
     if (SH.AFTER) SH.AFTER.react(S, a, 'start');
@@ -563,19 +596,27 @@
       if (!alive(a)) return;
       var dr = live(S).filter(function (q) { return q !== a && !q.inf; }).sort(function (x, y) { return skill(y, 'med') - skill(x, 'med'); })[0];
       if (dr && rng() < HK.Dark.live(S, 0.1 + skill(dr, 'med') * 0.4, 'kill')) {
+        /* 重い段階（3 以上）から治ったら、その病への耐性 */
+        var imC = a.inf >= 3 && C.IMMUNE && setImmune(a, dzOf(a.infSrc));
         a.inf = 0; setRel(S, a, dr, 0.2); mark(S, a, dr, 'nurse'); stress(a, -10);
-        ST.say(S, { actors: [dr, a], tag: '感染症', text: F(pk(S, C.INF_CURE), { a: a.name, b: dr.name, x: a.infSrc || '星の生き物' }), why: dr.name + 'の医療の腕 ' + Math.round(skill(dr, 'med') * 100), mag: 22 });
+        ST.say(S, { actors: [dr, a], tag: '感染症', text: F(pk(S, C.INF_CURE), { a: a.name, b: dr.name, x: a.infSrc || '星の生き物' }) + (imC ? F(pk(S, C.IMMUNE), { a: a.name, b: dr.name }) : ''), why: dr.name + 'の医療の腕 ' + Math.round(skill(dr, 'med') * 100) + (imC ? '。重い段階から治ったので、この病への耐性が付いた' : ''), mag: 22 });
         if (SH.AFTER) SH.AFTER.react(S, a, 'cure', [dr]);
         return;
       }
-      if (rng() < HK.Dark.live(S, 0.08 + a.m.hp / 100 * 0.1, 'kill')) { a.inf = 0; ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_SELF), { a: a.name }), why: '自分の体の力で持ち直した' }, a.name + 'は病に打ち勝った'); if (SH.AFTER) SH.AFTER.react(S, a, 'cure'); return; }
+      if (rng() < HK.Dark.live(S, 0.08 + a.m.hp / 100 * 0.1, 'kill')) {
+        /* 峠（段階 2 以上）を越えて持ち直したら、その病への耐性 */
+        var imS = a.inf >= 2 && C.IMMUNE_SELF && setImmune(a, dzOf(a.infSrc));
+        a.inf = 0;
+        ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_SELF), { a: a.name }) + (imS ? F(pk(S, C.IMMUNE_SELF), { a: a.name }) : ''), why: '自分の体の力で持ち直した' + (imS ? '。峠を越えたので、この病への耐性が付いた' : '') }, a.name + 'は病に打ち勝った' + (imS ? '（耐性が付いた）' : ''), imS);
+        if (SH.AFTER) SH.AFTER.react(S, a, 'cure'); return;
+      }
       a.inf++; a.m.hp = clamp(a.m.hp - 8 * a.inf, 1, 100); stress(a, 8);
       live(S).forEach(function (q) { if (q !== a) stress(q, 3); });
-      if (a.inf >= 3 && rng() < (0.35 + S.env.danger / 100 * 0.2) * HK.Dark.f(S, 'kill')) { var w = closest(S, a) || { name: '仲間' }; die(S, a, '感染症で', F(pk(S, C.INF_DEATH), { v: a.name, w: w.name })); return; }
+      if (a.inf >= 3 && rng() < (0.35 + S.env.danger / 100 * 0.2) * HK.Dark.f(S, 'kill')) { var w = closest(S, a) || { name: '仲間' }; a.dzDied = dzOf(a.infSrc); die(S, a, '感染症で', F(pk(S, C.INF_DEATH), { v: a.name, w: w.name })); return; }
       ST.sayB(S, { actors: [a], tag: '感染症', text: F(pk(S, C.INF_WORSE), { a: a.name }), why: '病状が悪化した（段階 ' + a.inf + '・体力 ' + Math.round(a.m.hp) + '）' }, a.name + 'の病状が悪化した');
       if (SH.AFTER) SH.AFTER.react(S, a, 'worse');
       /* うつる：近しい人ほど、そばにいるのでうつりやすい */
-      var cand = live(S).filter(function (q) { return q !== a && !q.inf; });
+      var cand = live(S).filter(function (q) { return q !== a && !q.inf && !immune(q, dzOf(a.infSrc)); });
       var q = cand.length ? HK.weighted(rng, cand, function (z) { return 0.1 + Math.max(0, bond(S, z, a)) * 1.5 + (amour(S, z, a) ? 1 : 0); }) : null;
       if (q && rng() < (0.12 + Math.max(0, bond(S, q, a)) * 0.25 + (amour(S, q, a) ? 0.15 : 0)) * HK.Dark.f(S, 'kill')) {
         q.inf = 1; q.infSrc = a.infSrc; q.cnt.inf = (q.cnt.inf || 0) + 1; stress(q, 10);
@@ -1099,6 +1140,9 @@
     if (S.deaths.length) { out.push({ act: L0, t: F(pk(S, EPI.mourn), { v: names(S.deaths), l: v.l }) }); }
     var aw = S.P.filter(function (p) { return p.alive && p.away; });
     if (aw.length) out.push({ act: L0, t: F(pk(S, EPI.away), { v: names(aw) }) });
+    /* 星の生き物に体を貸して持ち帰ったもの（ship-deal.js） */
+    var dE = SH.DEAL && SH.DEAL.epi ? SH.DEAL.epi(S, L0) : null;
+    if (dE) out.push(dE);
     var cap = L0.filter(function (p) { return p.role === 'captain'; })[0] || best(S, 'lead');
     out.push({ act: [cap], t: F(pk(S, L0.length === 1 ? EPI.logSolo : EPI.log), { a: cap.name }) });
     var END = SH.T.END || {};
@@ -1120,6 +1164,7 @@
     P.forEach(function (p) {
       if (!p.fate && p.alive && p.away === 'taken') p.fate = '連れ去られたまま、救出は間に合わなかった';
       if (!p.fate && p.alive && p.away === 'lost') p.fate = '遭難したまま、一年が終わった';
+      if (SH.DEAL) SH.DEAL.fate(S, p);
       if (!p.fate) p.fate = '生還';
       p.notes.push('役割：' + p.roleLabel + (p.picked ? '（指定）' : '（気質から）') + (capt(p) ? '・使命感から揉めごとを収める' : '') + (pleaser(p) ? '・周りの機嫌を取る気質' : ''));
       var bits = [];
@@ -1134,6 +1179,7 @@
       if (p.cnt.inf) bits.push('感染 ' + p.cnt.inf + '回');
       if (p.cnt.taken) bits.push('連れ去られた ' + p.cnt.taken + '回');
       if (bits.length) p.notes.push(bits.join('・'));
+      if (SH.DEAL && SH.DEAL.note(p)) p.notes.push(SH.DEAL.note(p));
     });
     var reveal = 0, total = 0;
     if (Pn) { [Pn.res, Pn.civ].concat(Pn.life).forEach(function (o) { reveal += o.st; total += 3; }); }
@@ -1150,6 +1196,7 @@
       else lines.push('生命体：いなかった');
       lines.push(lineOf('文明', Pn.civ, 'civ', Pn.civ.st >= 2 ? '（' + CIV_JP[Pn.civ.d.state] + '・珍しさ' + stars(Pn.civ.d.rare) + '）' : ''));
     }
+    if (SH.DEAL) SH.DEAL.lines(S).forEach(function (l) { lines.push(l); });
     if (S.items.length) lines.push('持ち帰った物品：' + S.items.map(function (x) { return x.name; }).join('、'));
     if (S.reports.length) lines.push('書き上げたレポート：' + S.reports.map(function (x) { return '『' + x.title + '』（' + x.by + '）'; }).join('、'));
     var sp = S.ship;
@@ -1167,6 +1214,9 @@
   }
   SH.skill = skill; SH.bond = bond;
   /* 全滅のあと・感染症の反応（ship-after.js）に渡す道具 */
-  SH.API = { live: live, bond: bond, lover: lover, amour: amour, canJoin: canJoin, join: join, loversOf: loversOf, family: family, ties: ties, rk: rk, loveOK: loveOK, setRel: setRel, stress: stress, pk: pk, names: names, closest: closest, makePlanet: makePlanet };
+  SH.API = { live: live, bond: bond, lover: lover, amour: amour, canJoin: canJoin, join: join, loversOf: loversOf, family: family, ties: ties, rk: rk, loveOK: loveOK, setRel: setRel, stress: stress, pk: pk, names: names, closest: closest, makePlanet: makePlanet,
+    /* 星の生命体の取引（ship-deal.js）に渡す道具 */
+    mark: mark, sxRoom: sxRoom, sxNote: sxNote, r18on: r18on, lewdOf: lewdOf, onPlanet: onPlanet };
 })();
 /* @event-ok 台詞を3本に（口調直し第8回） */
+/* @event-ok 病への耐性（重い段階から治った・峠を越えた・死んで生き返った人は同じ病にかからない）と、星の生命体の取引（ship-deal.js）の呼び出し */
