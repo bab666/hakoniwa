@@ -4,6 +4,12 @@
 (function () {
   var V = HK.Voice, FIX = V.TONE_FIX = V.TONE_FIX || {}, GK = V.TONE_FIX_G = V.TONE_FIX_G || {};
   [
+    "cool_soft\t計算では、こんなに満たされるはずじゃなかった\t……こんなに満たされるなんて、思ってなかった",
+    "cool_soft\t計算では、こんなに満たされるはずではなかった\t……こんなに満たされるなんて、思ってなかった",
+    "cool_soft\t合理的な判断とは言えないね\t賢いやり方とは、言えないね",
+    "cool_soft\t合理的な判断とは言えないな\t賢いやり方とは、言えないね",
+    "cool_soft\t……あなたのことだけは、うまく分析できない\t……あなたのことだけは、どうしても読めない",
+    "cool_soft\t……あなたが乱した。私の計算を\t……あなたのせいで、全部くずれた",
     "noja\t力を抜け\t力を抜くのじゃ"
   ].forEach(function (row) { var c = row.split('\t'); (FIX[c[0]] = FIX[c[0]] || {})[c[1]] = c[2]; (GK[c[0]] = GK[c[0]] || {})[c[1]] = 1; });
 })();

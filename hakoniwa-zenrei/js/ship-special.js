@@ -35,7 +35,7 @@
       /* 蘇りの文に添える一文（耐性が付いたとき） */
       reviveAdd: function (p) { return SH.reviveImmText ? SH.reviveImmText(S, p) : ''; },
       kill: function (p, how, text) {
-        p.alive = false; p.fate = '死亡（' + S.m + 'か月目・' + how.replace(/で$|に$/, '') + '）';
+        p.alive = false; p.dN = (p.dN || 0) + 1; p.fate = '死亡（' + S.m + 'か月目・' + how.replace(/で$|に$/, '') + '）';
         S.deaths.push(p);
         var o = ST.say(S, { actors: [p], tag: '死', kind: 'climax', text: text, why: how + '命を落とした', mag: 40 });
         ST.key(S, o, p.name + 'の死');

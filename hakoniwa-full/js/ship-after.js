@@ -1,7 +1,8 @@
 /* 箱庭シミュレーター: 宇宙船漂流記 ― 全滅のあとの「ひとりの船」と、感染症で倒れた人への反応（全年齢版も同じ）
    ■ 全滅のあと（SH.AFTER.wipe / month / epilogue）：船を滅ぼすトラブル（ship.js の doom）で全滅したとき、船の中に不死・吸血鬼がいれば、
      全滅の記録と亡くなった人はそのままに、次の月にその人だけが蘇り、2〜4か月の「ひとりの船」が続く。
-     仲間を一人ずつ弔い（最期の言葉は HK.Epilogue.storyWords）、ひとりで船を保ち、態度9種のひとりごとを言う。
+     目覚めた月に仲間を弔い（最期の言葉は HK.Epilogue.storyWords。三人以上なら一つの出来事にまとめる：SH.AFTER.mourn）、ひとりで船を保ち、態度9種のひとりごとを言う。
+     同じ死を二度弔わない（弔いの印 S.mourned）。体の残らない全滅（光に呑まれた・船が裂けた・巣にされた）のあとは、遺体に触れない弔いにする
      吸血鬼は血の通う者がいないと渇いて弱り、眠りの箱で眠る（死にはしない）。生き残りが二人以上なら、関係に合わせて支え合う。
      結末は「星に降り立つ（星があれば・見つかれば）」「漂い続ける」「（吸血鬼）眠りの中で、ずっと先の迎えを待つ」のどれか
    ■ 感染症の反応（SH.AFTER.react）：倒れた・悪化した・置き去りにされた・亡くなった・回復した人に、
@@ -10,6 +11,7 @@
    ship.js から呼ぶ。ship.js の中身は SH.API で受け取る */
 /* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
 /* @event scen=ship id=ship_after_wipe cat=solo tags=death label=全滅のあとの「ひとりの船」（不死・吸血鬼） */
+/* @event scen=ship id=ship_mourn_mass cat=ハプニング tie=- tags=death label=大勢を亡くしたときの弔い（近しい人の別れつき） */
 /* @event scen=ship id=ship_infect_react cat=help tie=yan,lover,honmei,sibling,parent,best,buddy label=感染症で倒れた人への反応（執着・恋人・本命・家族・親友） */
 (function () {
   'use strict';
@@ -249,6 +251,8 @@
   var GONE = /連れ去|攫|神隠し|取り残|消えた|呑み込|呑まれ|行方|旅立|成り代わ|花嫁|連れて行か|閉じ込め|連れ帰|帰ってこな/;
   var T = {
     wake: L('{a}が目を開けたとき、船の中は静まり返っていた。警報も、話し声も、足音も、何ひとつ聞こえなかった。|息を吹き返した{a}は、しばらく自分がどこにいるのか分からなかった。やがて、床に倒れたまま動かない仲間たちの姿が目に入った。|{a}は、冷たい床の上で目を覚ました。名前を呼んでも、返事をする者はもういなかった。――{n}は、誰ひとり起き上がらなかった。|{a}の心臓が、ひとりでに動き出した。けれど、この船でもう一度動き出した心臓は、{a}のものだけだった。'),
+    /* 体の残らない全滅のあと（光に呑まれた・船が裂けた・巣にされた。仲間の体は船の中に残っていない） */
+    wakeNB: L('息を吹き返した{a}は、しばらく自分がどこにいるのか分からなかった。仲間を探して船内を歩き回ったが、{n}の姿は、どこにも見当たらなかった。残っていたのは、持ち主のいない名札だけだった。|{a}は、ひとりきりの船の中で目を覚ました。名前を呼んでも、返事をする者はもういなかった。――{n}は、もう星の海の向こうだった。'),
     wakeNone: L('{a}が目を開けたとき、船の中にはほかに誰もいなかった。仲間たちは、この船を離れたまま戻っていなかった。|{a}は、ひとりきりの船の中で息を吹き返した。呼びかけに応える声は、どこからも返ってこなかった。'),
     wakeBy: {
       reactor: L('主炉は焼け落ち、船内は焦げた匂いで満ちていた。非常灯だけが、かろうじて生きていた。|機関室の壁は黒く焼け、計器はどれも針を振り切ったまま止まっていた。'),
@@ -282,6 +286,37 @@
     mournLove: L('{a}は、{v}を抱きかかえて、二人でよく過ごした部屋へ運んだ。最後に、その額にそっと唇を寄せた。|{a}は、{v}の手を握ったまま、長い時間そこに座っていた。やがて、その指を一本ずつほどいた。|{a}は、{v}が首にかけていた小さな飾りを外して、自分の首にかけた。それから、{v}を星の海へ送り出した。'),
     mournFam: L('{a}は、{v}の髪を、子どもの頃のように梳いてやった。それから、そっと毛布をかけた。|{a}は、{v}の名前の隣に、家族の印を刻んだ。|{a}は、{v}を送り出す前に、二人で覚えた古い歌を最後まで歌った。'),
     mournRest: '{a}は、{n}のことも、ひとりずつ同じように送り出した。',
+    /* 体の残らない死の人の弔い（2026-11-01 担当SY。光に呑まれた・船外へ吸い出された・巣にされた。遺体に触れず、名札・遺品・名前で送る） */
+    mournNB: L('{a}は、{v}の使っていた寝台を整え、枕もとに名札を置いた。その寝台で眠る人は、もう帰ってはこない。{a}は、名札に一度だけ指を触れた。|{a}は、船の壁に{v}の名前を刻んだ。一文字ずつ、時間をかけて。刻み終えた指先は、白くなっていた。|{a}は、{v}の持ち場に残っていた工具を一つずつ磨き、箱にしまった。送り出すための体は、どこにも残っていなかった。それが、{a}にできる弔いのすべてだった。'),
+    mournLoveNB: L('{a}は、{v}の寝台に残っていた上着を、胸に抱いて座り込んだ。まだ、かすかに{v}の匂いがした。{a}は、その上着を自分の肩にかけた。|{a}は、{v}がいつも首にかけていた飾りの片割れを握りしめた。もう片方は、{v}と一緒に星の海へ行ってしまった。{a}は、その小さな飾りに、長いあいだ額を押し当てていた。'),
+    mournFamNB: L('{a}は、{v}の名前の隣に、家族の印を刻んだ。送り出すための体さえ、残っていなかった。{a}は、刻んだ印を何度も指でなぞった。|{a}は、二人で覚えた古い歌を、{v}のいなくなった区画に向かって歌った。声は途中で何度も途切れたが、{a}は歌うのをやめなかった。歌の終わりには、船の機械の音だけが残った。'),
+    /* 大勢（三人以上）の弔いを一つにまとめる（SH.AFTER.mourn。{l}＝弔う人たち {k}＝亡くなった人の数 {d}＝原因 {a}＝弔う人 {v}＝亡くなった人 {n}＝残りの人の名前）
+       gIntro：体の残る死だけ／gIntroMix：体の残らない死の人も混じる／gIntroNB：全員の体が残らない */
+    gIntro: L('{d}が過ぎ去ったあと、船には{k}人分の空白が残った。{l}は、動かなくなった仲間を一人ずつ確かめ、医務室の寝台に並べた。誰も、すぐには口を開けなかった。|その夜、{l}は食堂の明かりだけを灯した。昨日まで同じ食卓を囲んでいた{k}人の席が、ぽっかりと空いていた。弔いは、一度にまとめて行うことにした。|{l}は、亡くなった{k}人の体を清め、それぞれの持ち場の制服を着せた。船の時計が一周するあいだ、誰も作業に戻ろうとしなかった。やがて、一人ずつ別れを告げることにした。'),
+    gIntroMix: L('{d}のあと、{k}人分の寝台が空いた。{l}は、空いた寝台と、持ち主のいない名札を一つずつ数えた。弔いは、一度にまとめて行うことにした。|{l}は、亡くなった{k}人の名札を食堂の机に並べ、その前に座った。船の中は、驚くほど静かだった。長い沈黙のあと、一人ずつ別れを告げることにした。'),
+    gIntroNB: L('{d}は、{k}人の体さえ残していかなかった。{l}は、空になった寝台と、持ち主のいない名札を一つずつ集めた。送り出すために残されたのは、それだけだった。|送り出すための体は、どこにも残っていなかった。{l}は、{k}人の名札を観測窓の前に並べ、星の海に向かって一人ずつ名前を呼んだ。返事は、もちろんなかった。'),
+    /* 特に近しかった人への別れ（2〜3文。関係ごと。gFareNB は体の残らない死の人） */
+    gFare: {
+      lover: L('{a}は、{v}の手を両手で包み、冷えた指先を何度も温めようとした。「＠{a}＠ずっと一緒だって、言ったのに｜ずっと一緒だと、言ったのに｜ずっと一緒だって、言ったじゃないですか」――最後に、{a}は{v}の額にそっと唇を寄せた。|{a}は、{v}が首にかけていた小さな飾りを外して、自分の首にかけた。{a}は、{v}の耳もとで、誰にも聞こえない声で何かを告げた。それが二人の、最後の会話だった。|{a}は、{v}の髪を指で梳いて、乱れを整えた。「＠{a}＠先に行って、待ってて｜先に行って、待っていてくれ｜先に行って、待っていてください」――その声は、最後まで震えなかった。'),
+      honmei: L('{a}は、とうとう言えなかった想いを、眠る{v}にだけ聞こえるように呟いた。「＠{a}＠ずっと、好きだった｜ずっと、好きだった｜ずっと、お慕いしていました」――{v}がその言葉を聞くことは、もうなかった。|{a}は、{v}の顔を、長いあいだ見つめていた。伝えるはずだった言葉は、とうとう声にならなかった。{a}は、{v}の制服の名札を外して、自分の胸ポケットにしまった。|{a}は、{v}のそばに膝をつき、震える手でその頬に触れた。「＠{a}＠……あなたに、言いたいことがあったのに｜……あなたに、言いたいことがあったのに｜……あなたに、お伝えしたいことがあったのに」――{a}は、その先を最後まで言えなかった。'),
+      family: L('{a}は、{v}の髪を、子どもの頃のように梳いてやった。「＠{a}＠おやすみ。今度は、ゆっくり眠って｜おやすみ。今度は、ゆっくり眠れ｜おやすみなさい。今度は、ゆっくり眠ってください」――それから、そっと毛布をかけた。|{a}は、{v}を送り出す前に、二人で覚えた古い歌を最後まで歌った。声は途中で何度も途切れたが、{a}は歌うのをやめなかった。歌い終えると、{a}は{v}の両手を胸の上でそっと組ませた。|{a}は、{v}の名前の隣に、家族の印を刻んだ。「＠{a}＠家に帰ったら、みんなに話すから｜家に帰ったら、皆に話す｜家に帰ったら、みんなに話しますから」――刻み終えた指先は、白くなっていた。'),
+      friend: L('{a}は、{v}の拳に、自分の拳を軽く当てた。いつも作業の終わりに交わしていた合図だった。「＠{a}＠お疲れ。あとは任せて｜ご苦労だった。あとは任せろ｜お疲れさまでした。あとは任せてください」|{a}は、{v}の持ち場に残っていた工具を、一本ずつ磨いて箱にしまった。{v}の癖のついた工具は、{a}の手にはしっくりこなかった。それでも{a}は、そのうちの一本を、自分の腰に差した。|{a}は、{v}の横に腰を下ろし、二人でよく飲んだ安酒の瓶を開けた。{a}はふたつの杯に注ぎ、片方を{v}の手もとに置いた。自分の杯を空にするまで、{a}は何も言わなかった。')
+    },
+    gFareNB: {
+      lover: L('{a}は、{v}の寝台に残っていた上着を、胸に抱いて座り込んだ。まだ、かすかに{v}の匂いがした。「＠{a}＠ずっと一緒だって、言ったのに｜ずっと一緒だと、言ったのに｜ずっと一緒だって、言ったじゃないですか」|{a}は、{v}がいつも首にかけていた飾りの片割れを握りしめた。もう片方は、{v}と一緒に星の海へ行ってしまった。{a}は、その小さな飾りに、長いあいだ額を押し当てていた。'),
+      honmei: L('{a}は、{v}の名札を両手で包んだ。伝えるはずだった言葉は、とうとう声にならなかった。「＠{a}＠ずっと、好きだった｜ずっと、好きだった｜ずっと、お慕いしていました」――名札は、何も答えなかった。|{a}は、観測窓の前に立ち、{v}が去っていった方角の星を探した。「＠{a}＠……あなたに、言いたいことがあったのに｜……あなたに、言いたいことがあったのに｜……あなたに、お伝えしたいことがあったのに」――窓に映った自分の顔だけが、{a}を見返していた。'),
+      family: L('{a}は、{v}の名前の隣に、家族の印を刻んだ。送り出すための体さえ、残っていなかった。「＠{a}＠家に帰ったら、みんなに話すから｜家に帰ったら、皆に話す｜家に帰ったら、みんなに話しますから」|{a}は、二人で覚えた古い歌を、{v}のいなくなった区画に向かって歌った。声は途中で何度も途切れたが、{a}は歌うのをやめなかった。歌の終わりには、船の機械の音だけが残った。'),
+      friend: L('{a}は、{v}の持ち場に残っていた工具を、一本ずつ磨いて箱にしまった。{v}の癖のついた工具は、{a}の手にはしっくりこなかった。それでも{a}は、そのうちの一本を、自分の腰に差した。|{a}は、二人でよく飲んだ安酒の瓶を開け、ふたつの杯に注いだ。片方の杯は、{v}の席に置かれたまま、誰も手をつけなかった。「＠{a}＠お疲れ。あとは任せて｜ご苦労だった。あとは任せろ｜お疲れさまでした。あとは任せてください」')
+    },
+    /* 残りの人をまとめて送る（{a}＝弔う人 {n}＝残りの人の名前） */
+    gRest: L('{a}は、残りの{n}も、ひとりずつ同じように送り出した。一人ごとに名前を呼び、制服の襟を正した。最後の一人を見送るころには、船の時計が半日ぶん進んでいた。|{n}のことも、{a}はひとりずつ同じように見送った。誰の持ち場にも、使いかけの道具と書きかけのメモが残っていた。{a}は、それをひとつも捨てずに箱へしまった。'),
+    gRestNB: L('{a}は、残りの{n}の名前も、ひとりずつ読み上げた。返事のない名前が、狭い船内に静かに響いた。読み上げ終えるまで、{a}は一度も顔を上げなかった。|{n}の名札も、{a}はひとりずつ磨いて並べた。名札の数だけ、船の中から声が減ったのだと思った。{a}は、その名前のすべてを日誌に書き写した。'),
+    /* 特に近しい相手のいる人がいないとき：全員を一人ずつ送る */
+    gAll: L('{a}は、{n}を、ひとりずつ送り出した。一人ごとに名前を呼び、制服の襟を正した。最後の一人を見送るころには、船の時計が半日ぶん進んでいた。|{a}は、{n}の持ち場を一つずつ回った。誰の持ち場にも、使いかけの道具と書きかけのメモが残っていた。{a}は、それをひとつも捨てずに箱へしまい、一人ずつ別れを告げた。'),
+    gAllNB: L('{a}は、{n}の名前を、ひとりずつ読み上げた。返事のない名前が、狭い船内に静かに響いた。読み上げ終えるまで、{a}は一度も顔を上げなかった。|{a}は、{n}の名札をひとりずつ磨いて並べた。名札の数だけ、船の中から声が減ったのだと思った。{a}は、その名前のすべてを日誌に書き写した。'),
+    /* 結び（gEnd のうちエアロックから送り出す文のときは、送り出した印 buried を付ける） */
+    gEnd: L('最後に、{l}は{k}人をエアロックから星の海へ送り出した。小さな影の列は、ゆっくりと光の中へ遠ざかっていった。|{l}は、{k}人を冷えた貯蔵庫に安置し、扉に名前を書き並べた。いつか星に降りたら、土に還すと約束して。|{l}は、船の壁に{k}人の名前を刻んだ。一文字ずつ、時間をかけて。'),
+    gEndNB: L('{l}は、船の壁に{k}人の名前を刻んだ。一文字ずつ、時間をかけて。|{l}は、{k}人の名札を一つの箱にまとめ、操縦席のそばに置いた。そこが、{k}人の新しい持ち場になった。'),
     words: L('{a}は、{v}が最後に口にした言葉を思い出していた。――「{q}」|{v}の声が、まだ耳に残っていた。――「{q}」――{a}は、その言葉を日誌の最初のページに書き写した。|{a}は、{v}の最後の言葉を、小さく声に出してなぞった。――「{q}」'),
     /* ひとりで船を保つ */
     keep: L('{a}は、ひとりで船を見回った。止まった機械を一台ずつ確かめ、まだ動くものだけをつなぎ直した。|{a}は、何人がかりでやっていた修理を、ひとりで一週間かけてやり遂げた。|{a}は、使わなくなった区画の電源を落とし、残った動力を生命維持と救難信号に回した。|{a}は、決まった時間に起き、決まった時間に食事をとり、決まった時間に航海日誌をつけた。船の時計だけが、{a}の話し相手だった。|{a}は、船の外壁の修理に出た。命綱は付けなかった。落ちても、どうせ死ねないのだから。|{a}は、皆が育てていた鉢植えに水をやり続けた。枯らしたら、皆に叱られる気がした。'),
@@ -323,8 +358,9 @@
     if (!S.wipeBy || S.after) return;
     var im = S.P.filter(function (p) { return p.spec && !p.away && !p.gone && !p.spNoRev && !p.spGone && !GONE.test(p.fate || ''); });
     if (!im.length) return;
-    var by = S.wipeBy, tag = m + 'か月目・' + by.name;
-    var dead = S.deaths.filter(function (p) { return !p.spec && String(p.fate || '').indexOf(tag) >= 0; });
+    var by = S.wipeBy;
+    /* この全滅で亡くなった人（ship.js の doom が印 wipeM を付ける）。弔いはまだ。蘇る人は除く */
+    var dead = S.deaths.filter(function (p) { return !p.spec && p.alive === false && p.wipeM === m; });
     im.forEach(function (p) { p.mad = null; });
     S.after = { at: m, by: by, n: 2 + S.rng.int(3), k: 0, who: im.map(function (p) { return p.i; }), dead: dead, mi: 0, end: false };
   };
@@ -334,27 +370,75 @@
     return A.lover(S, a, b) && !A.family(S, a, b);
   }
   function relOf(S, a, b) { return isLover(S, a, b) ? 'lover' : X().family(S, a, b) ? 'family' : 'other'; }
+  /* 体の残らない死か（光に呑まれた・船外へ送り出した など。ship.js の送り出した印 buried と、engine.js の HK.State.noBody） */
+  function nbOf(v) { var A = X(); return !!(A && A.buried && A.buried(v)) || !!(HK.State && HK.State.noBody ? HK.State.noBody(v) : v && v.noBody); }
+  /* 全滅のあとの弔い（2026-11-01 担当SY：目覚めた月に一度だけ。三人以上なら SH.AFTER.mourn で一つにまとめ、一人・二人は一人ずつ。
+     すでに弔った人（弔いの印 S.mourned）は除き、弔ったら印を付ける。前は数か月に分けて少しずつ弔っていた） */
   function mournChunk(S, AF, L0, input) {
-    var A = X(), rem = AF.dead.length - AF.mi;
-    if (rem <= 0) return;
-    var cnt = Math.ceil(rem / Math.max(1, AF.n - AF.k)), ch = AF.dead.slice(AF.mi, AF.mi + cnt);
-    AF.mi += cnt;
+    var A = X();
+    if (AF.mi) return;
+    var dl = AF.dead.filter(function (v) { return !A.mourned(S, v); });
     var up = L0.filter(function (p) { return !p.pod; });
-    if (!up.length) return;
+    if (!dl.length || !up.length) return;
+    AF.mi = 1;
+    if (dl.length >= 3 && SH.AFTER.mourn(S, dl, { up: up, cause: AF.by.name, input: input, after: true })) return;
     var t = '', who = null;
-    ch.forEach(function (v, j) {
+    dl.forEach(function (v, j) {
       var a = up.slice().sort(function (x, y) { return A.bond(S, y, v) - A.bond(S, x, v); })[0];
       if (!who) who = a;
-      if (j >= 2) return;
-      var rel = relOf(S, a, v), pool = rel === 'lover' ? T.mournLove : rel === 'family' ? T.mournFam : T.mourn;
-      t += F(pk(S, pool), { a: a.name, v: v.name, r: v.roleLabel || '船員' });
+      var rel = relOf(S, a, v), nb = nbOf(v);
+      var pool = rel === 'lover' ? (nb ? T.mournLoveNB : T.mournLove) : rel === 'family' ? (nb ? T.mournFamNB : T.mournFam) : (nb ? T.mournNB : T.mourn);
+      var mt = pk(S, pool);
+      t += F(mt, { a: a.name, v: v.name, r: v.roleLabel || '船員' });
+      if (/エアロック|星の海へ送り出/.test(mt)) A.setBuried(S, v);
+      A.setMourned(S, v);
       bump(S, a, { grief: rel === 'other' ? 10 : 25 });
       /* 最期の言葉：結末の箇条書き（HK.Epilogue.story）と同じ言葉を、弔いの場面で思い出す */
       if (j === 0 && HK.Epilogue && HK.Epilogue.storyWords) { var q = HK.Epilogue.storyWords(S, v, input); if (q) t += F(pk(S, T.words), { a: a.name, v: v.name, q: q }); }
     });
-    if (ch.length > 2) t += F(T.mournRest, { a: who.name, n: names(ch.slice(2)) });
-    ST.say(S, { actors: [who].concat(ch), tag: '弔い', text: t, why: '全滅（' + AF.by.name + '）で亡くなった仲間を、一人ずつ弔う（残り ' + (AF.dead.length - AF.mi) + '人）', mag: 26 });
+    ST.say(S, { actors: [who].concat(dl), tag: '弔い', text: t, why: '全滅（' + AF.by.name + '）で亡くなった仲間を弔う' + (dl.some(nbOf) ? '（体は残っていない）' : ''), mag: 26 });
   }
+  /* 大勢（三人以上）の弔いを一つの出来事にまとめる（2026-11-01 担当SY。ship.js の危機の犠牲と、全滅のあとの「ひとりの船」で共通）。
+     亡くなった人ごとに、いちばん近しい生き残り（恋人・本命・家族・親友・信頼の高い相手。relKind）を探し、そういう相手のいる人には 2〜3 文の別れを添える（三組まで）。
+     ほかの人は、まとめて送る。体の残らない死の人は体に触れない文で。弔った人には印（S.mourned）。o：{ up：弔う人, cause：原因, input } */
+  SH.AFTER.mourn = function (S, dead, o) {
+    var A = X(); o = o || {};
+    if (!A || !dead) return null;
+    var dl = dead.filter(function (v) { return v && v.alive === false && !A.mourned(S, v); });
+    var up = (o.up || A.live(S)).filter(function (p) { return p.alive && !p.pod; });
+    if (!dl.length || !up.length) return null;
+    var fare = [];
+    dl.forEach(function (v) {
+      var sc = up.map(function (q) { var k = relKind(S, q, v); return { q: q, v: v, k: k, w: PRI[k] * 10 + A.bond(S, q, v) }; }).sort(function (x, y) { return y.w - x.w; })[0];
+      if (sc && sc.k !== 'close') fare.push(sc);
+    });
+    fare.sort(function (x, y) { return y.w - x.w; });
+    fare = fare.slice(0, 3);
+    var spv = fare.map(function (f) { return f.v; }), rest = dl.filter(function (v) { return spv.indexOf(v) < 0; });
+    var lead = fare.length ? fare[0].q : up.slice().sort(function (x, y) { return (y.role === 'captain' ? 1 : 0) - (x.role === 'captain' ? 1 : 0) || y.tr.lead - x.tr.lead; })[0];
+    var allNB = dl.every(nbOf), anyNB = dl.some(nbOf), l = names(up), k = dl.length;
+    var t = F(pk(S, allNB ? T.gIntroNB : anyNB ? T.gIntroMix : T.gIntro), { l: l, k: k, d: o.cause || '危機' });
+    fare.forEach(function (f, j) {
+      var kk = f.k === 'obsess' ? 'honmei' : f.k, pool = (nbOf(f.v) ? T.gFareNB : T.gFare)[kk] || T.gFare.friend;
+      t += F(pk(S, pool), { a: f.q.name, v: f.v.name });
+      bump(S, f.q, { grief: 30 });
+      /* 最期の言葉は、いちばん近しい一組だけ */
+      if (j === 0 && HK.Epilogue && HK.Epilogue.storyWords) { var q = HK.Epilogue.storyWords(S, f.v, o.input || S.inp); if (q) t += F(pk(S, T.words), { a: f.q.name, v: f.v.name, q: q }); }
+    });
+    /* 特別な別れのない人：別れを告げた人がいれば「残りの〜も」、いなければ全員を一人ずつ（最期の言葉は、いちばん初めの人の分だけ） */
+    if (rest.length && fare.length) t += F(pk(S, rest.some(nbOf) ? T.gRestNB : T.gRest), { a: lead.name, n: names(rest) });
+    else if (rest.length) {
+      t += F(pk(S, rest.some(nbOf) ? T.gAllNB : T.gAll), { a: lead.name, n: names(rest) });
+      if (HK.Epilogue && HK.Epilogue.storyWords) { var q0 = HK.Epilogue.storyWords(S, rest[0], o.input || S.inp); if (q0) t += F(pk(S, T.words), { a: lead.name, v: rest[0].name, q: q0 }); }
+    }
+    var et = pk(S, anyNB ? T.gEndNB : T.gEnd);
+    t += F(et, { l: l, k: k });
+    if (/エアロック|星の海へ送り出/.test(et)) dl.forEach(function (v) { A.setBuried(S, v); });
+    dl.forEach(function (v) { A.setMourned(S, v); });
+    up.forEach(function (q) { var g = 0; dl.forEach(function (v) { g = Math.max(g, A.bond(S, q, v)); }); bump(S, q, { grief: 10 + Math.max(0, g) * 20 }); });
+    var mq = [lead]; fare.forEach(function (f) { if (mq.indexOf(f.q) < 0) mq.push(f.q); });
+    return ST.say(S, { actors: mq.concat(dl), tag: '弔い', text: t, why: (o.cause ? o.cause + 'で' : '') + '亡くなった' + k + '人を、一度にまとめて弔った' + (fare.length ? '（' + fare.map(function (f) { return f.q.name + 'は' + KIND_JP[f.k] + 'の' + f.v.name + 'に'; }).join('、') + '別れを告げた）' : '') + (allNB ? '（体は残っていない）' : anyNB ? '（体の残らない人がいる）' : ''), mag: 30 });
+  };
   /* 「ひとりの船」の一か月。終わったら false */
   SH.AFTER.month = function (S, m, input) {
     var AF = S.after, A = X();
@@ -365,7 +449,7 @@
     if (!L0.length) { AF.end = true; AF.fail = true; return false; }
     var a = L0[0], up = L0.filter(function (p) { return !p.pod; }), solo = L0.length === 1;
     if (AF.k === 0) {
-      var t = F(pk(S, AF.dead.length ? T.wake : T.wakeNone), { a: a.name, n: names(AF.dead) }) + (T.wakeBy[AF.by.id] ? F(pk(S, T.wakeBy[AF.by.id]), { a: a.name }) : '');
+      var t = F(pk(S, AF.dead.length ? (S.wipeNB ? T.wakeNB : T.wake) : T.wakeNone), { a: a.name, n: names(AF.dead) }) + (T.wakeBy[AF.by.id] ? F(pk(S, T.wakeBy[AF.by.id]), { a: a.name }) : '');
       if (!solo) { var b = L0[1]; t += F(pk(S, T.wake2[relOf(S, a, b)]), { a: a.name, b: b.name }); if (L0.length > 2) t += F(T.wakeMore, { n: names(L0.slice(2)) }); }
       var o = ST.say(S, { actors: L0, tag: solo ? 'ひとりの船' : '残された者たち', kind: 'climax', text: t, why: AF.by.name + 'で全滅した船の中で、死ねない体の' + names(L0) + 'だけが蘇った', mag: 40 });
       ST.key(S, o, '全滅のあと、' + names(L0) + 'だけが目を覚ました');
@@ -377,6 +461,7 @@
       if (solo) ST.say(S, { actors: [a], tag: 'ひとりごと', text: F(pk(S, T.mono[att(a)]), { a: a.name }), why: '全滅のあと、' + a.name + 'の胸のうち', mag: 18 });
       mournChunk(S, AF, L0, input);
     } else {
+      /* 弔いは目覚めた月に済ませた（眠りの箱にいて弔えなかったときだけ、ここで） */
       mournChunk(S, AF, L0, input);
       /* ひとりで船を保つ */
       if (up.length === 1) ST.say(S, { actors: up, tag: 'ひとりの船', text: F(pk(S, T.keep), { a: up[0].name }), why: 'ひとりで船を動かし続ける（船体・動力を保った）', mag: 16 });

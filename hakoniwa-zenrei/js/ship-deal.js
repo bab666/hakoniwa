@@ -1,5 +1,5 @@
 /* 箱庭シミュレーター: 宇宙船漂流記 ― 星の生命体の取引「実験で体を貸してくれたら、死んだ船員を生き返らせてやる」（2026-11-01 担当SX。全年齢版も同じ）
-   ・起きるのは、生き返らせられる死者（不死・吸血鬼のように自分で蘇る人と、遺体の残らない死の人を除く）が一人以上いる月に 10%。一回の漂流で一度まで。
+   ・起きるのは、生き返らせられる死者（不死・吸血鬼のように自分で蘇る人と、遺体の残らない死・エアロックから送り出した人を除く）が一人以上いる月に 22%（D.RATE）。一回の漂流で一度まで。
      全滅のあとの「ひとりの船」（ship-after.js）では起きない。ship.js の月の流れから SH.DEAL.month を呼ぶ
    ・体を貸す人（志願者）は、死んだ船員との関係（恋人・片想い・家族・親友・仲間への情）と気質（NP・FC・勇気）で選ぶ。誰も志願しなければ断って終わる
    ・実験は体を隅々まで調べる（性的でない調べを二つ。R18版で条件を満たす人には、性感帯の開発などの段がランダムで入る：ship-deal-r18.js の SH.DEAL_R18。
@@ -18,7 +18,8 @@
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function F(t, m) { return ST.fmt(t, m || {}); }
   var D = SH.DEAL = {};
-  D.RATE = 0.1;
+  /* 死者のいる月に起きる見込み（2026-11-01 担当SY：0.1 → 0.22。死者が出た回の 6 割前後で起きるように） */
+  D.RATE = 0.22;
 
   /* ---------- 文 ---------- */
   /* 漂流中（星がない・星に生命体がいない）に現れる生命体の名 */
@@ -168,7 +169,8 @@
   function deadOf(S) {
     var SP = HK.Special, St = HK.State;
     return S.P.filter(function (p) {
-      return p && p.alive === false && (S.deaths || []).indexOf(p) >= 0 && !(SP && SP.canRevive && SP.canRevive(p)) && !p.noBody && !(St && St.noBody && St.noBody(p));
+      /* 弔いでエアロックから送り出した人（ship.js の送り出した印 buried）も、元の体が無いので除く */
+      return p && p.alive === false && (S.deaths || []).indexOf(p) >= 0 && !(SP && SP.canRevive && SP.canRevive(p)) && !p.noBody && !(St && St.noBody && St.noBody(p)) && !(A().buried && A().buried(p));
     });
   }
   /* 志願者から見た死者との関係 */
