@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<title>結末 整理案</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#1d4f7a}a:hover{color:#123553}
+</style>
+</helmet>
+<div style="min-height: 1240px; background: #f4f5f7; color: #17202b; font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', sans-serif; font-size: 14px; line-height: 1.6">
+
+  <div style="background: #ffffff; border-bottom: 1px solid #dde2e7">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 20px 24px 0; box-sizing: border-box">
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 20px">
+        <div style="flex: 1 1 480px; min-width: 0">
+          <div style="font-size: 12px; color: #5b6672">合コン・10人・シード 101217</div>
+          <h1 style="margin: 2px 0 0; font-size: 22px; line-height: 1.5">終電で解散 ― <span style="color: #2a6f9e">鷹野</span>と<span style="color: #a24c18">柚木</span>が恋人になった</h1>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button type="button" style="height: 40px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">条件を変える</button>
+          <button type="button" aria-haspopup="menu" style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">保存・共有
+            <svg width="12" height="12" sc-camel-view-box="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 4.5l3 3 3-3"></path></svg>
+          </button>
+          <button type="button" style="height: 40px; padding: 0 16px; border: 0; border-radius: 8px; background: {{accent}}; color: #ffffff; font: inherit; font-weight: 700">別の運命で動かす</button>
+        </div>
+      </div>
+      <div role="tablist" aria-label="結果の見方" style="display: flex; gap: 2px; margin-top: 16px; overflow-x: auto">
+        <button type="button" role="tab" aria-selected="true" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid {{accent}}; background: none; font: inherit; font-weight: 700; color: #17202b">結末</button>
+        <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">経過 <span style="font-size: 12px; color: #5b6672">186件</span></button>
+        <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">関係図</button>
+        <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">二人ずつ <span style="font-size: 12px; color: #5b6672">意外 2</span></button>
+        <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">住人ごと</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 24px; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+    <div style="flex: 999 1 600px; min-width: 0; max-width: 760px; display: flex; flex-direction: column; gap: 20px">
+
+      <section aria-label="結末のまとめ" style="padding: 24px 28px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 14px">
+        <p style="margin: 0; font-size: 18px; line-height: 1.8; font-weight: 700"><span style="color: #2a6f9e">鷹野</span>×<span style="color: #a24c18">柚木</span>、<span style="color: #2e7d4f">ミナト</span>×<span style="color: #7a4699">黒田</span>が二人で店を出た。カップル成立は<span style="color: #2a6f9e">鷹野</span>×<span style="color: #a24c18">柚木</span>の1組。</p>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 18px">
+          <sc-for list="{{stats}}" as="s" hint-placeholder-count="4">
+            <div style="padding: 10px 12px; background: #f4f6f8; border-radius: 10px">
+              <div style="font-size: 12px; color: #5b6672">{{s.k}}</div>
+              <div style="font-size: 22px; font-weight: 700; line-height: 1.3">{{s.v}}<span style="font-size: 13px; font-weight: 400">{{s.u}}</span></div>
+            </div>
+          </sc-for>
+        </div>
+        <a href="#" style="display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 8px; font-size: 13px; text-decoration: none">転機：T03　20:20 盛り上がり を経過で読む
+          <svg width="12" height="12" sc-camel-view-box="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4.5 2.5L8 6 4.5 9.5"></path></svg>
+        </a>
+      </section>
+
+      <section aria-labelledby="h-pairs">
+        <h2 id="h-pairs" style="margin: 0 0 10px; font-size: 16px">二人で帰った組</h2>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+          <article style="padding: 18px 20px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 12px">
+            <div style="display: flex; align-items: center; gap: 8px">
+              <span style="display: inline-flex; width: 32px; height: 32px; border-radius: 16px; border: 2px solid #2a6f9e; color: #2a6f9e; align-items: center; justify-content: center; font-weight: 700; box-sizing: border-box">鷹</span>
+              <span style="display: inline-flex; width: 32px; height: 32px; margin-left: -14px; border-radius: 16px; border: 2px solid #a24c18; color: #a24c18; background: #ffffff; align-items: center; justify-content: center; font-weight: 700; box-sizing: border-box">柚</span>
+              <b style="font-size: 16px">鷹野 × 柚木</b>
+              <span style="margin-left: auto; padding: 1px 10px; border-radius: 12px; background: #f6e7ec; color: #8f2a4b; font-size: 12px; font-weight: 700">恋人</span>
+            </div>
+            <div style="margin-top: 4px; font-size: 12px; color: #5b6672">お持ち帰り</div>
+            <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.9">今も変わらず互いの隣にいる。二人の笑い声が、よく聞こえた。</p>
+          </article>
+          <article style="padding: 18px 20px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 12px">
+            <div style="display: flex; align-items: center; gap: 8px">
+              <span style="display: inline-flex; width: 32px; height: 32px; border-radius: 16px; border: 2px solid #2e7d4f; color: #2e7d4f; align-items: center; justify-content: center; font-weight: 700; box-sizing: border-box">ミ</span>
+              <span style="display: inline-flex; width: 32px; height: 32px; margin-left: -14px; border-radius: 16px; border: 2px solid #7a4699; color: #7a4699; background: #ffffff; align-items: center; justify-content: center; font-weight: 700; box-sizing: border-box">黒</span>
+              <b style="font-size: 16px">ミナト × 黒田</b>
+              <span style="margin-left: auto; padding: 1px 10px; border-radius: 12px; background: #e6f0ea; color: #23633e; font-size: 12px; font-weight: 700">友人</span>
+            </div>
+            <div style="margin-top: 4px; font-size: 12px; color: #5b6672">一緒に帰った</div>
+            <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.9">困ったときに真っ先に連絡し合う仲になった。二人とも、よく笑うようになった。</p>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="h-each" style="padding: 8px 28px 12px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 14px">
+        <h2 id="h-each" style="margin: 16px 0 4px; font-size: 16px">それぞれのその後</h2>
+        <sc-for list="{{after}}" as="a" hint-placeholder-count="6">
+          <div style="display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f1f3f5">
+            <span style="flex: 0 0 auto; display: inline-flex; width: 36px; height: 36px; border-radius: 18px; border: 2px solid {{a.color}}; color: {{a.color}}; align-items: center; justify-content: center; font-weight: 700; box-sizing: border-box">{{a.ini}}</span>
+            <div style="min-width: 0">
+              <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px"><b style="font-size: 15px; color: {{a.color}}">{{a.name}}</b><span style="font-size: 12px; color: #5b6672">{{a.st}}</span></div>
+              <p style="margin: 2px 0 0; font-size: 15px; line-height: 1.9">{{a.text}}</p>
+            </div>
+          </div>
+        </sc-for>
+      </section>
+
+      <details style="background: #ffffff; border: 1px solid #dde2e7; border-radius: 12px">
+        <summary style="display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: 0 20px; cursor: pointer; font-weight: 700">この回の条件<span style="font-weight: 400; font-size: 12px; color: #5b6672">16項目・初期値から2か所</span></summary>
+      </details>
+    </div>
+
+    <aside style="flex: 1 1 280px; max-width: 360px; display: flex; flex-direction: column; gap: 16px">
+      <section aria-labelledby="h-surprise" style="padding: 18px 20px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 14px">
+        <h2 id="h-surprise" style="margin: 0 0 4px; font-size: 15px">意外な組み合わせ</h2>
+        <p style="margin: 0 0 10px; font-size: 12px; color: #5b6672">相性予想と結末が食い違った二人</p>
+        <a href="#" style="display: block; padding: 10px 0; border-top: 1px solid #edf0f2; text-decoration: none; color: #17202b">
+          <b>鷹野 × 白石</b><span style="margin-left: 8px; font-size: 12px; color: #a8361f">気まずい</span>
+          <span style="display: block; font-size: 12px; color: #5b6672">予想は「惹かれ合いやすい」</span>
+        </a>
+        <a href="#" style="display: block; padding: 10px 0; border-top: 1px solid #edf0f2; text-decoration: none; color: #17202b">
+          <b>黒田 × 柚木</b><span style="margin-left: 8px; font-size: 12px; color: #a8361f">気まずい</span>
+          <span style="display: block; font-size: 12px; color: #5b6672">予想は「惹かれ合いやすい」</span>
+        </a>
+      </section>
+      <section aria-labelledby="h-oneway" style="padding: 18px 20px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 14px">
+        <h2 id="h-oneway" style="margin: 0 0 8px; font-size: 15px">片想いのまま</h2>
+        <div style="font-size: 14px; line-height: 2"><span style="color: #4f5b66">灰谷</span> → <span style="color: #2a6f9e">鷹野</span><br><span style="color: #2e7d4f">ミナト</span> → <span style="color: #2a6f9e">鷹野</span></div>
+      </section>
+      <a href="#" style="display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: 0 20px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 14px; text-decoration: none; color: #17202b; font-weight: 700">関係図を見る<span style="font-size: 12px; font-weight: 400; color: #5b6672">線 13本</span></a>
+    </aside>
+  </div>
+</div>
+</x-dc>
+
+
+
+</body></html>

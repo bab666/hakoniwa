@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<title>住人ごと 整理案</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#1d4f7a}a:hover{color:#123553}
+</style>
+</helmet>
+<div style="min-height: 1160px; background: #f4f5f7; color: #17202b; font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', sans-serif; font-size: 14px; line-height: 1.6">
+
+  <div style="background: #ffffff; border-bottom: 1px solid #dde2e7">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 20px 24px 0; box-sizing: border-box">
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 20px">
+        <div style="flex: 1 1 480px; min-width: 0">
+          <div style="font-size: 12px; color: #5b6672">合コン・10人・シード 101217</div>
+          <h1 style="margin: 2px 0 0; font-size: 22px; line-height: 1.5">終電で解散 ― <span style="color: #2a6f9e">鷹野</span>と<span style="color: #a24c18">柚木</span>が恋人になった</h1>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button type="button" style="height: 40px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">条件を変える</button>
+          <button type="button" aria-haspopup="menu" style="height: 40px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">保存・共有 ▾</button>
+          <button type="button" style="height: 40px; padding: 0 16px; border: 0; border-radius: 8px; background: {{accent}}; color: #ffffff; font: inherit; font-weight: 700">別の運命で動かす</button>
+        </div>
+      </div>
+      <div role="tablist" aria-label="結果の見方" style="display: flex; gap: 2px; margin-top: 16px; overflow-x: auto">
+        <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">結末</button>
+        <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">経過 <span style="font-size: 12px; color: #5b6672">186件</span></button>
+        <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">関係図</button>
+        <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">二人ずつ <span style="font-size: 12px; color: #5b6672">意外 2</span></button>
+        <button type="button" role="tab" aria-selected="true" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid {{accent}}; background: none; font: inherit; font-weight: 700; color: #17202b">住人ごと</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 24px; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+    <nav aria-label="住人の一覧" style="flex: 1 1 240px; max-width: 280px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 14px; overflow: hidden">
+      <sc-for list="{{people}}" as="p" hint-placeholder-count="10">
+        <a href="#" aria-current="{{p.cur}}" style="display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 4px 14px; border-bottom: 1px solid #f1f3f5; background: {{p.bg}}; text-decoration: none; color: #17202b">
+          <span style="flex: 0 0 auto; display: inline-flex; width: 32px; height: 32px; border-radius: 16px; border: 2px solid {{p.color}}; color: {{p.color}}; background: #ffffff; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; box-sizing: border-box">{{p.ini}}</span>
+          <span style="flex: 1 1 auto; min-width: 0">
+            <span style="display: block; font-weight: 700">{{p.name}}</span>
+            <span style="display: block; font-size: 12px; color: #5b6672">{{p.st}}</span>
+          </span>
+        </a>
+      </sc-for>
+    </nav>
+
+    <article style="flex: 999 1 560px; min-width: 0; max-width: 780px; padding: 24px 32px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 14px; box-sizing: border-box">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
+        <span style="display: inline-flex; width: 56px; height: 56px; border-radius: 28px; border: 3px solid #b03a2e; color: #b03a2e; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; box-sizing: border-box">朝</span>
+        <div style="flex: 1 1 auto">
+          <h2 style="margin: 0; font-size: 22px; color: #b03a2e">朝霧</h2>
+          <div style="font-size: 13px; color: #4a5562">一人で帰った・片想いのまま</div>
+        </div>
+        <div style="display: flex; gap: 6px">
+          <button type="button" aria-label="前の住人" style="width: 40px; height: 40px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; color: #17202b">‹</button>
+          <button type="button" aria-label="次の住人" style="width: 40px; height: 40px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; color: #17202b">›</button>
+        </div>
+      </div>
+
+      <p style="margin: 18px 0 0; font-size: 17px; line-height: 1.9">朝霧は鷹野の後ろ姿が見えなくなるまで、駅の前に立っていた。スマホを開いて、送りかけたメッセージを消した。</p>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px; padding: 16px 18px; background: #f4f6f8; border-radius: 12px">
+        <div style="flex: 1 1 220px">
+          <div style="font-size: 12px; color: #5b6672; margin-bottom: 6px">いちばん強かった気分</div>
+          <sc-for list="{{moods}}" as="m" hint-placeholder-count="4">
+            <div style="display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 8px; font-size: 12px; margin-bottom: 4px">
+              <span>{{m.name}}</span>
+              <span style="height: 8px; border-radius: 4px; background: #e1e5ea"><span style="display: block; height: 8px; width: {{m.w}}; border-radius: 4px; background: {{m.color}}"></span></span>
+            </div>
+          </sc-for>
+          <div style="font-size: 12px; color: #4a5562; margin-top: 4px">いちばん強かったのは「喜び」（24:00 終電）</div>
+        </div>
+        <dl style="flex: 1 1 260px; margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: 13px">
+          <dt style="color: #5b6672">気質</dt><dd style="margin: 0"><span style="font-family: ui-monospace, Menlo, Consolas, monospace">BDACD</span>（A優位・AC低め）</dd>
+          <dt style="color: #5b6672">口調</dt><dd style="margin: 0">強気</dd>
+          <dt style="color: #5b6672">初動</dt><dd style="margin: 0">食べることに集中</dd>
+          <dt style="color: #5b6672">目標</dt><dd style="margin: 0">早く帰りたい</dd>
+          <dt style="color: #5b6672">酒・見た目</dt><dd style="margin: 0">酒の強さ 2・見た目の自信 3</dd>
+        </dl>
+      </div>
+
+      <h3 style="margin: 24px 0 6px; font-size: 14px">読み解き</h3>
+      <div style="font-size: 16px; line-height: 1.95">
+        <p style="margin: 0 0 12px">エゴグラムではA優位（状況を冷静に計算する）なのに、この箱庭では「交流」に最も多く動いた。状況が別の面を引き出している。</p>
+        <p style="margin: 0">最も心を寄せた相手は<b style="color: #2a6f9e">鷹野</b>。けれど鷹野は、ほかの人と店を出た。</p>
+      </div>
+
+      <h3 style="margin: 24px 0 4px; font-size: 14px">らしくない瞬間 <span style="font-weight: 400; font-size: 12px; color: #5b6672">3回</span></h3>
+      <div style="font-size: 16px; line-height: 1.9">
+        <div style="padding: 12px 0; border-bottom: 1px solid #f1f3f5">
+          <div style="font-size: 12px; color: #5b6672; line-height: 1.5">20:20　盛り上がり</div>
+          <p style="margin: 0"><b style="color: #b03a2e">朝霧</b>はおみくじアプリで、全員の今日の運勢を引いた。</p>
+        </div>
+        <div style="padding: 12px 0; border-bottom: 1px solid #f1f3f5">
+          <div style="font-size: 12px; color: #5b6672; line-height: 1.5">21:00　席替え</div>
+          <p style="margin: 0"><b style="color: #b03a2e">朝霧</b>「それ、癖か？」<br><b style="color: #8a6a0e">白石</b>「何がだ」<br><b style="color: #b03a2e">朝霧</b>「考えるとき、口を尖らせる癖がある」</p>
+        </div>
+        <div style="padding: 12px 0">
+          <div style="font-size: 12px; color: #5b6672; line-height: 1.5">23:00　二次会・カラオケ</div>
+          <p style="margin: 0"><b style="color: #b03a2e">朝霧</b>は連絡先を聞くタイミングを、ずっと探していた。頭の中で、次の手を三つ考えた。</p>
+        </div>
+      </div>
+      <a href="#" style="display: inline-flex; align-items: center; height: 44px; margin-top: 8px; padding: 0 16px; border: 1px solid {{accent}}; border-radius: 8px; color: {{accent}}; font-weight: 700; text-decoration: none">朝霧の場面だけを経過で読む ›</a>
+    </article>
+  </div>
+</div>
+</x-dc>
+
+
+
+</body></html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<title>住人の設定 整理案</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#1d4f7a}a:hover{color:#123553}
+</style>
+</helmet>
+<div style="min-height: 1000px; background: #5d6670; padding: 40px 16px; box-sizing: border-box; color: #17202b; font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', sans-serif; font-size: 14px; line-height: 1.6">
+  <div role="dialog" aria-modal="true" aria-labelledby="dlg-title" style="max-width: 1040px; margin: 0 auto; background: #ffffff; border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden">
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 16px 20px; border-bottom: 1px solid #dde2e7">
+      <span style="display: inline-flex; width: 44px; height: 44px; border-radius: 22px; border: 2px solid #b03a2e; color: #b03a2e; align-items: center; justify-content: center; font-weight: 700; font-size: 19px; box-sizing: border-box">朝</span>
+      <div>
+        <h2 id="dlg-title" style="margin: 0; font-size: 18px">朝霧の設定</h2>
+        <div style="font-size: 12px; color: #5b6672"><span style="font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.1em; color: #17202b">BDACD</span>　理性的な分析家・強気</div>
+      </div>
+      <div style="flex: 1 1 auto"></div>
+      <div style="display: flex; border: 1px solid #cfd6dd; border-radius: 8px; overflow: hidden">
+        <button type="button" style="display: flex; align-items: center; gap: 4px; height: 38px; padding: 0 12px; border: 0; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">
+          <svg width="12" height="12" sc-camel-view-box="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M7.5 2.5L4 6l3.5 3.5"></path></svg>前の住人
+        </button>
+        <span style="width: 1px; background: #cfd6dd"></span>
+        <button type="button" style="display: flex; align-items: center; gap: 4px; height: 38px; padding: 0 12px; border: 0; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">
+          次の住人（鷹野）<svg width="12" height="12" sc-camel-view-box="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4.5 2.5L8 6 4.5 9.5"></path></svg>
+        </button>
+      </div>
+      <button type="button" aria-label="閉じる" style="width: 40px; height: 40px; border: 0; border-radius: 8px; background: #f1f3f5; color: #17202b; display: flex; align-items: center; justify-content: center">
+        <svg width="14" height="14" sc-camel-view-box="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2.5 2.5l9 9 M11.5 2.5l-9 9"></path></svg>
+      </button>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap">
+      <nav aria-label="設定の節" style="flex: 1 1 240px; max-width: 280px; padding: 12px; box-sizing: border-box; background: #f8f9fa; border-right: 1px solid #e3e7eb">
+        <sc-for list="{{secs}}" as="s" hint-placeholder-count="7">
+          <a href="#" aria-current="{{s.cur}}" style="display: block; padding: 10px 12px; margin-bottom: 2px; border-radius: 8px; text-decoration: none; background: {{s.bg}}; color: #17202b; box-shadow: {{s.shadow}}">
+            <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 700; font-size: 14px">{{s.name}}<span style="font-weight: 400; font-size: 11px; color: {{s.badgeColor}}">{{s.badge}}</span></span>
+            <span style="display: block; font-size: 12px; color: #5b6672; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.sum}}</span>
+          </a>
+        </sc-for>
+      </nav>
+
+      <div style="flex: 999 1 560px; min-width: 0; padding: 20px 28px 0; box-sizing: border-box">
+        <div style="display: flex; align-items: center; gap: 8px">
+          <h3 style="margin: 0; font-size: 17px">口調</h3>
+          <button type="button" aria-label="口調のヒント" style="width: 28px; height: 28px; border: 1px solid #cfd6dd; border-radius: 14px; background: #ffffff; font: inherit; font-size: 12px; color: #4a5562">?</button>
+        </div>
+        <p style="margin: 4px 0 16px; font-size: 13px; color: #5b6672">空欄の欄は、口調に合わせて自動で決まります。</p>
+
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; margin-bottom: 20px; background: #f4f6f8; border-radius: 10px">
+          <svg width="18" height="18" sc-camel-view-box="0 0 18 18" fill="none" stroke="#5b6672" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 auto; margin-top: 3px"><path d="M2.5 3.5h13v8.5H7l-3.5 3v-3h-1z"></path></svg>
+          <div>
+            <div style="font-size: 12px; color: #5b6672">台詞の見本（強気・一人称と呼び方も反映）</div>
+            <div style="font-size: 16px">「俺は朝霧だ。覚えとけ」</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px">
+          <label style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1">
+            <span style="font-size: 13px; font-weight: 700">口調</span>
+            <sc-raw-select style="height: 42px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; color: #17202b; max-width: 360px"><option>おまかせ（強気）</option><option>強気</option><option>穏やか</option><option>敬語</option></sc-raw-select>
+            <span style="font-size: 12px; color: #5b6672">CP高・NP低。罵って抗う／俺様・ぶっきらぼう</span>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 700">一人称</span>
+            <input type="text" placeholder="空なら口調から（俺）" style="height: 42px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 8px; font: inherit; color: #17202b">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 700">二人称</span>
+            <input type="text" placeholder="空なら口調から（お前）" style="height: 42px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 8px; font: inherit; color: #17202b">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 700">怒ったときの一人称</span>
+            <input type="text" placeholder="変えない" style="height: 42px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 8px; font: inherit; color: #17202b">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 700">恋人になってからの一人称</span>
+            <input type="text" placeholder="変えない" style="height: 42px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 8px; font: inherit; color: #17202b">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 700">名前の読み（ひらがな）</span>
+            <input type="text" placeholder="例：あさぎり" style="height: 42px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 8px; font: inherit; color: #17202b">
+            <span style="font-size: 12px; color: #5b6672">「あ、朝霧さん」のように、どもる台詞の頭の音に使います。</span>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 700">語尾の記号</span>
+            <input type="text" placeholder="例：！！！　または　♣♦" style="height: 42px; padding: 0 10px; border: 1px solid #cfd6dd; border-radius: 8px; font: inherit; color: #17202b">
+          </label>
+        </div>
+
+        <details style="margin-top: 20px; border: 1px solid #dde2e7; border-radius: 10px">
+          <summary style="display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 16px; cursor: pointer; font-weight: 700; font-size: 14px">語尾の設定（かんたん）<span style="font-weight: 400; font-size: 12px; color: #5b6672">未設定</span></summary>
+        </details>
+
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; padding: 12px 16px; border: 1px dashed #cfd6dd; border-radius: 10px; font-size: 13px; color: #4a5562">
+          口調の辞書・呼び方・敬語は「口調の全体設定」で、この住人を選んで決めます。
+          <a href="#" style="display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-weight: 700; text-decoration: none">口調の全体設定で開く
+            <svg width="12" height="12" sc-camel-view-box="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4.5 2.5L8 6 4.5 9.5"></path></svg>
+          </a>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 24px -28px 0; padding: 14px 28px; border-top: 1px solid #dde2e7; background: #ffffff">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5b6672">
+            <svg width="14" height="14" sc-camel-view-box="0 0 14 14" fill="none" stroke="#2e7d4f" stroke-width="1.6" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7"></path></svg>
+            変えた内容はすぐに保存されます
+          </span>
+          <div style="display: flex; gap: 8px">
+            <button type="button" style="height: 42px; padding: 0 16px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; color: #17202b">次の節：プロフィール</button>
+            <button type="button" style="height: 42px; padding: 0 20px; border: 0; border-radius: 8px; background: {{accent}}; color: #ffffff; font: inherit; font-weight: 700">閉じる</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+
+
+
+</body></html>
