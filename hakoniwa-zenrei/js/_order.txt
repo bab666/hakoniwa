@@ -287,7 +287,7 @@ js/yakata-frame.js @scen:yakata
 js/yakata-feud.js @scen:yakata
 js/scenario-jinro.js @scen:jinro
 js/jinro-love.js @scen:jinro
-js/same-story.js
+js/same-story.js @pack:story
 js/safe.js
 js/safe-room.js
 js/share-card.js
@@ -297,7 +297,6 @@ js/history.js
 js/portable.js
 js/state-store.js
 js/save-folder.js
-js/tips.js
 js/scen-meta.js
 js/scen-tags.js
 js/shared-stats.js
@@ -407,6 +406,7 @@ js/jinro-data.js @scen:jinro
 js/jinro-after.js @scen:jinro
 js/rel-bad-story.js
 late js/tie-new-story.js
+late js/tips.js
 late js/tips-scen-a.js
 late js/tips-scen-b.js
 late js/tips-scen-c.js

@@ -401,11 +401,12 @@
     }, LAST);
   }
   if (HK.Load && HK.Load.onChunk) HK.Load.onChunk(bedInstall);
-  if (HK.simulate && !HK.simulate._ini) {
-    var sim0 = HK.simulate;
+  if (HK.simulate && !HK.simulate._ini) HK.wrap(HK, 'simulate', function (sim0) {
     /* 一回のシミュレーションのあいだ、型の段で使った喘ぎを覚えておく（同じ喘ぎを別の記録で繰り返さない） */
-    HK.simulate = function () { install(); I._runSeen = {}; I._runMoan = {}; return sim0.apply(this, arguments); };
-    HK.simulate._ini = true;
-  }
+    /* 分割読み込み：このファイルは喘ぎのかたまり pack-lewd（中核のあと）にあるので、包みは HK.wrap で書く（素の代入だと、後から来るかたまりの HK.wrap（safe-room.js など）の並べ直しが切れる） */
+    var f = function () { install(); I._runSeen = {}; I._runMoan = {}; return sim0.apply(this, arguments); };
+    f._ini = true;
+    return f;
+  });
   I.install = install;
 })();

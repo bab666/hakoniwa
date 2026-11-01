@@ -35,11 +35,13 @@
     if (c.toneCustom && !HK.TONE_CUSTOM_OFF) bits.push('付け替え：' + c.toneCustom);
     /* r18:begin */
     /* 高度設定「喘ぎ声の調整」・この住人の「声の区分」で、この人の声の区分を既定から変えてあれば添える（moan-engine.js の HK.Moan.fitNote。住人の設定なら「（住人）」） */
-    var fnote = !HK.SAFE_ON && HK.Moan && HK.Moan.fitNote && HK.Moan.toneOf ? HK.Moan.fitNote(HK.Moan.toneOf(c), c) : '';
+    /* 喘ぎの部品（moan-engine.js・ui-gear-moan.js）は R18版では喘ぎのかたまり pack-lewd にあり、late と一緒に読む。late を読み終えるまでは添えない（読み終えたら ui.js の HK.onLate が描き直す） */
+    var lewdUp = !HK.SAFE_ON && HK.LATE_READY !== false;
+    var fnote = lewdUp && HK.Moan && HK.Moan.fitNote && HK.Moan.toneOf ? HK.Moan.fitNote(HK.Moan.toneOf(c), c) : '';
     if (c.moanTone && !HK.SAFE_ON) bits.push('喘ぎ：' + toneLabel(c.moanTone) + (fnote ? '（声：' + fnote + '）' : ''));
     else if (fnote) bits.push('声：' + fnote);
     /* 住人の欄の喘ぎの辞書（ui-gear-moan.js）：「喘ぎ辞書：N行」など */
-    if (!HK.SAFE_ON && HK.GearMoan) bits = bits.concat(HK.GearMoan.summary(c));
+    if (lewdUp && HK.GearMoan) bits = bits.concat(HK.GearMoan.summary(c));
     /* r18:end */
     if (HK.Ending && HK.Ending.on(c)) bits.push(HK.Ending.labelFor(c));
     if (c.call) bits.push('呼び方：' + callLabel(c.call));

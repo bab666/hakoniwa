@@ -30,7 +30,10 @@
        --no-guard を付けると、エラーでも止めない（移行作業の途中だけ）。--all で残りを全部、--soft で二段目（HARD。文脈しだいの語。ふだんは出さない）の一覧も出す
    ・軽量化（両ビルド。全年齢版の検査のあと。かたまりごと）：コメント・字下げ・空行を落とす（字句は変えない。build-min.js）。--no-min で軽量化しない
    ・事前圧縮：かたまりごとに .gz／.br も作る（サーバが Accept-Encoding を見て返す。.htaccess）。中身が同じなら作り直さない。
-       .br はふだん品質9、公開の前は --best で品質11（1割ほど小さくなるが、作るのに1分ほどかかる） */
+       .br はふだん品質9、公開の前は --best で品質11（1割ほど小さくなるが、作るのに1分ほどかかる）
+   ・中核（core）の内訳：ファイルごとの大きさ（軽量化後と、ファイル単独で br にした目安）を js/c/.prev.json の core に残し、
+       大きい順の上位15本と、前回の build からの増減（br の目安で ±1KB 以上・足した・外した）を出す。
+       中核の br が目安（1MB）を超えたら、前回より増えたファイル・中核に足したファイルを大きい順に出す（docs/reports/2026-11-01/core-size.md） */
 'use strict';
 const fs = require('fs'), path = require('path'), crypto = require('crypto'), zlib = require('zlib');
 /* 書式の誤りなどは、場所の分かる一文だけを出して止める（DEBUG=1 なら詳しく） */
@@ -342,7 +345,19 @@ fs.readdirSync(cdir).forEach(f => {
   if (!m) { console.warn('※ js/c/ に知らないファイル（消しません）: ' + f); return; }
   if (!keep.has(m[1])) { fs.unlinkSync(path.join(cdir, f)); removed++; }
 });
-fs.writeFileSync(prevPath, JSON.stringify({ cur, prev: keepPrev || {} }, null, 1) + '\n');
+/* 中核の内訳（ファイルごと。軽量化後の字数と、ファイル単独で br にした目安。かたまり全体の br は辞書を共有するので、合計より 2 割ほど小さい） */
+const coreStat = {};
+{
+  const BQ = { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 9, [zlib.constants.BROTLI_PARAM_LGWIN]: 22, [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT } };
+  [{ f: LOADF, src: chunksLoadSrc() }].concat(chunks.core.files).forEach(x => {
+    let code = x.src;
+    if (!flag('--no-min')) { try { code = M.minify(x.src, x.f); } catch (e) { /* 1本だけでは軽量化できない書き方なら元のまま */ } }
+    const b = Buffer.from(code, 'utf8');
+    coreStat[x.f] = [b.length, zlib.brotliCompressSync(b, BQ).length];
+  });
+}
+const prevCore = prev.core && typeof prev.core === 'object' ? prev.core : null;
+fs.writeFileSync(prevPath, JSON.stringify({ cur, prev: keepPrev || {}, core: coreStat }, null, 1) + '\n');
 ['bundle-main.js', 'bundle-late.js'].forEach(b => ['', '.gz', '.br'].forEach(x => { const p = path.join(dir, 'js', b + x); if (fs.existsSync(p)) { fs.unlinkSync(p); removed++; } }));
 
 /* ---------- 報告 ---------- */
@@ -367,4 +382,42 @@ if (tz.n) {
 if (toneInfo) console.log('  ' + toneInfo);
 if (catalogInfo) console.log('  ' + catalogInfo);
 console.log('  合計 ' + k(tot.raw) + '（gz ' + k(tot.gz) + '・br ' + k(tot.br) + '）。index.html の目録 ' + k(Buffer.byteLength(MF.manifestJs(manifest))) + (removed ? '。古いファイルを ' + removed + ' 本消した' : ''));
-if (chunks.core.z.br > 1024 * 1024) console.warn('※ 中核（core）の br が 1MB を超えています（' + k(chunks.core.z.br) + '）。起動時に読む量の目安は 1MB 以下です');
+/* 中核の内訳：大きい順の上位15本と、前回の build からの増減（br の目安） */
+const CORE_BR_MAX = 1024 * 1024, kk = n => (n / 1024).toFixed(n < 10240 ? 1 : 0) + 'KB', sg = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + kk(Math.abs(n));
+{
+  const fl = Object.keys(coreStat).sort((a, b) => coreStat[b][1] - coreStat[a][1]);
+  const dOf = f => prevCore && prevCore[f] ? coreStat[f][1] - prevCore[f][1] : null;
+  const nm = f => f.replace(/^js\//, '');
+  console.log('  中核の内訳（' + fl.length + '本。軽量化後の大きさ・ファイル単独の br の目安。大きい順の上位15本）：');
+  fl.slice(0, 15).forEach((f, i) => {
+    const d = dOf(f);
+    console.log('    ' + String(i + 1).padStart(2) + '. ' + nm(f).padEnd(28) + k(coreStat[f][0]).padStart(7) + '・br ' + kk(coreStat[f][1]).padStart(7) +
+      (!prevCore ? '' : d == null ? '　（前回は中核に無い）' : Math.abs(d) >= 1024 ? '　（前回比 ' + sg(d) + '）' : ''));
+  });
+  if (prevCore) {
+    const grow = fl.filter(f => prevCore[f] && dOf(f) >= 1024).sort((a, b) => dOf(b) - dOf(a));
+    const shrink = fl.filter(f => prevCore[f] && dOf(f) <= -1024).sort((a, b) => dOf(a) - dOf(b));
+    const added = fl.filter(f => !prevCore[f]), gone = Object.keys(prevCore).filter(f => !coreStat[f]).sort((a, b) => prevCore[b][1] - prevCore[a][1]);
+    const sumP = Object.keys(prevCore).reduce((a, f) => a + prevCore[f][1], 0), sumC = fl.reduce((a, f) => a + coreStat[f][1], 0);
+    const list = (xs, fmt) => xs.slice(0, 8).map(fmt).join('、') + (xs.length > 8 ? ' ほか' + (xs.length - 8) + '本' : '');
+    if (!grow.length && !shrink.length && !added.length && !gone.length) console.log('  前回の build から中核の中身の増減なし（br の目安の合計 ' + kk(sumC) + '）');
+    else {
+      console.log('  前回の build からの中核の増減（br の目安の合計 ' + kk(sumP) + ' → ' + kk(sumC) + '・' + sg(sumC - sumP) + '）：');
+      if (grow.length) console.log('    増えた ' + list(grow, f => nm(f) + ' ' + sg(dOf(f))));
+      if (shrink.length) console.log('    減った ' + list(shrink, f => nm(f) + ' ' + sg(dOf(f))));
+      if (added.length) console.log('    中核に足した ' + list(added, f => nm(f) + ' ' + kk(coreStat[f][1])));
+      if (gone.length) console.log('    中核から外した ' + list(gone, f => nm(f) + ' ' + kk(prevCore[f][1])));
+    }
+  }
+  if (chunks.core.z.br > CORE_BR_MAX) {
+    console.warn('※ 中核（core）の br が 1MB を超えています（' + k(chunks.core.z.br) + '）。起動時に読む量の目安は 1MB 以下です');
+    if (!prevCore) console.warn('  （前回の内訳が js/c/.prev.json に無いので、増えたファイルは次の build から出します）');
+    else {
+      const inc = f => coreStat[f][1] - (prevCore[f] ? prevCore[f][1] : 0);
+      const up = fl.filter(f => !prevCore[f] || dOf(f) >= 512).sort((a, b) => inc(b) - inc(a));
+      if (up.length) console.warn('  前回より増えた・中核に足したファイル（br の目安）：' + up.slice(0, 12).map(f => nm(f) + ' ' + (prevCore[f] ? sg(dOf(f)) : '新しく ' + kk(coreStat[f][1]))).join('、'));
+      else console.warn('  前回の build から増えたファイルはありません（前から目安を超えています）');
+    }
+    console.warn('  文の表・特定の箱庭だけの部品・画面が出たあとでよい部品は、中核に入れず @pack:<族>・@scen:<id>・late に振り分けてください（CLAUDE.md の「スクリプトはかたまりに分けて配る」）');
+  }
+}
