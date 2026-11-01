@@ -53,6 +53,8 @@ const PASS = function* (HK, opt) {
           if (cd[3] === 'nolib') { chars[1].libido = 'none'; if (n >= 4) chars[3].libido = 'none'; }
           const env = {}; (sc.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
           (sc.env || []).forEach(e => { if (e.max != null && /romance|love|night|lewd|heat|aphro|dose|pleasure|shady|prey/.test(e.id)) env[e.id] = e.max; });
+          /* 危険の環境値（宇宙の過酷さなど）は最小に：門の点検なので、死者が増えて生き残る組が減る揺れを入れない（2026-11-01。宇宙船の過酷さの見直しで N=24 の l／b が 82〜91% に揺れた） */
+          (sc.env || []).forEach(e => { if (e.min != null && /^(danger|hazard|risk)$/.test(e.id)) env[e.id] = e.min; });
           if (HK.Content) env.ct = HK.Content.TAGS.map(t => t.id).filter(t => FORCE || t !== 'force').join(',');
           const ties = [];
           if (cd[2]) [].concat(cd[2]).forEach(tt => { ties.push(Object.assign({ a: 0, b: 1 }, tt)); if (n >= 4) ties.push(Object.assign({ a: 2, b: 3 }, tt)); });
