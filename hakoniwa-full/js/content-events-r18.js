@@ -273,6 +273,8 @@
     var id = B.id;
     if (B.heavy === 'mild') return J('no', '展開の重さが「穏やか」のときは切として扱います');
     if (id === 'yakata') { var yp = o.env && o.env.ypleasure; return yp === 0 || yp === '0' ? J('no', '環境値「快楽殺人の起きやすさ」が0です') : J('maybe', '犯人の動機が「快楽殺人」になったとき（重さによらず）'); }
+    /* 宇宙船漂流記：星の生命体の取引の実験（ship-deal-r18.js）は、重さによらずこのスイッチだけで決まる */
+    if (id === 'ship') return J('maybe', '星の生命体の取引で、体を貸した人が性感帯まで調べられる段（死んだ仲間がいる月に起きることがあります）');
     if (!ENG[id] || id === 'classroom') return J('no', 'この箱庭には暴力をともなう性描写の場面がありません');
     if (B.heavy !== 'dark') return J('no', '展開の重さが「重い」のときだけ起きます（吹雪の館の快楽殺人を除く）');
     var force = !!B.ct.force, ev = [];

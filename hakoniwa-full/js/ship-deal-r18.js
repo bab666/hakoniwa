@@ -5,7 +5,7 @@
      それ以外は 始まり → 体ごとの開発（女性の体・男性の体・両方・性器なし）→ 測られる → 山場（態度9種）→ 果てる声 → 記録の終わり →（濃い）もう一度。数行で短くは 始まり＋開発＋山場
    ・作風：男性向けは擬音 {s:…} を入れ、小説調は落とす。体の語は印（{女性器} など。lewd-words.js）。喘ぎは moan-engine.js（態度・口調で選ぶ）
    {a}＝志願者 {x}＝生命体 {v}＝取り戻したい死者（きっかけの段だけ。の の形でだけ使う） {v0}{v1}{v2}＝{a} の喘ぎ（はじめ／最中／山場のあと）。登場人物はすべて成人として扱う */
-/* @event scen=ship id=ship_xeno_deal_lab cat=夜 tie=- tags=night,mob label=生命体の取引の実験（体の感じ方を調べられる） */
+/* @event scen=ship id=ship_xeno_deal_lab cat=夜 tie=- tags=night,mob,violence cond=HK.Content.ok(S, 'violence') label=生命体の取引の実験（体の感じ方を調べられる） */
 (function () {
   'use strict';
   var HK = window.HK, SH = HK.SHIP = HK.SHIP || {};

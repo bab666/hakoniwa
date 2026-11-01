@@ -194,6 +194,8 @@
   function sexOk(S, a) {
     var X = A(), P = HK.Pos, St = HK.State, R = SH.DEAL_R18;
     if (!R || HK.SAFE_ON || !X.r18on || !X.r18on(S) || !St || !P) return false;
+    /* 内容のスイッチ「暴力をともなう性描写」が入のときだけ（2026-11-01 の利用者の指示。切なら性的でない実験だけ） */
+    if (!HK.Content || !HK.Content.ok(S, 'violence')) return false;
     if (!St.mobSexOk(a) || a.faithful || lockList(a).length) return false;
     if (P.libOf && P.libOf(a) === 'none') return false;
     if (a.likes === 'none' && !(P.sexLikeOf && /^(m|f|both)$/.test(P.sexLikeOf(a)))) return false;
