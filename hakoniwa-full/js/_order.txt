@@ -453,6 +453,7 @@ js/ui-topics.js
 js/ui-ties.js
 js/ui-env.js
 js/ui-cast-tools.js
+js/ui-box-style.js
 js/ui-box-draw.js
 js/ui-import.js
 js/ui.js

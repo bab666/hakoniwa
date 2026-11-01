@@ -74,7 +74,7 @@
   function updLoveWarn() {
     var el = document.getElementById('lovewarn'), html = loveCrowdNote(S.scenId), jc = document.getElementById('joincount');
     if (el) el.remove();
-    if (html && jc) jc.insertAdjacentHTML('afterend', html);
+    if (html && jc) (jc.closest('.bxjbar') || jc).insertAdjacentHTML('afterend', html);
   }
   var SAMPLE = [
     { name: '朝霧', code: 'BDACD', memo: '例：皮肉屋の元刑事' },
@@ -1030,18 +1030,69 @@
     if (!H) return { q: '', d: e.desc ? '<div class="desc">' + esc(e.desc) + '</div>' : '' };
     return { q: H.q(k, e.label, e.desc), d: H.body(k, e.desc) };
   }
+  /* ---------- 箱庭タブの整え直し（2026-11-01 担当UB。参考デザインの見本 05〜08「登録しやすく」） ----------
+     ・上に選んだ箱庭のカード（節 'sel'）。「箱庭を選ぶ」は窓（節 'cards'。カードの一覧の HTML は今までどおりで、窓の中に置く。
+       カードを押すと右に説明が出て、「この箱庭にする」（またはダブルクリック・Enter）で決める。決めるまで S.scenId は変えない）
+     ・設定は4つの切替：参加者と初動（参加表）／場の設定（その箱庭だけの環境値）／起こりやすさ（全箱庭共通の割合の値・関係性イベント）／
+       展開と内容（展開の重さ・死ネタの重さ・複数の恋人・派閥・モブへの呼びかけ・内容のスイッチ）。
+       節は全部描いておき、見せるのは選んだ切替の節だけ（#view-box の data-bxtab。CSS は ui-box-style.js）。
+       注意書き（room-trio-note.js・locker-note.js など）が欄を id で探せるように、隠した節の欄も文書に残す
+     ・下に固定の帯（要約・読み込み待ち・シード・箱庭を動かす）
+     保存先（S.env・S.glob・S.per・S.join・S.seed）と data-f／data-act の処理は今までどおり。
+     切替・窓の開閉・「いまの住人で遊べるものだけ」は画面だけの状態（ブラウザに残す。鍵 hakoniwa:boxui） */
+  var BX_KEY = HK.STORE && HK.STORE.key ? HK.STORE.key('hakoniwa:boxui') : 'hakoniwa:boxui';
+  var bxPref = { tab: 'join', fit: true };
+  try { var bxSv = JSON.parse(localStorage.getItem(BX_KEY) || 'null'); if (bxSv && typeof bxSv === 'object') { if (/^(join|scen|odds|plot)$/.test(bxSv.tab)) bxPref.tab = bxSv.tab; if (bxSv.fit === false) bxPref.fit = false; } } catch (e) { /* 読めなければ既定 */ }
+  function bxPrefSave() { try { localStorage.setItem(BX_KEY, JSON.stringify(bxPref)); } catch (e) { /* 残せなくても切り替えはできる */ } }
+  var BX_TABS = [['join', '参加者と初動'], ['scen', '場の設定'], ['odds', '起こりやすさ'], ['plot', '展開と内容']];
+  var BX_TABNAME = { scen: '場の設定', odds: '起こりやすさ', plot: '展開と内容' };
+  var bxTabsOn = ['join'], pickOpen = false, pickPrev = '';
+  /* 環境値の切替：その箱庭だけの値は「場の設定」、全箱庭共通のうち割合の値（スライダー）と関係性イベントは「起こりやすさ」、ほか（選ぶ欄・派閥）は「展開と内容」 */
+  function envGroup(e) {
+    if (HK.GLOBAL_ENV.indexOf(e) < 0) return 'scen';
+    return !e.fac && (!e.type || e.type === 'range' || e.id === 'tieEv') ? 'odds' : 'plot';
+  }
+  /* 初期値から変えたか（変えた欄だけ濃く表示する。要約の「○か所を変更」） */
+  function envDef(e) { return e.def != null ? e.def : e.type === 'select' ? ((e.options || [])[0] || {}).v : e.type === 'text' ? '' : e.min; }
+  function envChg(e, scenId) { var v = envVal(e, scenId), d = envDef(e); return v != null && String(v) !== String(d == null ? '' : d); }
+  /* 選ぶ欄のうち、選択肢が 2〜4 個で短く言える（「：」「（」の前が 10 字まで・重ならない）ものはセグメントにする（実際の値は隠した select に入れ、change を送る） */
+  function envSeg(e) {
+    var os = e.options || [];
+    if (os.length < 2 || os.length > 4) return null;
+    var out = os.map(function (o) { var s = String(o.label).split('：')[0].replace(/（[^）]*）/g, '').trim(); return { v: String(o.v), label: String(o.label), short: s || String(o.label), disabled: !!o.disabled }; });
+    var seen = {};
+    return out.every(function (o) { if (o.short.length > 10 || seen[o.short]) return false; seen[o.short] = 1; return true; }) ? out : null;
+  }
   function envItem(e, scenId) {
-    var v = envVal(e, scenId), g = HK.GLOBAL_ENV.indexOf(e) >= 0 ? '1' : '0', h = envHelp(e);
+    var v = envVal(e, scenId), g = HK.GLOBAL_ENV.indexOf(e) >= 0 ? '1' : '0', h = envHelp(e), cg = envChg(e, scenId) ? ' chg' : '';
     if (e.type === 'text') {
-      return '<div class="envitem wide"><div class="lab"><span class="labt"><label for="env-' + e.id + '">' + esc(e.label) + '</label>' + h.q + '</span></div><input type="text" id="env-' + e.id + '" data-f="env" data-g="' + g + '" data-k="' + e.id + '" value="' + esc(v) + '" placeholder="' + esc(e.placeholder || '') + '" maxlength="60" style="width:100%;margin-top:4px">' + h.d + '</div>';
+      return '<div class="envitem wide' + cg + '"><div class="lab"><span class="labt"><label for="env-' + e.id + '">' + esc(e.label) + '</label>' + h.q + '</span></div><input type="text" id="env-' + e.id + '" data-f="env" data-g="' + g + '" data-k="' + e.id + '" value="' + esc(v) + '" placeholder="' + esc(e.placeholder || '') + '" maxlength="60" style="width:100%;margin-top:4px">' + h.d + '</div>';
     }
     if (e.type === 'select') {
-      return '<div class="envitem"><div class="lab"><span class="labt"><span>' + esc(e.label) + '</span>' + h.q + '</span></div><select id="env-' + e.id + '" data-f="env" data-g="' + g + '" data-k="' + e.id + '">' +
-        e.options.map(function (o) { return '<option value="' + esc(o.v) + '"' + (o.v === v ? ' selected' : '') + '>' + esc(o.label) + '</option>'; }).join('') + '</select>' + h.d + '</div>';
+      var opts = e.options.map(function (o) { return '<option value="' + esc(o.v) + '"' + (o.v === v ? ' selected' : '') + '>' + esc(o.label) + '</option>'; }).join(''), sg = envSeg(e);
+      if (!sg) return '<div class="envitem' + cg + '"><div class="lab"><span class="labt"><span>' + esc(e.label) + '</span>' + h.q + '</span></div><select id="env-' + e.id + '" data-f="env" data-g="' + g + '" data-k="' + e.id + '">' + opts + '</select>' + h.d + '</div>';
+      var cur = sg.filter(function (o) { return o.v === String(v); })[0] || sg[0];
+      return '<div class="envitem bxseg' + cg + '"><div class="lab"><span class="labt"><span id="envl-' + e.id + '">' + esc(e.label) + '</span>' + h.q + '</span></div>' +
+        '<div class="bxsegs" role="group" aria-labelledby="envl-' + e.id + '">' + sg.map(function (o) {
+          return '<button type="button" data-act="envseg" data-k="' + e.id + '" data-v="' + esc(o.v) + '" aria-pressed="' + (o === cur) + '"' + (o.disabled ? ' disabled' : '') + (o.short !== o.label ? ' title="' + esc(o.label) + '"' : '') + '>' + esc(o.short) + '</button>';
+        }).join('') + '</div>' +
+        '<select id="env-' + e.id + '" data-f="env" data-g="' + g + '" data-k="' + e.id + '" hidden tabindex="-1" aria-hidden="true">' + opts + '</select>' +
+        '<div class="bxsegd">' + (cur.short !== cur.label ? esc(cur.label) : '') + '</div>' + h.d + '</div>';
     }
-    return '<div class="envitem"><div class="lab"><span class="labt"><label for="env-' + e.id + '">' + esc(e.label) + '</label>' + h.q + '</span><span class="num" id="ev-' + e.id + '">' + v + (e.unit || '') + '</span></div>' +
+    return '<div class="envitem' + cg + '"><div class="lab"><span class="labt"><label for="env-' + e.id + '">' + esc(e.label) + '</label>' + h.q + '</span><span class="num" id="ev-' + e.id + '">' + v + (e.unit || '') + '</span></div>' +
       '<input type="range" id="env-' + e.id + '" min="' + e.min + '" max="' + e.max + '" step="1" value="' + v + '" data-f="env" data-g="' + g + '" data-k="' + e.id + '" data-unit="' + (e.unit || '') + '">' +
       '<div class="ends"><span>' + esc(e.lo || '') + '</span><span>' + esc(e.hi || '') + '</span></div>' + h.d + '</div>';
+  }
+  /* 環境値を変えたら、その欄の濃さ・セグメントの押した印・選んだ値の説明だけを書き換える */
+  function bxEnvSync(t) {
+    var it = t.closest && t.closest('.envitem'), sc = HK.SCENARIOS[S.scenId];
+    if (!it || !sc) return;
+    var e = genv(sc).filter(function (x) { return x.id === t.dataset.k; })[0];
+    if (!e) return;
+    it.classList.toggle('chg', envChg(e, S.scenId));
+    Array.prototype.forEach.call(it.querySelectorAll('[data-act="envseg"]'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === String(t.value))); });
+    var d = it.querySelector('.bxsegd'), sg = d ? envSeg(e) : null;
+    if (sg) { var o = sg.filter(function (x) { return x.v === String(t.value); })[0]; d.textContent = o && o.short !== o.label ? o.label : ''; }
   }
   function per(c, scenId) {
     S.per[c.id] = S.per[c.id] || {};
@@ -1109,10 +1160,181 @@
     return '<p class="hint prefrow"><label for="prefetch">データの先読み</label><select id="prefetch" data-f="prefetch">' + o('auto', '自動（おすすめ）') + o('all', 'すべて先読み') + o('pick', '選んだ箱庭だけ') + '</select>' +
       '<span>パソコンでは裏で先に読み込みます。スマホでは選んだ箱庭だけ読みます</span></p>';
   }
+  /* 下に固定の帯（見本 05・08）：左に要約、右にシードと「▶ 箱庭を動かす」。読み込みを待っているあいだは帯の中に知らせる（pendSync） */
+  var ICON_GRID = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>';
+  var ICON_PLAY = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>';
   function runBar() {
-    return '<div class="runbar nofold"><label for="seed">シード</label><input type="text" id="seed" inputmode="numeric" data-f="seed" value="' + esc(S.seed) + '" placeholder="空欄でランダム"><span class="hint" style="margin:0">同じシードと条件なら同じ結末になります。</span><span class="spacer"></span><button class="btn primary" data-act="run">箱庭を動かす</button></div>';
+    var w = !!(pending && !pending.scenOnly), x = bxCount(), narrow = !!(window.matchMedia && window.matchMedia('(max-width:600px)').matches);
+    return '<div class="runbar nofold bxrun' + (w ? ' bxwait' : '') + '"><div class="bxsum" id="bxsum">' + esc(bxSumText(x)) + '</div>' +
+      '<div class="bxpend" id="bxpend" role="status"' + (w ? '' : ' hidden') + '>データを読み込んでいます。終わりしだい動かします…</div><span class="spacer"></span>' +
+      '<span class="bxseed"><label for="seed">シード</label><input type="text" id="seed" inputmode="numeric" data-f="seed" value="' + esc(S.seed) + '" placeholder="' + (narrow ? 'ランダム' : '空欄でランダム') + '" aria-describedby="seedh" title="同じシードと条件なら同じ結末になります"></span>' +
+      '<span class="hint bxsr" id="seedh">同じシードと条件なら同じ結末になります。</span>' +
+      '<button class="btn primary" data-act="run"' + (w ? ' aria-busy="true"' : '') + '><span class="bxrun-t">' + ICON_PLAY + '箱庭を動かす</span><span class="bxrun-s" id="bxrunsub">' + esc(x.name + '・' + x.n + '人') + '</span></button></div>';
   }
-  /* 描き方は js/ui-box-draw.js（HK.BoxDraw）：節ごとに覚えて変わった節だけ作り直す。opt.defer（タブを押した・箱庭を選び替えた）はカードだけ先に描き、残りは次の描画のあとで */
+  /* 帯の要約：「合コン・参加 10人・場の設定 2か所を変更」（初期値から変えた欄の数。参加している人の初動・目標・能力値・欄も数える） */
+  function bxCount() {
+    var sc = HK.SCENARIOS[S.scenId], meta = scenOf(S.scenId), J = joined(S.scenId), c = { scen: 0, odds: 0, plot: 0, per: 0 };
+    if (sc && !sc.stub) {
+      try { genv(sc).forEach(function (e) { if (envChg(e, S.scenId)) c[envGroup(e)]++; }); } catch (e) { /* 読み込み前の箱庭 */ }
+      if (HK.Content && !HK.SAFE_ON) c.plot += ctOn().length;
+      J.forEach(function (ch) {
+        var p = S.per && S.per[ch.id] && S.per[ch.id][S.scenId];
+        if (!p) return;
+        if (sc.actions && sc.actions.length && p.action && p.action !== 'auto') c.per++;
+        if (sc.goals && sc.goals.length && p.goal && p.goal !== 'auto') c.per++;
+        c.per += Object.keys(p.stats || {}).length + Object.keys(p.pick || {}).length;
+        if (sc.weapons && p.weapon && p.weapon !== 'random') c.per++;
+      });
+    }
+    return { name: meta ? meta.name : '', n: J.length, max: smax(S.scenId), c: c };
+  }
+  function bxSumText(x) {
+    var ch = [];
+    if (x.c.per) ch.push('初動 ' + x.c.per + 'か所');
+    ['scen', 'odds', 'plot'].forEach(function (k) { if (x.c[k]) ch.push(BX_TABNAME[k] + ' ' + x.c[k] + 'か所'); });
+    return x.name + '・参加 ' + x.n + '人・' + (ch.length ? ch.join('・') + 'を変更' : 'すべて初期値');
+  }
+  /* 欄を変えたときに、帯の要約・切替の人数と「変えた」印だけを書き換える */
+  function bxLive() {
+    var sm = document.getElementById('bxsum');
+    if (!sm) return;
+    var x = bxCount(), t = bxSumText(x), sb = document.getElementById('bxrunsub'), st = x.name + '・' + x.n + '人', tn = document.getElementById('bxtn-join'), tt = x.n + '/' + x.max;
+    if (sm.textContent !== t) sm.textContent = t;
+    if (sb && sb.textContent !== st) sb.textContent = st;
+    if (tn && tn.textContent !== tt) tn.textContent = tt;
+    ['scen', 'odds', 'plot'].forEach(function (k) { var d = document.getElementById('bxdot-' + k); if (d && d.hidden === !!x.c[k]) d.hidden = !x.c[k]; });
+  }
+  /* 読み込み待ち（whenReady の pending。動かす・回し直すのとき）を帯に出す */
+  function pendSync() {
+    var w = !!(pending && !pending.scenOnly), el = document.getElementById('bxpend'), rb = el && el.closest('.runbar'), b = rb && rb.querySelector('[data-act="run"]');
+    if (el && el.hidden === w) el.hidden = !w;
+    if (rb && rb.classList.contains('bxwait') !== w) rb.classList.toggle('bxwait', w);
+    if (b) { if (w) b.setAttribute('aria-busy', 'true'); else b.removeAttribute('aria-busy'); }
+  }
+  /* 参加の人数（「参加 10人 ／ 上限 12人」。上限を超えた・足りないときは赤字で添える） */
+  function joinCountHtml(n, mx, mn) {
+    return '<b>参加 <span class="num">' + n + '</span>人</b><span class="bxmu"> ／ 上限 ' + mx + '人</span>' +
+      (n > mx ? '<span class="bxwarnt">上限を超えています</span>' : n < mn ? '<span class="bxwarnt">あと' + (mn - n) + '人選んでください</span>' : '');
+  }
+  /* 参加表の名前の下の一行（性別・恋愛対象・口調）。押すとその人の設定が開く（性別・恋愛対象は住人の「設定」で変える） */
+  function profText(c) {
+    var g = { m: '男性', f: '女性', x: 'その他' }[c.gender] || '性別おまかせ', l = { m: '対象 男性', f: '対象 女性', both: '対象 男女', none: '対象 なし' }[c.likes] || '対象おまかせ', tn = '口調おまかせ';
+    if (c.tone) { try { tn = '口調：' + (HK.toneLabel ? HK.toneLabel(c) : HK.PERSONA[c.tone].label); } catch (e) { tn = '口調あり'; } }
+    return g + '・' + l + '・' + tn;
+  }
+  function profBtn(c) {
+    var t = profText(c);
+    return '<button type="button" class="bxprof" data-act="bxgear" data-id="' + c.id + '" title="' + esc(c.name) + 'の設定を開く（' + esc(t) + '）">' + esc(t) + '</button>';
+  }
+  /* 箱庭の表示に使う値（カード・選んだ箱庭のカード・窓の右の説明で共通） */
+  function cardInfo(id) {
+    var s = scenOf(id), SM = HK.ScenMeta || {};
+    /* R18 の場面がある箱庭（描写の設定 lewd がある・キャッチコピーに R18・R18 の説明がある）は、名前の右の R18 の札でひと目で分かるようにする。
+       R18版にしかない箱庭（HK.ScenMeta.r18only）はカードの色も成人向け（ピンク）にする（2026-10-31 利用者の指示：R18 の札は R18 の場面のある全部の箱庭に） */
+    var adult = !HK.SAFE_ON && (/R-?18/.test(s.kicker || '') || (s.env || []).some(function (e) { return e && e.id === 'lewd'; }) || !!scenR18(s, id));
+    var r18only = !HK.SAFE_ON && (SM.r18only || []).indexOf(id) >= 0;
+    /* キャッチコピーに手書きで混ざった人数・R18 は外し、人数は肩見出しの右にそろえて出す */
+    var kt = String(s.kicker || '').replace(/（\d+(?:〜\d+)?人）/, '').replace(/^\d+(?:〜\d+)?人・/, '').replace(/・?R-?18/, '').replace(/^ソロ(?:（[^）]*）)?・?/, '').replace(/^・|・$/g, '');
+    if (!kt) kt = (SM.kicker && SM.kicker[id]) || '';
+    var lo = smin(id), hi = smax(id), cnt = lo === hi ? lo + '人' : lo + '〜' + hi + '人';
+    var pick = function (v) { return Array.isArray(v) ? v[HK.SAFE_ON ? 0 : 1] : v; };
+    var cl = pick((SM.descLong || {})[id]) || s.desc, cd = pick((SM.desc || {})[id]) || cl;
+    var snote = HK.SAFE_ON ? String(s.note || '').replace(/[^。]*成人として扱[^。]*。?/g, '').replace(/^※\s*$/, '').trim() : s.note, full = cl + (snote ? '\n' + snote : '') + (HK.SAFE_ON || /成人として扱/.test(s.note || '') ? '' : '\n※登場人物はすべて成人として扱います。');
+    /* タグの列の先頭に足す札：R18 の描写が入る条件（R18版の、常には R18 でない箱庭）と、注意書き（死の描写・パロディなど） */
+    var pre = [], r18s = !HK.SAFE_ON ? scenR18(s, id) : '', nh = cardNote(s.note);
+    if (r18s) pre.push({ html: esc(r18s), text: r18s, title: 'R18：' + r18s });
+    if (nh) pre.push({ html: esc(nh), text: nh, title: snote || nh, warn: true });
+    var minor = !HK.SAFE_ON && /未成年/.test(s.note || '') ? '<div class="note">※未成年の職業を選んだ人以外は成人として扱います</div>' : '';
+    return { s: s, adult: adult, r18only: r18only, kt: kt, cnt: cnt, cl: cl, cd: cd, snote: snote || '', full: full, pre: pre, minor: minor };
+  }
+  /* 1. 選んだ箱庭のカード（見本 05 の上）：分類・人数、題名、説明、札、効く気質。右に「箱庭を変える」「この箱庭のTIPS」「出来事の一覧」（tips.js の scenBtn。late を読んだら描き直す） */
+  function selCard(id, scen, busy) {
+    var ci = cardInfo(id), s = ci.s, uses = '';
+    if (scen && !scen.stub) {
+      uses = (scen.derived || []).map(function (k) { return '<span class="bxu" title="' + esc(HK.TRAIT_SRC[k]) + '">' + esc(HK.TRAIT_NAME[k]) + '<span class="src">' + esc(HK.TRAIT_SRC[k]) + '</span></span>'; }).join('') +
+        (scen.stats || []).map(function (x) { return '<span class="bxu" title="' + esc(x.desc) + '">' + esc(x.label) + '</span>'; }).join('') + (scen.weapons ? '<span class="bxu">支給武器</span>' : '');
+    }
+    var adultNote = !HK.SAFE_ON && !/成人として扱/.test(ci.snote) ? '<span class="bxadn">' + ADULT_NOTE + '</span>' : '';
+    return '<section class="bxsel" aria-label="選んだ箱庭"><div class="bxsel-m">' +
+      '<div class="bxk"><span>' + esc(ci.kt) + '</span><span>' + ci.cnt + '</span>' + adultNote + '</div>' +
+      '<h2 class="bxsel-n">' + esc(s.name) + (ci.adult ? '<span class="r18tag">R18</span>' : '') + (busy ? scLoadBadge(id) : '') + '</h2>' +
+      '<p class="bxsel-d">' + esc(ci.cl) + '</p>' + (ci.snote ? '<div class="note">' + esc(ci.snote) + '</div>' : '') + ci.minor + (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') +
+      (uses ? '<div class="bxuses"><span class="bxuses-h">効く気質' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</span>' + uses + '</div>' : '') +
+      '</div><div class="bxsel-a"><button type="button" class="bxbtn bxchg" data-act="pickopen" aria-haspopup="dialog">' + ICON_GRID + '<span><span class="bxlong">箱庭を</span>変える</span></button>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</div></section>';
+  }
+  /* 2. 箱庭を選ぶの窓（見本 06）の右：選んでいる（まだ決めていない）箱庭の説明 */
+  function pickSide(id) {
+    var ci = cardInfo(id), s = ci.s, n = S.chars.length, mn = smin(id), cur = scenOf(S.scenId);
+    return '<div class="bxk"><span>' + esc(ci.kt) + '</span><span>' + ci.cnt + '</span></div><h3>' + esc(s.name) + (ci.adult ? '<span class="r18tag">R18</span>' : '') + '</h3>' +
+      '<p class="bxside-d">' + esc(ci.cl) + '</p>' + (ci.snote ? '<p class="note">' + esc(ci.snote) + '</p>' : '') + ci.minor + (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') +
+      '<div class="bxside-b">' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</div>' +
+      (n && n < mn ? '<p class="bxwarnt" style="margin:0">いまの住人は' + n + '人です。この箱庭は' + mn + '人から遊べます。</p>' : '') +
+      '<span class="bxsp"></span><button type="button" class="bxgo" data-act="pickgo" data-id="' + esc(id) + '">この箱庭にする</button>' +
+      '<p class="bxcur">いまの箱庭：' + esc(cur ? cur.name : '') + '（場の設定は箱庭ごとに残ります）</p>';
+  }
+  /* 窓の開閉・カードの印（選んでいる .pv・人数の足りない注意・「遊べるものだけ」）・右の説明を合わせる（描いたあと・カードを押したとき） */
+  var pickSideId = '';
+  function pickSync() {
+    var pk = document.getElementById('bxpick');
+    if (!pk) return;
+    if (pk.hidden === pickOpen) pk.hidden = !pickOpen;
+    document.documentElement.classList.toggle('bx-modal', pickOpen);
+    var n = S.chars.length, pv = pickOpen ? pickPrev || S.scenId : S.scenId, fit = pickOpen && bxPref.fit && n > 0;
+    Array.prototype.forEach.call(pk.querySelectorAll('label.scen'), function (l) {
+      var inp = l.querySelector('input[data-f="scen"]');
+      if (!inp) return;
+      var id = inp.value, lack = Math.max(0, smin(id) - n), off = fit && lack > 0 && id !== S.scenId && id !== pv, on = pickOpen && id === pv;
+      if (l.classList.contains('bxfitoff') !== off) l.classList.toggle('bxfitoff', off);
+      if (l.classList.contains('pv') !== on) l.classList.toggle('pv', on);
+      if (inp.checked !== (id === pv)) inp.checked = id === pv;
+      var w = l.querySelector('.bxwarn'), wt = n && lack ? '住人が' + lack + '人足りません' : '';
+      if (w && w.textContent !== wt) w.textContent = wt;
+    });
+    if (!pickOpen) { pickSideId = ''; return; }
+    var fb = pk.querySelector('input[data-f="bxfit"]'), ft = document.getElementById('bxfitt');
+    if (fb) { fb.checked = bxPref.fit; fb.closest('label').hidden = !n; }
+    if (ft) ft.textContent = 'いまの住人 ' + n + '人 で遊べるものだけ';
+    var side = document.getElementById('bxside'), key = pv + '|' + S.scenId + '|' + n + '|' + (HK.Load ? HK.Load.gen : 0) + '|' + Object.keys(HK.TIPS_SCEN || {}).length;
+    if (side && pickSideId !== key && scenOf(pv)) { side.innerHTML = pickSide(pv); pickSideId = key; }
+  }
+  function pickShow(on) {
+    pickOpen = on; pickPrev = on ? S.scenId : ''; pickSideId = '';
+    pickSync();
+    var f = on ? document.querySelector('#bxpick label.scen.pv input') || document.querySelector('#bxpick .bxx') : document.querySelector('#view-box [data-act="pickopen"]');
+    if (f) { try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); } }
+    if (on) { var l = document.querySelector('#bxpick label.scen.pv'); if (l && l.scrollIntoView) l.scrollIntoView({ block: 'nearest' }); }
+  }
+  /* 「この箱庭にする」：箱庭を決めて窓を閉じ、上のカードに反映する（選び替えの描き方・保存は今までのカードの選択と同じ） */
+  function pickGo(id) {
+    id = id || pickPrev || S.scenId;
+    pickOpen = false; pickPrev = ''; pickSideId = '';
+    if (id && id !== S.scenId && scenOf(id)) { S.scenId = id; delete boxErr[id]; renderBox({ defer: true }); saveSoon(); toast('箱庭を「' + scenOf(id).name + '」にしました'); }
+    else pickSync();
+    var b = document.querySelector('#view-box [data-act="pickopen"]');
+    if (b) { try { b.focus({ preventScroll: true }); } catch (e) { b.focus(); } }
+  }
+  /* 3. 切替（見本 05・07）：参加者と初動 n/上限｜場の設定｜起こりやすさ｜展開と内容。右に「初期値に戻す」「ランダム」（いまの切替の環境値だけ） */
+  function bxTabCur() { return bxTabsOn.indexOf(bxPref.tab) >= 0 ? bxPref.tab : bxTabsOn[0] || 'join'; }
+  function bxTabsHtml(J, jmax) {
+    var cur = bxTabCur();
+    return '<div class="bxtabs"><div class="bxtl" role="tablist" aria-label="箱庭の設定">' + BX_TABS.filter(function (x) { return bxTabsOn.indexOf(x[0]) >= 0; }).map(function (x) {
+      var on = x[0] === cur;
+      return '<button type="button" role="tab" id="bxt-' + x[0] + '" data-act="bxtab" data-k="' + x[0] + '" aria-controls="bxp-' + x[0] + '" aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '">' + x[1] +
+        (x[0] === 'join' ? '<span class="bxtn" id="bxtn-join">' + J.length + '/' + jmax + '</span>' : '<span class="bxdot" id="bxdot-' + x[0] + '" hidden title="初期値から変えた欄があります"></span>') + '</button>';
+    }).join('') + '</div><div class="bxtabs-a"><button type="button" class="bxbtn" data-act="envreset" title="この切替の設定を初期値に戻す">初期値に戻す</button><button type="button" class="bxbtn" data-act="envrand" title="この切替の設定をランダムに決める（文字の項目はそのまま）">ランダム</button></div></div>';
+  }
+  function bxTabSync(vb) {
+    vb = vb || document.getElementById('view-box');
+    if (!vb) return;
+    var cur = bxTabCur();
+    if (vb.getAttribute('data-bxtab') !== cur) vb.setAttribute('data-bxtab', cur);
+    Array.prototype.forEach.call(vb.querySelectorAll('.bxtl [data-act="bxtab"]'), function (b) {
+      var on = b.dataset.k === cur;
+      if (b.getAttribute('aria-selected') !== String(on)) b.setAttribute('aria-selected', String(on));
+      if (b.tabIndex !== (on ? 0 : -1)) b.tabIndex = on ? 0 : -1;
+    });
+  }
+  /* 描き方は js/ui-box-draw.js（HK.BoxDraw）：節ごとに覚えて変わった節だけ作り直す。opt.defer（タブを押した・箱庭を選び替えた）は窓・選んだ箱庭のカード・切替だけ先に描き、残りは次の描画のあとで */
   function renderBox(opt) {
     var scen = scenOf(S.scenId);
     var wait = !!(scen && scen.stub);
@@ -1130,71 +1352,60 @@
     /* カードの HTML は、選択と読み込み中の印を除いて箱庭ごとに1回だけ作る（かたまり・TIPS を読んだら作り直す） */
     var ckey = (HK.Load ? HK.Load.gen : 0) + '|' + !!HK.SAFE_ON + '|' + Object.keys(HK.TIPS_SCEN || {}).length;
     var cards = order.map(function (id) { return BD ? BD.card(id, ckey, function () { return cardOf(id, false); }) : cardOf(id, true); }).join('');
-    /* カード：肩見出し＋人数・名前（R18 の札）・短い説明の3行。選んだカードだけに長い説明・タグ（PC は選んでいなくても1行）・注記・TIPS を出す（CSS の .scen.on で出し入れ。カードの HTML は選択によらず同じ） */
+    /* 窓の中のカード：肩見出し＋人数・名前（R18 の札）・注意（死の描写などの札・人数の不足 .bxwarn）。説明・タグは右の欄に（CSS で窓の中では隠す。カードの HTML は選択によらず同じ） */
     function cardOf(id, mark) {
-      var s = scenOf(id), SM = HK.ScenMeta || {};
-      /* R18 の場面がある箱庭（描写の設定 lewd がある・キャッチコピーに R18・R18 の説明がある）は、名前の右の R18 の札でひと目で分かるようにする。
-         R18版にしかない箱庭（HK.ScenMeta.r18only）はカードの色も成人向け（ピンク）にする（2026-10-31 利用者の指示：R18 の札は R18 の場面のある全部の箱庭に） */
-      var adult = !HK.SAFE_ON && (/R-?18/.test(s.kicker || '') || (s.env || []).some(function (e) { return e && e.id === 'lewd'; }) || !!scenR18(s, id));
-      var r18only = !HK.SAFE_ON && (SM.r18only || []).indexOf(id) >= 0;
-      /* キャッチコピーに手書きで混ざった人数・R18 は外し、人数は肩見出しの右にそろえて出す */
-      var kt = String(s.kicker || '').replace(/（\d+(?:〜\d+)?人）/, '').replace(/^\d+(?:〜\d+)?人・/, '').replace(/・?R-?18/, '').replace(/^ソロ(?:（[^）]*）)?・?/, '').replace(/^・|・$/g, '');
-      if (!kt) kt = (SM.kicker && SM.kicker[id]) || '';
-      var lo = smin(id), hi = smax(id), cnt = lo === hi ? lo + '人' : lo + '〜' + hi + '人';
-      var pick = function (v) { return Array.isArray(v) ? v[HK.SAFE_ON ? 0 : 1] : v; };
-      var cl = pick((SM.descLong || {})[id]) || s.desc, cd = pick((SM.desc || {})[id]) || cl;
-      var snote = HK.SAFE_ON ? String(s.note || '').replace(/[^。]*成人として扱[^。]*。?/g, '').replace(/^※\s*$/, '').trim() : s.note, full = cl + (snote ? '\n' + snote : '') + (HK.SAFE_ON || /成人として扱/.test(s.note || '') ? '' : '\n※登場人物はすべて成人として扱います。');
-      /* タグの列の先頭に足す札：R18 の描写が入る条件（R18版の、常には R18 でない箱庭）と、注意書き（死の描写・パロディなど） */
-      var pre = [], r18s = !HK.SAFE_ON ? scenR18(s, id) : '', nh = cardNote(s.note);
-      if (r18s) pre.push({ html: esc(r18s), text: r18s, title: 'R18：' + r18s });
-      if (nh) pre.push({ html: esc(nh), text: nh, title: snote || nh, warn: true });
-      var minor = !HK.SAFE_ON && /未成年/.test(s.note || '') ? '<div class="note">※未成年の職業を選んだ人以外は成人として扱います</div>' : '';
-      var on = mark && id === S.scenId;
-      return '<label class="scen' + (adult ? ' adult' : '') + (r18only ? ' r18only' : '') + (on ? ' on' : '') + '" title="' + esc(full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (on ? ' checked' : '') + '>' + ((wait || loadSel) && on ? scLoadBadge(id) : '') +
-        '<div class="k"><span class="kt">' + esc(kt) + '</span><span class="kn">' + cnt + '</span></div><div class="n">' + esc(s.name) + (adult ? '<span class="r18tag">R18</span>' : '') + '</div>' +
-        '<div class="d' + (cl !== cd ? ' hasl' : '') + '">' + esc(cd) + '</div>' + (cl !== cd ? '<div class="dl">' + esc(cl) + '</div>' : '') +
-        (HK.ScenTags ? HK.ScenTags.html(id, esc, pre) : '') + minor + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</label>';
+      var ci = cardInfo(id), s = ci.s, on = mark && id === S.scenId;
+      return '<label class="scen' + (ci.adult ? ' adult' : '') + (ci.r18only ? ' r18only' : '') + (on ? ' on' : '') + '" title="' + esc(ci.full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (on ? ' checked' : '') + '>' + ((wait || loadSel) && on ? scLoadBadge(id) : '') +
+        '<div class="k"><span class="kt">' + esc(ci.kt) + '</span><span class="kn">' + ci.cnt + '</span></div><div class="n">' + esc(s.name) + (ci.adult ? '<span class="r18tag">R18</span>' : '') + '</div>' +
+        '<div class="d' + (ci.cl !== ci.cd ? ' hasl' : '') + '">' + esc(ci.cd) + '</div>' + (ci.cl !== ci.cd ? '<div class="dl">' + esc(ci.cl) + '</div>' : '') +
+        (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') + ci.minor + '<span class="bxwarn"></span></label>';
     }
-    /* 全年齢版：R-18版の販売ページへの欄（URLは js/share-card.js の CONF.r18Url＝BOOTH・CONF.noteUrl＝note） */
-    if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<div class="scen r18link" title="エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。">' +
-      '<div class="k">BOOTH・noteで頒布中・18歳以上向け</div><div class="n">R-18版</div><div class="d">成人向けの箱庭を5つ追加。夜の場面もぼかさずに描きます。</div>' +
-      '<div class="r18buy"><a href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (HK.CONF.noteUrl ? '<a href="' + esc(HK.CONF.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '') + '</div></div>';
-    /* R18版は「※成人として扱います」を見出しの横に1行だけ（文字は CSS の attr で出す：折りたたみの開閉の覚えは見出しの文字で引くので、文字を変えない） */
-    var head = '<h2 class="sec">箱庭を選ぶ' + (HK.SAFE_ON ? '' : '<span class="secnote" data-note="' + ADULT_NOTE + '"></span>') + '</h2><div class="scens">' + cards + '</div>' + prefRow();
+    /* 窓の足：全年齢版は R-18版の案内（URL は js/share-card.js の CONF.r18Url＝BOOTH・CONF.noteUrl＝note）と、データの先読みの設定 */
+    var foot = '';
+    if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) foot += '<span class="r18link" title="エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。">R-18版（BOOTH・noteで頒布中・18歳以上向け）では成人向けの箱庭を5つ追加。夜の場面もぼかさずに描きます。</span>' +
+      '<a href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (HK.CONF.noteUrl ? '<a href="' + esc(HK.CONF.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '');
+    foot += prefRow();
+    /* R18版は「※成人として扱います」を窓の見出しの横に1行だけ */
+    var head = '<div class="bxpick" id="bxpick" hidden><div class="bxpick-bg" data-act="pickclose"></div><div class="bxpick-dlg" role="dialog" aria-modal="true" aria-labelledby="bxpick-t">' +
+      '<div class="bxpick-h"><h2 id="bxpick-t">箱庭を選ぶ</h2><span class="bxmu">' + order.length + '種類</span>' + (HK.SAFE_ON ? '' : '<span class="bxmu">' + ADULT_NOTE + '</span>') + '<span class="bxsp"></span><button type="button" class="bxx" data-act="pickclose" aria-label="閉じる">×</button></div>' +
+      '<div class="bxpick-b"><div class="bxpick-l"><label class="bxfit"><input type="checkbox" data-f="bxfit"> <span id="bxfitt">いまの住人で遊べるものだけ</span></label><div class="scens">' + cards + '</div></div>' +
+      '<aside class="bxpick-s" id="bxside" aria-label="選んでいる箱庭"></aside></div><div class="bxpick-f">' + foot + '</div></div></div>';
+    var selSeg = { k: 'sel', now: true, html: selCard(S.scenId, wait ? null : scen, wait || loadSel) };
     if (wait) {
       var we = boxErr[S.scenId];
-      drawBox([{ k: 'cards', html: head }, { k: 'run', html: runBar() }], opt, '<div class="boxwait"' + (we ? '' : ' aria-busy="true"') + '>' + (we ? '<p>「' + esc(scen.name) + '」のデータを読み込めませんでした' + (we.reason === 'offline' ? '（通信できないため読み込めません）' : '') + '</p><p><button type="button" class="btn small" data-act="scenretry">もう一度</button></p>' :
-          '<p>「' + esc(scen.name) + '」のデータを読み込んでいます…</p><p class="hint" style="margin:0">読み込み中に「箱庭を動かす」を押すと、読み終わりしだい動かします。</p>') + '</div>', wait || loadSel);
+      bxTabsOn = [];
+      drawBox([{ k: 'cards', html: head }, selSeg, { k: 'wait', html: '<div class="boxwait"' + (we ? '' : ' aria-busy="true"') + '>' + (we ? '<p>「' + esc(scen.name) + '」のデータを読み込めませんでした' + (we.reason === 'offline' ? '（通信できないため読み込めません）' : '') + '</p><p><button type="button" class="btn small" data-act="scenretry">もう一度</button></p>' :
+          '<p>「' + esc(scen.name) + '」のデータを読み込んでいます…</p><p class="hint" style="margin:0">読み込み中に「箱庭を動かす」を押すと、読み終わりしだい動かします。</p>') + '</div>' }, { k: 'run', html: runBar() }], opt, wait || loadSel);
       return;
     }
-    var derived = (scen.derived || []).map(function (k) { return '<span class="chip" title="' + esc(HK.TRAIT_SRC[k]) + '">' + esc(HK.TRAIT_NAME[k]) + '<span class="nums">' + esc(HK.TRAIT_SRC[k]) + '</span></span>'; }).join('');
-    var extra = (scen.stats || []).map(function (s) { return '<span class="chip" title="' + esc(s.desc) + '">' + esc(s.label) + '</span>'; }).join('') + (scen.weapons ? '<span class="chip">支給武器</span>' : '');
-    var sexCols = S.scenId === 'goukon' || S.scenId === 'omega';
     var pfs = scen.perFields || [];
     /* 最初の行動・短期目標：選べるものがない箱庭（物語型の宇宙船漂流記・吹雪の館など）では、見出しと列を出さない */
     var hasAct = !!(scen.actions && scen.actions.length), hasGoal = !!(scen.goals && scen.goals.length);
     /* 箱庭をまたいで共通の能力値・欄（shared-stats.js）は、見出しに ＊ を付けて説明を添える */
     var shn = function (id, pick) { return HK.Shared ? HK.Shared.headNote(S.scenId, id, pick) : ''; };
-    var statHead = (scen.stats || []).map(function (s) { var n = shn(s.id, false), sc = HK.Shared && HK.Shared.scale ? HK.Shared.scale(S.scenId, s.id) : ''; return '<th title="' + esc(s.desc + (sc ? ' ' + sc : '') + (n ? ' ' + n : '')) + '">' + esc(s.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (scen.weapons ? '<th>武器</th>' : '') + pfs.map(function (f) { var n = shn(f.id, true); return '<th' + (n ? ' title="' + esc(n) + '"' : '') + '>' + esc(f.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (sexCols ? '<th>性別</th><th>恋愛対象</th>' : '');
+    var statHead = (scen.stats || []).map(function (s) { var n = shn(s.id, false), sc = HK.Shared && HK.Shared.scale ? HK.Shared.scale(S.scenId, s.id) : ''; return '<th title="' + esc(s.desc + (sc ? ' ' + sc : '') + (n ? ' ' + n : '')) + '">' + esc(s.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('') + (scen.weapons ? '<th>武器</th>' : '') + pfs.map(function (f) { var n = shn(f.id, true); return '<th' + (n ? ' title="' + esc(n) + '"' : '') + '>' + esc(f.label) + (n ? '<span class="shmark" aria-label="共通の値">＊</span>' : '') + '</th>'; }).join('');
     var J = joined(S.scenId), jmax = smax(S.scenId);
     /* 住人が多いとき（41人以上）は、参加しない人の行を軽くする（設定の欄は、参加にすると出る。住人200人でも箱庭タブが重くならないように） */
-    var lazyBox = S.chars.length > 40, nCols = (hasAct ? 1 : 0) + (hasGoal ? 1 : 0) + (scen.stats || []).length + (scen.weapons ? 1 : 0) + pfs.length + (sexCols ? 2 : 0);
+    var lazyBox = S.chars.length > 40, nCols = (hasAct ? 1 : 0) + (hasGoal ? 1 : 0) + (scen.stats || []).length + (scen.weapons ? 1 : 0) + pfs.length;
+    /* 変えた欄（おまかせ・ランダムでない）だけ濃く（.chg。ui-box-style.js） */
+    var cg = function (v, dflt) { return v != null && v !== '' && String(v) !== dflt ? ' class="chg"' : ''; };
+    var nameCell = function (c, i, prof) { return '<td><span class="row" style="flex-wrap:nowrap"><span class="dot" style="background:var(--p' + i + ')"></span><b>' + esc(c.name) + '</b>' + (c.group ? '<span class="grptag">' + esc(grpList(c).join('・')) + '</span>' : '') + '</span>' + (prof ? profBtn(c) : '') + '</td>'; };
     var rowOf = function (c, i) {
       var on = J.indexOf(c) >= 0;
-      if (!on && lazyBox) return '<tr class="off lazy"><td><input type="checkbox" id="jn-' + c.id + '" data-f="join" data-id="' + c.id + '" aria-label="' + esc(c.name) + 'を参加させる"></td><td><span class="row" style="flex-wrap:nowrap"><span class="dot" style="background:var(--p' + i + ')"></span><b>' + esc(c.name) + '</b>' + (c.group ? '<span class="grptag">' + esc(grpList(c).join('・')) + '</span>' : '') + '</span></td>' + (nCols ? '<td colspan="' + nCols + '" class="hint" style="font-size:12px;margin:0;white-space:nowrap">参加にすると、ここで設定できます</td>' : '') + '</tr>';
+      if (!on && lazyBox) return '<tr class="off lazy"><td><input type="checkbox" id="jn-' + c.id + '" data-f="join" data-id="' + c.id + '" aria-label="' + esc(c.name) + 'を参加させる"></td>' + nameCell(c, i, false) + (nCols ? '<td colspan="' + nCols + '" class="hint" style="font-size:12px;margin:0;white-space:nowrap">参加にすると、ここで設定できます</td>' : '') + '</tr>';
       var p = per(c, S.scenId);
       var sel = function (f, list) {
-        return '<select id="pc-' + c.id + '-' + f + '" data-f="per" data-id="' + c.id + '" data-k="' + f + '" aria-label="' + esc(c.name) + 'の' + (f === 'action' ? '最初の行動' : '短期目標') + '"><option value="auto">おまかせ（気質から）</option>' +
+        return '<select id="pc-' + c.id + '-' + f + '"' + cg(p[f], 'auto') + ' data-f="per" data-id="' + c.id + '" data-k="' + f + '" aria-label="' + esc(c.name) + 'の' + (f === 'action' ? '最初の行動' : '短期目標') + '"><option value="auto">おまかせ（気質から）</option>' +
           list.map(function (o) { return '<option value="' + o.id + '"' + (p[f] === o.id ? ' selected' : '') + '>' + esc(o.label) + '</option>'; }).join('') + '</select>';
       };
       var st = (scen.stats || []).map(function (s) {
         var v = p.stats[s.id] == null ? 'random' : String(p.stats[s.id]);
-        return '<td><select id="ps-' + c.id + '-' + s.id + '" data-f="stat" data-id="' + c.id + '" data-k="' + s.id + '" aria-label="' + esc(c.name) + 'の' + esc(s.label) + '"><option value="random"' + (v === 'random' ? ' selected' : '') + '>ランダム</option>' +
+        return '<td><select id="ps-' + c.id + '-' + s.id + '"' + cg(v, 'random') + ' data-f="stat" data-id="' + c.id + '" data-k="' + s.id + '" aria-label="' + esc(c.name) + 'の' + esc(s.label) + '"><option value="random"' + (v === 'random' ? ' selected' : '') + '>ランダム</option>' +
           [1, 2, 3, 4, 5].map(function (n) { return '<option value="' + n + '"' + (v === String(n) ? ' selected' : '') + '>' + n + '</option>'; }).join('') + '</select></td>';
       }).join('');
-      var wp = scen.weapons ? '<td><select id="pw-' + c.id + '" data-f="weapon" data-id="' + c.id + '" aria-label="' + esc(c.name) + 'の武器"><option value="random">ランダム支給</option>' +
+      var wp = scen.weapons ? '<td><select id="pw-' + c.id + '"' + cg(p.weapon, 'random') + ' data-f="weapon" data-id="' + c.id + '" aria-label="' + esc(c.name) + 'の武器"><option value="random">ランダム支給</option>' +
         HK.WEAPONS.map(function (w) { return '<option value="' + w.id + '"' + (p.weapon === w.id ? ' selected' : '') + '>' + esc(w.name) + '</option>'; }).join('') + '</select></td>' : '';
-      return '<tr' + (on ? '' : ' class="off"') + '><td><input type="checkbox" id="jn-' + c.id + '" data-f="join" data-id="' + c.id + '"' + (on ? ' checked' : '') + ' aria-label="' + esc(c.name) + 'を参加させる"></td><td><span class="row" style="flex-wrap:nowrap"><span class="dot" style="background:var(--p' + i + ')"></span><b>' + esc(c.name) + '</b>' + (c.group ? '<span class="grptag">' + esc(grpList(c).join('・')) + '</span>' : '') + '</span></td>' + (hasAct ? '<td>' + sel('action', scen.actions) + '</td>' : '') + (hasGoal ? '<td>' + sel('goal', scen.goals) + '</td>' : '') + st + wp + pfs.map(function (f) {
+      return '<tr' + (on ? '' : ' class="off"') + '><td><input type="checkbox" id="jn-' + c.id + '" data-f="join" data-id="' + c.id + '"' + (on ? ' checked' : '') + ' aria-label="' + esc(c.name) + 'を参加させる"></td>' + nameCell(c, i, true) + (hasAct ? '<td>' + sel('action', scen.actions) + '</td>' : '') + (hasGoal ? '<td>' + sel('goal', scen.goals) + '</td>' : '') + st + wp + pfs.map(function (f) {
         /* ほかの欄の選び方でこの欄が意味を持たないとき（サキュバスの標的・遮断穴の主催者など）は、理由を出して選べなくする（perField.offWhen） */
         var offTx = f.offWhen ? f.offWhen(p.pick || {}) : '';
         if (offTx) return '<td><select id="pf-' + c.id + '-' + f.id + '" disabled title="' + esc(offTx) + '" aria-label="' + esc(c.name) + 'の' + esc(f.label) + '"><option>' + esc(offTx) + '</option></select></td>';
@@ -1202,49 +1413,104 @@
           var tv = (p.pick || {})[f.id] || '', ph = f.placeholder ? f.placeholder(c) : '';
           return '<td><input type="text" id="pf-' + c.id + '-' + f.id + '" data-f="pf" data-id="' + c.id + '" data-k="' + f.id + '" value="' + esc(tv) + '" placeholder="' + esc(ph) + '" maxlength="40" style="min-width:14em" aria-label="' + esc(c.name) + 'の' + esc(f.label) + '"></td>';
         }
-        var v = (p.pick || {})[f.id] || 'auto', opts = '', grp = null;
-        f.options.forEach(function (o) {
-          if (f.groups && o.group !== grp) { opts += (grp ? '</optgroup>' : '') + '<optgroup label="' + esc(o.group) + '">'; grp = o.group; }
-          opts += '<option value="' + o.id + '"' + (v === o.id ? ' selected' : '') + '>' + esc(o.label) + '</option>';
-        });
-        if (grp) opts += '</optgroup>';
-        return '<td><select id="pf-' + c.id + '-' + f.id + '" data-f="pf" data-id="' + c.id + '" data-k="' + f.id + '" aria-label="' + esc(c.name) + 'の' + esc(f.label) + '"><option value="auto">' + esc(f.auto || 'おまかせ') + '</option>' + opts + '</select></td>';
-      }).join('') + (sexCols ? '<td>' + gsel(c, 'gender', GENDERS, 'bg') + '</td><td>' + gsel(c, 'likes', LIKES, 'bl') + '</td>' : '') + '</tr>';
+        var v = (p.pick || {})[f.id] || 'auto';
+        return '<td><select id="pf-' + c.id + '-' + f.id + '"' + cg(v, 'auto') + ' data-f="pf" data-id="' + c.id + '" data-k="' + f.id + '" aria-label="' + esc(c.name) + 'の' + esc(f.label) + '"><option value="auto">' + esc(f.auto || 'おまかせ') + '</option>' + pfOpts(f, v) + '</select></td>';
+      }).join('') + '</tr>';
     };
+    function pfOpts(f, v) {
+      var opts = '', grp = null;
+      f.options.forEach(function (o) {
+        if (f.groups && o.group !== grp) { opts += (grp ? '</optgroup>' : '') + '<optgroup label="' + esc(o.group) + '">'; grp = o.group; }
+        opts += '<option value="' + o.id + '"' + (v === o.id ? ' selected' : '') + '>' + esc(o.label) + '</option>';
+      });
+      return opts + (grp ? '</optgroup>' : '');
+    }
+    /* 頭の下の「まとめて変える」の行（見本 07）：選ぶと参加している人全員のその欄を変える（data-f="bulk"） */
+    var bulkSel = function (k, label, inner) { return '<td data-label="' + esc(label) + '"><select data-f="bulk" data-k="' + k + '" aria-label="参加者全員の' + esc(label) + 'をまとめて変える"><option value="">全員に…</option>' + inner + '</select></td>'; };
+    var listOpts = function (list) { return list.map(function (o) { return '<option value="' + o.id + '">' + esc(o.label) + '</option>'; }).join(''); };
+    var bulk = nCols ? '<tr class="bxbulk"><td></td><td><b>まとめて変える</b></td>' +
+      (hasAct ? bulkSel('action', '最初の行動', '<option value="auto">おまかせ（気質から）</option>' + listOpts(scen.actions)) : '') +
+      (hasGoal ? bulkSel('goal', '短期目標', '<option value="auto">おまかせ（気質から）</option>' + listOpts(scen.goals)) : '') +
+      (scen.stats || []).map(function (s) { return bulkSel('stat:' + s.id, s.label, '<option value="random">ランダム</option>' + [1, 2, 3, 4, 5].map(function (n) { return '<option value="' + n + '">' + n + '</option>'; }).join('')); }).join('') +
+      (scen.weapons ? bulkSel('weapon', '武器', '<option value="random">ランダム支給</option>' + HK.WEAPONS.map(function (w) { return '<option value="' + w.id + '">' + esc(w.name) + '</option>'; }).join('')) : '') +
+      pfs.map(function (f) { return f.type === 'text' || !f.options ? '<td></td>' : bulkSel('pf:' + f.id, f.label, '<option value="auto">' + esc(f.auto || 'おまかせ') + '</option>' + pfOpts(f, '')); }).join('') + '</tr>' : '';
     /* 住人が多いときは、グループごとの折りたたみ・名前で探す・選んでいる人だけ（ui-cast-pages.js）。参加している人はいつも出す */
     var rows = lazyBox && CP ? CP.boxRows(rowOf, J, 2 + nCols).split(/(?=<tr[\s>])/) : S.chars.map(rowOf);
-
-    var segs = [{ k: 'cards', html: head }, { k: 'env', html: '<h2 class="sec">環境値' + (HK.Tips ? HK.Tips.btn('env') : '') + ' <span class="envbtns"><button type="button" class="mini" data-act="envreset" title="この箱庭の環境値を初期値に戻す">初期値に戻す</button><button type="button" class="mini" data-act="envrand" title="環境値をランダムに決める（文字の項目はそのまま）">ランダム</button></span></h2><div class="panel">' + (S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') + '<div class="envgrid">' + genv(scen).map(function (e) { return envItem(e, S.scenId); }).join('') + contentBox() + '</div></div>' },
-      { k: 'uses', html: '<h2 class="sec">この箱庭で効くもの' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</h2>' +
-      '<div class="uses">' + derived + '</div><div class="uses" style="margin-top:6px">' + extra + '</div>' },
-      { k: 'per', html: '<h2 class="sec">' + (!hasAct && !hasGoal ? (scen.solo ? '挑戦者の設定' : '住人ごとの設定') : scen.solo ? '挑戦者と方針' : '住人ごとの初動と目標') + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</h2>' +
+    var gs = groupsOf();
+    var joinHtml = '<section class="bxpanel bxjoin" data-bxp="join" id="bxp-join" role="tabpanel" aria-labelledby="bxt-join">' +
       (scen.castHint || scen.solo ? '<p class="hint">' + (scen.castHint ? esc(scen.castHint) : 'この箱庭は一人用です。チェックを入れた住人が挑みます。' + (HK.SAFE_ON ? '' : '登場人物はすべて成人として扱います。')) + '</p>' : '') +
-      (S.chars.length ? '<p class="hint" id="joincount">参加 <b class="num">' + J.length + '</b> / 上限 ' + jmax + '人' + (S.chars.length > jmax ? '　この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。' : '') + '</p>' + loveCrowdNote(S.scenId) + '<div class="row" style="margin-bottom:8px"><button class="btn small" data-act="joinall">全員を参加</button><button class="btn small" data-act="joinnone">全員を外す</button>' + (groupsOf().length ? '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button>' : '') + '</div>' + randRow(jmax) + (groupsOf().length ? '<div class="row grpjoin" style="margin-bottom:8px;gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + groupsOf().map(function (g) { var n = S.chars.filter(function (c) { return inGrp(c, g); }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button><button class="btn small ghost" data-act="joingrpdel" data-g="' + esc(g) + '" title="このグループを参加から外す" aria-label="' + esc(g) + 'を参加から外す">−</button></span>'; }).join('') + '</div>' : '') + (lazyBox && CP ? CP.boxTools() : '') + '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th>' + (hasAct ? '<th>最初の行動</th>' : '') + (hasGoal ? '<th>短期目標</th>' : '') + statHead + '</tr></thead><tbody><!--rows--></tbody></table></div>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
-      (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、カードの「この箱庭のTIPS」にあります。</p>' : '') +
-      (sexCols && S.chars.length ? '<p class="hint" style="margin-top:8px">性別と恋愛対象は、住人タブの各住人の「設定」と同じものです。</p>' : '') +
-      (S.scenId === 'classroom' && S.chars.length && HK.CastTeacher ? HK.CastTeacher.selectHtml(S) : '') },
-      { k: 'run', html: runBar() }];
+      (S.chars.length ? '<div class="bxjbar"><span class="bxjc"><span id="joincount">' + joinCountHtml(J.length, jmax, smin(S.scenId)) + '</span>' + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</span><span class="bxsp"></span>' +
+        '<button type="button" class="bxbtn" data-act="joinall">全員を参加</button><button type="button" class="bxbtn" data-act="joinnone">全員を外す</button>' + randRow(jmax) + '</div>' +
+        (S.chars.length > jmax ? '<p class="hint">この箱庭は' + jmax + '人までです。チェックで参加者を選んでください。</p>' : '') + loveCrowdNote(S.scenId) +
+        (gs.length ? '<div class="row grpjoin" style="gap:6px"><span class="hint" style="margin:0">グループで選ぶ：</span>' + gs.map(function (g) { var n = S.chars.filter(function (c) { return inGrp(c, g); }).length; return '<span class="grpchip"><button class="btn small" data-act="joingrp" data-g="' + esc(g) + '" title="このグループだけを参加させる">' + esc(g) + '（' + n + '）</button><button class="btn small ghost" data-act="joingrpadd" data-g="' + esc(g) + '" title="このグループを参加に加える" aria-label="' + esc(g) + 'を参加に加える">＋</button><button class="btn small ghost" data-act="joingrpdel" data-g="' + esc(g) + '" title="このグループを参加から外す" aria-label="' + esc(g) + 'を参加から外す">−</button></span>'; }).join('') + '<button class="btn small ghost" data-act="sortgrp">グループ順に並べる</button></div>' : '') +
+        (lazyBox && CP ? CP.boxTools() : '') +
+        '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th>' + (hasAct ? '<th>最初の行動</th>' : '') + (hasGoal ? '<th>短期目標</th>' : '') + statHead + '</tr>' + bulk + '</thead><tbody><!--rows--></tbody></table></div>' +
+        '<p class="bxnote">変えた欄だけ濃く表示します。性別・恋愛対象は住人の「設定」で変えます（名前の下に今の値を表示。押すとその人の設定が開きます）。</p>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
+      (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、上のカードの「この箱庭のTIPS」にあります。</p>' : '') +
+      (S.scenId === 'classroom' && S.chars.length && HK.CastTeacher ? HK.CastTeacher.selectHtml(S) : '') + '</section>';
+    /* 環境値の節：場の設定（この箱庭だけ）・起こりやすさ・展開と内容（全箱庭で共通。内容のスイッチは R18版だけ） */
+    var pan = { scen: [], odds: [], plot: [] }, ctb = contentBox();
+    genv(scen).forEach(function (e) { pan[envGroup(e)].push(e); });
+    bxTabsOn = ['join'].concat(pan.scen.length ? ['scen'] : [], pan.odds.length ? ['odds'] : [], pan.plot.length || ctb ? ['plot'] : []);
+    var envPanel = function (k, lead, items, extra) {
+      return '<section class="bxpanel bxenv" data-bxp="' + k + '" id="bxp-' + k + '" role="tabpanel" aria-labelledby="bxt-' + k + '"><p class="bxlead">' + lead + (HK.Tips ? HK.Tips.btn('env') : '') + '</p>' +
+        (k === 'scen' && S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') +
+        '<div class="envgrid">' + items.map(function (e) { return envItem(e, S.scenId); }).join('') + (extra || '') + '</div></section>';
+    };
+    var segs = [{ k: 'cards', html: head }, selSeg, { k: 'tabs', now: true, html: bxTabsHtml(J, jmax) }, { k: 'per', html: joinHtml }];
+    if (pan.scen.length) segs.push({ k: 'env', html: envPanel('scen', esc(scen.name) + 'だけの設定です。起こりやすさ・展開の重さは、ほかのタブにあります。', pan.scen) });
+    if (pan.odds.length) segs.push({ k: 'odds', html: envPanel('odds', 'すべての箱庭で共通の設定です（変えると、ほかの箱庭にも効きます）。', pan.odds) });
+    if (pan.plot.length || ctb) segs.push({ k: 'plot', html: envPanel('plot', '展開の重さ・内容のスイッチなど、すべての箱庭で共通の設定です。', pan.plot, ctb) });
+    segs.push({ k: 'run', html: runBar() });
     /* 参加表は行ごとに分けて渡す（変わった行だけ入れ替える。住人の名前などは esc 済みなので <!-- は表の位置にしか無い） */
-    var pp = segs[3].html.split('<!--rows-->');   /* 3：参加表（もとの「高度設定」の節は 2026-10-28 に住人タブの「口調・喘ぎの設定」へ移した） */
+    var pp = segs[3].html.split('<!--rows-->');
     segs[3] = pp.length === 2 ? { k: 'per', pre: pp[0], rows: rows, post: pp[1] } : { k: 'per', html: pp.join(rows.join('')) };
-    drawBox(segs.filter(function (x) { return x.html || x.rows; }), opt, '', loadSel);
+    drawBox(segs, opt, loadSel);
   }
-  function drawBox(segs, opt, tail, badge) {
-    var vb = $('#view-box'), after = function () { if (CP) CP.after(vb); };
-    if (!BD) { vb.innerHTML = segs[0].html + tail + segs.slice(1).map(function (x) { return x.rows ? x.pre + x.rows.join('') + x.post : x.html; }).join(''); after(); return; }
-    BD.draw(vb, segs, { defer: !!(opt && opt.defer), sel: S.scenId, badge: badge ? scLoadBadge(S.scenId) : '', tail: tail, after: after, live: function () { return tab === 'box'; } });
+  function drawBox(segs, opt, badge) {
+    var vb = $('#view-box'), after = function () { if (CP) CP.after(vb); bxTabSync(vb); pickSync(); bxLive(); pendSync(); };
+    if (!BD) { vb.innerHTML = segs.map(function (x) { return x.rows ? x.pre + x.rows.join('') + x.post : x.html; }).join(''); after(); return; }
+    BD.draw(vb, segs, { defer: !!(opt && opt.defer), sel: S.scenId, badge: badge ? scLoadBadge(S.scenId) : '', tail: '', after: after, live: function () { return tab === 'box'; } });
   }
 
-  /* 人数を決めてランダムに参加者を選ぶ（対象は全員か、グループ一つ） */
+  /* 人数を決めてランダムに参加者を選ぶ（対象は全員か、グループ一つ。見本 07 の「ランダムに n 人 選ぶ」） */
   function randRow(jmax) {
     var gs = groupsOf(), from = S.randFrom && gs.indexOf(S.randFrom) >= 0 ? S.randFrom : '';
     var pool = S.chars.filter(function (c) { return !from || inGrp(c, from); }).length, mx = Math.min(jmax, pool), mn = Math.min(smin(S.scenId), mx);
     var n = HK.clamp(+S.randN || Math.min(mx, Math.max(mn, 4)), mn, mx);
-    return '<div class="row randjoin" style="margin-bottom:8px;gap:6px;flex-wrap:wrap"><span class="hint" style="margin:0">ランダムに選ぶ：</span>' +
-      (gs.length ? '<select id="randfrom" data-f="randfrom" aria-label="ランダムに選ぶ対象" style="max-width:100%"><option value="">住人全員から</option>' + gs.map(function (g) { return '<option value="' + esc(g) + '"' + (g === from ? ' selected' : '') + '>【' + esc(g) + '】から</option>'; }).join('') + '</select>' : '') +
-      '<input type="number" id="randn" data-f="randn" min="' + mn + '" max="' + mx + '" value="' + n + '" inputmode="numeric" style="width:4.5em" aria-label="ランダムに選ぶ人数"><span class="hint" style="margin:0">人</span>' +
-      '<button class="btn small" data-act="joinrand" style="flex:none;white-space:nowrap"' + (mx < 1 ? ' disabled' : '') + '>ランダムに選ぶ</button></div>';
+    return '<span class="bxrand randjoin" role="group" aria-label="ランダムに参加者を選ぶ"><span class="bxrandl">' +
+      (gs.length ? '<select id="randfrom" data-f="randfrom" aria-label="ランダムに選ぶ対象"><option value="">住人全員から</option>' + gs.map(function (g) { return '<option value="' + esc(g) + '"' + (g === from ? ' selected' : '') + '>【' + esc(g) + '】から</option>'; }).join('') + '</select>' : '') +
+      'ランダムに<input type="number" id="randn" data-f="randn" min="' + mn + '" max="' + mx + '" value="' + n + '" inputmode="numeric" aria-label="ランダムに選ぶ人数">人</span>' +
+      '<button type="button" data-act="joinrand"' + (mx < 1 ? ' disabled' : '') + '>選ぶ</button></span>';
   }
+  /* 参加表の名前の下の一行から住人の設定を開いたら、閉じたときに箱庭タブを描き直す（性別・恋愛対象・口調の一行を合わせる） */
+  function bxGearWatch() {
+    var ov = document.querySelector('.gearov');
+    if (!ov || typeof MutationObserver === 'undefined' || ov._bxw) return;
+    ov._bxw = new MutationObserver(function () { if (ov.hidden && tab === 'box') renderBox(); });
+    ov._bxw.observe(ov, { attributes: true, attributeFilter: ['hidden'] });
+  }
+  /* 窓のキー操作：Esc で閉じる・カードの上で Enter で決める・Tab は窓の中を回る。切替は ← → で移る。カードのダブルクリックで決める */
+  document.addEventListener('keydown', function (ev) {
+    var t = ev.target;
+    if (pickOpen && tab === 'box') {
+      if (ev.key === 'Escape') { ev.preventDefault(); pickShow(false); return; }
+      if (ev.key === 'Enter' && t && t.matches && t.matches('#bxpick input[data-f="scen"]')) { ev.preventDefault(); pickGo(t.value); return; }
+      if (ev.key === 'Tab') {
+        var dlg = document.querySelector('#bxpick .bxpick-dlg'), fs = dlg ? Array.prototype.filter.call(dlg.querySelectorAll('button,input,select,a[href],[tabindex="0"]'), function (x) { return !x.disabled && x.offsetParent !== null && !(x.type === 'radio' && !x.checked); }) : [];
+        if (fs.length && (ev.shiftKey ? t === fs[0] : t === fs[fs.length - 1])) { ev.preventDefault(); fs[ev.shiftKey ? fs.length - 1 : 0].focus(); }
+      }
+      return;
+    }
+    if ((ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') && t && t.matches && t.matches('#view-box .bxtl [data-act="bxtab"]')) {
+      var bs = Array.prototype.slice.call(t.parentNode.querySelectorAll('[data-act="bxtab"]')), i = bs.indexOf(t), nx = bs[(i + (ev.key === 'ArrowRight' ? 1 : bs.length - 1)) % bs.length];
+      if (nx) { ev.preventDefault(); nx.click(); nx.focus(); }
+    }
+  });
+  document.addEventListener('dblclick', function (ev) {
+    var l = pickOpen && ev.target.closest && ev.target.closest('#bxpick label.scen'), i = l && l.querySelector('input[data-f="scen"]');
+    if (i) pickGo(i.value);
+  });
   function envNow() {
     var env = {};
     HK.SCENARIOS[S.scenId].env.forEach(function (e) { env[e.id] = envVal(e, S.scenId); });
@@ -1335,12 +1601,13 @@
   }
   var pending = null;
   function whenReady(id, fn, msg, scenOnly, tones) {
-    if (ready(id, scenOnly, tones)) { pending = null; goReady(fn, id); return; }
+    if (ready(id, scenOnly, tones)) { pending = null; pendSync(); goReady(fn, id); return; }
     var p = pending = { id: id, fn: fn, scenOnly: !!scenOnly, tones: scenOnly ? null : tones || null };
     toast(msg || 'データを読み込んでいます。終わりしだい動かします…');
+    pendSync();
     if (HK.Load && HK.Load.manifest) Promise.all([HK.Load.ensure(id), p.tones && HK.Load.ensureTones ? HK.Load.ensureTones(p.tones) : null]).then(function () { flushPending(p); }, function (e) {
       if (pending !== p) return;
-      pending = null;
+      pending = null; pendSync();
       loadFail(e, function () { whenReady(id, fn, msg, scenOnly, tones); });
     });
   }
@@ -1351,7 +1618,7 @@
   }
   function flushPending(p) {
     if (!p || pending !== p || !ready(p.id, p.scenOnly, p.tones)) return;
-    pending = null;
+    pending = null; pendSync();
     goReady(p.fn, p.id);
   }
   /* 読み込めなかったときの知らせ（画面の下に残す。「もう一度」で読み直す）。新しい版が出ていたときは load.js の知らせ（画面の上）を出す */
@@ -1567,7 +1834,10 @@
       /* 環境値：初期値に戻す／ランダムに決める（文字の項目はそのまま） */
       case 'envreset': case 'envrand': (function () {
         var scen = HK.SCENARIOS[S.scenId]; if (!scen) return;
+        /* 箱庭タブの切替（場の設定・起こりやすさ・展開と内容）で押したときは、その切替の環境値だけ */
+        var scope = BX_TABNAME[bxTabCur()] ? bxTabCur() : '';
         genv(scen).forEach(function (e) {
+          if (scope && envGroup(e) !== scope) return;
           var src = HK.GLOBAL_ENV.indexOf(e) >= 0 ? S.glob : (S.env[S.scenId] = S.env[S.scenId] || {});
           if (act === 'envreset') { delete src[e.id]; return; }
           if (e.type === 'text') return;
@@ -1575,8 +1845,20 @@
           var lo = +e.min, hi = +e.max; if (isNaN(lo) || isNaN(hi)) return;
           src[e.id] = lo + Math.floor(Math.random() * (hi - lo + 1));
         });
-        renderBox(); toast(act === 'envreset' ? '環境値を初期値に戻しました' : '環境値をランダムに決めました');
+        renderBox(); toast((scope ? BX_TABNAME[scope] : '環境値') + (act === 'envreset' ? 'を初期値に戻しました' : 'をランダムに決めました'));
       })(); break;
+      /* 箱庭タブ（2026-11-01 担当UB）：箱庭を選ぶの窓・切替・セグメント・参加表の名前の下の一行 */
+      case 'pickopen': pickShow(true); break;
+      case 'pickclose': pickShow(false); break;
+      case 'pickgo': pickGo(t.dataset.id); break;
+      case 'bxtab': bxPref.tab = t.dataset.k; bxPrefSave(); bxTabSync(); break;
+      case 'envseg': (function () {
+        var it = t.closest('.envitem'), sl = it && it.querySelector('select[data-f="env"]');
+        if (!sl || t.disabled || sl.value === t.dataset.v) return;
+        sl.value = t.dataset.v;
+        sl.dispatchEvent(new Event('change', { bubbles: true }));
+      })(); break;
+      case 'bxgear': if (HK.UI.openGear && t.dataset.id) { HK.UI.openGear(t.dataset.id); bxGearWatch(); } break;
       case 'import-add': importRoster(false); break;
       case 'import-replace': importRoster(true); break;
       case 'export':
@@ -1812,7 +2094,37 @@
       refreshRow(row, c, true);
     }
     /* 箱庭の選び替え：カードの印を先に描き、保存（住人が多いと重い）は次の描画のあとで */
-    else if (f === 'scen') { S.scenId = t.value; delete boxErr[t.value]; renderBox({ defer: true }); saveSoon(); return; }
+    else if (f === 'scen') {
+      /* 「箱庭を選ぶ」の窓の中：押したカードを右に出すだけ（決めるのは「この箱庭にする」。pickGo） */
+      if (pickOpen) { pickPrev = t.value; pickSync(); return; }
+      S.scenId = t.value; delete boxErr[t.value]; renderBox({ defer: true }); saveSoon(); return;
+    }
+    /* 窓の「いまの住人で遊べるものだけ」（画面だけの設定） */
+    else if (f === 'bxfit') { bxPref.fit = !!t.checked; bxPrefSave(); pickSync(); return; }
+    /* 参加表の「まとめて変える」：参加している人全員のその欄を変える（欄ごとの変更と同じ保存のしかた） */
+    else if (f === 'bulk') {
+      if (ev.type !== 'change' || !t.value) return;
+      var bk = t.dataset.k, bv = t.value, bsc = HK.SCENARIOS[S.scenId], bn = 0, blab = t.options[t.selectedIndex].text, bhd = (t.getAttribute('aria-label') || '').replace(/^参加者全員の|をまとめて変える$/g, '');
+      if (!bsc) return;
+      joined(S.scenId).forEach(function (bc) {
+        var bp = per(bc, S.scenId);
+        if (bk === 'action' || bk === 'goal') bp[bk] = bv;
+        else if (bk === 'weapon') bp.weapon = bv;
+        else if (bk.indexOf('stat:') === 0) { var sk = bk.slice(5); if (bv === 'random') delete bp.stats[sk]; else bp.stats[sk] = +bv; if (HK.Shared) HK.Shared.set(bc, S.scenId, sk, bv, false); }
+        else if (bk.indexOf('pf:') === 0) {
+          var fk = bk.slice(3), fd = (bsc.perFields || []).filter(function (x) { return x.id === fk; })[0];
+          bp.pick = bp.pick || {};
+          if (!fd || (fd.offWhen && fd.offWhen(bp.pick))) return;
+          if (bv === 'auto') delete bp.pick[fk]; else bp.pick[fk] = bv;
+          if (HK.Shared) HK.Shared.set(bc, S.scenId, fk, bv, true);
+        } else return;
+        bn++;
+      });
+      t.value = '';
+      save(); renderBox();
+      toast(bn ? '参加している' + bn + '人の「' + bhd + '」を「' + blab + '」にしました' : '参加している人がいません');
+      return;
+    }
     else if (f === 'prefetch') {
       if (ev.type === 'change' && HK.Load && HK.Load.setPref) { HK.Load.setPref(t.value); toast('データの先読みを「' + t.options[t.selectedIndex].text + '」にしました'); }
       return;
@@ -1829,6 +2141,7 @@
       if (lab) lab.textContent = t.value + (t.dataset.unit || '');
       var rl = document.getElementById('roomlabel');
       if (rl) rl.textContent = '「' + HK.roomLabel(envNow()) + '」';
+      bxEnvSync(t);
     }
     else if (f === 'pf') {
       var cp = S.chars.filter(function (x) { return x.id === t.dataset.id; })[0];
@@ -1863,7 +2176,7 @@
       /* 軽くした行（住人が多いとき）を参加にしたら、設定の欄を出すために描き直す */
       if (t.checked && tr && tr.classList.contains('lazy')) { var y0 = window.pageYOffset; save(); renderBox(); window.scrollTo(0, y0); var nb = document.getElementById('jn-' + t.dataset.id); if (nb) nb.focus(); return; }
       var jc = document.getElementById('joincount');
-      if (jc) { var mx = smax(S.scenId); jc.innerHTML = '参加 <b class="num">' + cur.length + '</b> / 上限 ' + mx + '人' + (cur.length > mx ? '　<span style="color:var(--warn)">上限を超えています</span>' : ''); }
+      if (jc) jc.innerHTML = joinCountHtml(cur.length, smax(S.scenId), smin(S.scenId));
       updLoveWarn();
     }
     else if (f === 'tie') {
@@ -1883,6 +2196,9 @@
     else if (f === 'randn') S.randN = parseInt(t.value, 10) || '';
     /* 内容のスイッチの注記（参加者・設定・第二性・性別・恋愛対象・入れたスイッチで変わる。関係は住人タブから戻ったときに描き直す） */
     if (f === 'join' || f === 'pf' || f === 'gender' || f === 'likes' || f === 'ct' || f === 'env') updCtWhy();
+    /* 参加表の欄：おまかせ・ランダムでないものだけ濃く。帯の要約・切替の印 */
+    if ((f === 'per' || f === 'stat' || f === 'weapon' || f === 'pf') && t.tagName === 'SELECT') t.classList.toggle('chg', !/^(auto|random|)$/.test(t.value));
+    if (tab === 'box') bxLive();
     save();
   }
   /* 一部の住人だけ書き出す：チェックの切り替え */
