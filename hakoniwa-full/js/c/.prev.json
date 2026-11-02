@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.287a190939.js",
+  "core": "core.54daf1b65e.js",
   "late": "late.2a025ab905.js",
   "pack-rel": "pack-rel.aec35cbfe9.js",
   "pack-lewd": "pack-lewd.9d3baf4799.js",
@@ -22,7 +22,7 @@
   "scen-saimin": "scen-saimin.fb2fef8f5e.js",
   "scen-variety": "scen-variety.48af9ae4b0.js",
   "scen-locker": "scen-locker.19946a9177.js",
-  "scen-jashin": "scen-jashin.a123e25476.js",
+  "scen-jashin": "scen-jashin.b41693bed9.js",
   "scen-yakata": "scen-yakata.c71d12a331.js",
   "scen-ship": "scen-ship.c5c6c53fd4.js",
   "pack-story": "pack-story.2c4a86a0fc.js",
@@ -72,7 +72,7 @@
   "tone-yankee": "tone-yankee.5aeecc86a9.js"
  },
  "prev": {
-  "core": "core.fc38b20a90.js",
+  "core": "core.287a190939.js",
   "late": "late.2a025ab905.js",
   "pack-rel": "pack-rel.aec35cbfe9.js",
   "pack-lewd": "pack-lewd.9d3baf4799.js",
@@ -333,8 +333,8 @@
    4580
   ],
   "js/emotion.js": [
-   25403,
-   8938
+   25418,
+   8947
   ],
   "js/emotion-r18.js": [
    2126,
@@ -429,8 +429,8 @@
    6859
   ],
   "js/epilogue.js": [
-   43545,
-   13787
+   43557,
+   13797
   ],
   "js/scenario-futari.js": [
    122452,

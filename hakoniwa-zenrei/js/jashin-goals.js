@@ -23,7 +23,7 @@
 
   /* ---------- 緊迫感 ---------- */
   function tension(S, h) {
-    var dead = S.P.filter(function (p) { return !p.alive && !p.out; }).length, lost = S.P.filter(function (p) { return p.taken; }).length;
+    var dead = S.P.filter(function (p) { return !p.alive && !p.out && !p.deathHidden; }).length, lost = S.P.filter(function (p) { return p.taken; }).length;
     var mur = (S.cases || []).filter(function (c) { return c.killer; }).length + (S.murders || 0);
     var v = dead * 18 + lost * 14 + mur * 12 + (S.vmurder ? 8 : 0) + h / Math.max(8, S.deadline) * 25 + (S.hostile - 30) / 3;
     S.tension = clamp(v, 0, 100);
