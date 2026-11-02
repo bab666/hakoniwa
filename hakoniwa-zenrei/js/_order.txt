@@ -310,6 +310,7 @@ js/ui-cast-tools.js
 js/ui-box-style.js
 js/ui-box-draw.js
 js/ui-import.js
+js/ui-modal.js
 js/ui-shell.js
 js/ui.js
 js/ui-cast-teacher.js

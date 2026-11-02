@@ -564,9 +564,11 @@
   var ov = null, opener = null;
   function close() {
     if (!ov) return;
+    var o = ov;
     ov.remove(); ov = null;
+    if (HK.Modal) HK.Modal.unlock(o);
     document.removeEventListener('keydown', onKey, true);
-    if (opener && opener.focus) try { opener.focus(); } catch (e) { }
+    if (opener && opener.focus) try { opener.focus({ preventScroll: true }); } catch (e) { }
     opener = null;
   }
   function onKey(e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } }
@@ -577,11 +579,12 @@
     opener = from || document.activeElement;
     ov = document.createElement('div');
     ov.className = 'gearov tipov';
-    ov.innerHTML = '<div class="gearbox" role="dialog" aria-modal="true" aria-labelledby="tiptitle" tabindex="-1"><div class="gearhd"><h2 id="tiptitle">' + esc(T.title || 'TIPS') + '</h2><button type="button" class="btn small" data-tipclose="1">閉じる</button></div>' + body(T) + '</div>';
+    ov.innerHTML = '<div class="gearbox" role="dialog" aria-modal="true" aria-labelledby="tiptitle" tabindex="-1"><div class="gearhd"><h2 id="tiptitle">' + esc(T.title || 'TIPS') + '</h2><button type="button" class="btn small" data-tipclose="1">閉じる</button></div><div class="gearbody tipbody">' + body(T) + '</div></div>';
     ov.addEventListener('click', function (e) { if (e.target === ov || (e.target.closest && e.target.closest('[data-tipclose]'))) close(); });
     document.body.appendChild(ov);
+    if (HK.Modal) HK.Modal.lock(ov);
     document.addEventListener('keydown', onKey, true);
-    var bx = ov.querySelector('.gearbox'); if (bx) bx.focus();
+    var bx = ov.querySelector('.gearbox'); if (bx) try { bx.focus({ preventScroll: true }); } catch (e) { bx.focus(); }
   }
 
   document.addEventListener('click', function (e) {
