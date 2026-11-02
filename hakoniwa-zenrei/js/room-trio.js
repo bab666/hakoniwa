@@ -496,6 +496,9 @@
     var roleSwapOK = function (l) { return !/役を入れ替え|入れ替わ|入れ替え/.test(l) || !g.some(function (c) { return HK.Pos && HK.Pos.hardTopIn(c, g); }); };
     /* 文の候補から、触れ合わせない二人・役の入れ替わりの文を除く（残らなければ null） */
     var pickA = function (arr, rr) { var l = (arr || []).filter(function (x) { return apartOK(x, rr) && roleSwapOK(x); }); return l.length ? fpk(l) : null; };
+    /* 一回の遊びで 2 回使った文は使わない（三人の場面が何度も起きても、同じ山場・二回戦の文が 3 回目にならないように。無ければ null。2026-11-02） */
+    var runN = ctx.flags.trioRunN = ctx.flags.trioRunN || {};
+    var pickR = function (arr) { var t = pickA((arr || []).filter(function (x) { return (runN[x] || 0) < 2; })); if (t != null) runN[t] = (runN[t] || 0) + 1; return t; };
     if (HK.SAFE_ON && HK.RoomFade3) return HK.RoomFade3(ctx);
     /* r18:begin */
     if (!X) return fpk(SEX[sp.p]).replace(/\{t\}/g, sp.t.name).replace(/\{m\}/g, sp.m.name).replace(/\{u\}/g, sp.u.name) + fpk(CLIMAX3);
@@ -628,7 +631,7 @@
     else if (ltC) put('peak', ltC, 1);
     /* 男性向けの絶頂：「{t}も{m}も搾りとられた」は、{t}{m}がどちらも入れる側（二人で一人を・挟む形）で、男性器のある人のときだけ（2026-10-26。
        女性の攻め・受けの{m}が搾りとられる文になっていた） */
-    else if (TE && (teC = pickA(TE.TRIO.climax.filter(function (l) { return !(ngE && /\{s:(?:hit|cum)\}|搾り|注|吐き出/.test(l)); }).filter(function (l) { return !/搾りと[られ]/.test(l) || ((sp.p === 'twoOne' || sp.p === 'sandwich') && HK.Pos && HK.Pos.hasM(sp.t) && HK.Pos.hasM(sp.m)); }))) !== null) put('peak', efill(teC), 1);
+    else if (TE && (teC = pickR(TE.TRIO.climax.filter(function (l) { return !(ngE && /\{s:(?:hit|cum)\}|搾り|注|吐き出/.test(l)); }).filter(function (l) { return !/搾りと[られ]/.test(l) || ((sp.p === 'twoOne' || sp.p === 'sandwich') && HK.Pos && HK.Pos.hasM(sp.t) && HK.Pos.hasM(sp.m)); }))) !== null) put('peak', efill(teC), 1);
     else if (!r.synced) {
       var cx = (X.CLIMAX_X || []).filter(function (o) { return ok(o) && o.t.some(penOK) && (!o.after || o.after === after); });
       var c = cx.length && ctx.rng() < 0.7 ? HK.weighted(ctx.rng, cx, function (z) { return (z.jeal ? 2 : 1) * (z.open ? 1.5 : 1) * (z.kinds ? (isLoveAny(kind) ? 6 : 2) : 1) / (1 + (ctx.flags.trioHL[z.id] || 0) * 2); }) : null;
@@ -636,7 +639,7 @@
       /* 決まった形の絶頂の文がなければ、半分は組み立ての「山場の順番」（誰が先に達したか）に任せる */
       else if (!T3 || ctx.rng() < 0.5) put('peak', X.fill(fpk(X.CLIMAX.filter(penOK)), r), 1);
     }
-    if (tHigh && HK.ThickEro) { var agL = pickA(TE ? TE.TRIO.again : HK.ThickEro.TRIO.againNovel); if (agL) put('after', TE ? efill(agL) : X.fill(agL, r), 1); }
+    if (tHigh && HK.ThickEro) { var agL = pickR(TE ? TE.TRIO.again : HK.ThickEro.TRIO.againNovel); if (agL) put('after', TE ? efill(agL) : X.fill(agL, r), 1); }
     /* 余韻：見所の結末（折れた／険悪／連帯）と嫉妬・開放度に合わせる */
     if (!tShort && ctx.rng() < (first ? 0.75 : 0.4)) {
       var aOK = function (l) { return rolesOK(l) && moodOK(l) && apartOK(l); };
