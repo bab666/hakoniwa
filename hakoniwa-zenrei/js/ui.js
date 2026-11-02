@@ -647,7 +647,7 @@
       P('ties', tiesSection()) +
       '<div class="uinext"><span>住人がそろったら、次は放り込む箱庭を選びます。</span><button class="btn primary" data-act="tobox">箱庭を選ぶ<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7h8 M8 4l3 3-3 3"/></svg></button></div>' +
       '<div class="uimobar" role="group" aria-label="住人の登録"><button type="button" class="btn" data-uia="imp" data-only-open aria-controls="castimp"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M3 2.5h7l3 3v8H3z M5.5 7h5 M5.5 9.5h5 M5.5 12h3"/></svg>取り込み</button>' +
-      '<button type="button" class="btn primary" data-act="add"' + (full ? ' disabled' : '') + '><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 2v10 M2 7h10"/></svg>住人を追加</button></div>';
+      /* スマホは上の道具の帯を隠すので、データ（JSON の書き出しなど）とほかの足し方の ▾ もここに（2026-11-02） */ '<button type="button" class="btn ctdata" data-ct="data" aria-haspopup="dialog" aria-controls="castdata" title="書き出し・読み込み・別の端末へ・保存フォルダ">データ</button>' + (HK.CastTools && HK.CastTools.split ? HK.CastTools.split('mob') : '<button type="button" class="btn primary" data-act="add"' + (full ? ' disabled' : '') + '><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 2v10 M2 7h10"/></svg>住人を追加</button>') + '</div>';
     var host = $('#view-cast');
     host.innerHTML = html;
     host.setAttribute('data-castpane', pane);

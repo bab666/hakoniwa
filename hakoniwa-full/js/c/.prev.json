@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.696acdb8d1.js",
+  "core": "core.298d68ede4.js",
   "late": "late.31c70cd8ea.js",
   "pack-rel": "pack-rel.7b107559e7.js",
   "pack-lewd": "pack-lewd.806427163c.js",
@@ -72,7 +72,7 @@
   "tone-yankee": "tone-yankee.cf1b16d856.js"
  },
  "prev": {
-  "core": "core.9b8044207d.js",
+  "core": "core.fa78eda4f8.js",
   "late": "late.31c70cd8ea.js",
   "pack-rel": "pack-rel.7b107559e7.js",
   "pack-lewd": "pack-lewd.806427163c.js",
@@ -609,8 +609,8 @@
    5039
   ],
   "js/ui-cast-tools.js": [
-   26743,
-   8930
+   27287,
+   9437
   ],
   "js/ui-box-style.js": [
    30273,
@@ -637,8 +637,8 @@
    1864
   ],
   "js/ui.js": [
-   144478,
-   41911
+   144742,
+   41977
   ],
   "js/ui-cast-teacher.js": [
    1438,

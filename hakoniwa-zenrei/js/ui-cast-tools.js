@@ -39,6 +39,10 @@
     '.csplit>.csplit-c{border-top-left-radius:0;border-bottom-left-radius:0;border-left-color:var(--paper);padding:0 9px;min-width:30px}' +
     '.csplit>.btn:not(.primary).csplit-c{border-left-color:var(--line2);margin-left:-1px}' +
     '.cthacts .btn.primary{min-height:30px;padding:2px 12px;font-size:12px}.cthacts .csplit-c,.ctbottom .csplit-c{padding:0 9px}' +
+    /* スマホの下の帯（ui.js の .uimobar）：取り込み・データ・＋住人を追加 ▾（2026-11-02） */
+    '#view-cast .uimobar .csplit{flex:1 1 auto;display:flex;min-width:0}#view-cast .uimobar .csplit [data-act="add"]{flex:1 1 auto;min-width:0;min-height:48px}#view-cast .uimobar .csplit-c{flex:none;min-height:48px}#view-cast .uimobar .ctdata{flex:none;padding:0 14px}#view-cast .uimobar .btn{white-space:nowrap}#view-cast .uimobar [data-uia="imp"]{padding:0 12px}' +
+    /* スマホでも住人の数（n / 上限）と TIPS の ？ を出す（見出しの大きな文字は出さない。2026-11-02） */
+    '@media (max-width:599px){#view-cast .uihead .uittl{display:flex;align-items:center;gap:8px;order:-1}#view-cast .uihead .uih1{font-size:15px;margin:0}}' +
     '.ctdata.attn::after{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--hot)}' +
     '.ctbottom{margin-top:12px}' +
     /* ツールバー（1本・上下の罫線） */
@@ -104,7 +108,7 @@
   /* ---------- 見出し行 ---------- */
   function full() { return P ? S().chars.length >= P.max : false; }
   function split(where) {
-    var dis = full() ? ' disabled title="住人が上限まで登録されています"' : '', pri = where === 'top' ? ' primary' : '';
+    var dis = full() ? ' disabled title="住人が上限まで登録されています"' : '', pri = where === 'top' || where === 'mob' ? ' primary' : '';
     return '<span class="csplit" data-where="' + where + '"><button type="button" class="btn' + pri + '" data-act="add"' + dis + '>' + PLUS + '住人を追加</button>' +
       '<button type="button" class="btn' + pri + ' csplit-c" data-ct="addmenu" aria-haspopup="menu" aria-expanded="false" aria-label="ほかの足し方（10 人・ランダム・サンプルから・複製・診断・名簿）" title="ほかの足し方">' + CHEV + '</button></span>';
   }
@@ -399,7 +403,7 @@
   HK.CastTools = {
     /* ui.js から：S（住人の状態を返す関数）・max（上限）・io（「名簿・JSON」の欄に渡す { jp, pick }） */
     bind: function (ctx) { P = ctx; },
-    head: head, bottom: bottom, actions: actions, chips: chips, sortSel: sortSel, foldBtns: foldBtns, grpTools: grpTools, mark: mark,
+    head: head, bottom: bottom, actions: actions, split: split, chips: chips, sortSel: sortSel, foldBtns: foldBtns, grpTools: grpTools, mark: mark,
     /* 住人タブを描き直したあと（ui.js の renderCast）：ダイアログを開いていれば中身を描き直す。メニューの位置も合わせる */
     after: function () { mark(); if (isOpen()) paint(); place(); },
     /* ダイアログの中身だけを描き直す（開いていなければ false：呼んだ側が住人タブを描き直す） */
