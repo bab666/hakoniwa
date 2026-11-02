@@ -20,9 +20,9 @@
   function K(k) { return KS ? KS.key(k) : k; }                  /* R18版の鍵の名前 → この版の鍵 */
   function mine(k) { return KS ? KS.mine(k) : /^hakoniwa/.test(k); }
   var MSG = K('hakoniwa-portable-msg');              /* 読み込み直したあとに出す知らせ（sessionStorage） */
-  /* 書き出さず、読み込みでも変えない鍵（端末ごとの設定）：全年齢／R18 の切り替え、R18版のパスワードを入れた印（pass-gate.js）、全年齢版の移行の印 */
-  var KEEP = { 'hakoniwa-safe-mode': 1, 'hakoniwa-r18-unlock': 1 };
-  if (KS) { KEEP[KS.FLAG] = 1; KEEP[K('hakoniwa-safe-mode')] = 1; KEEP[K('hakoniwa-r18-unlock')] = 1; }
+  /* 書き出さず、読み込みでも変えない鍵（端末ごとの設定）：全年齢／R18 の切り替え、R18版のパスワードを入れた印（pass-gate.js）、追加パックのコード（packs.js）、全年齢版の移行の印 */
+  var KEEP = { 'hakoniwa-safe-mode': 1, 'hakoniwa-r18-unlock': 1, 'hakoniwa-packs': 1 };
+  if (KS) { KEEP[KS.FLAG] = 1; KEEP[K('hakoniwa-safe-mode')] = 1; KEEP[K('hakoniwa-r18-unlock')] = 1; KEEP[K('hakoniwa-packs')] = 1; }
   var mode = 'add', strOpen = false, strVal = '', lastMsg = '', ready = null;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }

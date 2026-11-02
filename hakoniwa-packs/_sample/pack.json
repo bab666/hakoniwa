@@ -1,0 +1,12 @@
+{
+  "id": "sample",
+  "slot": "set-l",
+  "name": "見本のセット",
+  "desc": "追加パックの仕組みを試すための見本です（本番には出しません）。",
+  "sample": true,
+  "builds": ["full", "zenrei"],
+  "api": 1,
+  "chunks": [
+    { "name": "room", "deps": { "full": ["scen-futari"], "zenrei": ["pack-rel"] }, "files": ["js/sample-room.js"] }
+  ]
+}

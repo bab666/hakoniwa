@@ -283,6 +283,8 @@ js/scenario-jinro.js @scen:jinro
 js/jinro-love.js @scen:jinro
 js/same-story.js
 js/safe.js
+js/pack-crypto.js
+js/packs.js
 js/safe-room.js
 js/share-card.js
 js/egoquiz.js
@@ -303,6 +305,7 @@ js/ui-cast-tools.js
 js/ui-box-draw.js
 js/ui-import.js
 js/ui.js
+js/packs-ui.js
 js/ui-cast-teacher.js
 js/ui-gear.js
 js/ui-adv.js

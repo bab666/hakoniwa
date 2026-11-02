@@ -40,6 +40,10 @@
   <FilesMatch "^[a-z0-9-]+\.[0-9a-f]{10}\.js(\.br|\.gz)?$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
+  # 追加パック（packs/<枠>/pack.js と packs/index.js。名前が変わらないので毎回たしかめる。build-pack.js が書く）
+  <FilesMatch "^(pack|index)\.js$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
   # index.html は毎回たしかめる（目録と新しいかたまりの名前をすぐ届けるため）
   <FilesMatch "\.html?$">
     Header set Cache-Control "no-cache, private"

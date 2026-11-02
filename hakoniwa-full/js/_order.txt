@@ -415,6 +415,8 @@ js/same-story.js
 js/same-story-r18.js
 js/solo-rel-bad.js
 js/safe.js
+js/pack-crypto.js
+js/packs.js
 js/safe-room.js @scen:whiteroom
 js/room-games-r18.js @scen:whiteroom
 js/trap-open-room.js @scen:whiteroom
@@ -437,6 +439,7 @@ js/ui-cast-tools.js
 js/ui-box-draw.js
 js/ui-import.js
 js/ui.js
+js/packs-ui.js
 js/ui-cast-teacher.js
 js/ui-gear.js
 js/ui-adv.js

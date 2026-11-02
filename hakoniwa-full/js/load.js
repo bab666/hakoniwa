@@ -13,6 +13,8 @@
      箱庭だけの行は scen-<id> の中。どれも HK.Load.toneData(口調, {F, S, O, M, N}) で表に上書きで入れる。
      ensureTones(口調・住人・入力) は口調の閉包（HK.TONES の base・derive・endingOf など・喘ぎの口調・語尾の設定の元の口調・自動の10）のかたまりを読む。
      LATE_READY は late と tone-base を読み終えたら true
+   ・追加パック（js/packs.js）：コードで開いた中身を HK.Load.addPack で目録に足す（かたまりは中身を手元に持ち、選んだときに Blob の script で読む）。
+     設計：docs/reports/2026-11-02/pack-foundation.md
    設計：docs/reports/2026-10-27/chunk-loading-design.md（2-3〜2-6）。両方のビルドに同じファイルを置く */
 (function () {
   'use strict';
@@ -115,6 +117,43 @@
   L.onChunk = function (fn) {
     if (typeof fn === 'function') handlers.push({ fn: fn, ord: L.cur || 0, born: nDone, k: handlers.length });
   };
+  /* 取り付け役を全部、今あるものに当て直す（追加パックの箱庭を目録に足したあと。どの取り付け役も何度当てても同じ結果） */
+  function rerun(name) {
+    L.gen++;
+    handlers.filter(function (h) { return h.born < nDone; }).sort(function (a, b) { return (a.ord - b.ord) || (a.k - b.k); }).forEach(function (h) {
+      var pc = L.cur; L.cur = h.ord;
+      try { h.fn(name); }
+      catch (e) { if (window.console) console.error('取り付けのエラー：' + name, e); setTimeout(function () { throw e; }, 0); }
+      L.cur = pc;
+    });
+    sortOrder();
+  }
+
+  /* ---------- 追加パック（js/packs.js の HK.Packs が、コードで開いた中身を渡す） ----------
+     p = { id, chunks: { 名前: { code: 'HK.Load.def(…);…HK.Load.done(…);', deps: [本体やパックのかたまり] } }, scen: { id: 目録の形 }, order: [id, …] }
+     かたまりは目録（chunks）に足し、ほかのかたまりと同じく箱庭を選んだときに読む（中身は script 要素で実行。src の代わりに code）。
+     箱庭は目録（scen）と並び（SCEN_ORDER の後ろ）に足し、取り付け役（全年齢モードの絞り込みなど）を当て直す。
+     目録の無い画面（開発中・text-studio）では、かたまりをその場で順に実行する */
+  L.addPack = function (p) {
+    if (!p || typeof p !== 'object') return;
+    var cs = p.chunks || {}, names = Object.keys(cs);
+    if (!M) {
+      names.forEach(function (n) { try { runCode(cs[n].code, n); } catch (e) { if (window.console) console.error('追加パックのエラー：' + n, e); } });
+      return;
+    }
+    names.forEach(function (n) { if (!CH[n]) CH[n] = { code: String(cs[n].code || ''), deps: (cs[n].deps || []).slice(), br: (cs[n].code || '').length, pack: p.id || '' }; });
+    var ord = HK.SCEN_ORDER = HK.SCEN_ORDER || [];
+    Object.keys(p.scen || {}).forEach(function (id) { if (!Object.prototype.hasOwnProperty.call(SC, id)) SC[id] = p.scen[id]; });
+    (p.order || Object.keys(p.scen || {})).forEach(function (id) { if (SC[id] && ord.indexOf(id) < 0) ord.push(id); });
+    rerun('pack:' + (p.id || ''));
+  };
+  /* 足せないかたまり（本体に無い依存）を返す。追加パックが本体の版に合うかを見る */
+  L.missing = function (deps) { return M ? (deps || []).filter(function (d) { return d !== 'core' && !CH[d]; }) : []; };
+  function runCode(code, name) {
+    /* 包みは build と同じ（HK.Load.def(…) の並び。最後に HK.Load.done） */
+    (new Function(String(code || '')))();
+    if (!S(name).done) L.done(name, '', API);
+  }
 
   /* ---------- 名前を解く（箱庭の id・かたまりの名前・配列 → 読む順に並べたかたまりの名前） ---------- */
   function chunksOfScen(id) { var s = SC[id]; return s && Array.isArray(s.chunks) ? s.chunks : null; }
@@ -223,7 +262,33 @@
     return e;
   }
   L.errText = function (e) { return (e && e.message) || 'データを読み込めませんでした'; };
+  /* 追加パックのかたまり（中身を手元に持っている）：Blob の URL を script 要素で読む（file:// でも動く。エラーの行がファイル名つきで出る）。
+     Blob が使えないときは Function で実行する */
+  function injectCode(name) {
+    var code = CH[name].code;
+    return new Promise(function (ok, ng) {
+      var url = '';
+      try { url = window.Blob && window.URL && URL.createObjectURL ? URL.createObjectURL(new Blob([code + '\n//# sourceURL=pack:' + name + '.js'], { type: 'text/javascript' })) : ''; } catch (e) { url = ''; }
+      if (!url) {
+        try { runCode(code, name); } catch (e) { ng(fail('broken', name)); return; }
+        if (S(name).done) ok(); else ng(fail('broken', name));
+        return;
+      }
+      var s = document.createElement('script');
+      s.src = url; s.async = true;
+      s.onload = function () { try { URL.revokeObjectURL(url); } catch (e) { /* 何もしない */ } if (S(name).done) ok(); else ng(fail('broken', name)); };
+      s.onerror = function () {
+        try { URL.revokeObjectURL(url); } catch (e) { /* 何もしない */ }
+        if (s.parentNode) s.parentNode.removeChild(s);
+        /* Blob の script を許さない環境：Function でやり直す */
+        try { runCode(code, name); } catch (e) { ng(fail('broken', name)); return; }
+        if (S(name).done) ok(); else ng(fail('broken', name));
+      };
+      (document.head || document.documentElement).appendChild(s);
+    });
+  }
   function inject(name) {
+    if (CH[name].code != null && !CH[name].src) return injectCode(name);
     var src = CH[name].src;
     return new Promise(function (ok, ng) {
       var tries = 0;
@@ -345,7 +410,8 @@
   }
   L.prefetch = function (x) {
     if (!M || !web()) return;   /* file:// は手元のファイルなので先読みしない */
-    closure(x).forEach(function (n) { var s = S(n); if (!s.done && !s.p && !s.pre && queue.indexOf(n) < 0) queue.push(n); });
+    /* 追加パックのかたまり（中身を手元に持っている。src が無い）は先読みしない */
+    closure(x).forEach(function (n) { var s = S(n); if (CH[n].src && !s.done && !s.p && !s.pre && queue.indexOf(n) < 0) queue.push(n); });
     pump();
   };
 

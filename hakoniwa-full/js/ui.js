@@ -1140,6 +1140,8 @@
     if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) cards += '<div class="scen r18link" title="エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。">' +
       '<div class="k">BOOTH・noteで頒布中・18歳以上向け</div><div class="n">R-18版</div><div class="d">成人向けの箱庭を5つ追加。夜の場面もぼかさずに描きます。</div>' +
       '<div class="r18buy"><a href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (HK.CONF.noteUrl ? '<a href="' + esc(HK.CONF.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '') + '</div></div>';
+    /* 追加パック：まだ開けていないセットがあれば「箱庭を追加」のカード（js/packs-ui.js） */
+    if (HK.PacksUI) cards += HK.PacksUI.card();
     /* R18版は「※成人として扱います」を見出しの横に1行だけ（文字は CSS の attr で出す：折りたたみの開閉の覚えは見出しの文字で引くので、文字を変えない） */
     var head = '<h2 class="sec">箱庭を選ぶ' + (HK.SAFE_ON ? '' : '<span class="secnote" data-note="' + ADULT_NOTE + '"></span>') + '</h2><div class="scens">' + cards + '</div>' + prefRow();
     if (wait) {
@@ -1408,6 +1410,8 @@
   var HIST_MSG = { kept: '「これまでの箱庭」に残した結果を、動かしたときの内容のまま表示しています。', none: 'この履歴は結果が残っていないため開けません（保存時の版でのみ再現できます。以前の形式の履歴と、保存しきれなかった結果は開けません）。',
     r18: 'この履歴はR18モードで動かした結果なので、全年齢モードでは開けません（R18モードにすると開けます）。', z18: 'この履歴はR18版で動かした結果なので、全年齢版では開けません。' };
   /* 開けない履歴：知らせて、条件とシードを箱庭タブに写すかだけ聞く（写しても自動では動かさない） */
+  /* 追加パックの箱庭で、この端末ではまだ開けていない（コードを入れていない・データ配布版でフォルダが無い）もの。記録は書き換えない */
+  HIST_MSG.nopack = 'この箱庭はこの画面にありません（追加の箱庭なら、箱庭の一覧の「箱庭を追加」でコードを入れると開けます）。';
   function histNo(it, why) {
     if (!(it && it.input && Array.isArray(it.input.chars) && scenOf(it.input.scenId) && why === 'none')) toast(HIST_MSG[why]);
     else if (window.confirm(HIST_MSG[why] + '\n\n条件とシードを箱庭タブに写しますか？（写しても自動では動かしません。今の版で動かすと、保存時と結果が変わることがあります）')) copyCond(it.input);
@@ -1417,6 +1421,7 @@
     /* R18モードで動かした結果は、全年齢モードでは出さない（開けない） */
     var lock = HK.SAFE_ON && it.r18;
     if (lock) { histNo(it, HK.SAFE_BUILD ? 'z18' : 'r18'); return; }
+    if (it.input && it.input.scenId && !scenOf(it.input.scenId)) { histNo(it, 'nopack'); return; }
     /* 結果を置いていない履歴（以前の形式・置けなかったもの）は開けない。回し直さない */
     if (!(it.id && it.r && HK.History)) { histNo(it, 'none'); return; }
     /* 表示（結末の組み立て・一人用の表示）に箱庭のかたまりが要るので、読んでから開く */
@@ -1508,6 +1513,7 @@
     show: function (res, meta) {
       /* セーブから開くときも、箱庭のかたまりを読んでから表示する（saves.js の「開く」） */
       var sid = res && (res.scenId || (res.input && res.input.scenId));
+      if (sid && !scenOf(sid)) { toast(HIST_MSG.nopack); return; }
       whenReady(sid, function () { result = res; showAll = false; histNote = ''; histCur = null; opened = meta || { from: 'save' }; V.resetFilter(); setTab('result'); }, 'この箱庭のデータを読み込んでいます…', true);
     },
     copyCond: copyCond
