@@ -63,9 +63,12 @@
     '.ctmenu hr{border:0;border-top:1px solid var(--line);margin:6px 0;width:100%}' +
     '.ctmsel{display:flex;flex-direction:column;gap:4px;padding:2px 10px 6px;font-size:12px;color:var(--muted)}.ctmsel select{width:100%;min-height:32px;font-size:13px}' +
     /* 「データ」ダイアログ */
-    '.ctdov{position:fixed;inset:0;z-index:29;background:rgba(10,16,22,.55);display:flex;align-items:flex-start;justify-content:center;padding:max(24px,env(safe-area-inset-top,0px)) 16px 16px;overflow-y:auto;-webkit-overflow-scrolling:touch}' +
+    '.ctdov{position:fixed;inset:0;z-index:29;background:rgba(10,16,22,.55);display:flex;align-items:flex-start;justify-content:center;padding:max(24px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));overflow-y:auto;-webkit-overflow-scrolling:touch}' +
     '.ctdov[hidden]{display:none}' +
-    '.ctdbox{background:var(--paper);color:var(--ink);border:1px solid var(--line2);border-radius:var(--r-card,6px);width:100%;max-width:700px;padding:20px 24px 18px;margin:auto 0;min-width:0}' +
+    /* 頭（題名・閉じる・種類の切替）は固定し、中身 .ctdbody だけをスクロールする（2026-11-02 担当UG。高さは 100dvh 基準） */
+    '.ctdbox{background:var(--paper);color:var(--ink);border:1px solid var(--line2);border-radius:var(--r-card,6px);width:100%;max-width:700px;padding:20px 24px 0;margin:auto 0;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;' +
+      'max-height:calc(100vh - 40px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));max-height:calc(100dvh - 40px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}' +
+    '.ctdhd,.ctdtabs{flex:none}.ctdbody{flex:1 1 auto;min-height:0;overflow-x:hidden;overflow-y:auto;margin:0 -24px;padding:0 24px 18px}' +
     '.ctdbox:focus{outline:none}' +
     '.ctdhd{display:flex;align-items:center;gap:8px;margin:0 0 6px}.ctdhd h2{margin:0;font-size:17px;font-weight:700;letter-spacing:.02em}.ctdhd .sp{flex:1}' +
     '.ctdtabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:0 0 16px;overflow-x:auto;scrollbar-width:none}' +
@@ -75,7 +78,7 @@
     '.ctblk{display:flex;flex-direction:column;gap:5px;min-width:0}.ctrow{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}' +
     '.ctdesc{margin:0;font-size:12px;color:var(--muted);line-height:1.6}' +
     '.ctdbk{margin:18px 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);line-height:1.6}' +
-    '@media (max-width:600px){.ctdsub{display:none}.ctbar input[type=search]{flex:1 1 100%}.ctchips{flex-basis:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}.ctdbox{padding:16px 16px 14px}.ctdtabs{gap:16px}h2.sec.casthead .cthacts{margin-left:0;width:100%}}';
+    '@media (max-width:600px){.ctdsub{display:none}.ctbar input[type=search]{flex:1 1 100%}.ctchips{flex-basis:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}.ctdbox{padding:16px 16px 0}.ctdbody{margin:0 -16px;padding:0 16px 14px}.ctdtabs{gap:16px}h2.sec.casthead .cthacts{margin-left:0;width:100%}}';
   var stEl = document.createElement('style'); stEl.textContent = css; (document.head || document.documentElement).appendChild(stEl);
 
   function S() { return P ? P.S() : { chars: [] }; }
@@ -260,7 +263,7 @@
 
   /* ---------- 「データ」ダイアログ ---------- */
   var TABS = [['all', 'まるごと<span class="ctdsub">（別の端末へ）</span>'], ['io', '名簿・JSON'], ['sf', '保存フォルダ']];
-  var dlg = null, dTab = TABS.some(function (t) { return t[0] === mem.tab; }) ? mem.tab : 'all', dFrom = null, bodyOv = '';
+  var dlg = null, dTab = TABS.some(function (t) { return t[0] === mem.tab; }) ? mem.tab : 'all', dFrom = null;
   function attn() { var s = HK.SaveFolder && HK.SaveFolder.status ? HK.SaveFolder.status() : null; return !!(s && s.name && (s.st === 'perm' || s.st === 'hold' || s.st === 'err')); }
   function mark() {
     var a = attn();
@@ -273,8 +276,8 @@
     dlg.innerHTML = '<div class="ctdbox" role="dialog" aria-modal="true" aria-labelledby="castdata-h" tabindex="-1">' +
       '<div class="ctdhd"><h2 id="castdata-h">データ</h2>' + (HK.Tips ? HK.Tips.btn('portable', 'データの書き出し・読み込み') : '') + '<span class="sp"></span><button type="button" class="btn small" data-ct="dclose">閉じる</button></div>' +
       '<div class="ctdtabs" role="tablist" aria-label="データの種類">' + TABS.map(function (t) { return '<button type="button" role="tab" id="cdt-' + t[0] + '" data-ct="dtab" data-k="' + t[0] + '" aria-controls="castdata-p">' + t[1] + '</button>'; }).join('') + '</div>' +
-      '<div class="ctdp" id="castdata-p" role="tabpanel"></div>' +
-      '<p class="ctdbk">念のため、キャラクター設定・セーブデータなどは定期的なバックアップをお願いいたします（「住人をJSONで書き出す」か「まるごと書き出し」でファイルに残せます）。</p></div>';
+      '<div class="ctdbody"><div class="ctdp" id="castdata-p" role="tabpanel"></div>' +
+      '<p class="ctdbk">念のため、キャラクター設定・セーブデータなどは定期的なバックアップをお願いいたします（「住人をJSONで書き出す」か「まるごと書き出し」でファイルに残せます）。</p></div></div>';
     document.body.appendChild(dlg);
     return dlg;
   }
@@ -284,12 +287,12 @@
     return HK.Portable ? HK.Portable.html() : '';
   }
   function paint() {
-    var d = dlgEl(), p = d.querySelector('#castdata-p'), box = d.querySelector('.ctdbox'), y = d.scrollTop;
+    var d = dlgEl(), p = d.querySelector('#castdata-p'), box = d.querySelector('.ctdbox'), sc = d.querySelector('.ctdbody') || d, y = sc.scrollTop;
     TABS.forEach(function (t) { var b = d.querySelector('#cdt-' + t[0]); b.setAttribute('aria-selected', t[0] === dTab ? 'true' : 'false'); b.tabIndex = t[0] === dTab ? 0 : -1; });
     p.setAttribute('aria-labelledby', 'cdt-' + dTab);
     p.innerHTML = panelHtml(dTab);
     if (HK.CastPages && HK.CastPages.after) HK.CastPages.after(p);
-    d.scrollTop = y;
+    sc.scrollTop = y;
     return box;
   }
   function isOpen() { return !!(dlg && !dlg.hidden); }
@@ -299,7 +302,7 @@
     dFrom = btn || document.activeElement;
     dTab = tab || (attn() ? 'sf' : dTab);
     d.hidden = false;
-    bodyOv = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    if (HK.Modal) HK.Modal.lock(d);
     paint();
     var t = d.querySelector('#cdt-' + dTab); if (t) t.focus();
   }
@@ -307,7 +310,7 @@
     if (!isOpen()) return;
     dlg.hidden = true;
     dlg.querySelector('#castdata-p').innerHTML = '';
-    document.body.style.overflow = bodyOv;
+    if (HK.Modal) HK.Modal.unlock(dlg);
     var f = dFrom && dFrom.isConnected ? dFrom : document.querySelector('[data-ct="data"]');
     if (f && f.focus) try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); }
     dFrom = null;

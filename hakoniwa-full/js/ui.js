@@ -1329,6 +1329,8 @@
     if (!pickOpen) sheetOpen = false;
     if (pk.classList.contains('bxsheet') !== sheetOpen) pk.classList.toggle('bxsheet', sheetOpen);
     document.documentElement.classList.toggle('bx-modal', pickOpen);
+    /* 背景のスクロールを止める・戻す（ui-modal.js。描き直しで窓が作り直されても、開いているあいだは新しい窓で数える） */
+    if (HK.Modal) { if (pickOpen) HK.Modal.lock(pk); else HK.Modal.unlock(pk); }
     var n = S.chars.length, pv = pickOpen ? pickPrev || S.scenId : S.scenId, fit = pickOpen && bxPref.fit && n > 0;
     Array.prototype.forEach.call(pk.querySelectorAll('label.scen'), function (l) {
       var inp = l.querySelector('input[data-f="scen"]');

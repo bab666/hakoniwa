@@ -233,10 +233,13 @@
         var sg = HK.Seg ? HK.Seg.of(e, res) : null, lead = sg ? HK.Seg.speakers(sg).filter(function (i) { return res.heroes[i]; })[0] : null;
         var ids = (lead != null ? [lead] : []).concat(e.actors.filter(function (i) { return i !== lead; })).slice(0, 3);
         var avs = e.actors.length || lead != null ? '<span class="avs">' + ids.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
+        /* 吹き出しの見え方（view.js の HK.View.bubble。経過と同じ。発話の無い出来事は null でいつもの本文） */
+        var bb = HK.View && HK.View.bubble ? HK.View.bubble(e, sg, { who: function (i) { return res.heroes[i]; }, av: function (i, s) { return av(res, i, s); }, paint: function (s) { return paint(s, res); } }) : null;
+        if (bb) avs = '';
         var tc = tagCls(e);
         /* 重要な出来事の種類（view.js の HK.View.hotKindSolo。枠と、フルでは種類ごとの背景） */
         var hk = HK.View && HK.View.hotKindSolo ? HK.View.hotKindSolo(e, res) : '';
-        return '<li' + (hk ? ' data-hot="' + hk + '"' : '') + ' class="ev' + (hk ? ' hot-' + hk : '') + (tc ? ' cat-' + tc : '') + (e.trouble ? ' trouble' : '') + (tc === 'death' ? ' death' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (avs ? ' hasav' : '') + (avs && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)) ? ' talk' : '') + '">' + avs + '<div class="evb">' + (e.tag ? '<span class="c' + (tc ? ' cc-' + tc : '') + '">' + esc(e.tag) + '</span>' : '') + paint(e.text, res, sg) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+        return '<li' + (hk ? ' data-hot="' + hk + '"' : '') + ' class="ev' + (hk ? ' hot-' + hk : '') + (tc ? ' cat-' + tc : '') + (e.trouble ? ' trouble' : '') + (tc === 'death' ? ' death' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'climax' ? ' climax' : '') + (e.key ? ' key' : '') + (avs ? ' hasav' : '') + (avs && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)) ? ' talk' : '') + (bb ? ' bbl' : '') + '">' + avs + '<div class="evb">' + (e.tag ? (bb ? '<div class="evh">' : '') + '<span class="c' + (tc ? ' cc-' + tc : '') + '">' + esc(e.tag) + '</span>' + (bb ? '</div>' : '') : '') + (bb || paint(e.text, res, sg)) + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
@@ -342,6 +345,11 @@
       });
     }
   };
+  /* 経過の見え方を吹き出しへ／から切り替えたら、記録の本文を描き直す（view.js の HK.View.onTlv） */
+  if (HK.View && HK.View.onTlv) HK.View.onTlv(function () {
+    var t = lastHost && lastRes && lastRes.story ? lastHost.querySelector('#sttl') : null;
+    if (t && t.isConnected) t.innerHTML = timeline(lastRes);
+  });
   V.toText = function (res) {
     var S = HK.SCENARIOS[res.scenId], L = [], E = res.ending;
     L.push('【箱庭シミュレーター】' + S.name + '（' + res.meta + '・シード ' + res.seed + '）');

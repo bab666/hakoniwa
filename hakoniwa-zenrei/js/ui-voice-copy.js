@@ -49,15 +49,15 @@
       document.addEventListener('keydown', function (ev) { if (ov && !ov.hidden && ev.key === 'Escape') { ev.preventDefault(); closeDlg(); } });
     }
     onAct = handler; onChg = change || null;
-    ov.querySelector('.gearbox').innerHTML = '<div class="gearhd"><h2 id="vsdlgt">' + esc(title) + '</h2><button type="button" class="btn small" data-dact="close">閉じる</button></div>' + body;
+    ov.querySelector('.gearbox').innerHTML = '<div class="gearhd"><h2 id="vsdlgt">' + esc(title) + '</h2><button type="button" class="btn small" data-dact="close">閉じる</button></div><div class="gearbody">' + body + '</div>';
     ov.hidden = false;
-    document.body.style.overflow = 'hidden';
+    if (HK.Modal) HK.Modal.lock(ov);
     var f = ov.querySelector('.gearbox input,.gearbox textarea,.gearbox select'); if (f) try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); }
   }
   function closeDlg() {
     if (!ov) return;
     ov.hidden = true; onAct = null; onChg = null;
-    document.body.style.overflow = '';
+    if (HK.Modal) HK.Modal.unlock(ov);
     var t = document.getElementById('vs-target'); if (t) try { t.focus({ preventScroll: true }); } catch (e) { t.focus(); }
   }
   function q(sel) { return ov ? ov.querySelector(sel) : null; }
