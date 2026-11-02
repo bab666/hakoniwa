@@ -1,5 +1,5 @@
 /* 箱庭シミュレーター: 画面の土台（2026-11-01 担当UA。参考デザイン docs/reports/2026-11-01/ui-redesign.md の見本 01〜04。結果には影響しない）
-   ・ヘッダーの「表示（色・明るさ・書体）▾」のメニュー：開く・閉じる（外を押す・Esc）。中の 単色／キャラ色／フル（data-pal）・明るさ（data-thm）・書体（data-fnt）は
+   ・ヘッダーの「表示（色・明るさ・書体）▾」のメニュー：開く・閉じる（外を押す・Esc）。中の 色味 標準／ブルー（data-scm。2026-11-02 担当UD）・単色／キャラ色／フル（data-pal）・明るさ（data-thm）・書体（data-fnt）は
      index.html の先頭のスクリプトが処理する。データの先読み（http(s) で配っているときだけ。load.js の HK.Load.pref／setPref）はここで描いて、
      選んだときは ui.js の data-f="prefetch" の処理（箱庭タブの欄と同じ）に任せる
    ・住人タブの節の切替「住人一覧｜口調の全体設定｜話題 n｜関係 n」（HK.Shell.pane／setPane）。描き直さずに [data-pane] の hidden を付け替える。

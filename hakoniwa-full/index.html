@@ -21,26 +21,29 @@
 <script src="pass-gate.js"></script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <script>
-/* 表示の切り替え（色の量 data-palette：mono 単色／chars キャラ色／full フル、白黒 data-theme：auto 端末に合わせる／light／gray／dark。ヘッダーの丸を三分割したボタン（白・グレー・黒。選んでいる区画の下に印、自動は「A」）で 自動→白→グレー→黒 と巡る）。見た目だけで結果には影響しない。鍵：hakoniwa:palette・hakoniwa:theme（描く前に付けて、ちらつかないように） */
+/* 表示の切り替え（色の量 data-palette：mono 単色／chars キャラ色／full フル、白黒 data-theme：auto 端末に合わせる／light／gray／dark。ヘッダーの丸を三分割したボタン（白・グレー・黒。選んでいる区画の下に印、自動は「A」）で 自動→白→グレー→黒 と巡る）。見た目だけで結果には影響しない。鍵：hakoniwa:palette・hakoniwa:theme（描く前に付けて、ちらつかないように）。
+   色味 data-scheme（2026-11-02 担当UD）：std 標準（いまの配色。属性を付けない）／blue ブルー（前の藍の単色。:root[data-scheme="blue"] が --ui-* を藍と紙に差し替える）。「表示」のメニューの data-scm で選ぶ。鍵：hakoniwa:scheme */
 (function () {
-  var P = 'hakoniwa:', R = document.documentElement, PAL = ['mono', 'chars', 'full'], THM = ['auto', 'light', 'gray', 'dark'];
+  var P = 'hakoniwa:', R = document.documentElement, PAL = ['mono', 'chars', 'full'], THM = ['auto', 'light', 'gray', 'dark'], SCM = ['std', 'blue'];
   function get(k, ok, d) { try { var v = window.localStorage.getItem(P + k); return ok.indexOf(v) >= 0 ? v : d; } catch (e) { return d; } }
   function put(k, v) { try { window.localStorage.setItem(P + k, v); } catch (e) { /* 保存できない環境では、このページを開いているあいだだけ */ } }
-  var pal = get('palette', PAL, 'full'), thm = get('theme', THM, 'auto');
+  var pal = get('palette', PAL, 'full'), thm = get('theme', THM, 'auto'), scm = get('scheme', SCM, 'std');
   function apply() {
     R.setAttribute('data-palette', pal);
     if (thm === 'auto') R.removeAttribute('data-theme'); else R.setAttribute('data-theme', thm);
-    var bs = document.querySelectorAll('[data-pal],[data-thm]');
-    for (var i = 0; i < bs.length; i++) { var b = bs[i], on = b.hasAttribute('data-pal') ? b.getAttribute('data-pal') === pal : b.getAttribute('data-thm') === thm; b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+    if (scm === 'blue') R.setAttribute('data-scheme', 'blue'); else R.removeAttribute('data-scheme');
+    var bs = document.querySelectorAll('[data-pal],[data-thm],[data-scm]');
+    for (var i = 0; i < bs.length; i++) { var b = bs[i], on = b.hasAttribute('data-pal') ? b.getAttribute('data-pal') === pal : b.hasAttribute('data-scm') ? b.getAttribute('data-scm') === scm : b.getAttribute('data-thm') === thm; b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
     var T = { auto: '自動（端末に合わせる）', light: '白', gray: 'グレー', dark: '黒' }, tb = document.querySelectorAll('[data-thmcycle]');
     for (var j = 0; j < tb.length; j++) { tb[j].title = '白／グレー／黒：' + T[thm] + '。押すと 自動→白→グレー→黒 の順に切り替え'; tb[j].setAttribute('aria-label', '白／グレー／黒の切り替え（いま：' + T[thm] + '）'); tb[j].setAttribute('data-now', thm); }
   }
   apply();
   document.addEventListener('DOMContentLoaded', apply);
   document.addEventListener('click', function (ev) {
-    var b = ev.target && ev.target.closest && ev.target.closest('[data-pal],[data-thm],[data-thmcycle]');
+    var b = ev.target && ev.target.closest && ev.target.closest('[data-pal],[data-thm],[data-thmcycle],[data-scm]');
     if (!b) return;
-    if (b.hasAttribute('data-pal')) { pal = b.getAttribute('data-pal'); put('palette', pal); } else { thm = b.hasAttribute('data-thmcycle') ? THM[(THM.indexOf(thm) + 1) % THM.length] : b.getAttribute('data-thm'); put('theme', thm); }
+    if (b.hasAttribute('data-scm')) { scm = SCM.indexOf(b.getAttribute('data-scm')) >= 0 ? b.getAttribute('data-scm') : 'std'; put('scheme', scm); }
+    else if (b.hasAttribute('data-pal')) { pal = b.getAttribute('data-pal'); put('palette', pal); } else { thm = b.hasAttribute('data-thmcycle') ? THM[(THM.indexOf(thm) + 1) % THM.length] : b.getAttribute('data-thm'); put('theme', thm); }
     apply();
     /* 押した直後 1.2 秒だけ、ボタンの下に今の白黒を小さな札で出す（スマホはホバーの title が出ないため。CSS は 担当HY の節の .thmbtn[data-flash]） */
     if (b.hasAttribute('data-thmcycle')) { b.setAttribute('data-flash', { auto: '自動', light: '白', gray: 'グレー', dark: '黒' }[thm]); clearTimeout(b._flash); b._flash = setTimeout(function () { b.removeAttribute('data-flash'); }, 1200); }
@@ -180,6 +183,30 @@
   --ui-accent: #1d4f7a; --ui-accent2: #245f89; --ui-accent-soft: #dbe5ee; --ui-primary: #1b2a3d; --ui-primary-ink: #ffffff; --ui-primary-hover: #2c3e55;
   --ui-info-bg: #d9e4ee; --ui-info-line: #b3c7da; --ui-info-ink: #1f3a52; --ui-info-btn: #8eaac4;
 }
+/* ── 色味「ブルー」（data-scheme="blue"。2026-11-02 担当UD、利用者の依頼「前の藍色単色デザインもブルーとしてテーマの候補に」）：
+   2026-11-01 より前の「一色＋白」の見た目を、新しい配置（カード・段階ナビ・窓）のまま --ui-* の差し替えで出す。
+   地もカードも紙（--paper）、文字＝藍 100%（--ai）、補助＝68%（--muted）・76%（--muted2）、濃い線＝40%、ボタン枠＝26%（--line2）、罫線＝14%（--line）、面＝4〜9%。
+   主ボタン・選んだ札・段階ナビの丸は藍の塗りに紙の文字。影は使わず線で分ける。藍と紙は明るさ（白・グレー・黒）の変数をそのまま使うので、
+   黒は前の黒版（藍 #BAC4DA・地 #111217）、グレーは前のグレーの紙（#E9EBEE）になる。「色の量」（data-palette）はそのまま効く。
+   文字と地の比：本文 8.5:1 以上、補助 4.3:1 以上（白・グレー・黒、面 12% まで） */
+:root[data-scheme="blue"] {
+  --ui-page: var(--paper); --ui-card: var(--paper); --ui-input: var(--paper); --ui-ink: var(--ai); --ui-muted: var(--muted); --ui-muted2: var(--muted2);
+  --ui-line: var(--line); --ui-line2: var(--line2); --ui-line3: var(--mid); --ui-soft: var(--bg1); --ui-soft2: var(--accent-soft); --ui-head: var(--bg1); --ui-seg: var(--bg1); --ui-nav: var(--bg1);
+  --ui-accent: var(--ai); --ui-accent2: var(--ai); --ui-accent-soft: var(--accent-soft); --ui-primary: var(--ai); --ui-primary-ink: var(--paper); --ui-primary-hover: var(--muted2);
+  --ui-info-bg: var(--bg1); --ui-info-line: var(--line2); --ui-info-ink: var(--ai); --ui-info-btn: var(--line2);
+  --ui-shadow: none;
+}
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+  :root[data-scheme="blue"] { --ui-line3: color-mix(in srgb, var(--ai) 40%, var(--paper)); --ui-soft: color-mix(in srgb, var(--ai) 6%, var(--paper)); --ui-seg: color-mix(in srgb, var(--ai) 6%, var(--paper)); --ui-info-btn: color-mix(in srgb, var(--ai) 40%, var(--paper)); }
+}
+/* ブルーの部品：切替（セグメント・住人タブの節・箱庭の設定の切替）は前と同じ「藍の線で囲み、選んだものを藍の塗り」。住人の設定の目次は左に藍の線 */
+:root[data-scheme="blue"] .uiseg, :root[data-scheme="blue"] .uitabs { background: var(--paper); box-shadow: inset 0 0 0 1px var(--line2); }
+@media (min-width: 601px) { :root[data-scheme="blue"] #view-box .bxtl { background: var(--paper); box-shadow: inset 0 0 0 1px var(--line2); } }   /* スマホ幅の箱庭の切替は札を横に並べる形（ui-box-style.js）なので囲まない */
+:root[data-scheme="blue"] .uiseg button[aria-pressed="true"], :root[data-scheme="blue"] .uitabs [role=tab][aria-selected="true"], :root[data-scheme="blue"] #view-box .bxtl button[aria-selected="true"] { background: var(--ai); color: var(--paper); box-shadow: none; }
+:root[data-scheme="blue"] .uitabs [role=tab][aria-selected="true"] .uitn, :root[data-scheme="blue"] #view-box .bxtl button[aria-selected="true"] .bxtn { color: inherit; opacity: .85; }
+:root[data-scheme="blue"] #view-box .bxtl button[aria-selected="true"] .bxdot { background: var(--paper); }
+:root[data-scheme="blue"] .uiseg button:hover:not([aria-pressed="true"]) { background: var(--accent-soft); }
+:root[data-scheme="blue"] .gearov .geartoc button[aria-current="true"] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--ai); }
 :root[data-palette="mono"] { --ui-accent: var(--ui-ink); --ui-accent2: var(--ui-ink); --ui-accent-soft: var(--ui-soft); --ui-info-bg: var(--ui-soft); --ui-info-line: var(--ui-line2); --ui-info-ink: var(--ui-ink); --ui-info-btn: var(--ui-line3); }
 /* 藍と紙から段階の色を作る（対応していないブラウザでは上の同じ色のまま。黒版の同じ色は下の @supports not） */
 @supports (color: color-mix(in srgb, red 50%, blue)) {
@@ -1571,8 +1598,9 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
         <!-- 全年齢版へのリンク・全年齢モードの切り替え（safe.js が作り、ui-filter.js がここへ移す。「R18モード」の札はフッターへ） -->
         <span id="agemode-slot"></span>
         <div class="uidisp">
-          <button type="button" class="uidispbtn" data-uidisp aria-haspopup="true" aria-expanded="false" aria-controls="uidisp-menu" title="色の量・白／グレー／黒・書体"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 2v12"/><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"/></svg><span class="uidl">表示（色・明るさ・書体）</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg></button>
+          <button type="button" class="uidispbtn" data-uidisp aria-haspopup="true" aria-expanded="false" aria-controls="uidisp-menu" title="色味・色の量・白／グレー／黒・書体"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 2v12"/><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"/></svg><span class="uidl">表示（色・明るさ・書体）</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg></button>
           <div class="uidispmenu" id="uidisp-menu" role="group" aria-label="表示の設定" hidden>
+            <div class="uidm-row"><span class="uidm-h">色味</span><div class="uiseg" role="group" aria-label="色味"><button type="button" data-scm="std" aria-pressed="true">標準</button><button type="button" data-scm="blue" aria-pressed="false">ブルー</button></div><span class="uidm-note">ブルーは紙の地に藍一色の、前の落ち着いた見た目です</span></div>
             <div class="uidm-row"><span class="uidm-h">色の量</span><div class="uiseg" role="group" aria-label="色の量"><button type="button" data-pal="mono" aria-pressed="false">単色</button><button type="button" data-pal="chars" aria-pressed="false">キャラ色</button><button type="button" data-pal="full" aria-pressed="true">フル</button></div><span class="uidm-note">単色は藍だけ、キャラ色は住人の色だけ、フルは関係・出来事の色も出します</span></div>
             <div class="uidm-row"><span class="uidm-h">明るさ</span><div class="uiseg" role="group" aria-label="明るさ（白／グレー／黒）"><button type="button" data-thm="auto" aria-pressed="true">自動</button><button type="button" data-thm="light" aria-pressed="false">白</button><button type="button" data-thm="gray" aria-pressed="false">グレー</button><button type="button" data-thm="dark" aria-pressed="false">黒</button></div></div>
             <div class="uidm-row"><span class="uidm-h">書体</span><div class="uiseg" role="group" aria-label="書体"><button type="button" data-fnt="gothic" aria-pressed="true">ゴシック</button><button type="button" data-fnt="mincho" aria-pressed="false">明朝体</button></div></div>
@@ -1614,7 +1642,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
     </nav>
     <p class="support"><a data-ofuse-widget-button href="https://ofuse.me/o?uid=229334" data-ofuse-id="229334" data-ofuse-color="dark-invert">OFUSEで応援を送る</a><script async src="https://ofuse.me/assets/platform/widget.js" charset="utf-8"></script></p>
     <p class="disclaimer">このツールは、AnthropicのAI「Claude」を使って作成しました。<br>© 2026 箱庭シミュレーター</p>
-    <p class="updated">最終更新：<time datetime="2026-11-01">2026年11月1日</time>（<a href="https://docs.google.com/document/d/1o6UgdEEMXhUEZeODa3pWeVgMBlIEBi-cyktbtUmSNe0/edit?tab=t.0" target="_blank" rel="noopener">更新履歴</a>）</p>
+    <p class="updated">最終更新：<time datetime="2026-11-02">2026年11月2日</time>（<a href="https://docs.google.com/document/d/1o6UgdEEMXhUEZeODa3pWeVgMBlIEBi-cyktbtUmSNe0/edit?tab=t.0" target="_blank" rel="noopener">更新履歴</a>）</p>
   </footer>
 </div>
 <div class="toast" id="toast" hidden></div>
