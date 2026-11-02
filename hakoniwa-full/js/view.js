@@ -18,14 +18,16 @@
   /* ---------- 結果の画面の並び（2026-11-01 担当UC。参考デザインの「経過と結末」：頭＋切替「結末｜経過｜関係図｜二人ずつ｜住人ごと」。表示だけで、記録・結果は変えない） ----------
      rv.tab（今の切替）・fs（経過の文字の大きさ s/m/l）・why（理由を表示）・open（区切りを全部開く）は画面の設定としてブラウザに残す（新しい鍵 hakoniwa:rv。今までの鍵は変えない）。
      sec（区切りごとの開け閉め）・pair（選んだ組）・who（選んだ住人）・off（関係図で隠す線の種類）・lab（線の名前を全部出す）・line（選んだ線）・side（スマホの絞り込みの開閉）は結果ごと。
-     見た目は js/ui-result-style.js（--ui-* の変数）。一人用・ダンジョン（solo-story-kit.js・dungeon-view.js）も V.head・V.shell で同じ頭と切替を使う */
+     見た目は js/ui-result-style.js（--ui-* の変数）。一人用・ダンジョン（solo-story-kit.js・dungeon-view.js）も V.head・V.shell で同じ頭と切替を使う
+     tlv（経過の見え方。card＝区切りごとのカード／line＝前の見え方：縦の線・顔アイコン・種類の線の形と薄い背景。2026-11-02 担当UE）も同じ鍵に残す。
+     どちらも同じ HTML で、.rvw の data-tlv で見た目だけを切り替える（区切りの折りたたみ・目次・絞り込みは両方に効く。一人用・ダンジョンの記録も同じ） */
   var RV_KEY = 'hakoniwa:rv';
   var rv = (function () {
     var o = {};
     try { o = JSON.parse(window.localStorage.getItem(RV_KEY) || '{}') || {}; } catch (e) { o = {}; }
-    return { tab: typeof o.tab === 'string' ? o.tab : 'end', fs: /^[sml]$/.test(o.fs || '') ? o.fs : 'm', why: o.why !== false, open: !!o.open, sec: {}, pair: null, who: null, off: {}, lab: false, line: null, side: false, plist: 'all' };
+    return { tab: typeof o.tab === 'string' ? o.tab : 'end', fs: /^[sml]$/.test(o.fs || '') ? o.fs : 'm', why: o.why !== false, open: !!o.open, tlv: o.tlv === 'line' ? 'line' : 'card', sec: {}, pair: null, who: null, off: {}, lab: false, line: null, side: false, plist: 'all' };
   })();
-  function rvSave() { try { window.localStorage.setItem(RV_KEY, JSON.stringify({ tab: rv.tab, fs: rv.fs, why: rv.why, open: rv.open })); } catch (e) { /* 残せなくても表示はできる */ } }
+  function rvSave() { try { window.localStorage.setItem(RV_KEY, JSON.stringify({ tab: rv.tab, fs: rv.fs, why: rv.why, open: rv.open, tlv: rv.tlv })); } catch (e) { /* 残せなくても表示はできる */ } }
   /* 結果が変わったら、結果ごとの選択を戻す */
   function rvFresh() { rv.sec = {}; rv.pair = null; rv.who = null; rv.off = {}; rv.lab = false; rv.line = null; rv.side = false; rv.plist = 'all'; }
 
@@ -696,6 +698,13 @@
       return '<li><button type="button" class="rvtocb' + (g.hot ? ' hot' : '') + '" data-act="rvjump" data-s="' + g.key + '">' + (tno(g.step) ? '<span class="tn">' + tno(g.step) + '</span>' : '') + '<span class="lb">' + esc(g.label || '―') + '</span><span class="n">' + g.n + '</span></button></li>';
     }).join('') + '</ol>';
   }
+  /* 経過の見え方の切替「カード｜線」（2026-11-02 担当UE）。経過の右の絞り込みと、一人用・ダンジョンの記録の見出しの横に置く。
+     押すと .rvw の data-tlv を変えるだけ（描き直さないので、区切りの開け閉め・絞り込みはそのまま） */
+  V.tlvSeg = function (cls) {
+    return '<div class="rvseg rvtlv' + (cls ? ' ' + cls : '') + '" role="radiogroup" aria-label="経過の見え方">' + [['card', 'カード', '区切りごとのカードで読む'], ['line', '線', '縦の線と顔アイコンで読む（前の見え方）']].map(function (x) {
+      return '<button type="button" role="radio" data-act="rvtlv" data-v="' + x[0] + '" aria-checked="' + (rv.tlv === x[0]) + '" title="' + esc(x[2]) + '">' + x[1] + '</button>';
+    }).join('') + '</div>';
+  };
   /* 右の絞り込み（見本 09）：人で絞る・種類・重要な場面だけ・理由を表示・区切りを全部開く・文字の大きさ。
      人・重要・エロシーンは今までどおり data-act（ui.js）と aria-pressed（export-out.js が印刷の前に外して戻す）。種類・理由・全部開く・文字は role の checkbox／switch／radio */
   function tlBar(res) {
@@ -712,6 +721,7 @@
     };
     var fsb = [['s', '小'], ['m', '中'], ['l', '大']].map(function (x) { return '<button type="button" role="radio" data-act="rvfs" data-v="' + x[0] + '" aria-checked="' + (rv.fs === x[0]) + '">' + x[1] + '</button>'; }).join('');
     return '<div class="rvcard rvrailin">' +
+      '<div class="rvrs"><div class="rvrt">見え方</div>' + V.tlvSeg() + '</div>' +
       '<div class="rvrs"><div class="rvrt">人で絞る</div><div class="rvwhos" role="group" aria-label="人で絞る">' + who + '</div>' + (tl.who.length ? '<button type="button" class="rvlink small" data-act="whoclear">人の絞り込みを外す</button>' : '') + '</div>' +
       (catBox ? '<div class="rvrs"><div class="rvrt">種類</div><div class="rvcats" role="group" aria-label="種類">' + catBox + '</div></div>' : '') +
       '<div class="rvrs rvsws">' + sw('keyonly', tl.keyOnly, '<i class="hotdot" aria-hidden="true"></i>重要な場面だけ', '転機・死亡・関係の節目・決め手など、重要な出来事だけ', true) +
@@ -760,7 +770,7 @@
   /* 切替と中身の枠。tabs：[{ k, label, n（添える数）, html }]。今の切替は rv.tab（無い切替なら最初） */
   V.shell = function (o) {
     var ks = o.tabs.map(function (t) { return t.k; }), cur = ks.indexOf(rv.tab) >= 0 ? rv.tab : ks[0];
-    return '<div class="rvw" data-rv="' + cur + '" data-fs="' + rv.fs + '" data-why="' + (rv.why ? 1 : 0) + '" data-side="' + (rv.side ? 1 : 0) + '">' + o.head +
+    return '<div class="rvw" data-rv="' + cur + '" data-fs="' + rv.fs + '" data-why="' + (rv.why ? 1 : 0) + '" data-tlv="' + rv.tlv + '" data-side="' + (rv.side ? 1 : 0) + '">' + o.head +
       '<div class="rvtabs" role="tablist" aria-label="結果の表示">' + o.tabs.map(function (t) {
         return '<button type="button" role="tab" class="rvtab" id="rvt-' + t.k + '" data-act="rvtab" data-k="' + t.k + '" aria-selected="' + (t.k === cur) + '" aria-controls="rvp-' + t.k + '" tabindex="' + (t.k === cur ? 0 : -1) + '">' + esc(t.label) + (t.n ? '<small>' + esc(t.n) + '</small>' : '') + '</button>';
       }).join('') + '</div>' +
@@ -970,7 +980,7 @@
     Array.prototype.forEach.call(w.querySelectorAll('.rvpane'), function (p) { p.hidden = p.getAttribute('data-pane') !== k; });
     Array.prototype.forEach.call(w.querySelectorAll('.rvtab'), function (b) { var on = b.getAttribute('data-k') === k; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
     if (!noScroll) {
-      var tb = w.querySelector('.rvtabs'), top = tb ? tb.getBoundingClientRect().top + window.pageYOffset - 8 : 0;
+      var tb = w.querySelector('.rvtabs'), top = tb ? tb.getBoundingClientRect().top + window.pageYOffset - 56 : 0;  /* 上の段の切替（.tabs・44px）の下に見えるように */
       if (tb && window.pageYOffset > top) window.scrollTo(0, top);
     }
     return true;
@@ -1061,6 +1071,11 @@
       case 'rvfs':
         rv.fs = t.getAttribute('data-v') || 'm'; rvSave(); wrapAttr('data-fs', rv.fs);
         Array.prototype.forEach.call(t.parentNode.querySelectorAll('[data-act="rvfs"]'), function (b) { b.setAttribute('aria-checked', String(b === t)); });
+        break;
+      case 'rvtlv':
+        rv.tlv = t.getAttribute('data-v') === 'line' ? 'line' : 'card'; rvSave(); wrapAttr('data-tlv', rv.tlv);
+        var tw0 = rvWrap();
+        if (tw0) Array.prototype.forEach.call(tw0.querySelectorAll('[data-act="rvtlv"]'), function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-v') === rv.tlv)); });
         break;
       case 'rvside': rv.side = !rv.side; wrapAttr('data-side', rv.side ? 1 : 0); t.setAttribute('aria-expanded', String(rv.side)); break;
       case 'rvreset': tl.who = []; tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; tl.off = {}; V.refreshTimeline(); break;

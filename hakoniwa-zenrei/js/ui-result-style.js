@@ -7,7 +7,8 @@
 (function () {
   'use strict';
   if (typeof document === 'undefined' || !document.createElement || document.getElementById('hk-result-style')) return;
-  var V = '#view-result,#view-saves,.rvw{--rc:var(--ui-card,var(--paper));--ri:var(--ui-ink,var(--ink));--rm:var(--ui-muted,var(--muted));--rl:var(--ui-line,var(--line));--rs:var(--ui-soft,var(--bg1));--ra:var(--ui-accent,var(--accent,var(--ink)));--rp:var(--ui-primary,var(--ink));--rpi:var(--ui-primary-ink,var(--paper));--rr:var(--ui-radius,12px);--rr2:var(--ui-radius-s,8px);--rsh:var(--ui-shadow,0 1px 2px rgba(0,0,0,.08))}';
+  var V = '#view-result,#view-saves,.rvw{--rc:var(--ui-card,var(--paper));--ri:var(--ui-ink,var(--ink));--rm:var(--ui-muted,var(--muted));--rl:var(--ui-line,var(--line));--rs:var(--ui-soft,var(--bg1));--ra:var(--ui-accent,var(--accent,var(--ink)));--rp:var(--ui-primary,var(--ink));--rpi:var(--ui-primary-ink,var(--paper));--rr:var(--ui-radius,12px);--rr2:var(--ui-radius-s,8px);--rsh:var(--ui-shadow,0 1px 2px rgba(0,0,0,.08));--rvst:calc(env(safe-area-inset-top,0px) + 56px)}';
+  /* --rvst：目次・右の絞り込み・一覧を止める高さと、区切りへ移ったときの上の余白（上の段の切替 .tabs（index.html・44px・画面の上に固定）の下に 12px）*/
   var CHECK = 'content:"";position:absolute;left:5px;top:1.5px;width:4px;height:8px;border:solid var(--rpi);border-width:0 2px 2px 0;transform:rotate(45deg)';
   var css = V +
     /* カード */
@@ -47,7 +48,7 @@
     '.rvw .rvpane[hidden]{display:none}' +
     /* 中身の格子 */
     '.rvw .rvgrid{display:grid;gap:20px;align-items:start}' +
-    '.rvw .rvg-end{grid-template-columns:minmax(0,1fr) 320px}.rvw .rvg-log{grid-template-columns:150px minmax(0,1fr) 230px}.rvw .rvg-map{grid-template-columns:minmax(0,1fr) 280px}' +
+    '.rvw .rvg-end{grid-template-columns:minmax(0,1fr) 320px}.rvw .rvg-log{grid-template-columns:140px minmax(0,1fr) 216px;gap:16px}.rvw .rvg-map{grid-template-columns:minmax(0,1fr) 280px}' +
     '.rvw .rvg-pair{grid-template-columns:290px minmax(0,1fr)}.rvw .rvg-who{grid-template-columns:230px minmax(0,1fr)}' +
     '.rvw :is(.rvmain,.rvside){min-width:0;display:grid;gap:16px;align-content:start}' +
     '@media (max-width:1100px){.rvw .rvg-log{grid-template-columns:minmax(0,1fr) 220px}.rvw .rvg-log .rvtoc{display:none}}' +
@@ -82,43 +83,68 @@
     '.rvw .rvpine button{display:flex;gap:8px;align-items:center;justify-content:flex-start}.rvw .rvarr{color:var(--rm)}' +
     '.rvw .rvmaplink{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;color:var(--ri)}.rvw .rvmaplink small{color:var(--rm);font-size:12px}' +
     /* 経過（見本 09・11）：目次・区切りのカード・右の絞り込み */
-    '.rvw .rvtoc{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;font-size:12.5px}' +
+    '.rvw .rvtoc{position:sticky;top:var(--rvst);max-height:calc(100vh - var(--rvst) - 12px);overflow:auto;font-size:12.5px}' +
     '.rvw .rvtoct{font-size:12px;color:var(--rm);margin:4px 0 8px 8px}.rvw .rvtoc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}' +
     '.rvw .rvtocb{appearance:none;-webkit-appearance:none;background:none;border:0;border-radius:6px;width:100%;text-align:left;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;align-items:baseline;padding:5px 8px;font:inherit;color:var(--ri);cursor:pointer}' +
     '.rvw .rvtocb:hover{background:var(--rs)}.rvw .rvtocb .tn{font-family:var(--f-num);font-size:11px;color:var(--rm)}.rvw .rvtocb .lb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rvw .rvtocb .n{font-size:11px;color:var(--rm)}.rvw .rvtocb.hot .tn{color:var(--hot)}' +
     '.rvw .rvloghd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 -4px}' +
     '.rvw .rvloghd h2.sec,.rvw .rvsolo h2.sec#tlhead{margin:0;padding:0;border:0;font-size:14px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}.rvw .rvloghd h2.sec .hotleg{margin-left:4px}' +
     '.rvw .rvsidebtn{display:none}' +
-    '.rvw .tl{border:0;display:grid;gap:14px}' +
-    '.rvw .tl .stepblk{display:block;background:var(--rc);border:1px solid var(--rl);border-radius:var(--rr);box-shadow:var(--rsh);padding:2px 26px 10px;--rail:0px;--hfx:16px}' +
-    '.rvw .tl .stepblk+.stepblk{border-top:1px solid var(--rl)}' +
-    '.rvw .tl .stepblk .when{flex-direction:row;align-items:center;flex-wrap:wrap;gap:4px 12px;padding:14px 0 12px;border-bottom:1px solid var(--rl);font-size:14px;letter-spacing:0;line-height:1.4}' +
-    '.rvw .tl .stepblk .when .tn{font-family:var(--f-num);font-size:13px;font-weight:600;color:var(--rm)}.rvw .tl .stepblk .when.hot .tn{color:var(--hot)}' +
-    '.rvw .tl .stepblk .when .ph{font-family:var(--f-body);font-size:15px;font-weight:700;color:var(--ri);line-height:1.4}' +
+    /* 経過の見え方（2026-11-02 担当UE）：.rvw の data-tlv（view.js の rv.tlv）で「カード」と「線」を切り替える。HTML は同じ。
+       線＝前の見え方（index.html の .tl・.stepblk・.ev のまま：左の縦の線と点、顔アイコン、重要な出来事の種類の線の形と薄い背景）を、新しい殻（切替・目次・右の絞り込み）の中で 1 枚の面に置く。
+       カード＝区切りごとのカード。1 出来事の高さを前の見え方とほぼ同じに詰める（余白・行間・頭の札を本文の行の頭に・理由は本文の直下に小さく）。顔アイコンも本文の左に小さく出す */
+    /* 両方：区切りの折りたたみ・理由の表示・文字の大きさ・転機への移動の印 */
     '.rvw .rvsecm{margin-left:auto;display:inline-flex;gap:8px;align-items:center;font-family:var(--f-body);font-size:12px;font-weight:400;color:var(--rm);letter-spacing:0}' +
     '.rvw .rvfoldbtn{appearance:none;-webkit-appearance:none;background:none;border:0;font:inherit;font-family:var(--f-body);font-size:12px;font-weight:400;letter-spacing:0;color:var(--rm);cursor:pointer;padding:4px 2px;min-height:30px;display:inline-flex;align-items:center;gap:6px}' +
     '.rvw .rvfoldbtn:hover{color:var(--ri)}.rvw .rvfoldbtn::after{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(2px) rotate(-135deg)}.rvw .rvfold .rvfoldbtn::after{transform:translateY(-2px) rotate(45deg)}' +
-    '.rvw .tl .stepblk.rvfold>:is(ol,.rvnext){display:none}.rvw .tl .stepblk.rvfold{padding-bottom:0;background:var(--rs);box-shadow:none}.rvw .tl .stepblk.rvfold .when{border-bottom:0;background:transparent}' +
-    '.rvw .tl .stepblk ol{border-left:0;padding:0;gap:0;display:block}' +
-    '.rvw .tl .stepblk ol>.ev{padding:14px 0;border-top:1px solid var(--rl)}.rvw .tl .stepblk ol>.ev:first-child{border-top:0}' +
-    '.rvw .tl .stepblk ol>.ev::before{display:none}.rvw .tl .ev .avs{display:none}.rvw .tl .ev.hasav{display:block}' +
-    '.rvw .tl .ev{font-size:14.5px;line-height:1.85}.rvw[data-fs="s"] .tl .ev{font-size:13px;line-height:1.75}.rvw[data-fs="l"] .tl .ev{font-size:16.5px;line-height:1.9}' +
-    '.rvw .tl .ev .evh{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;margin:0 0 4px;line-height:1.5}.rvw .tl .ev .evh>*{margin:0;vertical-align:0}' +
-    '.rvw .tl .ev .c{border:0;padding:0;font-family:var(--f-body);font-size:12px;letter-spacing:0;color:var(--rm);font-weight:400;background:none}' +
-    '.rvw .tl .ev.hot .c{background:none;border:0;color:var(--rm)}' +
-    '.rvw .rvimp{display:inline-block;font-size:11px;font-weight:700;line-height:1.6;padding:0 7px;border-radius:4px;color:#fff;background:var(--hot);white-space:nowrap;letter-spacing:.02em}' +
-    ':root[data-palette="mono"] .rvw .rvimp{color:var(--paper)}' +
-    '.rvw .tl .ev .oddb{border-radius:4px;font-family:var(--f-body);letter-spacing:0;font-size:11px;margin:0;padding:0 7px}' +
-    '.rvw .tl .ev :is(.markb,.goalb,.rmb){border-radius:4px;margin:0}' +
-    '.rvw .tl .ev.trouble:not(.death) .evb::before,.rvw .tl .ev.death .evb::before{float:left;margin:1px 6px 0 0}' +
-    '.rvw .tl .ev .why{margin-top:6px;font-size:12px;line-height:1.6;color:var(--rm)}.rvw .tl .ev .why::before{content:"理由："}.rvw[data-why="0"] .tl .ev .why{display:none}' +
-    '.rvw .tl .ev .evp+.evp{margin-top:.55em}.rvw .tl .ev .evq{border-left:0;padding-left:1em}' +
-    '.rvw :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm]){margin:8px -16px;padding:12px 16px;border-radius:10px}' +
-    '.rvw :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm])+.ev{border-top:0}' +
-    '.rvw .tl .ev.facfold{padding:10px 0}' +
+    '.rvw .tl .stepblk.rvfold>:is(ol,.rvnext){display:none}' +
+    '.rvw[data-why="0"] .tl .ev .why{display:none}' +
+    '.rvw[data-fs="s"] .tl .ev{font-size:13px;line-height:1.65}.rvw[data-fs="l"] .tl .ev{font-size:16px;line-height:1.8}' +
     '.rvw .tl .ev.rvflash{outline:2px solid var(--ra);outline-offset:4px;border-radius:8px}' +
-    '.rvw .rvnext{border-top:1px solid var(--rl);padding:8px 0 0;text-align:right}' +
-    '.rvw .rvrail{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}' +
+    '.rvw :is(.tl .stepblk,#tlhead){scroll-margin-top:var(--rvst)}' +
+    '.rvw .rvtlvbar{display:inline-flex;margin-left:auto;min-width:132px}.rvw .rvtlvbar button{min-height:30px;font-size:12.5px;padding:3px 10px}' +
+    /* カード */
+    '.rvw[data-tlv="card"] .tl{border:0;display:grid;gap:8px}' +
+    '.rvw[data-tlv="card"] .tl .stepblk{display:block;background:var(--rc);border:1px solid var(--rl);border-radius:var(--rr);box-shadow:var(--rsh);padding:0 18px 2px;--rail:0px;--hfx:10px}' +
+    '.rvw[data-tlv="card"] .tl .stepblk+.stepblk{border-top:1px solid var(--rl)}' +
+    '.rvw[data-tlv="card"] .tl .stepblk .when{flex-direction:row;align-items:center;flex-wrap:wrap;gap:2px 10px;padding:5px 0 4px;border-bottom:1px solid var(--rl);font-size:13px;letter-spacing:0;line-height:1.4}' +
+    '.rvw[data-tlv="card"] .tl .stepblk .when .tn{font-family:var(--f-num);font-size:12px;font-weight:600;color:var(--rm)}.rvw[data-tlv="card"] .tl .stepblk .when.hot .tn{color:var(--hot)}' +
+    '.rvw[data-tlv="card"] .tl .stepblk .when .ph{font-family:var(--f-body);font-size:14px;font-weight:700;color:var(--ri);line-height:1.4}' +
+    '.rvw[data-tlv="card"] .tl .stepblk .when .rvfoldbtn{min-height:26px;padding:2px}' +
+    '.rvw[data-tlv="card"] .tl .stepblk.rvfold{padding-bottom:0;background:var(--rs);box-shadow:none}.rvw[data-tlv="card"] .tl .stepblk.rvfold .when{border-bottom:0;background:transparent}' +
+    '.rvw[data-tlv="card"] .tl .stepblk ol{border-left:0;padding:0;gap:0;display:block}' +
+    '.rvw[data-tlv="card"] .tl .stepblk ol>.ev{padding:5px 0;border-top:1px solid var(--rl)}.rvw[data-tlv="card"] .tl .stepblk ol>.ev:first-child{border-top:0}' +
+    '.rvw[data-tlv="card"] .tl .stepblk ol>.ev::before{display:none}' +
+    '.rvw[data-tlv="card"] .tl .ev{font-size:14px;line-height:1.65}.rvw[data-tlv="card"] .tl .ev .evb{line-height:inherit}' +
+    /* 顔アイコン：本文の左に 22px（二人なら重ねる）。本文の 1 行目と同じ高さに置くので、出来事の高さは増えない */
+    '.rvw[data-tlv="card"] .tl .ev.hasav{display:flex;gap:8px;align-items:flex-start}' +
+    '.rvw[data-tlv="card"] .tl .ev .avs{display:flex;flex:none;min-width:35px;padding:1px 0 0}' +
+    '.rvw[data-tlv="card"] .tl .ev .avs .av{width:22px!important;height:22px!important;font-size:10px!important}' +
+    '.rvw[data-tlv="card"] .tl .ev .avs .av+.av{margin-left:-9px}' +
+    /* 頭の札（重要・節目・種類・らしくない）は本文の行の頭に並べる（札のための 1 行を使わない） */
+    '.rvw[data-tlv="card"] .tl .ev .evh{display:inline;margin:0}.rvw[data-tlv="card"] .tl .ev .evh>*{margin:0 5px 0 0;vertical-align:1px}' +
+    '.rvw[data-tlv="card"] .tl .ev .c{display:inline-block;border:1px solid var(--rl);border-radius:4px;padding:0 5px;font-family:var(--f-body);font-size:11px;line-height:1.55;letter-spacing:0;color:var(--rm);font-weight:400;background:none}' +
+    '.rvw[data-tlv="card"] .tl .ev.hot .c{background:none;border-color:var(--rl);color:var(--rm)}' +
+    '.rvw .rvimp{display:inline-block;font-size:10.5px;font-weight:700;line-height:1.55;padding:0 6px;border-radius:4px;color:var(--paper);background:var(--hot);white-space:nowrap;letter-spacing:.02em}' +
+    ':root[data-palette="mono"] .rvw .rvimp{color:var(--paper)}' +
+    '.rvw[data-tlv="card"] .tl .ev .oddb{border-radius:4px;font-family:var(--f-body);letter-spacing:0;font-size:11px;padding:0 6px}' +
+    '.rvw[data-tlv="card"] .tl .ev :is(.markb,.goalb,.rmb){border-radius:4px}' +
+    /* 理由：本文の直下に小さく */
+    '.rvw[data-tlv="card"] .tl .ev .why{display:block;margin-top:0;font-size:11.5px;line-height:1.45;color:var(--rm)}.rvw[data-tlv="card"] .tl .ev .why::before{content:"理由："}' +
+    '.rvw[data-tlv="card"] .tl .ev .evp+.evp{margin-top:.4em}.rvw[data-tlv="card"] .tl .ev .evq{border-left:0;padding-left:1em}' +
+    '.rvw[data-tlv="card"] :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm]){margin:3px -10px;padding:5px 10px;border-radius:8px}' +
+    '.rvw[data-tlv="card"] :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm])+.ev{border-top:0}' +
+    '.rvw[data-tlv="card"] .tl .ev.facfold{padding:5px 0}' +
+    '.rvw[data-tlv="card"] .rvnext{border-top:1px solid var(--rl);padding:0;text-align:right}.rvw[data-tlv="card"] .rvnext .rvlink{padding:4px 0;font-size:12px}' +
+    /* 線（前の見え方）：中身は index.html の見た目のまま。区切りの頭（左の列）に件数と畳む／開く、畳んだ区切りは 1 行 */
+    '.rvw[data-tlv="line"] .tl{background:var(--rc);border:1px solid var(--rl);border-radius:var(--rr);box-shadow:var(--rsh);padding:0 20px}' +
+    '.rvw[data-tlv="line"] .tl .stepblk .when .rvsecm{margin:3px 0 0;gap:6px;font-size:11px}.rvw[data-tlv="line"] .tl .stepblk .when .rvimp{font-size:10px;padding:0 5px}' +
+    '.rvw[data-tlv="line"] .tl .stepblk .when .rvfoldbtn{justify-content:flex-start;min-height:24px;padding:2px 0;font-size:11.5px}' +
+    '.rvw[data-tlv="line"] .tl .stepblk.rvfold .when{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:2px 12px;padding:9px 0}' +
+    '.rvw[data-tlv="line"] .tl .stepblk.rvfold .when .rvsecm{margin:0 0 0 auto}' +
+    '.rvw[data-tlv="line"] .tl .rvnext{grid-column:2;padding:0 0 8px;text-align:right}.rvw[data-tlv="line"] .tl .rvnext .rvlink{font-size:12px;padding:2px 0}' +
+    '.rvw[data-tlv="line"] .tl .ev .evh{display:inline}.rvw[data-tlv="line"] .tl .ev .evh .rvimp{display:none}' +
+    '.rvw .rvrail{position:sticky;top:var(--rvst);max-height:calc(100vh - var(--rvst) - 12px);overflow:auto}' +
     '.rvw .rvrailin{padding:16px 18px}.rvw .rvrs{padding:12px 0;border-top:1px solid var(--rl)}.rvw .rvrs:first-child{border-top:0;padding-top:0}.rvw .rvrs:last-child{padding-bottom:0}' +
     '.rvw .rvrt{font-size:12px;font-weight:700;margin:0 0 8px}' +
     '.rvw .rvwhos{display:flex;flex-wrap:wrap;gap:6px}' +
@@ -138,7 +164,10 @@
     '@media (max-width:760px){' +
       '.rvw .rvsidebtn{display:inline-flex}.rvw .rvg-log .rvtoc{display:none}' +
       '.rvw .rvg-log .rvrail{display:none;order:-1;position:static;max-height:none}.rvw[data-side="1"] .rvg-log .rvrail{display:block}' +
-      '.rvw .tl .stepblk{padding:0 16px 8px;--hfx:10px}.rvw :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm]){margin:6px -10px;padding:10px 10px}' +
+      '.rvw[data-tlv="card"] .tl .stepblk{padding:0 12px 2px;--hfx:8px}.rvw[data-tlv="card"] :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm]){margin:4px -8px;padding:6px 8px}' +
+      '.rvw[data-tlv="line"] .tl{padding:0 12px}.rvw[data-tlv="line"] .tl .rvnext{grid-column:auto}.rvw[data-tlv="line"] .tl .stepblk .when .rvsecm{margin:0 0 0 auto}' +
+      '.rvw .rvtlvbar{margin-left:0}' +
+      '.rvw[data-tlv="card"] .tl .ev.hasav{gap:6px}.rvw[data-tlv="card"] .tl .ev .avs{min-width:31px}.rvw[data-tlv="card"] .tl .ev .avs .av{width:20px!important;height:20px!important;font-size:9px!important}' +
     '}' +
     /* 関係図（見本 12） */
     '.rvw .rvmapcard{padding:14px 16px}.rvw .rvmaphd .mapat{margin:0}.rvw .rvmaphd{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px}' +
@@ -150,7 +179,7 @@
     '.rvw .rvselline .rvslh{margin:4px 0 0;font-size:15px}.rvw .rvselline .rvslt{font-size:13.5px;line-height:1.8;margin:8px 0 4px}' +
     '.rvw .rvsec2>h2.sec:first-child,.rvw .rvsec2 h2.sec{margin-top:0}' +
     /* 二人ずつ・住人ごと（見本 13・14）：左の一覧と右のカード */
-    '.rvw .rvlist{padding:10px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}' +
+    '.rvw .rvlist{padding:10px;position:sticky;top:var(--rvst);max-height:calc(100vh - var(--rvst) - 12px);overflow:auto}' +
     '.rvw .rvpills{display:flex;flex-wrap:wrap;gap:6px;padding:4px 4px 10px;border-bottom:1px solid var(--rl);margin-bottom:6px}' +
     '.rvw .rvpill{appearance:none;-webkit-appearance:none;border:1px solid var(--rl);background:var(--rc);border-radius:999px;padding:3px 10px;font:inherit;font-size:12px;color:var(--ri);cursor:pointer;min-height:30px}' +
     '.rvw .rvpill small{margin-left:4px;color:var(--rm)}.rvw .rvpill[aria-pressed="true"]{background:var(--rp);color:var(--rpi);border-color:var(--rp)}.rvw .rvpill[aria-pressed="true"] small{color:inherit;opacity:.8}' +

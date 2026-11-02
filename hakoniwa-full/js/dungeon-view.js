@@ -161,7 +161,7 @@
       '<div class="cards" style="margin-top:12px">' + heroCard(res, res.hero) +
       '<div class="ccard"><div class="hd"><span class="nm" style="font-size:16px">開発度</span><span class="nums">' + (res.hero.hardTop ? '攻めの挑戦者は罠や魔物に責められないので、開発度は伸びない' : '罠や魔物に責められた部位ほど伸び、次から感じやすくなる') + '</span></div>' + devBars(res.hero) + '</div></div>'),
       '<h2 class="sec">足りなかったもの・効いたもの</h2><ul class="dgadvice">' + res.advice.map(function (a) { return '<li>' + paint(a, res) + '</li>'; }).join('') + '</ul>',
-      '<h2 class="sec" id="tlhead">探索の記録' + (HK.View && HK.View.hotLegendSolo ? HK.View.hotLegendSolo(res) : '') + '</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button>' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="dglewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + '</div><div class="tl" id="dgtl">' + timeline(res) + '</div>',
+      '<h2 class="sec" id="tlhead">探索の記録' + (HK.View && HK.View.hotLegendSolo ? HK.View.hotLegendSolo(res) : '') + '</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button>' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="dglewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + (HK.View && HK.View.tlvSeg ? HK.View.tlvSeg('rvtlvbar') : '') + '</div><div class="tl" id="dgtl">' + timeline(res) + '</div>',
       histHtml || ''
     ];
     /* 頭と切替は経過と結末（view.js の V.head・V.shell）と同じ部品で「結末｜探索の記録」（2026-11-01 担当UC。表示だけ） */
