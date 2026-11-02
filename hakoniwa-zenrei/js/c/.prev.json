@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.44f1c1a55b.js",
+  "core": "core.aa2a402f8a.js",
   "late": "late.968824c7d3.js",
   "pack-rel": "pack-rel.2a37b4cfba.js",
   "scen-goukon": "scen-goukon.81745f0368.js",
@@ -64,7 +64,7 @@
   "tone-yankee": "tone-yankee.47e39e5f24.js"
  },
  "prev": {
-  "core": "core.e20fe0c568.js",
+  "core": "core.44f1c1a55b.js",
   "late": "late.968824c7d3.js",
   "pack-rel": "pack-rel.2a37b4cfba.js",
   "scen-goukon": "scen-goukon.81745f0368.js",
@@ -129,8 +129,8 @@
  },
  "core": {
   "js/load.js": [
-   14136,
-   5111
+   14386,
+   5203
   ],
   "js/load-order.js": [
    1812,
@@ -553,8 +553,8 @@
    1864
   ],
   "js/ui.js": [
-   143560,
-   41587
+   143740,
+   41663
   ],
   "js/ui-cast-teacher.js": [
    1438,
