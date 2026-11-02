@@ -244,7 +244,9 @@
   function bar(res) {
     return '<div class="tlbar">' + res.heroes.map(function (h) { return '<button class="chip whochip" data-st="who" data-i="' + h.i + '" aria-pressed="' + (who === h.i) + '">' + av(res, h.i, 20) + esc(h.name) + '</button>'; }).join('') +
       '<span class="spacer"></span><button class="chip" data-st="key" aria-pressed="' + keyOnly + '">' + KEY_LB + '</button>' +
-      (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-st="lewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + '</div>';
+      (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-st="lewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') +
+      /* 記録の見え方「カード｜線」（view.js の V.tlvSeg。経過と同じ切替。2026-11-02 担当UE） */
+      (HK.View && HK.View.tlvSeg ? HK.View.tlvSeg('rvtlvbar') : '') + '</div>';
   }
 
   /* ---------- 関係図（res.relmap があるとき） ---------- */
