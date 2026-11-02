@@ -398,18 +398,17 @@
       }, true);
     }
     ov.hidden = false;
-    document.body.style.overflow = 'hidden';
+    if (HK.Modal) HK.Modal.lock(ov);
     render();
     var f = ov.querySelector('.gearsec:not([hidden]) select, .gearsec:not([hidden]) input, .gx'); if (f) try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); }
   }
   function close() {
-    if (ov) ov.hidden = true;
-    document.body.style.overflow = '';
+    if (ov) { ov.hidden = true; if (HK.Modal) HK.Modal.unlock(ov); }
     cur = null;
     UI.renderCast();
     UI.applyColors(S().chars);
     var b = opener && document.querySelector('.res[data-id="' + opener + '"] .gearbtn');
-    if (b) b.focus();
+    if (b) try { b.focus({ preventScroll: true }); } catch (e) { b.focus(); }
   }
   function changed(rerender) { UI.save(); if (rerender) render(); }
 

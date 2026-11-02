@@ -224,10 +224,11 @@
       m = document.createElement('div'); m.id = 'imgmodal'; m.className = 'modal'; m.hidden = true;
       m.innerHTML = '<div class="modal-box" role="dialog" aria-modal="true" aria-label="結果画像"><p class="hint">長押し（PCは右クリック）で画像を保存できます。</p><img id="imgmodal-img" alt="結果の画像" style="width:100%;height:auto;border-radius:6px"><div class="row" style="margin-top:10px"><span class="spacer"></span><button class="btn" id="imgmodal-close">閉じる</button></div></div>';
       document.body.appendChild(m);
-      m.addEventListener('click', function (e) { if (e.target === m || e.target.id === 'imgmodal-close') m.hidden = true; });
+      m.addEventListener('click', function (e) { if (e.target === m || e.target.id === 'imgmodal-close') { m.hidden = true; if (HK.Modal) HK.Modal.unlock(m); } });
     }
     document.getElementById('imgmodal-img').src = canvas.toDataURL('image/png');
     m.hidden = false;
+    if (HK.Modal) HK.Modal.lock(m);
   }
   function save(canvas, name, msg) {
     say(msg, '画像を作成しています…');

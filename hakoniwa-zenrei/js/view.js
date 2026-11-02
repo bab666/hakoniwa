@@ -1072,6 +1072,8 @@
     if (open == null) open = m.hidden;
     m.hidden = !open;
     b.setAttribute('aria-expanded', String(open));
+    /* スマホでは下に固定した板になるので、開いている間は背景のスクロールを止める（ui-modal.js。2026-11-02） */
+    if (HK.Modal && window.matchMedia && window.matchMedia('(max-width:600px)').matches) { if (open) HK.Modal.lock(m); else HK.Modal.unlock(m); }
   }
   function setSec(el, open) {
     el.classList.toggle('rvfold', !open);

@@ -406,6 +406,7 @@
   }
   function close(m) {
     m.hidden = true;
+    if (HK.Modal) HK.Modal.unlock(m);
     $$('img', m).forEach(function (im) { if (/^blob:/.test(im.src)) URL.revokeObjectURL(im.src); });
     $('.modal-box', m).innerHTML = '';
   }
@@ -433,6 +434,7 @@
       } else if (a === 'dl') files.forEach(function (f, i) { setTimeout(function () { download(f.name, f.blob); }, i * 400); });
     };
     m.hidden = false;
+    if (HK.Modal) HK.Modal.lock(m);
   }
   /* 白地か、いまの配色か（白のときは聞かない） */
   function askBg() {
@@ -451,6 +453,7 @@
         ok(b.getAttribute('data-xbg') === 'white');
       };
       m.hidden = false;
+      if (HK.Modal) HK.Modal.lock(m);
       var f = $('[data-xbg="white"]', box);
       if (f) f.focus();
     });
