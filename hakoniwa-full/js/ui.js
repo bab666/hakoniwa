@@ -1199,13 +1199,6 @@
     if (e) return '<span class="scload ng" role="status">読み込めませんでした<button type="button" data-act="scenretry">もう一度</button></span>';
     return '<span class="scload" role="status">読み込み中…</span>';
   }
-  /* データの先読みの設定（load.js の HK.Load.pref。http(s) で配っているときだけ。file:// は手元のファイルなので先読みしない） */
-  function prefRow() {
-    if (!HK.Load || !HK.Load.manifest || !HK.Load.setPref || !/^https?:$/.test(location.protocol)) return '';
-    var v = HK.Load.pref(), o = function (k, l) { return '<option value="' + k + '"' + (v === k ? ' selected' : '') + '>' + l + '</option>'; };
-    return '<p class="hint prefrow"><label for="prefetch">データの先読み</label><select id="prefetch" data-f="prefetch">' + o('auto', '自動（おすすめ）') + o('all', 'すべて先読み') + o('pick', '選んだ箱庭だけ') + '</select>' +
-      '<span>パソコンでは裏で先に読み込みます。スマホでは選んだ箱庭だけ読みます</span></p>';
-  }
   /* 下に固定の帯（見本 05・08）：左に要約、右にシードと「▶ 箱庭を動かす」。読み込みを待っているあいだは帯の中に知らせる（pendSync） */
   var ICON_GRID = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>';
   var ICON_PLAY = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>';
@@ -1311,19 +1304,30 @@
   /* 2. 箱庭を選ぶの窓（見本 06）の右：選んでいる（まだ決めていない）箱庭の説明 */
   function pickSide(id) {
     var ci = cardInfo(id), s = ci.s, n = S.chars.length, mn = smin(id), cur = scenOf(S.scenId);
-    return '<div class="bxk"><span>' + esc(ci.kt) + '</span><span>' + ci.cnt + '</span></div><h3>' + esc(s.name) + (ci.adult ? '<span class="r18tag">R18</span>' : '') + '</h3>' +
+    return '<div class="bxsh-h"><button type="button" class="bxsh-grip" data-act="sheetclose" aria-label="説明を閉じる"></button><button type="button" class="bxx bxsh-x" data-act="sheetclose" aria-label="説明を閉じる">×</button></div>' +
+      '<div class="bxk"><span>' + esc(ci.kt) + '</span><span>' + ci.cnt + '</span></div><h3>' + esc(s.name) + (ci.adult ? '<span class="r18tag">R18</span>' : '') + '</h3>' +
       '<p class="bxside-d">' + esc(ci.cl) + '</p>' + (ci.snote ? '<p class="note">' + esc(ci.snote) + '</p>' : '') + ci.minor + (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') +
       '<div class="bxside-b">' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</div>' +
       (n && n < mn ? '<p class="bxwarnt" style="margin:0">いまの住人は' + n + '人です。この箱庭は' + mn + '人から遊べます。</p>' : '') +
       '<span class="bxsp"></span><button type="button" class="bxgo" data-act="pickgo" data-id="' + esc(id) + '">この箱庭にする</button>' +
       '<p class="bxcur">いまの箱庭：' + esc(cur ? cur.name : '') + '（場の設定は箱庭ごとに残ります）</p>';
   }
-  /* 窓の開閉・カードの印（選んでいる .pv・人数の足りない注意・「遊べるものだけ」）・右の説明を合わせる（描いたあと・カードを押したとき） */
-  var pickSideId = '';
+  /* 窓の開閉・カードの印（選んでいる .pv・人数の足りない注意・「遊べるものだけ」）・右の説明を合わせる（描いたあと・カードを押したとき）
+     スマホ（幅 600px 以下）では右の説明を、カードを押したときに下から出る板（.bxsheet。2026-11-02 担当UF）にする。閉じる＝×・つまみ・板の外・Esc・下へなぞる */
+  var pickSideId = '', sheetOpen = false;
+  function pickNarrow() { return !!(window.matchMedia && window.matchMedia('(max-width:600px)').matches); }
+  function sheetShow(on) {
+    sheetOpen = !!on && pickOpen;
+    pickSync();
+    var f = sheetOpen ? document.querySelector('#bxside .bxgo') : document.querySelector('#bxpick label.scen.pv input');
+    if (f) { try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); } }
+  }
   function pickSync() {
     var pk = document.getElementById('bxpick');
     if (!pk) return;
     if (pk.hidden === pickOpen) pk.hidden = !pickOpen;
+    if (!pickOpen) sheetOpen = false;
+    if (pk.classList.contains('bxsheet') !== sheetOpen) pk.classList.toggle('bxsheet', sheetOpen);
     document.documentElement.classList.toggle('bx-modal', pickOpen);
     var n = S.chars.length, pv = pickOpen ? pickPrev || S.scenId : S.scenId, fit = pickOpen && bxPref.fit && n > 0;
     Array.prototype.forEach.call(pk.querySelectorAll('label.scen'), function (l) {
@@ -1344,7 +1348,7 @@
     if (side && pickSideId !== key && scenOf(pv)) { side.innerHTML = pickSide(pv); pickSideId = key; }
   }
   function pickShow(on) {
-    pickOpen = on; pickPrev = on ? S.scenId : ''; pickSideId = '';
+    pickOpen = on; pickPrev = on ? S.scenId : ''; pickSideId = ''; sheetOpen = false;
     pickSync();
     var f = on ? document.querySelector('#bxpick label.scen.pv input') || document.querySelector('#bxpick .bxx') : document.querySelector('#view-box [data-act="pickopen"]');
     if (f) { try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); } }
@@ -1353,7 +1357,7 @@
   /* 「この箱庭にする」：箱庭を決めて窓を閉じ、上のカードに反映する（選び替えの描き方・保存は今までのカードの選択と同じ） */
   function pickGo(id) {
     id = id || pickPrev || S.scenId;
-    pickOpen = false; pickPrev = ''; pickSideId = '';
+    pickOpen = false; pickPrev = ''; pickSideId = ''; sheetOpen = false;
     if (id && id !== S.scenId && scenOf(id)) { S.scenId = id; delete boxErr[id]; renderBox({ defer: true }); saveSoon(); toast('箱庭を「' + scenOf(id).name + '」にしました'); }
     else pickSync();
     var b = document.querySelector('#view-box [data-act="pickopen"]');
@@ -1406,16 +1410,17 @@
         '<div class="d' + (ci.cl !== ci.cd ? ' hasl' : '') + '">' + esc(ci.cd) + '</div>' + (ci.cl !== ci.cd ? '<div class="dl">' + esc(ci.cl) + '</div>' : '') +
         (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') + ci.minor + '<span class="bxwarn"></span></label>';
     }
-    /* 窓の足：全年齢版は R-18版の案内（URL は js/share-card.js の CONF.r18Url＝BOOTH・CONF.noteUrl＝note）と、データの先読みの設定 */
-    var foot = '';
-    if (HK.SAFE_ON && HK.CONF && HK.CONF.r18Url) foot += '<span class="r18link" title="エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。">R-18版（BOOTH・noteで頒布中・18歳以上向け）では成人向けの箱庭を5つ追加。夜の場面もぼかさずに描きます。</span>' +
-      '<a href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (HK.CONF.noteUrl ? '<a href="' + esc(HK.CONF.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '');
-    foot += prefRow();
+    /* 一覧の最後：全年齢版だけ、R-18版の案内のカード（URL は js/share-card.js の CONF.r18Url＝BOOTH・CONF.noteUrl＝note。押すと一文とリンクが開く。.r18link は絞りの札が「すべて」のときだけ出す＝ui-filter.js）。
+       データの先読みの設定は表示メニュー（ui-shell.js の prefetch-top）にある */
+    if (HK.SAFE_BUILD && HK.CONF && HK.CONF.r18Url) cards += '<div class="scen r18link bxr18c"><button type="button" class="bxr18c-t" data-act="r18card" aria-expanded="false" aria-controls="bxr18c-b" title="エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。">' +
+      '<span class="k"><span class="kt">18歳以上向け</span></span><span class="n">R-18版のご案内</span><span class="bxr18c-i" aria-hidden="true"></span></button>' +
+      '<div class="bxr18c-b" id="bxr18c-b" hidden><p class="bxr18c-d">R-18版（BOOTH・noteで頒布中・18歳以上向け）では成人向けの箱庭を5つ追加。夜の場面もぼかさずに描きます。</p><p class="bxr18c-a">' +
+      '<a href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (HK.CONF.noteUrl ? '<a href="' + esc(HK.CONF.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '') + '</p></div></div>';
     /* R18版は「※成人として扱います」を窓の見出しの横に1行だけ */
     var head = '<div class="bxpick" id="bxpick" hidden><div class="bxpick-bg" data-act="pickclose"></div><div class="bxpick-dlg" role="dialog" aria-modal="true" aria-labelledby="bxpick-t">' +
       '<div class="bxpick-h"><h2 id="bxpick-t">箱庭を選ぶ</h2><span class="bxmu">' + order.length + '種類</span>' + (HK.SAFE_ON ? '' : '<span class="bxmu">' + ADULT_NOTE + '</span>') + '<span class="bxsp"></span><button type="button" class="bxx" data-act="pickclose" aria-label="閉じる">×</button></div>' +
       '<div class="bxpick-b"><div class="bxpick-l"><label class="bxfit"><input type="checkbox" data-f="bxfit"> <span id="bxfitt">いまの住人で遊べるものだけ</span></label><div class="scens">' + cards + '</div></div>' +
-      '<aside class="bxpick-s" id="bxside" aria-label="選んでいる箱庭"></aside></div><div class="bxpick-f">' + foot + '</div></div></div>';
+      '<div class="bxpick-sbg" data-act="sheetclose"></div><aside class="bxpick-s" id="bxside" aria-label="選んでいる箱庭"></aside></div></div></div>';
     var selSeg = { k: 'sel', now: true, html: selCard(S.scenId, wait ? null : scen, wait || loadSel) };
     if (wait) {
       var we = boxErr[S.scenId];
@@ -1540,10 +1545,10 @@
   document.addEventListener('keydown', function (ev) {
     var t = ev.target;
     if (pickOpen && tab === 'box') {
-      if (ev.key === 'Escape') { ev.preventDefault(); pickShow(false); return; }
+      if (ev.key === 'Escape') { ev.preventDefault(); if (sheetOpen) sheetShow(false); else pickShow(false); return; }
       if (ev.key === 'Enter' && t && t.matches && t.matches('#bxpick input[data-f="scen"]')) { ev.preventDefault(); pickGo(t.value); return; }
       if (ev.key === 'Tab') {
-        var dlg = document.querySelector('#bxpick .bxpick-dlg'), fs = dlg ? Array.prototype.filter.call(dlg.querySelectorAll('button,input,select,a[href],[tabindex="0"]'), function (x) { return !x.disabled && x.offsetParent !== null && !(x.type === 'radio' && !x.checked); }) : [];
+        var dlg = document.querySelector('#bxpick .bxpick-dlg'), fs = dlg ? Array.prototype.filter.call(dlg.querySelectorAll('button,input,select,a[href],[tabindex="0"]'), function (x) { return !x.disabled && x.offsetParent !== null && !(x.type === 'radio' && !x.checked) && getComputedStyle(x).visibility !== 'hidden'; }) : [];
         if (fs.length && (ev.shiftKey ? t === fs[0] : t === fs[fs.length - 1])) { ev.preventDefault(); fs[ev.shiftKey ? fs.length - 1 : 0].focus(); }
       }
       return;
@@ -1557,6 +1562,20 @@
     var l = pickOpen && ev.target.closest && ev.target.closest('#bxpick label.scen'), i = l && l.querySelector('input[data-f="scen"]');
     if (i) pickGo(i.value);
   });
+  /* スマホ：カードを押したら下から説明の板を出す（矢印・スペースでの選び替えは入力そのものへのクリックなので、板は出さない） */
+  document.addEventListener('click', function (ev) {
+    var l = pickOpen && ev.target.closest && ev.target.tagName !== 'INPUT' && ev.target.closest('#bxpick label.scen');
+    if (l && pickNarrow()) { sheetOpen = true; setTimeout(function () { if (sheetOpen) pickSync(); }, 0); }
+  });
+  /* 板のつまみ・頭を下へなぞったら閉じる */
+  var shY = null;
+  document.addEventListener('touchstart', function (ev) { shY = sheetOpen && ev.touches.length === 1 && ev.target.closest && ev.target.closest('#bxside .bxsh-h') ? ev.touches[0].clientY : null; }, { passive: true });
+  document.addEventListener('touchend', function (ev) {
+    if (shY == null) return;
+    var dy = ev.changedTouches && ev.changedTouches[0] ? ev.changedTouches[0].clientY - shY : 0;
+    shY = null;
+    if (dy > 40) sheetShow(false);
+  }, { passive: true });
   function envNow() {
     var env = {};
     HK.SCENARIOS[S.scenId].env.forEach(function (e) { env[e.id] = envVal(e, S.scenId); });
@@ -1899,6 +1918,8 @@
       case 'pickopen': pickShow(true); break;
       case 'pickclose': pickShow(false); break;
       case 'pickgo': pickGo(t.dataset.id); break;
+      case 'sheetclose': sheetShow(false); break;
+      case 'r18card': (function () { var on = t.getAttribute('aria-expanded') !== 'true', bd = document.getElementById('bxr18c-b'); t.setAttribute('aria-expanded', String(on)); if (bd) bd.hidden = !on; if (on && bd && bd.scrollIntoView) bd.scrollIntoView({ block: 'nearest' }); })(); break;
       case 'bxtab': bxPref.tab = t.dataset.k; bxPrefSave(); bxTabSync(); break;
       case 'envseg': (function () {
         var it = t.closest('.envitem'), sl = it && it.querySelector('select[data-f="env"]');

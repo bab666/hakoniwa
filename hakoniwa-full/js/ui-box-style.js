@@ -1,11 +1,12 @@
 /* 箱庭シミュレーター: 箱庭タブの見た目（2026-11-01 担当UB。参考デザインの見本 05〜08「登録しやすく」。全年齢版・R18版共通。ui.js の前に読む）
    ui.js の renderBox が描く箱庭タブの部品に、ここから <style> を差す（index.html には書かない。ui-ties.js と同じ作り）。
    ・上：選んだ箱庭のカード（.bxsel。分類・人数、題名、説明、札、効く気質。右に「箱庭を変える」「この箱庭のTIPS」「出来事の一覧」）
-   ・「箱庭を選ぶ」の窓（.bxpick。絞りの札・「いまの住人で遊べるものだけ」・カードの一覧・右に選んでいる箱庭の説明・足に R18 版の案内）
+   ・「箱庭を選ぶ」の窓（.bxpick。絞りの札・「いまの住人で遊べるものだけ」・カードの一覧・右に選んでいる箱庭の説明。全年齢版は一覧の最後に R-18版の案内のカード .bxr18c）
+     2026-11-02 担当UF：足の帯（R18 版の案内・データの先読み）をやめて一覧を高くし、スマホでは一覧を主役（1 列・1 枚 60〜70px）に、説明はカードを押すと下から出る板（.bxsheet）に
    ・切替（.bxtabs：参加者と初動／場の設定／起こりやすさ／展開と内容。#view-box の data-bxtab で見せる節を選ぶ）と、各節（.bxpanel）
    ・下に固定の帯（.runbar.bxrun：要約・読み込み待ち・シード・「▶ 箱庭を動かす」）
    色・角丸・影は土台の変数 --ui-*（index.html。担当UA）を使い、無いときは今のテーマの変数（--paper・--ink など）か見本の値に戻る。
-   スマホ（幅 600px 以下）は見本 08：カードを小さく、切替を横スクロール、設定は 1 列、下に固定の「▶ 箱庭を動かす」。
+   スマホ（幅 600px 以下）は見本 08：カードを小さく、切替を横スクロール、設定は 1 列、下に固定の「▶ 箱庭を動かす」。窓は全画面で、スクロールは一覧だけ。
    画面だけの部品で、箱庭の結果には効かない。 */
 (function () {
   'use strict';
@@ -70,7 +71,8 @@
     V + ' .bxfit{grid-column:2;grid-row:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px 20px;border-bottom:1px solid var(--bx-line);font-size:13px;color:var(--bx-ink);cursor:pointer}' +
     V + ' .bxfit[hidden]{display:flex;visibility:hidden}' +
     V + ' .bxfit input{width:18px;height:18px;margin:0;accent-color:var(--bx-pr)}' +
-    V + ' .bxpick .scens{grid-column:1;grid-row:2;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;align-content:start;overscroll-behavior:contain}' +
+    V + ' .bxpick .scens{grid-column:1;grid-row:2;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));grid-auto-rows:max-content;gap:8px;align-content:start;overscroll-behavior:contain}' +
+    /* 行は中身の高さ（一覧が窓より長いとき、行が min-height まで縮んで、開いた R-18版のカードの中身がはみ出さないように） */
     V + ' .bxpick .scens>.bxfitoff{display:none!important}' +
     V + ' .bxpick .scen{min-height:72px;padding:10px 12px;gap:2px;border-radius:10px;border-color:var(--bx-line)}' +
     V + ' .bxpick .scen .d,' + V + ' .bxpick .scen .dl,' + V + ' .bxpick .scen .note,' + V + ' .bxpick .scen .tipscen,' + V + ' .bxpick .scen .ftag:not(.warn),' + V + ' .bxpick .scen .ftmore{display:none!important}' +
@@ -94,9 +96,19 @@
     V + ' .bxgo{height:48px;border:0;border-radius:10px;background:var(--bx-pr);color:var(--bx-pri);font:inherit;font-size:15px;font-weight:700;cursor:pointer}' +
     V + ' .bxgo:hover{filter:brightness(1.12)}' + V + ' .bxgo:focus-visible{outline:2px solid var(--bx-acc);outline-offset:2px}' +
     V + ' .bxpick-s .bxcur{font-size:12px;color:var(--bx-mu)}' +
-    V + ' .bxpick-f{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:12px 20px;border-top:1px solid var(--bx-line);font-size:12px;color:var(--bx-mu)}' +
-    V + ' .bxpick-f:empty{display:none}' +
-    V + ' .bxpick-f a{color:var(--bx-acc);font-weight:700}' + V + ' .bxpick-f .prefrow{margin:0}' +
+    /* スマホの板の頭（つまみ・×）と板の外の幕は、PC 幅では出さない */
+    V + ' .bxsh-h,' + V + ' .bxpick-sbg{display:none}' +
+    /* 全年齢版：一覧の最後の R-18版の案内のカード（ほかのカードと同じ形。押すと一文と BOOTH・note のリンクが開く） */
+    V + ' .bxpick .scen.bxr18c{display:block;padding:0;cursor:default}' +
+    V + ' .bxr18c-t{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:2px;width:100%;min-height:72px;box-sizing:border-box;margin:0;padding:10px 36px 10px 12px;border:0;border-radius:10px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}' +
+    V + ' .bxr18c-t:focus-visible{outline:2px solid var(--bx-acc);outline-offset:2px}' +
+    V + ' .bxr18c .k{white-space:nowrap}' + V + ' .bxr18c-b[hidden]{display:none}' +
+    V + ' .bxr18c-i{position:absolute;right:14px;top:50%;width:8px;height:8px;margin-top:-6px;border-right:2px solid var(--bx-mu);border-bottom:2px solid var(--bx-mu);transform:rotate(45deg);transition:transform .15s}' +
+    V + ' .bxr18c-t[aria-expanded="true"] .bxr18c-i{transform:rotate(-135deg);margin-top:-2px}' +
+    V + ' .bxr18c-d{margin:0;padding:0 12px;font-size:12px;line-height:1.65;color:var(--bx-mu)}' +
+    V + ' .bxr18c-a{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:10px 12px 12px}' +
+    V + ' .bxr18c-a a{flex:1 1 0;display:flex;align-items:center;justify-content:center;min-height:36px;padding:0 10px;border:1px solid var(--bx-line2);border-radius:var(--bx-rs);background:var(--bx-card);color:var(--bx-acc);font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap}' +
+    V + ' .bxr18c-a a:hover,' + V + ' .bxr18c-a a:focus-visible{border-color:var(--bx-ink);outline:none}' +
 
     /* ---------- 3. 切替と各節 ---------- */
     V + ' .bxtabs{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}' +
@@ -221,19 +233,41 @@
       V + ' .bxenv .envitem{padding:12px 0}' +
       V + ' .bxjbar .bxjc{flex:1 1 100%}' + V + ' .bxjbar .bxsp{display:none}' +
       V + ' .bxrand{flex:1 1 100%}' + V + ' .bxrand .bxrandl{flex:1 1 auto}' +
+      /* 窓（2026-11-02 担当UF）：全画面。頭・絞りの行の下は全部一覧（スクロールは一覧だけ）。カードは 1 列・1 枚 60〜70px */
       V + ' .bxpick{padding:0}' +
-      V + ' .bxpick-dlg{max-width:none;height:100%;max-height:none;border-radius:0}' +
-      V + ' .bxpick-h{padding:10px 12px 10px 16px}' +
-      V + ' .bxpick-b{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto}' +
-      V + ' .bxpick .scfilt{grid-column:1;grid-row:1;flex-wrap:nowrap;overflow-x:auto;padding:10px 16px;border-bottom:0}' +
-      V + ' .bxpick .scfilt .chip{flex:0 0 auto}' +
-      V + ' .bxfit{grid-column:1;grid-row:2;justify-content:flex-start;padding:0 16px 10px}' +
-      V + ' .bxpick .scens{grid-column:1;grid-row:3;padding:10px 16px;grid-template-columns:repeat(2,minmax(0,1fr))}' +
-      V + ' .bxpick .scen{min-height:64px}' +
-      V + ' .bxpick-s{grid-column:1;grid-row:4;max-height:44vh;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));gap:8px;border-left:0;border-top:1px solid var(--bx-line);box-shadow:0 -4px 16px rgba(23,32,43,.06)}' +
-      V + ' .bxpick-s h3{font-size:18px}' + V + ' .bxpick-s .bxside-d{font-size:13px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}' +
-      V + ' .bxpick-s .tags{display:none}' + V + ' .bxside-b .tipscen{height:36px}' + V + ' .bxgo{height:48px;flex:none}' +
-      V + ' .bxpick-f{padding:8px 16px}' +
+      V + ' .bxpick-dlg{max-width:none;height:100%;max-height:none;border-radius:0;box-shadow:none}' +
+      V + ' .bxpick-h{padding:max(8px,env(safe-area-inset-top,0px)) 10px 8px 16px}' +
+      V + ' .bxpick-b{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr)}' +
+      V + ' .bxpick .scfilt{grid-column:1;grid-row:1;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:10px 16px 8px;border-bottom:0;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}' +
+      V + ' .bxpick .scfilt::-webkit-scrollbar{display:none}' +
+      V + ' .bxpick .scfilt .chip{flex:0 0 auto;height:34px;white-space:nowrap}' +
+      V + ' .bxfit{grid-column:1;grid-row:2;justify-content:flex-start;min-width:0;padding:0 16px 10px;border-bottom:1px solid var(--bx-line);white-space:nowrap}' +
+      V + ' .bxfit input{flex:none}' + V + ' .bxfit span{min-width:0;overflow:hidden;text-overflow:ellipsis}' +
+      V + ' .bxpick .scens{grid-column:1;grid-row:3;padding:12px 16px calc(16px + env(safe-area-inset-bottom,0px));grid-template-columns:minmax(0,1fr);gap:8px}' +
+      V + ' .bxpick .scen{display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:center;column-gap:10px;row-gap:2px;min-height:62px;box-sizing:border-box;padding:9px 14px}' +
+      V + ' .bxpick .scen .k{grid-column:1;grid-row:1}' +
+      V + ' .bxpick .scen .n{grid-column:1;grid-row:2;min-width:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      V + ' .bxpick .scen .tags{grid-column:2;grid-row:1 / span 2;flex-direction:column;flex-wrap:nowrap;align-items:flex-end;justify-content:center;gap:0;max-width:13em;margin:0;overflow:hidden}' +
+      V + ' .bxpick .scen .ftag.warn{max-width:100%;text-align:right}' +
+      V + ' .bxpick .scen .bxwarn{grid-column:1 / -1;grid-row:3}' +
+      V + ' .bxpick .scen .scload{grid-column:2;grid-row:1;justify-self:end;font-size:11px}' +
+      V + ' .bxpick .scen.bxr18c{display:block;padding:0}' + V + ' .bxr18c-t{min-height:62px;padding:9px 40px 9px 14px}' +
+      V + ' .bxr18c-d{padding:0 14px}' + V + ' .bxr18c-a{padding:10px 14px 12px}' + V + ' .bxr18c-a a{min-height:40px}' +
+      /* 説明の板：カードを押すと下から出る（画面の下 55% まで）。板の外の幕・×・つまみ・Esc で閉じる */
+      V + ' .bxpick-sbg{display:block;position:absolute;inset:0;z-index:2;background:rgba(10,14,20,.45);opacity:0;visibility:hidden;transition:opacity .2s,visibility 0s linear .2s}' +
+      V + ' .bxpick.bxsheet .bxpick-sbg{opacity:1;visibility:visible;transition:opacity .2s}' +
+      V + ' .bxpick-s{position:absolute;left:0;right:0;bottom:0;z-index:3;max-height:55%;overflow:auto;padding:0 16px calc(14px + env(safe-area-inset-bottom,0px));gap:8px;background:var(--bx-card);border:0;border-top:1px solid var(--bx-line);border-radius:16px 16px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.28);transform:translateY(105%);visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}' +
+      V + ' .bxpick.bxsheet .bxpick-s{transform:none;visibility:visible;transition:transform .22s ease}' +
+      V + ' .bxsh-h{position:sticky;top:0;z-index:1;display:flex;align-items:center;flex:none;height:40px;margin:0 -16px;padding:0 8px 0 56px;background:var(--bx-card)}' +
+      V + ' .bxsh-grip{position:relative;flex:1 1 auto;height:40px;margin:0;padding:0;border:0;background:none;cursor:pointer}' +
+      V + ' .bxsh-grip::before{content:"";position:absolute;left:50%;top:50%;width:40px;height:5px;margin:-2px 0 0 -20px;border-radius:3px;background:var(--bx-line2)}' +
+      V + ' .bxsh-x{width:36px;height:36px;font-size:18px}' +
+      V + ' .bxpick-s .bxk{margin-top:-4px}' +
+      V + ' .bxpick-s h3{font-size:19px}' + V + ' .bxpick-s .bxside-d{font-size:13px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}' +
+      V + ' .bxpick-s .note{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}' +
+      V + ' .bxpick-s .tags,' + V + ' .bxpick-s .bxsp{display:none}' + V + ' .bxside-b .tipscen{height:36px;font-size:12px}' + V + ' .bxgo{height:48px;flex:none}' +
+      V + ' .bxpick-s .bxcur{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '@media (prefers-reduced-motion:reduce){' + V + ' .bxpick-s,' + V + ' .bxpick-sbg{transition:none!important}}' +
       ':root.hk-runfix:root{--runfix-h:calc(77px + env(safe-area-inset-bottom,0px))}' +
       'html body ' + V + '>.runbar.bxrun{gap:8px;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--bx-card);color:var(--bx-ink);border-top:1px solid var(--bx-line);box-shadow:0 -4px 16px rgba(23,32,43,.06)}' +
       V + ' .bxrun .bxsum,' + V + ' .bxrun .spacer{display:none}' +

@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.cd93674abf.js",
+  "core": "core.44f1c1a55b.js",
   "late": "late.968824c7d3.js",
   "pack-rel": "pack-rel.2a37b4cfba.js",
   "scen-goukon": "scen-goukon.81745f0368.js",
@@ -64,7 +64,7 @@
   "tone-yankee": "tone-yankee.47e39e5f24.js"
  },
  "prev": {
-  "core": "core.07c42551b0.js",
+  "core": "core.e20fe0c568.js",
   "late": "late.968824c7d3.js",
   "pack-rel": "pack-rel.2a37b4cfba.js",
   "scen-goukon": "scen-goukon.81745f0368.js",
@@ -537,8 +537,8 @@
    8810
   ],
   "js/ui-box-style.js": [
-   25877,
-   5032
+   29848,
+   5700
   ],
   "js/ui-box-draw.js": [
    8621,
@@ -553,8 +553,8 @@
    1864
   ],
   "js/ui.js": [
-   141992,
-   41291
+   143560,
+   41587
   ],
   "js/ui-cast-teacher.js": [
    1438,
