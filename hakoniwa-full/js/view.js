@@ -20,12 +20,14 @@
      sec（区切りごとの開け閉め）・pair（選んだ組）・who（選んだ住人）・off（関係図で隠す線の種類）・lab（線の名前を全部出す）・line（選んだ線）・side（スマホの絞り込みの開閉）は結果ごと。
      見た目は js/ui-result-style.js（--ui-* の変数）。一人用・ダンジョン（solo-story-kit.js・dungeon-view.js）も V.head・V.shell で同じ頭と切替を使う
      tlv（経過の見え方。card＝区切りごとのカード／line＝前の見え方：縦の線・顔アイコン・種類の線の形と薄い背景。2026-11-02 担当UE）も同じ鍵に残す。
-     どちらも同じ HTML で、.rvw の data-tlv で見た目だけを切り替える（区切りの折りたたみ・目次・絞り込みは両方に効く。一人用・ダンジョンの記録も同じ） */
+     どちらも同じ HTML で、.rvw の data-tlv で見た目だけを切り替える（区切りの折りたたみ・目次・絞り込みは両方に効く。一人用・ダンジョンの記録も同じ）
+     bubble＝吹き出し（2026-11-02 担当UH）：区切りはカードと同じ。発話のある出来事の本文だけを V.bubble（e.seg で台詞と地の文に分ける）で描くので、
+     吹き出しへ／から切り替えたときだけ記録の本文（#tl・#sttl・#dgtl）を描き直す（V.onTlv。区切りの開け閉め・絞り込みは rv.sec・tl のまま） */
   var RV_KEY = 'hakoniwa:rv';
   var rv = (function () {
     var o = {};
     try { o = JSON.parse(window.localStorage.getItem(RV_KEY) || '{}') || {}; } catch (e) { o = {}; }
-    return { tab: typeof o.tab === 'string' ? o.tab : 'end', fs: /^[sml]$/.test(o.fs || '') ? o.fs : 'm', why: o.why !== false, open: !!o.open, tlv: o.tlv === 'line' ? 'line' : 'card', sec: {}, pair: null, who: null, off: {}, lab: false, line: null, side: false, plist: 'all' };
+    return { tab: typeof o.tab === 'string' ? o.tab : 'end', fs: /^[sml]$/.test(o.fs || '') ? o.fs : 'm', why: o.why !== false, open: !!o.open, tlv: o.tlv === 'line' || o.tlv === 'bubble' ? o.tlv : 'card', sec: {}, pair: null, who: null, off: {}, lab: false, line: null, side: false, plist: 'all' };
   })();
   function rvSave() { try { window.localStorage.setItem(RV_KEY, JSON.stringify({ tab: rv.tab, fs: rv.fs, why: rv.why, open: rv.open, tlv: rv.tlv })); } catch (e) { /* 残せなくても表示はできる */ } }
   /* 結果が変わったら、結果ごとの選択を戻す */
@@ -678,16 +680,19 @@
       var avs = who.length ? '<span class="avs">' + who.map(function (i) { return av(res, i, 26); }).join('') + '</span>' : '';
       /* 会話は吹き出しにせず、「」の引用だけ少し太く（.q） */
       var talk = !!(avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)));
-      var body = paint(e.text, res, sg);
+      /* 吹き出しの見え方（V.bubble）：発話のある出来事は本文を吹き出しと地の文に分ける（顔は吹き出しの側に出すので、行の頭の顔は出さない） */
+      var bb = V.bubble(e, sg, { who: function (i) { return res.chars[i]; }, av: function (i, s) { return av(res, i, s); }, paint: function (s) { return paint(s, res); } });
+      if (bb) { avs = ''; talk = false; }
+      var body = bb || paint(e.text, res, sg);
       if (talk) body = body.replace(/「[^「」]*」/g, '<span class="q">$&</span>');
       /* 段落の箱と、出られない部屋の札（まとめての見出しは囲みに。段が一つだけなら札に） */
-      var pw = paraWrap(body, rm && rm.dg);
+      var pw = bb ? { html: bb, dg: false } : paraWrap(body, rm && rm.dg);
       body = pw.html;
       if (rm) chip = rm.chips.concat(rm.dg && !pw.dg ? [['dg', rm.dg]] : []).map(function (c) { return '<span class="rmb" data-k="' + c[0] + '">' + esc(c[1]) + '</span>'; }).join('') + chip;
       /* 出来事の頭の行：重要の札（種類つき）・節目などの札・種類・らしくない */
       var imp = hk ? '<span class="rvimp" data-hot="' + hk + '" title="' + esc(HOT_TIP[hk] || '') + '">重要' + (HOT_NAME[hk] ? '・' + esc(HOT_NAME[hk]) : '') + '</span>' : '';
       var head = imp + chip + (e.odd ? '<span class="oddb">らしくない</span>' : '');
-      return '<li class="' + cls + (avs ? ' hasav' : '') + (talk ? ' talk' : '') + '" data-n="' + e.n + '"' + (hk ? ' data-hot="' + hk + '"' : '') + (rm && rm.k ? ' data-rm="' + rm.k + '"' : '') + '>' + avs + '<div class="evb">' + (head ? '<div class="evh">' + head + '</div>' : '') + body + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
+      return '<li class="' + cls + (avs ? ' hasav' : '') + (talk ? ' talk' : '') + (bb ? ' bbl' : '') + '" data-n="' + e.n + '"' + (hk ? ' data-hot="' + hk + '"' : '') + (rm && rm.k ? ' data-rm="' + rm.k + '"' : '') + '>' + avs + '<div class="evb">' + (head ? '<div class="evh">' + head + '</div>' : '') + body + (e.why ? '<span class="why">' + esc(e.why) + '</span>' : '') + '</div></li>';
     }
   }
   /* 目次（区切り。押すとその区切りを開いて移る） */
@@ -701,10 +706,85 @@
   /* 経過の見え方の切替「カード｜線」（2026-11-02 担当UE）。経過の右の絞り込みと、一人用・ダンジョンの記録の見出しの横に置く。
      押すと .rvw の data-tlv を変えるだけ（描き直さないので、区切りの開け閉め・絞り込みはそのまま） */
   V.tlvSeg = function (cls) {
-    return '<div class="rvseg rvtlv' + (cls ? ' ' + cls : '') + '" role="radiogroup" aria-label="経過の見え方">' + [['card', 'カード', '区切りごとのカードで読む'], ['line', '線', '縦の線と顔アイコンで読む（前の見え方）']].map(function (x) {
+    return '<div class="rvseg rvtlv' + (cls ? ' ' + cls : '') + '" role="radiogroup" aria-label="経過の見え方">' + [['card', 'カード', '区切りごとのカードで読む'], ['line', '線', '縦の線と顔アイコンで読む（前の見え方）'], ['bubble', '吹き出し', '台詞を話し手の顔と吹き出しで読む']].map(function (x) {
       return '<button type="button" role="radio" data-act="rvtlv" data-v="' + x[0] + '" aria-checked="' + (rv.tlv === x[0]) + '" title="' + esc(x[2]) + '">' + x[1] + '</button>';
     }).join('') + '</div>';
   };
+  /* ---------- 吹き出しの見え方（2026-11-02 担当UH。表示だけで、記録・文は変えない） ----------
+     rv.tlv が 'bubble' のとき、出来事の本文を区分（voice-seg.js の e.seg）で分けて描く：
+       台詞行 l・埋め込みの発話 q・決まらない発話 u・喘ぎとモブ m … 左に話し手の顔（HK.Icons.html）、右に角丸の吹き出し（しっぽ付き。住人の色を薄く敷く）。
+         外側の「」は吹き出しが示すので外し、話し手の名前は吹き出しの頭に小さく出す。♡などの記号は文のまま。
+         同じ話し手が続くとき（間が空白・改行だけ）は顔を一つにまとめる。話し手の分からない台詞・モブは灰色の丸（モブの名前が直前にあればその頭文字）。
+       地の文 n・名詞の引用 c … 吹き出しの間に、細い字（.bbn）で左寄せに置く。
+     発話の無い出来事（地の文・名詞の引用だけ）と区切りの行は null を返し、呼ぶ側はいつもの本文を出す。全員左寄せ（色で区別）なので、スマホ幅でも 1 列のまま。
+     e：記録、sg：e の seg（HK.Seg.of）、o：{ who(i) → 住人（name・i）か null, av(i, 大きさ) → 顔の HTML, paint(文) → 名前に色を付けた HTML } */
+  var BB_TALK = /^[lqmu]$/;
+  /* モブの名前（直前の地の文の終わり「司会の田中「」「店員が「」」、文が切れていればその文の主語「行商人は……。「」」から。代名詞・体の語・住人の名前は使わない） */
+  var BB_MOBNG = /^(?:誰|誰か|だれか|声|皆|みんな|全員|周り|周囲|一同|何人か|数人|ひとり|一人|相手|その人|彼|彼女|二人|ふたり|三人|口|唇|喉|息|胸|奥|中|耳元|背後|外|遠く|向こう)$/;
+  function bbCut(s) { return Math.max(s.lastIndexOf('。'), s.lastIndexOf('！'), s.lastIndexOf('？'), s.lastIndexOf('」'), s.lastIndexOf('\n')); }
+  function bbMob(pre, isName) {
+    var s = String(pre || '').replace(/[\s　]+$/, ''), m, x = '';
+    var tail = s.slice(Math.max(bbCut(s), s.lastIndexOf('、')) + 1).replace(/[がはも]$/, '');
+    if (tail) { m = /^(?:[^\s、。]{0,10}の)?([一-龯々ァ-ヶーA-Za-zＡ-Ｚａ-ｚ]{1,8}(?:さん|ちゃん|くん|様|さま)?)$/.exec(tail); x = m ? m[1] : ''; }
+    else if (/[。！？]$/.test(s)) {
+      /* 文の切れ目のすぐ後ろの「」：その文の頭の「〇〇は／が」 */
+      var t = s.slice(0, -1); t = t.slice(bbCut(t) + 1).replace(/^[\s　―]+/, '');
+      m = /^([^、。！？」\s]{1,12}?)(?:は|が)/.exec(t);
+      if (m) { m = /([一-龯々ァ-ヶーA-Za-zＡ-Ｚａ-ｚ]{1,8})$/.exec(m[1]); x = m ? m[1] : ''; }
+    }
+    return x && !BB_MOBNG.test(x) && !(isName && isName(x)) ? Array.from(x)[0] : '';
+  }
+  V.bubble = function (e, sg, o) {
+    if (rv.tlv !== 'bubble' || !e || e.kind === 'step' || e.kind === 'phase' || !sg || !sg.length || !o) return null;
+    if (!sg.some(function (x) { return BB_TALK.test(x.t); })) return null;
+    var out = [], g = null, nar = '';
+    function isName(n) { for (var i = 0; i < 64; i++) { var c = o.who(i); if (!c) return false; if (c.name === n) return true; } return false; }
+    function closeG() {
+      if (!g) return;
+      var w = g.w, col = w ? (HK.Icons && HK.Icons.color && HK.Icons.color(w.name)) || pc(w.i != null ? w.i : g.k) : '';
+      var face = w ? o.av(g.k, 24) : '<span class="av bbmob" aria-hidden="true"><b>' + esc(g.mob) + '</b></span>';
+      out.push('<div class="bbg' + (w ? '' : ' bbg0') + '"' + (w ? ' style="--c:' + col + '"' : '') + '>' + face + '<div class="bbs">' + g.items.map(function (h, k) {
+        return '<div class="bb' + (h.m ? ' bbm' : '') + '">' + (k === 0 && w ? '<b class="bbnm">' + esc(w.name) + '</b>' : '') + h.h + '</div>';
+      }).join('') + '</div></div>');
+      g = null;
+    }
+    function flushN() {
+      var s = nar.replace(/^\s+|\s+$/g, '');
+      nar = '';
+      if (!s) return;
+      closeG();
+      s.split(/\n\s*\n+/).forEach(function (p) { p = p.replace(/^\s+|\s+$/g, ''); if (p) out.push('<p class="bbn">' + o.paint(p) + '</p>'); });
+    }
+    var prevC = false;
+    sg.forEach(function (x) {
+      /* 話し手の決まらない「」が名詞の引用のすぐ後ろに続くとき（「頭が良くなる」「レモンが甘く感じる」の並び）は、引用の続きとして地の文に */
+      var asN = !BB_TALK.test(x.t) || (x.t === 'u' && !(x.who >= 0) && prevC && /」\s*$/.test(nar));
+      prevC = x.t === 'c' || (asN && x.t === 'u');
+      if (asN) { nar += x.s; return; }
+      var w = x.who >= 0 ? o.who(x.who) : null, t = String(x.s);
+      /* 名前「…」の形：話し手が分かれば名前は吹き出しの頭に、分からなければ名前は地の文に残す */
+      if (x.nm) { if (!w) nar += t.slice(0, x.nm); t = t.slice(x.nm); }
+      var pre = nar;
+      flushN();
+      var m = /^「([\s\S]*)」$/.exec(t), key = w ? 'p' + x.who : 'm' + bbMob(pre, isName);
+      if (!g || g.key !== key) { closeG(); g = { key: key, k: x.who, w: w, mob: w ? '' : key.slice(1), items: [] }; }
+      g.items.push({ h: o.paint(m ? m[1] : t), m: x.t === 'm' });
+    });
+    flushN();
+    closeG();
+    return '<div class="bbx">' + out.join('') + '</div>';
+  };
+  /* 吹き出しへ／から切り替えたときに記録の本文を描き直す（一人用・ダンジョンの記録は V.onTlv で登録する） */
+  var tlvHooks = [];
+  V.onTlv = function (fn) { if (typeof fn === 'function') tlvHooks.push(fn); };
+  function tlvRedraw() {
+    /* 見えている区切りの位置を保つ（描き直しで高さが変わっても、読んでいた区切りが同じ高さに残るように） */
+    var w = rvWrap(), blks = w ? w.querySelectorAll('.tl .stepblk') : [], ai = -1, at = 0;
+    for (var i = 0; i < blks.length; i++) { var r = blks[i].getBoundingClientRect(); if (r.height && r.bottom > 80) { ai = i; at = r.top; break; } }
+    if (lastRes && lastHost && !lastRes.solo) { var t = lastHost.querySelector('#tl'); if (t) t.innerHTML = timeline(lastRes); }
+    tlvHooks.forEach(function (fn) { try { fn(); } catch (er) { /* 一人用・ダンジョンの描き直しに失敗しても、経過の切替は効く */ } });
+    if (ai >= 0 && w) { var nb = w.querySelectorAll('.tl .stepblk')[ai]; if (nb) window.scrollBy(0, nb.getBoundingClientRect().top - at); }
+  }
   /* 右の絞り込み（見本 09）：人で絞る・種類・重要な場面だけ・理由を表示・区切りを全部開く・文字の大きさ。
      人・重要・エロシーンは今までどおり data-act（ui.js）と aria-pressed（export-out.js が印刷の前に外して戻す）。種類・理由・全部開く・文字は role の checkbox／switch／radio */
   function tlBar(res) {
@@ -1073,9 +1153,12 @@
         Array.prototype.forEach.call(t.parentNode.querySelectorAll('[data-act="rvfs"]'), function (b) { b.setAttribute('aria-checked', String(b === t)); });
         break;
       case 'rvtlv':
-        rv.tlv = t.getAttribute('data-v') === 'line' ? 'line' : 'card'; rvSave(); wrapAttr('data-tlv', rv.tlv);
+        var tv0 = rv.tlv, tv1 = t.getAttribute('data-v');
+        rv.tlv = tv1 === 'line' || tv1 === 'bubble' ? tv1 : 'card'; rvSave(); wrapAttr('data-tlv', rv.tlv);
         var tw0 = rvWrap();
         if (tw0) Array.prototype.forEach.call(tw0.querySelectorAll('[data-act="rvtlv"]'), function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-v') === rv.tlv)); });
+        /* 吹き出しへ／から：本文の HTML が変わるので、記録の本文だけ描き直す（カード⇔線は属性だけ） */
+        if ((tv0 === 'bubble') !== (rv.tlv === 'bubble')) tlvRedraw();
         break;
       case 'rvside': rv.side = !rv.side; wrapAttr('data-side', rv.side ? 1 : 0); t.setAttribute('aria-expanded', String(rv.side)); break;
       case 'rvreset': tl.who = []; tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; tl.off = {}; V.refreshTimeline(); break;

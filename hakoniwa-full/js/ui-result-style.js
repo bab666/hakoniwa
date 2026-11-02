@@ -91,6 +91,7 @@
     '.rvw .rvloghd h2.sec,.rvw .rvsolo h2.sec#tlhead{margin:0;padding:0;border:0;font-size:14px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}.rvw .rvloghd h2.sec .hotleg{margin-left:4px}' +
     '.rvw .rvsidebtn{display:none}' +
     /* 経過の見え方（2026-11-02 担当UE）：.rvw の data-tlv（view.js の rv.tlv）で「カード」と「線」を切り替える。HTML は同じ。
+       吹き出し（data-tlv="bubble"。2026-11-02 担当UH）は区切りの面・出来事の頭と足がカードと同じ（下のカードの規則を :is で共有）で、発話のある出来事の本文だけが吹き出し（.bbx）
        線＝前の見え方（index.html の .tl・.stepblk・.ev のまま：左の縦の線と点、顔アイコン、重要な出来事の種類の線の形と薄い背景）を、新しい殻（切替・目次・右の絞り込み）の中で 1 枚の面に置く。
        カード＝区切りごとのカード。1 出来事の高さを前の見え方とほぼ同じに詰める（余白・行間・頭の札を本文の行の頭に・理由は本文の直下に小さく）。顔アイコンも本文の左に小さく出す */
     /* 両方：区切りの折りたたみ・理由の表示・文字の大きさ・転機への移動の印 */
@@ -99,43 +100,44 @@
     '.rvw .rvfoldbtn:hover{color:var(--ri)}.rvw .rvfoldbtn::after{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(2px) rotate(-135deg)}.rvw .rvfold .rvfoldbtn::after{transform:translateY(-2px) rotate(45deg)}' +
     '.rvw .tl .stepblk.rvfold>:is(ol,.rvnext){display:none}' +
     '.rvw[data-why="0"] .tl .ev .why{display:none}' +
-    '.rvw[data-fs="s"] .tl .ev{font-size:13px;line-height:1.65}.rvw[data-fs="l"] .tl .ev{font-size:16px;line-height:1.8}' +
+    /* 文字の大きさは見え方の規則（カード・吹き出しの .tl .ev の 14px）より強く（[data-tlv] を足す。2026-11-02 担当UH：カードで「小・大」が効いていなかった） */
+    '.rvw[data-tlv][data-fs="s"] .tl .ev{font-size:13px;line-height:1.65}.rvw[data-tlv][data-fs="l"] .tl .ev{font-size:16px;line-height:1.8}' +
     '.rvw .tl .ev.rvflash{outline:2px solid var(--ra);outline-offset:4px;border-radius:8px}' +
     '.rvw :is(.tl .stepblk,#tlhead){scroll-margin-top:var(--rvst)}' +
-    '.rvw .rvtlvbar{display:inline-flex;margin-left:auto;min-width:132px}.rvw .rvtlvbar button{min-height:30px;font-size:12.5px;padding:3px 10px}' +
+    '.rvw .rvtlvbar{display:inline-flex;margin-left:auto;min-width:196px}.rvw .rvtlvbar button{min-height:30px;font-size:12.5px;padding:3px 10px}.rvw .rvtlv button{white-space:nowrap;padding-left:4px;padding-right:4px}' +
     /* カード */
-    '.rvw[data-tlv="card"] .tl{border:0;display:grid;gap:8px}' +
-    '.rvw[data-tlv="card"] .tl .stepblk{display:block;background:var(--rc);border:1px solid var(--rl);border-radius:var(--rr);box-shadow:var(--rsh);padding:0 18px 2px;--rail:0px;--hfx:10px}' +
-    '.rvw[data-tlv="card"] .tl .stepblk+.stepblk{border-top:1px solid var(--rl)}' +
-    '.rvw[data-tlv="card"] .tl .stepblk .when{flex-direction:row;align-items:center;flex-wrap:wrap;gap:2px 10px;padding:5px 0 4px;border-bottom:1px solid var(--rl);font-size:13px;letter-spacing:0;line-height:1.4}' +
-    '.rvw[data-tlv="card"] .tl .stepblk .when .tn{font-family:var(--f-num);font-size:12px;font-weight:600;color:var(--rm)}.rvw[data-tlv="card"] .tl .stepblk .when.hot .tn{color:var(--hot)}' +
-    '.rvw[data-tlv="card"] .tl .stepblk .when .ph{font-family:var(--f-body);font-size:14px;font-weight:700;color:var(--ri);line-height:1.4}' +
-    '.rvw[data-tlv="card"] .tl .stepblk .when .rvfoldbtn{min-height:26px;padding:2px}' +
-    '.rvw[data-tlv="card"] .tl .stepblk.rvfold{padding-bottom:0;background:var(--rs);box-shadow:none}.rvw[data-tlv="card"] .tl .stepblk.rvfold .when{border-bottom:0;background:transparent}' +
-    '.rvw[data-tlv="card"] .tl .stepblk ol{border-left:0;padding:0;gap:0;display:block}' +
-    '.rvw[data-tlv="card"] .tl .stepblk ol>.ev{padding:5px 0;border-top:1px solid var(--rl)}.rvw[data-tlv="card"] .tl .stepblk ol>.ev:first-child{border-top:0}' +
-    '.rvw[data-tlv="card"] .tl .stepblk ol>.ev::before{display:none}' +
-    '.rvw[data-tlv="card"] .tl .ev{font-size:14px;line-height:1.65}.rvw[data-tlv="card"] .tl .ev .evb{line-height:inherit}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl{border:0;display:grid;gap:8px}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk{display:block;background:var(--rc);border:1px solid var(--rl);border-radius:var(--rr);box-shadow:var(--rsh);padding:0 18px 2px;--rail:0px;--hfx:10px}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk+.stepblk{border-top:1px solid var(--rl)}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk .when{flex-direction:row;align-items:center;flex-wrap:wrap;gap:2px 10px;padding:5px 0 4px;border-bottom:1px solid var(--rl);font-size:13px;letter-spacing:0;line-height:1.4}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk .when .tn{font-family:var(--f-num);font-size:12px;font-weight:600;color:var(--rm)}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk .when.hot .tn{color:var(--hot)}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk .when .ph{font-family:var(--f-body);font-size:14px;font-weight:700;color:var(--ri);line-height:1.4}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk .when .rvfoldbtn{min-height:26px;padding:2px}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk.rvfold{padding-bottom:0;background:var(--rs);box-shadow:none}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk.rvfold .when{border-bottom:0;background:transparent}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk ol{border-left:0;padding:0;gap:0;display:block}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk ol>.ev{padding:5px 0;border-top:1px solid var(--rl)}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk ol>.ev:first-child{border-top:0}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk ol>.ev::before{display:none}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev{font-size:14px;line-height:1.65}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .evb{line-height:inherit}' +
     /* 顔アイコン：本文の左に 22px（二人なら重ねる）。本文の 1 行目と同じ高さに置くので、出来事の高さは増えない */
-    '.rvw[data-tlv="card"] .tl .ev.hasav{display:flex;gap:8px;align-items:flex-start}' +
-    '.rvw[data-tlv="card"] .tl .ev .avs{display:flex;flex:none;min-width:35px;padding:1px 0 0}' +
-    '.rvw[data-tlv="card"] .tl .ev .avs .av{width:22px!important;height:22px!important;font-size:10px!important}' +
-    '.rvw[data-tlv="card"] .tl .ev .avs .av+.av{margin-left:-9px}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev.hasav{display:flex;gap:8px;align-items:flex-start}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .avs{display:flex;flex:none;min-width:35px;padding:1px 0 0}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .avs .av{width:22px!important;height:22px!important;font-size:10px!important}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .avs .av+.av{margin-left:-9px}' +
     /* 頭の札（重要・節目・種類・らしくない）は本文の行の頭に並べる（札のための 1 行を使わない） */
-    '.rvw[data-tlv="card"] .tl .ev .evh{display:inline;margin:0}.rvw[data-tlv="card"] .tl .ev .evh>*{margin:0 5px 0 0;vertical-align:1px}' +
-    '.rvw[data-tlv="card"] .tl .ev .c{display:inline-block;border:1px solid var(--rl);border-radius:4px;padding:0 5px;font-family:var(--f-body);font-size:11px;line-height:1.55;letter-spacing:0;color:var(--rm);font-weight:400;background:none}' +
-    '.rvw[data-tlv="card"] .tl .ev.hot .c{background:none;border-color:var(--rl);color:var(--rm)}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .evh{display:inline;margin:0}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .evh>*{margin:0 5px 0 0;vertical-align:1px}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .c{display:inline-block;border:1px solid var(--rl);border-radius:4px;padding:0 5px;font-family:var(--f-body);font-size:11px;line-height:1.55;letter-spacing:0;color:var(--rm);font-weight:400;background:none}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev.hot .c{background:none;border-color:var(--rl);color:var(--rm)}' +
     '.rvw .rvimp{display:inline-block;font-size:10.5px;font-weight:700;line-height:1.55;padding:0 6px;border-radius:4px;color:var(--paper);background:var(--hot);white-space:nowrap;letter-spacing:.02em}' +
     ':root[data-palette="mono"] .rvw .rvimp{color:var(--paper)}' +
-    '.rvw[data-tlv="card"] .tl .ev .oddb{border-radius:4px;font-family:var(--f-body);letter-spacing:0;font-size:11px;padding:0 6px}' +
-    '.rvw[data-tlv="card"] .tl .ev :is(.markb,.goalb,.rmb){border-radius:4px}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .oddb{border-radius:4px;font-family:var(--f-body);letter-spacing:0;font-size:11px;padding:0 6px}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev :is(.markb,.goalb,.rmb){border-radius:4px}' +
     /* 理由：本文の直下に小さく */
-    '.rvw[data-tlv="card"] .tl .ev .why{display:block;margin-top:0;font-size:11.5px;line-height:1.45;color:var(--rm)}.rvw[data-tlv="card"] .tl .ev .why::before{content:"理由："}' +
-    '.rvw[data-tlv="card"] .tl .ev .evp+.evp{margin-top:.4em}.rvw[data-tlv="card"] .tl .ev .evq{border-left:0;padding-left:1em}' +
-    '.rvw[data-tlv="card"] :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm]){margin:3px -10px;padding:5px 10px;border-radius:8px}' +
-    '.rvw[data-tlv="card"] :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm])+.ev{border-top:0}' +
-    '.rvw[data-tlv="card"] .tl .ev.facfold{padding:5px 0}' +
-    '.rvw[data-tlv="card"] .rvnext{border-top:1px solid var(--rl);padding:0;text-align:right}.rvw[data-tlv="card"] .rvnext .rvlink{padding:4px 0;font-size:12px}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .why{display:block;margin-top:0;font-size:11.5px;line-height:1.45;color:var(--rm)}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .why::before{content:"理由："}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .evp+.evp{margin-top:.4em}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .evq{border-left:0;padding-left:1em}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm]){margin:3px -10px;padding:5px 10px;border-radius:8px}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm])+.ev{border-top:0}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev.facfold{padding:5px 0}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .rvnext{border-top:1px solid var(--rl);padding:0;text-align:right}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .rvnext .rvlink{padding:4px 0;font-size:12px}' +
     /* 線（前の見え方）：中身は index.html の見た目のまま。区切りの頭（左の列）に件数と畳む／開く、畳んだ区切りは 1 行 */
     '.rvw[data-tlv="line"] .tl{background:var(--rc);border:1px solid var(--rl);border-radius:var(--rr);box-shadow:var(--rsh);padding:0 20px}' +
     '.rvw[data-tlv="line"] .tl .stepblk .when .rvsecm{margin:3px 0 0;gap:6px;font-size:11px}.rvw[data-tlv="line"] .tl .stepblk .when .rvimp{font-size:10px;padding:0 5px}' +
@@ -144,6 +146,26 @@
     '.rvw[data-tlv="line"] .tl .stepblk.rvfold .when .rvsecm{margin:0 0 0 auto}' +
     '.rvw[data-tlv="line"] .tl .rvnext{grid-column:2;padding:0 0 8px;text-align:right}.rvw[data-tlv="line"] .tl .rvnext .rvlink{font-size:12px;padding:2px 0}' +
     '.rvw[data-tlv="line"] .tl .ev .evh{display:inline}.rvw[data-tlv="line"] .tl .ev .evh .rvimp{display:none}' +
+    /* 吹き出し（view.js の V.bubble が描く .bbx。2026-11-02 担当UH）：左に話し手の顔、右に角丸の吹き出し（しっぽ付き・住人の色を薄く）、間に地の文を細い字で。
+       全員左寄せ（色で区別）で、スマホ幅でも 1 列。記録を画像で保存（export-out.js）の写しは .rvw の外なので、形は .rvw に頼らずに書く。
+       色は --ui-*（無ければテーマの変数）。単色は吹き出しの地を藍 6% に、黒は少し濃く。話し手の分からない台詞・モブは灰色の丸と灰色の地 */
+    '.tl .ev.bbl .evh,.rvw[data-tlv] .tl .ev.bbl .evh{display:flex;flex-wrap:wrap;align-items:center;gap:3px 5px;margin:0 0 4px}.tl .ev.bbl .evh>*{margin:0!important}' +
+    '.bbx{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0}' +
+    '.bbx .bbn{margin:0;font-size:.89em;line-height:1.6;color:var(--ui-muted,var(--muted))}' +
+    '.bbx .bbg{--bbf:12%;--bbl:30%;--bbbg:var(--ui-soft,var(--bg1));--bbln:var(--ui-line,var(--line));display:flex;align-items:flex-start;gap:8px;min-width:0}' +
+    '.bbx .bbg>.av{flex:none;width:24px!important;height:24px!important;font-size:11px!important;margin-top:3px}' +
+    '.bbx .bbmob{--c:var(--ui-muted,var(--muted));--k:var(--ui-muted,var(--muted))}' +
+    '.bbx .bbs{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;flex:1}' +
+    '.bbx .bb{position:relative;max-width:100%;box-sizing:border-box;padding:3px 11px;border-radius:12px;border:1px solid var(--bbln);background:var(--bbbg);color:var(--ui-ink,var(--ink));line-height:1.65;overflow-wrap:anywhere}' +
+    '.bbx .bb:first-child::before{content:"";position:absolute;left:-5px;top:10px;width:8px;height:8px;background:inherit;border:solid var(--bbln);border-width:0 0 1px 1px;transform:rotate(45deg)}' +
+    '.bbx .bbnm{font-weight:700;font-size:.84em;margin-right:.5em;color:var(--c)}' +
+    '@supports (color: color-mix(in srgb, red 50%, blue)){' +
+      '.bbx .bbg:not(.bbg0){--bbbg:color-mix(in srgb,var(--c) var(--bbf),var(--ui-card,var(--paper)));--bbln:color-mix(in srgb,var(--c) var(--bbl),var(--ui-card,var(--paper)))}' +
+      '.bbx .bbnm{color:color-mix(in srgb,var(--c) 72%,var(--ui-ink,var(--ink)))}' +
+    '}' +
+    '@media (prefers-color-scheme: dark){:root:not([data-theme="light"],[data-theme="gray"]) .bbx .bbg{--bbf:18%;--bbl:42%}}:root[data-theme="dark"] .bbx .bbg{--bbf:18%;--bbl:42%}' +
+    ':root[data-palette="mono"] .bbx .bbg{--c:var(--ai)!important;--bbf:6%;--bbl:24%}' +
+    '@media print{.bbx .bb{background:none!important}}' +
     '.rvw .rvrail{position:sticky;top:var(--rvst);max-height:calc(100vh - var(--rvst) - 12px);overflow:auto}' +
     '.rvw .rvrailin{padding:16px 18px}.rvw .rvrs{padding:12px 0;border-top:1px solid var(--rl)}.rvw .rvrs:first-child{border-top:0;padding-top:0}.rvw .rvrs:last-child{padding-bottom:0}' +
     '.rvw .rvrt{font-size:12px;font-weight:700;margin:0 0 8px}' +
@@ -164,10 +186,11 @@
     '@media (max-width:760px){' +
       '.rvw .rvsidebtn{display:inline-flex}.rvw .rvg-log .rvtoc{display:none}' +
       '.rvw .rvg-log .rvrail{display:none;order:-1;position:static;max-height:none}.rvw[data-side="1"] .rvg-log .rvrail{display:block}' +
-      '.rvw[data-tlv="card"] .tl .stepblk{padding:0 12px 2px;--hfx:8px}.rvw[data-tlv="card"] :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm]){margin:4px -8px;padding:6px 8px}' +
+      '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .stepblk{padding:0 12px 2px;--hfx:8px}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm]){margin:4px -8px;padding:6px 8px}' +
       '.rvw[data-tlv="line"] .tl{padding:0 12px}.rvw[data-tlv="line"] .tl .rvnext{grid-column:auto}.rvw[data-tlv="line"] .tl .stepblk .when .rvsecm{margin:0 0 0 auto}' +
       '.rvw .rvtlvbar{margin-left:0}' +
-      '.rvw[data-tlv="card"] .tl .ev.hasav{gap:6px}.rvw[data-tlv="card"] .tl .ev .avs{min-width:31px}.rvw[data-tlv="card"] .tl .ev .avs .av{width:20px!important;height:20px!important;font-size:9px!important}' +
+      '.bbx .bbg{gap:6px}.bbx .bbg>.av{width:22px!important;height:22px!important;font-size:10px!important}.bbx .bb{padding:3px 9px}' +
+      '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev.hasav{gap:6px}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .avs{min-width:31px}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .avs .av{width:20px!important;height:20px!important;font-size:9px!important}' +
     '}' +
     /* 関係図（見本 12） */
     '.rvw .rvmapcard{padding:14px 16px}.rvw .rvmaphd .mapat{margin:0}.rvw .rvmaphd{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px}' +

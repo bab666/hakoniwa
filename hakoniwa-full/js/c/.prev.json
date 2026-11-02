@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.2742f7078b.js",
+  "core": "core.80434b107a.js",
   "late": "late.305c396c15.js",
   "pack-rel": "pack-rel.5eb436242f.js",
   "pack-lewd": "pack-lewd.89c93c3b34.js",
@@ -72,7 +72,7 @@
   "tone-yankee": "tone-yankee.5c7f225d76.js"
  },
  "prev": {
-  "core": "core.10788f32ef.js",
+  "core": "core.cbed62529a.js",
   "late": "late.305c396c15.js",
   "pack-rel": "pack-rel.5eb436242f.js",
   "pack-lewd": "pack-lewd.89c93c3b34.js",
@@ -497,20 +497,20 @@
    1231
   ],
   "js/view.js": [
-   72560,
-   22896
+   76243,
+   24381
   ],
   "js/view-map.js": [
    33820,
    11815
   ],
   "js/dungeon-view.js": [
-   14467,
-   5195
+   15001,
+   5138
   ],
   "js/solo-story-kit.js": [
-   22688,
-   9100
+   23129,
+   9237
   ],
   "js/avoid-kit.js": [
    6430,
@@ -673,8 +673,8 @@
    1848
   ],
   "js/ui-result-style.js": [
-   28249,
-   5762
+   31389,
+   6262
   ],
   "js/ui-scroll-style.js": [
    1236,

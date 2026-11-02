@@ -131,7 +131,15 @@
         /* 重要な出来事の種類（view.js の HK.View.hotKindSolo。枠と、フルでは種類ごとの背景） */
         var hk = HK.View && HK.View.hotKindSolo ? HK.View.hotKindSolo(e, res) : '';
         var avs = avsOf(res, e);
-        return '<li class="' + cls + (hk ? ' hot-' + hk : '') + (avs ? ' hasav' : '') + '"' + (hk ? ' data-hot="' + hk + '"' : '') + '>' + avs + '<div class="evb">' + (res.noGear ? '' : '<span class="rn">' + (e.room + 1) + '</span>') + '<span class="c">' + esc(e.tag || '') + '</span>' + paint(e.text, res) +
+        /* 吹き出しの見え方（view.js の HK.View.bubble。経過と同じ。話し手の番号は挑戦者（と主催者）の並び。発話の無い出来事は null でいつもの本文） */
+        var bb = null;
+        if (HK.View && HK.View.bubble && HK.Seg) {
+          var ppl = (res.heroes || [res.hero]).filter(Boolean);
+          bb = HK.View.bubble(e, HK.Seg.of(e, ppl), { who: function (i) { return ppl[i]; }, av: function (i, s) { var h = ppl[i]; return h && HK.Icons ? HK.Icons.html(h.name, h.i || 0, s) : ''; }, paint: function (s) { return paint(s, res); } });
+        }
+        if (bb) avs = '';
+        var hd = (res.noGear ? '' : '<span class="rn">' + (e.room + 1) + '</span>') + '<span class="c">' + esc(e.tag || '') + '</span>';
+        return '<li class="' + cls + (hk ? ' hot-' + hk : '') + (avs ? ' hasav' : '') + (bb ? ' bbl' : '') + '"' + (hk ? ' data-hot="' + hk + '"' : '') + '>' + avs + '<div class="evb">' + (bb ? '<div class="evh">' + hd + '</div>' + bb : hd + paint(e.text, res)) +
           ((e.why || e.key || e.kind === 'climax') ? '<span class="why">' + (e.why ? esc(e.why) : '') + (e.key || e.kind === 'climax' ? '<span class="nums">　理性' + e.v.r + '・堕ち' + e.v.c + '</span>' : '') + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
@@ -191,6 +199,11 @@
     if (b) b.setAttribute('aria-pressed', String(lewdOnly));
   };
 
+  /* 経過の見え方を吹き出しへ／から切り替えたら、探索の記録の本文を描き直す（view.js の HK.View.onTlv） */
+  if (HK.View && HK.View.onTlv) HK.View.onTlv(function () {
+    var t = lastHost && lastRes && !lastRes.story ? lastHost.querySelector('#dgtl') : null;
+    if (t && t.isConnected) t.innerHTML = timeline(lastRes);
+  });
   DV.toText = function (res) {
     var h = res.hero, E = res.ending, L = [];
     var SC = HK.SCENARIOS[res.scenId] || HK.SCENARIOS.dungeon;
