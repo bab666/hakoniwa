@@ -1692,7 +1692,7 @@
   function loadFail(e, retry) {
     if (e && e.reason === 'stale') { if (HK.Load && HK.Load.staleNotice) HK.Load.staleNotice(); return; }
     var old = document.getElementById('loadfail'); if (old) old.remove();
-    var why = e && e.reason === 'offline' ? '（通信できないため読み込めません）' : e && e.reason === 'broken' ? '（ページを読み込み直してください）' : '';
+    var why = e && e.reason === 'offline' ? '（通信できないため読み込めません）' : e && e.reason === 'broken' ? (e.chunk ? '（配信中のファイルが壊れているようです。少し時間をおいて「もう一度」を押してください。お問い合わせ用：' + e.chunk + '）' : '（ページを読み込み直してください）') : '';
     var d = document.createElement('div');
     d.id = 'loadfail'; d.setAttribute('role', 'alert');
     d.innerHTML = '<span>' + (e && /^tone-/.test(e.chunk || '') ? '口調のデータ' : 'この箱庭のデータ') + 'を読み込めませんでした' + why + '</span>' + (retry ? '<button type="button" class="btn small primary" data-lf="retry">もう一度</button>' : '') +
