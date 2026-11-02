@@ -10,6 +10,8 @@
   var HK = window.HK, H = HK.HateKit, SC = HK.SCENARIOS;
   if (!H || !SC) return;
   HK.atScen('zombie', function (s) { H.install(s, { w: 1.4 }); });
+  /* 無人島にも（片方向の不仲・敵対で、敵視する側だけが冷たくする場面。2026-11-02） */
+  HK.atScen('island', function (s) { H.install(s, { w: 1.3 }); });
   HK.atScen('classroom', function (s) { H.install(s, { w: 1.3, place: function () { return '教室で、'; } }); });
   HK.atScen('goukon', function (s) { H.install(s, { w: 1.3, place: function () { return '合コンの席で、'; } }); });
   /* 出られない部屋は最初から同じ部屋にいるので、「顔を合わせる」は目覚めの区切りだけ（2026-10-31 担当RC） */

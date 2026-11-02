@@ -148,6 +148,8 @@
     all(ctx, a, b).forEach(function (t) {
       var k = t && KIND[t.type];
       if (!k || (t.type === 'fiance' && !t.couple)) return;
+      /* 相手の気持ちが決まっている片方向の不仲・敵対は、張り合う台詞（二人とも嫌い合う）にしない（敵視する側の場面は hate-kit.js。2026-11-02） */
+      if ((t.type === 'bad' || t.type === 'enemy') && t.cold) return;
       var i = ORDER.indexOf(k);
       if (i < bi) { bi = i; best = t; }
     });

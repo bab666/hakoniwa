@@ -62,6 +62,8 @@
       if (isCtx(x)) { var r = x.R(a, b); return clamp(r.ten * 0.9 - r.aff * 0.7, 0, 100); }
       return storyMap(x)[a.i + '>' + b.i] || 0;
     },
+    /* a が b を敵視する側として動くか：嫌悪 35 以上で、片方向の不仲・敵対で気持ちが決まっている側（b が a を敵視し、a の気持ちが設定されている）ではない（2026-11-02） */
+    hater: function (x, a, b) { return !backOf(x, b, a) && H.level(x, a, b) >= 35; },
     band: function (lv) { return lv >= 65 ? 'enemy' : lv >= 35 ? 'bad' : ''; },
     /* 嫌悪を上下させる。不仲⇔敵対の境目を越えたら、その一文を返す */
     shift: function (x, a, b, d) {
@@ -77,9 +79,10 @@
     },
     /* b から見た a（a が b を敵視しているときの、b の気持ち） */
     stance: function (x, b, a) {
-      if (H.level(x, b, a) >= 35) return 'hate';
+      /* 設定した「相手の気持ち」を先に見る（関係の値で b の嫌悪が上がっても、愛している・友人だと思っている設定は変えない。2026-11-02 利用者の報告） */
       var back = backOf(x, a, b);
       if (back) return back;
+      if (H.level(x, b, a) >= 35) return 'hate';
       if (hasT(x, b, a, LOVE_T)) return 'love';
       if (isCtx(x)) {
         var r = x.R(b, a);
@@ -124,7 +127,8 @@
     /* a が b を敵視している二人（a→b）。lv は a の嫌悪レベル */
     pairs: function (x, list, min) {
       var out = [];
-      list.forEach(function (a) { list.forEach(function (b) { if (a !== b) { var lv = H.level(x, a, b); if (lv >= (min || 35)) out.push({ a: a, b: b, lv: lv, band: H.band(lv), st: H.stance(x, b, a) }); } }); });
+      /* 片方向の不仲・敵対で気持ちが決まっている側（b が a を敵視し、a の気持ちが設定されている）は、関係の値で嫌悪が上がっても敵視する側にしない（2026-11-02） */
+      list.forEach(function (a) { list.forEach(function (b) { if (a !== b && !backOf(x, b, a)) { var lv = H.level(x, a, b); if (lv >= (min || 35)) out.push({ a: a, b: b, lv: lv, band: H.band(lv), st: H.stance(x, b, a) }); } }); });
       return out;
     },
     /* 関係の説明（理由の欄） */
@@ -310,14 +314,14 @@
     /* 出来事の表への追加は HK.addTo（分割読み込みで、組み込みが箱庭の本体より後になっても、元のファイルの順に並ぶ） */
     if (opt.meet !== false) HK.addTo(scen.events, {
       id: 'hk_meet', label: '敵視する相手と顔を合わせる', cat: 'conflict', scope: 'pair',
-      when: function (ctx, a, b) { var pf = ctx.pair(a, b); if (opt.atStart && ctx.stepIndex > 0) return false; return !(pf.hkMet && pf.hkMet[a.i]) && H.level(ctx, a, b) >= 35 && okKinds(ctx, a, b); },
+      when: function (ctx, a, b) { var pf = ctx.pair(a, b); if (opt.atStart && ctx.stepIndex > 0) return false; return !(pf.hkMet && pf.hkMet[a.i]) && H.hater(ctx, a, b) && okKinds(ctx, a, b); },
       w: function (ctx, a, b) { return 6 * W * H.drive(a, 'hater'); },
       run: function (ctx, a, b) { var pf = ctx.pair(a, b); (pf.hkMet = pf.hkMet || {})[a.i] = 1; var r = H.meet(ctx, a, b, opt.place ? opt.place(ctx, a) : ''); return { text: r.text, why: r.why, mag: r.mag, cat: r.cat, with: r.with }; }
     });
     /* 敵視する側から */
     HK.addTo(scen.events, {
       id: 'hk_hater', label: '敵視する相手に突っかかる', cat: 'conflict', scope: 'pair',
-      when: function (ctx, a, b) { return H.level(ctx, a, b) >= 35 && okKinds(ctx, a, b) && (ctx.pair(a, b).hkAt == null || ctx.stepIndex - ctx.pair(a, b).hkAt >= 2); },
+      when: function (ctx, a, b) { return H.hater(ctx, a, b) && okKinds(ctx, a, b) && (ctx.pair(a, b).hkAt == null || ctx.stepIndex - ctx.pair(a, b).hkAt >= 2); },
       w: function (ctx, a, b) { return 1.6 * W * H.drive(a, 'hater') * (0.7 + H.level(ctx, a, b) / 100); },
       run: function (ctx, a, b) {
         ctx.pair(a, b).hkAt = ctx.stepIndex;
@@ -328,7 +332,7 @@
     /* 敵視されている相手から（友人だと思っている・愛している・気づかずに話しかける） */
     HK.addTo(scen.events, {
       id: 'hk_receiver', label: '敵視されていると知らずに近づく', cat: 'bond', scope: 'pair',
-      when: function (ctx, b, a) { var st = H.stance(ctx, b, a); return H.level(ctx, a, b) >= 35 && st !== 'hate' && st !== 'avoid' && okKinds(ctx, a, b) && (ctx.pair(a, b).hkAt == null || ctx.stepIndex - ctx.pair(a, b).hkAt >= 2); },
+      when: function (ctx, b, a) { var st = H.stance(ctx, b, a); return H.hater(ctx, a, b) && st !== 'hate' && st !== 'avoid' && okKinds(ctx, a, b) && (ctx.pair(a, b).hkAt == null || ctx.stepIndex - ctx.pair(a, b).hkAt >= 2); },
       w: function (ctx, b, a) { var st = H.stance(ctx, b, a); return 1.4 * W * H.drive(b, 'receiver') * (st === 'love' ? 1.6 : st === 'friend' ? 1.3 : 0.6); },
       run: function (ctx, b, a) {
         ctx.pair(a, b).hkAt = ctx.stepIndex;

@@ -9,7 +9,8 @@
   var HK = window.HK, RK = HK.RelKit;
   if (!RK || !HK.Ties) return;
   var L = RK.L, fill = RK.fill;
-  function is(k) { return function (ctx, a, b) { return !!(b && HK.Ties.has(ctx, a, b, k)); }; }
+  /* 不仲の相手の気持ちが決まっている片方向の関係は、二人とも嫌い合う場面にしない（敵視する側の場面は hate-kit.js。2026-11-02） */
+  function is(k) { return function (ctx, a, b) { return !!b && HK.Ties.all(ctx, a, b).some(function (t) { return (t.type === k || t.like === k) && !((t.type === 'bad' || t.type === 'enemy') && t.cold); }); }; }
   function third(ctx, a, b) { var o = ctx.others(a).filter(function (c) { return c !== b; }); return o.length ? ctx.pick(o) : null; }
   function hurt(ctx, b) { return b.stress > 40 || (b.hp != null && b.hp < 60); }
 

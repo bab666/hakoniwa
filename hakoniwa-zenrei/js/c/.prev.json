@@ -1,10 +1,10 @@
 {
  "cur": {
-  "core": "core.6b8e68f314.js",
+  "core": "core.8ba7b22233.js",
   "late": "late.14a7f32bc8.js",
-  "pack-rel": "pack-rel.505c2b5403.js",
-  "scen-goukon": "scen-goukon.1b6810c66b.js",
-  "scen-classroom": "scen-classroom.3111b009ab.js",
+  "pack-rel": "pack-rel.94b7b72c81.js",
+  "scen-goukon": "scen-goukon.4c2d2fc475.js",
+  "scen-classroom": "scen-classroom.a63f366124.js",
   "scen-island": "scen-island.7b26bfe9f8.js",
   "scen-br": "scen-br.62620caa55.js",
   "pack-trap": "pack-trap.6c4c043b39.js",
@@ -16,12 +16,12 @@
   "scen-rpg": "scen-rpg.ea44c8c8b8.js",
   "scen-saimin": "scen-saimin.46efda8ad6.js",
   "scen-locker": "scen-locker.392d61d2e5.js",
-  "scen-jashin": "scen-jashin.fe291ce0bf.js",
+  "scen-jashin": "scen-jashin.1908eadcc7.js",
   "scen-yakata": "scen-yakata.5a56f59aee.js",
   "scen-ship": "scen-ship.f673bc4ef1.js",
   "scen-jinro": "scen-jinro.91c89e3378.js",
   "pack-story": "pack-story.99255eef55.js",
-  "pack-catalog": "pack-catalog.47f333382f.js",
+  "pack-catalog": "pack-catalog.84566cd3bc.js",
   "tone-base": "tone-base.a1a37488a3.js",
   "tone-ane": "tone-ane.5a3202d537.js",
   "tone-boku-n": "tone-boku-n.dda3188189.js",
@@ -64,11 +64,11 @@
   "tone-yankee": "tone-yankee.65208fea32.js"
  },
  "prev": {
-  "core": "core.bf279e9485.js",
+  "core": "core.50837ea269.js",
   "late": "late.14a7f32bc8.js",
-  "pack-rel": "pack-rel.505c2b5403.js",
-  "scen-goukon": "scen-goukon.1b6810c66b.js",
-  "scen-classroom": "scen-classroom.3111b009ab.js",
+  "pack-rel": "pack-rel.94b7b72c81.js",
+  "scen-goukon": "scen-goukon.4c2d2fc475.js",
+  "scen-classroom": "scen-classroom.a63f366124.js",
   "scen-island": "scen-island.7b26bfe9f8.js",
   "scen-br": "scen-br.62620caa55.js",
   "pack-trap": "pack-trap.6c4c043b39.js",
@@ -80,12 +80,12 @@
   "scen-rpg": "scen-rpg.ea44c8c8b8.js",
   "scen-saimin": "scen-saimin.46efda8ad6.js",
   "scen-locker": "scen-locker.392d61d2e5.js",
-  "scen-jashin": "scen-jashin.fe291ce0bf.js",
+  "scen-jashin": "scen-jashin.1908eadcc7.js",
   "scen-yakata": "scen-yakata.5a56f59aee.js",
   "scen-ship": "scen-ship.f673bc4ef1.js",
   "scen-jinro": "scen-jinro.91c89e3378.js",
   "pack-story": "pack-story.99255eef55.js",
-  "pack-catalog": "pack-catalog.47f333382f.js",
+  "pack-catalog": "pack-catalog.84566cd3bc.js",
   "tone-base": "tone-base.a1a37488a3.js",
   "tone-ane": "tone-ane.5a3202d537.js",
   "tone-boku-n": "tone-boku-n.dda3188189.js",
@@ -233,8 +233,8 @@
    5328
   ],
   "js/hate-kit.js": [
-   23708,
-   7558
+   23779,
+   7577
   ],
   "js/feud-kit.js": [
    16380,
@@ -637,8 +637,8 @@
    1027
   ],
   "js/rel-bad-story.js": [
-   32259,
-   9561
+   32640,
+   9716
   ]
  }
 }

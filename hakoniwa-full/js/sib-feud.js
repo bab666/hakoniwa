@@ -42,7 +42,7 @@
       if (!t) return;
       var f = '';
       if (t.type === 'sibbad') { f = 'sibbad'; k.sib = true; }
-      else if (t.type === 'bad' || t.type === 'enemy') { if (t.a === ai || !t.cold) f = t.type; }
+      else if (t.type === 'bad' || t.type === 'enemy') { if (!t.cold) f = t.type; }   /* 片方向相手の気持ちが決まっている片方向の不仲・敵対は、二人とも嫌い合う場面にしない。敵視する側の場面は hate-kit.js。2026-11-02） */
       else if (t.type === 'rival') f = 'rival';
       else if (BOSS.test(t.type) && t.cold === 'bad') f = 'cold';
       if (t.kg === 'bad') { f = f || 'kg'; k.kg = true; if (SIBT.test(t.type) || (t.type === 'relative' && t.step)) k.sib = true; }

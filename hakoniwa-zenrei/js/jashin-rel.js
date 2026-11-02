@@ -34,6 +34,7 @@
     var l = tiesOf(S, a, b).map(function (t) { return t; }), c = '';
     l.forEach(function (t) {
       if ((t.type === 'enemy' || t.type === 'bad') && t.cold && t.a !== a.i) { var bk = { love: 'love', friend: 'close' }[t.cold] || ''; if (['love', 'family', 'crush', 'close', 'ex', 'bad', ''].indexOf(bk) < ['love', 'family', 'crush', 'close', 'ex', 'bad', ''].indexOf(c || '')) c = bk; return; }
+      if ((t.type === 'enemy' || t.type === 'bad') && t.cold) return;   /* 片方向の不仲・敵対は二人とも嫌い合う紹介・口論・休戦にしない（敵視する側の場面は hate-kit.js。2026-11-02） */
       var k = inList(t.type, LOVE) ? 'love' : inList(t.type, FAMILY) ? 'family' : t.type === 'crush' ? (t.a === a.i ? 'crush' : '') : t.type === 'ex' ? 'ex' : inList(t.type, BAD) ? 'bad' : inList(t.type, CLOSE) ? 'close' : '';
       var order = ['love', 'family', 'crush', 'close', 'ex', 'bad', ''];
       if (order.indexOf(k) < order.indexOf(c || '')) c = k;

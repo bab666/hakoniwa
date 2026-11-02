@@ -79,6 +79,7 @@
 
   /* SET_RATE：喘ぎの口調を決めた人は、口調の語尾・口調ごとの喘ぎを使う割合をこちらに上げる（決めた口調が聞こえるように） */
   var M = HK.Moan = { MODES: MODES, user: null, TONE_RATE: 0.25, TONE_MOAN_RATE: 0.25, SET_RATE: 0.5, map: null };
+  if (HK.wrap && HK.simulate) HK.wrap(HK, 'simulate', function (prev) { return function () { M._run = {}; return prev.apply(this, arguments); }; });
   /* 鍵の種類（設定画面の「全場面の見出しを引き込む」が、範囲ごとに効く声を選ぶのに使う。ui-adv-moan.js。読むだけ） */
   M.KEY_KIND = { words: WORDS_ONLY, mix: MIX };
   M.keys = function () { var out = []; Object.keys(MODES).forEach(function (m) { MODES[m].stages.forEach(function (s, i) { out.push({ key: m + i, mode: m, stage: i, label: MODES[m].label + '・' + s }); }); }); return out; };
@@ -89,6 +90,8 @@
   function rand(S) { var r = rng(S); return r ? (typeof r === 'function' ? r() : r.float ? r.float() : Math.random()) : Math.random(); }
   function rint(S, n) { var r = rng(S); return r && r.int ? r.int(n) : Math.floor(rand(S) * n); }
   /* 一回の結果の中では同じ喘ぎをなるべく繰り返さない（ero-kit.js の pickFresh と同じ） */
+  /* 一回の遊び（HK.simulate の一回）で使った喘ぎの回数。場面ごとに乱数が別でも数えられるように、遊びの始まりで空にする（2026-11-02） */
+  function runCnt(S, x) { return (M._run && M._run[x]) || 0; }
   function fresh(S, list, tag) {
     if (!list || !list.length) return '';
     /* 一つの場面（記録）の中で使った喘ぎは、表をまたいで避ける（ero-kit.js の E.sceneAvoid） */
@@ -98,7 +101,11 @@
     var seen = st._eroSeen = st._eroSeen || {}, used = seen[tag] = seen[tag] || [];
     var free = list.filter(function (x) { return used.indexOf(x) < 0; });
     if (!free.length) { var old = list.slice().sort(function (a, b) { return used.indexOf(a) - used.indexOf(b); }); free = old.slice(0, Math.max(1, Math.ceil(old.length / 2))); }
+    /* 一回の遊びで、表をまたいで同じ喘ぎが 3 回目にならないように（2 回使った行は、ほかに候補があれば避ける。数は M._run。2026-11-02） */
+    var cnt = M._run = M._run || {}, f2 = free.filter(function (x) { return (cnt[x] || 0) < 2; });
+    if (f2.length) free = f2;
     var x = free[rint(S, free.length)], i = used.indexOf(x); if (i >= 0) used.splice(i, 1); used.push(x);
+    cnt[x] = (cnt[x] || 0) + 1;
     return E.sceneMark ? E.sceneMark(S, x) : x;
   }
   /* 喘ぎの口調（住人の設定「喘ぎの口調」c.moanTone。空ならいつもの口調）：喘ぎの声だけ、この口調とその態度で作る（普段は作った口調で話す人の、素の声）。
@@ -585,6 +592,8 @@
       if (wp && wp0.src === 'base') { wp = wp.map(kForm); var wk = wp.filter(function (x) { return !KEIGO.test(x); }); if (wk.length) wp = wk; }
       /* 候補がこの場面ですべて使用済み（候補が1つの表など）なら、言葉のない声・近い鍵に回す（同じ場面で同じ喘ぎを2回出さない） */
       if (wp && wp.length && E.sceneUsed && wp.every(function (x) { return E.sceneUsed(S, x); })) wp = null;
+      /* 言葉のある声の候補が、この遊びでどれも 2 回ずつ使われていたら、言葉のない声に回す（同じ言葉の喘ぎが 3 回目にならないように。2026-11-02） */
+      if (wp && wp.length && wp.every(function (x) { return runCnt(S, x) >= 2; })) wp = null;
       if (wp && wp.length) { M.lastSrc = wp0.src; out = fresh(S, wp, tag + '.' + wp0.src); if (wp0.src === 'base') out = plainOut(S, who, out, ctx); }
       else if (key === 'p0' || key === 'p1') { var pp = sharedPool(key); if (pp && U && U.shared[key]) M.lastSrc = 'user'; out = pp && rand(S) < 0.5 ? fresh(S, pp, tag) : (M.lastSrc = 'shared', M.pound(S, who, key === 'p1', !ROUGH[ps] || fallenOf(who))); }
       else {
