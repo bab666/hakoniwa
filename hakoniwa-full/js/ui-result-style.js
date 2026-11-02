@@ -7,8 +7,9 @@
 (function () {
   'use strict';
   if (typeof document === 'undefined' || !document.createElement || document.getElementById('hk-result-style')) return;
-  var V = '#view-result,#view-saves,.rvw{--rc:var(--ui-card,var(--paper));--ri:var(--ui-ink,var(--ink));--rm:var(--ui-muted,var(--muted));--rl:var(--ui-line,var(--line));--rs:var(--ui-soft,var(--bg1));--ra:var(--ui-accent,var(--accent,var(--ink)));--rp:var(--ui-primary,var(--ink));--rpi:var(--ui-primary-ink,var(--paper));--rr:var(--ui-radius,12px);--rr2:var(--ui-radius-s,8px);--rsh:var(--ui-shadow,0 1px 2px rgba(0,0,0,.08));--rvst:calc(env(safe-area-inset-top,0px) + 56px)}';
-  /* --rvst：目次・右の絞り込み・一覧を止める高さと、区切りへ移ったときの上の余白（上の段の切替 .tabs（index.html・44px・画面の上に固定）の下に 12px）*/
+  var V = '#view-result,#view-saves,.rvw{--rc:var(--ui-card,var(--paper));--ri:var(--ui-ink,var(--ink));--rm:var(--ui-muted,var(--muted));--rl:var(--ui-line,var(--line));--rs:var(--ui-soft,var(--bg1));--ra:var(--ui-accent,var(--accent,var(--ink)));--rp:var(--ui-primary,var(--ink));--rpi:var(--ui-primary-ink,var(--paper));--rr:var(--ui-radius,12px);--rr2:var(--ui-radius-s,8px);--rsh:var(--ui-shadow,0 1px 2px rgba(0,0,0,.08));--rvst:calc(var(--hk-stick,44px) + 64px)}';
+  /* --rvst：目次・右の絞り込み・一覧を止める高さと、区切りへ移ったときの上の余白（上の段の切替 .tabs（index.html・画面の上に固定。高さ --hk-stick は ui-box-list.js が測る）と、
+     その下に貼り付く結果の目次 .rvtabs（約 52px。2026-11-02 担当UI）の下に 12px）*/
   var CHECK = 'content:"";position:absolute;left:5px;top:1.5px;width:4px;height:8px;border:solid var(--rpi);border-width:0 2px 2px 0;transform:rotate(45deg)';
   var css = V +
     /* カード */
@@ -22,7 +23,8 @@
     '.rvw .rvhead .rvtitle{grid-area:title;font-family:var(--f-body);font-size:22px;font-weight:700;line-height:1.45;letter-spacing:.02em;margin:0;min-width:0;overflow-wrap:anywhere}' +
     '.rvw .rvhead .scnote{grid-area:note;margin-top:6px;min-width:0}' +
     '.rvw .rvhead>.rvbtns{grid-area:btn;display:flex;flex-wrap:nowrap;gap:8px;justify-content:flex-end;align-items:center;align-self:start;margin:0}' +
-    '.rvw .rvbtns .btn{min-height:38px;border-radius:var(--rr2);white-space:nowrap}.rvw .rvbtns .btn.primary{padding:6px 18px}' +
+    '.rvw .rvbtns .btn{min-height:38px;border-radius:var(--rr2);white-space:nowrap}.rvw .rvbtns .btn.primary{padding:6px 18px;background:var(--ui-hot,var(--rp));border-color:var(--ui-hot,var(--rp));color:var(--ui-hot-ink,var(--rpi))}' +
+    '.rvw .rvbtns .btn.primary:hover{background:var(--ui-hot-hover,var(--rp));border-color:var(--ui-hot-hover,var(--rp))}' +
     '.rvw .rvbtns .btn svg{flex:none}' +
     '.rvw .rvsave{position:relative;display:inline-flex}' +
     '.rvw .rvcaret{display:inline-block;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;margin-left:2px}' +
@@ -40,12 +42,15 @@
       '.rvw .rvmenu{position:fixed;left:10px;right:10px;top:auto;bottom:10px;width:auto;max-width:none;max-height:70vh;overflow:auto}' +
     '}' +
     /* 切替「結末｜経過｜関係図｜二人ずつ｜住人ごと」（スマホは横に流す） */
-    '.rvw .rvtabs{display:flex;gap:2px;border-bottom:1px solid var(--rl);margin:14px 0 18px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.rvw .rvtabs::-webkit-scrollbar{display:none}' +
+    /* 目次（2026-11-02 担当UI）：節は全部縦に並べ、目次は上の段の切替の下に貼り付く。押すとその節へ・いま見ている節を強調（aria-current） */
+    '.rvw .rvtabs{position:-webkit-sticky;position:sticky;top:var(--hk-stick,0px);z-index:20;display:flex;gap:2px;border-bottom:1px solid var(--rl);margin:14px 0 18px;padding-top:4px;background:var(--ui-page,var(--paper));overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.rvw .rvtabs::-webkit-scrollbar{display:none}' +
     '.rvw .rvtab{appearance:none;-webkit-appearance:none;background:none;border:0;border-bottom:2px solid transparent;margin:0 0 -1px;padding:10px 16px;font:inherit;font-size:14px;color:var(--rm);white-space:nowrap;cursor:pointer;display:inline-flex;align-items:baseline;gap:6px;min-height:44px;flex:none}' +
     '.rvw .rvtab small{font-size:11.5px;color:var(--rm);font-weight:400}.rvw .rvtab:hover{color:var(--ri)}' +
-    '.rvw .rvtab[aria-selected="true"]{color:var(--ri);font-weight:700;border-bottom-color:var(--ri)}.rvw .rvtab:focus-visible{outline:2px solid var(--ra);outline-offset:-3px}' +
+    '.rvw .rvtab[aria-current="true"]{color:var(--ri);font-weight:700;border-bottom-color:var(--ri)}.rvw .rvtab:focus-visible{outline:2px solid var(--ra);outline-offset:-3px}' +
     '@media (max-width:760px){.rvw .rvtab{padding:10px 12px}.rvw .rvsecn{display:none}}' +
-    '.rvw .rvpane[hidden]{display:none}' +
+    '.rvw .rvpane[hidden]{display:none}.rvw .rvpane+.rvpane{margin-top:44px}' +
+    '.rvw .rvph{display:flex;align-items:baseline;gap:8px;margin:0 0 14px;font-family:var(--f-body);font-size:19px;font-weight:700;letter-spacing:.04em;color:var(--ri)}.rvw .rvph small{font-size:12px;font-weight:400;color:var(--rm)}' +
+    '.rvw .rvpane[data-pane="end"]>.rvph{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}' +
     /* 中身の格子 */
     '.rvw .rvgrid{display:grid;gap:20px;align-items:start}' +
     '.rvw .rvg-end{grid-template-columns:minmax(0,1fr) 320px}.rvw .rvg-log{grid-template-columns:140px minmax(0,1fr) 216px;gap:16px}.rvw .rvg-map{grid-template-columns:minmax(0,1fr) 280px}' +

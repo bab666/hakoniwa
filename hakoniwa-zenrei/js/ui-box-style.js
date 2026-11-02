@@ -3,7 +3,8 @@
    ・上：選んだ箱庭のカード（.bxsel。分類・人数、題名、説明、札、効く気質。右に「箱庭を変える」「この箱庭のTIPS」「出来事の一覧」）
    ・「箱庭を選ぶ」の窓（.bxpick。絞りの札・「いまの住人で遊べるものだけ」・カードの一覧・右に選んでいる箱庭の説明。全年齢版は一覧の最後に R-18版の案内のカード .bxr18c）
      2026-11-02 担当UF：足の帯（R18 版の案内・データの先読み）をやめて一覧を高くし、スマホでは一覧を主役（1 列・1 枚 60〜70px）に、説明はカードを押すと下から出る板（.bxsheet）に
-   ・切替（.bxtabs：参加者と初動／場の設定／起こりやすさ／展開と内容。#view-box の data-bxtab で見せる節を選ぶ）と、各節（.bxpanel）
+   ・目次（.bxtabs：参加者と初動／場の設定／起こりやすさ／展開と内容。2026-11-02 担当UI から節は全部縦に並べ、目次は上に貼り付く。押すとその節へ＝ui-box-list.js）と、各節（.bxpanel）
+   ・「箱庭を動かす」（帯と選んだ箱庭のカード）は強調の色 --ui-hot*（index.html）
    ・下に固定の帯（.runbar.bxrun：要約・読み込み待ち・シード・「▶ 箱庭を動かす」）
    色・角丸・影は土台の変数 --ui-*（index.html。担当UA）を使い、無いときは今のテーマの変数（--paper・--ink など）か見本の値に戻る。
    スマホ（幅 600px 以下）は見本 08：カードを小さく、切替を横スクロール、設定は 1 列、下に固定の「▶ 箱庭を動かす」。窓は全画面で、スクロールは一覧だけ。
@@ -48,6 +49,8 @@
     V + ' .bxsel-a .bxbtn,' + V + ' .bxsel-a .tipscen{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:40px;margin:0;padding:0 12px;border:1px solid var(--bx-line2);border-radius:var(--bx-rs);background:var(--bx-card);color:var(--bx-ink);font:inherit;font-size:13px;box-sizing:border-box;cursor:pointer}' +
     V + ' .bxsel-a .bxchg{height:44px;border-color:var(--bx-acc);color:var(--bx-acc);font-weight:700;font-size:14px}' +
     V + ' .bxsel-a .bxchg:hover{background:var(--bx-soft)}' +
+    V + ' .bxsel-a .bxgorun{height:48px;border:0;background:var(--ui-hot,#f26b1d);color:var(--ui-hot-ink,#1a1208);font-size:15px;font-weight:700}' +
+    V + ' .bxsel-a .bxgorun:hover{background:var(--ui-hot-hover,#e05d12)}' + V + ' .bxsel-a .bxgorun[aria-busy="true"]{opacity:.8}' +
     V + ' .bxsel-a .tipscen:hover,' + V + ' .bxsel-a .tipscen:focus-visible{border-color:var(--bx-ink);color:var(--bx-ink)}' +
     V + ' .bxsel .scload{position:static;display:inline-block;font-size:11px;font-weight:400;letter-spacing:.04em;padding:0 8px;border:1px solid var(--bx-line2);border-radius:999px;color:var(--bx-mu);background:var(--bx-soft)}' +
     V + ' .bxsel .scload.ng{color:var(--bx-warn);border-style:dashed}' + V + ' .bxsel .scload.ng button{font:inherit;color:inherit;background:none;border:0;padding:0 0 0 4px;text-decoration:underline;cursor:pointer}' +
@@ -111,18 +114,20 @@
     V + ' .bxr18c-a a:hover,' + V + ' .bxr18c-a a:focus-visible{border-color:var(--bx-ink);outline:none}' +
 
     /* ---------- 3. 切替と各節 ---------- */
-    V + ' .bxtabs{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}' +
+    /* 2026-11-02 担当UI：切替は目次（押すとその節へ。節は全部縦に並べる）。上の段の切替（.tabs）の下に貼り付く（--hk-stick は ui-box-list.js が測る） */
+    V + ' .bxtabs{position:-webkit-sticky;position:sticky;top:var(--hk-stick,0px);z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:0 -6px;padding:6px;background:var(--ui-page,var(--paper,#f4f5f7))}' +
     V + ' .bxtl{display:flex;flex-wrap:wrap;padding:3px;background:var(--bx-line);background:color-mix(in srgb,var(--bx-ink) 9%,var(--bx-card));border-radius:10px}' +
     V + ' .bxtl button{display:inline-flex;align-items:center;gap:4px;height:38px;padding:0 16px;border:0;border-radius:var(--bx-rs);background:none;color:var(--bx-mu);font:inherit;font-size:14px;cursor:pointer;white-space:nowrap}' +
     V + ' .bxtl button:hover{color:var(--bx-ink)}' +
-    V + ' .bxtl button[aria-selected="true"]{background:var(--bx-card);box-shadow:var(--bx-sh);font-weight:700;color:var(--bx-ink)}' +
+    V + ' .bxtl button[aria-current="true"]{background:var(--bx-card);box-shadow:var(--bx-sh);font-weight:700;color:var(--bx-ink)}' +
     V + ' .bxtl button:focus-visible{outline:2px solid var(--bx-acc);outline-offset:1px}' +
     V + ' .bxtn{font-size:12px;font-weight:400;color:var(--bx-mu);font-family:var(--f-num,inherit)}' +
     V + ' .bxdot{display:inline-block;width:6px;height:6px;margin-left:2px;border-radius:50%;background:var(--bx-acc)}' + V + ' .bxdot[hidden]{display:none}' +
-    V + ' .bxtabs-a{display:flex;gap:8px}' +
-    V + '[data-bxtab="join"] .bxtabs-a{display:none}' +
-    V + ' .bxpanel{display:none}' +
-    V + '[data-bxtab="join"] .bxpanel[data-bxp="join"],' + V + '[data-bxtab="scen"] .bxpanel[data-bxp="scen"],' + V + '[data-bxtab="odds"] .bxpanel[data-bxp="odds"],' + V + '[data-bxtab="plot"] .bxpanel[data-bxp="plot"]{display:block}' +
+    /* 節の見出し（参加者と初動・場の設定・起こりやすさ・展開と内容）。場の設定などは見出しの右に「初期値に戻す」「ランダム」（その節だけ） */
+    V + ' .bxpanel{display:block}' +
+    V + ' .bxph{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px}' +
+    V + ' .bxph h3{margin:0;font-size:17px;font-weight:700;letter-spacing:.04em;color:var(--bx-ink)}' +
+    V + ' .bxenv .bxph{margin:16px 0 0}' + V + ' .bxph .bxbtn{height:34px}' +
     V + ' .bxenv{padding:4px 24px 12px;background:var(--bx-card);border:1px solid var(--bx-line);border-radius:var(--bx-r)}' +
     V + ' .bxlead{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:12px 0 4px;font-size:13px;color:var(--bx-mu)}' +
     V + ' .bxenv .roomlabel{margin:12px 0 0}' +
@@ -200,8 +205,8 @@
     'html body ' + V + '>.runbar.bxrun input[type="text"]{width:140px;flex:none;height:40px;min-height:0;padding:0 10px;border:1px solid rgba(255,255,255,.4);border-color:color-mix(in srgb,var(--bx-pri) 40%,transparent);border-radius:var(--bx-rs);background:rgba(255,255,255,.08);background:color-mix(in srgb,var(--bx-pri) 8%,transparent);color:var(--bx-pri);font-family:var(--f-num,inherit)}' +
     'html body ' + V + '>.runbar.bxrun input[type="text"]::placeholder{color:var(--bx-pri);opacity:.6}' +
     'html body ' + V + '>.runbar.bxrun input[type="text"]:focus{outline:2px solid var(--bx-pri);outline-offset:0;border-color:var(--bx-pri)}' +
-    'html body ' + V + '>.runbar.bxrun .btn.primary{flex:none;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;height:48px;min-height:0;padding:0 24px;border:0;border-radius:10px;background:var(--bx-pri);color:var(--bx-pr);font-size:15px;font-weight:700;line-height:1.2}' +
-    'html body ' + V + '>.runbar.bxrun .btn.primary:hover{filter:brightness(.95)}' +
+    'html body ' + V + '>.runbar.bxrun .btn.primary{flex:none;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;height:48px;min-height:0;padding:0 24px;border:0;border-radius:10px;background:var(--ui-hot,var(--bx-pri));color:var(--ui-hot-ink,var(--bx-pr));font-size:15px;font-weight:700;line-height:1.2}' +
+    'html body ' + V + '>.runbar.bxrun .btn.primary:hover{background:var(--ui-hot-hover,var(--bx-pri))}' +
     'html body ' + V + '>.runbar.bxrun .btn.primary:focus-visible{outline:2px solid var(--bx-pri);outline-offset:2px}' +
     'html body ' + V + '>.runbar.bxrun .btn.primary[aria-busy="true"]{opacity:.8}' +
     V + ' .bxrun-t{display:inline-flex;align-items:center;gap:8px}' + V + ' .bxrun-t svg{flex:none}' +
@@ -219,15 +224,15 @@
       V + ' .bxsel-a{flex:0 0 auto;max-width:none}' +
       V + ' .bxsel-a .bxchg{height:40px;padding:0 14px;font-size:13px}' + V + ' .bxsel-a .bxchg svg,' + V + ' .bxsel-a .bxlong{display:none}' +
       /* 折り返しのある縦の flex は、行の幅が中身（切替の札の全幅）になって画面からはみ出すので、スマホでは折り返さない */
-      V + ' .bxtabs{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:8px}' + V + ' .bxtabs-a{flex-wrap:wrap}' +
+      V + ' .bxtabs{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:8px;margin:0 -16px;padding:8px 16px}' + V + ' .bxsel-a .bxgorun{display:none}' +
       V + ' .bxk .bxadn{display:none}' + V + ' .bxpick-h{flex-wrap:nowrap}' + V + ' .bxx{flex:none}' +
       V + ' .bxtabs>*{min-width:0}' +
       V + ' .bxtl{flex-wrap:nowrap;min-width:0;gap:6px;overflow-x:auto;padding:0;background:none;border-radius:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}' +
       V + ' .bxtl::-webkit-scrollbar{display:none}' +
       V + ' .bxtl button{flex:0 0 auto;height:36px;padding:0 14px;border:1px solid var(--bx-line2);border-radius:18px;background:var(--bx-card);font-size:13px}' +
-      V + ' .bxtl button[aria-selected="true"]{border-color:var(--bx-pr);background:var(--bx-pr);color:var(--bx-pri);box-shadow:none}' +
-      V + ' .bxtl button[aria-selected="true"] .bxtn{color:inherit;opacity:.85}' + V + ' .bxtl button[aria-selected="true"] .bxdot{background:var(--bx-pri)}' +
-      V + ' .bxtabs-a .bxbtn{flex:1 1 0;height:40px}' +
+      V + ' .bxtl button[aria-current="true"]{border-color:var(--bx-pr);background:var(--bx-pr);color:var(--bx-pri);box-shadow:none}' +
+      V + ' .bxtl button[aria-current="true"] .bxtn{color:inherit;opacity:.85}' + V + ' .bxtl button[aria-current="true"] .bxdot{background:var(--bx-pri)}' +
+      V + ' .bxph h3{font-size:16px}' + V + ' .bxph .bxbtn{flex:1 1 0;height:38px}' + V + ' .bxph h3{flex:1 1 100%}' +
       V + ' .bxenv{padding:0 16px 8px;border-radius:12px}' +
       V + ' .bxenv .envgrid{grid-template-columns:minmax(0,1fr)}' +
       V + ' .bxenv .envitem{padding:12px 0}' +
@@ -277,7 +282,7 @@
       'html body ' + V + '>.runbar.bxrun input[type="text"]{width:100%;height:24px;min-height:0;padding:0;border:0;background:transparent;color:var(--bx-ink);text-align:center;font-size:16px}' +
       'html body ' + V + '>.runbar.bxrun input[type="text"]::placeholder{color:var(--bx-ink);opacity:.85;font-size:12px}' +
       'html body ' + V + '>.runbar.bxrun input[type="text"]:focus{outline:2px solid var(--bx-acc);border:0}' +
-      'html body ' + V + '>.runbar.bxrun .btn.primary{flex:1 1 auto;height:52px;padding:0 12px;background:var(--bx-pr);color:var(--bx-pri)}' +
+      'html body ' + V + '>.runbar.bxrun .btn.primary{flex:1 1 auto;height:52px;padding:0 12px}' +
       V + ' .bxrun-s{display:block}' +
     '}' +
     /* 印刷では帯と窓を出さない */

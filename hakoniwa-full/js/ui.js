@@ -1245,10 +1245,10 @@
   }
   /* 読み込み待ち（whenReady の pending。動かす・回し直すのとき）を帯に出す */
   function pendSync() {
-    var w = !!(pending && !pending.scenOnly), el = document.getElementById('bxpend'), rb = el && el.closest('.runbar'), b = rb && rb.querySelector('[data-act="run"]');
+    var w = !!(pending && !pending.scenOnly), el = document.getElementById('bxpend'), rb = el && el.closest('.runbar'), bs = document.querySelectorAll('#view-box [data-act="run"]');   /* 帯と選んだ箱庭のカードの「箱庭を動かす」の両方 */
     if (el && el.hidden === w) el.hidden = !w;
     if (rb && rb.classList.contains('bxwait') !== w) rb.classList.toggle('bxwait', w);
-    if (b) { if (w) b.setAttribute('aria-busy', 'true'); else b.removeAttribute('aria-busy'); }
+    Array.prototype.forEach.call(bs, function (b) { if (w) b.setAttribute('aria-busy', 'true'); else b.removeAttribute('aria-busy'); });
   }
   /* 参加の人数（「参加 10人 ／ 上限 12人」。上限を超えた・足りないときは赤字で添える） */
   function joinCountHtml(n, mx, mn) {
@@ -1299,7 +1299,7 @@
       '<h2 class="bxsel-n">' + esc(s.name) + (ci.adult ? '<span class="r18tag">R18</span>' : '') + (busy ? scLoadBadge(id) : '') + '</h2>' +
       '<p class="bxsel-d">' + esc(ci.cl) + '</p>' + (ci.snote ? '<div class="note">' + esc(ci.snote) + '</div>' : '') + ci.minor + (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') +
       (uses ? '<div class="bxuses"><span class="bxuses-h">効く気質' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</span>' + uses + '</div>' : '') +
-      '</div><div class="bxsel-a"><button type="button" class="bxbtn bxchg" data-act="pickopen" aria-haspopup="dialog">' + ICON_GRID + '<span><span class="bxlong">箱庭を</span>変える</span></button>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</div></section>';
+      '</div><div class="bxsel-a"><button type="button" class="bxbtn bxgorun" data-act="run">' + ICON_PLAY + '<span>箱庭を動かす</span></button><button type="button" class="bxbtn bxchg" data-act="pickopen" aria-haspopup="dialog">' + ICON_GRID + '<span><span class="bxlong">箱庭を</span>変える</span></button>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</div></section>';
   }
   /* 2. 箱庭を選ぶの窓（見本 06）の右：選んでいる（まだ決めていない）箱庭の説明 */
   function pickSide(id) {
@@ -1369,22 +1369,20 @@
   function bxTabCur() { return bxTabsOn.indexOf(bxPref.tab) >= 0 ? bxPref.tab : bxTabsOn[0] || 'join'; }
   function bxTabsHtml(J, jmax) {
     var cur = bxTabCur();
-    return '<div class="bxtabs"><div class="bxtl" role="tablist" aria-label="箱庭の設定">' + BX_TABS.filter(function (x) { return bxTabsOn.indexOf(x[0]) >= 0; }).map(function (x) {
+    return '<nav class="bxtabs" aria-label="箱庭の設定の目次"><div class="bxtl">' + BX_TABS.filter(function (x) { return bxTabsOn.indexOf(x[0]) >= 0; }).map(function (x) {
       var on = x[0] === cur;
-      return '<button type="button" role="tab" id="bxt-' + x[0] + '" data-act="bxtab" data-k="' + x[0] + '" aria-controls="bxp-' + x[0] + '" aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '">' + x[1] +
+      return '<button type="button" id="bxt-' + x[0] + '" data-act="bxtab" data-k="' + x[0] + '" aria-controls="bxp-' + x[0] + '"' + (on ? ' aria-current="true"' : '') + ' title="「' + x[1] + '」へ移る">' + x[1] +
         (x[0] === 'join' ? '<span class="bxtn" id="bxtn-join">' + J.length + '/' + jmax + '</span>' : '<span class="bxdot" id="bxdot-' + x[0] + '" hidden title="初期値から変えた欄があります"></span>') + '</button>';
-    }).join('') + '</div><div class="bxtabs-a"><button type="button" class="bxbtn" data-act="envreset" title="この切替の設定を初期値に戻す">初期値に戻す</button><button type="button" class="bxbtn" data-act="envrand" title="この切替の設定をランダムに決める（文字の項目はそのまま）">ランダム</button></div></div>';
+    }).join('') + '</div></nav>';
   }
   function bxTabSync(vb) {
     vb = vb || document.getElementById('view-box');
     if (!vb) return;
     var cur = bxTabCur();
     if (vb.getAttribute('data-bxtab') !== cur) vb.setAttribute('data-bxtab', cur);
-    Array.prototype.forEach.call(vb.querySelectorAll('.bxtl [data-act="bxtab"]'), function (b) {
-      var on = b.dataset.k === cur;
-      if (b.getAttribute('aria-selected') !== String(on)) b.setAttribute('aria-selected', String(on));
-      if (b.tabIndex !== (on ? 0 : -1)) b.tabIndex = on ? 0 : -1;
-    });
+    /* 2026-11-02 担当UI：節は全部縦に並べ、切替は目次にした。目次の強調（aria-current）は、いま見ている節を ui-box-list.js（HK.Toc）が決める
+       （押した目次の節へのスクロールも HK.Toc）。data-bxtab は「初期値に戻す」の既定の範囲として残す */
+    if (HK.Toc) HK.Toc.sync();
   }
   /* 描き方は js/ui-box-draw.js（HK.BoxDraw）：節ごとに覚えて変わった節だけ作り直す。opt.defer（タブを押した・箱庭を選び替えた）は窓・選んだ箱庭のカード・切替だけ先に描き、残りは次の描画のあとで */
   function renderBox(opt) {
@@ -1423,12 +1421,12 @@
       '<div class="bxpick-h"><h2 id="bxpick-t">箱庭を選ぶ</h2><span class="bxmu">' + order.length + '種類</span>' + (HK.SAFE_ON ? '' : '<span class="bxmu">' + ADULT_NOTE + '</span>') + '<span class="bxsp"></span><button type="button" class="bxx" data-act="pickclose" aria-label="閉じる">×</button></div>' +
       '<div class="bxpick-b"><div class="bxpick-l"><label class="bxfit"><input type="checkbox" data-f="bxfit"> <span id="bxfitt">いまの住人で遊べるものだけ</span></label><div class="scens">' + cards + '</div></div>' +
       '<div class="bxpick-sbg" data-act="sheetclose"></div><aside class="bxpick-s" id="bxside" aria-label="選んでいる箱庭"></aside></div></div></div>';
-    var selSeg = { k: 'sel', now: true, html: selCard(S.scenId, wait ? null : scen, wait || loadSel) };
+    var selSeg = { k: 'sel', now: true, html: selCard(S.scenId, wait ? null : scen, wait || loadSel) }, listSeg = HK.BoxList ? { k: 'list', now: true, html: HK.BoxList.html(order, S.scenId, wait || loadSel ? scLoadBadge(S.scenId) : '') } : null;   /* PC の上の一覧（ui-box-list.js） */
     if (wait) {
       var we = boxErr[S.scenId];
       bxTabsOn = [];
-      drawBox([{ k: 'cards', html: head }, selSeg, { k: 'wait', html: '<div class="boxwait"' + (we ? '' : ' aria-busy="true"') + '>' + (we ? '<p>「' + esc(scen.name) + '」のデータを読み込めませんでした' + (we.reason === 'offline' ? '（通信できないため読み込めません）' : '') + '</p><p><button type="button" class="btn small" data-act="scenretry">もう一度</button></p>' :
-          '<p>「' + esc(scen.name) + '」のデータを読み込んでいます…</p><p class="hint" style="margin:0">読み込み中に「箱庭を動かす」を押すと、読み終わりしだい動かします。</p>') + '</div>' }, { k: 'run', html: runBar() }], opt, wait || loadSel);
+      drawBox([{ k: 'cards', html: head }, listSeg, selSeg, { k: 'wait', html: '<div class="boxwait"' + (we ? '' : ' aria-busy="true"') + '>' + (we ? '<p>「' + esc(scen.name) + '」のデータを読み込めませんでした' + (we.reason === 'offline' ? '（通信できないため読み込めません）' : '') + '</p><p><button type="button" class="btn small" data-act="scenretry">もう一度</button></p>' :
+          '<p>「' + esc(scen.name) + '」のデータを読み込んでいます…</p><p class="hint" style="margin:0">読み込み中に「箱庭を動かす」を押すと、読み終わりしだい動かします。</p>') + '</div>' }, { k: 'run', html: runBar() }].filter(Boolean), opt, wait || loadSel);
       return;
     }
     var pfs = scen.perFields || [];
@@ -1490,7 +1488,7 @@
     /* 住人が多いときは、グループごとの折りたたみ・名前で探す・選んでいる人だけ（ui-cast-pages.js）。参加している人はいつも出す */
     var rows = lazyBox && CP ? CP.boxRows(rowOf, J, 2 + nCols).split(/(?=<tr[\s>])/) : S.chars.map(rowOf);
     var gs = groupsOf();
-    var joinHtml = '<section class="bxpanel bxjoin" data-bxp="join" id="bxp-join" role="tabpanel" aria-labelledby="bxt-join">' +
+    var joinHtml = '<section class="bxpanel bxjoin" data-bxp="join" id="bxp-join" aria-labelledby="bxh-join"><div class="bxph"><h3 id="bxh-join">参加者と初動</h3></div>' +
       (scen.castHint || scen.solo ? '<p class="hint">' + (scen.castHint ? esc(scen.castHint) : 'この箱庭は一人用です。チェックを入れた住人が挑みます。' + (HK.SAFE_ON ? '' : '登場人物はすべて成人として扱います。')) + '</p>' : '') +
       (S.chars.length ? '<div class="bxjbar"><span class="bxjc"><span id="joincount">' + joinCountHtml(J.length, jmax, smin(S.scenId)) + '</span>' + (HK.Tips ? HK.Tips.btn('perchar') : '') + '</span><span class="bxsp"></span>' +
         '<button type="button" class="bxbtn" data-act="joinall">全員を参加</button><button type="button" class="bxbtn" data-act="joinnone">全員を外す</button>' + randRow(jmax) + '</div>' +
@@ -1506,18 +1504,18 @@
     genv(scen).forEach(function (e) { pan[envGroup(e)].push(e); });
     bxTabsOn = ['join'].concat(pan.scen.length ? ['scen'] : [], pan.odds.length ? ['odds'] : [], pan.plot.length || ctb ? ['plot'] : []);
     var envPanel = function (k, lead, items, extra) {
-      return '<section class="bxpanel bxenv" data-bxp="' + k + '" id="bxp-' + k + '" role="tabpanel" aria-labelledby="bxt-' + k + '"><p class="bxlead">' + lead + (HK.Tips ? HK.Tips.btn('env') : '') + '</p>' +
+      return '<section class="bxpanel bxenv" data-bxp="' + k + '" id="bxp-' + k + '" aria-labelledby="bxh-' + k + '"><div class="bxph"><h3 id="bxh-' + k + '">' + BX_TABNAME[k] + '</h3><span class="bxsp"></span><button type="button" class="bxbtn" data-act="envreset" data-k="' + k + '" title="「' + BX_TABNAME[k] + '」の設定を初期値に戻す">初期値に戻す</button><button type="button" class="bxbtn" data-act="envrand" data-k="' + k + '" title="「' + BX_TABNAME[k] + '」の設定をランダムに決める（文字の項目はそのまま）">ランダム</button></div><p class="bxlead">' + lead + (HK.Tips ? HK.Tips.btn('env') : '') + '</p>' +
         (k === 'scen' && S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') +
         '<div class="envgrid">' + items.map(function (e) { return envItem(e, S.scenId); }).join('') + (extra || '') + '</div></section>';
     };
-    var segs = [{ k: 'cards', html: head }, selSeg, { k: 'tabs', now: true, html: bxTabsHtml(J, jmax) }, { k: 'per', html: joinHtml }];
-    if (pan.scen.length) segs.push({ k: 'env', html: envPanel('scen', esc(scen.name) + 'だけの設定です。起こりやすさ・展開の重さは、ほかのタブにあります。', pan.scen) });
+    var segs = [{ k: 'cards', html: head }, listSeg, selSeg, { k: 'tabs', now: true, html: bxTabsHtml(J, jmax) }, { k: 'per', html: joinHtml }].filter(Boolean), pi = segs.length - 1;
+    if (pan.scen.length) segs.push({ k: 'env', html: envPanel('scen', esc(scen.name) + 'だけの設定です。起こりやすさ・展開の重さは、下の節にあります。', pan.scen) });
     if (pan.odds.length) segs.push({ k: 'odds', html: envPanel('odds', 'すべての箱庭で共通の設定です（変えると、ほかの箱庭にも効きます）。', pan.odds) });
     if (pan.plot.length || ctb) segs.push({ k: 'plot', html: envPanel('plot', '展開の重さ・内容のスイッチなど、すべての箱庭で共通の設定です。', pan.plot, ctb) });
     segs.push({ k: 'run', html: runBar() });
     /* 参加表は行ごとに分けて渡す（変わった行だけ入れ替える。住人の名前などは esc 済みなので <!-- は表の位置にしか無い） */
-    var pp = segs[3].html.split('<!--rows-->');
-    segs[3] = pp.length === 2 ? { k: 'per', pre: pp[0], rows: rows, post: pp[1] } : { k: 'per', html: pp.join(rows.join('')) };
+    var pp = segs[pi].html.split('<!--rows-->');
+    segs[pi] = pp.length === 2 ? { k: 'per', pre: pp[0], rows: rows, post: pp[1] } : { k: 'per', html: pp.join(rows.join('')) };
     drawBox(segs, opt, loadSel);
   }
   function drawBox(segs, opt, badge) {
@@ -1904,7 +1902,7 @@
       case 'envreset': case 'envrand': (function () {
         var scen = HK.SCENARIOS[S.scenId]; if (!scen) return;
         /* 箱庭タブの切替（場の設定・起こりやすさ・展開と内容）で押したときは、その切替の環境値だけ */
-        var scope = BX_TABNAME[bxTabCur()] ? bxTabCur() : '';
+        var scope = BX_TABNAME[t.dataset.k] ? t.dataset.k : t.dataset.k == null && BX_TABNAME[bxTabCur()] ? bxTabCur() : '';   /* 節の見出しの横のボタンは data-k の節だけ */
         genv(scen).forEach(function (e) {
           if (scope && envGroup(e) !== scope) return;
           var src = HK.GLOBAL_ENV.indexOf(e) >= 0 ? S.glob : (S.env[S.scenId] = S.env[S.scenId] || {});
@@ -2423,7 +2421,7 @@
   function sampleLeft() { var have = {}; S.chars.forEach(function (c) { have[c.name] = 1; }); return SAMPLE.filter(function (c) { return !have[c.name]; }); }
   if (HK.CastTools) HK.CastTools.bind({ S: function () { return S; }, max: MAX, io: function () { return { jp: jpOpen, pick: pickPanel() }; }, sampleLeft: function () { return sampleLeft().length; }, dup: function (id) { dupRes(id); } });
   HK.UI.refresh = function () { setTab(tab); };
-  HK.UI.autoTone = autoTone;
+  HK.UI.autoTone = autoTone; HK.UI.pickGo = pickGo; HK.UI.cardInfo = cardInfo; HK.UI.smin = smin;   /* 箱庭の一覧（ui-box-list.js）から */
   /* 書き出し・読み込み・入力の組み立て（点検・往復の試験から呼ぶ。画面の操作と同じ関数） */
   HK.UI.rosterJSON = rosterJSON; HK.UI.importJSON = importJSON; HK.UI.buildInput = buildInput; HK.UI.normState = normState;
   setTab('cast');

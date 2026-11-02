@@ -11,6 +11,7 @@
   var EXTREME = ['island', 'zombie', 'jashin', 'yakata', 'rpg', 'jinro', 'ship', 'br', 'trial', 'dungeon'];
   var CATS = [['all', 'すべて'], ['daily', '日常'], ['extreme', '極限'], ['solo', 'ひとり用'], ['r18', 'R-18 のみ']];
   var cur = 'all';
+  HK.ScenCat = { extreme: EXTREME, cats: CATS };   /* 箱庭タブの上の一覧（ui-box-list.js）も同じ分類で絞る */
   var css = '.scfilt{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}' +
     '.scfilt .fn{font-family:var(--f-num);font-size:11px;margin-left:4px;opacity:.85}' +
     '#view-box .scens>.fltoff{display:none!important}' +

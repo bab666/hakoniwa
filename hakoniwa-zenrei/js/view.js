@@ -847,14 +847,21 @@
       '<span class="rvmenu" id="rvmenu" role="group" aria-label="保存・共有" hidden><span class="rvmrow"><button type="button" class="btn" data-act="copytext">結果をテキストでコピー</button></span></span></span>' +
       '<button type="button" class="btn primary" data-act="reroll">' + esc(o.reroll || '別の運命で動かす') + '</button></div></div>';
   };
-  /* 切替と中身の枠。tabs：[{ k, label, n（添える数）, html }]。今の切替は rv.tab（無い切替なら最初） */
+  /* 節と目次の枠。tabs：[{ k, label, n（添える数）, html }]。
+     2026-11-02 担当UI（利用者の声「クリックの工程が挟まる」）：切替で隠さず、節を全部縦に並べる。並びは 結末 → 関係図 → 二人ずつ → 住人ごと → 経過（長い経過は最後。一人用・ダンジョンも同じ順）。
+     帯は画面の上に貼り付く目次で、押すとその節へスクロールし、いま見ている節を強調する（ui-box-list.js の HK.Toc）。節の頭に見出し（中に見出しのある経過・記録などは付けない） */
+  var RV_ORDER = ['end', 'map', 'pair', 'who', 'log'];
   V.shell = function (o) {
-    var ks = o.tabs.map(function (t) { return t.k; }), cur = ks.indexOf(rv.tab) >= 0 ? rv.tab : ks[0];
+    var tabs = o.tabs.slice().sort(function (a, b) { var x = RV_ORDER.indexOf(a.k), y = RV_ORDER.indexOf(b.k); return (x < 0 ? 99 : x) - (y < 0 ? 99 : y); });
+    var cur = tabs[0].k;
     return '<div class="rvw" data-rv="' + cur + '" data-fs="' + rv.fs + '" data-why="' + (rv.why ? 1 : 0) + '" data-tlv="' + rv.tlv + '" data-side="' + (rv.side ? 1 : 0) + '">' + o.head +
-      '<div class="rvtabs" role="tablist" aria-label="結果の表示">' + o.tabs.map(function (t) {
-        return '<button type="button" role="tab" class="rvtab" id="rvt-' + t.k + '" data-act="rvtab" data-k="' + t.k + '" aria-selected="' + (t.k === cur) + '" aria-controls="rvp-' + t.k + '" tabindex="' + (t.k === cur ? 0 : -1) + '">' + esc(t.label) + (t.n ? '<small>' + esc(t.n) + '</small>' : '') + '</button>';
-      }).join('') + '</div>' +
-      o.tabs.map(function (t) { return '<section class="rvpane" id="rvp-' + t.k + '" data-pane="' + t.k + '" role="tabpanel" aria-labelledby="rvt-' + t.k + '"' + (t.k === cur ? '' : ' hidden') + '>' + t.html + '</section>'; }).join('') +
+      '<nav class="rvtabs" aria-label="結果の目次">' + tabs.map(function (t) {
+        return '<button type="button" class="rvtab" id="rvt-' + t.k + '" data-act="rvtab" data-k="' + t.k + '" aria-controls="rvp-' + t.k + '"' + (t.k === cur ? ' aria-current="true"' : '') + ' title="「' + esc(t.label) + '」へ移る">' + esc(t.label) + (t.n ? '<small>' + esc(t.n) + '</small>' : '') + '</button>';
+      }).join('') + '</nav>' +
+      tabs.map(function (t) {
+        var own = /^\s*<h2|id="tlhead"/.test(t.html);
+        return '<section class="rvpane" id="rvp-' + t.k + '" data-pane="' + t.k + '" aria-label="' + esc(t.label) + '">' + (own ? '' : '<h2 class="rvph">' + esc(t.label) + (t.n ? '<small>' + esc(t.n) + '</small>' : '') + '</h2>') + t.html + '</section>';
+      }).join('') +
       (o.foot ? '<div class="rvfoot">' + o.foot + '</div>' : '') + '</div>';
   };
   /* 「この回の条件（n 項目・初期値から m か所）」の折りたたみ。初期値から変えた札は濃く */
@@ -1051,18 +1058,14 @@
   /* ---------- 切替・操作（このファイルで受ける。ui.js の data-act の switch には無い名前だけ） ---------- */
   function rvHost() { return document.getElementById('view-result'); }
   function rvWrap() { var h = rvHost(); return h ? h.querySelector('.rvw') : null; }
-  /* 切替を出す。tabs の位置より下まで読み進めていたら、切替の位置まで戻す */
+  /* 節 k へ移る（2026-11-02 担当UI：切り替える代わりに、その節の頭が目次の下に来るようにスクロールする。noScroll は呼び手が中の位置へスクロールするとき） */
   V.showTab = function (k, noScroll) {
     var w = rvWrap(), pane = w && w.querySelector('#rvp-' + k);
     if (!pane) return false;
     rv.tab = k; rvSave();
     w.setAttribute('data-rv', k);
-    Array.prototype.forEach.call(w.querySelectorAll('.rvpane'), function (p) { p.hidden = p.getAttribute('data-pane') !== k; });
-    Array.prototype.forEach.call(w.querySelectorAll('.rvtab'), function (b) { var on = b.getAttribute('data-k') === k; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
-    if (!noScroll) {
-      var tb = w.querySelector('.rvtabs'), top = tb ? tb.getBoundingClientRect().top + window.pageYOffset - 56 : 0;  /* 上の段の切替（.tabs・44px）の下に見えるように */
-      if (tb && window.pageYOffset > top) window.scrollTo(0, top);
-    }
+    if (!noScroll) { if (HK.Toc) HK.Toc.go(pane, w.querySelector('.rvtabs'), 'rv', k); else pane.scrollIntoView({ block: 'start' }); }
+    else if (HK.Toc) HK.Toc.sync();
     return true;
   };
   V.tab = function () { return rv.tab; };
@@ -1184,11 +1187,11 @@
   });
   document.addEventListener('keydown', function (ev) {
     if (ev.key === 'Escape') { var mw = rvWrap(), mm = mw && mw.querySelector('#rvmenu'); if (mm && !mm.hidden) { menu(false); var b = mw.querySelector('[data-act="rvmenu"]'); if (b) b.focus(); } return; }
-    /* 切替は左右の矢印でも移れる */
+    /* 目次は左右の矢印でも移れる */
     var t = ev.target;
     if (!(t && t.classList && t.classList.contains('rvtab')) || (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft')) return;
     var all = Array.prototype.slice.call(t.parentNode.querySelectorAll('.rvtab')), i = all.indexOf(t), nx = all[(i + (ev.key === 'ArrowRight' ? 1 : all.length - 1)) % all.length];
-    if (nx) { ev.preventDefault(); V.showTab(nx.getAttribute('data-k'), true); nx.focus(); }
+    if (nx) { ev.preventDefault(); V.showTab(nx.getAttribute('data-k')); nx.focus(); }
   });
 
   /* ---------- 結末 ---------- */
