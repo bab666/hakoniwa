@@ -941,11 +941,12 @@ const JUDGE = function (HK, opt) {
         /* 記録の文で見る点検（S4〜S7, S9） */
         const nm = chars.map(c => c.name);
         /* S8：内容のスイッチを切った回に、合意のない場面（札・理由で見分ける）・妊娠・快楽殺人の性的な文が出た */
+        /* （2026-11-03）洞窟は邪神の「洞窟の眷属」だけを指す。無人島の合意の夜「島の夜：洞窟」は場所の名なので数えない */
         const coreSc = HK.Content && HK.Content.CORE && HK.Content.CORE[sc];
         if (offTags.force && !coreSc) (res.log || []).forEach(e => {
           if (!e || typeof e.text !== 'string') return;
           const lab = (e.tag || '') + ' ' + (e.why || '');
-          if (!/恋人|攻めを選んで|自分から|受け入れている|共依存/.test(lab) && /夜這い|憑依|清めの湯|洞窟|脅迫|蛇の夜|蛇の夢|チョー・チョー人|収穫祭の夜|略奪者|ゾンビに襲|監禁の夜|奪われたうなじ|攫われ|強引|無理やり|凌辱|夢の中で神/.test(lab) && sents(e.text).some(isSex)) hit('S8', 'force | ' + lab.slice(0, 50) + ' | ' + e.text.slice(0, 100));
+          if (!/恋人|攻めを選んで|自分から|受け入れている|共依存/.test(lab) && /夜這い|憑依|清めの湯|洞窟の眷属|脅迫|蛇の夜|蛇の夢|チョー・チョー人|収穫祭の夜|略奪者|ゾンビに襲|監禁の夜|奪われたうなじ|攫われ|強引|無理やり|凌辱|夢の中で神/.test(lab) && sents(e.text).some(isSex)) hit('S8', 'force | ' + lab.slice(0, 50) + ' | ' + e.text.slice(0, 100));
         });
         if (offTags.preg) (res.log || []).forEach(e => { if (e && /(?<!酸素を)孕|疑似妊娠|身籠|神の子を産む/.test((e.text || '') + (e.why || ''))) hit('S8', 'preg | ' + (e.why || '').slice(0, 40) + ' | ' + String(e.text).slice(0, 100)); });
         /* S10：一回の遊びの中で、同じ性的な文（15文字以上）が3つ以上の記録に出た */
@@ -1048,6 +1049,8 @@ const JUDGE = function (HK, opt) {
       cur = { sc: '画面', story: false }; out.bySc['画面'] = out.bySc['画面'] || { runs: 0 };
       const S0 = HK.UI.state(), bak = JSON.stringify(S0);
       const sid = (HK.SCEN_ORDER || []).filter(id => HK.SCENARIOS[id] && !HK.SCENARIOS[id].solo && (HK.SCENARIOS[id].maxCast || 6) >= 4)[0];
+      /* HK_ONLY_SCEN で 2〜3 人の箱庭だけに絞った回など、4 人以上入るエンジン型の箱庭が無いときは対象なし（0 件）にする */
+      if (!sid) { out.info.s22 = '対象なし（4 人以上入る箱庭がない）'; cur = null; return; }
       const put = st => { Object.keys(S0).forEach(k => { delete S0[k]; }); Object.assign(S0, st); };
       try {
         const eg = { CP: 10, NP: 12, A: 8, FC: 14, AC: 6 };
