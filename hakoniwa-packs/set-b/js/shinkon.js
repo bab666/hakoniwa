@@ -9,6 +9,8 @@
    ・家事をしない設定の人は料理・家事をしない（HK.Life.canCook／canChore）。ポンコツの出来事は「家事が苦手（ポンコツ）」の役割の人がいるときだけ
    ・なれそめ「元の関係のまま」（既定）：住人の関係の設定をそのまま使う。ほかを選ぶと二人の関係を新婚の夫婦に上書きする（家族などで「恋愛：なし」の関係は上書きしない）
    ・R18版の夜は shinkon-r18.js（描写の有無・長さ・作風は本体の共通の設定 HK.Lewd。エッチ多めなら一度は長い場面）
+   ・2026-11-03 追加（shinkon-design.md の 6）：新婚らしい出来事（shinkon-wed.js）・三人婚（全員の立場が「新婚の夫婦」。shinkon-trio.js）・どの関係を夫婦に直したかの表示（relFromAll）・
+     元の関係が分かる出来事と「元○○」（shinkon-past.js）・始まりの月と日付・月の行事・バレンタイン／ホワイトデー・誕生日（shinkon-cal.js）
    部品：暮らしの状態は HK.Life、願望の高まり・表を引くのは HK.Journal（本体のかたまり pack-roomkit）、文の仕上げは HK.ShinkonKit（話し手の目印）。登場人物はすべて成人として扱う */
 /* @event scen=set-b-shinkon id=sk_setup cat=romance tie=- label=新婚の二人の暮らしが始まる */
 /* @event scen=set-b-shinkon id=sk_morning cat=romance tie=- label=二人の朝の様子（10種） */
@@ -47,6 +49,8 @@
     if (S && !S.wed && WED.test(x)) return false;
     if (!choreOk(x, a, b)) return false;
     if (!awayOk(ctx, x, a, b)) return false;
+    /* 季節に合わない文（夏に雪など）・誕生日でない日の誕生日の文（shinkon-cal.js の HK.ShinkonCal.ok） */
+    if (HK.ShinkonCal && !HK.ShinkonCal.ok(ctx, x)) return false;
     return true;
   }
   /* ---------- 離れていた日数・忙しい日の続き（2026-11-03 利用者の指摘「2 日目なのに『数日ぶりに帰ってきた』という文が出る」）----------
@@ -106,7 +110,10 @@
     return fb && okText(ctx, fb, a, b) ? fb : '';
   }
   SKX();
-  function SKX() { HK.Shinkon = { restNight: restNight, restAhead: restAhead, okText: okText, choreOk: choreOk, awayOk: awayOk, away: away, busy: busy, ROM: ROM, WED: WED, COOK: COOK, CHORE: CHORE, AW_MANY: AW_MANY, AW_ONE: AW_ONE, AW_WHO: AW_WHO, BUSY_RE: BUSY_RE, KYUKA: KYUKA }; }
+  function SKX() { HK.Shinkon = { restNight: restNight, restAhead: restAhead, okText: okText, choreOk: choreOk, awayOk: awayOk, away: away, busy: busy, ROM: ROM, WED: WED, COOK: COOK, CHORE: CHORE, AW_MANY: AW_MANY, AW_ONE: AW_ONE, AW_WHO: AW_WHO, BUSY_RE: BUSY_RE, KYUKA: KYUKA,
+    /* 追加の部品（shinkon-cal.js・shinkon-past.js・shinkon-wed.js・shinkon-trio.js が使う。2026-11-03） */
+    pickT: function (ctx, arr, a, b) { return pickT(ctx, arr, a, b); }, fill: fill, per: function (c) { return RC() ? RC().per(c) : 'gentle'; },
+    withReact: function (ctx, kind, who, other, p) { return withReact(ctx, kind, who, other, p); }, persK: function (c, k) { return persK(c, k); }, pickOfChar: function (ctx, c, k) { return pickOfChar(ctx, c, k); }, canLove2: function (ctx, a, b) { return canLove2(ctx, a, b); } }; }
   /* 恋愛にしてよい二人か（恋愛対象・恋愛相手の固定・関係の「恋愛：なし」（家族・無関心・恐怖など）を両方向で） */
   function canLove2(ctx, a, b) {
     if (HK.canLove && !(HK.canLove(a, b, ctx) && HK.canLove(b, a, ctx))) return false;
@@ -145,7 +152,7 @@
   var scen = {
     id: ID, name: '新婚部屋', kicker: 'ふたり・日常',
     desc: '結婚したばかりの二人の毎日を、朝・日中・夜ごとに眺める。暮らしの中で願望が高まると出来事が起き、困りごとや来客もある。同じ出来事でも、性格や関係で受け止め方が変わる。最後の夜は幸せなキスで一区切り。',
-    note: '※参加は3人まで。参加者の最初の二人（住人ごとの「立場」で選べます）が新婚の二人です。三人目は「他の住人」として、遊びに来たり連絡をくれたりします。「登場しない住人を出す」なら、名簿にいて参加していない、二人と関係のある住人も訪ねてきます（関係図には出ず、恋愛も始まりません）。登場人物はすべて成人として扱います。',
+    note: '※参加は3人まで。参加者の最初の二人（住人ごとの「立場」で選べます）が新婚の二人です。三人目は「他の住人」として、遊びに来たり連絡をくれたりします。三人とも立場を「新婚の夫婦（配偶者）」にすると、三人で結婚した暮らし（三人婚。三人の組がどれも恋愛にしてよい組のときだけ）になります。誕生日は、住人の設定の「誕生月」と、住人ごとの「誕生日の日」で祝います。「登場しない住人を出す」なら、名簿にいて参加していない、二人と関係のある住人も訪ねてきます（関係図には出ず、恋愛も始まりません）。登場人物はすべて成人として扱います。',
     unit: '日', perUnit: 3, preRel: 0, lethal: false, minCast: 2, maxCast: 3,
     catBias: { romance: 1, bond: 1, help: 1, conflict: 0.3, combat: 0, betray: 0, kill: 0 },
     decay: 0.998, actRate: 0.2,
@@ -156,13 +163,18 @@
       { id: 'rel', label: '二人のなれそめ', type: 'select', def: 'keep', options: [{ v: 'keep', label: '元の関係のまま（住人の関係の設定どおり）' }].concat(opts(D.REL.map(function (t, i) { return relShort(i); }), 'おまかせ（新しく決める）')),
         desc: '「元の関係のまま」なら、住人の関係の設定（友人・擬似親子・同僚など）をそのまま使って暮らします（関係が無ければ新婚の夫婦）。【注意】ほかを選ぶと、二人のあいだに設定した関係を「新婚の夫婦」に上書きします（家族などで恋愛が「なし」の関係は上書きしません）' },
       { id: 'meet', label: '出会いの場所', type: 'select', def: 'auto', options: opts(D.MEET.map(function (t) { return t.split(/\s/)[0]; })), desc: '二人が出会った場所' },
+      { id: 'month', label: '始まりの月', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ' }].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (m) { return { v: 'm' + m, label: m + '月' }; })),
+        desc: '一日目の月。月ごとの行事（初詣・バレンタイン・ホワイトデー・花見・七夕・花火・月見・ハロウィン・クリスマス など）が、その月の日付に合わせて起きる。季節に合わない出来事（夏に雪など）は出ない' },
+      { id: 'sday', label: '始まりの日', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ（その月の大きな行事の日が入るように）' }, { v: 'rand', label: 'ランダム' }, { v: 'e', label: '上旬（1日から）' }, { v: 'm', label: '中旬（11日から）' }, { v: 'l', label: '下旬（21日から）' }],
+        desc: '一日目が何日か。おまかせなら、2月はバレンタイン、3月はホワイトデー、12月はクリスマス・イブの日などが日数の中に入るように始める。住人の誕生月（住人の設定）が日数の中に入れば、誕生日のお祝いも' },
       { id: 'speed', label: '願望の高まりやすさ', type: 'select', def: 'normal', options: [{ v: 'slow', label: 'ゆっくり' }, { v: 'normal', label: 'ふつう' }, { v: 'fast', label: '早い' }], desc: '早いほど、願望から来る行動が多く起きる' },
       { id: 'outsideNames', label: '登場しない住人を出す', type: 'select', def: 'yes', options: [{ v: 'yes', label: '出す（名簿の住人のうち、二人と関係のある人が訪ねてくる・連絡をくれる）' }, { v: 'no', label: '出さない（二人と、参加者だけ）' }],
         desc: '出られない部屋の「登場しない住人の名前を出す」と同じ読み方で、名簿にいて今回は参加していない住人のうち、新婚の二人のどちらかと関係（家族・擬似親子・友人・同僚・先輩後輩・同級生・元恋人・知人）がある人（三人まで）が、名簿の性格・口調・関係のまま、遊びに来たり、一緒に出かけたり、連絡をくれたりします。元恋人が来た日は、ヤキモチから始まる夜も。訪ねてくる住人は関係図に出ず、その人との恋愛も始まりません。参加者の三人目（住人ごとの「立場」で「他の住人」にした人）は、この設定にかかわらず同じように出ます（参加した住人なので関係図に出ます）' }
     ],
     stats: [],
     perFields: [
-      { id: 'part', label: '立場', auto: 'おまかせ（上から二人が新婚の二人）', options: [{ id: 'couple', label: '新婚の二人' }, { id: 'guest', label: '他の住人（訪ねてくる側）' }] },
+      { id: 'part', label: '立場', auto: 'おまかせ（上から二人が新婚の二人）', options: [{ id: 'couple', label: '新婚の夫婦（配偶者。三人とも選ぶと三人婚）' }, { id: 'guest', label: '他の住人（訪ねてくる側）' }] },
+      { id: 'bday', label: '誕生日の日', auto: 'おまかせ（誕生月が日数の中に入れば、その中のどこか）', options: [{ id: 'none', label: '祝わない' }].concat([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].map(function (d) { return { id: 'd' + d, label: d + '日（住人の設定の誕生月の）' }; })) },
       { id: 'work', label: '仕事の型', auto: 'おまかせ（気質から）', options: LF.WORK.map(function (w) { return { id: w.v, label: w.label }; }) },
       { id: 'job', label: '職業', type: 'text', placeholder: function () { return '例：営業、看護師（空欄でもよい）'; } },
       { id: 'role', label: '家庭での役割', auto: 'おまかせ（気質から）', options: LF.ROLE.map(function (r) { return { id: r.v, label: r.label }; }) },
@@ -178,15 +190,11 @@
       return s;
     },
     /* 新婚の二人の関係：元の関係のまま（既定）で二人のあいだに関係が無いか、なれそめを選んだ（上書き）ときは、夫婦の関係を足す（恋愛にしてよい二人だけ） */
-    extraTies: function (ctx, input) {
-      var cp = couple(ctx.chars, input), A = cp[0], B = cp[1];
-      if (!A || !B || A === B) return [];
-      var has = (input.ties || []).some(function (t) { return (t.a === A.i && t.b === B.i) || (t.a === B.i && t.b === A.i); });
-      if (has) return [];
-      if (HK.canLove && !(HK.canLove(A, B, ctx) && HK.canLove(B, A, ctx))) return [];
-      return [{ a: A.i, b: B.i, type: 'spouse', spouse: true }];
+    extraTies: function (ctx, input) { return extraTies(ctx, input); },
+    othersFor: function (ctx, a) {
+      var S = ctx.sk, M = S ? (S.trio ? [S.A0, S.B0, S.C0] : [S.A, S.B]) : null;
+      return ctx.present().filter(function (c) { return c !== a && (!M || (M.indexOf(a) >= 0 && M.indexOf(c) >= 0)); });
     },
-    othersFor: function (ctx, a) { var S = ctx.sk; return ctx.present().filter(function (c) { return c !== a && (!S || ((a === S.A || a === S.B) && (c === S.A || c === S.B))); }); },
     setup: function (ctx) { setup(ctx); },
     phase: function (ctx, s, n) { phase(ctx, s, n); },
     finish: function (ctx) { finish(ctx); },
@@ -197,6 +205,52 @@
 
   /* 新婚の二人（住人ごとの「立場」。おまかせは上から） */
   function partOf(input, i) { var p = input && input.perChar && input.perChar[i]; return p && p.pick ? p.pick.part : null; }
+  /* ---------- 夫婦の関係を足す（extraTies）。2026-11-03：三人婚・元○○ ----------
+     ・元○○（元の関係のまま遊ぶ二人に、結婚しないはずの関係（shinkon-past.js の PS.exOf）がある）：恋愛にしてよい二人なら、その組の関係を外して夫婦にする（ctx._skEx に元の関係を覚える）
+     ・三人婚（三人とも立場「新婚の夫婦」）：三組とも恋愛にしてよいなら、恋人・夫婦などの関係の無い組に夫婦の関係を足す。なれそめを選んだときは三組とも元の関係を外す（恋愛「なし」の関係は外さない＝三人婚にならない）
+       合わなければ今までどおり上の二人だけ（ctx._skTrioNG に理由）
+     関係を外すのは、包み（HK.simulate の内側）が写した入力の関係の配列（記録の入力は書き換えない） */
+  function loveBoth(ctx, a, b) { return !HK.canLove || (HK.canLove(a, b, ctx) && HK.canLove(b, a, ctx)); }
+  function extraTies(ctx, input) {
+    var ts = input.ties || [], keep = !ctx.env.rel || ctx.env.rel === 'keep', PSx = HK.ShinkonPast;
+    var T3 = trioOf(ctx.chars, input), cp = couple(ctx.chars, input), A = cp[0], B = cp[1];
+    var P3 = T3 ? [[T3[0], T3[1]], [T3[0], T3[2]], [T3[1], T3[2]]] : [], PA = A && B && A !== B ? [[A, B]] : [];
+    var kk = function (a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; };
+    var exC = {};
+    if (keep && PSx && ts.length) (T3 ? P3 : PA).forEach(function (p) { var X = PSx.exOf(ts, p[0].i, p[1].i); if (X && loveBoth(ctx, p[0], p[1])) exC[kk(p[0], p[1])] = X; });
+    var drop = function (a, b) { for (var i = ts.length - 1; i >= 0; i--) { var t = ts[i]; if (t && ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i))) ts.splice(i, 1); } };
+    ctx._skEx = {}; ctx._skTrio = null; ctx._skTrioNG = '';
+    if (T3) {
+      var why = '';
+      P3.forEach(function (p) {
+        if (why) return;
+        var a = p[0], b = p[1], tl = tiesOf(input, a, b);
+        if (!loveBoth(ctx, a, b)) { why = a.name + 'と' + b.name + 'の恋愛対象が合わない'; return; }
+        if (exC[kk(a, b)]) return;
+        if (tl.some(function (t) { return t.love === 'no'; }) || (HK.tiesLove && tl.length && !HK.tiesLove(tl))) why = a.name + 'と' + b.name + 'の関係が恋愛「なし」';
+      });
+      if (!why) {
+        ctx._skTrio = T3;
+        P3.forEach(function (p) { var k = kk(p[0], p[1]); if (exC[k]) { drop(p[0], p[1]); ctx._skEx[k] = exC[k]; } else if (!keep) drop(p[0], p[1]); });
+        return P3.filter(function (p) { return !tiesOf(input, p[0], p[1]).some(function (t) { return /^(spouse|lover|fiance|mate)$/.test(t.type); }); })
+          .map(function (p) { return { a: p[0].i, b: p[1].i, type: 'spouse', spouse: true }; });
+      }
+      ctx._skTrioNG = why;
+    }
+    if (!PA.length) return [];
+    var k0 = kk(A, B);
+    if (exC[k0]) { drop(A, B); ctx._skEx[k0] = exC[k0]; }
+    if (tiesOf(input, A, B).length) return [];
+    if (!loveBoth(ctx, A, B)) return [];
+    return [{ a: A.i, b: B.i, type: 'spouse', spouse: true }];
+  }
+  /* 三人婚の三人：参加者（名簿から訪れる住人を除く）のうち、立場を「新婚の夫婦」に選んだ人がちょうど三人 */
+  function trioOf(C, input) {
+    var n = input && input._outN != null ? input._outN : input && input.chars ? input.chars.length : C.length;
+    var t = C.filter(function (c) { return c.i < n && partOf(input, c.i) === 'couple'; });
+    return t.length === 3 ? t : null;
+  }
+  function tiesOf(input, a, b) { return ((input && input.ties) || []).filter(function (t) { return t && ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)); }); }
   function couple(C, input) {
     var ok = C.filter(function (c) { return partOf(input, c.i) === 'couple'; });
     C.forEach(function (c) { if (ok.length < 2 && ok.indexOf(c) < 0 && partOf(input, c.i) !== 'guest') ok.push(c); });
@@ -213,7 +267,31 @@
   var EX_ID = /^(?:confess|take_charge|brood|lighten|mob_after|tie_spouse|grp_|poly_|ct_|cf_)/;
   /* 外す出来事は、その時点の共通の出来事の山から引く（読み取り専用の値。出来事の一覧（event-catalog.js の HK.buildPool）も、遊ぶときと同じものを外して数える。
      2026-11-03 利用者の確かめごと：一覧に「セフレといつもの部屋で落ち合う」などが並んでいた＝以前は setup で書き込んでいたので、一覧を作るときは空だった） */
-  function exList() { return (HK.COMMON || []).filter(function (e) { return e.sex || e.force || EX_ID.test(e.id); }).map(function (e) { return e.id; }); }
+  function exList() {
+    /* 誕生日の出来事（双子の誕生日の話など）は、この部屋の誕生日の祝い（shinkon-cal.js。誕生日の日に出す）と重なるので出さない */
+    var L0 = (HK.COMMON || []).filter(function (e) { return e.sex || e.force || EX_ID.test(e.id) || /誕生日/.test(evStr(e)); }).map(function (e) { return e.id; });
+    /* 遊んでいる回（エンジンが setup のあとで出来事の山を組む）：季節に合わない共通の出来事・誕生日の出来事（日数に誕生日が無い回）も外す（2026-11-03） */
+    var c = HK._curCtx;
+    if (c && c.scen && c.scen.id === ID && c.sk && c.sk.cal && HK.ShinkonCal) L0 = L0.concat(seasonEx(c, L0));
+    return L0;
+  }
+  var EV_STR = {};
+  function evStr(e) {
+    if (EV_STR[e.id] != null) return EV_STR[e.id];
+    var t = '';
+    try { t = JSON.stringify(e, function (k, v) { return typeof v === 'function' ? String(v) : v; }); } catch (x) { t = ''; }
+    return (EV_STR[e.id] = t);
+  }
+  function seasonEx(ctx, L0) {
+    var S = ctx.sk, CL = HK.ShinkonCal, ms = {};
+    for (var d = 0; d < S.days; d++) ms[CL.date(S, d).m] = 1;
+    var M = Object.keys(ms).map(Number);
+    return (HK.COMMON || []).filter(function (e) {
+      if (!e || !e.id || L0.indexOf(e.id) >= 0) return false;
+      var t = evStr(e);
+      return !M.some(function (m) { return CL.okMonth(t, m); });
+    }).map(function (e) { return e.id; });
+  }
   Object.defineProperty(scen, 'exclude', { get: exList, enumerable: true, configurable: true });
   /* 元の関係のまま遊ぶときの、関係の種類と名前 */
   var LOVE_T = /^(lover|spouse|fiance|mate|fated|ex|crush|almost|fwb|honmei)$/;
@@ -230,18 +308,32 @@
     var days = Math.max(5, Math.min(14, +env.days || 7));
     ctx.place = '二人の新居';
     var keep = !env.rel || env.rel === 'keep';
+    /* 三人婚（extraTies で決めた三人。三組とも恋愛にしてよいときだけ） */
+    var T3 = ctx._skTrio || null;
+    if (T3) { A = T3[0]; B = T3[1]; }
     var ri = relInfo(ctx, A, B);
-    var S = ctx.sk = { days: days, A: A, B: B, G: C.filter(function (c) { return c !== A && c !== B; }),
+    var exAB = PSX() ? PSX().info : null;
+    var S = ctx.sk = { days: days, A: A, B: B, A0: A, B0: B, C0: T3 ? T3[2] : null, C: T3 ? T3[2] : null, trio: !!T3, spouses: T3 ? T3.slice() : [A, B],
       home: sel(ctx, 'home', D.HOME), rel: keep && ri.t && !/^(spouse|lover|fiance|mate)$/.test(ri.t.type) ? -1 : sel(ctx, 'rel', D.REL), keep: keep, ri: ri, meet: sel(ctx, 'meet', D.MEET), meet2: 0,
       speed: env.speed === 'slow' ? 0.7 : env.speed === 'fast' ? 1.45 : 1, love: canLove2(ctx, A, B), day: null, fights: 0, makeups: 0, acts: 0, sex: 0, kissed: false, best: null, lewdMax: 0,
       troubles: 0, visits: 0, odd: 0 };
-    /* 結婚している二人か：元の関係のままで、二人の関係が恋人・夫婦などの関係（か、関係なし）。なれそめを選んだら、恋愛にしてよい二人は夫婦 */
+    S.G = C.filter(function (c) { return S.spouses.indexOf(c) < 0; });
+    S.trioNG = !T3 && ctx._skTrioNG ? ctx._skTrioNG : '';
+    /* 結婚している二人か：元の関係のままで、二人の関係が恋人・夫婦などの関係（か、関係なし）。なれそめを選んだら、恋愛にしてよい二人は夫婦。三人婚は三人とも夫婦 */
     S.wed = S.love && (keep ? ri.loveTie : true);
+    if (T3) { S.love = true; S.wed = true; }
+    /* 元○○（ライバル・不仲などで結婚した二人。shinkon-past.js）：元の関係のままでも、結婚した夫婦として始める（なれそめの言葉は使わない） */
+    var X0 = exAB ? exAB(ctx, S, A, B).exr : null;
+    if (X0 && keep && S.love) { S.rel = -1; S.wed = true; S.exLabel = EX_PAST[X0.k] || ''; }
+    /* 三人婚：恋人が複数いる人の恋人どうしを恋愛にしない印（engine.js の coNG）を、三人のあいだでは外す（三人とも結婚した） */
+    if (T3) T3.forEach(function (c) { if (Array.isArray(c.coNG)) c.coNG = c.coNG.filter(function (i) { return !T3.some(function (o) { return o.i === i; }); }); });
+    /* 季節・日付・誕生日（shinkon-cal.js） */
+    if (HK.ShinkonCal) HK.ShinkonCal.setup(ctx, S);
     /* 他の住人：出番のときだけ場に出す（ほかの区切りは留守。共通の出来事に混ざらないように） */
     S.G.forEach(function (g) { g.gone = true; g.life = g.life || { job: '' }; if (pickOfChar(ctx, g, 'outside')) g.outside = true; });
     var night1 = !HK.SAFE_ON && S.love && !(HK.Pos && HK.Pos.libNone && HK.Pos.libNone([A, B]));
     S.meet2 = HK.weighted(ctx.rng, D.MEET2.map(function (x, i) { return i; }), function (i) { return i === 9 && !night1 ? 0 : 1; });
-    [A, B].forEach(function (c) {
+    S.spouses.forEach(function (c) {
       var job = pickOfChar(ctx, c, 'job');
       c.life = { job: job ? String(job).slice(0, 20) : '' };
       /* 仕事の型を選んでいれば先に決める（在宅ワークの人のおまかせの役割は、家事を分け合う役割になりやすい。roomkit-life.js） */
@@ -252,19 +344,81 @@
       var w = wishOf(ctx, c, pickOfChar(ctx, c, 'wish'));
       J.wish(ctx, c, w, D.WISH[w].init);
     });
-    if (!HK.SAFE_ON && HK.ShinkonR18 && HK.ShinkonR18.quota) S.lewdMax = HK.ShinkonR18.quota(ctx, env.lewdN);
+    if (!HK.SAFE_ON && HK.ShinkonR18 && HK.ShinkonR18.quota) S.lewdMax = HK.ShinkonR18.quota(ctx, env.lewdN) + (T3 ? 1 : 0);
+    /* どの関係を夫婦に直したか（2026-11-03 利用者のメモ「元の関係 → 夫婦を細かく表示する」）：結末・結果の画面に出す */
+    S.relFrom = relFromAll(ctx, S);
     /* 二人の紹介 */
-    var home = D.HOME[S.home], meet = D.MEET[S.meet].split(/\s/)[0], intro;
-    if (S.rel >= 0) {
-      intro = prose(ctx, 'SETUP', 0, '{a}と{b}は、結婚したばかりの二人だ。住まいは{home}。{rel}――出会いは{meet}だった。', A, B);
-      if (!S.wed) intro = pickOf(ctx, NW_SETUP);
-    } else if (S.wed) intro = pickOf(ctx, KEEP_WED);
-    else intro = pickOf(ctx, NW_SETUP);
-    var rl = S.rel >= 0 && S.wed ? relShort(S.rel) : ri.label || '同居人';
-    var tx = fill(ctx, intro, A, B, { home: home, rel: rl, meet: meet });
-    /* 元の関係のまま：関係の色の一文 */
-    if (S.rel < 0 && RC()) { var rc = RC().rel(ctx, ri.cls); if (rc) tx += fill(ctx, rc, A, B, { rel: rl }); }
-    ctx.act2({ actors: [A, B], cat: S.love ? 'romance' : 'bond', text: tx, why: '新婚部屋：二人の始まり' + (S.rel < 0 ? '（元の関係のまま：' + rl + '）' : '') });
+    var home = D.HOME[S.home], meet = D.MEET[S.meet].split(/\s/)[0], intro, tx, rl;
+    if (T3) {
+      tx = HK.ShinkonTrio ? HK.ShinkonTrio.say(ctx, HK.ShinkonTrio.T.SETUP, A, B, T3[2], { home: home }) : '';
+      ctx.act2({ actors: T3.slice(), cat: 'romance', text: tx, why: '新婚部屋：三人の暮らしの始まり（三人婚・' + relLine(S) + '）' });
+    } else {
+      if (S.rel >= 0) {
+        intro = prose(ctx, 'SETUP', 0, '{a}と{b}は、結婚したばかりの二人だ。住まいは{home}。{rel}――出会いは{meet}だった。', A, B);
+        if (!S.wed) intro = pickOf(ctx, NW_SETUP);
+      } else if (S.wed) intro = pickOf(ctx, KEEP_WED);
+      else intro = pickOf(ctx, NW_SETUP);
+      rl = S.exLabel || (S.rel >= 0 && S.wed ? relShort(S.rel) : ri.label || '同居人');
+      tx = fill(ctx, intro, A, B, { home: home, rel: rl, meet: meet });
+      /* 元の関係のまま：関係の色の一文 */
+      if (S.rel < 0 && RC() && !S.exLabel) { var rc = RC().rel(ctx, ri.cls); if (rc) tx += fill(ctx, rc, A, B, { rel: rl }); }
+      ctx.act2({ actors: [A, B], cat: S.love ? 'romance' : 'bond', text: tx, why: '新婚部屋：二人の始まり（' + relLine(S) + '）' + (S.trioNG ? '（三人婚にならなかった：' + S.trioNG + '）' : '') });
+    }
+    /* もとは恐怖の関係だった二人（「恋愛：あり」にした恐怖を元○○にした・なれそめで上書きした）：本体の決まりどおり、体の関係・夜は止めたまま（住人の noSex。HK.sexBlocked が真を返す） */
+    var orig0 = (ctx.input && (ctx.input._skOrig || ctx.input.ties)) || [];
+    pairsOf(S).forEach(function (p) {
+      var wasFear = orig0.some(function (t) { return t && t.type === 'fear' && ((t.a === p[0].i && t.b === p[1].i) || (t.a === p[1].i && t.b === p[0].i)); });
+      if (wasFear) [[p[0], p[1]], [p[1], p[0]]].forEach(function (q) { var l = q[0].noSex = q[0].noSex || []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); });
+    });
+    /* 元○○の二人の導入（「まさか私たちが結婚するなんて……」）。三人婚は組ごとに */
+    if (PSX()) pairsOf(S).forEach(function (p) { PSX().intro(ctx, S, p[0], p[1]); });
+  }
+  function PSX() { return HK.ShinkonPast; }
+  function pairsOf(S) { return S.trio ? [[S.A0, S.B0], [S.A0, S.C0], [S.B0, S.C0]] : [[S.A0, S.B0]]; }
+  /* 元○○の二人の紹介に入れる、元の関係の言い方（「{rel}から夫婦になった」「{rel}だった二人」） */
+  var EX_PAST = { rival: 'ライバル', bad: '犬猿の仲', enemy: '敵どうし', fear: '近寄りがたい仲', lovehate: '憎まれ口の仲', master: '主従' };
+  /* ---------- どの関係を夫婦に直したか ---------- */
+  function tieLab(ctx, t) {
+    var D0 = HK.TIES[t.type]; if (!D0) return '';
+    if (t.type === 'crush' && t.cold === 'mutual') return '両片想い';
+    return D0.dir && ctx.chars[t.a] ? ctx.chars[t.a].name + 'が' + D0.roleA + 'の' + D0.label : D0.label;
+  }
+  var WEDT = /^(spouse)$/;
+  function relFromAll(ctx, S) {
+    var inp = ctx.input || {}, orig = inp._skOrig || inp.ties || [];
+    return pairsOf(S).map(function (p) {
+      var a = p[0], b = p[1], k = a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i;
+      var o = orig.filter(function (t) { return t && HK.TIES[t.type] && t.type !== 'noobs' && ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)); });
+      var now = HK.Ties && HK.Ties.all ? (HK.Ties.all(ctx, a, b) || []) : [];
+      var nowSp = S.trio || S.wed;
+      var from = o.map(function (t) { return tieLab(ctx, t); }).filter(Boolean), how;
+      var exr = PSX() ? PSX().info(ctx, S, a, b).exr : null;
+      var gone = o.every(function (t) { return !now.some(function (u) { return u.type === t.type || (t.type === 'spouse' && u.spouse); }); });
+      if (exr) how = 'ex';
+      else if (!o.length) how = nowSp ? 'new' : 'none';
+      else if (o.some(function (t) { return WEDT.test(t.type); })) how = 'same';
+      else if (!S.keep && gone) how = 'override';
+      else if (!S.keep) how = 'kept';
+      else how = nowSp ? 'keep' : 'keepNW';
+      return { a: a.i, b: b.i, from: from, how: how, ex: exr ? exr.k : '', fm: exr && exr.fm ? exr.fm : '', main: o[0] ? { type: o[0].type, a: o[0].a, b: o[0].b, cold: o[0].cold } : null };
+    });
+  }
+  /* 関係の行（記録の理由・結末に出す）：「友人 → 夫婦（なれそめ『幼なじみ』で上書き）」など */
+  function relLine(S, rf) {
+    var L0 = (rf || S.relFrom || []).map(function (r) {
+      var nm = function (i) { return (S.spouses.filter(function (c) { return c.i === i; })[0] || {}).name || ''; };
+      var who = S.trio ? nm(r.a) + 'と' + nm(r.b) + '：' : '', f = r.from.length ? r.from.join('・') : '関係なし';
+      var PN = PSX() ? PSX().EXNAME : {};
+      if (r.how === 'ex') return who + f + ' → 夫婦（' + (PN[r.ex] || '元の関係') + (r.fm ? '・' + (r.fm === 'calm' ? 'もう怖くない' : 'まだ少し怖い') : '') + '。結婚して関係が変わった）';
+      if (r.how === 'override') return who + f + ' → 夫婦（なれそめ「' + relShort(S.rel) + '」で上書き）';
+      if (r.how === 'same') return who + 'もともと夫婦';
+      if (r.how === 'new') return who + '関係なし → 新婚の夫婦';
+      if (r.how === 'keep') return who + f + ' → 夫婦';
+      if (r.how === 'none') return who + '関係なし（同居）';
+      if (r.how === 'kept') return who + f + '（恋愛「なし」の関係なので上書きしない）';
+      return who + f + '（元の関係のまま。結婚はしていない）';
+    });
+    return L0.join('／');
   }
   /* 元の関係のまま、恋人どうしの関係（か夫婦）の二人の紹介。{rel}＝関係の名前 */
   var KEEP_WED = [
@@ -310,7 +464,10 @@
     var S = f(ctx), A = S.A, B = S.B, hol = holiday(d);
     var pa = LF.day(ctx, A, d, hol), pb = LF.day(ctx, B, d, hol);
     var hi = J.of(ctx, A).pt >= J.of(ctx, B).pt ? A : B;
-    var day = { d: d, hol: hol, pa: pa, pb: pb, hi: hi, lo: hi === A ? B : A };
+    var day = { d: d, hol: hol, pa: pa, pb: pb, hi: hi, lo: hi === A ? B : A }, CL = HK.ShinkonCal;
+    S.curD = d;
+    if (CL && S.cal) day.date = CL.date(S, d);
+    if (S.trio && S.C) day.pc = LF.day(ctx, S.C, d, hol);
     /* 体調を崩している人：その日は家で休む（出張・残業は取りやめ）。看る人も出張・残業を取りやめる */
     var sc = sickOn(S, d);
     if (sc) {
@@ -329,12 +486,12 @@
         if ([A, B][k] === day.dull) p.late = false;
       });
     }
-    /* 最後の日は二人とも家にいる（最後の夜の幸せなキスがあるので、出張はその日までに切り上げる） */
-    if (d === S.days - 1) [pa, pb].forEach(function (p) { if (p.trip) { p.trip = false; p.tripEnd = true; p.home = { m: true, d: p.hol, n: true }; } });
+    /* 最後の日は二人とも家にいる（最後の夜の幸せなキスがあるので、出張はその日までに切り上げる）。誕生日・バレンタイン・ホワイトデー・クリスマス・イブも出張を入れない（shinkon-cal.js） */
+    if (d === S.days - 1 || (CL && S.cal && CL.keyDay(S, d))) [pa, pb, day.pc].forEach(function (p) { if (p && p.trip) { p.trip = false; p.tripEnd = true; p.home = { m: true, d: p.hol, n: true }; } });
     var apart = day.apart = pa.trip || pb.trip;
-    var lv = S.love, nr = function (x) { return lv || !romRow(x) ? 1 : 0; }, nw = function (x) { return S.wed || !WED.test((x.k || '') + (x.t || '')) ? 1 : 0; };
+    var lv = S.love, nr = function (x) { return lv || !romRow(x) ? 1 : 0; }, nw = function (x) { return (S.wed || !WED.test((x.k || '') + (x.t || '')) ? 1 : 0) * seaRow(ctx, x); };
     /* 新しく体調を崩してよい日か：状態の外・治った朝でない・二人とも家にいる・最後の朝までに治る・まだ崩していない人がいる */
-    var canSick = !sc && !day.recover && !apart && !(S.sick && !S.sick.done) && d <= S.days - 2 && [A, B].some(function (c) { return !(S.sickWho && S.sickWho[c.i]); });
+    var canSick = !sc && !day.recover && !apart && !(S.sick && !S.sick.done) && d <= S.days - 2 && [A, B].some(function (c) { return !(S.sickWho && S.sickWho[c.i]); }) && !keyAhead(S, d);
     /* 日替わり：離れている日は連絡、休日はデートも、家事が苦手（ポンコツ）の人がいるときだけポンコツの出来事も */
     var clumsy = [A, B].some(function (c) { return LF.clumsy(c); });
     var noChore = !LF.canChore(A) || !LF.canChore(B);
@@ -368,16 +525,17 @@
       var len = ctx.rng() < 0.45 ? 2 : 1;
       S.sick = { c: sc, from: d, last: Math.min(d + len - 1, S.days - 2), dull: ctx.rng() < 0.5, done: false };
       S.sickWho = S.sickWho || {}; S.sickWho[sc.i] = 1; S.sickN = (S.sickN || 0) + 1;
-      day.sick = sc; day.carer = sc === A ? B : A; day.sickDay = 0;
+      day.sick = sc; day.carer = sc === A ? B : A; day.sickDay = 0; S.sick.carer = day.carer;
       [pa, pb].forEach(function (p, k) { p.late = false; if ([A, B][k] === sc) p.home = { m: true, d: true, n: true }; });
     }
     /* 朝：体調を崩した日は「相手のちょっとした体調不良に気がついた」（看る人の朝）。二日目は看る朝・治った朝・離れている朝は shinkon-sick.js の文 */
     if (day.sick && day.sickDay === 0) { day.intro = D.INTRO[5]; day.introWho = day.carer; }
     else if (day.sick || day.recover || apart) day.intro = null;
-    else day.intro = J.pick(ctx, 'intro', D.INTRO, function (x, i) { return (i === 5 ? 0 : 1) * (i === 0 && src === 'DATE' ? 0 : 1) * nr(x); });
+    else day.intro = J.pick(ctx, 'intro', D.INTRO, function (x, i) { return (i === 5 ? 0 : 1) * (i === 0 && src === 'DATE' ? 0 : 1) * nr(x) * seaRow(ctx, x); });
     day.introI = day.intro ? D.INTRO.indexOf(day.intro) : -1;
     if (ctx.rng() < 0.35) { day.item = J.pick(ctx, 'item', D.ITEM); day.itemI = D.ITEM.indexOf(day.item); }
-    if (!day.sick && (ctx.rng() < 0.12 || (day.daily && /記念日/.test(day.daily.k)))) day.special = J.pick(ctx, 'special', D.SPECIAL);
+    /* 特別な日の種：暦の行事（バレンタイン・誕生日・クリスマスなど）は shinkon-cal.js が日付で出すので、ここでは記念日の種だけ */
+    if (!day.sick && (ctx.rng() < 0.12 || (day.daily && /記念日/.test(day.daily.k)))) day.special = J.pick(ctx, 'special', D.SPECIAL, function (x) { return /記念日|出会った日/.test(x) ? 1 : 0; });
     if (!day.sick && day.daily && /喧嘩/.test(day.daily.t + (day.intro && day.intro.t))) day.fight = J.pick(ctx, 'fight', D.FIGHT, function (x) { return fightOk(x, S) ? 1 : 0; });
     day.fightInDaily = !!(day.daily && /喧嘩/.test(day.daily.t));
     /* 昨夜の言い合いの朝：喧嘩っ早い二人ほど、昼にもう一度ぶつかる */
@@ -387,7 +545,66 @@
     if (!apart && !day.sick && ctx.rng() < 0.4) { var mr = ctx.rng(); day.mealK = mr < 0.3 ? 'BREAKFAST' : hol && mr < 0.6 ? 'LUNCH' : 'DINNER'; day.meal = pickMeal(ctx, day); }
     /* 暮らしの困りごと（体調を崩している日は出さない） */
     if (HK.ShinkonTrouble && !day.sick) day.trouble = HK.ShinkonTrouble.roll(ctx, S, day);
+    /* 暦の行事・誕生日（shinkon-cal.js）、元の関係・元○○の出来事（shinkon-past.js）、新婚らしい出来事（shinkon-wed.js） */
+    if (CL && S.cal) CL.roll(ctx, S, day);
+    if (HK.ShinkonPast) HK.ShinkonPast.roll(ctx, S, day);
+    if (HK.ShinkonWed) HK.ShinkonWed.roll(ctx, S, day);
+    if (S.trio) trioRoll(ctx, S, day);
     return day;
+  }
+  /* 表の行の季節（デートの海・お祭り、季節の語）。暦の無い遊び（古い記録など）では絞らない */
+  function seaRow(ctx, x) { return !HK.ShinkonCal || HK.ShinkonCal.rowOk(ctx, x) ? 1 : 0; }
+  /* d から 3 日のうちに大事な日（誕生日・バレンタインなど）があれば、体調を崩す日を始めない */
+  function keyAhead(S, d) { var CL = HK.ShinkonCal; if (!CL || !S.cal) return false; for (var k = d; k <= d + 2 && k < S.days; k++) if (CL.keyDay(S, k)) return true; return false; }
+  /* ---------- 追加の出来事（暦の行事・誕生日・元の関係・新婚らしい出来事・三人婚。2026-11-03）---------- */
+  function extras(ctx, day, part) {
+    var S = f(ctx);
+    if (HK.ShinkonCal) HK.ShinkonCal.run(ctx, S, day, part);
+    if (HK.ShinkonPast) HK.ShinkonPast.run(ctx, S, day, part);
+    if (HK.ShinkonWed) HK.ShinkonWed.run(ctx, S, day, part);
+    if (S.trio) trioRun(ctx, S, day, part);
+  }
+  /* その日、その人が家にいるか（出張でない） */
+  function cHome(S, day, c) {
+    if (!day || !c) return false;
+    var p = c === S.A ? day.pa : c === S.B ? day.pb : c === S.C ? day.pc : null;
+    return !(p && p.trip);
+  }
+  /* 三人婚：その日の「二人」（体調を崩した人と看る人の日はその二人、一人が出張なら残る二人、ほかは日ごとに回す） */
+  function trioFocus(ctx, S, d) {
+    var T = [S.A0, S.B0, S.C0], hol = holiday(d), k = S.sick, pair;
+    if (S.trioOff == null) S.trioOff = Math.floor(ctx.rng() * 3);
+    if (k && !k.done && d <= k.last + 1 && k.carer) pair = [k.c, k.carer];
+    else {
+      var home = d === S.days - 1 ? T : T.filter(function (c) { return !LF.day(ctx, c, d, hol).trip; });
+      var P = [[T[0], T[1]], [T[0], T[2]], [T[1], T[2]]];
+      pair = home.length === 2 ? home : P[(d + S.trioOff) % 3];
+    }
+    S.A = pair[0]; S.B = pair[1]; S.C = T.filter(function (c) { return c !== S.A && c !== S.B; })[0];
+  }
+  function trioRoll(ctx, S, day) {
+    if (day.sick || day.apart || !cHome(S, day, S.C)) return;
+    day.trioM = !day.sick && ctx.rng() < 0.45;
+    var TR = HK.ShinkonTrio; if (!TR) return;
+    var U = S.trioUsed = S.trioUsed || {};
+    if (day.hol && !day.dull && ctx.rng() < 0.55) { var dk = TR.dateKinds().filter(function (k) { return !U[k]; }); if (dk.length) { day.trioD = { k: dk[Math.floor(ctx.rng() * dk.length)], date: true }; U[day.trioD.k] = 1; } }
+    else if (ctx.rng() < 0.38) { var yk = TR.dayKinds().filter(function (k) { return !U[k]; }); if (yk.length) { day.trioD = { k: yk[Math.floor(ctx.rng() * yk.length)] }; U[day.trioD.k] = 1; } }
+  }
+  function trioRun(ctx, S, day, part) {
+    var TR = HK.ShinkonTrio, A = S.A, B = S.B, C3 = S.C;
+    if (!TR || day.sick || day.apart || !cHome(S, day, C3)) return;
+    var ord = [A, B, C3].sort(function () { return ctx.rng() - 0.5; });
+    if (part === 'm' && day.trioM) {
+      day.trioM = false;
+      var mt = TR.say(ctx, TR.T.MORN, ord[0], ord[1], ord[2]);
+      if (mt) ctx.act2({ actors: ord, cat: 'romance', text: mt, why: '新婚部屋：三人の朝', fx: function () { ctx.mod2(ord[0], ord[2], { aff: 1 }, { aff: 1 }); } });
+    }
+    if (part === 'd' && day.trioD && !day.trioD.done) {
+      day.trioD.done = true;
+      var X = day.trioD, tt = TR.say(ctx, (X.date ? TR.T.DATE : TR.T.DAY)[X.k], ord[0], ord[1], ord[2]);
+      if (tt) ctx.act2({ actors: ord, cat: 'romance', text: tt, why: '新婚部屋：三人の' + (X.date ? '休日（' : '日中（') + TR.KN[X.k] + '）',
+        fx: function () { ctx.mod2(ord[0], ord[1], { aff: 2, att: 1 }, { aff: 2, att: 1 }); ctx.mod2(ord[0], ord[2], { aff: 2, att: 1 }, { aff: 2, att: 1 }); ctx.mod2(ord[1], ord[2], { aff: 2, att: 1 }, { aff: 2, att: 1 }); } });
+    }
   }
   /* 喧嘩の種：家事のやり方の喧嘩は、家事をしない設定の人がいる二人でも（文は shinkon-text の側で担い手を見る） */
   function fightOk(x, S) { return S.love || !ROM.test(x); }
@@ -402,6 +619,7 @@
     var unskilled = [A, B].filter(function (c) { return LF.canCook(c) && (LF.clumsy(c) || (LF.roleInfo(c.life.role) || {}).cook <= 0.5); });
     var row = J.pick(ctx, K0, D[K0], function (x) {
       if (!(lv || !romRow(x))) return 0;
+      if (!seaRow(ctx, x)) return 0;
       if (/喧嘩/.test(x.k) && !day.fight) return 0;
       if (/デート/.test(x.k + x.t) && day.src !== 'DATE') return 0;
       /* まだだるい日は、外に食べに出かける種を出さない */
@@ -426,11 +644,11 @@
 
   /* 願望を高め、越えた分の願望の行動を出す */
   function gain(ctx, c, n) { var S = f(ctx); return J.add(ctx, c, Math.max(0, Math.round(n * S.speed))); }
-  function wishActs(ctx, c, k) {
-    var S = f(ctx), w = J.of(ctx, c), o = c === S.A ? S.B : S.A;
+  function wishActs(ctx, c, k, o0) {
+    var S = f(ctx), w = J.of(ctx, c), o = o0 || (c === S.A ? S.B : S.A);
     for (var i = 0; i < k; i++) {
       var list = (TX().WISH4 && w.d === 3) ? TX().WISH4 : D.WISH[w.d].acts;
-      var act = J.pick(ctx, 'act' + w.d + '_' + c.i, list, function (x) { return (S.love || !romRow(x)) && (S.wed || !WED.test(x.t)) ? 1 : 0; });
+      var act = J.pick(ctx, 'act' + w.d + '_' + c.i, list, function (x) { return (S.love || !romRow(x)) && (S.wed || !WED.test(x.t)) ? seaRow(ctx, x) : 0; });
       if (!act) continue;
       var ai = list.indexOf(act), wn = wishName(w.d);
       var T = TX().ACT && TX().ACT[w.d] && TX().ACT[w.d][ai];
@@ -440,7 +658,11 @@
       /* 受け止め方：相手（o）の態度で（らしくない反応もある） */
       var tx = fill(ctx, t, c, o), odd = false;
       if (RC() && ctx.rng() < 0.5) { var r = RC().say(ctx, 'warm', o, c); if (r.text) { tx += fill(ctx, r.text, o, c); odd = r.odd; if (odd) tx += fill(ctx, RC().after(ctx, S.love), o, c); } }
-      var e = ctx.act2({ actors: [c, o], cat: S.love ? 'romance' : 'bond', text: tx, odd: odd, why: '新婚部屋：願望が高まった（' + c.name + '：' + wn + '）', fx: function () { ctx.mod2(c, o, { aff: 3, att: S.love ? 2 : 0 }, { aff: 2 + persK(o, 'warm'), att: S.love ? 2 : 0 }); } });
+      /* 三人婚：二人の様子を見た三人目の反応（態度 9 種） */
+      var C3 = S.trio ? S.spouses.filter(function (x) { return x !== c && x !== o; })[0] : null, see = '';
+      if (C3 && cHome(S, S.day, C3) && HK.ShinkonTrio && ctx.rng() < 0.35) { var SE = HK.ShinkonTrio.T.SEE; see = HK.ShinkonTrio.say(ctx, SE[RC() ? RC().per(C3) : 'gentle'] || SE.gentle, c, o, C3); }
+      tx += see;
+      var e = ctx.act2({ actors: see ? [c, o, C3] : [c, o], cat: S.love ? 'romance' : 'bond', text: tx, odd: odd, why: '新婚部屋：願望が高まった（' + c.name + '：' + wn + (see ? '・' + C3.name + 'も見ていた' : '') + '）', fx: function () { ctx.mod2(c, o, { aff: 3, att: S.love ? 2 : 0 }, { aff: 2 + persK(o, 'warm'), att: S.love ? 2 : 0 }); } });
       if (e) { S.acts++; J.count(ctx, 'acts'); if (odd) S.odd++; }
       S.day.urge = Math.max(S.day.urge || 0, w.d === 9 ? 1 : /^(4|7|8)$/.test(String(w.d)) ? 0.55 : 0.3);
       S.day.urgeBy = S.day.urgeBy || c;
@@ -470,6 +692,7 @@
     /* 平日の日中は、それぞれの仕事：共通の出来事を少なく */
     scen.actRate = t === 1 && !holiday(d) ? 0.08 : 0.2;
     if (t === 0) {
+      if (S.trio) trioFocus(ctx, S, d);
       var day = S.day = rollDay(ctx, d);
       /* 体調を崩している日・出張で離れている日は、本体の共通の出来事を混ぜない（寝ている人・家にいない人が出ないように） */
       if (day.sick || day.apart) scen.actRate = REST_RATE;
@@ -489,6 +712,7 @@
       }
       if (day.meal && day.mealK === 'BREAKFAST') meal(ctx, day);
       trouble(ctx, day, 'm');
+      extras(ctx, day, 'm');
       return;
     }
     var day2 = S.day;
@@ -526,6 +750,7 @@
         }
         day2.fought = true;
       }
+      extras(ctx, day2, 'd');
       visit(ctx, day2, 'd');
       var g1 = gain(ctx, a, 2 + Math.floor(ctx.rng() * 4)), g2 = gain(ctx, b, 1 + Math.floor(ctx.rng() * 4));
       day2.pend.push([a, g1], [b, g2]);
@@ -543,15 +768,28 @@
       var mk = prose(ctx, 'MAKEUP', 0, '寝る前に、{a}のほうから「さっきはごめん｜さっきは悪かった｜先ほどはすみませんでした」と切り出した。{b}は小さくうなずいた。', lo, hi);
       if (ctx.act2({ actors: [lo, hi], cat: 'bond', text: fill(ctx, mk, lo, hi), why: '新婚部屋：仲直り（' + lo.name + 'から）', fx: function () { ctx.mod2(lo, hi, { aff: 4, ten: -6 }, { aff: 4, ten: -6 }); } })) S.makeups++;
     }
+    extras(ctx, day2, 'n');
     var gn1 = gain(ctx, A, Math.floor(ctx.rng() * 3)), gn2 = gain(ctx, B, Math.floor(ctx.rng() * 3));
     day2.pend.push([A, gn1], [B, gn2]);
+    if (S.trio && cHome(S, day2, S.C)) day2.pend.push([S.C, gain(ctx, S.C, 1 + Math.floor(ctx.rng() * 4))]);
     var crossed = {}; day2.pend.forEach(function (p) { crossed[p[0].i] = (crossed[p[0].i] || 0) + p[1]; });
-    /* 願望の行動は相手と一緒の場面なので、どちらかが出張で家にいない日は出さない */
+    /* 願望の行動は相手と一緒の場面なので、どちらかが出張で家にいない日は出さない。三人婚の三人目は、二人のどちらかと */
     if (!day2.apart) [A, B].forEach(function (c) { if (crossed[c.i]) wishActs(ctx, c, Math.min(2, crossed[c.i])); });
-    var sexed = false;
-    if (!HK.SAFE_ON && HK.ShinkonR18 && S.sex < S.lewdMax && !restNight(ctx, day2)) sexed = HK.ShinkonR18.night(ctx, A, B, day2, d === S.days - 1);
+    if (S.trio && !day2.apart && cHome(S, day2, S.C) && crossed[S.C.i]) wishActs(ctx, S.C, Math.min(2, crossed[S.C.i]), ctx.rng() < 0.5 ? A : B);
+    /* 寝る前の新婚らしい出来事（イエスノー枕。夜の場面の直前） */
+    if (HK.ShinkonWed) HK.ShinkonWed.run(ctx, S, day2, 'bed');
+    var sexed = false, lastN = d === S.days - 1;
+    /* 三人婚の三人の夜（shinkon-r18-trio.js）：三人とも家にいて、体の関係にしてよい組が二つ以上（HK.Pos.trioPlan） */
+    if (S.trio && !HK.SAFE_ON && HK.ShinkonR18Trio && S.sex < S.lewdMax && !restNight(ctx, day2) && !day2.r18x && !day2.noSex && cHome(S, day2, S.C) &&
+      (ctx.rng() < 0.4 || (!S.trioSex && (lastN || S.lewdMax - S.sex >= S.days - d)))) sexed = HK.ShinkonR18Trio.night(ctx, S, day2, lastN);
+    if (!sexed && !HK.SAFE_ON && HK.ShinkonR18 && S.sex < S.lewdMax && !restNight(ctx, day2)) sexed = HK.ShinkonR18.night(ctx, A, B, day2, lastN);
     if (sexed) S.sex++;
-    var en = day2.apart ? null : J.pick(ctx, 'end', D.END, function (x) { return (S.love || !romRow(x) ? 1 : 0) * (S.wed || !WED.test(x.t) ? 1 : 0) * (day2.fought && /不安|動揺|戸惑/.test(x.t) ? 1.5 : 1); });
+    /* 三人婚：夜の場面の無い夜は、ときどき三人並んで眠る段 */
+    if (S.trio && !sexed && !day2.apart && !day2.sick && cHome(S, day2, S.C) && !lastN && HK.ShinkonTrio && ctx.rng() < 0.3) {
+      var nt = HK.ShinkonTrio.say(ctx, HK.ShinkonTrio.T.NIGHT, A, B, S.C);
+      if (nt) ctx.act2({ actors: [A, B, S.C], cat: 'romance', text: nt, why: '新婚部屋：三人並んで眠る夜', fx: function () { ctx.mod2(A, S.C, { aff: 1 }, { aff: 1 }); ctx.mod2(B, S.C, { aff: 1 }, { aff: 1 }); } });
+    }
+    var en = day2.apart ? null : J.pick(ctx, 'end', D.END, function (x) { return (S.love || !romRow(x) ? 1 : 0) * (S.wed || !WED.test(x.t) ? 1 : 0) * seaRow(ctx, x) * (day2.fought && /不安|動揺|戸惑/.test(x.t) ? 1.5 : 1); });
     var dist = distance(ctx, day2);
     if (en) {
       var et = prose(ctx, 'END', D.END.indexOf(en), '一日の終わりに、{a}は思った――' + en.t.replace(/。$/, '') + '。', day2.hi, day2.lo);
@@ -633,11 +871,14 @@
         tx += fill(ctx, RC().outText(ctx, oc), b, a);
       }
     }
+    /* 三人婚：困りごとに三人目が駆けつける */
+    var helper = null;
+    if (S.trio && together && cHome(S, day, S.C) && HK.ShinkonTrio && ctx.rng() < 0.5) { var hl = HK.ShinkonTrio.say(ctx, HK.ShinkonTrio.T.HELP, a, b, S.C); if (hl) { tx += hl; helper = S.C; } }
     if (c.tr.id === 'rain') day.rain = a;
     if (c.tr.id === 'dark') day.dark = true;
     if (c.tr.id === 'forgot') day.forgot = a;
     if (c.tr.id === 'overtime' || c.tr.id === 'train') day.lateHome = a;
-    var e = ctx.act2({ actors: together ? [a, b] : [a], cat: oc === 'spat' ? 'conflict' : together ? 'bond' : 'solo', text: tx, odd: odd, why: '新婚部屋：困りごと（' + TROUBLE_NAME[c.tr.id] + '）' + (oc ? '・' + OUT_NAME[oc] : ''),
+    var e = ctx.act2({ actors: together ? (helper ? [a, b, helper] : [a, b]) : [a], cat: oc === 'spat' ? 'conflict' : together ? 'bond' : 'solo', text: tx, odd: odd, why: '新婚部屋：困りごと（' + TROUBLE_NAME[c.tr.id] + '）' + (oc ? '・' + OUT_NAME[oc] : '') + (helper ? '・' + helper.name + 'も手伝った' : ''),
       fx: function () { if (!together) return; if (oc === 'spat') ctx.mod2(a, b, { aff: -2, ten: 5 }, { aff: -2, ten: 5 }); else ctx.mod2(a, b, { aff: 2, trust: 2 }, { aff: 2, trust: oc === 'help' ? 3 : 1 }); } });
     if (e) { S.troubles++; if (odd) S.odd++; }
     if (oc === 'spat' && e) { day.fought = true; S.fights++; day.lo = a; day.hi = b; }
@@ -699,6 +940,11 @@
   }
   function ending(ctx) {
     var S = f(ctx), A = S.A, B = S.B, k = Math.floor(ctx.rng() * D.KISS.length);
+    if (S.trio && HK.ShinkonTrio) {
+      var T3 = [S.A0, S.B0, S.C0], kt = HK.ShinkonTrio.say(ctx, HK.ShinkonTrio.T.KISS, T3[0], T3[1], T3[2]);
+      if (ctx.act2({ actors: T3, cat: 'romance', text: kt, why: '新婚部屋：最後の夜（三人の幸せなキス）', fx: function () { ctx.mod2(T3[0], T3[1], { aff: 5, att: 5 }, { aff: 5, att: 5 }); ctx.mod2(T3[0], T3[2], { aff: 5, att: 5 }, { aff: 5, att: 5 }); ctx.mod2(T3[1], T3[2], { aff: 5, att: 5 }, { aff: 5, att: 5 }); } })) S.kissed = true;
+      return;
+    }
     if (S.love) {
       var t = prose(ctx, 'KISS', k, D.KISS[k], A, B);
       if (ctx.act2({ actors: [A, B], cat: 'romance', text: fill(ctx, t, A, B), why: '新婚部屋：最後の夜（幸せなキス）', fx: function () { ctx.mod2(A, B, { aff: 6, att: 6, trust: 4 }, { aff: 6, att: 6, trust: 4 }); } })) S.kissed = true;
@@ -707,28 +953,67 @@
     }
   }
   function finish(ctx) {
-    var S = f(ctx), A = S.A, B = S.B;
+    var S = f(ctx), A = S.A0, B = S.B0, P = S.spouses;
     if (A === B) return;
-    S.G.forEach(function (g) { g.gone = false; g.fate = g.outside ? '訪ねてきた住人（名簿から）' : '二人を訪ねる住人'; g.fateNote = (S.gUsed && S.gUsed[g.i]) || S.visits ? A.name + 'と' + B.name + 'の暮らしを見守った' : ''; });
-    var wa = J.of(ctx, A), wb = J.of(ctx, B);
-    ctx.flags.shinkon = { days: S.days, home: D.HOME[S.home], rel: S.rel >= 0 ? relShort(S.rel) : (S.ri.label || ''), keep: S.rel < 0, meet: D.MEET[S.meet].split(/\s/)[0], a: A.i, b: B.i,
-      life: [LF.label(A), LF.label(B)], wish: [wishName(wa.d), wishName(wb.d)], wed: S.wed,
-      acts: S.acts, fights: S.fights, makeups: S.makeups, sex: S.sex, long: S.longN || 0, kissed: S.kissed, love: S.love, best: S.best, troubles: S.troubles, visits: S.visits, odd: S.odd };
-    [A, B].forEach(function (c) { c.fate = S.wed ? '新婚の夫婦' : S.love ? '一緒に暮らす恋人' : '同じ家で暮らす二人'; c.fateNote = (c === A ? B : A).name + 'と、' + S.days + '日を過ごした'; });
-    ctx.flags.outcome = A.name + 'と' + B.name + 'の' + (S.wed ? '新婚の' : '同居の') + S.days + '日' + (S.kissed ? '――最後の夜、二人は幸せなキスをした' : '');
+    S.G.forEach(function (g) { g.gone = false; g.fate = g.outside ? '訪ねてきた住人（名簿から）' : '二人を訪ねる住人'; g.fateNote = (S.gUsed && S.gUsed[g.i]) || S.visits ? P.map(function (c) { return c.name; }).join('と') + 'の暮らしを見守った' : ''; });
+    var CL = HK.ShinkonCal;
+    ctx.flags.shinkon = { days: S.days, home: D.HOME[S.home], rel: S.exLabel ? (HK.ShinkonPast ? HK.ShinkonPast.EXNAME[(S.relFrom[0] || {}).ex] || S.exLabel : S.exLabel) : S.rel >= 0 ? relShort(S.rel) : (S.ri.label || ''), keep: S.rel < 0, meet: D.MEET[S.meet].split(/\s/)[0], a: A.i, b: B.i,
+      c: S.trio ? S.C0.i : null, trio: S.trio, trioNG: S.trioNG || '', who: P.map(function (c) { return c.i; }),
+      life: P.map(function (c) { return LF.label(c); }), wish: P.map(function (c) { return wishName(J.of(ctx, c).d); }), wed: S.wed,
+      relFrom: S.relFrom, relLine: relLine(S), start: S.cal && CL ? CL.label(S, 0) : '', end: S.cal && CL ? CL.label(S, S.days - 1) : '',
+      bdays: (S.bdays || []).map(function (b) { return { i: b.c.i, label: b.label }; }), sea: S.calN || 0, past: S.pastN || 0, wedN: S.wedN || 0,
+      acts: S.acts, fights: S.fights, makeups: S.makeups, sex: S.sex, long: S.longN || 0, trioSex: S.trioSex || 0, kissed: S.kissed, love: S.love, best: S.best, troubles: S.troubles, visits: S.visits, odd: S.odd };
+    P.forEach(function (c) { c.fate = S.trio ? '三人婚の新婚' : S.wed ? '新婚の夫婦' : S.love ? '一緒に暮らす恋人' : '同じ家で暮らす二人'; c.fateNote = P.filter(function (o) { return o !== c; }).map(function (o) { return o.name; }).join('と') + 'と、' + S.days + '日を過ごした'; });
+    ctx.flags.outcome = S.trio ? P.map(function (c) { return c.name; }).join('と') + 'の三人の新婚の' + S.days + '日' + (S.kissed ? '――最後の夜、三人は幸せなキスを交わした' : '')
+      : A.name + 'と' + B.name + 'の' + (S.wed ? '新婚の' : '同居の') + S.days + '日' + (S.kissed ? '――最後の夜、二人は幸せなキスをした' : '');
   }
   /* 関係の上書き・登場しない住人・結果から訪れた住人を外す：共通の部品（kit-cast.js の HK.PairCast） */
+  /* 入力の包み（内側。PairCast の上書き・訪れる住人の追加のあとの入力）：関係の配列を写す（extraTies が元○○・三人婚の組の関係を外すため。記録の入力は書き換えない）。
+     上書きの前の関係は _skOrig（外側の包みが覚えた、渡されたままの入力の関係） */
+  var ORIG = null;
+  if (HK.wrap && HK.simulate) HK.wrap(HK, 'simulate', function (sim0) {
+    return function (input) {
+      if (!input || input.scenId !== ID || !Array.isArray(input.chars)) return sim0.apply(this, arguments);
+      var cp = {}; Object.keys(input).forEach(function (k) { cp[k] = input[k]; });
+      cp.ties = Array.isArray(input.ties) ? input.ties.slice() : [];
+      cp._skOrig = ORIG || input.ties || [];
+      return sim0.apply(this, [cp].concat([].slice.call(arguments, 1)));
+    };
+  });
   if (HK.PairCast) HK.PairCast.install(ID, couple, 'shinkon');
+  /* 入力の包み（外側）：渡されたままの関係を覚え、結果の二人ずつ（pairs）の「もともと」の関係を、上書き・元○○の前の関係に直す
+     （2026-11-03 利用者のメモ：なれそめで上書きした二人が「もともと『夫婦』」と出ていた。関係の無かった二人は「もともと」を出さない） */
+  if (HK.wrap && HK.simulate) HK.wrap(HK, 'simulate', function (sim0) {
+    return function (input) {
+      if (!input || input.scenId !== ID) return sim0.apply(this, arguments);
+      var o0 = ORIG; ORIG = Array.isArray(input.ties) ? input.ties : [];
+      var r;
+      try { r = sim0.apply(this, arguments); } finally { ORIG = o0; }
+      var R = r && r.end && r.end.shinkon;
+      if (R && Array.isArray(R.relFrom) && Array.isArray(r.pairs)) R.relFrom.forEach(function (x) {
+        if (x.how !== 'override' && x.how !== 'ex' && x.how !== 'new') return;
+        r.pairs.forEach(function (p) {
+          if (!((p.a === x.a && p.b === x.b) || (p.a === x.b && p.b === x.a))) return;
+          var m = x.main, D0 = m && HK.TIES[m.type];
+          p.tie = m && D0 ? { type: m.type, label: HK.tieLabel ? HK.tieLabel(m) : D0.label, a: m.a, b: m.b, pol: D0.pol, was: true } : null;
+        });
+      });
+      return r;
+    };
+  });
   /* 結末の要約（endings.js の E.build から） */
   if (HK.Endings) HK.Endings[ID] = function (res, X) {
     var R = res.end && res.end.shinkon, lines = [];
     if (!R) return { headline: res.outcome || '', stats: [], lines: [] };
-    var a = X.nm(R.a), b = X.nm(R.b);
-    lines.push('二人の' + R.days + '日（' + a + 'と' + b + '）');
+    var who = (R.who || [R.a, R.b]).map(function (i) { return X.nm(i); });
+    lines.push((R.trio ? '三人の' : '二人の') + R.days + '日（' + who.join('と') + '）' + (R.start ? '：' + R.start + '〜' + R.end : ''));
     lines.push('住まい：' + R.home + '／' + (R.keep ? '関係：' : 'なれそめ：') + R.rel + '／出会い：' + R.meet);
-    lines.push(a + '：' + R.life[0] + '／願望「' + R.wish[0] + '」');
-    lines.push(b + '：' + R.life[1] + '／願望「' + R.wish[1] + '」');
-    lines.push('願望から来た行動 ' + R.acts + '回／困りごと ' + R.troubles + '回／喧嘩 ' + R.fights + '回' + (R.fights ? '（仲直り ' + R.makeups + '回）' : '') + (R.visits ? '／来客・連絡 ' + R.visits + '回' : '') + (HK.SAFE_ON ? '' : '／エッチ ' + R.sex + '回'));
+    /* どの関係を夫婦に直したか（元の関係 → 夫婦） */
+    if (R.relLine) lines.push('関係の移り変わり：' + R.relLine);
+    if (R.trioNG) lines.push('三人婚にはならなかった（' + R.trioNG + '）');
+    who.forEach(function (nm, k) { lines.push(nm + '：' + (R.life[k] || '') + '／願望「' + (R.wish[k] || '') + '」'); });
+    (R.bdays || []).forEach(function (b) { lines.push(X.nm(b.i) + 'の誕生日：' + b.label + '（日数の中で祝った）'); });
+    lines.push('願望から来た行動 ' + R.acts + '回／困りごと ' + R.troubles + '回／喧嘩 ' + R.fights + '回' + (R.fights ? '（仲直り ' + R.makeups + '回）' : '') + (R.visits ? '／来客・連絡 ' + R.visits + '回' : '') + (R.sea ? '／季節の行事 ' + R.sea + '回' : '') + (R.wedN ? '／新婚らしい出来事 ' + R.wedN + '回' : '') + (HK.SAFE_ON ? '' : '／エッチ ' + R.sex + '回' + (R.trioSex ? '（三人で ' + R.trioSex + '回）' : '')));
     if (R.best) lines.push('いちばん心に残った日：' + R.best.label + '――' + R.best.why);
     X.C.forEach(function (c) { c.afterDone = true; });
     return { headline: (res.outcome || '') + '。', stats: [['日数', R.days + '日'], ['願望の行動', R.acts + '回'], ['困りごと', R.troubles + '回'], ['喧嘩', R.fights + '回']].concat(HK.SAFE_ON ? [] : [['エッチ', R.sex + '回']]), lines: lines };

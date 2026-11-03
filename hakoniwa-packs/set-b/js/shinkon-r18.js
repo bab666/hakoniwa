@@ -57,7 +57,9 @@
   function rowOk(ctx, key, i, sh, a, b) { var T = TX()[key], p = T && T[i]; if (p && !Array.isArray(p) && typeof p === 'object') p = p[sh] || p.all; if (!Array.isArray(p) || !p.length || !HK.Shinkon) return true; return p.some(function (x) { return HK.Shinkon.okText(ctx, x, a, b); }); }
   SH.quota = function (ctx, v) { var r = ctx.rng(); return v === 'low' ? 1 : v === 'high' ? 2 + (r < 0.5 ? 1 : 0) : 1 + (r < 0.5 ? 1 : 0); };
   /* 入口の名前（記録の理由の欄・出来事の一覧と同じ言葉） */
-  var ENTRY = { lewd: 'ちょっとえっちな出来事', trig: '日々の気持ちの高まり', witness: 'ひとりでしているところを見て', gomu: 'ゴムを買いそびれた夜', late: '遅く帰った夜', rain: '雨に濡れて帰った夜', dark: '停電の夜', trip: '出張から帰った夜', jeal: 'ヤキモチ', ini: '受けのほうから' };
+  var ENTRY = { lewd: 'ちょっとえっちな出来事', trig: '日々の気持ちの高まり', witness: 'ひとりでしているところを見て', gomu: 'ゴムを買いそびれた夜', late: '遅く帰った夜', rain: '雨に濡れて帰った夜', dark: '停電の夜', trip: '出張から帰った夜', jeal: 'ヤキモチ', ini: '受けのほうから',
+    /* 新婚らしい出来事・季節の贈り物から来る入口（2026-11-03。shinkon-r18-special.js の HK.ShinkonR18X） */
+    apron: '裸エプロンの出迎え', pillow: 'イエスの枕', vday: 'バレンタインの贈り物', wday: 'ホワイトデーのお返し', bday: '誕生日の贈り物' };
   var FORM = { fade: 'ほのめかす', short: '短い場面', mid: '中くらいの場面', long: '長い場面' };
   SH.ENTRY = ENTRY; SH.FORM = FORM;
   /* ---------- 夜の性格（attr.js の夜の態度・夜の主導）。2026-11-03 利用者の指示「夜の性格を反映できているか。受けが誘ったりするように」 ---------- */
@@ -90,24 +92,28 @@
     [A, B].forEach(function (c) { var wv = J.of(ctx, c); if (wv && wv.d === 9) wv.pt = Math.max(0, wv.pt - 4); });
   }
   /* 場面の本文：{ text（名前を当てたもの）, form }（共通の部品 HK.PairR18.scene） */
-  function sceneText(ctx, S, env, a, b, sh, form, o) { return PR.scene(ctx, S, env, a, b, sh, form, o, SRC); }
+  function sceneText(ctx, S, env, a, b, sh, form, o, src) { return PR.scene(ctx, S, env, a, b, sh, form, o, src || SRC); }
   SH.night = function (ctx, A, B, day, last) {
     var S = ctx.sk, env = ctx.env, LV = HK.Lewd, P = HK.Pos, SKN = HK.Shinkon;
     if (!sexOk(ctx, A, B)) return false;
-    /* 体調を崩している人がいる夜・まだだるい日・離れている夜は出さない（shinkon.js の restNight） */
+    /* 体調を崩している人がいる夜・まだだるい日・離れている夜は出さない（shinkon.js の restNight）。イエスノー枕で断られた夜も */
     if (SKN && SKN.restNight && SKN.restNight(ctx, day)) return false;
+    if (day.noSex) return false;
     var o = P && P.order ? P.order(A, B) : [A, B], a = o[0], b = o[1], sh = shape(a, b);
     var hasM = P && P.hasM ? (P.hasM(a) || P.hasM(b)) : sh !== 'ff';
     var prevTrip = day.d > 0 && ((A.life.days[day.d - 1] || {}).trip || (B.life.days[day.d - 1] || {}).trip);
     /* その日の出来事から来るきっかけ（重い順） */
-    var cute = null;
-    if (day.jealBy && (day.jealBy === A || day.jealBy === B)) cute = 'jeal';
+    var cute = null, XX = HK.ShinkonR18X, X0 = day.r18x && XX ? day.r18x : null;
+    if (X0 && !((X0.x === A || X0.x === B) && (X0.y === A || X0.y === B))) X0 = null;
+    /* 新婚らしい出来事・季節の贈り物から来る入口（裸エプロン・イエスの枕・バレンタイン・ホワイトデー・誕生日） */
+    if (X0) cute = 'x';
+    else if (day.jealBy && (day.jealBy === A || day.jealBy === B)) cute = 'jeal';
     else if (hasM && (day.forgot || ctx.rng() < 0.08)) cute = 'gomu';
     else if (day.lateHome) cute = 'late';
     else if (day.rain) cute = 'rain';
     else if (day.dark) cute = 'dark';
     else if (prevTrip) cute = 'trip';
-    var pc = { jeal: 0.85, gomu: 0.55, late: 0.45, rain: 0.5, dark: 0.55, trip: 0.65 }[cute] || 0;
+    var pc = { x: X0 && X0.sure ? 1 : 0.9, jeal: 0.85, gomu: 0.55, late: 0.45, rain: 0.5, dark: 0.55, trip: 0.65 }[cute] || 0;
     var left = S.lewdMax - S.sex, nightsLeft = S.days - day.d - (SKN && SKN.restAhead ? Math.max(0, SKN.restAhead(ctx, day.d + 1)) : 0);
     /* 受けのほうから誘う夜（夜の主導・夜の性格・態度で。受け攻めは変えない） */
     var ini = !cute ? iniOf(ctx, a, b) : null;
@@ -121,13 +127,16 @@
     var who = day.urgeBy || (J.of(ctx, A).pt >= J.of(ctx, B).pt ? A : B);
     var lonely = day.pa.late || day.pb.late, trig = J.pick(ctx, 'trig', R.TRIGGER, function (x, i) { return i === 30 ? (lonely && !lewdEv && !cute ? 3 : 0) : rowOk(ctx, 'TRIGGER', i, sh, a, b) ? 1 : 0; });
     var ti = R.TRIGGER.indexOf(trig), witness = !cute && !lewdEv && ti === 30;
-    var entry = cute || (lewdEv ? 'lewd' : witness ? 'witness' : 'trig');
+    var entry = cute === 'x' ? X0.k : cute || (lewdEv ? 'lewd' : witness ? 'witness' : 'trig');
     var play = J.pick(ctx, 'play', R.PLAY, function (x, i) { return rowOk(ctx, 'PLAY', i, sh, a, b) ? 1 : 0; }) || R.PLAY[0], pi = R.PLAY.indexOf(play);
     var af = J.pick(ctx, 'after', R.AFTER), afi = R.AFTER.indexOf(af);
     var s = witness ? (who === a || who === b ? who : b) : null, w = s ? (s === a ? b : a) : null;
     /* 1. きっかけの段（なぜ今夜こうなったか。場面の直前に必ず） */
     var lt, lwho = [who, who === A ? B : A];
-    if (cute === 'jeal') {
+    if (cute === 'x') {
+      lt = XX.lead(ctx, X0.k, a, b, X0.x, X0.y);
+      lwho = [X0.x, X0.y];
+    } else if (cute === 'jeal') {
       var jb = day.jealBy, jo = jb === A ? B : A, ex = { g: day.jealG ? day.jealG.name : '' };
       var jl = ((day.jealEx ? MO().JEAL_EX : MO().JEAL) || []).filter(function (x) { return jb === a || !/手首をつかんで|壁際|引き寄せ/.test(x); });
       if (!jl.length) jl = MO().JEAL || [];
@@ -151,25 +160,28 @@
       if (lewdEv) { var le = text(ctx, 'LEWD', R.LEWD.indexOf(lewdEv), sh, '', a, b); if (le) lt0 = le; }
       lt = mk(ctx, lt0, a, b, { who: who.name, trig: trig.t.replace(/。$/, ''), s: s ? s.name : '', w: w ? w.name : '' });
     }
-    var lwhy = 'きっかけ：' + ENTRY[entry] + (cute === 'ini' ? '（' + b.name + 'が' + INI_NAME[ini.k] + '・' + ini.why + '）' : cute === 'jeal' ? '（' + day.jealBy.name + 'が' + (day.jealG ? day.jealG.name : '') + 'に）' : lewdEv ? '（' + lewdEv.k + '）' : entry === 'trig' ? '（' + trig.k + '）' : '') + (day.urge && !cute ? '／' + who.name + 'の願望が高まった' : '');
+    var lwhy = 'きっかけ：' + ENTRY[entry] + (cute === 'x' ? '（' + X0.x.name + 'から）' : cute === 'ini' ? '（' + b.name + 'が' + INI_NAME[ini.k] + '・' + ini.why + '）' : cute === 'jeal' ? '（' + day.jealBy.name + 'が' + (day.jealG ? day.jealG.name : '') + 'に）' : lewdEv ? '（' + lewdEv.k + '）' : entry === 'trig' ? '（' + trig.k + '）' : '') + (day.urge && !cute ? '／' + who.name + 'の願望が高まった' : '');
     var le0 = ctx.say({ kind: 'event', cat: ctx.sk.love ? 'romance' : 'bond', actors: lwho, text: lt, why: lwhy, mag: 0 });
     if (le0) le0.tag = 'きっかけ';
     /* 2. 場面の長さ（formOf）。最中に邪魔が入る夜（knock）は、前半の段・邪魔と応対・再開の理由のあとに本番の場面 */
     var lv = LV ? LV.lv(env) : 'mid', ero = !!(LV && LV.ero(env) && HK.ThickEro);
     var nogen = !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b));
     var form = formOf(ctx, S, env, lv, nogen, last);
-    var kn = form !== 'fade' && HK.ShinkonKnock ? HK.ShinkonKnock.roll(ctx, S, day, a, b) : null;
+    var kn = form !== 'fade' && cute !== 'x' && HK.ShinkonKnock ? HK.ShinkonKnock.roll(ctx, S, day, a, b) : null;
     if (kn) {
       var kr = HK.ShinkonKnock.run(ctx, S, day, a, b, sh, kn);
       if (kr === 'stop') { S.knockN = (S.knockN || 0) + 1; countNight(ctx, S, A, B, 'knockStop', entry); return true; }
       if (!kr) kn = null;
       else S.knockN = (S.knockN || 0) + 1;
     }
-    var full = sceneText(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: pi, afi: afi, jealTop: cute === 'jeal' && day.jealBy === a,
-      /* 受けの側のきっかけ（受けから誘う・ゴムのおねだり・受けが妬いた夜）は受けから始める */
-      leadB: !kn && (cute === 'ini' || cute === 'gomu' || (cute === 'jeal' && day.jealBy === b)), entry: entry, resume: !!kn });
+    /* 新婚らしい入口・贈り物の夜は、入口ごとの場面の文（PLAY・OPEN。枕は新婚部屋の文のまま） */
+    var xsrc = cute === 'x' ? XX.src(X0.k, X0.x, X0.y, SRC, a) : null;
+    var full = sceneText(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: xsrc ? 0 : pi, afi: afi, jealTop: cute === 'jeal' && day.jealBy === a,
+      /* 受けの側のきっかけ（受けから誘う・ゴムのおねだり・受けが妬いた夜・受けが言い出した贈り物の夜）は受けから始める */
+      leadB: !kn && (cute === 'ini' || cute === 'gomu' || (cute === 'jeal' && day.jealBy === b) || (cute === 'x' && X0.x === b)), entry: entry, resume: !!kn }, xsrc);
+    day.r18x = null;
     form = full.form;
-    var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚部屋：夜（' + FORM[form] + '）' + ((form === 'short' || form === 'mid') && !kn ? '・' + play.t.slice(0, 18) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
+    var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚部屋：夜（' + FORM[form] + '）' + (cute === 'x' ? '・' + ENTRY[entry] : (form === 'short' || form === 'mid') && !kn ? '・' + play.t.slice(0, 18) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
     if (!e) return !!kn;
     if (form === 'long') S.longN = (S.longN || 0) + 1;
