@@ -6,6 +6,8 @@
 
 ## 0. 置き場所
 
+（2026-11-03 看病の部屋を作るとき、shinkon-kit.js → kit-text.js、shinkon-react.js → kit-react.js に改名し、訪れの関係の読み方・配役の包み・夜の場面の組み立ては共通のかたまり kit（kit-visit.js・kit-cast.js・kit-r18.js）に移した。新婚部屋の動きは変わらない。`kanbyo-design.md` の 0）
+
 | 置き場所 | ファイル | 中身 |
 | --- | --- | --- |
 | 本体（かたまり `pack-roomkit`） | `js/roomkit-life.js` | `HK.Life`：仕事の型・家庭での役割、その日の在宅・帰りの時間・出張。**家事をしない人（役割の家事・料理が 0.2 未満）の判定 `canChore`／`canCook`、料理する人 `cookOf`、ポンコツ `clumsy`**（家事をしない人の一言は家事をしない文だけ） |

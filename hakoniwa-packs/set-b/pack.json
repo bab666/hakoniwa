@@ -10,7 +10,7 @@
   "api": 1,
   "chunks": [
     {
-      "name": "shinkon",
+      "name": "kit",
       "deps": {
         "full": [
           "pack-roomkit",
@@ -21,12 +21,32 @@
         ]
       },
       "files": [
-        "js/shinkon-kit.js",
+        "js/kit-text.js",
+        "js/kit-react.js",
+        "js/kit-visit.js",
+        "js/kit-cast.js",
+        "js/kit-r18.js",
+        "js/shinkon-tone.js"
+      ]
+    },
+    {
+      "name": "shinkon",
+      "deps": {
+        "full": [
+          "pack-roomkit",
+          "pack-lewd",
+          "kit"
+        ],
+        "zenrei": [
+          "pack-roomkit",
+          "kit"
+        ]
+      },
+      "files": [
         "js/shinkon-data.js",
         "js/shinkon-text-a.js",
         "js/shinkon-text-b.js",
         "js/shinkon-text-c.js",
-        "js/shinkon-react.js",
         "js/shinkon-trouble.js",
         "js/shinkon-visit.js",
         "js/shinkon-sick.js",
@@ -38,8 +58,30 @@
         "js/shinkon-r18-ini-text.js",
         "js/shinkon-r18-knock-text.js",
         "js/shinkon-r18-knock.js",
-        "js/shinkon-tone.js",
         "js/shinkon.js"
+      ]
+    },
+    {
+      "name": "kanbyo",
+      "deps": {
+        "full": [
+          "pack-roomkit",
+          "pack-lewd",
+          "kit"
+        ],
+        "zenrei": [
+          "pack-roomkit",
+          "kit"
+        ]
+      },
+      "files": [
+        "js/kanbyo-text-a.js",
+        "js/kanbyo-text-b.js",
+        "js/kanbyo-text-c.js",
+        "js/kanbyo-tone.js",
+        "js/kanbyo.js",
+        "js/kanbyo-r18-text.js",
+        "js/kanbyo-r18.js"
       ]
     }
   ]

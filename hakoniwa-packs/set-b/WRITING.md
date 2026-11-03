@@ -2,7 +2,7 @@
 
 設計は `docs/reports/2026-11-03/shinkon-design.md`。表のデータは `js/shinkon-data.js`（`HK.ShinkonData`）と `js/shinkon-r18-data.js`（`HK.ShinkonR18Data`）。
 表の行は「何が起きたか」の種として内部で引くだけで、画面には出ない（2026-11-03 の作り直し）。担当が書くのは、その行を**一つの場面にした地の文**。
-家事・料理をする文は、家事をしない設定の人が主語になると使われない（shinkon.js の choreOk）。台詞の話し手は shinkon-kit.js が目印を付けるが、決めにくい文には「＠{a}＠」を直に書く。
+家事・料理をする文は、家事をしない設定の人が主語になると使われない（shinkon.js の choreOk）。台詞の話し手は kit-text.js（HK.PairKit。もとの shinkon-kit.js）が目印を付けるが、決めにくい文には「＠{a}＠」を直に書く。
 
 ## 1. 書式
 
@@ -78,3 +78,17 @@ node hakoniwa-tools/build/pack-site.js hakoniwa-packs/set-b --out=<試しのフ�
 - `node -e` で構文を確かめ、配列の数（52・10）が表と合うことを確かめる。
 - できあがりの見本：`<試しのフォルダ>` の hakoniwa-full を開いてコードを入れ、新婚部屋を回して読む（まとめ役が回し方の道具を持っている）。
 - 点検（audit-all・tone-feel・relcons・base-lint）はまとめ役がまとめて回す。
+
+# 看病の部屋の文の書き方（担当向け。2026-11-03）
+
+設計は `docs/reports/2026-11-03/kanbyo-design.md`。文は `js/kanbyo-text-a.js`・`kanbyo-text-b.js`・`kanbyo-text-c.js`（`HK.KanbyoText`）と、R18 は `js/kanbyo-r18-text.js`（`HK.KanbyoR18Text`。ファイル全体を r18 の印で挟む）。
+
+- 役：ことわりの無い表は `{a}`＝看病する人、`{b}`＝看病される人（体調を崩した人）。看病し返す表（KAESHI・KMORN・KCARE・KNIGHT・KHEAL）は `{a}`＝看病し返す人、`{b}`＝うつって寝込んだ人。DATE・REI は `{a}`＝お礼をする人。CONFESS は `{a}`＝想いを告げる人。R18 の LEAD・FEEL・FANS は `{a}`＝言い出す人、PLAY・BOTTOM・TOP・OPEN は `{a}`＝攻め。
+- 関係ごとの表は `{ 関係: [...], まとめ: [...], all: [...] }`。関係の鍵：spouse・lover・fam・pfam・ex・almost・crush（crushA＝看病する人が想う側／crushB）・bad・mentor（mentorA＝看病する人が師）・senpai（senpaiA＝看病する人が先輩）・work・childhood・friend・school・weak・none。まとめ：love・pine・close・work・fam・awk。関係の文を先に使い、使い切ったら all。
+- 使える印：`{temp}`（その日の熱）、`{rel}`（関係の名前）、見舞いの表は `{g}`（来た人）・`{h}`（来た人と関係のある人）・`{gl}`（`{h}` から見た呼び名）。
+- 一回の遊びで同じ文は二度出ないので、出番の多い表（看病の種・朝・夜・来る／帰る）は多めに書く（1 行の種につき 2 本以上、1 本 2〜4 文）。
+- 恋愛の語（好き・甘え・抱き・キス・寄り添 など＝`HK.PairKit.ROM`）は、恋愛にならない二人では外れる。家族・不仲・同僚の表には書かない。「恋人」「付き合っている」は恋人どうしでない二人では外れる（「元恋人」は可）。結婚の語は夫婦の表だけ。
+- 看病される人が出かける・家事をする・元気に動く文は、治った日より前の表に書かない。料理・家事の文の主語は看病する人（料理をしない設定の人には出ない）。
+- 台詞は 3 本「くだけた常体｜硬い常体｜敬語」（一人称「私」・二人称「あなた」、敬語のベースに尊敬語・謙譲語を書かない）。名前が 2 人以上出る文は話し手の目印が自動で付くが、決めにくい文は `「＠{a}＠…」` を直に書く。
+- R18：病み上がりの相手を気づかう合意の上の場面だけ。形 mf／ff／fm を書き分け、体の語は印、攻めを選んだ人を受けにしない。地の文は 3 文以上。
+- 足したら：`node hakoniwa-tools/tone-check/base-lint.js hakoniwa-packs/set-b`、tone-feel（`--scen=set-b-kanbyo`。崩れは `kanbyo-tone.js` に書き下ろし）、出来事を足したら `kanbyo.js`／`kanbyo-r18.js` の `@event` と出来事の一覧。

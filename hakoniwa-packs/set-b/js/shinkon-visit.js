@@ -1,7 +1,7 @@
 /* 新婚部屋：他の住人（参加者の三人目・名簿の登場しない住人。shinkon.js の outsideOf）の訪れ（両方のビルド。2026-11-03 利用者のフィードバック「他の住人を出すにチェックを入れると、関係性のある知り合いなどが
    遊びに来たり、出かけたり、連絡がきたりするイベントが発生するように。元恋人とかだとヤキモチエッチが発生したりする」）
    ■ HK.ShinkonVisit（VI）
-     ・VI.cls(ctx, a, g)：新婚の二人の一人 a と、他の住人 g の関係の種類。fam（家族）／pfam（擬似親子）／known（友人・親友・幼なじみ・相棒・恩人）／weak（知人）／
+     ・VI.cls・VI.word は共通の部品 HK.PairVisit（kit-visit.js）と同じもの。VI.cls(ctx, a, g)：新婚の二人の一人 a と、他の住人 g の関係の種類。fam（家族）／pfam（擬似親子）／known（友人・親友・幼なじみ・相棒・恩人）／weak（知人）／
        work（同僚・上司・先輩後輩）／school（同級生・先生・師弟）／ex（元恋人）。恋人・片想い・執着・不仲・敵対・主従などの関係は訪れの相手にしない（null）
      ・VI.word(ctx, a, g)：a から見た g の呼び名（友人・きょうだい・同僚・先輩 など）
      ・VI.roll(ctx, S, day, part)：その区切りの訪れを一つ決める { kind, host, other, g, cls }。kind：visit 遊びに来る／out 一緒に出かける／contact 連絡が来る。
@@ -23,34 +23,12 @@
   var HK = window.HK;
   if (!HK) return;
   function L(s) { return s.split('|'); }
-  var CLS = { parent: 'fam', sibling: 'fam', sibprot: 'fam', sibclose: 'fam', twin: 'fam', stepsib: 'fam', relative: 'fam', pparent: 'pfam',
-    friend: 'known', best: 'known', buddy: 'known', childhood: 'known', benefactor: 'known', acq: 'weak',
-    colleague: 'work', boss: 'work', senpai: 'work', classmate: 'school', teacher: 'school', mentor: 'school', ex: 'ex' };
-  /* 訪れの相手にしない関係（どれか一つでもあれば出さない） */
-  var NG = /^(lover|spouse|mate|fated|fiance|fwb|crush|almost|honmei|yan|enemy|bad|sibbad|rival|abuse|master|worship|apathy|fear|noobs)$/;
-  var WORD = { parent: '家族', sibling: 'きょうだい', sibprot: 'きょうだい', sibclose: 'きょうだい', twin: 'きょうだい', stepsib: 'きょうだい', relative: '親戚', pparent: '家族同然の人',
-    friend: '友人', best: '親友', buddy: '相棒', childhood: '幼なじみ', benefactor: '恩人', acq: '知り合い', colleague: '同僚', boss: '職場の人', classmate: '同級生', ex: '元恋人' };
-  function ties(ctx, a, g) { return HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, a, g) || [] : []; }
+  /* 関係の読み方は共通の部品（kit-visit.js の HK.PairVisit） */
+  var PV = HK.PairVisit;
+  if (!PV) return;
   var VI = HK.ShinkonVisit = {};
-  VI.cls = function (ctx, a, g) {
-    var tl = ties(ctx, a, g), best = null, ORD = ['ex', 'fam', 'pfam', 'known', 'work', 'school', 'weak'];
-    if (!tl.length) return null;
-    if (tl.some(function (t) { return NG.test(t.type) || t.cold === 'fear' || t.cold === 'apathy'; })) return null;
-    tl.forEach(function (t) { var c = CLS[t.type]; if (c && (!best || ORD.indexOf(c) < ORD.indexOf(best))) best = c; });
-    if (HK.Ties.apathy && (HK.Ties.apathy(ctx, a, g) || HK.Ties.apathy(ctx, g, a))) return null;
-    return best;
-  };
-  VI.word = function (ctx, a, g) {
-    var tl = ties(ctx, a, g);
-    for (var i = 0; i < tl.length; i++) {
-      var t = tl[i];
-      if (t.type === 'senpai') return t.a === a.i ? '後輩' : '先輩';
-      if (t.type === 'teacher') return t.a === a.i ? '教え子' : '先生';
-      if (t.type === 'mentor') return t.a === a.i ? '弟子' : '師匠';
-      if (WORD[t.type]) return WORD[t.type];
-    }
-    return '知り合い';
-  };
+  VI.cls = PV.cls;
+  VI.word = PV.word;
   /* ---------- 文 ---------- */
   VI.T = {
     visit: {
@@ -75,7 +53,7 @@
     jealExC: L('{a}のスマホに元恋人の{g}の名前が出たときから、{b}は口数が少なくなった。{a}が電話を置くと、{b}はそっぽを向いたまま「……まだ連絡を取り合ってるんだ｜……まだ連絡を取り合っているのか｜……まだ連絡を取り合っているんですね」とつぶやいた。|{a}が元恋人の{g}と短く話すあいだ、{b}はずっと聞こえないふりをしていた。電話が終わると、{b}は{a}の袖をつかんで、自分のほうを向かせた。「今、誰のことを考えてる？｜今、誰のことを考えている｜今、誰のことを考えていますか」'),
     jealEx: L('{g}が帰ったあとも、{b}の胸のもやもやは消えなかった。{a}と{g}が交わした短い目くばせが、頭から離れない。{b}は「元恋人って、あんなに親しげなもの？｜元恋人とは、あんなに親しげなものか｜元恋人って、あんなに親しげなものなんですか」と、思わず口にしていた。|{b}は{a}の袖をつかんで離さなかった。{g}との昔の話をしていた{a}の顔が、自分の知らない顔に見えて、悔しかった。{b}のヤキモチに気づいた{a}は、困ったように、でも少しうれしそうに笑った。')
   };
-  function here(c) { if (!c) return false; var g0 = c.gone; c.gone = false; var ok = HK.State && HK.State.here ? HK.State.here(c) : c.alive !== false; c.gone = g0; return ok; }
+  var here = PV.here;
   VI.here = here;
   /* その区切りの訪れ（part：d 日中／n 夜） */
   VI.roll = function (ctx, S, day, part) {

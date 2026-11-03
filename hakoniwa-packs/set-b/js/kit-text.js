@@ -1,5 +1,5 @@
-/* 新婚部屋：文を仕上げる部品（両方のビルド。2026-11-03）
-   ■ HK.ShinkonKit（K）
+/* セットB の部屋の共通部品：文を仕上げる（両方のビルド。2026-11-03。新婚部屋の shinkon-kit.js を、看病の部屋でも使えるよう共通のかたまり kit に移した）
+   ■ HK.PairKit（K。新婚部屋からは以前の名前 HK.ShinkonKit でも同じものを読む）
      ・K.mark(t)：文の雛形（{a}{b}{g}{s}{w} の印のまま）の台詞「…」に、話し手の目印「＠{x}＠」を付ける（CLAUDE.md「台詞の話し手を明示する目印」。
        利用者の報告：願望の行動で、前の文の主語の台詞が、その前に名前の出た人の台詞として出た）。決め方：
          1. 目印のある台詞・「{x}「」の形・名詞の引用（「…」という／と書いた など）はそのまま
@@ -13,7 +13,7 @@
   'use strict';
   var HK = window.HK;
   if (!HK) return;
-  var K = HK.ShinkonKit = {};
+  var K = HK.PairKit = HK.ShinkonKit = {};
   var NOUNQ = /^(?:という|といった|って(?:書|いう|言う)|と書|の文字|の札|と名|と題|の一言だけ|の一行)/;
   var PASSIVE = /^と(?:[^。「」]{0,4})?(?:聞かれ|言われ|囁かれ|尋ねられ|問われ|頼まれ|笑われ|叱られ|たしなめられ)/;
   function strip(s) { var o = '', d = 0; for (var i = 0; i < s.length; i++) { var c = s.charAt(i); if (c === '「') d++; else if (c === '」') { d = Math.max(0, d - 1); continue; } if (!d) o += c; } return o; }
@@ -79,6 +79,40 @@
   };
   function soft(t) { return HK.SAFE_ON ? String(t).replace(/♡/g, '♪') : t; }
   K.soft = soft;
+  /* ---------- 文の候補の絞り込み（新婚部屋 shinkon.js から移した。看病の部屋も使う） ---------- */
+  /* 恋愛にならない二人のときに出さない文（キス・嫉妬・甘え・デートなど、恋人どうしを前提にした文） */
+  K.ROM = /キス|いちゃ|嫉妬|ヤキモチ|甘え|抱き|膝枕|好き|愛|デート|ナンパ|記念日|触れ合|スキンシップ|独り占め|寄り添|ペアリング|彼シャツ|添い|一緒に寝|ぎゅっ|ムラムラ|エッチ|色っぽ|夢に相手/;
+  /* 結婚していない二人（元の関係のまま、恋人どうしの関係でない）に出さない文 */
+  K.WED = /結婚|新婚|夫婦|入籍|式場|新妻|新郎|新婦|伴侶|旦那|奥さん|結婚指輪|指輪/;
+  /* 家事・料理（担い手の点検。shinkon-kit の点検と同じ語） */
+  var COOK = K.COOK = /料理(?:を(?:作|し|する)|して|した|中|の腕を)|手料理を(?:作|振る舞)|台所に立|キッチンに立|包丁|フライパン|鍋(?:を(?:火|かき|焦)|に火)|味見|味付け|下ごしらえ|弁当を(?:作|詰)|煮物を|炒め|茹で|揚げ物を|刻ん|盛り付け|炊い|(?:ご飯|ごはん|朝食|夕飯|夕食|昼食|お昼|おかず|朝ごはん|夜ごはん|スープ|カレー|味噌汁|お菓子|ケーキ|おにぎり|パン|トースト|オムライス|クッキー|お粥|おかゆ)を(?:作|焼|用意|握|温め|こしらえ)|(?:ご飯|ごはん|夕飯|食事|朝食|朝ごはん)の(?:支度|用意)/;
+  var CHORE = K.CHORE = /家事|洗濯|掃除|洗い物|皿を洗|食器を洗|畳ん|(?<!折り)たたん|干し|ゴミ出し|アイロン|拭き掃除|(?:部屋|台所|家のこと|食卓|テーブル)を(?:ひと通り)?片(?:づ|付)け/;
+  /* 家事・料理の文の担い手：文の中で家事・料理をしている人（その文の主語）が、家事をしない設定の人なら使わない */
+  K.choreOk = function (t, a, b) {
+    var LF = HK.Life;
+    if (!(COOK.test(t) || CHORE.test(t))) return true;
+    var ss = String(t).replace(/「[^」]*」/g, '').split(/[。\n]/), carry = null;
+    for (var i = 0; i < ss.length; i++) {
+      var s = ss[i]; if (!s) continue;
+      var re = new RegExp(COOK.source + '|' + CHORE.source, 'g'), m;
+      while ((m = re.exec(s))) {
+        var pre = s.slice(0, m.index), sub = null, mm, r2 = /\{([ab])\}(?:は|が|も)/g;
+        while ((mm = r2.exec(pre))) sub = mm[1];
+        if (!sub) sub = carry;
+        var two = /二人で|二人は|二人して|ふたりで|一緒に|手分け/.test(pre + m[0]);
+        var who = two ? ['a', 'b'] : sub ? [sub] : ['a'], ck = COOK.test(m[0]);
+        for (var k = 0; k < who.length; k++) {
+          var c = who[k] === 'a' ? a : b;
+          if (!c || !c.life) continue;
+          if (ck && !LF.canCook(c)) return false;
+          if (!ck && !LF.canChore(c)) return false;
+        }
+      }
+      var last = null, r3 = /\{([ab])\}(?:は|が)/g, m3; while ((m3 = r3.exec(s))) last = m3[1];
+      if (last) carry = last;
+    }
+    return true;
+  };
   K.fill = function (ctx, t, a, b, ex) {
     t = K.mark(t);
     if (ex) Object.keys(ex).forEach(function (k) { t = t.split('{' + k + '}').join(ex[k]); });
