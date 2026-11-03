@@ -96,3 +96,20 @@ node hakoniwa-tools/build/pack-site.js hakoniwa-packs/set-b --out=<試しのフ�
 - 追加の表（`js/kanbyo-text-d.js`）：家事で変わる出来事（CHORE_*・NOCHORE）、同居していない日（ALONE・ALONE_N・TEL・WEAK_TEL・ARRIVE_APART・LEAVE_APART・STAY_APART）、仲の悪い二人（FEUD_*・WEAK_ANS_FEUD・関係 rival・lovehate の導入）、病中の夜の翌朝（ILL_AFTER）。
   R18 の病中の夜は `kanbyo-r18-text.js` の ILL_*（理性が揺らぐ入口は、受けの「でも……」の段 ILL_HESIT を必ず書く）。
 - 看病の部屋でしか出ない長い場面は `kanbyo-r18-text.js` の LONG_LEAD・LONG_OPEN（{ mf, ff, fm } × 2 本、2 段落）・LONG_AFTER。中盤と山場は本体の長い場面の部品が組み立てる。
+
+# 新婚部屋の追加の文（2026-11-03。設計は `docs/reports/2026-11-03/shinkon-design.md` の 6）
+
+| ファイル | キー | {a} | {b} | ほかの印・決まり |
+| --- | --- | --- | --- | --- |
+| shinkon-cal-text.js | `EV[行事の id]`（月の行事 31 種 × 2 本） | 言い出す人 | 相手 | 季節の語は shinkon-cal.js の `CL.SEA` の月にだけ出る。行事を足したら `CL.EV` の表と `@event` も |
+| 〃 | `VDAY.give[hand/shop/fail/surp]`・`VDAY.both`・`VDAY.prep`・`VDAY.thanks`（恋愛にならない二人）・`WDAY.ret[…]`・`WDAY.both/nogot/none/thanks` | 贈る人・お返しをする人 | 受け取る人 | 手作り（hand・fail）の文の主語は料理をする人だけに出る。性別で贈る側を決めつけない |
+| 〃 | `BDAY.morn/prep/party[cook/buy/out]/gift`（`{gift}`＝贈り物）・`GIFT[態度9種]`（受け取った人の反応） | 祝う人（GIFT は受け取った人） | 誕生日の人（GIFT は贈った人） | 「誕生日」の語は誕生日の日だけに出る |
+| 〃 | `VDAY.trio3`・`WDAY.trio3`・`BDAY.trio3`（三人婚の三人目） | 二人 | 二人 | `{c}`＝三人目 |
+| shinkon-past-text.js | `PAST[関係][yobi/yaku/chijin/kenka]`（12 関係 × 4 種 × 2 本） | 先輩・師匠・面倒を見てきた側・想っていた側（向きのある関係）か、どちらか | 相手 | 元の関係のまま暮らす二人（結婚していない友人どうしなど）にも出るので、「〜だったころ」に決めつけない書き方を混ぜる。`HK.relFilter` の語（初対面・連絡先・家まで送る・馴れ初め・付き合うことになった など）は書かない |
+| 〃 | `EXNARR[関係]`・`EXSAY[態度9種]`・`EXANS[態度9種]`・`FEAR[calm/still][態度9種]`・`FEARANS[calm/still]`・`EXEV[関係][種]` | EXSAY は言い出す人、EXANS は返事をする人、恐怖は怖がっていた人、主従は主 | 相手 | `{was}`（ライバルだった など）は地の文に書く（台詞に入れると口調の書き下ろしが当たらない）。台詞は「まさか私たちが結婚するなんて……」の形を入れる |
+| shinkon-wed.js | `W.T[出来事の id]`（13 種 × 2 本） | 言い出す人（エプロンは待っていた人） | 相手 | 出来事を足したら `W.EV` の表（part・wed・love）と `@event` も |
+| shinkon-trio.js | `TR.T.SETUP/MORN/DAY[種]/DATE[種]/HELP/SEE[態度9種]/NIGHT/KISS` | 三人のうち一人 | 二人目 | `{c}`＝三人目（`TR.say` が名前を当てる）。HELP・SEE は {c}＝三人目、{a}{b}＝二人 |
+| shinkon-r18-special.js（R18） | `APRON`・`PILLOW.show/yes/no/noReact[態度9種]`・`LEAD[入口]`・`PLAY[入口][mf/ff/fm]`・`OPEN[入口]` | APRON・PILLOW は言い出す人、PLAY・OPEN は攻め | 相手（PLAY・OPEN は受け） | LEAD は `{x}`＝言い出した人・`{y}`＝相手（受け攻めに関係なく。立場を入れ替える言い回しは書かない）。PLAY・OPEN の `{x}`＝エプロンの人・贈った人、`{y}`＝誕生日の人。地の文 3 文以上、体の語は印 |
+| shinkon-r18-trio.js（R18） | `LEAD`・`FADE`・`MID[oneTwo/twoOne/sandwich/ring]`・`PEAK`・`AFTER` | LEAD・FADE・AFTER は {a}{b}{c} | | MID は `{t}`＝攻め・`{m}`＝真ん中・`{u}`＝受け。直接の行為は `HK.Pos.trioPlan` の組だけ（本体の `HK.Trio3` が組み立てる） |
+
+- 足したら：`node hakoniwa-tools/tone-check/base-lint.js hakoniwa-packs/set-b`、tone-feel（`--scen=set-b-shinkon`。元○○の台詞は `--tie=rival`・`--tie=fear` などでも見る。崩れは `shinkon-tone.js` に書き下ろし）、`node hakoniwa-tools/build/event-catalog.js --pack=hakoniwa-packs/set-b` と catalog-check。

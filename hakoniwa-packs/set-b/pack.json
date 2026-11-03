@@ -58,6 +58,14 @@
         "js/shinkon-r18-ini-text.js",
         "js/shinkon-r18-knock-text.js",
         "js/shinkon-r18-knock.js",
+        "js/shinkon-cal-text.js",
+        "js/shinkon-cal.js",
+        "js/shinkon-past-text.js",
+        "js/shinkon-past.js",
+        "js/shinkon-wed.js",
+        "js/shinkon-trio.js",
+        "js/shinkon-r18-special.js",
+        "js/shinkon-r18-trio.js",
         "js/shinkon.js"
       ]
     },
