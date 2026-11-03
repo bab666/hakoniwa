@@ -196,7 +196,7 @@
       if (k === 'bUp' && mode === 'fm') return;
       var re = new RegExp(POS.chg[k].source, 'g'), m; while ((m = re.exec(n))) chg.push({ k: k, i: m.index + m[0].length });
     });
-    if (mode === 'fm') { var re2 = new RegExp(FM_AUP.source, 'g'), m2; while ((m2 = re2.exec(n))) chg.push({ k: 'aUp', i: m2.index + m2[0].length - 0.5 }); }
+    if (mode === 'fm') { var re2 = new RegExp(FM_AUP.source, 'g'), m2; while ((m2 = re2.exec(n))) chg.push({ k: 'aUp', i: m2.index + m2[0].length - 0.5, fm: true }); }
     Object.keys(POS.at).forEach(function (k) {
       if (k === 'bUp' && mode === 'fm') return;
       var re = new RegExp(POS.at[k].source, 'g'), m; while ((m = re.exec(n))) at.push({ k: k, i: m.index, s: m[0] });
@@ -238,7 +238,10 @@
   var TH_B = 60, TH_T = 50;
   F.TH = { b: TH_B, t: TH_T };
   /* units：F.split の段（feat 済みでなくてよい）。戻り値：{ v: [{ k: 'a'|'b'|'c'|'d'|'e', i: 段の番号, why, ... }], st: 最後の状態, stages: [段ごとの段階] } */
-  F.check = function (units, mode) {
+  /* play：エッチの型（play-r18.js の HK.Play）。{ prop, lock（型の体位の posture）, posT（型の繋がる段の頭の段落） }。あれば型の矛盾（h）も数える */
+  F.check = function (units, mode, play) {
+    var posIdx = -1;
+    if (play && play.posT) for (var pi0 = 0; pi0 < units.length; pi0++) if (units[pi0].paras.join('\n\n').indexOf(play.posT) >= 0) { posIdx = pi0; break; }
     var st = { stage: 'lead', insert: false, climax: false, posture: null, heatB: 0, heatT: 0, hold: false, used: { lines: {}, motions: {}, mpos: {} }, pending: null, posPrev: null }, v = [], stages = [];
     for (var i = 0; i < units.length; i++) {
       var u = units[i], f = u.f || (u.f = feat(u, mode)), sg;
@@ -303,13 +306,26 @@
       }
     }
     if (st.pending) v.push({ k: 'd', i: units.length, why: '応答待ち（' + st.pending.kind + '：' + st.pending.s + '）で場面が終わる' });
-    return { v: v, st: st, stages: stages };
+    /* (h) 型の矛盾：着衣なのに脱がせる／型の体位の段のあと（山場まで）に別の体位へ変える動き */
+    if (play) {
+      var clx = false;
+      for (var hi = 0; hi < units.length; hi++) {
+        var hf = units[hi].f || (units[hi].f = feat(units[hi], mode));
+        if (play.prop === 'chakui' && hf.undress) v.push({ k: 'h', i: hi, why: '着衣の型なのに脱がせる', re: RE.undress });
+        if (hf.climax) clx = true;
+        /* 女性の攻め×男性で攻めが腰を落とす言い回し（FM_AUP）は、どの体位でも使うので数えない */
+        if (play.lock && posIdx >= 0 && hi > posIdx && !clx) {
+          for (var hj = 0; hj < hf.chg.length; hj++) if (hf.chg[hj].k !== play.lock && !hf.chg[hj].fm) { v.push({ k: 'h', i: hi, why: '型の体位（' + play.lock + '）のあとに別の体位（' + hf.chg[hj].k + '）', re: POS.chg[hf.chg[hj].k], from: play.lock, to: hf.chg[hj].k }); break; }
+        }
+      }
+    }
+    return { v: v, st: st, stages: stages, posIdx: posIdx };
   };
   /* 本文を見る（点検用）：{ units, tail, check } */
-  F.analyze = function (text, a, b, mode, after) {
+  F.analyze = function (text, a, b, mode, after, play) {
     var t = normNames(text, a, b), af = after ? normNames(after, a, b) : '';
     var sp = F.split(t, af);
-    sp.check = F.check(sp.units, mode || 'mf');
+    sp.check = F.check(sp.units, mode || 'mf', play || null);
     return sp;
   };
 
@@ -320,10 +336,14 @@
   };
 
   /* ---------- 直す ---------- */
+  /* 一回の遊び（シミュレーション）のあいだ、使った文を覚えて避ける（F.memo.used。全部使ったら、いちばん前に使ったものから戻す） */
   function pickFrom(R, arr, used) {
     if (!arr || !arr.length) return '';
-    var free = arr.filter(function (x) { return !used[x]; }), l = free.length ? free : arr, s = l[Math.floor(R() * l.length)];
-    used[s] = 1;
+    var M = F.memo || (F.memo = {}), U = M.used || (M.used = {}), best = Infinity, sub = [];
+    M.usedN = M.usedN || 0;
+    arr.forEach(function (x) { var v = used[x] ? 1e9 : U[x] == null ? -1 : U[x]; if (v < best) { best = v; sub = [x]; } else if (v === best) sub.push(x); });
+    var s = sub[Math.floor(R() * sub.length)];
+    used[s] = 1; U[s] = ++M.usedN;
     return s;
   }
   function psOf(c) { var b = (HK.personaOf ? HK.personaOf(c) : c && c.persona) || (c && c.persona) || 'gentle'; if (HK.Attr && HK.Attr.psNight) b = HK.Attr.psNight(c, null, b) || b; return /^(proud|stern|tsun|gentle|devoted|cool|free|shy|polite)$/.test(b) ? b : 'gentle'; }
@@ -405,6 +425,7 @@
   }
   function isCore(units, i, mode) {
     var u = units[i];
+    if (u && u.keep) return true;
     if (i === 0 || !u.f) return i === 0;
     if (u.f.climax) return true;
     if (u.f.insert || u.f.inside) { for (var j = 0; j < i; j++) if (units[j].f && (units[j].f.insert || units[j].f.inside)) return false; return true; }
@@ -426,10 +447,25 @@
         return true;
       }
       var tgt = x.why.indexOf('山場') >= 0 ? S.firstClimax() : S.firstInsert();
-      if (!isCore(units, x.i, mode) && tgt >= 0 && tgt < x.i) { units.splice(x.i, 1); units.splice(tgt, 0, u); u.moved = true; delete u.f; return true; }
+      /* エッチの型が組み替えた段（u.keep）は外さないが、挿入の前へ移すのはよい */
+      if ((u.keep || !isCore(units, x.i, mode)) && tgt >= 0 && tgt < x.i) { units.splice(x.i, 1); units.splice(tgt, 0, u); u.moved = true; delete u.f; return true; }
       if (cutSentence(u, x.re)) return true;
       if (!isCore(units, x.i, mode)) { units.splice(x.i, 1); return true; }
       return false;
+    }
+    if (x.k === 'h') {
+      if (x.re && cutSentence(u, x.re)) return true;
+      var ph = partOf(S.parts, u);
+      if (ph && !u.keep) { cutPart(units, ph.t); S.parts.splice(S.parts.indexOf(ph), 1); return true; }
+      if (!isCore(units, x.i, mode)) { units.splice(x.i, 1); return true; }
+      return false;
+    }
+    /* 型の体位のあと（山場まで）は、つなぎの段で別の体位へ戻さず、その言い回しの一文か部品を外す */
+    if (x.k === 'b' && S.lock && S.posIdx >= 0 && x.i > S.posIdx && !S.climaxBefore(x.i)) {
+      var lp = partOf(S.parts, u);
+      if (cutSentence(u, new RegExp(x.s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))) return true;
+      if (lp && !u.keep) { cutPart(units, lp.t); S.parts.splice(S.parts.indexOf(lp), 1); return true; }
+      if (!isCore(units, x.i, mode)) { units.splice(x.i, 1); return true; }
     }
     if (x.k === 'b') {
       var l = (T.BRIDGE && T.BRIDGE[x.to] && T.BRIDGE[x.to][mode]) || null;
@@ -522,7 +558,7 @@
     }
     /* 段階ごとの段数（つなぎ・リアクション・追い上げの段は、その前の段と組なので数えない） */
     var ck = F.check(units, mode), cnt = {}, idx = {};
-    ck.stages.forEach(function (sg, i2) { if (sg === 'flow') return; cnt[sg] = (cnt[sg] || 0) + 1; (idx[sg] = idx[sg] || []).push(i2); });
+    ck.stages.forEach(function (sg, i2) { if (sg === 'flow' || units[i2].keep) return; cnt[sg] = (cnt[sg] || 0) + 1; (idx[sg] = idx[sg] || []).push(i2); });
     var drop = [];
     Object.keys(cap).forEach(function (sg) {
       var over = (cnt[sg] || 0) - cap[sg];
@@ -530,7 +566,7 @@
       /* 外す候補：本体の段でないもの。差し込まれた部品の段を先に、そのあと後ろから */
       var cands = (idx[sg] || []).filter(function (i3) {
         var uf = units[i3].f || {};
-        if (isCore(units, i3, mode) || units[i3].flow || uf.insert || uf.inside || uf.climax) return false;
+        if (isCore(units, i3, mode) || units[i3].flow || units[i3].keep || uf.insert || uf.inside || uf.climax) return false;
         /* 差し込まれた部品の段か、繋がったあとの最中の段だけを外す（段階の読み取りが外れても本筋の段を落とさない） */
         if (partMostly(S.parts, units[i3])) return true;
         /* 本筋の最中の段は、台詞の無い地の文だけの段で、山場のすぐ前でないものだけ */
@@ -557,7 +593,7 @@
     var t = normNames(text, a, b), af = info.after ? normNames(info.after, a, b) : '';
     var sp = F.split(t, af);
     var S = {
-      units: sp.units, mode: mode, b: b, thick: !!info.thick, usedText: {},
+      units: sp.units, mode: mode, b: b, thick: !!info.thick, usedText: {}, play: info.play || null, lock: info.play && info.play.lock || null, posIdx: -1,
       parts: (info.parts || []).map(function (p) { return { role: p.role, t: normNames(p.t, a, b) }; }).filter(function (p) { return p.t && p.t.length >= 8; }),
       R: rngOf(hashOf((a && a.name) + '|' + (b && b.name) + '|' + t.length + '|' + t.slice(0, 60)))
     };
@@ -566,11 +602,18 @@
     S.insertBefore = function (i) { for (var j = 0; j < i && j < S.units.length; j++) { var f = S.units[j].f || (S.units[j].f = feat(S.units[j], mode)); if (f.insert || f.inside) return true; } return false; };
     S.foreBefore = function (i) { for (var j = 0; j < i && j < S.units.length; j++) { var f = S.units[j].f || (S.units[j].f = feat(S.units[j], mode)); if (f.fore) return true; } return false; };
     S.roleSeen = function (role, except) { return S.units.some(function (u) { var tt = u.paras.join('\n\n'); return S.parts.some(function (p) { return p.role === role && p.t !== except && tt.indexOf(p.t) >= 0; }); }); };
-    var before = F.check(S.units, mode), n0 = S.units.length, fixed = 0;
+    /* エッチの型（play-r18.js）が組み替えた段は守る（外さない・段数に数えない） */
+    var keepL = (info.keep || []).map(function (k) { return normNames(k, a, b); });
+    var markKeep = function () { S.units.forEach(function (u) { var tt = u.paras.join('\n\n'); u.keep = keepL.some(function (k) { return tt.indexOf(k) >= 0; }); }); };
+    if (keepL.length) markKeep();
+    S.climaxBefore = function (i) { for (var j = 0; j < i && j < S.units.length; j++) { var f = S.units[j].f || (S.units[j].f = feat(S.units[j], mode)); if (f.climax) return true; } return false; };
+    var before = F.check(S.units, mode, S.play), n0 = S.units.length, fixed = 0;
     var capped = capUnits(S);
-    if (!before.v.length && !capped && !(info.press && F.starter(S.units[0] ? S.units[0].paras.join('') : '') === 'b')) return { text: text, changed: false, before: before.v.length };
+    if (!before.v.length && !capped && !keepL.length && !(info.press && F.starter(S.units[0] ? S.units[0].paras.join('') : '') === 'b')) return { text: text, changed: false, before: before.v.length };
     for (var it = 0; it < 60; it++) {
-      var ck = F.check(S.units, mode);
+      if (keepL.length) markKeep();
+      var ck = F.check(S.units, mode, S.play);
+      S.posIdx = ck.posIdx;
       if (!ck.v.length) break;
       S.posture = ck.st.posture;
       var done = false;
@@ -688,10 +731,15 @@
         }));
         var r = sc0.apply(self, arguments);
         if (!r || typeof r.text !== 'string') return r;
-        var pressK = F.pressOf(a, b, opt);
-        var fx = F.fix(r.text, { a: a, b: b, mode: modeOf(r, a, b), after: opt.after || '', thick: thickOf(opt), parts: parts, press: pressK, ero: obj === HK.ThickEro });
-        if (fx.changed) r.text = fx.text;
-        r.flow = { lead: lt, why: whyL, parts: parts.map(function (p) { return p.role; }), partT: parts.filter(function (p) { return p.role === 'lead' || p.role === 'ini-lead'; }).map(function (p) { return { role: p.role, t: p.t }; }) };
+        var pressK = F.pressOf(a, b, opt), md = modeOf(r, a, b);
+        /* エッチの型（play-r18.js の HK.Play）：入り方・主な責め・道具・体位・終わり方に沿って本文を組み替え、性格が目立つ行為の段を足す */
+        var pl = null;
+        if (HK.Play && HK.Play.apply) { try { pl = HK.Play.apply(r.text, { a: a, b: b, mode: md, opt: opt, ero: obj === HK.ThickEro, parts: parts, press: pressK, lead: lt }); } catch (e) { pl = null; if (F.log) F.log.push({ err: String(e) }); } }
+        if (pl && pl.act) parts.push({ role: 'act', t: pl.act });
+        var t1 = pl ? pl.text : r.text;
+        var fx = F.fix(t1, { a: a, b: b, mode: md, after: opt.after || '', thick: thickOf(opt), parts: parts, press: pressK, ero: obj === HK.ThickEro, play: pl && pl.play, keep: pl && pl.keep });
+        r.text = fx.changed ? fx.text : t1;
+        r.flow = { play: pl ? { entry: pl.play.entry, focus: pl.play.focus, prop: pl.play.prop, pos: pl.play.pos, finish: pl.play.finish, scene: pl.play.scene || '', posT: pl.play.posT, lock: pl.play.lock, act: pl.play.act || '' } : null, lead: lt, why: whyL, parts: parts.map(function (p) { return p.role; }), partT: parts.filter(function (p) { return p.role === 'lead' || p.role === 'ini-lead'; }).map(function (p) { return { role: p.role, t: p.t }; }) };
         return r;
       } finally {
         undo.forEach(function (u) { if (u) u(); });

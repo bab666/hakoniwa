@@ -145,3 +145,11 @@
 - 段階・体位は本文の言い回しから読むので、言い回しの拾い漏れ（遠回しな挿入・山場の書き方）はある。新しい長い場面の文を足したら sex-flow-audit を回し、`--why` の例で拾い方（`HK.SexFlow.RE`・`POS`）を足す。
 - 新婚部屋（追加パック）は本体の包みで直るが、パックの側で `opt.jealous`（男性向けの `HK.ThickEro.scene` にも）・`opt.leadB`（受けからの入口）、短い・中くらいの場面の `HK.PosLead.text(…, 5 番目の引数 { jealous, leadB })` を渡すと、きっかけごとの主導がより正確になる（まとめ役に報告）。
 - `HK.SexLead`（出られない部屋のきっかけの段）は場面の文の切れ端で記録を探すので、頭の段を外すと付かなくなるおそれがある。変更後も 100%（点検用の計測で 26/26）。
+
+## 6. エッチの型（2026-11-03 追記。設計は play-design.md）
+
+- 包み（`makeWrap`）は、本体の組み立てのあと `F.fix` の前に `HK.Play.apply`（play-r18.js）を呼び、型（入り方・主な責め・道具・体位・終わり方）に沿って前戯・繋がる段・果てる段を置き換え、入り方の段・最中の段・性格が目立つ行為の段を足す。型が組み替えた段は守る段（`info.keep`）として渡す：段数の上限に数えず、外さない（挿入の前へ移すのはよい）。
+- 型の体位の段のあと山場までは体位を固定し、別の体位を前提にした言い回し（b）はつなぎの段で戻さずに一文（なければ部品）を外す。点検に (h) 型の矛盾（着衣なのに脱がせる・型の体位のあとに別の体位）を足した（`F.check(units, mode, play)`・`F.analyze(…, play)`。結果の `r.flow.play` に型の印）。
+- つなぎ・リアクション・追い上げ・攻めが迫る段の文は、一回の遊びのあいだ使った文を `F.memo.used` で避ける（全部使ったら前に使ったものから戻す）。REACT・BRIDGE・PRESS・BUILD_PRE はどれも 4 本以上（play-more-r18.js）。
+- 部屋ごとの専用の長い場面は `HK.Play.addScene(部屋の id, { id, label, when, weight, play, lead, steps: [ { stage: 'undress'|'fore'|'insert'|'play'|'after', … } ], tags })`。段は段階（lead → undress → foreplay → insert → play → climax → after）の順に並べ、きっかけの段（`lead`）を持ち、山場の喘ぎ・終わり方・事後は共通の部品が後ろに付く（play-design.md の 7）。
+

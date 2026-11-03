@@ -494,6 +494,12 @@ js/ero-flavor-r18.js @pack:lewd
 # 長いエッチの場面の流れを段階で管理する（2026-11-03。場面の状態：段階・体位・性感・使った台詞と動き・応答待ち。いちばん外側の包み。設計は docs/reports/2026-11-03/sex-flow-design.md）
 js/sex-flow-text-r18.js @pack:lewd
 js/sex-flow-r18.js @pack:lewd
+# エッチの型（2026-11-03。入り方・主な責め・道具・体位・終わり方で一回のエッチを組み替える HK.Play と、性格が目立つ行為の段 HK.PlayAct。sex-flow-r18.js の包みが呼ぶ。設計は docs/reports/2026-11-03/play-design.md）
+js/play-text-r18.js @pack:lewd
+js/play-text2-r18.js @pack:lewd
+js/play-act-r18.js @pack:lewd
+js/play-more-r18.js @pack:lewd
+js/play-r18.js @pack:lewd
 js/futari-r18.js @scen:futari
 js/reset.js
 js/voice-seg.js
@@ -589,6 +595,7 @@ tone js/tone-brush10f.js
 tone js/tone-brush-sa.js
 tone js/tone-brush10f-r18.js
 tone js/tone-brush-lk3-r18.js
+tone js/tone-brush-play-r18.js
 tone js/tone-brush10h.js
 tone js/tone-brush-sx.js
 late js/tone-hero.js
