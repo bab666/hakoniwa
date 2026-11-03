@@ -119,10 +119,11 @@
     return { k: k, p: Math.min(0.75, p), why: why };
   }
   /* 夜の性格の一文と夜の主導の段（短い・中くらいの場面に差す。長い場面は本体の山場の組み立ての包み（attr-r18.js・pos-lead-r18.js・ero-initiative-r18.js）が入れる） */
-  function nightAdd(ctx, a, b, sh, ero, entry) {
+  /* lo：{ jealous（攻めが妬いた夜＝攻めから）, leadB（受けの側のきっかけ＝受けから） }。夜の主導は傾向（本体の HK.SexFlow.leadTonight。設計は docs/reports/2026-11-03/sex-flow-design.md の 3） */
+  function nightAdd(ctx, a, b, sh, ero, entry, lo) {
     var pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(ctx, null) : function (arr) { return pickOf(ctx, arr); };
     var t = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(a, b, sh, pk, ero) : '';
-    var l = entry !== 'ini' && HK.PosLead && HK.PosLead.text ? HK.PosLead.text(a, b, sh, pk) : '';
+    var l = entry !== 'ini' && HK.PosLead && HK.PosLead.text ? HK.PosLead.text(a, b, sh, pk, lo || null) : '';
     return l + t;
   }
   /* 段落の一つ目（なければ一文目）のあとに差す */
@@ -156,7 +157,7 @@
   }
   /* 場面の本文：{ text（名前を当てたもの）, form } */
   function sceneText(ctx, S, env, a, b, sh, form, o) {
-    var pk = function (arr) { return pickOf(ctx, arr); }, high = o.lv === 'high', ero = o.ero, body;
+    var pk = function (arr) { return pickOf(ctx, arr); }, high = o.lv === 'high', ero = o.ero, body, lo = { jealous: !!o.jealTop, leadB: !!o.leadB };
     var aft = text(ctx, 'AFTER', o.afi, sh, pickOf(ctx, FB.after), a, b);
     var openL = o.resume && MO().REOPEN ? MO().REOPEN : MO().OPEN || ['{a}は{b}を抱き寄せた。'];
     if (form === 'fade') body = pickOf(ctx, MO().FADE || FB.after);
@@ -164,12 +165,12 @@
       var st = HK.ThickSex.style(a), open = K ? K.mark(pickOf(ctx, openL)) : pickOf(ctx, openL);
       if (K) aft = K.mark(aft);
       var again = high && HK.ThickEro ? HK.ThickEro.again(ctx, pk, a, b, ero, false) + '\n\n' : '';
-      var rr = ero ? HK.ThickEro.scene({ S: ctx, pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: again + aft })
-        : HK.ThickSex.scene({ pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: again + aft, ctx: ctx, jealous: o.jealTop });
+      var rr = ero ? HK.ThickEro.scene({ S: ctx, pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: again + aft, jealous: o.jealTop, leadB: o.leadB })
+        : HK.ThickSex.scene({ pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: again + aft, ctx: ctx, jealous: o.jealTop, leadB: o.leadB });
       return { text: ctx.t(rr.text, a, b), form: form };
     } else if (form === 'short' && ero && HK.ThickEro && HK.ThickEro.short) {
       body = HK.ThickEro.short({ S: ctx, pick: pk, a: a, b: b, open: '', again: high, after: '' }).text;
-      body = insert1(body, nightAdd(ctx, a, b, sh, true, o.entry));
+      body = insert1(body, nightAdd(ctx, a, b, sh, true, o.entry, lo));
     } else {
       /* 邪魔が入ったあとの続き（resume）は、場所や状況の決まった種（脱衣所・ベランダなど）を使わず、寝室の続きの文に */
       body = o.resume ? pickOf(ctx, FB.short[sh]) : text(ctx, 'PLAY', o.pi, sh, pickOf(ctx, FB.short[sh]), a, b);
@@ -192,7 +193,7 @@
         if (!fo && sh !== 'ff' && /指/.test(bx) && /沈め|入れ|入って|入ってる|中を|ナカ|何本/.test(bx) && !/指を(?:抜|引き抜)/.test(bx + body)) fo = pickOf(ctx, FB.fingerOut);
         body = bx + (fo ? fo : '') + '\n\n' + body + '\n\n' + peak + '\n\n' + tx;
       }
-      if (!o.nogen) body = insert1(body, nightAdd(ctx, a, b, sh, ero, o.entry));
+      if (!o.nogen) body = insert1(body, nightAdd(ctx, a, b, sh, ero, o.entry, lo));
       /* 濃い：もう一度（短い版の一文は形を問わない書き方なので、女性どうしは段落の版にする） */
       if (high && HK.ThickEro) body += '\n\n' + HK.ThickEro.again(ctx, pk, a, b, ero && form === 'mid', form === 'short' && sh !== 'ff');
     }
@@ -272,7 +273,9 @@
       if (!kr) kn = null;
       else S.knockN = (S.knockN || 0) + 1;
     }
-    var full = sceneText(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: pi, afi: afi, jealTop: cute === 'jeal' && day.jealBy === a, entry: entry, resume: !!kn });
+    var full = sceneText(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: pi, afi: afi, jealTop: cute === 'jeal' && day.jealBy === a,
+      /* 受けの側のきっかけ（受けから誘う・ゴムのおねだり・受けが妬いた夜）は受けから始める */
+      leadB: !kn && (cute === 'ini' || cute === 'gomu' || (cute === 'jeal' && day.jealBy === b)), entry: entry, resume: !!kn });
     form = full.form;
     var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚部屋：夜（' + FORM[form] + '）' + ((form === 'short' || form === 'mid') && !kn ? '・' + play.t.slice(0, 18) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
