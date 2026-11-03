@@ -199,8 +199,10 @@
     return { text: mk(ctx, body + (aft ? '\n\n' + aft : ''), a, b), form: form };
   }
   SH.night = function (ctx, A, B, day, last) {
-    var S = ctx.sk, env = ctx.env, LV = HK.Lewd, P = HK.Pos;
+    var S = ctx.sk, env = ctx.env, LV = HK.Lewd, P = HK.Pos, SKN = HK.Shinkon;
     if (!sexOk(ctx, A, B)) return false;
+    /* 体調を崩している人がいる夜・まだだるい日・離れている夜は出さない（shinkon.js の restNight） */
+    if (SKN && SKN.restNight && SKN.restNight(ctx, day)) return false;
     var o = P && P.order ? P.order(A, B) : [A, B], a = o[0], b = o[1], sh = shape(a, b);
     var hasM = P && P.hasM ? (P.hasM(a) || P.hasM(b)) : sh !== 'ff';
     var prevTrip = day.d > 0 && ((A.life.days[day.d - 1] || {}).trip || (B.life.days[day.d - 1] || {}).trip);
@@ -213,7 +215,7 @@
     else if (day.dark) cute = 'dark';
     else if (prevTrip) cute = 'trip';
     var pc = { jeal: 0.85, gomu: 0.55, late: 0.45, rain: 0.5, dark: 0.55, trip: 0.65 }[cute] || 0;
-    var left = S.lewdMax - S.sex, nightsLeft = S.days - day.d;
+    var left = S.lewdMax - S.sex, nightsLeft = S.days - day.d - (SKN && SKN.restAhead ? Math.max(0, SKN.restAhead(ctx, day.d + 1)) : 0);
     /* 受けのほうから誘う夜（夜の主導・夜の性格・態度で。受け攻めは変えない） */
     var ini = !cute ? iniOf(ctx, a, b) : null;
     if (ini && ctx.rng() < ini.p) cute = 'ini';
