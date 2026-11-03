@@ -26,6 +26,8 @@
   /* 地の文：表の名前・行の番号で shinkon-text.js を引く。無ければ fb（表の言葉の一文） */
   function prose(ctx, key, i, fb) {
     var T = TX()[key], p = T && T[i];
+    /* 恋愛にならない二人では、キス・嫉妬などの文を候補から外す（全部当たるなら表の言葉の一文） */
+    if (Array.isArray(p) && ctx.sk && !ctx.sk.love) { p = p.filter(function (x) { return typeof x !== 'string' || !ROM.test(x); }); if (!p.length) return fb || ''; }
     if (Array.isArray(p) && p.length) return pickOf(ctx, p);
     if (typeof p === 'string' && p) return p;
     return fb || '';
@@ -165,7 +167,7 @@
     });
     day.dailyI = D[src].indexOf(day.daily);
     if (ctx.rng() < 0.35) { day.item = J.pick(ctx, 'item', D.ITEM); day.itemI = D.ITEM.indexOf(day.item); }
-    if (!apart && ctx.rng() < 0.4) { var mr = ctx.rng(); day.mealK = mr < 0.3 ? 'BREAKFAST' : hol && mr < 0.6 ? 'LUNCH' : 'DINNER'; day.meal = J.pick(ctx, day.mealK, D[day.mealK]); day.mealI = D[day.mealK].indexOf(day.meal); }
+    if (!apart && ctx.rng() < 0.4) { var mr = ctx.rng(); day.mealK = mr < 0.3 ? 'BREAKFAST' : hol && mr < 0.6 ? 'LUNCH' : 'DINNER'; day.meal = J.pick(ctx, day.mealK, D[day.mealK], nr); day.mealI = D[day.mealK].indexOf(day.meal); }
     if (ctx.rng() < 0.12 || (day.daily && /記念日/.test(day.daily.k))) day.special = J.pick(ctx, 'special', D.SPECIAL);
     if (day.daily && /喧嘩/.test(day.daily.t + (day.intro && day.intro.t))) day.fight = J.pick(ctx, 'fight', D.FIGHT);
     /* 日替わりの行そのものが小さな喧嘩のとき（買い物の喧嘩など）は、喧嘩の段を重ねない（記録と夜の仲直りは出す） */
@@ -187,6 +189,8 @@
       var ai = list.indexOf(act), wn = D.WISH[w.d].t.split(/\s/)[0];
       J.prompt(ctx, [c], [['願望行動表', act.t]], '〇' + c.name + 'の願望行動');
       var T = TX().ACT && TX().ACT[w.d] && TX().ACT[w.d][ai];
+      /* 「押し倒して相手の反応を見る」（願望10の行10）：願望を持つ人が受けのときは、押し倒さずに誘う形にする（攻めを選んだ人を受けにしない・受けが攻めを組み敷かない） */
+      if (w.d === 9 && ai === 9 && HK.Pos && HK.Pos.order && HK.Pos.order(c, o)[0] !== c) T = ['{a}は布団の上で{b}に体を預け、腕を引いて自分のほうへ倒れ込ませた。間近で見下ろしてくる{b}の目を、{a}はじっと見上げた。「……どうする？｜……どうする｜……どうしますか」', '{a}は{b}のシャツの裾を握って、ベッドの端まで引っぱった。{a}が先に仰向けになると、{b}は息を呑んで、その上に覆いかぶさった。'];
       var t = Array.isArray(T) && T.length ? pickOf(ctx, T) : '{a}の気持ちが、また少し高まった。{a}は、' + act.t.replace(/。$/, '') + '。';
       var e = ctx.act2({ actors: [c, o], cat: S.love ? 'romance' : 'bond', text: fill(ctx, t, c, o), why: '新婚部屋：願望が高まった（' + wn + '・' + w.pt + 'pt）', fx: function () { ctx.mod2(c, o, { aff: 3, att: 2 }, { aff: 2, att: 2 }); } });
       if (e) { S.acts++; J.count(ctx, 'acts'); }
