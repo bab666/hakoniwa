@@ -272,7 +272,8 @@
     if (!HK.SAFE_ON && HK.ShinkonR18 && S.sex < S.lewdMax && !day2.apart) sexed = HK.ShinkonR18.night(ctx, A, B, day2, d === S.days - 1);
     if (sexed) S.sex++;
     /* シーンの結末 */
-    var en = J.pick(ctx, 'end', D.END, function (x) { return (S.love || !romRow(x) ? 1 : 0) * (day2.fought && /不安|動揺|戸惑/.test(x.t) ? 1.5 : 1); });
+    /* 離れて過ごした日（出張など）は、一緒にいる前提の「シーンの結末」を出さない（ふたりの距離の一行で締める） */
+    var en = day2.apart ? null : J.pick(ctx, 'end', D.END, function (x) { return (S.love || !romRow(x) ? 1 : 0) * (day2.fought && /不安|動揺|戸惑/.test(x.t) ? 1.5 : 1); });
     if (en) {
       J.prompt(ctx, [A, B], [['シーンの結末表', en.k + '／' + en.t]]);
       var et = prose(ctx, 'END', D.END.indexOf(en), '一日の終わりに、{a}は思った――' + en.t.replace(/。$/, '') + '。');
