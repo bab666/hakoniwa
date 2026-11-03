@@ -1,0 +1,36 @@
+{
+  "id": "set-b",
+  "slot": "set-b",
+  "name": "ふたりのイチャイチャセット",
+  "desc": "新婚の毎日や看病、夜のドライブなど、二人きりの日常と甘い時間を眺める箱庭のセットです。",
+  "builds": [
+    "full",
+    "zenrei"
+  ],
+  "api": 1,
+  "chunks": [
+    {
+      "name": "shinkon",
+      "deps": {
+        "full": [
+          "pack-roomkit",
+          "pack-lewd"
+        ],
+        "zenrei": [
+          "pack-roomkit"
+        ]
+      },
+      "files": [
+        "js/shinkon-data.js",
+        "js/shinkon-text-a.js",
+        "js/shinkon-text-b.js",
+        "js/shinkon-text-c.js",
+        "js/shinkon-r18-data.js",
+        "js/shinkon-r18-text-a.js",
+        "js/shinkon-r18-text-b.js",
+        "js/shinkon-r18.js",
+        "js/shinkon.js"
+      ]
+    }
+  ]
+}

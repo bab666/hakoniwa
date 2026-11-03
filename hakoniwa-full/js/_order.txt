@@ -34,6 +34,7 @@
 @chunk scen-saimin deps=pack-rel,pack-solo
 @chunk scen-variety deps=pack-rel,pack-solo
 @chunk scen-locker deps=pack-rel,pack-solo,pack-trap
+@chunk pack-roomkit deps=pack-rel
 js/load.js
 js/load-order.js
 js/scenarios-init.js
@@ -494,6 +495,9 @@ js/voice-seg.js
 js/voice-fp.js
 # 出来事の一覧のデータ（build が毎回作り直す）。late に入れず、族のかたまり pack-catalog にして、箱庭カードの「出来事の一覧」を押したときだけ読む（event-catalog-ui.js が HK.Load.ensure）
 js/event-catalog.js @pack:catalog
+# 追加パックの部屋の部品（暮らしの状態・ジャーナル。パックの部屋を選んだときに読む）
+js/roomkit-life.js @pack:roomkit
+js/roomkit-journal.js @pack:roomkit
 # ==== ここから下は late の区切り：上の行（中核・族）をすべて読んだあとに実行される行。late・tone の行と、もとは late だった族の行を、元の実行の順のまま置く ====
 tone js/voice-override-rows.js
 tone js/voice-override-rows2.js

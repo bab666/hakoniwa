@@ -34,6 +34,17 @@ async function openBuild(dir, hash, opts) {
   await page.goto(buildUrl(dir, hash));
   /* あとで読む分（bundle-late.js／#all なら全部のかたまり）があれば、読み終わるまで待つ */
   await page.waitForFunction(() => window.HK && window.HK.simulate && window.HK.TONE_KEYS && window.HK.LATE_READY !== false, null, { timeout: 120000 });
+  /* 追加パック（2026-11-03）：HK_PACK_CODES=コード,コード で開いて、パックの箱庭のかたまりを読んでから点検する（build/pack-site.js で作った試しのフォルダを --full=…／--zen=… に渡す）。
+     HK_ONLY_SCEN=id,id で、点検する箱庭をその箱庭だけにする（HK.SCEN_ORDER を絞る） */
+  if (process.env.HK_PACK_CODES || process.env.HK_ONLY_SCEN) await page.evaluate(async ([codes, only]) => {
+    if (codes.length && window.HK.Packs) {
+      await new Promise(ok => window.HK.Packs.onReady(ok));
+      codes.forEach(c => window.HK.Packs.unlock(c));
+      const ids = window.HK.SCEN_ORDER.filter(id => !window.HK.SCENARIOS[id]);
+      await Promise.all(ids.map(id => window.HK.Load.ensure(id)));
+    }
+    if (only.length) { const keep = window.HK.SCEN_ORDER.filter(id => only.indexOf(id) >= 0); window.HK.SCEN_ORDER.length = 0; Array.prototype.push.apply(window.HK.SCEN_ORDER, keep); }
+  }, [(process.env.HK_PACK_CODES || '').split(',').filter(Boolean), (process.env.HK_ONLY_SCEN || '').split(',').filter(Boolean)]);
   const lewdMode = process.env.HK_LEWD_MODE || (opts && opts.lewdMode) || '';
   if (lewdMode) await page.evaluate(m => { if (window.HK && window.HK.LewdWords) window.HK.LewdWords.MODE = m === 'none' ? null : m; }, lewdMode);
   return { browser, page, errors };
