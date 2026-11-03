@@ -440,6 +440,8 @@
     if (lw) e.lewd = true;
     /* 夜の起こりやすさ 0 でも起きた場面（条件の夜・合意のない展開・モブ）は、止めなかった理由を理由の欄に添える（pos.js の HK.Pos.nightNote） */
     if (lw && HK.Pos && HK.Pos.nightNote) { var nn = HK.Pos.nightNote(this, o); if (nn) e.why = (e.why ? e.why + '／' : '') + nn; }
+    /* その時点で生きて場にいる人数（2026-10-31 担当CL。三人以上の配役で二人だけ残った回の第三者の文を外すのに使う。記録には残さない＝数えない印） */
+    if (this.chars && this.chars.length > 2) Object.defineProperty(e, '_here', { value: this.present().length, enumerable: false, writable: true });
     this.log.push(e);
     return e;
   };
@@ -618,7 +620,26 @@
     o.ties = HK.fearTies ? HK.fearTies(ts) : ts;
     return o;
   };
+  /* 名前の無い住人（name が空・無い）には「名無し」「名無し2」…を付けた写しで回す（2026-10-31 担当JN）。
+     画面の名簿は ui.js の normChar で必ず名前を付けるが、点検の道具・外から渡した配役で名前が欠けると、
+     文に「undefined「……」」「{b}」が残っていた。名前のある住人の配役はそのまま（写さない）。渡された input・住人は書き換えない */
+  HK.nameInput = function (input) {
+    var cs = (input && input.chars) || [];
+    /* 空白だけの名前も無いものとみなす（外側の包み voice-seg.js が空白を私用領域の文字にしてから来るので、戻して見る） */
+    var NS = HK.NameSafe, has = function (c) { return typeof c.name === 'string' && !!(NS && NS.dec ? NS.dec(c.name) : c.name).trim(); };
+    if (!cs.some(function (c) { return c && !has(c); })) return input;
+    var used = {}; cs.forEach(function (c) { if (c && has(c)) used[c.name] = 1; });
+    var o = {}; for (var k in input) o[k] = input[k];
+    o.chars = cs.map(function (c) {
+      if (!c || has(c)) return c;
+      var x = {}; for (var k2 in c) x[k2] = c[k2];
+      var n = 1, nm = '名無し'; while (used[nm]) nm = '名無し' + (++n);
+      used[nm] = 1; x.name = nm; return x;
+    });
+    return o;
+  };
   HK.simulate = function (input) {
+    input = HK.nameInput(input);
     var sc0 = HK.SCENARIOS[input.scenId];
     if (sc0 && sc0.simulate) return sc0.simulate(HK.fearInput(input));
     var ctx = new Ctx(input), scen = ctx.scen, rng = ctx.rng;
@@ -1088,6 +1109,10 @@
       });
     }
     pairs.sort(function (x, y) { return (y.surprise - x.surprise) || (y.intensity - x.intensity); });
+    /* 二人だけの配役の記録から、居合わせた第三者の地の文（周りが割って入った など）を外す（mini.js の HK.dropBystand。出来事の文は say のあとで足されることがあるので、最後にまとめて。2026-10-31 担当RC） */
+    /* 2026-10-31（担当CL）：三人以上の配役でも、閉じ込められた部屋（出られない部屋）で、ほかの住人が死亡・退場して生きて場にいるのが二人以下になったあとの記録は同じく外す（say が記録した人数 e._here） */
+    var sealedSc = ctx.scen && (ctx.scen.id === 'whiteroom' || ctx.scen.sealedRoom);
+    if (HK.dropBystand) ctx.log.forEach(function (e) { if (e && typeof e.text === 'string' && e.kind !== 'step' && e.kind !== 'phase' && (C.length <= 2 || (sealedSc && e._here != null && e._here <= 2))) e.text = HK.dropBystand(null, e.text); });
     var chars = C.map(function (c) { return charSummary(ctx, c); });
     if (HK.Emo) HK.Emo.summary(ctx, chars);   /* 気分の最終値・いちばん強かった気分・最期の言葉（emotion.js・epilogue.js） */
     return {

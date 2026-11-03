@@ -82,7 +82,8 @@
   var st0 = ST.state;
   ST.state = function (input, scenId) {
     var S = st0(input, scenId);
-    S.rbTies = (input.ties || []).filter(function (t) { return (t.type === 'sibbad' || t.type === 'bad') && t.noev !== 'off' && S.P[t.a] && S.P[t.b]; });
+    /* 不仲の相手の気持ちが決まっている片方向の関係は、二人とも嫌い合う場面にしない（敵視する側の場面は hate-kit.js。2026-11-02） */
+    S.rbTies = (input.ties || []).filter(function (t) { return (t.type === 'sibbad' || (t.type === 'bad' && !t.cold)) && t.noev !== 'off' && S.P[t.a] && S.P[t.b]; });
     S.rbUsed = {};
     return S;
   };
@@ -105,6 +106,11 @@
     if (TX && S.rbTies && S.rbTies.length && !SKIP.test(label || '') && (S.rbN || 0) < 5 && S.rng() < 0.42) {
       var c = choose(S, S.P, S.rbTies, TX, S.rng);
       if (c) ST.say(S, make(S, c, TX));
+    }
+    /* 宇宙船：片方向の不仲・敵対（相手の気持ちが決まっている）の二人は、敵視する側だけが冷たくする場面（hate-kit.js）。2026-11-02 */
+    if (S.scen && S.scen.id === 'ship' && HK.HateKit && !SKIP.test(label || '') && (S.ties || []).some(function (t) { return (t.type === 'bad' || t.type === 'enemy') && t.cold; })) {
+      var hk = HK.HateKit.storyTick(S, S.P.filter(function (p) { return p.alive && !p.away; }), { rate: 0.15 });
+      if (hk) ST.say(S, { actors: hk.actors, tag: hk.cat === 'romance' ? '片恋と嫌悪' : '敵視', text: hk.text, why: hk.why, mag: hk.mag });
     }
     /* ほかのファイルが足す物語型の関係の出来事（sib-feud.js の不仲の二人の出来事など。HK.addTo(HK.RelBad.EXTRA, fn) で足す。fn(S, label)） */
     for (var xi = 0; xi < RB.EXTRA.length; xi++) RB.EXTRA[xi](S, label);

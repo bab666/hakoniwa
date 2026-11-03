@@ -2,6 +2,7 @@
    ・エリアごとに「始まり方」が違う：襲われている真っ最中／立てこもり／病院のベッドで目覚める／職場で／車の中で／
      見知らぬ誰かに助けられる／すでに引っかかれている…など
    ・同じエリアの同盟は、一組ずつではなく一場面にまとめて描く */
+/* @event-ok 関係ごとの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK, Z = HK.ZB;
@@ -67,7 +68,9 @@
       var kind = HK.weighted(rng, Object.keys(OPEN), function (x) { var o = OPEN[x]; if ((o.min || 1) > g.length) return 0; if (x === 'npc' && ctx.env.npc < 20) return 0; return o.w / (1 + (used[x] || 0) * 2); });
       used[kind] = (used[kind] || 0) + 1;
       var O = OPEN[kind], a = g[0], b = g[1] || g[0];
-      var t = f(ctx.pick(O.t), { g: names(g), a: a.name, b: b.name, area: A.name, w: wname(a), w2: wname(b) });
+      /* 知り合いの二人には「見知らぬ誰か」の文を使わない（2026-10-31 担当RC。mini.js の HK.relFilter） */
+      var ot = g.length > 1 && HK.relFilter ? HK.relFilter(ctx, O.t, a, b) : O.t;
+      var t = f(ctx.pick(ot.length ? ot : O.t), { g: names(g), a: a.name, b: b.name, area: A.name, w: wname(a), w2: wname(b) });
       if (kind !== 'wake' && rng() < 0.6) t += f(ctx.pick(LOOK), { look: A.def.look });
       var why = '開始地点はランダム（仲の良さとは関係なし）', mag = 10;
       if (O.fx === 'attack') { g.forEach(function (c) { ctx.stress(c, 15); }); A.z = Math.min(100, A.z + 6); mag = 20; why += '／襲われている最中から始まる'; }

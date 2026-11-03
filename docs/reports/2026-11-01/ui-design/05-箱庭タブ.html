@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<title>箱庭タブ 整理案</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#1d4f7a}a:hover{color:#123553}
+</style>
+</helmet>
+<div style="position: relative; min-height: 1060px; background: #f4f5f7; color: #17202b; font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', sans-serif; font-size: 14px; line-height: 1.6">
+
+  <header style="background: #ffffff; border-bottom: 1px solid #dde2e7">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 12px 24px 0; box-sizing: border-box">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <svg width="28" height="28" sc-camel-view-box="0 0 24 24" fill="none" stroke="#17202b" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="11"></circle><path d="M12 5l6 3.5v7L12 19l-6-3.5v-7z M12 12l6-3.5 M12 12v7 M12 12L6 8.5"></path></svg>
+        <div style="font-size: 18px; font-weight: 700; letter-spacing: 0.08em">箱庭シミュレーター</div>
+        <div style="flex: 1 1 auto"></div>
+        <nav aria-label="案内" style="display: flex; gap: 4px; flex-wrap: wrap">
+          <a href="#" style="padding: 8px 10px; text-decoration: none; color: #4a5562; font-size: 13px">遊び方</a>
+          <a href="#" style="padding: 8px 10px; text-decoration: none; color: #4a5562; font-size: 13px">注意事項</a>
+          <a href="#" style="padding: 8px 10px; text-decoration: none; color: #4a5562; font-size: 13px">更新履歴</a>
+        </nav>
+        <button type="button" aria-haspopup="menu" style="display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; color: #17202b; font: inherit; font-size: 13px">表示（色・明るさ・書体・先読み）
+          <svg width="12" height="12" sc-camel-view-box="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 4.5l3 3 3-3"></path></svg>
+        </button>
+      </div>
+      <div role="tablist" aria-label="手順" style="display: flex; gap: 4px; margin-top: 10px; overflow-x: auto">
+        <button type="button" role="tab" aria-selected="false" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">
+          <span style="display: inline-flex; width: 22px; height: 22px; border-radius: 11px; border: 1px solid #aab4be; align-items: center; justify-content: center; font-size: 12px; box-sizing: border-box">1</span>住人<span style="color: #5b6672; font-size: 12px">10人</span>
+        </button>
+        <button type="button" role="tab" aria-selected="true" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 0; border-bottom: 3px solid {{accent}}; background: none; font: inherit; font-weight: 700; color: #17202b">
+          <span style="display: inline-flex; width: 22px; height: 22px; border-radius: 11px; background: {{accent}}; color: #fff; align-items: center; justify-content: center; font-size: 12px">2</span>箱庭<span style="font-weight: 400; color: #5b6672; font-size: 12px">合コン</span>
+        </button>
+        <button type="button" role="tab" aria-selected="false" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">
+          <span style="display: inline-flex; width: 22px; height: 22px; border-radius: 11px; border: 1px solid #aab4be; align-items: center; justify-content: center; font-size: 12px; box-sizing: border-box">3</span>経過と結末
+        </button>
+        <div style="flex: 1 1 auto"></div>
+        <button type="button" role="tab" aria-selected="false" style="display: flex; align-items: center; gap: 6px; padding: 10px 14px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">
+          <svg width="14" height="14" sc-camel-view-box="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true"><path d="M2 2.5h7.5L12 5v6.5H2z M4.5 2.5v3h4v-3 M4 11.5V8h6v3.5"></path></svg>セーブ
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main style="max-width: 1200px; margin: 0 auto; padding: 24px 24px 120px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+
+    <section aria-label="選んだ箱庭" style="display: flex; flex-wrap: wrap; gap: 20px; padding: 20px 24px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 14px">
+      <div style="flex: 999 1 520px; min-width: 0">
+        <div style="font-size: 12px; color: #5b6672; letter-spacing: 0.06em">恋愛・社交　・　2〜12人</div>
+        <h1 style="margin: 2px 0 4px; font-size: 26px; letter-spacing: 0.04em">合コン</h1>
+        <p style="margin: 0; color: #3b4652">居酒屋の個室で一晩の合コン。酒が回るほど本音と衝動があふれ出す。最後に誰と誰が一緒に帰ったかで決着がつく。</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px">
+          <span style="padding: 2px 10px; border-radius: 12px; background: #eef1f4; font-size: 12px; color: #3b4652">関係が中心</span>
+          <span style="padding: 2px 10px; border-radius: 12px; background: #eef1f4; font-size: 12px; color: #3b4652">モブ登場</span>
+          <span style="padding: 2px 10px; border-radius: 12px; background: #eef1f4; font-size: 12px; color: #3b4652">お酒</span>
+          <span style="padding: 2px 10px; border-radius: 12px; background: #eef1f4; font-size: 12px; color: #3b4652">好物</span>
+          <span style="padding: 2px 10px; border-radius: 12px; background: #eef1f4; font-size: 12px; color: #3b4652">種族・体格</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #edf0f2; font-size: 12px; color: #4a5562">
+          <span style="font-weight: 700; color: #17202b">効く気質</span>
+          <span>衝動性 <span style="font-family: ui-monospace, Menlo, Consolas, monospace">FC高／A低</span></span>
+          <span>本音の出やすさ <span style="font-family: ui-monospace, Menlo, Consolas, monospace">FC高／AC低</span></span>
+          <span>人懐こさ <span style="font-family: ui-monospace, Menlo, Consolas, monospace">NP・FC高</span></span>
+          <span>嫉妬・執着 <span style="font-family: ui-monospace, Menlo, Consolas, monospace">AC・CP高／A低</span></span>
+          <span>酒の強さ</span>
+          <span>見た目の自信</span>
+        </div>
+      </div>
+      <div style="flex: 1 1 200px; display: flex; flex-direction: column; gap: 8px; justify-content: flex-start">
+        <button type="button" style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 44px; border: 1px solid {{accent}}; border-radius: 8px; background: #ffffff; font: inherit; font-weight: 700; color: {{accent}}">
+          <svg width="16" height="16" sc-camel-view-box="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1"></rect><rect x="9" y="2" width="5" height="5" rx="1"></rect><rect x="2" y="9" width="5" height="5" rx="1"></rect><rect x="9" y="9" width="5" height="5" rx="1"></rect></svg>
+          箱庭を変える
+        </button>
+        <button type="button" style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 40px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">この箱庭のTIPS</button>
+        <button type="button" style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 40px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">出来事の一覧</button>
+      </div>
+    </section>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+      <div role="tablist" aria-label="箱庭の設定" style="display: flex; flex-wrap: wrap; padding: 3px; background: #e6e9ed; border-radius: 10px">
+        <button type="button" role="tab" aria-selected="false" style="height: 38px; padding: 0 16px; border: 0; border-radius: 8px; background: none; font: inherit; color: #4a5562">参加者と初動 <span style="font-size: 12px; color: #5b6672">10/12</span></button>
+        <button type="button" role="tab" aria-selected="true" style="height: 38px; padding: 0 16px; border: 0; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.12); font: inherit; font-weight: 700; color: #17202b">場の設定</button>
+        <button type="button" role="tab" aria-selected="false" style="height: 38px; padding: 0 16px; border: 0; border-radius: 8px; background: none; font: inherit; color: #4a5562">起こりやすさ</button>
+        <button type="button" role="tab" aria-selected="false" style="height: 38px; padding: 0 16px; border: 0; border-radius: 8px; background: none; font: inherit; color: #4a5562">展開と内容</button>
+      </div>
+      <div style="display: flex; gap: 8px">
+        <button type="button" style="height: 38px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">初期値に戻す</button>
+        <button type="button" style="height: 38px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">ランダム</button>
+      </div>
+    </div>
+
+    <section aria-label="場の設定" style="padding: 8px 24px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 14px">
+      <p style="margin: 12px 0 4px; font-size: 13px; color: #5b6672">合コンだけの設定です。起こりやすさ・展開の重さは、ほかのタブにあります。</p>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 40px">
+        <sc-for list="{{sliders}}" as="s" hint-placeholder-count="3">
+          <label style="display: block; padding: 16px 0; border-bottom: 1px solid #edf0f2">
+            <span style="display: flex; justify-content: space-between; font-weight: 700">{{s.name}}<span style="font-family: ui-monospace, Menlo, Consolas, monospace">{{s.val}}</span></span>
+            <input type="range" min="0" max="{{s.max}}" value="{{s.val}}" style="width: 100%; margin: 8px 0 2px; accent-color: {{accent}}">
+            <span style="display: flex; justify-content: space-between; font-size: 12px; color: #5b6672"><span>{{s.lo}}</span><span>{{s.hi}}</span></span>
+          </label>
+        </sc-for>
+        <sc-for list="{{segs}}" as="g" hint-placeholder-count="3">
+          <fieldset style="margin: 0; padding: 16px 0; border: 0; border-bottom: 1px solid #edf0f2">
+            <legend style="float: left; width: 100%; padding: 0; margin-bottom: 8px; font-weight: 700">{{g.name}}</legend>
+            <div style="clear: both; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #cfd6dd; border-radius: 8px; overflow: hidden">
+              <button type="button" aria-pressed="true" style="height: 40px; border: 0; background: {{accent}}; color: #ffffff; font: inherit; font-size: 13px; font-weight: 700">{{g.a}}</button>
+              <button type="button" aria-pressed="false" style="height: 40px; border: 0; border-left: 1px solid #cfd6dd; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">{{g.b}}</button>
+            </div>
+          </fieldset>
+        </sc-for>
+      </div>
+    </section>
+  </main>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; background: {{accent}}; color: #ffffff">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 14px 24px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 16px">
+      <div style="font-size: 13px; opacity: 0.85">合コン・参加 10人・場の設定 2か所を変更</div>
+      <div style="flex: 1 1 auto"></div>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 13px">シード
+        <input type="text" placeholder="空欄でランダム" style="width: 140px; height: 40px; padding: 0 10px; border: 1px solid rgba(255,255,255,0.4); border-radius: 8px; background: rgba(255,255,255,0.08); color: #ffffff; font: inherit">
+      </label>
+      <button type="button" style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 24px; border: 0; border-radius: 10px; background: #ffffff; color: {{accent}}; font: inherit; font-size: 15px; font-weight: 700">
+        <svg width="14" height="14" sc-camel-view-box="0 0 14 14" fill="currentColor" aria-hidden="true"><path d="M3.5 2l8 5-8 5z"></path></svg>
+        箱庭を動かす
+      </button>
+    </div>
+  </div>
+</div>
+</x-dc>
+
+
+
+</body></html>

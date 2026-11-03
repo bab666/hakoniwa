@@ -245,7 +245,10 @@
     var nogen = HK.NoGen && HK.NoGen.on && HK.NoGen.on(top, bot);
     var k = kindOf(top, bot, opt);
     if (!nogen && KIND[k] && KIND[k][st]) out.push([0.35, KIND[k][st]]);
-    out.push([1, LINES[personaOf(top, opt)][st]]);
+    /* 夜の性格で選んだ態度があれば、その態度の台詞（attr.js の HK.Attr.psNight。opt.persona の指定が優先。2026-10-31 担当E4） */
+    var pt = personaOf(top, opt);
+    if (!(opt && opt.persona) && HK.Attr && HK.Attr.psNight) { pt = HK.Attr.psNight(top, bot, pt); if (PS.indexOf(pt) < 0) pt = personaOf(top, opt); }
+    out.push([1, LINES[pt][st]]);
     /* 性器なしの人がいる組は、繋がる・出す・中の言い方の台詞を外す（口・指・玩具だけの場面なので） */
     if (nogen) out = out.map(function (p) { return [p[0], p[1].filter(function (l) { return !NOGEN_NG.test(l); })]; }).filter(function (p) { return p[1].length; });
     return out;

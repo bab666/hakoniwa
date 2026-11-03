@@ -1,7 +1,7 @@
 /* 箱庭シミュレーター: 画面の上の部分（2026-10-27 のデザインの適用。結果には影響しない）
    ・箱庭タブの一覧の上に絞り込みの札（すべて／日常／極限／ひとり用／R-18 のみ）。表示だけで、選んだ箱庭・保存には触らない（選んだカードは絞り込んでも出す）。
      カードの HTML は ui.js（ui-box-draw.js が箱庭ごとに1回だけ作る）のまま。札の行はカードの一覧（.scens）の直前に別の要素として置き、カードには .fltoff を付け外しするだけ
-     分類：極限＝下の EXTREME、ひとり用＝solo の箱庭（極限を除く）、日常＝それ以外、R-18 のみ＝R18 の札のカード（.scen.adult。R18版だけ）。数が 0 の札は出さない
+     分類：極限＝下の EXTREME、ひとり用＝solo の箱庭（極限を除く）、日常＝それ以外、R-18 のみ＝R18版にしかない箱庭のカード（.scen.r18only。2026-10-31 までは R18 の札のカード .scen.adult だったが、札が R18 の場面のある全部の箱庭に付くようになったので、R18専用の箱庭だけに）。数が 0 の札は出さない
    ・工程タブに、住人の数（住人）と選んだ箱庭の名前（箱庭）を小さく添える
    ・年齢モードの切り替え（safe.js が .brand に足す .agemode）をヘッダーのチップの列（#agemode-slot）へ、「R18モード」の札はフッターのリンクの列へ移す */
 (function () {
@@ -11,6 +11,7 @@
   var EXTREME = ['island', 'zombie', 'jashin', 'yakata', 'rpg', 'jinro', 'ship', 'br', 'trial', 'dungeon'];
   var CATS = [['all', 'すべて'], ['daily', '日常'], ['extreme', '極限'], ['solo', 'ひとり用'], ['r18', 'R-18 のみ']];
   var cur = 'all';
+  HK.ScenCat = { extreme: EXTREME, cats: CATS };   /* 箱庭タブの上の一覧（ui-box-list.js）も同じ分類で絞る */
   var css = '.scfilt{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}' +
     '.scfilt .fn{font-family:var(--f-num);font-size:11px;margin-left:4px;opacity:.85}' +
     '#view-box .scens>.fltoff{display:none!important}' +
@@ -25,7 +26,7 @@
     var inp = card.querySelector('input[name="scen"]');
     if (!inp) return null;
     var id = inp.value, m = meta(id) || {}, ex = EXTREME.indexOf(id) >= 0, so = !ex && !!m.solo;
-    return { all: true, extreme: ex, solo: so, daily: !ex && !so, r18: card.classList.contains('adult') };
+    return { all: true, extreme: ex, solo: so, daily: !ex && !so, r18: card.classList.contains('r18only') };
   }
   /* 札の行とカードの出し入れ */
   function filt() {

@@ -12,6 +12,14 @@
   function fillN(ctx, t, n, a, b) { if (HK.Mob) t = HK.Mob.you(t, n, n.type === 'child' ? 'ちゃん' : 'さん'); return ctx.t(t, a, b).replace(/\{n\}/g, n.label).replace(/\{area\}/g, Z.an(ctx, n.area)); }
   function luck(ctx, c) { return ctx.stat(c, 'luck'); }
   function power(c) { return (c.weapon ? c.weapon.pow : 0) * 5 + c.hp * 0.25 + c.tr.aggr * 12 + c.tr.a * 6; }
+  /* 名前の表から、住人と同じ名前（住人の名前に含まれる名前・住人の名前を含む名前も）を外す（2026-11-01）。
+     住人の「ソウタ」が飢えで亡くなったあとに「迷子の子・ソウタ」が群れに襲われると、亡くなった住人が出てきたように読めるため。
+     全部が当たるときは、もとの表のまま */
+  function freePool(ctx, pool) {
+    var res = ctx.chars.map(function (c) { return c.name || ''; }).filter(Boolean);
+    var free = pool.filter(function (x) { return !res.some(function (r) { return r === x || r.indexOf(x) >= 0 || x.indexOf(r) >= 0; }); });
+    return free.length ? free : pool;
+  }
 
   Z.spawnNPC = function (ctx) {
     var zb = ctx.zb, rng = ctx.rng;
@@ -25,7 +33,7 @@
     var used = {};
     zb.npcs.forEach(function (n) { used[n.type] = (used[n.type] || 0) + 1; });
     var type = HK.weighted(rng, Object.keys(Z.NPC_TYPES), function (k) { return Z.NPC_TYPES[k].w / (1 + (used[k] || 0) * 1.5) * (k === 'soldier' ? 0.6 + Z.day(ctx) * 0.12 : 1); });
-    var T = Z.NPC_TYPES[type], pool = type === 'child' ? CHILD[zb.reg] : Z.NPC_NAMES[zb.reg];
+    var T = Z.NPC_TYPES[type], pool = freePool(ctx, type === 'child' ? CHILD[zb.reg] : Z.NPC_NAMES[zb.reg]);
     var taken = zb.npcs.map(function (n) { return n.name; });
     var name = rng.pick(pool.filter(function (x) { return taken.indexOf(x) < 0; }).concat(pool.length ? [] : ['名無し'])) || rng.pick(pool);
     var n = { id: zb.npcs.length, type: type, name: name, label: T[zb.reg] + name, area: area, alive: true, with: null, at: ctx.stepIndex, met: false, turnAt: type === 'bitten' ? ctx.stepIndex + 2 + rng.int(4) : -1, cult: [], deserter: type === 'soldier' && rng() < 0.22, gun: zb.reg === 'us' && rng() < 0.6 };
@@ -35,7 +43,7 @@
 
   /* 指定の種類のNPCを、指定のエリアにすぐ出す（始まりの場面用） */
   Z.spawnNPCAt = function (ctx, type, area) {
-    var zb = ctx.zb, rng = ctx.rng, T = Z.NPC_TYPES[type], pool = type === 'child' ? CHILD[zb.reg] : Z.NPC_NAMES[zb.reg];
+    var zb = ctx.zb, rng = ctx.rng, T = Z.NPC_TYPES[type], pool = freePool(ctx, type === 'child' ? CHILD[zb.reg] : Z.NPC_NAMES[zb.reg]);
     var name = rng.pick(pool);
     var n = { id: zb.npcs.length, type: type, name: name, label: T[zb.reg] + name, area: area, alive: true, with: null, at: 0, met: false, turnAt: -1, cult: [], deserter: false, gun: zb.reg === 'us' };
     if (type === 'child') n.label = '迷子の' + (zb.reg === 'us' ? '' : '子・') + name;

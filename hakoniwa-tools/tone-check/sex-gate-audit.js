@@ -53,6 +53,8 @@ const PASS = function* (HK, opt) {
           if (cd[3] === 'nolib') { chars[1].libido = 'none'; if (n >= 4) chars[3].libido = 'none'; }
           const env = {}; (sc.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
           (sc.env || []).forEach(e => { if (e.max != null && /romance|love|night|lewd|heat|aphro|dose|pleasure|shady|prey/.test(e.id)) env[e.id] = e.max; });
+          /* 危険の環境値（宇宙の過酷さなど）は最小に：門の点検なので、死者が増えて生き残る組が減る揺れを入れない（2026-11-01。宇宙船の過酷さの見直しで N=24 の l／b が 82〜91% に揺れた） */
+          (sc.env || []).forEach(e => { if (e.min != null && /^(danger|hazard|risk)$/.test(e.id)) env[e.id] = e.min; });
           if (HK.Content) env.ct = HK.Content.TAGS.map(t => t.id).filter(t => FORCE || t !== 'force').join(',');
           const ties = [];
           if (cd[2]) [].concat(cd[2]).forEach(tt => { ties.push(Object.assign({ a: 0, b: 1 }, tt)); if (n >= 4) ties.push(Object.assign({ a: 2, b: 3 }, tt)); });
@@ -105,7 +107,7 @@ function verdict(r, show) {
     }
     if (c.j >= MIN && c.i === 0) { v += '／不具合（理性で止まった）'; if (bad.indexOf(id) < 0) bad.push(id); }
     /* 気持ちの関係の列：付けない組の 85% を下回ったら不具合（しづらくしない原則。比べる側が MIN_B 件以上あるときだけ） */
-    [['g', 'e'], ['k', 'b'], ['l', 'b'], ['m', 'b']].forEach(([x, y]) => { if (c[x] != null && c[y] >= MIN_B && c[x] < c[y] * 0.85) { v += '／不具合：' + x + '=' + Math.round(c[x] / c[y] * 100) + '%（' + y + ' 比）'; if (bad.indexOf(id) < 0) bad.push(id); } });
+    [['g', 'e'], ['k', 'b'], ['l', 'b'], ['m', 'b']].forEach(([x, y]) => { if (c[x] != null && c[y] >= MIN_B && Math.round(c[x] / c[y] * 100) < 85) {   /* 表示と同じ四捨五入で比べる（84.8% を「85%／不具合」と出さない。2026-10-31） */ v += '／不具合：' + x + '=' + Math.round(c[x] / c[y] * 100) + '%（' + y + ' 比）'; if (bad.indexOf(id) < 0) bad.push(id); } });
     if (c.j > 0) v += '／理性 高÷低 ' + Math.round(c.i / c.j * 100) + '%';
     /* 恐怖の列（2026-10-30 担当FS）：スイッチ切の恐怖の夜・固定を越えた恐怖の夜・恐れられる側の性欲「なし」での恐怖の夜は 1 件でも不具合 */
     const fz = [];

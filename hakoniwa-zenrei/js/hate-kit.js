@@ -1,3 +1,4 @@
+/* @event-ok 名前の呼びかけを減らした（2026-11-01 担当NC） */
 /* 箱庭シミュレーター: 敵視・不仲・敵対の共通部品（いくつかの箱庭で使う）
    ■ 嫌悪レベル（a が b をどれだけ嫌っているか。0〜100、向きがある）
      ・関係の値で動く箱庭（ゾンビ・クラスメイト・合コン・出られない部屋・オメガバース）は、緊張と好意から計算する
@@ -13,6 +14,7 @@
    ■ 狭い場所（媚薬ロッカーなど）：物語型の S に hkSpace: 'cramped' を付けると、嫌がらせ・無視・衝突・避ける・歩み寄りの地の文を
      狭い場所用（NC・AVC：肩を押しのける・背中を向ける・息を殺す・壁を蹴る など）にする。席・皿・荷物・周りの人・歩いて離れる文は使わない
    台詞は tone-lines.js・tone-lines-hate.js（口調ごとの書き下ろし） */
+/* @event-ok 閉じ込められた部屋・二人きりの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK, clamp = HK.clamp;
@@ -36,7 +38,7 @@
     for (var i = 0; i < l.length; i++) { var D = HK.TIES[l[i].type]; if (D && D.hate && l[i].a === a.i && l[i].cold) return l[i].cold; }
     return '';
   }
-  var LOVE_T = 'lover,mate,fated,almost,crush,fwb', FRIEND_T = 'friend,best,buddy,childhood,colleague,sibclose,sibling,senpai,mentor,classmate,boss,benefactor,relative,worship,fond,blind';
+  var LOVE_T = 'lover,mate,fated,almost,crush,fwb', FRIEND_T = 'friend,best,buddy,childhood,colleague,sibclose,twin,sibling,senpai,mentor,classmate,boss,benefactor,relative,worship,fond,blind';
   function hasT(x, a, b, list) { return tieList(x, a, b).some(function (t) { return list.split(',').indexOf(t.type) >= 0 && (t.type !== 'crush' || t.a === a.i); }); }
 
   /* 物語型：嫌悪レベルの表（設定した関係から始める） */
@@ -60,6 +62,8 @@
       if (isCtx(x)) { var r = x.R(a, b); return clamp(r.ten * 0.9 - r.aff * 0.7, 0, 100); }
       return storyMap(x)[a.i + '>' + b.i] || 0;
     },
+    /* a が b を敵視する側として動くか：嫌悪 35 以上で、片方向の不仲・敵対で気持ちが決まっている側（b が a を敵視し、a の気持ちが設定されている）ではない（2026-11-02） */
+    hater: function (x, a, b) { return !backOf(x, b, a) && H.level(x, a, b) >= 35; },
     band: function (lv) { return lv >= 65 ? 'enemy' : lv >= 35 ? 'bad' : ''; },
     /* 嫌悪を上下させる。不仲⇔敵対の境目を越えたら、その一文を返す */
     shift: function (x, a, b, d) {
@@ -75,9 +79,10 @@
     },
     /* b から見た a（a が b を敵視しているときの、b の気持ち） */
     stance: function (x, b, a) {
-      if (H.level(x, b, a) >= 35) return 'hate';
+      /* 設定した「相手の気持ち」を先に見る（関係の値で b の嫌悪が上がっても、愛している・友人だと思っている設定は変えない。2026-11-02 利用者の報告） */
       var back = backOf(x, a, b);
       if (back) return back;
+      if (H.level(x, b, a) >= 35) return 'hate';
       if (hasT(x, b, a, LOVE_T)) return 'love';
       if (isCtx(x)) {
         var r = x.R(b, a);
@@ -122,7 +127,8 @@
     /* a が b を敵視している二人（a→b）。lv は a の嫌悪レベル */
     pairs: function (x, list, min) {
       var out = [];
-      list.forEach(function (a) { list.forEach(function (b) { if (a !== b) { var lv = H.level(x, a, b); if (lv >= (min || 35)) out.push({ a: a, b: b, lv: lv, band: H.band(lv), st: H.stance(x, b, a) }); } }); });
+      /* 片方向の不仲・敵対で気持ちが決まっている側（b が a を敵視し、a の気持ちが設定されている）は、関係の値で嫌悪が上がっても敵視する側にしない（2026-11-02） */
+      list.forEach(function (a) { list.forEach(function (b) { if (a !== b && !backOf(x, b, a)) { var lv = H.level(x, a, b); if (lv >= (min || 35)) out.push({ a: a, b: b, lv: lv, band: H.band(lv), st: H.stance(x, b, a) }); } }); });
       return out;
     },
     /* 関係の説明（理由の欄） */
@@ -184,8 +190,8 @@
   var AV = {
     lead: L('{a}が{b}のほうへ歩いてきた。|{a}は{b}を見つけると、わざとらしく声をかけてきた。|{a}が何か言いたげに、{b}の前に立った。'),
     ignore: L('{b}は気づかないふりをして、手元から目を上げなかった。{a}の声は、宙に浮いたまま消えた。|{b}は小さく会釈だけして、すっとその場を離れた。苦手な相手とは、関わらないのがいちばんだった。|{b}は{a}と目を合わせないまま、「……今、忙しいから｜……今、忙しい｜……今、忙しいんです」とだけ言った。'),
-    third: L('{b}は返事をせずに、近くにいた{c}の袖を引いた。{c}は事情を察して、{b}と{a}のあいだにさりげなく立った。|{b}は{c}に目で助けを求めた。{c}「{a}、その話なら私が聞く｜＝｜{a}、その話なら私が聞きます」――{b}はほっと息をついた。|{b}は{a}から逃げるように{c}の隣へ移り、{c}にばかり話しかけた。{a}の言葉は、行き場をなくした。'),
-    proxy: L('{b}「……{c}、代わりに聞いておいて｜……{c}、代わりに聞いておいてくれ｜……{c}、代わりに聞いておいてください」――そう言い残して、{b}は席を外した。{c}は苦笑して、{a}に向き直った。|{b}は{a}への用件を、全部{c}に頼んだ。{a}が何を言っても、返ってくるのは{c}の声だった。|{b}は{a}の前に{c}を押し出した。「この件は{c}に任せてあるから｜この件は{c}に任せてある｜この件は{c}に任せてあります」――{c}は肩をすくめて、{a}の相手を引き受けた。')
+    third: L('{b}は返事をせずに、近くにいた{c}の袖を引いた。{c}は事情を察して、{b}と{a}のあいだにさりげなく立った。|{b}は{c}に目で助けを求めた。{c}「その話なら私が聞く｜＝｜その話なら私が聞きます」――{b}はほっと息をついた。|{b}は{a}から逃げるように{c}の隣へ移り、{c}にばかり話しかけた。{a}の言葉は、行き場をなくした。'),
+    proxy: L('{b}「……代わりに聞いておいて｜……代わりに聞いておいてくれ｜……代わりに聞いておいてください」――そう言い残して、{b}は席を外した。{c}は苦笑して、{a}に向き直った。|{b}は{a}への用件を、全部{c}に頼んだ。{a}が何を言っても、返ってくるのは{c}の声だった。|{b}は{a}の前に{c}を押し出した。「この件は{c}に任せてあるから｜この件は{c}に任せてある｜この件は{c}に任せてあります」――{c}は肩をすくめて、{a}の相手を引き受けた。')
   };
   /* 狭い場所では、その場を離れることも、第三者のそばへ移ることもできない（無視するだけ） */
   var AVC = {
@@ -304,18 +310,18 @@
       if (opt.kinds !== 'love') return true;
       return H.stance(ctx, b, a) === 'love' || hasT(ctx, a, b, LOVE_T);
     }
-    /* 最初に顔を合わせたとき（ゾンビは、同じエリアで出会ったとき：zombie-core.js から H.meet を呼ぶ） */
+    /* 最初に顔を合わせたとき（ゾンビは、同じエリアで出会ったとき：zombie-core.js から H.meet を呼ぶ）。opt.atStart：最初から同じ場所に閉じ込められている箱庭（出られない部屋）は、最初の区切りだけ */
     /* 出来事の表への追加は HK.addTo（分割読み込みで、組み込みが箱庭の本体より後になっても、元のファイルの順に並ぶ） */
     if (opt.meet !== false) HK.addTo(scen.events, {
       id: 'hk_meet', label: '敵視する相手と顔を合わせる', cat: 'conflict', scope: 'pair',
-      when: function (ctx, a, b) { var pf = ctx.pair(a, b); return !(pf.hkMet && pf.hkMet[a.i]) && H.level(ctx, a, b) >= 35 && okKinds(ctx, a, b); },
+      when: function (ctx, a, b) { var pf = ctx.pair(a, b); if (opt.atStart && ctx.stepIndex > 0) return false; return !(pf.hkMet && pf.hkMet[a.i]) && H.hater(ctx, a, b) && okKinds(ctx, a, b); },
       w: function (ctx, a, b) { return 6 * W * H.drive(a, 'hater'); },
       run: function (ctx, a, b) { var pf = ctx.pair(a, b); (pf.hkMet = pf.hkMet || {})[a.i] = 1; var r = H.meet(ctx, a, b, opt.place ? opt.place(ctx, a) : ''); return { text: r.text, why: r.why, mag: r.mag, cat: r.cat, with: r.with }; }
     });
     /* 敵視する側から */
     HK.addTo(scen.events, {
       id: 'hk_hater', label: '敵視する相手に突っかかる', cat: 'conflict', scope: 'pair',
-      when: function (ctx, a, b) { return H.level(ctx, a, b) >= 35 && okKinds(ctx, a, b) && (ctx.pair(a, b).hkAt == null || ctx.stepIndex - ctx.pair(a, b).hkAt >= 2); },
+      when: function (ctx, a, b) { return H.hater(ctx, a, b) && okKinds(ctx, a, b) && (ctx.pair(a, b).hkAt == null || ctx.stepIndex - ctx.pair(a, b).hkAt >= 2); },
       w: function (ctx, a, b) { return 1.6 * W * H.drive(a, 'hater') * (0.7 + H.level(ctx, a, b) / 100); },
       run: function (ctx, a, b) {
         ctx.pair(a, b).hkAt = ctx.stepIndex;
@@ -326,7 +332,7 @@
     /* 敵視されている相手から（友人だと思っている・愛している・気づかずに話しかける） */
     HK.addTo(scen.events, {
       id: 'hk_receiver', label: '敵視されていると知らずに近づく', cat: 'bond', scope: 'pair',
-      when: function (ctx, b, a) { var st = H.stance(ctx, b, a); return H.level(ctx, a, b) >= 35 && st !== 'hate' && st !== 'avoid' && okKinds(ctx, a, b) && (ctx.pair(a, b).hkAt == null || ctx.stepIndex - ctx.pair(a, b).hkAt >= 2); },
+      when: function (ctx, b, a) { var st = H.stance(ctx, b, a); return H.hater(ctx, a, b) && st !== 'hate' && st !== 'avoid' && okKinds(ctx, a, b) && (ctx.pair(a, b).hkAt == null || ctx.stepIndex - ctx.pair(a, b).hkAt >= 2); },
       w: function (ctx, b, a) { var st = H.stance(ctx, b, a); return 1.4 * W * H.drive(b, 'receiver') * (st === 'love' ? 1.6 : st === 'friend' ? 1.3 : 0.6); },
       run: function (ctx, b, a) {
         ctx.pair(a, b).hkAt = ctx.stepIndex;

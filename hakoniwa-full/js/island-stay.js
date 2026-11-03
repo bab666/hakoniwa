@@ -43,7 +43,8 @@
     else if (tr < -6 && live.length >= 2) out.push({ k: 'lonely', s: 0.18 + Math.min(0.2, -tr / 200) + c.tr.ac * 0.1, why: '皆からの信頼・好意が低いまま（平均' + Math.round(tr) + '）' });
     /* 失恋 */
     others.forEach(function (b) {
-      var att = ctx.R(c, b).att; if (att < 28 || !b.alive) return;
+      /* 先に島を出た人（通りがかりの船・呼んだ船で帰った人）は、残る理由の相手にしない（同じ船に乗らない・場にいない人を出来事に出さない。2026-11-02） */
+      var att = ctx.R(c, b).att; if (att < 28 || !b.alive || (HK.State && HK.State.here && !HK.State.here(b))) return;
       var rival = null, rv = 0;
       live.forEach(function (x) { if (x === c || x === b) return; var v = Math.min(ctx.R(b, x).att, ctx.R(x, b).att); if (v > rv) { rv = v; rival = x; } });
       if (rival && rv > 32 && rv > ctx.R(b, c).att + 5) out.push({ k: 'heart', s: 0.2 + att / 250 + c.tr.ac * 0.1, b: b, c: rival, why: c.name + 'は' + b.name + 'に惹かれていた（' + Math.round(att) + '）が、' + b.name + 'は' + rival.name + 'と結ばれた' });

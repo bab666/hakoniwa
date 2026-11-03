@@ -172,6 +172,8 @@
   };
   function gfill(t, m) { return t.replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
   Z.groupReaction = function (ctx, c) {
+    /* 咬まれた本人がもう亡くなった・場を離れたなら、仲間の反応は出さない（後から呼ばれる Z.later の経路。2026-11-01） */
+    if (!c || !c.alive || c.out) return;
     var rng = ctx.rng, mates = Z.here(ctx, c);
     if (!mates.length) return;
     var K = null, kv = -9, P = null, pv = -9, leavers = [];
@@ -394,17 +396,19 @@
       var t = ctx.t('{a}は{b}の腕を掴んで、袖をまくり上げた。そこには、黒ずんだ咬み跡があった。{a}は低く訊いた。「いつから？｜いつからだ｜いつからですか」', a, b);
       ctx.mod2(a, b, { ten: 20, trust: -20 }, { ten: 15 });
       ctx.pending = (ctx.pending || []);
-      setTimeout0(ctx, function () { Z.groupReaction(ctx, b); });
+      setTimeout0(ctx, function () { Z.groupReaction(ctx, b); }, [b]);
       return { text: t, why: a.name + 'の観察眼（A・慎重さ）。' + b.name + 'は咬み跡を隠していた', mag: 32 };
     }
   });
-  /* 出来事のあとで続けて起きること（同じ区切りのうちに） */
-  function setTimeout0(ctx, fn) { (ctx.zb.later = ctx.zb.later || []).push(fn); }
+  /* 出来事のあとで続けて起きること（同じ区切りのうちに。区切りの終わりの処理（飢え・絶望など）のあとで足したものは、次の区切りの終わりに起きる）。
+     who（省略可）：その出来事に出る住人。起きるときまでに一人でも亡くなった・場を離れていたら、起こさない
+     （仲間の群れに呑まれた・飢えで倒れた人が、そのあとの反応や知らせの出来事に「生きている人」として出ないように。2026-11-01） */
+  function setTimeout0(ctx, fn, who) { (ctx.zb.later = ctx.zb.later || []).push({ fn: fn, who: (who || []).filter(Boolean) }); }
   Z.later = setTimeout0;
   var after0 = scen.after;
   scen.after = function (ctx, s, n) {
     var L0 = ctx.zb.later || []; ctx.zb.later = [];
-    L0.forEach(function (fn) { fn(); });
+    L0.forEach(function (x) { if (x.who.every(function (c) { return c.alive && !c.out; })) x.fn(); });
     after0(ctx, s, n);
   };
 

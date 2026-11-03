@@ -13,6 +13,7 @@
 /* @event scen=saimin id=sm_friend cat=bond tie=friend label=友人に催眠をかけられる */
 /* @event scen=saimin id=sm_grudge cat=conflict tie=enemy label=恨みを持った相手に催眠をかけられる */
 /* @event scen=saimin id=sm_stalker cat=conflict tie=yan tags=mob label=ストーカーに催眠をかけられる */
+/* @event scen=saimin id=sm_counter_sweet cat=romance tie=lover,friend,colleague label=同意の上の逆催眠（今度はこっちの番） */
 /* r18:begin */
 /* @event scen=saimin id=sm_r18_sex cat=夜 tie=- tags=night label=暗示から実際の行為へ */
 /* @event scen=saimin id=sm_r18_force cat=夜 tags=night,force cond=HK.Content.ok(S, 'force') label=同意のない催眠（恨み・ストーカー） */
@@ -122,7 +123,8 @@
   if (HK.SCEN_ORDER.indexOf('saimin') < 0) HK.SCEN_ORDER.push('saimin');
 
   var TIEMAP = { teacher: 'colleague', mentor: 'colleague', lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'lover', colleague: 'colleague', senpai: 'colleague', master: 'colleague', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', acq: 'friend', almost: 'friend', enemy: 'grudge', rival: 'grudge', ex: 'grudge', crush: 'stalker', classmate: 'friend', boss: 'colleague', benefactor: 'friend', worship: 'friend', fond: 'friend', blind: 'stalker' };
-  var FATE = { confused: '困惑したまま、答えを出せなかった', dazed: '放心して、しばらく何も手につかなかった', accept: '戸惑いながらも受け入れた', peace: '頭が良くなって喜んだ', forget: '何も覚えていない', body: '体だけが覚えている', angry: '激怒した', report: '通報した', revenge: 'やり返した', counter: '逆催眠をかけた', sweet: '照れながら許した', shy: '恥ずかしくて避けた', fall: '快楽に堕ちた（自分からねだる）', couple: '恋人になった', depend: '憎みながら離れられない', laugh: 'かからずに笑い飛ばした', noticed: '見破った' };
+  SM.TIEMAP = TIEMAP;   /* saimin-note.js（設定画面の事前の表示）が、二人の関係からかける側の種類を引く */
+  var FATE = { confused: '困惑したまま、答えを出せなかった', dazed: '放心して、しばらく何も手につかなかった', accept: '戸惑いながらも受け入れた', peace: '頭が良くなって喜んだ', forget: '何も覚えていない', body: '体だけが覚えている', angry: '激怒した', report: '通報した', revenge: 'やり返した', counter: '逆催眠をかけた', counterSweet: '同意の上で逆催眠をかけ返した', csLove: '逆催眠のあと、恋人になった', sweet: '照れながら許した', shy: '恥ずかしくて避けた', fall: '快楽に堕ちた（自分からねだる）', couple: '恋人になった', depend: '憎みながら離れられない', laugh: 'かからずに笑い飛ばした', noticed: '見破った' };
 
   function resolve(S, p, list, pick) {
     if (pick && pick !== 'auto') for (var i = 0; i < list.length; i++) if (list[i].id === pick) return list[i];
@@ -135,7 +137,9 @@
     var S = ST.state(input, 'saimin'), rng = S.rng, env = S.env, P = S.P, lew = env.lewd || 'mid', skill = env.skill / 100;
     var V = HK.Voice;
     /* 内容のスイッチ「合意のない展開」（content.js）：性的な暗示がありうるときだけ見る。切なら、恨み・ストーカーは性的な暗示をかけず、ほかは合意の上の催眠プレイにする */
-    S.gate = !HK.SAFE_ON && lew !== 'low' && !!HK.Content && !HK.Content.ok(S, 'force');
+    /* 描写「ぼかす」でも、暗示の方向が「エッチなものだけ」なら性的な暗示をかける（ぼかした文 SM.SUG_LOW*）ので、合意のない展開のスイッチも見る（2026-10-31 担当SA） */
+    var lowLewd = lew === 'low' && env.mode === 'lewd';
+    S.gate = !HK.SAFE_ON && (lew !== 'low' || lowLewd) && !!HK.Content && !HK.Content.ok(S, 'force');
     P.forEach(function (p) { var pk = (input.perChar && input.perChar[p.i] && input.perChar[p.i].pick || {}).role; p.role = pk === 'hypno' ? 'hypno' : 'target'; });
     /* かける側とかけられる側で、合わせて二人まで。かける側を決めなければモブ（2人のときは、役割を決めていない人がかける側） */
     if (P.length > 2) P = S.P = P.slice(0, 2);
@@ -185,9 +189,15 @@
       /* 合意のない展開が切で、住人のかけ手と敵対・ライバルの二人（おまかせ）：恨みの種類（性的な暗示をかけない）だけにせず、
          表面上は反発し合いながら同意を取った催眠プレイにすることがある（友人の種類に関係の名前の札。起こりやすさは ties.js の HK.sexTieK：敵対 0.6・ライバル 0.85、愛憎があれば戻す）。
          利用者の指示「敵対はあくまで表面上＋しづらい程度」（2026-10-28 担当MC） */
-      if (S.gate && HY && tt && env.who === 'random' && ty === 'grudge' && /^(enemy|rival)$/.test(tt.type) && !kinNo && rng() < (HK.sexTieK ? HK.sexTieK(tt) : 0.6)) { ty = 'friend'; famL = (HK.TIES[tt.type] && HK.TIES[tt.type].label) || ''; }
+      /* 暗示の方向が「エッチなものだけ」なら、いつも催眠プレイにする（エッチな内容を優先する。2026-10-31 担当SA） */
+      if (S.gate && HY && tt && env.who === 'random' && ty === 'grudge' && /^(enemy|rival)$/.test(tt.type) && !kinNo && (env.mode === 'lewd' || rng() < (HK.sexTieK ? HK.sexTieK(tt) : 0.6))) { ty = 'friend'; famL = (HK.TIES[tt.type] && HK.TIES[tt.type].label) || ''; }
       /* 合意のない展開が切：おまかせで選んだモブの恨み・ストーカーは、同僚・友人・恋人に替える */
-      if (S.gate && !HY && env.who === 'random' && (ty === 'grudge' || ty === 'stalker')) ty = rng.pick(['colleague', 'friend', 'lover']);
+      /* 「エッチなものだけ」で、住人のかけ手と関係のない二人（おまかせ）も同じ（恨み・ストーカーを引くと、性的な暗示が一つも出ない回になるため。2026-10-31 担当SA）。
+         恋人は、恋愛にならない二人（恋愛対象・恋愛・R18にしない組）なら友人 */
+      if (S.gate && (!HY || (env.mode === 'lewd' && !tt)) && env.who === 'random' && (ty === 'grudge' || ty === 'stalker')) {
+        ty = rng.pick(['colleague', 'friend', 'lover']);
+        if (HY && ty === 'lover' && ((HK.ngPair && HK.ngPair(HY, p)) || (HK.canLove && !(HK.canLove(HY, p) && HK.canLove(p, HY))))) ty = 'friend';
+      }
       /* モブのかける側の性別：設定がなければ、かけられる人の恋愛対象に合わせる（どちらでもよければ、男性・女性の人にはときどき女性） */
       if (!HY) {
         var hs = env.hsex === 'm' || env.hsex === 'f' ? env.hsex : null;
@@ -197,6 +207,8 @@
       /* 恋愛・R18にしない組（HK.ngPair）では、住人のかけ手を恋人・ストーカーにしない */
       if (HY && HK.ngPair && HK.ngPair(HY, p) && (ty === 'lover' || ty === 'stalker')) ty = ty === 'lover' ? 'friend' : 'colleague';
       p.ty = ty; p.T = famL && ty === 'friend' ? Object.assign({}, SM.TYPES[ty], { label: famL }) : SM.TYPES[ty];
+      /* 住人のかけ手との関係（同意の上の逆催眠で、恋人になる分岐を見るとき。すでに恋愛の関係なら「付き合い始める」にしない） */
+      p.tie = HY ? (tt || null) : null;
       p.hc = HY || null; p.h = HY ? HY.name : ST.fmt(rng.pick(p.hf && p.T.namesF ? p.T.namesF : p.T.names), { a: p.name });
       /* モブのかける側の体（受け攻め・女攻めの文・喘ぎを選ぶための仮の人物） */
       p.hm = HY ? null : { name: p.h, gender: p.hf ? 'f' : 'm', persona: 'gentle', mob: true, mobRole: ty === 'stalker' || ty === 'grudge' ? 'guest' : 'street' };
@@ -206,7 +218,7 @@
       p.M = SM.METHODS[p.mk];
       p.bad = ty === 'grudge' || ty === 'stalker';
       /* 受け攻め：かけられた側が攻めか（住人どうしは HK.Pos.order、モブ相手は HK.Pos.vsNpc）。
-         住人どうしで向きの決まらない組（HK.Pos.okSex が false）は、性的な暗示を一切かけない。女性どうしは専用の文 */
+         住人どうしで体の関係にならない組（HK.Pos.okSex が false）は、性的な暗示をかけない（受け攻めの向きだけが決まらない組は、体を重ねない暗示だけ。下の p.solo）。女性どうしは専用の文 */
       var Pz = HK.Pos;
       /* モブが相手：モブとの場面に出してよい人（HK.State.mobSexOk。性行為の相手を「固定した相手だけ」にした人は、恋人の種類のモブでも不可）で、恋愛対象がかける側の性別に合うときだけ */
       var mobNo = !HY && !HK.SAFE_ON && (!!(HK.State && !HK.State.mobSexOk(p)) || !!(Pz && !Pz.genderOK(p, p.hm)));
@@ -219,12 +231,24 @@
       /* 性欲「なし」（pos.js の HK.Pos.libOf）：同意を取った催眠プレイ（合意のない展開が切）では、かけられる人・住人のかけ手のどちらかが「なし」なら性的な暗示をかけない。
          合意のない展開が入（同意のない催眠）は、内容のスイッチどおり（2026-10-27 担当HM） */
       var libNo = !!(S.gate && Pz && Pz.libOf && (Pz.libOf(p) === 'none' || (HY && Pz.libOf(HY) === 'none')));
-      p.noSex = !!(Pz && HY && !Pz.okSex(HY, p)) || kinNo || mobNo || resNo || p.noForce || libNo;
+      var pairNo = !!(Pz && HY && !Pz.okSex(HY, p));
+      /* 理由（HK.Pos.noSexInfo。R18版だけ）は、下で p.noSex（真偽）を書く前に引く（住人の写しの noSex は「体の関係にしない相手」の並びで、HK.sexBlocked が読むため） */
+      var noInfo = HY && !HK.SAFE_ON && (pairNo || kinNo || resNo || libNo) && Pz && Pz.noSexInfo ? Pz.noSexInfo(HY, p, { ctx: { chars: S.P }, ties: input.ties || [] }) : null;
+      p.noSex = pairNo || kinNo || mobNo || resNo || p.noForce || libNo;
       /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK：50 で 1・100 で 1.7・0 で 0。2026-10-29 担当MI）：住人のかけ手と同意を取った催眠プレイは、
          0 なら性的な暗示をかけない（1 より小さければ、その見込みでだけかける）。上げたときは「平和な暗示だけ」の回を減らす。
          同意のない催眠（合意のない展開が入）・モブのかけ手は止めない */
       var nK = Pz && Pz.nightK ? Pz.nightK(S) : 1;
-      if (HY && p.consent && !p.noSex && nK < 1 && !(nK > 0 && rng() < nK)) p.noSex = true;
+      var nightNo = false;
+      if (HY && p.consent && !p.noSex && nK < 1 && !(nK > 0 && rng() < nK)) { p.noSex = true; nightNo = true; }
+      /* 性的な暗示をかけない理由（導入の一文・設定画面の事前の表示 saimin-note.js。2026-10-31 担当SA）。
+         住人どうしで受け攻めの向きだけが決まらない組（HK.Pos.noSexInfo の k が 'pos'。恋愛対象・R18に参加しない・性欲・固定は合っている）は、
+         かける側と体を重ねない暗示（感度・発情・声・絶頂の合図など。SUG の solo の文）だけはかける（p.solo）。恋愛対象・受け攻め・固定は越えない */
+      p.noK = !p.noSex ? '' : pairNo ? 'pair' : kinNo ? 'kin' : mobNo ? 'mob' : resNo ? 'res' : p.noForce ? 'force' : libNo ? 'lib' : nightNo ? 'night' : 'other';
+      p.noInfo = /^(pair|kin|res|lib)$/.test(p.noK) ? noInfo : null;
+      p.solo = !!(p.noSex && p.noK === 'pair' && p.noInfo && p.noInfo.k === 'pos' && !HK.SAFE_ON && !kinNo && !resNo && !p.noForce && !libNo);
+      /* 夜の起こりやすさ（同意を取った催眠プレイ）は、体を重ねない暗示にも同じように効かせる */
+      if (p.solo && p.consent && nK < 1 && !(nK > 0 && rng() < nK)) { p.solo = false; p.noK = 'night'; p.noInfo = null; }
       p.aTop = !!(Pz && !p.noSex && (HY ? Pz.order(HY, p, [HY, p])[0] === p : Pz.vsNpc(p, '') === 'top'));
       p.ff = !!(Pz && (HY ? Pz.ff(HY, p) : p.hf && Pz.isF(p)));
       /* かける側が女性で、男性（女性でない人）を導く組（女攻め×男）：{h} が跨る・導く専用の文（fm）を使う。男性の体で書いた {h} の文は使わない。
@@ -240,6 +264,8 @@
       p.aff = {};
       Object.keys(SM.SUG).forEach(function (k) { var g = SM.SUG[k]; p.aff[k] = dot(g.aff, p.tr) - dot(g.res, p.tr) + (rng() - 0.5) * 0.25; });
       p.weak = Object.keys(p.aff).filter(function (k) { return okSug(p, k, env); }).sort(function (a, b) { return p.aff[b] - p.aff[a]; }).slice(0, 2);
+      /* 点検の道具（/tmp の計測）が理由の内訳を読む窓口。ふだんは null */
+      if (SM._dbg) SM._dbg.push({ name: p.name, noK: p.noK, info: p.noInfo ? p.noInfo.k : '', solo: p.solo, ty: p.ty });
       p.m = { depth: 0, plea: 0, fall: 0, resist: Math.round(clamp((p.tr.cp * 0.5 + p.tr.a * 0.4 + (p.goal.id === 'safe' ? 0.15 : 0)) * 100 * (HK.Attr ? 2 - HK.Attr.willK(p) : 1), 5, 95)) };
       p.cnt = { ok: 0, part: 0, ng: 0, climax: 0, lewd: 0, shame: 0, smart: 0, ev: 0 };
       p.used = {}; p.got = []; p.maxDepth = 0;
@@ -247,7 +273,9 @@
     });
 
     function say(p, o, short, force) {
-      o.actors = HY ? [p, HY] : [p];
+      /* かける側と体を重ねない暗示（p.solo）の場面は、かけられる人だけの場面（かける側は声をかけるだけ） */
+      o.actors = HY && !o.solo ? [p, HY] : [p];
+      delete o.solo;
       /* かける側への呼びかけ（{you}）：モブなら印（mob.js の HK.Mob.addr。台詞では話し手の二人称になる）、住人なら「あなた」（相手ごとの二人称が効く） */
       if (typeof o.text === 'string' && o.text.indexOf('{you}') >= 0) o.text = !HY && p.hm && HK.Mob ? HK.Mob.you(o.text, p.hm, p.ty === 'lover' ? '' : 'さん') : o.text.replace(/\{you\}/g, 'あなた');
       /* かける側の呼び名が「アキラの元患者」のようなとき、「アキラはアキラの元患者を」→「アキラは自分の元患者を」 */
@@ -279,7 +307,7 @@
       var o = say(p, { tag: '目覚め', text: vJoin(ST.fmt(ST.pick(S, L('{a}がはっと目を見開いた。目の前に{h}の顔があった。自分の格好を見下ろして、{a}は息を呑んだ。|{a}の瞳に、急に光が戻った。{a}は「……え。{you}、何してるの｜……え。{you}、何をしているんだ｜……え。{you}、何をしているんですか」と後ずさった。|{a}は跳ね起きた。体はまだ火照っているのに、頭だけが冷えていた。')), { a: p.name, h: p.h }), p, SM.RESIST_SAY[p.persona] ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : ''), why: '催眠が浅くなって、途中で目を覚ました（深さ ' + Math.round(p.m.depth) + '）', mag: 35 }, '', true);
       ST.key(S, o, p.name + 'が途中で目を覚ました');
       /* エッチな暗示のあとで目を覚ましたなら、そこからも分かれる（流される／通報／逃げる） */
-      if (p.cnt.lewd >= 1 && lew !== 'low' && SM.afterSnap && !p.snapDone) {
+      if (p.cnt.lewd >= 1 && !p.solo && lew !== 'low' && SM.afterSnap && !p.snapDone) {
         p.wokeMid = true; p.snapDone = true;
         var sr = snapThick(S, p, SM.afterSnap(wrapS(S, p), p));
         var o2 = say(p, { tag: sr.tag, text: sr.text, why: sr.why, mag: 40, kind: sr.k === 'swept' ? 'climax' : 'event' }, '', true);
@@ -321,7 +349,9 @@
       var mi = p.M.intro, miq = lastSpk(t, [p.name, p.h]) === p.h ? mi.filter(function (x) { return x.indexOf('「') < 0; }) : [];
       t += ST.fmt(ST.pick(S, miq.length ? miq : mi), v);
       say(p, { tag: p.T.label, text: t, why: '催眠をかけるのは' + p.h + '（' + p.T.label + (p.hf ? '・女性' : '') + '）。' + ST.fmt(p.T.motive, v) + (p.consent ? '／始める前に、二人で同意していた（内容のスイッチ「合意のない展開」が切）' : p.noForce ? '／内容のスイッチ「合意のない展開」が切なので、いたずらの暗示だけ' : '') });
-      var o = say(p, { tag: '診断', text: p.name + 'のかかりやすさは' + Math.round(p.sus * 100) + '％。弱い暗示は「' + p.weak.map(function (k) { return SM.SUG[k].label; }).join('」「') + '」。', why: 'AC・FCが高いほど、A・CPが低いほどかかりやすい／' + p.M.name + 'との相性・' + p.h + 'への警戒の薄さ・方針「' + p.action.label + '」' }, '', true);
+      /* 「エッチなものだけ」でかからない理由の一文があるとき・体を重ねない暗示だけの人は、診断の段をかけられる人だけの記録にする（二人の性的な場面ではないため） */
+      var nsn = SM.noSexNote(p, HY, env);
+      var o = say(p, { tag: '診断', text: p.name + 'のかかりやすさは' + Math.round(p.sus * 100) + '％。弱い暗示は「' + p.weak.map(function (k) { return SM.SUG[k].label; }).join('」「') + '」。' + nsn, solo: p.solo || !!nsn, why: 'AC・FCが高いほど、A・CPが低いほどかかりやすい／' + p.M.name + 'との相性・' + p.h + 'への警戒の薄さ・方針「' + p.action.label + '」' }, '', true);
       ST.key(S, o, p.name + 'のかかりやすさ');
     });
     ST.snap(S, keys);
@@ -401,8 +431,10 @@
           /* 受け攻め・女性どうし：かけられた側が攻めなら攻めの文、女性どうしなら専用の文（variant） */
           var aTop = p.aTop;
           var vk = full ? (lew === 'low' && g.softFull ? 'softFull' : vkey(p, g, 'full')) : vkey(p, g, 'part');
-          var body = ST.pick(S, bodyL(S, p, 'sug.' + k + '.' + ekey(p, vk), g[vk]));
-          var fb = lew === 'low' && g.lewd && full ? ST.fmt(ST.pick(S, SM.SUG_LOW), v) : eF(S, p, ST.fmt(body, v));
+          /* 描写「ぼかす」の性的な暗示（「エッチなものだけ」のときだけ出る）：受け入れた・半分だけ受け入れたどちらも、ぼかした文（体を重ねない暗示は SUG_LOW_SOLO*） */
+          var lowL = lew === 'low' && g.lewd && SM.SUG_LOW_PART ? (p.solo ? (full ? SM.SUG_LOW_SOLO : SM.SUG_LOW_SOLO_PART) : (full ? SM.SUG_LOW : SM.SUG_LOW_PART)) : null;
+          var body = lowL ? '' : ST.pick(S, bodyL(S, p, 'sug.' + k + '.' + ekey(p, vk), g[vk]));
+          var fb = lowL ? ST.fmt(ST.pick(S, lowL), v) : lew === 'low' && g.lewd && full ? ST.fmt(ST.pick(S, SM.SUG_LOW), v) : eF(S, p, ST.fmt(body, v));
           t += fb;
           /* うわごと（乱数の順は変えずに先に引き、山場の差し替えのあとで足す） */
           var tqs = tq(p);
@@ -413,9 +445,10 @@
           /* 小説調の山場：本番の暗示を受け入れて達したときは、段落に分けて厚く（solo-thick4.js） */
           /* 達しなかった本番の暗示でも、ときどき厚くする（そのときは一度達したことにする） */
           /* 描写の長さ「厚く」：盛り上がったとき（二つ目以降のエッチな暗示）は、段落を多く重ねた大きな山場に（solo-saimin-thick.js。R18版だけ） */
-          var big = full && g.lewd && SM.bigScene ? SM.bigScene(S, p, fb, vk, cl) : null;
+          /* 体を重ねない暗示（p.solo）は、二人の本番の山場・厚い段落・中に出された熱で我に返る・行為の最中に我に返る、を使わない */
+          var big = full && g.lewd && !p.solo && SM.bigScene ? SM.bigScene(S, p, fb, vk, cl) : null;
           if (big) { t = t.replace(fb, big); if (!cl) cl = 1; }
-          var thick = !big && full && g.lewd && (cl ? rng() < 0.85 : rng() < 0.3) && HK.Thick4 && HK.Thick4.ok(S, lew) ? thickSug(S, p, fb, vk) : null;
+          var thick = !big && !p.solo && full && g.lewd && (cl ? rng() < 0.85 : rng() < 0.3) && HK.Thick4 && HK.Thick4.ok(S, lew) ? thickSug(S, p, fb, vk) : null;
           if (thick) { t = t.replace(fb, thick); if (!cl) cl = 1; }
           t = vJoin(t, p, tqs);
           if (cl) {
@@ -428,7 +461,7 @@
           p.m.depth = clamp(p.m.depth + (full ? 5 : -5), 0, 100);
           why += full ? '：受け入れた' : '：半分だけ受け入れた';
           /* 中に出された熱で、我に返る（快楽堕ちが進んでいるほど返りにくい） */
-          if (full && g.snap && lew !== 'low' && SM.SNAP && WK_K > 0 && rng() < g.snap * (1.2 - p.m.fall / 100) * WK_K) {
+          if (full && g.snap && !p.solo && lew !== 'low' && SM.SNAP && WK_K > 0 && rng() < g.snap * (1.2 - p.m.fall / 100) * WK_K) {
             var snk = p.ff ? (aTop ? 'SNAP_FF_TOP' : 'SNAP_FF') : p.fm && SM.SNAP_FM ? 'SNAP_FM' : aTop && SM.SNAP_TOP_F && HK.Pos && HK.Pos.isF(p) ? 'SNAP_TOP_F' : aTop && SM.SNAP_TOP ? 'SNAP_TOP' : 'SNAP';
             t += eF(S, p, ST.fmt(ST.pick(S, eL(S, snk, SM[snk])), v));
             t = vJoin(t, p, SM.RESIST_SAY[p.persona] && rng() < 0.5 ? p.name + ST.pick(S, SM.RESIST_SAY[p.persona]) : '');
@@ -437,7 +470,7 @@
             mag = 40;
           }
           /* 行為の最中に、ふと我に返る（半分しか効いていないとき・抵抗が強いときほど起きやすく、快楽堕ちが進むほど起きにくい） */
-          if (!p.woke && g.lewd && lew !== 'low' && SM.midSnap && SM.midSnapOk(k) && p.cnt.lewd >= 2 && WK_K > 0 && rng() < WK_K * (0.03 + (full ? 0 : 0.05) + p.m.resist / 1000 + Math.max(0, 40 - p.m.depth) / 500) * (1.1 - p.m.fall / 100)) {
+          if (!p.woke && g.lewd && !p.solo && lew !== 'low' && SM.midSnap && SM.midSnapOk(k) && p.cnt.lewd >= 2 && WK_K > 0 && rng() < WK_K * (0.03 + (full ? 0 : 0.05) + p.m.resist / 1000 + Math.max(0, 40 - p.m.depth) / 500) * (1.1 - p.m.fall / 100)) {
             t += SM.midSnap(wrapS(S, p), p, k);
             p.woke = true; p.wokeMid = true; p.m.depth = 0; p.aTopLast = aTop;
             why += '／行為の最中に我に返った（快楽堕ち ' + Math.round(p.m.fall) + '・抵抗 ' + Math.round(p.m.resist) + '）';
@@ -446,7 +479,7 @@
           mag = p.wokeCum || p.wokeMid ? 40 : full ? (g.lewd ? 30 : 18) : 16;
         }
         p.maxDepth = Math.max(p.maxDepth, p.m.depth);
-        var o = say(p, { tag: g.label, text: t, why: why, mag: mag, kind: res === 'full' && g.lewd ? 'climax' : 'event' }, p.name + '×「' + g.label + '」＝' + { full: '受け入れた', part: '半分', ng: '拒んだ' }[res], res === 'full' && (p.cnt.ok === 1 || k === 'buzama' || k === 'smart'));
+        var o = say(p, { tag: g.label, text: t, why: why + (p.solo && g.lewd ? '／' + p.h + 'とは受け攻めの向きが決まらないので、触れずにかける暗示だけ' : ''), mag: mag, kind: res === 'full' && g.lewd ? 'climax' : 'event', solo: p.solo && g.lewd }, p.name + '×「' + g.label + '」＝' + { full: '受け入れた', part: '半分', ng: '拒んだ' }[res], res === 'full' && (p.cnt.ok === 1 || k === 'buzama' || k === 'smart'));
         if (o && res === 'full' && p.cnt.ok === 1) ST.key(S, o, p.name + 'が最初に受け入れた暗示');
         if (o && (p.wokeCum || p.wokeMid) && !p.snapDone) {
           ST.key(S, o, p.name + (p.wokeMid ? 'が行為の最中に我に返った' : 'が' + snapWord(p) + '我に返った'));
@@ -488,25 +521,36 @@
     T.forEach(function (p) {
       var route = after(S, p);
       p.route = route; p.fate = FATE[route];
+      /* 同意の上の逆催眠：関係ごとの書き分け（恋人・友人・友人から恋人へ・同僚・同僚で気まずい） */
+      if (route === 'counterSweet') { p.csK = csKind(S, p); if (p.csK === 'friendLove') p.fate = FATE.csLove; }
       var v = { a: p.name, h: p.h };
       var snapK = SM.SNAP_AFTER && ((route === 'report' && p.reportedNow) || (route === 'fall' && p.swept)) ? ((p.ff && SM.SNAP_AFTER_FF && SM.SNAP_AFTER_FF[route]) ? 'SNAP_AFTER_FF' : (p.fm && SM.SNAP_AFTER_FM && SM.SNAP_AFTER_FM[route]) ? 'SNAP_AFTER_FM' : (p.aTop && SM.SNAP_AFTER_TOP && SM.SNAP_AFTER_TOP[route]) ? 'SNAP_AFTER_TOP' : 'SNAP_AFTER') : null;
       /* 性的な暗示を一つも受けていないとき（向きの決まらない組など）は、いたずら向けの「その後」を使う */
-      var soft = (lew === 'low' || (!p.failed && !p.cnt.lewd)) && SM.AFTER_SOFT && SM.AFTER_SOFT[route];
+      /* 描写「ぼかす」でも、「エッチなものだけ」で性的な暗示を受けたなら、いたずら向けの文にしない（文はふつうの「その後」。男性向けの言い換えは使わない） */
+      var soft = ((lew === 'low' && !(lowLewd && p.cnt.lewd)) || (!p.failed && !p.cnt.lewd)) && SM.AFTER_SOFT && SM.AFTER_SOFT[route];
       var afK = snapK || (soft ? 'AFTER_SOFT' : (p.aTop && SM.AFTER_TOP && SM.AFTER_TOP[route]) ? 'AFTER_TOP' : 'AFTER');
       /* 男性向けの「その後」は、性的な暗示を受けたときだけ（かからなかった・いたずらだけのときは元の文） */
       var afE = afK === 'AFTER' && p.ff ? 'AFTER_FF' : afK === 'AFTER' && p.fm ? 'AFTER_FM' : afK === 'AFTER' && p.aTop ? 'AFTER_TOP' : afK;
-      var afL = !p.failed && p.cnt.lewd && !soft ? eL(S, afE + '.' + route, SM[afK][route]) : SM[afK][route];
+      var afL = !p.failed && p.cnt.lewd && !soft && !p.solo && lew !== 'low' ? eL(S, afE + '.' + route, SM[afK][route]) : SM[afK][route];
       /* 知らない相手・恨みのある相手（ストーカー・恨み）を訴えたときは、共通の友人のいる文を使わない */
       if (soft && route === 'report' && (p.ty === 'stalker' || p.ty === 'grudge') && SM.AFTER_SOFT.reportX) afL = SM.AFTER_SOFT.reportX;
+      /* 同意の上の逆催眠は、関係ごとの文（性的な語のない文。両ビルド共通） */
+      if (route === 'counterSweet' && SM.AFTER_CS) afL = SM.AFTER_CS[p.failed ? 'fail' : p.csK] || SM.AFTER_CS.friend;
       var t = eF(S, p, ST.fmt(ST.pick(S, afL), v));
-      var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', confused: 'confused', dazed: 'dazed', accept: 'accept', body: null }[route];
+      var mood = { angry: 'angry', report: 'angry', revenge: 'angry', counter: 'angry', counterSweet: 'csweet', sweet: 'sweet', couple: 'sweet', fall: 'fall', depend: 'fall', confused: 'confused', dazed: 'dazed', accept: 'accept', body: null }[route];
       if (mood && SM.AFTER_SAY[mood] && SM.AFTER_SAY[mood][p.persona]) t = vJoin(t, p, p.name + ST.pick(S, p.aTop && SM.AFTER_SAY_TOP && SM.AFTER_SAY_TOP[mood] ? (SM.AFTER_SAY_TOP[mood][p.persona] || SM.AFTER_SAY_TOP[mood].gentle) : topL(p, SM.AFTER_SAY[mood][p.persona])));
       /* 完堕ち：描写の長さ「厚く」なら、自分から戻ってきて堕ちきるまでを段落で（solo-saimin-thick.js。R18版だけ） */
       if ((route === 'fall' || route === 'depend') && SM.bigFall) { var bf = SM.bigFall(S, p, route); if (bf) { t += bf; p.bigFell = true; } }
       /* 心の強さが強い人：体が暗示を覚えてしまっても、心は折れない一文を添える */
-      if (HK.Attr && p.m.fall >= 40 && route !== 'laugh' && route !== 'noticed') t += HK.Attr.hold(function (l) { return ST.pick(S, l); }, p, 'saimin');
+      /* R18版：同意の上の逆催眠のあと、かけ返した{a}が言葉で導いて体を重ねる段（solo-saimin-sex.js の SM.csSex。きっかけの段つき）。
+         体の関係にならない組・R18に参加しない・性欲「なし」・恋人だけ（固定）・夜の起こりやすさ 0 は出さない（csSexOk） */
+      var csx = route === 'counterSweet' && SM.csSex && csSexOk(S, p) ? SM.csSex(wrapS(S, p), p) : null;
+      if (csx) { t += '\n\n' + csx.text; p.csSex = true; p.cnt.climax += csx.climax || 0; }
+      if (HK.Attr && p.m.fall >= 40 && route !== 'laugh' && route !== 'noticed' && route !== 'counterSweet') t += HK.Attr.hold(function (l) { return ST.pick(S, l); }, p, 'saimin');
       if (p.trigger && (route === 'forget' || route === 'body') && rng() < 0.6) t += ST.fmt('――数日後、会議中に誰かが何気なく「おやすみ」と言った。{a}は理由も分からないまま、机の下で膝を震わせた。', v);
-      var o = say(p, { tag: '結末', text: t, why: whyAfter(p, route), mag: 40 }, '', true);
+      var oe = { tag: '結末', text: t, why: whyAfter(p, route) + (csx ? '／' + csx.why : ''), mag: 40 };
+      if (csx) oe.kind = 'climax';
+      var o = say(p, oe, '', true);
       ST.key(S, o, p.name + '：' + p.fate);
     });
 
@@ -563,6 +607,8 @@
     return sr;
   }
   function vkey(p, g, kind) {
+    /* かける側と体を重ねない暗示（受け攻めの向きの決まらない組 p.solo）：solo / soloPart */
+    if (p.solo && g.lewd) return kind === 'part' ? (g.soloPart ? 'soloPart' : null) : (g.solo ? 'solo' : null);
     /* 女攻め×男（かける側の女性が跨る）：fm / fmPart。元の文がそのまま読める暗示（fmOk）だけ full / part を使い、ほかは選ばない */
     if (p.fm && g.lewd) {
       if (kind === 'part') return g.fmPart ? 'fmPart' : (g.fm || g.fmOk) && g.part ? 'part' : null;
@@ -635,20 +681,51 @@
   /* かけられた側が攻めのとき・向きの決まらない組のときは起こさないハプニング（{h}が{a}に触れる・{a}がねだる） */
   var EV_NG = { beg: 1, mark: 1 };
 
+  /* 「エッチなものだけ」で性的な暗示をかけない人の、診断の段に添える理由の一文（2026-10-31 担当SA。全年齢版・全年齢モードでは出さない）。
+     設定画面の事前の表示は saimin-note.js（同じ理由の言い方） */
+  SM.noSexNote = function () { return ''; };
+  /* r18:begin */
+  SM.noSexWhy = function (p, HY) {
+    var nm = p.name, hn = HY ? HY.name : p.h;
+    if (p.noK === 'force') return '合意のない展開が切で、かける側の' + hn + 'が「' + p.T.label + '」のため';
+    if (p.noK === 'night') return '夜の起こりやすさが 0 のため';
+    if (p.noK === 'mob') {
+      if (p.noR18) return nm + 'が「R18に参加しない」ため';
+      if (HK.State && !HK.State.mobSexOk(p)) return nm + 'は性行為の相手を固定していて、知らない相手とは関係を持たないため';
+      return nm + 'の恋愛対象に、かける人（' + (p.hf ? '女性' : '男性') + '）が合わないため';
+    }
+    var r = p.noInfo;
+    /* 「…合わない（…）」「…固定している」の後ろは「ため」、名詞・かぎ括弧の後ろは「のため」 */
+    if (r && r.t) return r.t + (/[るいた]$/.test(r.t.replace(/（[^（）]*）$/, '')) ? 'ため' : 'のため');
+    if (p.noK === 'kin') return hn + 'と' + nm + 'は「恋愛：なし」の家族のため';
+    if (p.noK === 'lib') return '性欲の強さが「なし」の人がいるため';
+    return '体の関係の設定が合わないため';
+  };
+  SM.noSexNote = function (p, HY, env) {
+    if (HK.SAFE_ON || !p.noSex || !env || env.mode !== 'lewd') return '';
+    var w = SM.noSexWhy(p, HY);
+    /* 受け攻めの組で、かける側が恨み・ストーカー（合意のない展開が切）でもあるとき */
+    if (p.noK === 'pair' && p.noForce) w = w.replace(/の?ため$/, '') + '、合意のない展開が切でかける側が「' + p.T.label + '」でもあるため';
+    return '※暗示の方向は「エッチなものだけ」ですが、' + w + (p.solo ? '、' + p.name + 'には' + p.h + 'と体を重ねる暗示はかかりません。触れずにかける暗示（感度・発情・声・合図など）だけになります。' :
+      p.noK === 'force' ? '、' + p.name + 'に性的な暗示はかかりません。いたずらと平和な暗示になります。' : '、' + p.name + 'に性的な暗示はかかりません。平和な暗示になります。');
+  };
+  /* r18:end */
   function okSug(p, k, env) {
     var g = SM.SUG[k];
-    /* 住人どうしで向きの決まらない組には、性的な暗示をかけない */
-    if (p.noSex && g.lewd) return false;
+    /* 性的な暗示をかけない組（p.noSex）。ただし受け攻めの向きだけが決まらない組（p.solo）には、かける側と体を重ねない暗示（solo の文がある暗示）だけかける */
+    if (p.noSex && g.lewd && !(p.solo && g.solo)) return false;
     /* 受け攻め・女性どうしに合う文がない暗示は使わない */
     if (env.lewd !== 'low' && g.lewd && !variant(p, g, 'full')) return false;
     if (g.notLover && p.ty === 'lover') return false;
     /* 実際の行為に進む暗示は、エッチな暗示をすでに受け入れたあとだけ */
     if (g.need && ((p.got || []).filter(function (x) { return SM.SUG[x] && SM.SUG[x].lewd; }).length < g.need)) return false;
     if (g.bad && !p.bad) return false;
-    /* 描写を「ぼかす」にしたときは、いたずらの暗示と、性的でない暗示だけ */
-    if (env.lewd === 'low') return !g.lewd;
+    /* 描写を「ぼかす」にしたときは、いたずらの暗示と、性的でない暗示だけ。
+       ただし暗示の方向が「エッチなものだけ」なら、性的な暗示を優先してかける（受け入れた場面はぼかした文 SM.SUG_LOW*。2026-10-31 担当SA：
+       利用者の不具合報告「エッチのみにしていても、エッチな内容にならない」） */
+    if (env.lewd === 'low' && env.mode !== 'lewd') return !g.lewd;
     if ((env.mode === 'peace' || p.peaceOnly) && g.lewd) return false;
-    if (env.mode === 'lewd' && !g.lewd && !p.noSex) return false;
+    if (env.mode === 'lewd' && !g.lewd && (!p.noSex || p.solo)) return false;
     if (g.peace && (p.ty === 'grudge' || p.ty === 'stalker') && env.mode !== 'peace') return false;
     if (p.peaceOnly && k === 'freeze') return false;
     return true;
@@ -656,7 +733,7 @@
 
   /* ---------- 後日談 ---------- */
   /* 結末の大きな分け方（後日談の文の表の名前） */
-  var EPI_GROUP = { forget: 'erased', body: 'body', angry: 'neg', report: 'report', revenge: 'turn', counter: 'turn', shy: 'neg', confused: 'mid', dazed: 'mid', accept: 'warm', sweet: 'warm', couple: 'couple', peace: 'peace', fall: 'fall', depend: 'depend' };
+  var EPI_GROUP = { forget: 'erased', body: 'body', angry: 'neg', report: 'report', revenge: 'turn', counter: 'turn', counterSweet: 'turnSweet', shy: 'neg', confused: 'mid', dazed: 'mid', accept: 'warm', sweet: 'warm', couple: 'couple', peace: 'peace', fall: 'fall', depend: 'depend' };
   /* 気質の見出し（台詞の態度9種とは別に、地の文の振る舞いを分ける） */
   function temperOf(p) {
     var ps = p.persona;
@@ -666,19 +743,20 @@
     return 'soft';
   }
   /* 地の文の気分（関係・気質の一文と台詞の表）：忘れた・冷えた・揺れている・温かい（頭が良くなっただけのときは、結末の場面だけ） */
-  var EPI_MOOD = { erased: 'forgot', body: 'forgot', neg: 'cold', report: 'cold', turn: 'cold', fail: 'cold', mid: 'wobble', warm: 'warm', couple: 'warm', peace: 'peace', fall: 'warm', depend: 'wobble' };
+  var EPI_MOOD = { erased: 'forgot', body: 'forgot', neg: 'cold', report: 'cold', turn: 'cold', turnSweet: 'warm', fail: 'cold', mid: 'wobble', warm: 'warm', couple: 'warm', peace: 'peace', fall: 'warm', depend: 'wobble' };
   function epilogue(S, p) {
-    var route = p.route, grp = p.failed ? 'fail' : EPI_GROUP[route] || 'neg';
+    /* 同意の上の逆催眠は、かからなかった人がかけ返したときも、関係ごとの後日談（turnSweet） */
+    var route = p.route, grp = route === 'counterSweet' && SM.EPI_TS ? 'turnSweet' : p.failed ? 'fail' : EPI_GROUP[route] || 'neg';
     var rel = p.ty === 'lover' ? 'close' : p.bad ? 'bad' : 'near', tmp = temperOf(p);
     /* かからなかった人：笑い飛ばしたなら「何も変わらない」、怒った・見破った・通報したなら「冷えた」 */
-    var mood = p.failed ? (route === 'laugh' ? 'forgot' : 'cold') : EPI_MOOD[grp] || 'cold';
+    var mood = grp === 'turnSweet' ? (p.csK === 'colleagueAwk' ? 'wobble' : 'warm') : p.failed ? (route === 'laugh' ? 'forgot' : 'cold') : EPI_MOOD[grp] || 'cold';
     var v = { a: p.name, h: p.h, place: p.T !== SM.TYPES[p.ty] ? '家' : (SM.PLACE && SM.PLACE[p.ty]) || 'いつもの場所', who: (SM.WHO && SM.WHO[p.ty]) || p.h };
     /* いたずらだけ（性的な暗示を受けていない）・ぼかすときは、いたずら向けの表があればそちら */
-    var soft = (S.env.lewd === 'low' || (!p.failed && !p.cnt.lewd)) && SM.EPI_SOFT && SM.EPI_SOFT[grp];
-    var lst = soft ? SM.EPI_SOFT[grp] : SM.EPI[grp] || SM.EPI.neg;
+    var soft = ((S.env.lewd === 'low' && !(S.env.mode === 'lewd' && p.cnt.lewd)) || (!p.failed && !p.cnt.lewd)) && SM.EPI_SOFT && SM.EPI_SOFT[grp];
+    var lst = grp === 'turnSweet' ? SM.EPI_TS[p.csK] || SM.EPI_TS.friend : soft ? SM.EPI_SOFT[grp] : SM.EPI[grp] || SM.EPI.neg;
     var t = ST.fmt(ST.pick(S, lst), v);
-    /* 二人の関係ごとの一文 */
-    var RL = SM.EPI_REL && SM.EPI_REL[rel] && SM.EPI_REL[rel][mood];
+    /* 二人の関係ごとの一文（同意の上の逆催眠は、上の文が関係ごとに書いてあるので足さない） */
+    var RL = grp !== 'turnSweet' && SM.EPI_REL && SM.EPI_REL[rel] && SM.EPI_REL[rel][mood];
     if (RL) t += ST.fmt(ST.pick(S, RL), v);
     /* 記憶が一部だけ欠けている（消し損ねた）とき */
     if (p.erased === 'part' && grp !== 'erased' && grp !== 'body' && SM.EPI_PART) t += ST.fmt(ST.pick(S, SM.EPI_PART), v);
@@ -702,6 +780,9 @@
     var rng = S.rng, t = p.tr, fall = p.m.fall / 100;
     if (p.failed) {
       var w0 = { laugh: t.fc * 0.6 + t.np * 0.3 + (p.ty === 'friend' || p.ty === 'lover' ? 0.4 : 0), noticed: t.a * 0.6 + t.caution * 0.3, angry: t.cp * 0.6 + (p.bad ? 0.3 : 0), report: (t.cp * 0.4 + t.a * 0.4) * (p.ty === 'stalker' ? 1.8 : p.ty === 'grudge' ? 1.3 : 0.5), counter: Math.max(0, t.a + t.cp - t.ac - 0.6) };
+      /* かからなかった人が、笑って「今度はこっちの番」とかけ返す（悪意のない相手だけ。2026-11-01 担当SC） */
+      w0.counterSweet = csBase(p) * (t.fc * 0.5 + t.np * 0.3 + 0.25);
+      csSplit(p, w0);
       return pickW(rng, w0);
     }
     var lewdN = p.cnt.lewd, remember = p.woke || !p.erased || (p.erased === 'part' && rng() < 0.6);
@@ -712,6 +793,8 @@
       report: (t.cp * 0.4 + t.a * 0.4) * (1 - fall) * ({ stalker: 1.6, colleague: 1.3, grudge: 1.2, friend: 0.6, lover: 0.08 }[p.ty]) * (p.recorded ? 1.3 : 1),
       revenge: (t.aggr * 0.6 + t.cp * 0.3) * (p.ty === 'grudge' ? 1.5 : p.bad ? 1.1 : 0.6) * (1 - fall * 0.6),
       counter: (t.a * 0.6 + t.cp * 0.3) * (p.woke ? 1.4 : 0.5) * (1 - fall * 0.5),
+      /* 同意の上の逆催眠：悪意のない相手（恋人・友人・同僚の催眠プレイやいたずら）に、笑って「今度はこっちの番」とかけ返し、相手も受け入れる（2026-11-01 担当SC） */
+      counterSweet: csBase(p) * (t.a * 0.3 + t.fc * 0.4 + t.np * 0.3 + 0.2) * (p.woke ? 1.25 : 0.8) * (1 - fall * 0.35),
       sweet: (p.ty === 'lover' ? 1.2 : 0) + (p.ty === 'lover' ? t.np * 0.4 + fall * 0.5 : 0),
       shy: t.ac * 0.7 * (1 - fall * 0.4),
       fall: Math.pow(fall, 2) * 2.2,
@@ -725,20 +808,63 @@
       accept: (t.np * 0.45 + t.fc * 0.2 + fall * 0.3 + ({ lover: 0.45, friend: 0.3, colleague: 0.2 }[p.ty] || 0)) * (p.bad ? (fall > 0.5 ? 0.45 : 0) : 1) * (1 - t.cp * 0.4)
     };
     /* 合意の上の催眠プレイ（内容のスイッチ「合意のない展開」が切）：通報・やり返しには寄らず、受け入れる・困惑するに寄る */
-    if (p.consent) { w.report *= 0.15; w.angry *= 0.6; w.revenge *= 0.4; w.counter *= 0.5; w.accept *= 1.4; w.confused *= 1.15; }
+    if (p.consent) { w.report *= 0.15; w.angry *= 0.6; w.revenge *= 0.4; w.accept *= 1.4; w.confused *= 1.15; }
+    /* 逆催眠の分け方：合意の上の催眠プレイなら、破局の逆催眠（counter）は同意ありの逆催眠に寄せる。恋人・いたずらだけの相手も、破局の逆催眠を減らす */
+    csSplit(p, w);
     if (p.cnt.smart && lewdN <= 1) w.peace = 0.6;
     /* 向きの決まらない組：恋人になる・快楽に堕ちる結末にしない */
     if (p.noSex) { w.couple = 0; w.fall = 0; w.depend = 0; }
     /* 中に出されて我に返ったあと：その場で通報した人は通報、流された人は快楽堕ちへ寄る */
     if (p.reportedNow) return 'report';
-    if (p.swept) { w.angry *= 0.15; w.report = 0; w.revenge *= 0.2; w.counter = 0; w.shy *= 0.4; w.fall = w.fall * 2 + 1; if (p.bad) w.depend = (w.depend || 0) + 0.8; w.accept *= 1.3; w.dazed *= 1.2; w.confused *= 0.7; }
+    if (p.swept) { w.angry *= 0.15; w.report = 0; w.revenge *= 0.2; w.counter = 0; w.counterSweet *= 0.3; w.shy *= 0.4; w.fall = w.fall * 2 + 1; if (p.bad) w.depend = (w.depend || 0) + 0.8; w.accept *= 1.3; w.dazed *= 1.2; w.confused *= 0.7; }
     w.fall *= HK.Dark.f(S, 'fall'); if (w.depend) w.depend *= HK.Dark.f(S, 'fall');   /* 展開の重さ（mood-dial.js） */
-    if (p.fled) { w.shy += 0.4; w.angry += 0.2; w.fall *= 0.5; w.sweet *= 0.5; w.confused += 0.3; w.accept *= 0.5; }
+    if (p.fled) { w.counterSweet *= 0.4; w.shy += 0.4; w.angry += 0.2; w.fall *= 0.5; w.sweet *= 0.5; w.confused += 0.3; w.accept *= 0.5; }
     /* 向きの決まらない組・いたずらだけ：体の関係を受け入れる結末にはしない（いたずらとして受け流すのは残す） */
     if (p.noSex && !p.cnt.lewd) w.accept *= 0.6;
     /* 心の強さ（attr.js）：弱い人は堕ちやすく、強い人は体が覚えても心は堕ちない（自分からねだる・離れられない結末にしない） */
-    if (HK.Attr && p.will) { var wk = HK.Attr.willK(p); if (wk < 1) { w.fall = 0; w.depend = 0; w.counter *= 1.3; } else if (wk > 1) { w.fall *= wk * wk; if (w.depend) w.depend *= wk; } }
+    if (HK.Attr && p.will) { var wk = HK.Attr.willK(p); if (wk < 1) { w.fall = 0; w.depend = 0; w.counter *= 1.3; w.counterSweet *= 1.2; } else if (wk > 1) { w.fall *= wk * wk; if (w.depend) w.depend *= wk; } }
     return pickW(rng, w);
+  }
+  /* 同意の上の逆催眠の起こりやすさの元（悪意のある相手＝恨み・ストーカーは 0。同意を取っていない性的な暗示をかけた同僚も 0） */
+  function csPlay(p) { return !!(p.consent || !p.cnt.lewd); }
+  function csBase(p) {
+    if (p.bad) return 0;
+    var play = csPlay(p);
+    return p.ty === 'lover' ? 1.1 : p.ty === 'friend' ? (play ? 1 : 0.6) : p.ty === 'colleague' ? (play ? 0.75 : 0) : 0;
+  }
+  /* 破局の逆催眠（counter）は、恨み・ストーカー・合意のない催眠のときだけに絞る：合意の上なら同意ありの逆催眠へ移し、
+     恋人・いたずらだけの相手（悪意がない）なら減らす */
+  function csSplit(p, w) {
+    if (p.bad || !w.counter) return;
+    if (p.consent) { w.counterSweet = (w.counterSweet || 0) + w.counter; w.counter = 0; }
+    else if (p.ty === 'lover') w.counter *= csPlay(p) ? 0.15 : 0.35;
+    else if (csPlay(p)) w.counter *= 0.4;
+  }
+  /* 同意の上の逆催眠の、関係ごとの書き分け */
+  function csKind(S, p) {
+    var rng = S.rng;
+    if (p.ty === 'lover') return 'lover';
+    if (p.ty === 'colleague') return !p.failed && (p.cnt.shame >= 2 || p.tr.ac > 0.6) && rng() < 0.45 ? 'colleagueAwk' : 'colleague';
+    if (!p.failed && csLoveOk(p) && rng() < 0.3 + p.m.fall / 250 + p.tr.np * 0.15) return 'friendLove';
+    return 'friend';
+  }
+  /* 友人から恋人になれる二人か：恋愛対象・恋愛の設定を両方向で見る（HK.canLove）。家族・敵対の札の二人、すでに恋愛の関係の二人はならない */
+  function csLoveOk(p) {
+    var o = p.hc || p.hm;
+    if (!o || p.T !== SM.TYPES[p.ty] || !HK.canLove) return false;
+    if (p.hc && ((HK.ngPair && HK.ngPair(p.hc, p)) || (p.tie && /^(lover|mate|fated|fwb|ex|crush|almost|yan|worship|honmei)$/.test(p.tie.type)))) return false;
+    if (!p.hc && HK.Pos && HK.Pos.genderOK && !HK.Pos.genderOK(p, o)) return false;
+    try { return !!(HK.canLove(p, o) && HK.canLove(o, p)); } catch (e) { return false; }
+  }
+  /* R18版の、逆催眠のあとに体を重ねる段を出してよいか（体の関係の組・R18・性欲・固定・夜の起こりやすさ） */
+  function csSexOk(S, p) {
+    if (HK.SAFE_ON || p.failed || p.noSex || p.solo || !p.cnt.lewd || (S.env.lewd || 'mid') === 'low' || p.csK === 'colleagueAwk') return false;
+    var Pz = HK.Pos, hc = p.hc;
+    if (Pz && Pz.libOf && (Pz.libOf(p) === 'none' || (hc && Pz.libOf(hc) === 'none'))) return false;
+    if (hc && ((Pz && Pz.okSex && !Pz.okSex(hc, p)) || (HK.sexBlocked && HK.sexBlocked(hc, p)) || (HK.ngSexPair && HK.ngSexPair(hc, p)))) return false;
+    if (!hc && ((HK.State && !HK.State.mobSexOk(p)) || (Pz && Pz.genderOK && !Pz.genderOK(p, p.hm)))) return false;
+    if (hc && Pz && Pz.nightK) { var nK = Pz.nightK(S); if (nK < 1 && !(nK > 0 && S.rng() < nK)) return false; }
+    return S.rng() < ({ lover: 0.65, friendLove: 0.6, friend: 0.4, colleague: 0.35 }[p.csK] || 0);
   }
   function pickW(rng, w) {
     var ks = Object.keys(w).filter(function (k) { return w[k] > 0; });
@@ -751,13 +877,21 @@
     else if (p.failed) bits.push('催眠にかからなかった');
     else bits.push(p.woke ? (p.wokeCum || p.wokeMid ? (p.wokeMid ? '行為の最中に我に返った' : snapWord(p) + '我に返った') + (p.swept ? '。それでも流された' : p.reportedNow ? '。その場で通報した' : p.fled ? '。逃げ出した' : '') : '途中で目を覚ました') : p.erased ? '記憶は消えきらなかった' : '記憶は消されなかった');
     bits.push('快楽堕ち ' + Math.round(p.m.fall));
-    bits.push({ confused: 'AC・NP・慎重さと、ほどほどの堕ち', dazed: '深さ ' + Math.round(p.maxDepth) + '・' + W_CL + ' ' + p.cnt.climax + '回', accept: 'NP・FCと、' + p.T.label + 'への情', angry: 'CP ' + Math.round(p.eg.CP), report: 'CP・A（正義感と冷静さ）', revenge: '攻撃性とCP', counter: 'A・CP（冷静さと意志の強さ）', sweet: '相手が恋人・NP', shy: 'AC ' + Math.round(p.eg.AC), fall: '快楽に呑まれた', couple: 'NP・FCと、ほどよい堕ち', depend: '憎しみと快楽', laugh: 'FC・NP', noticed: 'A・慎重さ', peace: '平和な暗示だけだった', forget: '', body: '体に暗示が残った' }[route] || '');
+    bits.push({ confused: 'AC・NP・慎重さと、ほどほどの堕ち', dazed: '深さ ' + Math.round(p.maxDepth) + '・' + W_CL + ' ' + p.cnt.climax + '回', accept: 'NP・FCと、' + p.T.label + 'への情', angry: 'CP ' + Math.round(p.eg.CP), report: 'CP・A（正義感と冷静さ）', revenge: '攻撃性とCP', counter: 'A・CP（冷静さと意志の強さ）', counterSweet: p.T.label + 'に悪意がなかった・FC・NP（遊び心）', sweet: '相手が恋人・NP', shy: 'AC ' + Math.round(p.eg.AC), fall: '快楽に呑まれた', couple: 'NP・FCと、ほどよい堕ち', depend: '憎しみと快楽', laugh: 'FC・NP', noticed: 'A・慎重さ', peace: '平和な暗示だけだった', forget: '', body: '体に暗示が残った' }[route] || '');
     if (p.recorded) bits.push('録画されていた');
     if (p.consent) bits.push('合意の上の催眠プレイ');
     return bits.filter(Boolean).join('／');
   }
 
   /* ---------- 結果 ---------- */
+  /* 同意の上の逆催眠のあとの関係（sub 札の言葉・fx 気持ちの動き・edge 関係図の線・cls 線の色） */
+  var CS_REL = {
+    lover: { sub: '催眠ごっこで仲が深まった', fx: '好意↑・信頼↑', edge: '催眠ごっこ', cls: 'love' },
+    friendLove: { sub: '順番違いの恋', fx: '好意↑↑・信頼↑', edge: '順番違いの恋', cls: 'love' },
+    friend: { sub: '二人だけの秘密', fx: '好意↑・信頼↑', edge: '二人だけの秘密', cls: 'friend' },
+    colleague: { sub: '職場では言えない秘密の共有', fx: '信頼↑', edge: '秘密の共有', cls: 'partner' },
+    colleagueAwk: { sub: '気まずいけれど、関係は続く', fx: '好意・信頼は変わらず', edge: '気まずいけれど続く', cls: 'none' }
+  };
   function finish(S, input, T, HY) {
     T.forEach(function (p) {
       p.notes.push('かけた人：' + p.h + '（' + p.T.label + '・' + p.M.name + '）・かかりやすさ ' + Math.round(p.sus * 100) + '％・最大の深さ ' + Math.round(p.maxDepth));
@@ -765,12 +899,27 @@
       p.notes.push('弱い暗示：' + p.weak.map(function (k) { return SM.SUG[k].label; }).join('・') + '・快楽堕ち ' + Math.round(p.m.fall) + (p.trigger ? '・合図の言葉が残った' : '') + (p.recorded ? '・録画された' : ''));
     });
     if (HY) { HY.fate = T.length + '人中' + HY.cnt.ok + '人にかけた'; HY.notes.push('催眠をかけた相手：' + T.map(function (p) { return p.name + '（' + (p.failed ? 'かからず' : p.fate) + '）'; }).join('、')); }
+    /* 同意の上の逆催眠：二人の関係の動き（住人ごとの結果・結末の行・関係図。かける側がモブなら、かけられた人の結果だけ） */
+    var csLines = [], csEdges = [];
+    T.forEach(function (p) {
+      if (p.route !== 'counterSweet') return;
+      var R = CS_REL[p.csK] || CS_REL.friend, lb = (p.csK === 'friendLove' ? p.T.label + 'から恋人に' : p.T.label) + '（' + R.sub + '）';
+      p.notes.push('逆催眠：' + p.h + 'の同意を取って、今度は' + p.name + 'がかけ返した／' + p.h + 'との関係：' + lb + '・' + R.fx);
+      csLines.push(p.name + 'と' + p.h + '：' + lb + '・' + R.fx);
+      if (HY) {
+        HY.notes.push(p.name + 'に、同意の上で逆催眠をかけられた／関係：' + lb + '・' + R.fx);
+        /* 恋の線は、恋愛対象と恋愛の設定が両方向で合う二人だけ（合わない二人は友情の線） */
+        var lv = !!(HK.canLove && HK.canLove(HY, p) && HK.canLove(p, HY));
+        csEdges.push({ a: p.i, b: HY.i, label: '★' + R.edge, cls: R.cls === 'love' && !lv ? 'friend' : R.cls, dir: null });
+      }
+    });
+    if (HY && csEdges.length) HY.fate += '・逆催眠を受け入れた';
     var one = T.length === 1 ? T[0] : null;
     var hit = T.filter(function (p) { return !p.failed; });
     var ET = SM.END_TITLE || {};
     var title = one ? (one.failed ? one.name + 'は' + one.h + 'の催眠にかからなかった。' : one.name + 'は' + one.h + '（' + one.T.label + '）の催眠にかかった。') + '結末' + (ET[one.route] ? '「' + ET[one.route] + '」' : '') + '：' + one.fate + '。'
       : '催眠にかかったのは' + T.length + '人中' + hit.length + '人。' + T.map(function (p) { return p.name + '＝' + p.fate; }).join('、') + '。';
-    var lines = T.map(function (p) { return p.name + '：' + p.h + '（' + p.T.label + '）に' + p.M.name + 'で――' + (p.failed ? 'かからなかった' : '最大の深さ ' + Math.round(p.maxDepth) + '・暗示 ' + p.cnt.ok + '/' + (p.cnt.ok + p.cnt.part + p.cnt.ng)) + '→' + p.fate; });
+    var lines = T.map(function (p) { return p.name + '：' + p.h + '（' + p.T.label + '）に' + p.M.name + 'で――' + (p.failed ? 'かからなかった' : '最大の深さ ' + Math.round(p.maxDepth) + '・暗示 ' + p.cnt.ok + '/' + (p.cnt.ok + p.cnt.part + p.cnt.ng)) + '→' + p.fate; }).concat(csLines);
     var top = hit.slice().sort(function (a, b) { return b.m.fall - a.m.fall; })[0];
     if (top && T.length > 1) lines.push('いちばん堕ちたのは' + top.name + '（快楽堕ち ' + Math.round(top.m.fall) + '）');
     var rows = T.slice().sort(function (a, b) { return b.maxDepth - a.maxDepth; }).map(function (p) {
@@ -783,6 +932,7 @@
       table: { title: '催眠の結果', hint: '深さ40でかかり、70で深くかかる。暗示は「受け入れた／全部」。快楽堕ちが高いほど、終わったあとに怒るより求めてしまう。', cols: ['かけた人', 'かけ方', 'かかりやすさ', '最大の深さ', '暗示', W_CL, '堕ち', '結末'], rows: rows },
       meters: [{ label: '深さ', color: '--accent' }, { label: '快感', color: '--pine', dash: true }, { label: '快楽堕ち', color: '--love' }, { label: '警戒心', color: '--warn', dash: true }],
       meta: T.map(function (p) { return p.T.label; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join('・') + '・暗示' + S.env.rounds + '回',
+      relmap: csEdges.length ? { nodes: S.P.map(function (c) { return { i: c.i, name: c.name, sub: c === HY ? 'かける側' : 'かけられる側' }; }), edges: csEdges } : null,
       summary: '催眠：' + T.map(function (p) { return p.name + '=' + p.fate; }).join('、')
     });
   }

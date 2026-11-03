@@ -227,7 +227,9 @@
   var MATCH = {
     spouse: function (t) { return t.type === 'lover' && !!t.spouse; },
     stepsib: function (t) { return t.type === 'relative' && !!t.step; },
-    relative: function (t) { return t.type === 'relative' && !t.step; }
+    relative: function (t) { return t.type === 'relative' && !t.step; },
+    /* 双子（2026-10-31）は兄弟姉妹の場面も使う */
+    sibling: function (t) { return t.type === 'sibling' || t.type === 'twin'; }
   };
   function match(k, t) { return !!t && (MATCH[k] ? MATCH[k](t) : t.type === k); }
   function find(ctx, a, b, k) {
@@ -303,7 +305,7 @@
   /* 関係 k のまとまり（{say} の表）。o.say があればそれ */
   var GROUP = { acq: 'pal', friend: 'pal', best: 'pal', buddy: 'pal', classmate: 'pal', childhood: 'pal', colleague: 'pal', senpai: 'pal', noobs: 'pal',
     almost: 'love', fated: 'love', mate: 'love', spouse: 'love', honmei: 'love',
-    pparent: 'kin', parent: 'kin', sibprot: 'kin', sibclose: 'kin', sibling: 'kin', stepsib: 'kin', relative: 'kin', rival: 'rival' };
+    pparent: 'kin', parent: 'kin', sibprot: 'kin', sibclose: 'kin', twin: 'kin', sibling: 'kin', stepsib: 'kin', relative: 'kin', rival: 'rival' };
   function sayOf(ctx, k, o, a) {
     var g = o.say || GROUP[k] || 'pal', tb = SAY[g] && SAY[g][o.mood === 'rub' ? 'rub' : 'warm'];
     return tb ? ctx.pick(tb[per(a)] || tb.gentle) : '';

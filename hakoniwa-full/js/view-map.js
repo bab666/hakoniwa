@@ -16,10 +16,10 @@
   /* 絞り込み中は、元の結果（res._base）を鍵にする（絞った結果は描くたびに作り直すので）。時点の結果（res._at0）も元の結果を鍵に */
   function S(res) { var b = res._base || res; if (b._at0) b = b._at0; if (st.res !== b) st = { res: b, mode: 'auto', inner: few(b), stat: null, sub: 'all', at: 'final' }; return st; }
   /* 派閥の色（住人の色と別にして、派閥どうしを見分けやすく） */
-  /* 色は index.html の --fc0〜--fc5（白黒それぞれ。色の量が「藍のみ／キャラ色」なら藍） */
+  /* 色は index.html の --fc0〜--fc5（白黒それぞれ。色の量が「単色／キャラ色」なら藍） */
   var FCOL = ['var(--fc0,#e8590c)', 'var(--fc1,#1c7ed6)', 'var(--fc2,#2b8a3e)', 'var(--fc3,#ae3ec9)', 'var(--fc4,#c92a2a)', 'var(--fc5,#0c8599)'];
   function fcol(res, g) { var k = M.groups(res).indexOf(g); return FCOL[(k < 0 ? 0 : k) % FCOL.length]; }
-  /* 派閥の見分け（形）：番号ごとの線の形。藍のみ・キャラ色（派閥の色が藍に落ちる）では、図の囲み・派閥の枠・クラスの表の縁をこの形で描き分ける
+  /* 派閥の見分け（形）：番号ごとの線の形。単色・キャラ色（派閥の色が藍に落ちる）では、図の囲み・派閥の枠・クラスの表の縁をこの形で描き分ける
      （index.html の「担当HX」の節：fp0 実線・fp1 破線・fp2 点線・fp3 一点鎖線・fp4 二重線、fp5〜fp8 は 0〜3 の太い線。それより後は 5〜8 の繰り返し）。
      名札の頭の印（12px の輪）は、どの色の量でも同じ形で、フルでは派閥の色。2026-10-28 担当HX */
   function fpk(k) { k = k < 0 ? 0 : k; return k < 9 ? k : 5 + (k - 5) % 4; }
@@ -544,7 +544,7 @@
       var LX = X + 8;
       taken.push({ x1: LX - hw - 16, x2: LX + hw, y1: Y - c.r - 22, y2: Y - c.r - 2 });
       under += '<circle class="fhull ' + fc + '" cx="' + X.toFixed(1) + '" cy="' + Y.toFixed(1) + '" r="' + c.r.toFixed(1) + '" style="--c:' + col + ';stroke:' + col + '"' + (c.g.kind === 'ring' ? ' stroke-dasharray="7 5"' : '') + '/>';
-      /* 二重線（fp4）：藍のみ・キャラ色のときだけ見える内側の輪（index.html の .fhull2） */
+      /* 二重線（fp4）：単色・キャラ色のときだけ見える内側の輪（index.html の .fhull2） */
       if (fc === 'fp4') under += '<circle class="fhull2" cx="' + X.toFixed(1) + '" cy="' + Y.toFixed(1) + '" r="' + Math.max(4, c.r - 5).toFixed(1) + '" style="stroke:' + col + '"/>';
       over += '<g class="fmk" aria-hidden="true"><circle cx="' + (LX - hw - 6).toFixed(1) + '" cy="' + (Y - c.r - 12).toFixed(1) + '" r="7.5" style="fill:var(--sand);stroke:none"/>' + markIn(gk, col, (LX - hw - 6).toFixed(1), (Y - c.r - 12).toFixed(1)) + '</g>';
       over += '<text class="fhlab" x="' + LX.toFixed(1) + '" y="' + (Y - c.r - 8).toFixed(1) + '" text-anchor="middle" style="fill:' + col + '">' + esc(h.txt) + '</text>';

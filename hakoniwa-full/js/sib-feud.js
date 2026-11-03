@@ -19,6 +19,7 @@
    ・関係値：不仲らしい出来事は緊張を上げ、好意・信頼は少し下げるか動かさない。渋々の協力・世話・見殺しにしかけて助けるは信頼だけ少し上げる。雪解けは好意を上げる。
    台詞は3本（くだけた常体｜硬い常体｜敬語）、一人称は「私」、二人称は「あなた」。性的な文は書かない。登場人物はすべて成人として扱う。
    死んだ人・その場にいない人・監禁中の人は出さない（HK.State.here）。恋愛の出来事ではないので恋愛対象・受け攻めの判定は通さない（恋愛の値は動かさない） */
+/* @event-ok 閉じ込められた部屋・二人きりの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -32,8 +33,8 @@
   function keyOf(a, b) { return a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; }
 
   /* ======================= 不仲の種類 ======================= */
-  var BOSS = /^(mentor|master|boss|teacher)$/, SIBT = /^(sibling|stepsib|sibprot)$/;
-  var WARMT = /^(lover|spouse|mate|fated|almost|best|friend|buddy|childhood|sibclose|fiance|honmei|fwb)$/;
+  var BOSS = /^(mentor|master|boss|teacher)$/, SIBT = /^(sibling|stepsib|sibprot|twin)$/;
+  var WARMT = /^(lover|spouse|mate|fated|almost|best|friend|buddy|childhood|sibclose|twin|fiance|honmei|fwb)$/;
   /* 関係の一覧（エンジン型の ctx.tiesAll の中身か、物語型の入力の ties）から、ai の側から見た不仲の種類 */
   function kindsOf(l, ai) {
     var k = { any: false, sib: false, warm: false, t: null };
@@ -41,7 +42,7 @@
       if (!t) return;
       var f = '';
       if (t.type === 'sibbad') { f = 'sibbad'; k.sib = true; }
-      else if (t.type === 'bad' || t.type === 'enemy') { if (t.a === ai || !t.cold) f = t.type; }
+      else if (t.type === 'bad' || t.type === 'enemy') { if (!t.cold) f = t.type; }   /* 片方向相手の気持ちが決まっている片方向の不仲・敵対は、二人とも嫌い合う場面にしない。敵視する側の場面は hate-kit.js。2026-11-02） */
       else if (t.type === 'rival') f = 'rival';
       else if (BOSS.test(t.type) && t.cold === 'bad') f = 'cold';
       if (t.kg === 'bad') { f = f || 'kg'; k.kg = true; if (SIBT.test(t.type) || (t.type === 'relative' && t.step)) k.sib = true; }
@@ -524,7 +525,7 @@
   var SCN_EV = {
     whiteroom: [
       { id: 'tie_sf_wr_stuck', label: 'よりによって不仲の相手と閉じ込められる', cat: 'conflict', say: 'stuck', back: null, gap: 99, once: true,
-        when: function (ctx) { return ctx.stepIndex <= 1; }, w: function (a) { return 1.2 + a.tr.cp * 0.4; },
+        when: function (ctx) { return ctx.stepIndex < 1; }, w: function (a) { return 1.2 + a.tr.cp * 0.4; },
         fx: function (ctx, a, b) { ctx.mod2(a, b, { ten: 5 }, { ten: 5 }); ctx.stress(a, 3); }, why: 'よりによって不仲の相手と閉じ込められた' },
       { id: 'tie_sf_wr_line', label: '狭い部屋に不仲の相手との境界線を引く', cat: 'conflict', say: 'ignore', sayFrom: SAY, back: 'cold', gap: 8,
         w: function (a) { return 0.45 + a.tr.cold * 0.3 + a.tr.cp * 0.2; },

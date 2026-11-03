@@ -15,6 +15,7 @@
      （HK.simulate を包む。名簿は HK.UI.state()。{ i: 参加者の番号, k: lover|friend|family, l: 関係の呼び名, n: 名前（出すときだけ） }）。
      出すときは「友人の△△」、出さないときは「友人」と書く。関係の人がいなければ「ひとりで夜景を眺めながら帰った」などの型。
    ■ 台詞は3本「くだけた常体｜硬い常体｜敬語」（一人称は「私」、二人称は「あなた」）。R18 の文（体の関係の層）は r18 の印の中 */
+/* @event-ok 関係ごとの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK, RA = HK.RoomAPI;
@@ -36,7 +37,7 @@
   var OUT_T = {
     spouse: ['lover', '伴侶', 0], lover: ['lover', '恋人', 1], fiance: ['lover', '許嫁', 2],
     best: ['friend', '親友', 3], buddy: ['friend', '相棒', 4], childhood: ['friend', '幼馴染', 5], friend: ['friend', '友人', 6],
-    sibclose: ['family', 'きょうだい', 7], sibling: ['family', 'きょうだい', 7], sibprot: ['family', 'きょうだい', 7],
+    sibclose: ['family', 'きょうだい', 7], twin: ['family', 'きょうだい', 7], sibling: ['family', 'きょうだい', 7], sibprot: ['family', 'きょうだい', 7],
     parent: ['family', '家族', 8], pparent: ['family', '家族', 8], stepsib: ['family', 'きょうだい', 9], relative: ['family', '親族', 9]
   };
   function outsideOf(input) {
@@ -89,6 +90,8 @@
     handG: L('{a}は{b}の手を取って扉を抜け、{R}もそのあとに続いた。|{R}が先に出て、{a}と{b}は手を繋いだまま最後に扉を抜けた。|{a}と{b}が手を繋いで先に出ると、{R}も黙ってあとに続いた。'),
     silent: L('{G}は互いに目を合わせないまま、黙って外へ出た。|誰も口をきかなかった。{G}は、一度も振り返らずに外へ出た。|{G}は、肩がぶつからないように間を空けて、無言で外へ出た。'),
     silent2: L('{a}が先に出て、{b}は少し間を置いてから、無言であとに続いた。|{a}と{b}は、どちらも相手を見ないまま、黙って扉を抜けた。|{a}は{b}より先に出ようとして、扉の前で肩がぶつかった。どちらも、何も言わなかった。'),
+    /* 殺す条件で一人だけ生き残って出る（2026-10-31 担当RC。「{G}は互いに目を合わせないまま」が一人に当たっていた） */
+    alone: L('{G}は、床に倒れた相手から目を逸らして、一人で扉を抜けた。|{G}は、ふらつく足で立ち上がり、誰もいなくなった部屋を一度も振り返らずに外へ出た。|{G}は、自分の手についたものを服で拭ってから、黙って外へ出た。'),
     calm: L('{G}は顔を見合わせてから、外へ出た。|{G}は、白い部屋を一度だけ振り返ってから扉を抜けた。|{G}は、拍子抜けするほどあっさりと外へ出た。|{G}は、誰からともなく小さく笑って、外へ出た。')
   };
   /* 何もしていないのに一緒に出た人（全員で出られる部屋。{L}＝一緒に出た人、{G}＝扉を開けた人）。
@@ -138,6 +141,8 @@
     /* 腐れ縁（愛憎の二人で、体の関係か強い絡みがあった。2026-10-29 担当C。調査の気づき 12）。kusare＝双方、kusare1＝{a} だけが持つ（{a}＝愛憎を持つ側） */
     kusare: L('{a}と{b}は、扉を出たところで「これで清々した｜これで清々した｜これで清々しました」と同時に言い、同時に顔をしかめた。帰る方向は、なぜか同じだった。|{a}と{b}は、連絡先を交換しなかった。それでも一週間後、二人は同じ店で鉢合わせて、また口喧嘩を始めた。|外に出た{a}と{b}は、駅までずっと言い争っていた。改札の前で、どちらからともなく「じゃあ、また｜じゃあ、またな｜では、またお会いしましょう」と言った。|{a}は{b}に「二度と会いたくない｜二度と会いたくない｜二度と会いたくありません」と言い、{b}は「こっちの台詞｜こちらの台詞だ｜こちらの台詞です」と返した。二人が次に会ったのは、三日後だった。'),
     kusare1: L('{a}は扉を出るなり、{b}に背を向けた。けれど角を曲がる前に一度だけ振り返り、{b}がまだそこにいるのを確かめた。|{a}は「せいせいした｜せいせいした｜せいせいしました」と吐き捨てて歩き出した。その夜、{a}は{b}の名前を検索しかけて、乱暴にスマホを伏せた。|{b}は何事もなかったように帰っていった。{a}だけが、その背中に向かって聞こえないほどの悪態をつき、それから長いあいだ立ち尽くしていた。|{a}は{b}の連絡先を消そうとして、指を止めた。嫌いな相手の番号を、なぜ消せないのか、{a}自身にも分からなかった。'),
+    /* 殺す条件で一人だけ生き残った（{G}＝一人） */
+    kill1: L('{G}は外に出ても、しばらく自分の手を見つめていた。白い部屋に置いてきたものの重さだけが、帰り道について来た。|{G}は、この話を誰にもしないと、一人で決めた。誰に話しても、あの部屋の空気は伝わらない気がした。|{G}は、駅までの道を一人で歩いた。足音が一人分しかないことに、何度も気づかされた。'),
     kill: L('{G}は、外に出ても誰も口をきかなかった。白い部屋に置いてきたものの重さだけが、帰り道について来た。|{G}は、二度とこの話をしないと約束して別れた。|{G}は、扉の外で一度だけ振り返った。そこにはもう、壁しかなかった。')
   };
   /* r18:begin */
@@ -163,7 +168,7 @@
     if (HK.Ties && HK.Ties.hostile && (HK.Ties.hostile(ctx, a, b) || HK.Ties.hostile(ctx, b, a)) && v.aff < 30) return true;
     return v.ten >= 50 && v.aff < 15;
   }
-  function isClose(ctx, a, b) { return ['best', 'buddy', 'childhood', 'sibclose'].some(function (t) { return tieHas(ctx, a, b, t); }); }
+  function isClose(ctx, a, b) { return ['best', 'buddy', 'childhood', 'sibclose', 'twin'].some(function (t) { return tieHas(ctx, a, b, t); }); }
   function isLove(ctx, a, b) { var pf = ctx.pair(a, b), v = avgR(ctx, a, b); return !!pf.couple || (v.att > 45 && v.aff > 35); }
   /* 腐れ縁（2026-10-29 担当C）：愛憎（気持ちの関係。HK.LoveHate）の二人で、恋人になっていない・殺していない、
      体の関係（夜・敵対の強引な場面）か強い絡み（構う・嫉妬・挑発×2 が合わせて 3 回以上。hate-love.js の結末「腐れ縁（愛憎）」と同じ条件）があった。
@@ -194,12 +199,71 @@
   /* 一夜を過ごした二人の文：R18版は一夜の型と気まずさの型から、全年齢は気まずさの型から */
   function pairPool(k) { return k === 'night' ? (PAIR.night && !HK.SAFE_ON ? PAIR.night.concat(PAIR.awk) : PAIR.awk) : PAIR[k] || PAIR.far; }
   /* 二人の関係の層の一文（{a}{b}）。片方だけの腐れ縁は、{a} を愛憎を持つ側にそろえる */
+  /* 関係のある二人の層（2026-10-31 担当RC。利用者の報告：家族なのに連絡先を交換する）。
+     もとの層（love・friend・far）は、部屋で初めて会った二人を前提にした文（連絡先の交換・名前しか知らない・改めて待ち合わせ・家まで送る など）を含むので、
+     家族・夫婦・もとからの恋人・知り合い（同僚・同級生・友人・元恋人など）は、ここの表から選ぶ。仲のあたたかさ（好意・緊張）で warm／cool に分ける */
+  var REL = {
+    fam: {
+      warm: L('{a}と{b}は、外に出るとどちらからともなく顔を見合わせて、小さく笑った。家族どうしで閉じ込められたことが、今になっておかしくなってきた。駅までの道で、二人は白い部屋の話を、もう半分笑い話にしていた。|' +
+        '外に出た{a}は、{b}の背中を軽く叩いた。{a}「帰ったら、まず何か食べよう｜帰ったら、まず何か食べよう｜帰ったら、まず何か食べましょう」{b}「賛成｜賛成だ｜賛成です」その夜の家族の食卓は、いつもより少しだけにぎやかだった。|' +
+        '{a}と{b}は、駅までの道を並んで歩いた。家族に無事を知らせると、すぐに心配そうな返事が届いた。二人は顔を見合わせて、部屋のことをどこまで話すかを相談した。'),
+      cool: L('{a}と{b}は、外に出ても目を合わせなかった。家族だからこそ、部屋で見せた顔をどう扱えばいいのか分からなかった。それでも別れ際、{b}はぼそりと言った。{b}「気をつけて帰って｜気をつけて帰れ｜気をつけて帰ってください」|' +
+        '{a}と{b}は、扉の外で短く言葉を交わしただけで別れた。次に顔を合わせたのは、家族の集まりの席だった。二人は部屋のことには触れず、いつもどおりの距離で座った。|' +
+        '外に出ると、{a}は家族に無事を知らせる連絡を入れ、{b}の分も一緒に書き添えた。{b}はそれを横から見ていたが、何も言わなかった。言わなくても通じることが、家族にはいくつかある。')
+    },
+    spouse: {
+      warm: L('{a}と{b}は、部屋を出たその足で、同じ家に帰った。玄関の鍵を開けたとき、二人はようやく肩の力を抜いた。{a}「ただいま｜ただいま｜ただいま」{b}「おかえり。……私も、ただいま｜おかえり。……私も、ただいまだ｜おかえりなさい。……私も、ただいまです」|' +
+        '外に出た{a}と{b}は、いつもの帰り道を並んで歩いた。{a}「今日のことは、二人だけの話にしよう｜今日のことは、二人だけの話にしておこう｜今日のことは、二人だけの話にしておきましょう」{b}は頷いて、{a}の腕に自分の腕を絡めた。家の明かりが見えたとき、二人は少しだけ歩く速さを落とした。|' +
+        '{a}と{b}は、家に着くなり並んでソファに沈みこんだ。白い部屋の話をしているうちに、どちらからともなく笑いだした。長く一緒にいても知らない顔はまだあるものだと、二人とも思った。'),
+      cool: L('{a}と{b}は、外に出ても並んで歩かなかった。それでも帰る家は同じで、玄関の前で二人は同じ鍵を探した。扉を開ける前に、{a}が小さく言った。{a}「……ごめん｜……すまない｜……ごめんなさい」|' +
+        '{a}と{b}は、同じ電車の離れた席に座って帰った。家に着いても、二人は部屋のことを口にしなかった。その夜、寝室の明かりはいつもより遅くまで消えなかった。|' +
+        '外に出ると、{a}は先に歩き出し、{b}は少し遅れてついていった。夫婦の間に溜まっていたものが、あの部屋で少しだけこぼれた。家の前で、{a}は振り返って{b}を待った。')
+    },
+    lover: {
+      warm: L('{a}と{b}は、部屋を出たその足で一緒に帰った。付き合ってから長いのに、手を繋ぐのが妙に照れくさかった。白い部屋の話は、二人の間で長く語られる思い出になった。|' +
+        '外に出た{a}は、{b}の手をいつもより強く握った。{b}「もう、どこにも行かないから｜もう、どこにも行かない｜もう、どこにも行きませんから」{a}「知ってる｜知っている｜知っています」それでも{a}は、駅に着くまで手を離さなかった。|' +
+        '{a}と{b}は、帰り道のコンビニで、いつもの飲み物を二つ買った。顔を見合わせて、二人は同時に笑った。恋人として過ごしてきた日々に、少し変わった思い出がひとつ増えた。'),
+      cool: L('{a}と{b}は、外に出ても少し距離を空けて歩いた。恋人どうしなのに、部屋で見た互いの顔が、まだうまく飲みこめなかった。駅の前で、{b}が先に口を開いた。{b}「あとで連絡する｜あとで連絡する｜あとで連絡します」|' +
+        '{a}と{b}は、改札の前で立ち止まった。言いたいことはお互いにあったが、今日はやめておくことにした。別れ際、{a}は{b}の袖を一度だけ引いた。|' +
+        '外に出た{a}は、{b}にかける言葉を探した。付き合ってきた時間のぶん、言わなくても分かることも、言わないと伝わらないこともあった。その夜、二人の通話はいつもより長く続いた。')
+    },
+    /* 同僚・同級生・友人・元恋人など、外でもまた顔を合わせる二人 */
+    known: {
+      warm: L('{a}と{b}は外に出ると、肩を叩き合って笑った。あの部屋の話は、いつのまにか二人だけの笑い話になった。次に会ったときも、最初に出たのはその話だった。|' +
+        '{a}と{b}は、近くの店で遅い食事をとった。知り合ってからずいぶん経つのに、こんなに長く話したのは初めてだった。店を出るころには、二人の距離は前より少し近くなっていた。|' +
+        '{a}が「お腹すいた｜腹が減った｜お腹が空きました」と言うと、{b}も同じことを言って吹き出した。二人は顔なじみの店に寄って、並んで座った。白い部屋の話は、その日のうちに二人の鉄板の笑い話になった。'),
+      cool: L('{a}と{b}は、外に出るとねぎらいの言葉を短く交わして別れた。また顔を合わせる日が来るのは、二人とも分かっていた。そのときにどんな顔をすればいいのかは、まだ決めていなかった。|' +
+        '{a}と{b}は、扉の外で軽く手を上げただけで、別々の方向へ歩き出した。知らない仲ではないぶん、かえって何を言えばいいのか分からなかった。次に会ったときの最初の一言を、{a}は帰り道でずっと考えていた。|' +
+        '外に出ると、{a}も{b}もそれぞれのスマホを確かめ、届いていた通知を黙って眺めた。二人とも、部屋のことは誰にも言わないと決めていた。顔見知りどうしの間に、ひとつだけ秘密が増えた。')
+    }
+  };
+  RE.REL = REL;
+  /* 関係のある二人の層の表（k＝層の種類）。関係のない組・知人・表に当てない層（腐れ縁・憎しみ・先に出た・一夜）は null */
+  function relPool(ctx, x, y, k) {
+    var rc = HK.relClass ? HK.relClass(ctx, x, y) : 'none';
+    if (rc === 'none' || rc === 'weak' || !/^(?:love|friend|far|awk)$/.test(k)) return null;
+    var v = avgR(ctx, x, y), wm = v.aff > 20 && v.ten < 40;
+    if (rc === 'fam') return REL.fam[wm ? 'warm' : 'cool'];
+    /* 擬似親子は恋愛もありうる関係なので、部屋で恋人になった組（love）はもとの層 */
+    if (rc === 'pfam') return k === 'love' ? null : REL.fam[wm ? 'warm' : 'cool'];
+    if (rc === 'spouse') return REL.spouse[wm ? 'warm' : 'cool'];
+    if (rc === 'lover') return REL.lover[wm ? 'warm' : 'cool'];
+    /* 知り合い：部屋で恋人になった二人（love）は、もとの層から初対面の文を外して使う */
+    if (k === 'love') return null;
+    return REL.known[k === 'friend' ? 'warm' : 'cool'];
+  }
+  RE.relPool = relPool;
   function pairLayer(ctx, x, y) {
     var k = kindOf(ctx, x, y);
     if (k === 'kusare1' && !HK.LoveHate.has(ctx, x, y)) { var s = x; x = y; y = s; }
-    return fill(ctx.pick(pairPool(k)), { a: x.name, b: y.name });
+    var pool = relPool(ctx, x, y, k) || pairPool(k);
+    /* 二人の関係に合わない文（初対面の文・連絡先 など。mini.js の HK.relFilter）を外す */
+    var f = HK.relFilter ? HK.relFilter(ctx, pool, x, y) : pool;
+    return fill(ctx.pick(f && f.length ? f : pool), { a: x.name, b: y.name });
   }
   RE.pairLayer = pairLayer;
+  /* 結末の書き分け（room-end-vary.js）が包む入口：RE.layerOf（二人の関係の層。ex＝出た記録）・RE.exitOf（出る様子）・RE.groupOf（三人以上の組の層） */
+  RE.layerOf = function (ctx, x, y, ex) { return pairLayer(ctx, x, y); };
   /* 出る様子：手を取る（恋人・親友）／無言（敵対）／我先に（関係が薄い）／ふつう */
   function manner(ctx, g) {
     /* 腐れ縁の二人（kusareOf）は手を取って出ない（関係の層の言い争いと食い違うため） */
@@ -271,6 +335,13 @@
      部品：出る様子（exitLine）＋関係の層（PAIR。三人以上の組は、後日談が結末の段にあるので外の情景 SCENE_G）。先に出て一人が残った組は GO_LATER／GO_WAIT（三人目の恋人に付き添う）。
      書いた組の出た記録には told が付き、結末の段（closing）はその組の出る様子・一緒に出た人・関係の層を書き直さない。外の情景の場所も、結末の段では避ける。
      この扉で部屋の動きが終わるとき（全員が出た など）は呼ばれない（最後の「結末」の段に任せる） */
+  RE.exitOf = function (ctx, g, ex) { return exitLine(ctx, g); };
+  RE.groupOf = function (ctx, g, ex, kill) {
+    var pool = kill ? (g && g.length === 1 ? PAIR.kill1 : PAIR.kill) : PAIR.group;
+    /* 全員が知り合いの組には「全員の連絡先」のような初対面の文を使わない（mini.js の HK.relGroupFits） */
+    var f = HK.relGroupFits ? pool.filter(function (t) { return HK.relGroupFits(ctx, g, t); }) : pool;
+    return fill(ctx.pick(f.length ? f : pool), { G: nm(g) });
+  };
   RE.groupEnd = function (ctx, ex, opt) {
     opt = opt || {};
     if (!ex || ex.how) return '';
@@ -281,9 +352,9 @@
     } else {
       var g = membersOf(ctx, ex), lay;
       if (ex.trio || g.length > 2) lay = { t: freshScene(ctx, SCENE_G), o: 1 };
-      else { var x = g[0], y = g[1]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } lay = { t: pairLayer(ctx, x, y), o: 0 }; }
+      else { var x = g[0], y = g[1]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } lay = { t: RE.layerOf(ctx, x, y, ex), o: 0 }; }
       /* 関係の層の一文目が出るところから書く型（「外に出ると」「部屋を出た〇〇は」など）なら、出る様子は重ねない */
-      if (!/^[^。]*(?:外に出る|部屋を出た|扉を出た)/.test(lay.t)) parts.push({ t: exitLine(ctx, g), o: 2 });
+      if (!/^[^。]*(?:外に出る|部屋を出た|扉を出た)/.test(lay.t)) parts.push({ t: RE.exitOf(ctx, g, ex), o: 2 });
       parts.push(lay);
     }
     return trim(parts, 3).map(function (p) { return p.t; }).join('');
@@ -314,7 +385,7 @@
       if (fresh.length === 1) {
         var e0 = fresh[0], g0 = membersOf(ctx, e0);
         if (kill && e0.group) parts.push({ t: ctx.pick(KILL_PAUSE), o: 4 });
-        parts.push({ t: kill && e0.group ? fill(ctx.pick(EXIT.silent), { G: nm(g0) }) : exitLine(ctx, g0), o: 0 });
+        parts.push({ t: kill && e0.group ? fill(ctx.pick(g0.length === 1 ? EXIT.alone : EXIT.silent), { G: nm(g0) }) : RE.exitOf(ctx, g0, e0), o: 0 });
       } else if (fresh.length > 1) {
         var byL = [], lab = {};
         fresh.forEach(function (e) { var k = seqLabel(e.label); if (lab[k] == null) { lab[k] = byL.length; byL.push({ l: k, g: [] }); } byL[lab[k]].g.push(membersOf(ctx, e)); });
@@ -328,7 +399,13 @@
       /* 一人だけ先に出て、残った人があとから出た */
       real.filter(function (e) { return e.stay != null && C[e.stay].out; }).slice(0, 1).forEach(function (e) { parts.push({ t: fill(ctx.pick(FIRST), { a: C[e.a].name, b: C[e.stay].name }), o: 5 }); });
       /* 外の情景・取り残された人 */
-      if (!P.length) { title = C.length === 2 ? '二人とも部屋を出た' : '全員が部屋を出た'; parts.push({ t: freshScene(ctx, SCENE), alt: freshScene(ctx, SCENE1, true), o: 6 }); }
+      /* 殺す条件などで死んだ人がいるときは「二人とも・全員が出た」にしない。一人だけ出たなら、全員・二人の情景も使わない（2026-10-31 担当RC） */
+      var dead = C.filter(function (c) { return c.alive === false; });
+      if (!P.length) {
+        title = dead.length ? nm(out) + (out.length === 1 ? 'だけが部屋を出た' : 'が部屋を出た') : C.length === 2 ? '二人とも部屋を出た' : '全員が部屋を出た';
+        var one1 = out.length === 1, sc1 = function (l) { var f = one1 ? l.filter(function (t) { return !/全員|二人|最後の一人/.test(t); }) : l; return f.length ? f : l; };
+        parts.push({ t: freshScene(ctx, sc1(SCENE)), alt: freshScene(ctx, sc1(SCENE1), true), o: 6 });
+      }
       else if (left.length) { title = nm(left) + 'が取り残された'; parts.push({ t: fill(ctx.pick(SOME), { L: nm(left) }), o: 0 }); }
       else title = nm(stayed) + 'が自分から残った';
       if (stayed.length) parts.push({ t: fill(ctx.pick(STAYED), { S: nm(stayed) }), o: 2 });
@@ -337,9 +414,10 @@
       fresh.forEach(function (e) {
         if (e.trio) return;
         var t;
-        if (e.group) t = fill(ctx.pick(kill ? PAIR.kill : PAIR.group), { G: nm(e.group.map(function (i) { return C[i]; })) });
+        if (e.group && (kill || e.group.length !== 2)) t = RE.groupOf(ctx, e.group.map(function (i) { return C[i]; }), e, kill);
+        else if (e.group) t = RE.layerOf(ctx, C[e.group[0]], C[e.group[1]], e);
         else if (e.stay != null) t = fill(ctx.pick(PAIR.go), { a: C[e.a].name, b: C[e.b].name });
-        else { var x = C[e.a], y = C[e.b]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } t = pairLayer(ctx, x, y); }
+        else { var x = C[e.a], y = C[e.b]; if (ctx.rng() < 0.5) { var s = x; x = y; y = s; } t = RE.layerOf(ctx, x, y, e); }
         parts.push({ t: t, o: nL ? 8 + nL : 1 });
         nL++;
       });

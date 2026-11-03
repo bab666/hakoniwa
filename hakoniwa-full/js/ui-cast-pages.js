@@ -190,7 +190,8 @@
     var b = document.getElementById('tiebody');
     if (b && lastTieRow && b.querySelector('p.hint') && !b.querySelector('.tierow')) { tieGen++; b.innerHTML = tieBody(castView()); after(b); }
   }
-  function castHtml() { var p = castParts(); return '<div id="castpages">' + p.tools + '<div id="castbody">' + p.body + '</div></div>'; }
+  /* extra：道具の帯と表のあいだに置く HTML（取り込みの欄・サンプルの案内。ui.js の renderCast） */
+  function castHtml(extra) { var p = castParts(); return '<div id="castpages">' + p.tools + (extra || '') + '<div id="castbody">' + p.body + '</div></div>'; }
   /* bodyOnly：一覧だけ描き直すとき（ページ送り・折りたたみ・探す）は道具の行を組み立てない */
   function castParts(bodyOnly) {
     var S = X.S(), v = castView(), on = {}, many = S.chars.length > SIZES[0], body = '', n = 0, later = [];
@@ -204,12 +205,15 @@
     var dl = '<datalist id="taglist">' + TG.list.map(function (t) { return '<option value="' + esc(t) + '">'; }).join('') + '</datalist>';
     /* ツールバー（1本）：探す｜グループの件数つきチップ｜並び｜すべて折りたたむ・すべて開く＋「50 人 / 頁」（チップと並びは ui-cast-tools.js） */
     var CT = HK.CastTools;
-    var tools = bodyOnly ? '' : dl + (S.chars.length > 1 ? '<div class="ctbar cptools" role="group" aria-label="住人の一覧の表示">' +
-      '<input type="search" id="cpq" value="' + esc(st.q) + '" placeholder="名前・メモ・グループ・タグで探す" aria-label="住人を名前・メモ・グループ・タグで探す" autocomplete="off" enterkeyhint="search">' +
-      (CT ? CT.chips() + CT.sortSel() : '') +
+    /* 2026-11-01 担当UA（見本 01）：探す（虫眼鏡つき）・並び・グループの札・折りたたみ／1ページの人数、右に「取り込み」「データ」「＋住人を追加」（ui-cast-tools.js の actions）。
+       右の操作は住人が 0〜1 人でも出す（探す・並び・グループは 2 人から） */
+    var MAG = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>';
+    var tools = bodyOnly ? '' : dl + '<div class="ctbar cptools" role="group" aria-label="住人の一覧の表示と登録">' + (S.chars.length > 1 ?
+      '<label class="uisearch">' + MAG + '<input type="search" id="cpq" value="' + esc(st.q) + '" placeholder="名前・メモ・グループ・タグで探す" aria-label="住人を名前・メモ・グループ・タグで探す" autocomplete="off" enterkeyhint="search"></label>' +
+      (CT ? CT.sortSel() : '') +
       (v.grouped || many ? '<span class="ctview">' + (v.grouped && CT ? CT.foldBtns() : '') +
-        (many ? '<select id="cpsize" aria-label="1ページに出す住人の数">' + SIZES.map(function (n) { return '<option value="' + n + '"' + (n === V.size ? ' selected' : '') + '>' + n + ' 人 / 頁</option>'; }).join('') + '</select>' : '') + '</span>' : '') +
-      '</div>' : '') + tagRow;
+        (many ? '<select id="cpsize" aria-label="1ページに出す住人の数">' + SIZES.map(function (n) { return '<option value="' + n + '"' + (n === V.size ? ' selected' : '') + '>' + n + ' 人 / 頁</option>'; }).join('') + '</select>' : '') + '</span>' : '') : '') +
+      (CT && CT.actions ? CT.actions() : '') + '</div>' + (S.chars.length > 1 && CT ? CT.chips().replace('class="ctchips"', 'class="ctchips cptools"') : '') + tagRow;
     v.secs.forEach(function (s, no) {
       var rows = (v.q || s.open) ? s.show.filter(function (i) { return on[i]; }) : [];
       if (v.grouped) body += castHead(s, rows.length, v, no);
@@ -223,8 +227,14 @@
     var note = v.folded && !v.q ? '（折りたたみ中の' + v.folded + '人を除く）' : '';
     st.want = '';
     fillLater(later);
+    if (!S.chars.length) body = '<p class="hint uiempty">住人がいません。右上の「＋住人を追加」か「診断結果をまとめて取り込む」から登録してください。</p>';
+    /* 表（2026-11-01 担当UA：見本 01）：列の見出し・住人の行・いちばん下に「＋住人を1人追加」。列の見出しは住人の行と同じ格子（index.html の CSS） */
+    var full = X.max ? S.chars.length >= X.max : false;
+    var hd = '<div class="reshd" aria-hidden="true"><span></span><span>住人</span><span class="reshd-eg">' + (HK.FACTORS || ['CP', 'NP', 'A', 'FC', 'AC']).map(function (k) { return '<span>' + k + '</span>'; }).join('') + '</span><span>口調・性別</span><span>グループ・メモ</span><span class="r">操作</span></div>';
     return { tools: tools, view: v, body: pager('cppage', '住人', st.page, v.pages, v.from, v.size, v.total, '人', note, 'top') +
-      '<div class="cast" id="castlist">' + body + '</div>' + pager('cppage', '住人', st.page, v.pages, v.from, v.size, v.total, '人', note, 'bottom') };
+      '<div class="uitable">' + hd + '<div class="cast" id="castlist">' + body + '</div>' +
+      '<button type="button" class="uiaddrow" data-act="add"' + (full ? ' disabled' : '') + '><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M7 2v10 M2 7h10"/></svg>住人を1人追加</button></div>' +
+      pager('cppage', '住人', st.page, v.pages, v.from, v.size, v.total, '人', note, 'bottom') };
   }
   /* ページを移る・節を開け閉めする・探すとき：住人の一覧と、関係の表（このページの住人に関わる関係のとき）だけを描き直す（住人タブ全体は描き直さない）。
      関係の表の形（表示する関係の選択・ページ送りの有無）が変わるときは、住人タブ全体を描き直す */

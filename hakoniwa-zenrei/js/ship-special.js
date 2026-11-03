@@ -29,9 +29,13 @@
       revive: function (p) {
         p.alive = true; p.fate = '';
         var k = S.deaths.indexOf(p); if (k >= 0) S.deaths.splice(k, 1);
+        /* 死んだ病への耐性を付け、病の段階を消す（ship.js の SH.reviveBody。同じ病で同じ月にまた死ぬ連鎖を止める） */
+        if (SH.reviveBody) SH.reviveBody(S, p);
       },
+      /* 蘇りの文に添える一文（耐性が付いたとき） */
+      reviveAdd: function (p) { return SH.reviveImmText ? SH.reviveImmText(S, p) : ''; },
       kill: function (p, how, text) {
-        p.alive = false; p.fate = '死亡（' + S.m + 'か月目・' + how.replace(/で$|に$/, '') + '）';
+        p.alive = false; p.dN = (p.dN || 0) + 1; p.fate = '死亡（' + S.m + 'か月目・' + how.replace(/で$|に$/, '') + '）';
         S.deaths.push(p);
         var o = ST.say(S, { actors: [p], tag: '死', kind: 'climax', text: text, why: how + '命を落とした', mag: 40 });
         ST.key(S, o, p.name + 'の死');

@@ -699,6 +699,12 @@
     return done(K.finish(S, input, E, adv, { meta: staff.n + (TR ? '（住人）' : '') + '・' + ({ normal: '整体', oil: 'アロマオイル', lymph: '全身リンパ', special: '特別' })[course] + 'コース', estats: [['気づいた', S.flags.noticedAt || '気づかず'], ['騙された', deceived + '回'], [K.W_CL, h.climax + '回'], ['堕ち度', Math.min(100, Math.round(h.corrupt))], ['理性', Math.max(0, Math.round(h.reason))]].concat(positions.length ? [dark ? (HK.SAFE_ON ? ['暗闇の中で姿勢を変えた', positions.length + '回'] : ['暗闇の中の体位', positions.length + 'つ']) : ['指定された体位', positions.join('→')]] : []), label3: '施術' }));
   }
 
+  /* 結末の題の「（体位）、（体位）で」：名前が「舌で」「指と舌で」「口で」のように「で」で終わる、または「脚を絡めて」「後ろから」のように
+     それだけで句になっているときは「で」を重ねない（「舌でで」にしない。2026-11-01 担当SB） */
+  function posPhrase(list) {
+    var u = list.filter(function (v, i, A) { return A.indexOf(v) === i; }), last = u[u.length - 1] || '';
+    return u.join('、') + (/(?:で|て|から)$/.test(last) ? '' : 'で');
+  }
   function ending(S, x) {
     var h = S.h, L0 = [], title, kind, M = HK.MassageMore;
     if (x.reversed && S.flags.scout === 'yes') { kind = 'ok'; title = 'スカウトされた ― 来月から、施術する側に'; L0.push(h.name + 'の初出勤の日、' + x.staff.n + 'は研修資料を一枚も用意していなかった。「教えることなんて、ありませんから」'); }
@@ -708,7 +714,7 @@
     else if (x.left) { kind = 'ok'; title = '途中で帰った ― 「' + S.flags.noticedAt + '」で見抜いた'; L0.push(h.name + 'はその日のうちに口コミサイトに長文を書いた。星は一つだった。'); }
     else if (x.fell && S.flags.trainee) { kind = 'over'; title = '新人の練習台になった ― 研修日は毎週水曜'; L0.push(HK.SoloKit.fmt(S, S.rng.pick(M.TRAINEE_END))); }
     else if (x.fell && h.goal.id === 'secret') { kind = 'over'; title = '常連になった ― 毎週水曜、同じ時間に'; L0.push(h.name + 'の予約は、もう三ヶ月先まで埋まっている。指名はいつも' + x.staff.n + 'だった。'); }
-    else if (x.fell) { kind = 'over'; title = '快楽に負けた ― ' + (x.positions.length ? (S.dark ? (HK.SAFE_ON ? '暗闇の中で、' + x.positions.length + '回姿勢を変えて' : '暗闇の中で、' + x.positions.length + 'つの体位を') : x.positions.filter(function (v, i, A) { return A.indexOf(v) === i; }).join('、') + 'で') : '延長の三十分で'); L0.push(h.name + 'は帰り道、駅のホームで何度も膝が笑った。財布には、次回割引券が入っていた。'); }
+    else if (x.fell) { kind = 'over'; title = '快楽に負けた ― ' + (x.positions.length ? (S.dark ? (HK.SAFE_ON ? '暗闇の中で、' + x.positions.length + '回姿勢を変えて' : '暗闇の中で、' + x.positions.length + 'つの体位を') : posPhrase(x.positions)) : '延長の三十分で'); L0.push(h.name + 'は帰り道、駅のホームで何度も膝が笑った。財布には、次回割引券が入っていた。'); }
     else if (x.asked) { kind = 'over'; title = '自分からねだった ― 延長料金は払った'; L0.push(h.name + 'は会計のとき、' + x.staff.n + 'と目を合わせられなかった。'); }
     else if (!x.noticed && x.deceived) { kind = 'mid'; title = '騙されたまま ― 「また来ます」'; L0.push(h.name + 'は' + x.deceived + '回疑って、' + x.deceived + '回納得した。体は軽くなった気がした。'); }
     else if (!x.noticed) { kind = 'mid'; title = '最後まで気づかなかった ― 星5のレビューを書いた'; L0.push(h.name + '「すごく丁寧な施術だった。特にリンパのところが効いた｜＝｜すごく丁寧な施術でした。特にリンパのところが効きました」――レビューには「参考になった」が千件ついた。'); }

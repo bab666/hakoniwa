@@ -11,7 +11,10 @@
      判定は A.featsOf(c)・A.feat(c, k)・A.isImmortal(c)。実行時は dst.feats（未設定なら写さない）
    ・looks 目につく特徴（自由記入。読点区切りで 3 つまで・1 つ 12 文字まで）：地の文の飾り（A.LOOKS_FL の {feat}）。実行時は配列（A.looksOf(c)）
    ・体の特徴・目につく特徴の文は「連続させない」（A.featPick：一つの記録に全員で 1 文・同じ人は 2 記録あける・同じ特徴を続けない）
-   ・night 夜の性格（R18版だけ）：''（おまかせ＝気質から）／sadist サド／maso マゾ／mean 意地悪／sweet 甘々／shy 恥じらい／none 表と同じ。
+   ・night 夜の性格（R18版だけ）：''（おまかせ＝気質から）／sadist サド／maso マゾ／mean 意地悪／sweet 甘々／shy 恥じらい／none 表と同じ／match 相手に合わせる、
+     と、ふだんの態度を夜に固定する proud 強気／stern 厳格／tsun 意地っ張り／gentle 穏やか／devoted 健気／cool 冷静／free 奔放／polite 丁寧（2026-10-31 担当E4。
+     恥じらい shy は夜だけの性格と態度の両方を兼ねる）。窓口は A.nightKind（夜だけの性格）・A.nightAtt（夜の態度）・A.nightOf（互換。態度の値なら ''）。
+     設計は docs/reports/2026-10-31/night-attitude.md
      nightFor { 相手の番号: night } があれば、その相手にはそちらを優先する。R18 の山場の型（style）より優先する（attr-r18.js）。
      maso は受け攻めを変えない（攻め指定が優先。受けに回ったときの崩れ方だけを変える）。全年齢では無視する
    ・sexLikes 体の関係の相手（R18版だけ。恋愛対象「なし」の人だけ画面に出す）：''（おまかせ＝相手に合わせる）／m／f／both／none（体の関係にもならない）。
@@ -51,8 +54,16 @@
   A.FEATS = [['ear', '獣の耳'], ['tail', '尻尾'], ['fang', '牙'], ['horn', '角'], ['wing', '翼'], ['trans', '体が透けている'], ['cold', '冷たい肌'], ['eye', '光る瞳'], ['drive', '機械の体（駆動音）'], ['immortal', '不死']];
   /* 種族ごとの既定の特徴（人間・おまかせ・その他は無し。その他は種族の名前の文だけ） */
   A.RACE_FEATS = { vampire: ['fang', 'cold', 'eye', 'immortal'], beast: ['ear', 'tail'], demon: ['horn', 'tail'], angel: ['wing'], ghost: ['trans', 'cold'], android: ['drive'] };
-  A.NIGHT = [['', 'おまかせ（気質から）'], ['sadist', 'サド'], ['maso', 'マゾ'], ['mean', '意地悪'], ['sweet', '甘々'], ['shy', '恥じらい'], ['none', '表と同じ'], ['match', '相手に合わせる']];
-  /* 夜の性格「相手に合わせる」（match）：相手の夜の性格から決める（サド↔マゾ・意地悪↔恥じらい・甘々↔甘々。相手が表と同じ・おまかせ・相手に合わせるなら気質から） */
+  A.NIGHT = [['', 'おまかせ（気質から）'], ['sadist', 'サド'], ['maso', 'マゾ'], ['mean', '意地悪'], ['sweet', '甘々'], ['shy', '恥じらい'], ['none', '表と同じ'], ['match', '相手に合わせる'],
+    ['proud', '強気'], ['stern', '厳格'], ['tsun', '意地っ張り'], ['gentle', '穏やか'], ['devoted', '健気'], ['cool', '冷静'], ['free', '奔放'], ['polite', '丁寧']];
+  /* 画面の並び（選択肢の見出し。A.nightSel）：決め方／夜だけの性格／ふだんの態度を夜に固定。恥じらい shy は夜だけの性格の側に 1 つだけ置く（態度としても効く） */
+  A.NIGHT_GROUPS = [['', ['', 'none', 'match']], ['夜だけの性格', ['sadist', 'maso', 'mean', 'sweet', 'shy']], ['ふだんの態度を夜に固定', ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'polite']]];
+  /* 夜だけの性格（A.nightKind が返すもの）と、夜の態度（A.nightAtt が返すもの。HK.PERSONA の 9 種。shy は両方） */
+  A.NIGHT_KIND = { sadist: 1, maso: 1, mean: 1, sweet: 1, shy: 1 };
+  A.NIGHT_ATT = { proud: 1, stern: 1, tsun: 1, gentle: 1, devoted: 1, cool: 1, free: 1, shy: 1, polite: 1 };
+  /* 夜の性格「相手に合わせる」（match）：本人がそこまで乗り気でなくても、相手の嗜好に付き合う（2026-10-31 利用者の補足）。
+     役（A.nightKind）は相手の夜の性格から決める（サド↔マゾ・意地悪↔恥じらい・甘々↔甘々。相手が態度の値・表と同じ・おまかせ・相手に合わせるなら ''）。
+     態度（A.nightAtt）は本人のまま（全体で選んだ態度か気質）。付き合っていることは A.nightAccom で分かる */
   A.MATCH = { sadist: 'maso', maso: 'sadist', mean: 'shy', shy: 'mean', sweet: 'sweet' };
   /* 攻め度（全年齢版・R18版共通。pos.js の P.lv）と、夜の主導（R18版だけ。見出しの語は R18版だけ） */
   A.TOPLV = [['', 'おまかせ（ふつう）'], ['1', '1（受けに回りやすい）'], ['2', '2'], ['3', '3（ふつう）'], ['4', '4'], ['5', '5（攻めに回りやすい）']];
@@ -309,11 +320,20 @@
       /* r18:end */
       (HK.SAFE_ON ? '<label title="催眠の箱庭で、暗示のかかりやすさが変わります。強いと、流されても心は折れません">心の強さ ' + sel('will') + '</label>' : '') + '</div>' + feats(c, esc) + food(c, esc);
   };
+  /* 夜の性格の選択肢（A.NIGHT_GROUPS の並び。見出しは optgroup）。inner：<select> の中身だけを返す（相手ごとの欄は select を自前で書く）。
+     first：'' の選択肢の表示名（相手ごとの欄は「全体と同じ」）。値の一覧は A.NIGHT のまま（保存・正規化は val(A.NIGHT, …)） */
+  A.nightSel = function (attrs, cur, first, h, inner) {
+    var o = A.NIGHT_GROUPS.map(function (g) {
+      var ops = g[1].map(function (k) { return h.opt(k, k ? lab(A.NIGHT, k) : first || lab(A.NIGHT, ''), cur || ''); }).join('');
+      return g[0] ? '<optgroup label="' + h.esc(g[0]) + '">' + ops + '</optgroup>' : ops;
+    }).join('');
+    return inner ? o : '<select ' + attrs + '>' + o + '</select>';
+  };
   /* 「恋愛と夜」の節に置く、全体の夜の性格（R18版だけ。相手ごとに決めていない相手・モブが相手のとき） */
   A.nightHtml = function (c, h) {
     var out = '', ld = A.libDim(c), tl = A.topLvState(c, h.byId);
     /* r18:begin */
-    if (!HK.SAFE_ON) out = '<label' + ld + ' title="R18の場面での振る舞い。作風（山場の書き方）より優先します。相手ごとの設定で決めた相手には、そちらを優先します。マゾは受け攻めを変えません（攻めを選んだ人は攻めのまま）。相手に合わせるは、相手の夜の性格から決めます（サドの相手にはマゾ、マゾの相手にはサド、意地悪の相手には恥じらい、恥じらいの相手には意地悪、甘々の相手には甘々。相手が表と同じ・おまかせ・相手に合わせるなら気質から）">夜の性格（全体） ' + h.selOf('at_night', A.NIGHT, c.night || '') + '</label>' +
+    if (!HK.SAFE_ON) out = '<label' + ld + ' title="R18の場面での振る舞い。作風（山場の書き方）より優先します。相手ごとの設定で決めた相手には、そちらを優先します。マゾは受け攻めを変えません（攻めを選んだ人は攻めのまま）。相手に合わせるは、相手の嗜好（サド・マゾなど）に、本人は乗り気でなくても付き合います（サドの相手にはマゾ役、マゾの相手にはサド役、意地悪の相手には恥じらう役、恥じらいの相手には意地悪な役、甘々の相手には甘々。声や態度は本人のまま。相手が強気・厳格など・表と同じ・おまかせ・相手に合わせるなら気質から）。サド・マゾ・意地悪・甘々は夜だけの性格。強気・厳格などは、昼の性格に関わらずその態度で夜を過ごします（喘ぎ・台詞・抱き方がその態度になります）。恥じらいは両方を兼ねます">夜の性格（全体） ' + A.nightSel('data-gf="at_night"', c.night || '', '', h) + '</label>' +
       '<label' + ld + ' title="受け攻めは変えずに、夜の場面でどちらが主導するかを決めます。受けが主導（誘い受け）は受けが自分から誘い、受けが主導（襲い受け）は受けが押し倒して跨ります（自分で攻めを選んだ相手は押し倒さず、跨るだけ）。挿れる側・挿れられる側は受け攻めのままです。二人のうち受けの人の設定を先に見ます">夜の主導 ' + h.selOf('at_lead', A.LEAD, c.lead || '') + '</label>';
     /* r18:end */
     /* 攻め度：受け攻めが「おまかせ」「リバ」のときだけ選べる（攻め・受けを選んだ人は薄くして選べなくする。値は消さない）。2026-10-27 担当HK */
@@ -344,7 +364,7 @@
     var esc = h.esc, pv = (c.posFor || {})[o.id] || '';
     var out = '<label title="この相手との恋愛・夜の場面での向きだけを変えます。おまかせなら、恋愛と夜の節の受け攻めに従います（ほかの相手・モブには全体の受け攻めのまま）">受け攻め <select data-gf="at_pf" data-o="' + esc(o.id) + '" aria-label="' + esc(o.name) + 'への受け攻め">' + A.POSFOR.map(function (x) { return h.opt(x[0], x[1], pv); }).join('') + '</select></label>';
     /* r18:begin */
-    if (!HK.SAFE_ON) out += '<label' + A.libDim(c) + ' title="この相手との夜の場面での振る舞い。「全体と同じ」なら、恋愛と夜の節の夜の性格のまま">夜の性格 <select data-gf="at_nf" data-o="' + esc(o.id) + '" aria-label="' + esc(o.name) + 'への夜の性格">' + A.NIGHT.map(function (x) { return h.opt(x[0], x[0] ? x[1] : '全体と同じ', (c.nightFor || {})[o.id] || ''); }).join('') + '</select></label>';
+    if (!HK.SAFE_ON) out += '<label' + A.libDim(c) + ' title="この相手との夜の場面での振る舞い。「全体と同じ」なら、恋愛と夜の節の夜の性格のまま">夜の性格 <select data-gf="at_nf" data-o="' + esc(o.id) + '" aria-label="' + esc(o.name) + 'への夜の性格">' + A.nightSel('', (c.nightFor || {})[o.id] || '', '全体と同じ', h, true) + '</select></label>';
     /* r18:end */
     return out;
   };
@@ -582,15 +602,57 @@
   A.spare = function (ctx, victim, killer) { return !!(victim && killer && victim !== killer && !A.killForced(ctx, killer) && A.noKillPair(victim, killer)); };
   /* 夜の性格：a が b に向けるもの（相手ごとの指定が優先。'none'＝表と同じは '' と同じ扱い）。全年齢では常に '' */
   function rawNight(a, b) { return (isRes(b) && a.nightFor && a.nightFor[b.i]) || a.night || (a.src && a.src.night) || ''; }
-  A.nightOf = function (a, b) {
-    if (HK.SAFE_ON || !a) return '';
-    var v = rawNight(a, b);
-    /* 相手に合わせる：相手（b）の夜の性格から決める。相手がいない・相手もおまかせ・表と同じ・相手に合わせるなら、気質から（''） */
-    if (v === 'match') v = b && b !== a ? A.MATCH[rawNight(b, a)] || '' : '';
-    return v === 'none' ? '' : v;
+  /* 自分の値 v と相手の値 pv から、相手に合わせる（match）を解いた役（'none'・相手がいない・相手が態度の値／おまかせ／表と同じ／相手に合わせるなら ''） */
+  A.nightResolve = function (v, pv, hasB) {
+    if (v === 'match') return hasB ? A.MATCH[pv] || '' : '';
+    return v === 'none' ? '' : v || '';
   };
-  /* 山場の型（thick-sex.js などの style）：夜の性格があれば、気質から決めた型より優先する */
-  A.STYLE = { sadist: 'rough', mean: 'tease', sweet: 'gentle', shy: 'clumsy' };
+  /* 選んだ態度：v＝この相手への値、g＝全体の値。相手に合わせる（match）のときは態度を変えず、全体で態度を選んでいればそれ（相手ごとに match・全体に強気など）。
+     moan-engine.js が入力の住人の値で引くのにも使う */
+  A.nightAttRaw = function (v, g) {
+    if (v === 'match') v = g;
+    return A.NIGHT_ATT[v] ? v : '';
+  };
+  function nightRes(a, b) { var v = rawNight(a, b), hb = !!(b && b !== a); return A.nightResolve(v, v === 'match' && hb ? rawNight(b, a) : '', hb); }
+  /* 夜だけの性格：sadist／maso／mean／sweet／shy／''（態度の値を選んだ人・おまかせ・表と同じは ''）。'match' の解き方は今までと同じ。全年齢では常に '' */
+  A.nightKind = function (a, b) {
+    if (HK.SAFE_ON || !a) return '';
+    var v = nightRes(a, b);
+    return A.NIGHT_KIND[v] ? v : '';
+  };
+  /* 夜の性格（互換。6 種を期待している箇所のため）：A.nightKind と同じ。態度の値（強気など）を選んだ人には '' */
+  A.nightOf = function (a, b) { return A.nightKind(a, b); };
+  /* 夜の性格で選んだ態度（態度の値か shy）。選んでいなければ ''（気質には下りない。呼ぶ側の態度をそのまま使うとき用）。
+     相手に合わせる（match）は態度を変えない（全体で態度を選んでいればそれ、なければ ''） */
+  A.nightAttSet = function (a, b) {
+    if (HK.SAFE_ON || !a) return '';
+    return A.nightAttRaw(rawNight(a, b), a.night || (a.src && a.src.night) || '');
+  };
+  /* 相手に合わせて、相手の嗜好に付き合っているか（a の値が「相手に合わせる」で、相手の夜の性格から役が決まった）。全年齢では常に false */
+  A.nightAccom = function (a, b) {
+    if (HK.SAFE_ON || !a || !b || b === a) return false;
+    return rawNight(a, b) === 'match' && !!A.nightKind(a, b);
+  };
+  /* 夜の態度：proud／stern／tsun／gentle／devoted／cool／free／shy／polite。選んでいなければ気質から（HK.personaOf。ふだんの態度と同じ）。全年齢では '' */
+  A.nightAtt = function (a, b) {
+    if (HK.SAFE_ON || !a) return '';
+    var v = A.nightAttSet(a, b);
+    if (v) return v;
+    var p = HK.personaOf ? HK.personaOf(a) : a.persona;
+    return HK.PERSONA && HK.PERSONA[p] ? p : 'gentle';
+  };
+  /* 態度の表を引く呼び出し（thick-sex.js・room-thick.js などの psOf）が使う：夜の性格で選んだ態度があればそれ、なければ base（呼ぶ側の今までの態度）。
+     相手 b が分からないときは、いま組み立てている山場の相手（attr-r18.js の A.pairNow）から引く */
+  A.psNight = function (c, b, base) {
+    if (HK.SAFE_ON || !c) return base;
+    if (!b && A.pairNow) { var pn = A.pairNow(c); if (pn) b = pn; }
+    return A.nightAttSet(c, b) || base;
+  };
+  /* 型（A.STYLE）を引く鍵：夜だけの性格があればそれ、なければ選んだ態度（どちらも無ければ ''） */
+  A.nightKey = function (a, b) { return A.nightKind(a, b) || A.nightAttSet(a, b); };
+  /* 山場の型（thick-sex.js などの style）：夜の性格があれば、気質から決めた型より優先する。態度の値の型は 2026-10-31 担当E4 */
+  A.STYLE = { sadist: 'rough', mean: 'tease', sweet: 'gentle', shy: 'clumsy',
+    proud: 'rough', stern: 'clinical', tsun: 'tease', gentle: 'gentle', devoted: 'gentle', cool: 'clinical', free: 'playful', polite: 'gentle' };
   A.styleFor = function (night, base) { return A.STYLE[night] || base; };
   /* 第二性（オメガバースの c.om.sex。ほかの箱庭では ''。将来の Dom/Sub などは c.attr.second に足す） */
   A.second = function (c) { return (c && c.om && c.om.sex) || (c && c.attr && c.attr.second) || ''; };

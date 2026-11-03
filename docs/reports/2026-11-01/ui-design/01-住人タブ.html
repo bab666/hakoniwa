@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<title>住人タブ 整理案</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#1d4f7a}a:hover{color:#123553}
+</style>
+</helmet>
+<div style="min-height: 1180px; background: #f4f5f7; color: #17202b; font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', sans-serif; font-size: 14px; line-height: 1.6">
+
+  <header style="background: #ffffff; border-bottom: 1px solid #dde2e7">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 12px 24px 0; box-sizing: border-box">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <svg width="28" height="28" sc-camel-view-box="0 0 24 24" fill="none" stroke="#17202b" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="11"></circle><path d="M12 5l6 3.5v7L12 19l-6-3.5v-7z M12 12l6-3.5 M12 12v7 M12 12L6 8.5"></path></svg>
+        <div style="font-size: 18px; font-weight: 700; letter-spacing: 0.08em">箱庭シミュレーター</div>
+        <div style="flex: 1 1 auto"></div>
+        <nav aria-label="案内" style="display: flex; gap: 4px; flex-wrap: wrap">
+          <a href="#" style="padding: 8px 10px; text-decoration: none; color: #4a5562; font-size: 13px">遊び方</a>
+          <a href="#" style="padding: 8px 10px; text-decoration: none; color: #4a5562; font-size: 13px">注意事項</a>
+          <a href="#" style="padding: 8px 10px; text-decoration: none; color: #4a5562; font-size: 13px">更新履歴</a>
+        </nav>
+        <button type="button" aria-haspopup="menu" style="display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; color: #17202b; font: inherit; font-size: 13px">
+          <svg width="16" height="16" sc-camel-view-box="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M8 2v12"></path><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"></path></svg>
+          表示（色・明るさ・書体）
+          <svg width="12" height="12" sc-camel-view-box="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 4.5l3 3 3-3"></path></svg>
+        </button>
+      </div>
+      <div role="tablist" aria-label="手順" style="display: flex; gap: 4px; margin-top: 10px; overflow-x: auto">
+        <button type="button" role="tab" aria-selected="true" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 0; border-bottom: 3px solid {{accent}}; background: none; font: inherit; font-weight: 700; color: #17202b">
+          <span style="display: inline-flex; width: 22px; height: 22px; border-radius: 11px; background: {{accent}}; color: #fff; align-items: center; justify-content: center; font-size: 12px">1</span>住人<span style="font-weight: 400; color: #5b6672; font-size: 12px">10人</span>
+        </button>
+        <button type="button" role="tab" aria-selected="false" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">
+          <span style="display: inline-flex; width: 22px; height: 22px; border-radius: 11px; border: 1px solid #aab4be; align-items: center; justify-content: center; font-size: 12px; box-sizing: border-box">2</span>箱庭<span style="color: #5b6672; font-size: 12px">合コン</span>
+        </button>
+        <button type="button" role="tab" aria-selected="false" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">
+          <span style="display: inline-flex; width: 22px; height: 22px; border-radius: 11px; border: 1px solid #aab4be; align-items: center; justify-content: center; font-size: 12px; box-sizing: border-box">3</span>経過と結末
+        </button>
+        <div style="flex: 1 1 auto"></div>
+        <button type="button" role="tab" aria-selected="false" style="display: flex; align-items: center; gap: 6px; padding: 10px 14px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">
+          <svg width="14" height="14" sc-camel-view-box="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true"><path d="M2 2.5h7.5L12 5v6.5H2z M4.5 2.5v3h4v-3 M4 11.5V8h6v3.5"></path></svg>セーブ
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main style="max-width: 1200px; margin: 0 auto; padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <h1 style="margin: 0; font-size: 24px; letter-spacing: 0.04em">住人</h1>
+        <span style="color: #5b6672; font-size: 13px">10 / 1000 人</span>
+      </div>
+      <div role="tablist" aria-label="住人タブの中" style="display: flex; padding: 3px; background: #e6e9ed; border-radius: 10px">
+        <button type="button" role="tab" aria-selected="true" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.12); font: inherit; font-weight: 700; color: #17202b">住人一覧</button>
+        <button type="button" role="tab" aria-selected="false" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: none; font: inherit; color: #4a5562">口調の全体設定</button>
+        <button type="button" role="tab" aria-selected="false" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: none; font: inherit; color: #4a5562">話題 <span style="font-size: 12px; color: #5b6672">0</span></button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+      <label style="display: flex; align-items: center; gap: 8px; flex: 1 1 260px; max-width: 360px; height: 40px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; box-sizing: border-box">
+        <svg width="16" height="16" sc-camel-view-box="0 0 16 16" fill="none" stroke="#5b6672" stroke-width="1.5" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.5 10.5L14 14"></path></svg>
+        <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">住人を探す</span>
+        <input type="search" placeholder="名前・メモ・グループ・タグで探す" style="flex: 1 1 auto; min-width: 0; border: 0; outline: none; font: inherit; background: none; color: #17202b">
+      </label>
+      <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4a5562">並び
+        <sc-raw-select style="height: 40px; padding: 0 8px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; color: #17202b"><option>登録順</option><option>名前順</option></sc-raw-select>
+      </label>
+      <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4a5562">グループ
+        <sc-raw-select style="height: 40px; padding: 0 8px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; color: #17202b"><option>すべて</option></sc-raw-select>
+      </label>
+      <div style="flex: 1 1 auto"></div>
+      <button type="button" style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; color: #17202b">
+        <svg width="16" height="16" sc-camel-view-box="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M3 2.5h7l3 3v8H3z M5.5 7h5 M5.5 9.5h5 M5.5 12h3"></path></svg>
+        診断結果をまとめて取り込む
+      </button>
+      <button type="button" aria-haspopup="menu" style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; color: #17202b">
+        データ
+        <svg width="12" height="12" sc-camel-view-box="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 4.5l3 3 3-3"></path></svg>
+      </button>
+      <div style="display: flex">
+        <button type="button" style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px; border: 0; border-radius: 8px 0 0 8px; background: {{accent}}; color: #ffffff; font: inherit; font-weight: 700">
+          <svg width="14" height="14" sc-camel-view-box="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 2v10 M2 7h10"></path></svg>
+          住人を追加
+        </button>
+        <button type="button" aria-label="ほかの足し方（10人・ランダム・診断・名簿）" style="width: 40px; height: 40px; border: 0; border-left: 1px solid rgba(255,255,255,0.3); border-radius: 0 8px 8px 0; background: {{accent}}; color: #ffffff; display: flex; align-items: center; justify-content: center">
+          <svg width="12" height="12" sc-camel-view-box="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 4.5l3 3 3-3"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <div role="status" style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #eaf1f7; border: 1px solid #c7d8e8; border-radius: 8px; color: #1f3a52; font-size: 13px">
+      <svg width="16" height="16" sc-camel-view-box="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.5"></circle><path d="M8 7v4.5 M8 4.6v.1"></path></svg>
+      <span style="flex: 1 1 auto">いま並んでいるのはサンプルの住人です。自分のキャラクターに置き換えてください。</span>
+      <button type="button" style="height: 32px; padding: 0 10px; border: 1px solid #9fbad3; border-radius: 6px; background: #ffffff; font: inherit; font-size: 12px; color: #1f3a52">サンプルを全員消す</button>
+      <button type="button" aria-label="この案内を閉じる" style="width: 32px; height: 32px; border: 0; background: none; color: #1f3a52; display: flex; align-items: center; justify-content: center">
+        <svg width="12" height="12" sc-camel-view-box="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 2l8 8 M10 2l-8 8"></path></svg>
+      </button>
+    </div>
+
+    <div style="overflow-x: auto; background: #ffffff; border: 1px solid #dde2e7; border-radius: 12px">
+      <div style="min-width: 940px">
+        <div style="display: grid; grid-template-columns: 36px 220px 210px 1fr 1fr 136px; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #dde2e7; background: #f8f9fa; font-size: 12px; color: #5b6672; letter-spacing: 0.04em">
+          <span></span>
+          <span>住人</span>
+          <span style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); text-align: center; font-family: ui-monospace, Menlo, Consolas, monospace"><span>CP</span><span>NP</span><span>A</span><span>FC</span><span>AC</span></span>
+          <span>口調・性別</span>
+          <span>グループ・メモ</span>
+          <span style="text-align: right">操作</span>
+        </div>
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+          <div style="position: relative; display: grid; grid-template-columns: 36px 220px 210px 1fr 1fr 136px; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #edf0f2; background: {{r.bg}}">
+            <button type="button" aria-label="{{r.dragLabel}}" style="width: 32px; height: 44px; border: 0; background: none; color: #9aa5b1; cursor: grab; display: flex; align-items: center; justify-content: center">
+              <svg width="12" height="16" sc-camel-view-box="0 0 12 16" fill="currentColor" aria-hidden="true"><circle cx="4" cy="4" r="1.3"></circle><circle cx="8" cy="4" r="1.3"></circle><circle cx="4" cy="8" r="1.3"></circle><circle cx="8" cy="8" r="1.3"></circle><circle cx="4" cy="12" r="1.3"></circle><circle cx="8" cy="12" r="1.3"></circle></svg>
+            </button>
+            <div style="display: flex; align-items: center; gap: 10px; min-width: 0">
+              <span style="flex: 0 0 auto; display: inline-flex; width: 40px; height: 40px; border-radius: 20px; border: 2px solid {{r.color}}; color: {{r.color}}; background: #ffffff; align-items: center; justify-content: center; font-weight: 700; font-size: 17px; box-sizing: border-box">{{r.ini}}</span>
+              <div style="min-width: 0">
+                <div style="font-weight: 700; font-size: 15px">{{r.name}}</div>
+                <div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #5b6672; white-space: nowrap"><span style="font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.1em; color: #17202b">{{r.code}}</span>{{r.type}}</div>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; text-align: center; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px">
+              <span style="padding: 4px 0; border-radius: 4px; background: #f1f3f5">{{r.v1}}</span>
+              <span style="padding: 4px 0; border-radius: 4px; background: #f1f3f5">{{r.v2}}</span>
+              <span style="padding: 4px 0; border-radius: 4px; background: #f1f3f5">{{r.v3}}</span>
+              <span style="padding: 4px 0; border-radius: 4px; background: #f1f3f5">{{r.v4}}</span>
+              <span style="padding: 4px 0; border-radius: 4px; background: #f1f3f5">{{r.v5}}</span>
+            </div>
+            <div style="font-size: 13px; min-width: 0">
+              <div>{{r.tone}}</div>
+              <div style="font-size: 12px; color: #5b6672">{{r.sex}}</div>
+            </div>
+            <div style="font-size: 13px; min-width: 0">
+              <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                <span style="padding: 1px 8px; border-radius: 10px; border: 1px solid #cfd6dd; font-size: 12px; color: #4a5562">{{r.group}}</span>
+              </div>
+              <div style="font-size: 12px; color: #5b6672; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.memo}}</div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 6px">
+              <button type="button" aria-label="{{r.setLabel}}" style="display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">
+                <svg width="14" height="14" sc-camel-view-box="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="2.3"></circle><path d="M8 1.5v2 M8 12.5v2 M1.5 8h2 M12.5 8h2 M3.4 3.4l1.4 1.4 M11.2 11.2l1.4 1.4 M3.4 12.6l1.4-1.4 M11.2 4.8l1.4-1.4"></path></svg>
+                設定
+              </button>
+              <button type="button" aria-haspopup="menu" aria-label="{{r.moreLabel}}" style="width: 36px; height: 36px; border: 1px solid {{r.moreBorder}}; border-radius: 8px; background: #ffffff; color: #4a5562; display: flex; align-items: center; justify-content: center">
+                <svg width="16" height="16" sc-camel-view-box="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="3.5" cy="8" r="1.4"></circle><circle cx="8" cy="8" r="1.4"></circle><circle cx="12.5" cy="8" r="1.4"></circle></svg>
+              </button>
+            </div>
+            <sc-if value="{{r.menu}}" hint-placeholder-val="{{false}}">
+              <div role="menu" aria-label="鷹野の操作" style="position: absolute; right: 16px; top: 54px; z-index: 2; width: 200px; padding: 6px; background: #ffffff; border: 1px solid #cfd6dd; border-radius: 10px; box-shadow: 0 8px 24px rgba(23,32,43,0.16)">
+                <button type="button" role="menuitem" style="display: flex; width: 100%; align-items: center; gap: 10px; height: 40px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 13px; color: #17202b; text-align: left">
+                  <svg width="14" height="14" sc-camel-view-box="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5"></rect><path d="M2 9.5V3a1 1 0 0 1 1-1h6.5"></path></svg>複製する
+                </button>
+                <button type="button" role="menuitem" style="display: flex; width: 100%; align-items: center; gap: 10px; height: 40px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 13px; color: #17202b; text-align: left">
+                  <svg width="14" height="14" sc-camel-view-box="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><circle cx="7" cy="7" r="5.5"></circle><path d="M7 4.5v5 M4.5 7h5"></path></svg>アイコンを変える
+                </button>
+                <button type="button" role="menuitem" style="display: flex; width: 100%; align-items: center; gap: 10px; height: 40px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 13px; color: #17202b; text-align: left">
+                  <svg width="14" height="14" sc-camel-view-box="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M7 2v10 M4 5l3-3 3 3 M4 9l3 3 3-3"></path></svg>並び順を動かす
+                </button>
+                <div style="height: 1px; margin: 6px 4px; background: #e3e7eb"></div>
+                <button type="button" role="menuitem" style="display: flex; width: 100%; align-items: center; gap: 10px; height: 40px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 13px; color: #b42318; text-align: left">
+                  <svg width="14" height="14" sc-camel-view-box="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M2.5 4h9 M5.5 4V2.5h3V4 M3.5 4l.7 8h5.6l.7-8"></path></svg>削除する…
+                </button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <button type="button" style="display: flex; width: 100%; align-items: center; gap: 8px; height: 52px; padding: 0 24px; border: 0; background: none; font: inherit; font-size: 13px; color: #1d4f7a; text-align: left">
+          <svg width="14" height="14" sc-camel-view-box="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M7 2v10 M2 7h10"></path></svg>
+          住人を1人追加
+        </button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 12px">
+      <div style="font-size: 13px; color: #4a5562">住人がそろったら、次は放り込む箱庭を選びます。</div>
+      <a href="#" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 8px; background: {{accent}}; color: #ffffff; text-decoration: none; font-weight: 700">
+        箱庭を選ぶ
+        <svg width="14" height="14" sc-camel-view-box="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7h8 M8 4l3 3-3 3"></path></svg>
+      </a>
+    </div>
+  </main>
+</div>
+</x-dc>
+
+
+
+</body></html>

@@ -1,3 +1,4 @@
+/* @event-ok 名前の呼びかけを減らした（2026-11-01 担当NC） */
 /* 箱庭診断: 〇〇しないと出られない部屋（ルールを組み立てられる密室） */
 /* @event-ok まとめて進んだ回のダイジェストの段（既にある出来事に足すだけ。2026-10-29 担当RD） */
 (function () {
@@ -551,7 +552,7 @@
     /* r18:begin */
     { n: 'ローション', t: ['{a}は木箱に入っていたローションの小瓶を手に取り、中身を手のひらで温めた。「…こういうの、使ったことある？｜…こういうものを、使ったことはあるか？｜…こういうもの、使ったことはありますか？」{b}は首を横に振った。――', '{a}は木箱のローションを手に出そうとして、瓶を逆さにしすぎた。こぼれたローションを見て、{a}と{b}は二人とも吹き出した。それで少し、緊張がほどけた。――'] },
     /* r18:end */
-    { n: '手錠', t: ['{a}は木箱から毛皮つきの手錠を取り出して、指でくるくる回した。「{b}、これつける？｜{b}、これをつけるか？｜{b}、これをつけますか？」{b}は「…片方だけなら｜…片方だけならいい｜…片方だけなら、いいです」と手首を差し出した。――', '{a}は木箱の手錠を、冗談めかして{b}の手首にかけた。{b}は笑っていたが、{a}はその手錠を外さないまま{b}を抱き寄せた。――'] },
+    { n: '手錠', t: ['{a}は木箱から毛皮つきの手錠を取り出して、指でくるくる回した。「これつける？｜これをつけるか？｜これをつけますか？」{b}は「…片方だけなら｜…片方だけならいい｜…片方だけなら、いいです」と手首を差し出した。――', '{a}は木箱の手錠を、冗談めかして{b}の手首にかけた。{b}は笑っていたが、{a}はその手錠を外さないまま{b}を抱き寄せた。――'] },
     /* r18:begin */
     { n: '玩具', t: ['{a}は木箱の中からローターを取り出して、真顔になった。「…説明書まで入ってる｜…説明書まで入っている｜…説明書まで入っています」{b}は耳まで赤くなった。――', '{a}は木箱のローターのスイッチを入れ、自分で低い振動音に驚いた。{b}は最初こそ笑っていたが、{a}がそれを{b}の肌に当てると、笑わなくなった。――'] },
     /* r18:end */
@@ -1385,11 +1386,13 @@
   /* 誰かを殺さないと出られない（全年齢版・全年齢モードは、気絶させる）。ドライで攻撃的な人ほど踏み切り、優しい人・相手を想う人は踏みとどまる */
   function killRule(ctx) { return ctx.rules.filter(function (r) { return r.k === 'kill'; })[0]; }
   EV.push({
-    id: 'cond_kill', cat: 'betray', dk: 'kill', scope: 'pair', pri: true,
+    id: 'cond_kill', label: '条件のために一人を襲う（抜け駆け）', tags: ['death', 'cruel'], cat: 'betray', dk: 'kill', scope: 'pair', pri: true,
     /* 憎悪を持っても殺さない相手（attr.js の HK.Attr.spare）には、この出来事を選ばない（文を先に書いてから kill を呼ぶ作りなので、選ぶ段階で外す。全年齢の「気絶させる」も同じ） */
-    when: function (ctx, a, b) { var r = killRule(ctx); return !!r && !globDone(ctx, r) && ctx.stepIndex > 0 && !a.flags.down && !b.flags.knocked && b.alive !== false && a.stress > 40 && !(HK.Attr && HK.Attr.spare && HK.Attr.spare(ctx, b, a)); },
-    w: function (ctx, a, b) { return Math.max(0.02, a.tr.cold * 0.6 + a.tr.aggr * 0.5 - a.tr.np * 0.6 + a.stress / 140 - Math.max(0, ctx.R(a, b).aff) / 120 - 0.3); },
+    when: function (ctx, a, b) { var r = killRule(ctx); return !!r && !globDone(ctx, r) && ctx.stepIndex > 0 && !a.flags.down && !b.flags.knocked && b.alive !== false && a.stress > (HK.RoomKill ? HK.RoomKill.gate(ctx, a, b) : 40) && !(HK.Attr && HK.Attr.spare && HK.Attr.spare(ctx, b, a)); },
+    /* 殺意（憎悪・敵対・不仲・負の好意・緊張・恨み・怒り）と残り時間を、重み・踏み切り・焦りの門に入れ、庇い死・返り討ちに分ける：room-kill.js の HK.RoomKill（2026-10-31 担当KR） */
+    w: function (ctx, a, b) { return HK.RoomKill ? HK.RoomKill.w(ctx, a, b) : Math.max(0.02, a.tr.cold * 0.6 + a.tr.aggr * 0.5 - a.tr.np * 0.6 + a.stress / 140 - Math.max(0, ctx.R(a, b).aff) / 120 - 0.3); },
     run: function (ctx, a, b) {
+      if (HK.RoomKill) return HK.RoomKill.attack(ctx, a, b);
       var will = a.tr.cold * 0.6 + a.tr.aggr * 0.5 + a.stress / 160 - a.tr.np * 0.5 - Math.max(0, ctx.R(a, b).aff) / 90;
       var safe = HK.SAFE_ON;
       if (ctx.rng() > HK.clamp(will, 0.05, 0.9)) {
@@ -1466,7 +1469,7 @@
         return { text: ctx.t(ctx.pick(['{a}が条件の話を切り出すと、{b}は「ふざけてる｜ふざけている｜ふざけています」と吐き捨てた。', '{b}は紙を指で弾いた。「私はこんなものに従う気はない｜＝｜私はこんなものに従う気はありません」', '「話し合う余地なんてある？｜話し合う余地なんかあるか｜話し合う余地なんてありますか」{b}は{a}の言葉を遮った。']), a, b), why: b.name + 'のCP（' + Math.round(b.eg.CP) + '）：理不尽なルールへの反発' };
       }
       ctx.mod2(a, b, { trust: 7, att: ctx.flags.romantic ? 3 : 0 }, { trust: 7, att: ctx.flags.romantic ? 3 : 0 });
-      return { text: ctx.t(ctx.pick(['{a}と{b}は、紙の条件について真面目に話し合った。話すほど、相手の考え方が見えてきた。', '{a}と{b}は、条件の文言を一語ずつ分解して検討した。', '「もし出られなかったら、どうする？｜もし出られなかったら、どうする｜もし出られなかったら、どうしますか」{a}の問いに、{b}は長いこと考えてから答えた。', '{a}は{b}に、どこまでなら平気かを率直に訊いた。{b}も率直に答えた。']), a, b), why: a.name + 'のA（状況を言語化する）' };
+      return { text: ctx.t(ctx.pick(['{a}と{b}は、紙の条件について真面目に話し合った。話すほど、相手がこの部屋をどう見ているのかが分かってきた。', '{a}と{b}は、条件の文言を一語ずつ分解して検討した。', '「もし出られなかったら、どうする？｜もし出られなかったら、どうする｜もし出られなかったら、どうしますか」{a}の問いに、{b}は長いこと考えてから答えた。', '{a}は{b}に、どこまでなら平気かを率直に訊いた。{b}も率直に答えた。']), a, b), why: a.name + 'のA（状況を言語化する）' };
     }
   });
   EV.push({

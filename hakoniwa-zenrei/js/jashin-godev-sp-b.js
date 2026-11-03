@@ -22,7 +22,8 @@
       if (!I) {
         if (!JS.night(h) || h < 6 || vs.length < 2 || rng() > 0.26) return false;
         var v = HK.weighted(rng, vs, function (p) { return 0.4 + (p.action.id === 'alone' ? 2 : 0) + (6 - p.stats.stamina) * 0.15; });
-        v.alive = false; v.ithFake = true; v.fate = '風の眷属に殺され、成り代わられた（' + JS.hm(h) + '）'; v.how = '風の眷属に殺されて';
+        /* deathHidden：仲間はまだ死を知らない（悼む・最期の言葉・緊迫感の死者に数えない。見破られる・祠で正体を現す・雪解けで外す）。lwNone：吹雪の中で一人で殺されたので最期の言葉は無い（2026-11-02） */
+        v.alive = false; v.ithFake = true; v.deathHidden = true; v.lwNone = true; v.fate = '風の眷属に殺され、成り代わられた（' + JS.hm(h) + '）'; v.how = '風の眷属に殺されて';
         S.ith = { v: v, h: h, seen: 0, rev: false };
         ST.say(S, { actors: [v], tag: '吹雪の夜', text: '吹雪の夜、' + v.name + 'は外の様子を見に出たきり、なかなか戻らなかった。明け方、' + v.name + 'は雪まみれで戻ってきた。「平気だよ。少し道に迷っただけだよ｜平気だ。少し道に迷っただけだ｜平気です。少し道に迷っただけですよ」――' + v.name + 'は、そう言って笑った。', why: '吹雪の中で、何かがあったらしい', mag: 18 });
         return true;
@@ -39,7 +40,7 @@
     cave: function (S, live) {
       var I = S.ith;
       if (!I || I.rev) return I ? { bonus: 0.04, why: '風の眷属を見破っていた' } : {};
-      I.rev = true;
+      I.rev = true; I.v.deathHidden = false;
       var vs = free(live), a = vs[S.rng() * vs.length | 0];
       ST.say(S, { kind: 'climax', tag: '成り代わり', text: '峠の祠へ向かう途中、' + I.v.name + 'が、ふいに足を止めた。振り向いたその顔は、霜に覆われ、目だけが青白く燃えていた。「＠――寒いだろう。お前たちも、風になれ」' + I.v.name + 'の姿をしていたものは、吹雪の中へ跳び上がり、一行の頭上を旋回し始めた。', why: I.v.name + 'は、とうに風の眷属に殺され、成り代わられていた（最後まで気づけなかった）', mag: 46 });
       if (a && S.rng() < 0.4) JS.core.die(S, a, '風の眷属に襲われて', ['吹雪の中から伸びた爪が{a}を掴み上げ、空の高みへ連れ去った。しばらくして、遠くの雪原に、何かが落ちる音がした。']);
@@ -48,11 +49,12 @@
     },
     end: function (S) {
       var I = S.ith;
+      if (I) I.v.deathHidden = false;
       if (I && !I.rev) ST.say(S, { kind: 'phase', tag: '雪解け', text: '春になって、峠の雪の中から、ひとりの遺体が見つかった。' + I.v.name + 'だった。死んでから、ずいぶん日が経っていた。――では、あの村で一行と一緒にいた' + I.v.name + 'は、誰だったのか。', why: I.v.name + 'は、吹雪の夜に風の眷属に殺され、成り代わられていた' });
     }
   };
   function reveal(S, sh, vs, sign) {
-    var I = S.ith; I.rev = true;
+    var I = S.ith; I.rev = true; I.v.deathHidden = false;
     var ct = GD.giveClue(S, sh);
     var o = ST.say(S, { actors: [sh], tag: '成り代わり', kind: 'climax', text: sign + '――' + sh.name + 'は、気づいてしまった。「あなた……' + I.v.name + 'じゃない｜あなた……' + I.v.name + 'ではない｜あなた……' + I.v.name + 'ではありませんね」' + I.v.name + 'の姿をしたものの顔に、霜の亀裂が走った。それは人の声ではない声で笑い、窓を突き破って、吹雪の中へ消えた。' + ct, why: sh.name + 'が、成り代わりを見抜いた（観察' + (sh.job === 'psychic' ? '・霊感' : '') + '）', mag: 44 });
     ST.key(S, o, I.v.name + 'は成り代わられていた');

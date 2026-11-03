@@ -72,7 +72,7 @@
         ] },
         { h: 'もっと知りたいとき', items: [
           '見出しの横の ？ を押すと、その欄のくわしい説明が出ます。箱庭ごとの説明は、カードの「この箱庭のTIPS」から読めます。',
-          '見た目は、上の「藍のみ／キャラ色／フル」（色の量）と半月のボタン（自動→白→グレー→黒）で切り替えられます。重要な出来事は、時系列の点・ターン番号・札の赤で示します。'
+          '見た目は、上の「単色／キャラ色／フル」（色の量）と半月のボタン（自動→白→グレー→黒）で切り替えられます。重要な出来事は、時系列の点・ターン番号・札の赤で示します。'
         ] }
       ]
     },
@@ -225,7 +225,7 @@
     },
     'env': {
       title: '環境値',
-      lead: '箱庭全体の空気を決めるつまみです。どの箱庭にもある4つと、箱庭ごとの値があります。',
+      lead: '箱庭全体の空気を決めるつまみです。この箱庭だけの値は「場の設定」、どの箱庭にもある値は「起こりやすさ」「展開と内容」の切替にあります。右上の「初期値に戻す」「ランダム」は、開いている切替の値だけを変えます。',
       sections: [
         { h: '共通の環境値', items: [
           '**運命の揺らぎ** … 高いほど「らしくない行動」や勝負のまぐれが増えます。0に近いほど気質どおりに動きます。',
@@ -272,18 +272,19 @@
       sections: [
         { h: '気質とステータス', items: [
           '気質の札に表示されている式（例：CP＋A）が、その気質の材料です。',
-          'ステータス（体力・酒の強さなど）は「住人ごとの初動と目標」の表で決められます。「おまかせ」なら気質から推定します。'
+          'ステータス（体力・酒の強さなど）は「参加者と初動」の表で決められます。「おまかせ」なら気質から推定します。'
         ] }
       ]
     },
     'perchar': {
-      title: '住人ごとの初動と目標',
+      title: '参加者と初動',
       lead: '箱庭が始まったときの最初の行動と、それぞれが目指すものです。',
       sections: [
         { h: '選び方', items: [
           '「おまかせ」は、気質に合う選択肢から抽選します。',
           'あえて気質と逆の行動を選ぶと、意外な関係や展開が出やすくなります。',
           'チェックを外した住人は、この箱庭には参加しません。',
+          '表の頭の下の「まとめて変える」で、参加している全員の同じ欄を一度に変えられます。おまかせ・ランダムから変えた欄は濃く表示します。',
           'グループをつけた住人は、「グループで選ぶ」でまとめて参加させられます（グループ名だけ押すとそのグループだけ、＋で今の参加者に加えます）。',
           '一人用の箱庭では、チェックを入れた住人が挑みます。「おまかせ」は気質から方針を選びます。',
           '宇宙船漂流記・吹雪の館のように、物語の流れが決まっている箱庭には、最初の行動・短期目標の列はありません（役割などの欄だけを選びます）。'
@@ -401,7 +402,7 @@
     },
     'gear-ab': {
       title: '箱庭の能力',
-      lead: '箱庭をまたいで同じ意味の能力値・欄を、住人ごとに一つの値で持ちます。箱庭の「住人ごとの初動と目標」の表で ＊ の付いた列と同じ値で、どちらで変えても揃います。',
+      lead: '箱庭をまたいで同じ意味の能力値・欄を、住人ごとに一つの値で持ちます。箱庭の「参加者と初動」の表で ＊ の付いた列と同じ値で、どちらで変えても揃います。',
       sections: [
         { h: '能力値（1〜5。ランダムなら箱庭ごとに決まります）', items: [
           '体力：無人島・出られない部屋・ゾンビの街・邪神村RTA・宇宙船漂流記（全年齢版はバトルロワイヤルも）。運：無人島・ゾンビの街・媚薬ロッカー・ダンジョンRPG・邪神村RTA。',
@@ -461,7 +462,7 @@
         /* r18:end */
         { h: '固定のしくみ', items: [
           '固定すると、その相手以外とは恋愛に発展しません。夜の出来事や三人の場面でも、その相手以外とは関係を持ちません。片想いのままでも使えます。',
-          '相手は何人でも選べます（押すと開きます）。二人以上を選ぶと、その中の誰とでも恋愛になれて、それ以外の人とはなりません（例：AがBとCを固定、BがAとCを固定、CがAとBを固定にすると、三人の中だけで恋愛・三人の場面が起きます）。',
+          '相手は何人でも選べます（押すと開きます）。二人以上を選ぶと、その中の誰とでも恋愛になれて、それ以外の人とはなりません（例：AがBとCを固定、BがAとCを固定、CがAとBを固定にすると、三人の中だけで恋愛・三人の場面が起きます。CだけがAとBを固定したときも、A・B・Cの三人の場面は起きます）。',
           '相手が一人も箱庭にいないときは、誰とも恋愛しません。',
           '環境値の「恋愛の起こりやすさ」が0のときは、固定していても恋愛は起きません。'
         ] },
@@ -563,9 +564,11 @@
   var ov = null, opener = null;
   function close() {
     if (!ov) return;
+    var o = ov;
     ov.remove(); ov = null;
+    if (HK.Modal) HK.Modal.unlock(o);
     document.removeEventListener('keydown', onKey, true);
-    if (opener && opener.focus) try { opener.focus(); } catch (e) { }
+    if (opener && opener.focus) try { opener.focus({ preventScroll: true }); } catch (e) { }
     opener = null;
   }
   function onKey(e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } }
@@ -576,11 +579,12 @@
     opener = from || document.activeElement;
     ov = document.createElement('div');
     ov.className = 'gearov tipov';
-    ov.innerHTML = '<div class="gearbox" role="dialog" aria-modal="true" aria-labelledby="tiptitle" tabindex="-1"><div class="gearhd"><h2 id="tiptitle">' + esc(T.title || 'TIPS') + '</h2><button type="button" class="btn small" data-tipclose="1">閉じる</button></div>' + body(T) + '</div>';
+    ov.innerHTML = '<div class="gearbox" role="dialog" aria-modal="true" aria-labelledby="tiptitle" tabindex="-1"><div class="gearhd"><h2 id="tiptitle">' + esc(T.title || 'TIPS') + '</h2><button type="button" class="btn small" data-tipclose="1">閉じる</button></div><div class="gearbody tipbody">' + body(T) + '</div></div>';
     ov.addEventListener('click', function (e) { if (e.target === ov || (e.target.closest && e.target.closest('[data-tipclose]'))) close(); });
     document.body.appendChild(ov);
+    if (HK.Modal) HK.Modal.lock(ov);
     document.addEventListener('keydown', onKey, true);
-    var bx = ov.querySelector('.gearbox'); if (bx) bx.focus();
+    var bx = ov.querySelector('.gearbox'); if (bx) try { bx.focus({ preventScroll: true }); } catch (e) { bx.focus(); }
   }
 
   document.addEventListener('click', function (e) {

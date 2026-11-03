@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<title>関係図 整理案</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#1d4f7a}a:hover{color:#123553}
+</style>
+</helmet>
+<div style="min-height: 1000px; background: #f4f5f7; color: #17202b; font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans JP', sans-serif; font-size: 14px; line-height: 1.6">
+
+  <div style="background: #ffffff; border-bottom: 1px solid #dde2e7">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 20px 24px 0; box-sizing: border-box">
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 20px">
+        <div style="flex: 1 1 480px; min-width: 0">
+          <div style="font-size: 12px; color: #5b6672">合コン・10人・シード 101217</div>
+          <h1 style="margin: 2px 0 0; font-size: 22px; line-height: 1.5">終電で解散 ― <span style="color: #2a6f9e">鷹野</span>と<span style="color: #a24c18">柚木</span>が恋人になった</h1>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button type="button" style="height: 40px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">条件を変える</button>
+          <button type="button" aria-haspopup="menu" style="height: 40px; padding: 0 14px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 13px; color: #17202b">保存・共有 ▾</button>
+          <button type="button" style="height: 40px; padding: 0 16px; border: 0; border-radius: 8px; background: {{accent}}; color: #ffffff; font: inherit; font-weight: 700">別の運命で動かす</button>
+        </div>
+      </div>
+      <div role="tablist" aria-label="結果の見方" style="display: flex; gap: 2px; margin-top: 16px; overflow-x: auto">
+        <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">結末</button>
+        <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">経過 <span style="font-size: 12px; color: #5b6672">186件</span></button>
+        <button type="button" role="tab" aria-selected="true" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid {{accent}}; background: none; font: inherit; font-weight: 700; color: #17202b">関係図</button>
+        <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">二人ずつ <span style="font-size: 12px; color: #5b6672">意外 2</span></button>
+        <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 16px; border: 0; border-bottom: 3px solid transparent; background: none; font: inherit; color: #4a5562">住人ごと</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 24px; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+    <div style="flex: 999 1 600px; min-width: 0; background: #ffffff; border: 1px solid #dde2e7; border-radius: 14px; padding: 16px; box-sizing: border-box">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px">
+        <div role="group" aria-label="いつの関係か" style="display: flex; padding: 3px; background: #e6e9ed; border-radius: 10px">
+          <button type="button" aria-pressed="false" style="height: 34px; padding: 0 14px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 13px; color: #4a5562">開始時</button>
+          <button type="button" aria-pressed="false" style="height: 34px; padding: 0 14px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 13px; color: #4a5562">T03 転機</button>
+          <button type="button" aria-pressed="true" style="height: 34px; padding: 0 14px; border: 0; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.12); font: inherit; font-size: 13px; font-weight: 700; color: #17202b">最終</button>
+        </div>
+        <div style="flex: 1 1 auto"></div>
+        <span style="font-size: 12px; color: #5b6672">線 13本・選んだ人：鷹野</span>
+        <button type="button" style="height: 34px; padding: 0 12px; border: 1px solid #cfd6dd; border-radius: 8px; background: #ffffff; font: inherit; font-size: 12px; color: #17202b">選択を外す</button>
+      </div>
+
+      <div style="position: relative; width: 100%; max-width: 720px; margin: 0 auto; aspect-ratio: 720 / 640">
+        <svg sc-camel-view-box="0 0 720 640" width="100%" height="100%" role="img" aria-label="10人の関係図。鷹野を選んでいるので、鷹野の線だけ濃く表示" style="position: absolute; inset: 0">
+          <defs>
+            <marker id="arw" sc-camel-view-box="0 0 10 10" sc-camel-ref-x="9" sc-camel-ref-y="5" sc-camel-marker-width="7" sc-camel-marker-height="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#b8325e"></path></marker>
+          </defs>
+          <g stroke="#3f7f8c" stroke-width="1.6" opacity="0.18">
+            <line x1="207" y1="110" x2="113" y2="400"></line>
+            <line x1="360" y1="580" x2="113" y2="400"></line>
+            <line x1="113" y1="240" x2="207" y2="530"></line>
+            <line x1="360" y1="60" x2="607" y2="400"></line>
+          </g>
+          <line x1="607" y1="240" x2="513" y2="530" stroke="#3f7f8c" stroke-width="1.6" opacity="0.18"></line>
+          <line x1="207" y1="530" x2="607" y2="400" stroke="#b5523a" stroke-width="1.6" stroke-dasharray="6 5" opacity="0.18"></line>
+          <line x1="513" y1="530" x2="113" y2="400" stroke="#b5523a" stroke-width="1.6" stroke-dasharray="6 5" opacity="0.18"></line>
+          <line x1="513" y1="110" x2="113" y2="400" stroke="#b8325e" stroke-width="6"></line>
+          <line x1="513" y1="110" x2="607" y2="400" stroke="#b5523a" stroke-width="2.4" stroke-dasharray="7 5"></line>
+          <line x1="140" y1="232" x2="482" y2="122" stroke="#b8325e" stroke-width="2" marker-end="url(#arw)"></line>
+          <line x1="582" y1="226" x2="534" y2="140" stroke="#b8325e" stroke-width="2" marker-end="url(#arw)"></line>
+          <line x1="513" y1="110" x2="360" y2="580" stroke="#3f7f8c" stroke-width="2"></line>
+          <line x1="513" y1="110" x2="513" y2="530" stroke="#3f7f8c" stroke-width="2"></line>
+        </svg>
+        <span style="position: absolute; left: 39%; top: 37%; padding: 0 6px; background: #ffffff; color: #b8325e; font-size: 13px; font-weight: 700">恋人</span>
+        <span style="position: absolute; left: 77%; top: 38%; padding: 0 6px; background: #ffffff; color: #b5523a; font-size: 13px; font-weight: 700">気まずい＊</span>
+        <span style="position: absolute; left: 38%; top: 23%; padding: 0 6px; background: #ffffff; color: #b8325e; font-size: 12px">片想い</span>
+        <span style="position: absolute; left: 82%; top: 26%; padding: 0 6px; background: #ffffff; color: #b8325e; font-size: 12px">片想い</span>
+        <sc-for list="{{nodes}}" as="n" hint-placeholder-count="10">
+          <button type="button" aria-pressed="{{n.on}}" aria-label="{{n.label}}" style="position: absolute; left: {{n.x}}; top: {{n.y}}; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0; border: 0; background: none; font: inherit; color: #17202b; opacity: {{n.op}}">
+            <span style="display: inline-flex; width: {{n.size}}; height: {{n.size}}; border-radius: 50%; border: {{n.ring}}; background: #ffffff; color: {{n.color}}; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; box-sizing: border-box">{{n.ini}}</span>
+            <span style="font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.9); padding: 0 4px">{{n.name}}</span>
+            <span style="font-size: 11px; color: #5b6672; background: rgba(255,255,255,0.9); padding: 0 4px">{{n.st}}</span>
+          </button>
+        </sc-for>
+      </div>
+      <p style="margin: 8px 0 0; font-size: 12px; color: #5b6672">丸を押すとその人の線だけ濃くなります。線を押すと右に二人の説明が出ます。＊は意外な組み合わせ。</p>
+    </div>
+
+    <aside style="flex: 1 1 280px; max-width: 360px; display: flex; flex-direction: column; gap: 16px">
+      <fieldset style="margin: 0; padding: 16px 18px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 14px">
+        <legend style="float: left; width: 100%; padding: 0; margin-bottom: 8px; font-size: 13px; font-weight: 700">表示する線</legend>
+        <div style="clear: both; display: flex; flex-direction: column; gap: 2px; font-size: 13px">
+          <label style="display: flex; align-items: center; gap: 10px; min-height: 36px"><input type="checkbox" checked="" style="width: 18px; height: 18px; accent-color: {{accent}}"><svg width="28" height="8" aria-hidden="true"><line x1="0" y1="4" x2="28" y2="4" stroke="#b8325e" stroke-width="5"></line></svg>恋人・執着<span style="margin-left: auto; color: #5b6672">1</span></label>
+          <label style="display: flex; align-items: center; gap: 10px; min-height: 36px"><input type="checkbox" checked="" style="width: 18px; height: 18px; accent-color: {{accent}}"><svg width="28" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="#b8325e" stroke-width="2"></line><path d="M21 0L28 4L21 8z" fill="#b8325e"></path></svg>片想い<span style="margin-left: auto; color: #5b6672">2</span></label>
+          <label style="display: flex; align-items: center; gap: 10px; min-height: 36px"><input type="checkbox" checked="" style="width: 18px; height: 18px; accent-color: {{accent}}"><svg width="28" height="8" aria-hidden="true"><line x1="0" y1="4" x2="28" y2="4" stroke="#3f7f8c" stroke-width="2"></line></svg>友人<span style="margin-left: auto; color: #5b6672">7</span></label>
+          <label style="display: flex; align-items: center; gap: 10px; min-height: 36px"><input type="checkbox" checked="" style="width: 18px; height: 18px; accent-color: {{accent}}"><svg width="28" height="8" aria-hidden="true"><line x1="0" y1="4" x2="28" y2="4" stroke="#b5523a" stroke-width="2" stroke-dasharray="5 4"></line></svg>気まずい・敵対<span style="margin-left: auto; color: #5b6672">3</span></label>
+          <label style="display: flex; align-items: center; gap: 10px; min-height: 36px"><input type="checkbox" style="width: 18px; height: 18px; accent-color: {{accent}}">線の名前を全部出す</label>
+        </div>
+      </fieldset>
+
+      <section aria-labelledby="h-sel" style="padding: 18px 20px; background: #ffffff; border: 1px solid #dde2e7; border-radius: 14px">
+        <div style="font-size: 12px; color: #5b6672">選んだ線</div>
+        <h2 id="h-sel" style="display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; font-size: 16px"><span style="color: #2a6f9e">鷹野</span>×<span style="color: #8a6a0e">白石</span><span style="padding: 0 8px; border: 1px dashed #b5523a; border-radius: 4px; color: #b5523a; font-size: 12px">気まずい・意外</span></h2>
+        <p style="margin: 0; font-size: 15px; line-height: 1.85">小さな衝突が残り、ぎこちない距離のまま終わった。相性予想は「惹かれ合いやすい」だった。</p>
+        <a href="#" style="display: inline-flex; align-items: center; min-height: 44px; margin-top: 4px; font-size: 13px; font-weight: 700; text-decoration: none">二人ずつで詳しく見る ›</a>
+      </section>
+    </aside>
+  </div>
+</div>
+</x-dc>
+
+
+
+</body></html>

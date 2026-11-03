@@ -131,7 +131,15 @@
         /* 重要な出来事の種類（view.js の HK.View.hotKindSolo。枠と、フルでは種類ごとの背景） */
         var hk = HK.View && HK.View.hotKindSolo ? HK.View.hotKindSolo(e, res) : '';
         var avs = avsOf(res, e);
-        return '<li class="' + cls + (hk ? ' hot-' + hk : '') + (avs ? ' hasav' : '') + '"' + (hk ? ' data-hot="' + hk + '"' : '') + '>' + avs + '<div class="evb">' + (res.noGear ? '' : '<span class="rn">' + (e.room + 1) + '</span>') + '<span class="c">' + esc(e.tag || '') + '</span>' + paint(e.text, res) +
+        /* 吹き出しの見え方（view.js の HK.View.bubble。経過と同じ。話し手の番号は挑戦者（と主催者）の並び。発話の無い出来事は null でいつもの本文） */
+        var bb = null;
+        if (HK.View && HK.View.bubble && HK.Seg) {
+          var ppl = (res.heroes || [res.hero]).filter(Boolean);
+          bb = HK.View.bubble(e, HK.Seg.of(e, ppl), { who: function (i) { return ppl[i]; }, av: function (i, s) { var h = ppl[i]; return h && HK.Icons ? HK.Icons.html(h.name, h.i || 0, s) : ''; }, paint: function (s) { return paint(s, res); } });
+        }
+        if (bb) avs = '';
+        var hd = (res.noGear ? '' : '<span class="rn">' + (e.room + 1) + '</span>') + '<span class="c">' + esc(e.tag || '') + '</span>';
+        return '<li class="' + cls + (hk ? ' hot-' + hk : '') + (avs ? ' hasav' : '') + (bb ? ' bbl' : '') + '"' + (hk ? ' data-hot="' + hk + '"' : '') + '>' + avs + '<div class="evb">' + (bb ? '<div class="evh">' + hd + '</div>' + bb : hd + paint(e.text, res)) +
           ((e.why || e.key || e.kind === 'climax') ? '<span class="why">' + (e.why ? esc(e.why) : '') + (e.key || e.kind === 'climax' ? '<span class="nums">　理性' + e.v.r + '・堕ち' + e.v.c + '</span>' : '') + '</span>' : '') + '</div></li>';
       }).join('') + '</ol></div>';
     }).join('');
@@ -149,18 +157,31 @@
       if (v == null || shown == null) return '';
       return chip(e.label + '：' + shown);
     }).join('');
-    host.innerHTML =
+    var P = [
       '<div class="resulthead"><div><h2>' + esc(S.name) + '</h2><div class="meta">シード <span class="num">' + res.seed + '</span>　' + (res.meta ? esc(res.meta) : esc(res.themeLabel) + '　' + res.stepCount + '部屋　主：' + esc(res.boss) + (res.mids.length ? '　番人：' + esc(res.mids.join('・')) : '')) + '</div></div><span class="spacer"></span>' +
-      '<div class="row"><button class="btn primary" data-act="reroll">別の運命で挑む</button><button class="btn" data-act="copytext">結果をテキストでコピー</button><button class="btn" data-act="gobox">条件を変える</button></div></div>' +
-      endingBlock(res) +
-      '<div class="uses" style="margin-top:12px">' + envChips + '</div>' +
+      '<div class="row"><button class="btn primary" data-act="reroll">別の運命で挑む</button><button class="btn" data-act="copytext">結果をテキストでコピー</button><button class="btn" data-act="gobox">条件を変える</button></div></div>',
+      endingBlock(res),
+      '<div class="uses" style="margin-top:12px">' + envChips + '</div>',
       '<h2 class="sec">理性と堕ちの推移</h2>' + gauge(res) +
       (res.party ? '<div class="cards" style="margin-top:12px">' + res.heroes.map(function (h) { return heroCard(res, h); }).join('') + '</div>' :
       '<div class="cards" style="margin-top:12px">' + heroCard(res, res.hero) +
-      '<div class="ccard"><div class="hd"><span class="nm" style="font-size:16px">開発度</span><span class="nums">' + (res.hero.hardTop ? '攻めの挑戦者は罠や魔物に責められないので、開発度は伸びない' : '罠や魔物に責められた部位ほど伸び、次から感じやすくなる') + '</span></div>' + devBars(res.hero) + '</div></div>') +
-      '<h2 class="sec">足りなかったもの・効いたもの</h2><ul class="dgadvice">' + res.advice.map(function (a) { return '<li>' + paint(a, res) + '</li>'; }).join('') + '</ul>' +
-      '<h2 class="sec" id="tlhead">探索の記録' + (HK.View && HK.View.hotLegendSolo ? HK.View.hotLegendSolo(res) : '') + '</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button>' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="dglewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + '</div><div class="tl" id="dgtl">' + timeline(res) + '</div>' + /* r18:ok */
-      (histHtml || '');
+      '<div class="ccard"><div class="hd"><span class="nm" style="font-size:16px">開発度</span><span class="nums">' + (res.hero.hardTop ? '攻めの挑戦者は罠や魔物に責められないので、開発度は伸びない' : '罠や魔物に責められた部位ほど伸び、次から感じやすくなる') + '</span></div>' + devBars(res.hero) + '</div></div>'),
+      '<h2 class="sec">足りなかったもの・効いたもの</h2><ul class="dgadvice">' + res.advice.map(function (a) { return '<li>' + paint(a, res) + '</li>'; }).join('') + '</ul>',
+      '<h2 class="sec" id="tlhead">探索の記録' + (HK.View && HK.View.hotLegendSolo ? HK.View.hotLegendSolo(res) : '') + '</h2><div class="tlbar"><button class="chip" data-act="dgkey" aria-pressed="' + keyOnly + '">転機と絶頂だけ</button>' + (HK.lewdFilterOn && HK.lewdFilterOn(res.log) ? '<button class="chip" data-act="dglewd" aria-pressed="' + lewdOnly + '">エロシーンだけ</button>' : '') + (HK.View && HK.View.tlvSeg ? HK.View.tlvSeg('rvtlvbar') : '') + '</div><div class="tl" id="dgtl">' + timeline(res) + '</div>', /* r18:ok */
+      histHtml || ''
+    ];
+    /* 頭と切替は経過と結末（view.js の V.head・V.shell）と同じ部品で「結末｜探索の記録」（2026-11-01 担当UC。表示だけ） */
+    var HV = HK.View;
+    if (HV && HV.head && HV.shell) {
+      host.innerHTML = HV.shell({
+        head: HV.head({ meta: esc(S.name) + '・シード <span class="num">' + res.seed + '</span>・' + (res.meta ? esc(res.meta) : esc(res.themeLabel) + '・' + res.stepCount + '部屋・主：' + esc(res.boss) + (res.mids.length ? '・番人：' + esc(res.mids.join('・')) : '')), title: esc(res.ending.title), reroll: '別の運命で挑む' }),
+        tabs: [
+          { k: 'end', label: '結末', html: P[1] + (HV.cond ? HV.cond(S.env, res.env) : P[2]) + '<section class="rvcard rvsec2">' + P[3] + '</section><section class="rvcard rvsec2">' + P[4] + '</section>' },
+          { k: 'log', label: '探索の記録', n: res.log.filter(function (e) { return e.kind !== 'step'; }).length + '件', html: '<div class="rvsolo">' + P[5] + '</div>' }
+        ],
+        foot: P[6]
+      });
+    } else host.innerHTML = P.join('');
   };
   DV.toggleKey = function () {
     keyOnly = !keyOnly;
@@ -178,6 +199,11 @@
     if (b) b.setAttribute('aria-pressed', String(lewdOnly));
   };
 
+  /* 経過の見え方を吹き出しへ／から切り替えたら、探索の記録の本文を描き直す（view.js の HK.View.onTlv） */
+  if (HK.View && HK.View.onTlv) HK.View.onTlv(function () {
+    var t = lastHost && lastRes && !lastRes.story ? lastHost.querySelector('#dgtl') : null;
+    if (t && t.isConnected) t.innerHTML = timeline(lastRes);
+  });
   DV.toText = function (res) {
     var h = res.hero, E = res.ending, L = [];
     var SC = HK.SCENARIOS[res.scenId] || HK.SCENARIOS.dungeon;

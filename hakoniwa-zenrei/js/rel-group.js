@@ -209,7 +209,7 @@
   G.rel = function (ctx, a, b) {
     if (tieHas(ctx, a, b, 'best')) return 'best';
     if (tieHas(ctx, a, b, 'buddy')) return 'buddy';
-    if (['sibling', 'sibclose', 'sibprot', 'sibbad'].some(function (t) { return tieHas(ctx, a, b, t); })) return 'sib';
+    if (['sibling', 'sibclose', 'twin', 'sibprot', 'sibbad'].some(function (t) { return tieHas(ctx, a, b, t); })) return 'sib';
     if (tieHas(ctx, a, b, 'childhood')) return 'childhood';
     if (tieHas(ctx, a, b, 'classmate')) return 'classmate';
     if (tieHas(ctx, a, b, 'senpai')) return 'senpai';

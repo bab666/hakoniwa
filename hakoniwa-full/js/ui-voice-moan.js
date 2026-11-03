@@ -153,6 +153,7 @@
     act: function (act, c, el) { return !!(G() && G().act(act, c, el)); },
     toChar: toChar, fromChar: fromChar, mergeAdv: mergeAdv
   });
-  /* ui.js が先に描いた住人タブを、喘ぎの折りたたみ入りで描き直す */
-  if (HK.UI && HK.UI.refresh) HK.UI.refresh();
+  /* ui.js が先に描いた住人タブを、喘ぎの折りたたみ入りで描き直す。
+     分割読み込みでは、このファイルは喘ぎのかたまり pack-lewd（late の前に読む）にあるので、late を読み終える前なら描き直さない（読み終えたら ui.js の HK.onLate が描き直す） */
+  if (HK.UI && HK.UI.refresh && HK.LATE_READY !== false) HK.UI.refresh();
 })();

@@ -1,7 +1,7 @@
 /* 箱庭シミュレーター（R18版のみ）: 夜の主導（受け優位：誘い受け・襲い受け）
    ■ 住人の設定「夜の主導」lead（attr.js の A.LEAD・pos.js の P.leadOf）：
      ''（おまかせ）／top（攻めが主導）／sasoi（受けが主導・誘い受け）／osoi（受けが主導・襲い受け）
-   ■ 二人の主導（HK.PosLead.of(攻め, 受け)）：受けの設定 → 攻めの設定 の順に見る（受けが「攻めが主導」なら何も足さない）。
+   ■ 二人の主導（HK.PosLead.of(攻め, 受け)）：受けになる本人の設定だけを見る（攻めになる人の「受けが主導」は、その人が受けでないので効かせない。2026-10-31）。
      受け攻め（挿れる側／挿れられる側）と体の書き方は変えない。受けが主導の人は「ノリノリ」（P.nori）としても扱う（pos.js）
    ■ 受けが主導のとき、山場の始まりの段落のすぐあと（前戯・挿入前）に、受けが誘う・押し倒す・跨る地の文と受けの台詞を差し込む。
      ・地の文は体の組ごと：m（攻めが男性の体。受けの性別は問わない）／ff（女性どうし）／fm（女性の攻め×男性の受け：受けが攻めを自分の上へ導く）
@@ -88,7 +88,7 @@
   /* 二人の主導：'sasoi'｜'osoi'｜''（T＝攻め・U＝受け） */
   PL.of = function (T, U) {
     if (HK.SAFE_ON || !T || !U || T === U || !P.leadOf) return '';
-    var v = P.leadOf(U) || P.leadOf(T);
+    var v = P.leadOf(U);
     return v === 'sasoi' || v === 'osoi' ? v : '';
   };
   /* どちらかが主導を決めているか（決めていなければ、包みは何もしない＝乱数も向きの記憶も触らない） */
@@ -162,9 +162,10 @@
     }, LAST);
   }
   /* 包むのは最初のシミュレーションの前（r18-thick.js は後から読む。attr-r18.js の夜の性格の包みより外側にして、主導の文を夜の性格の文より先に置く） */
-  if (HK.simulate && !HK.simulate._lead) {
-    var sim0 = HK.simulate;
-    HK.simulate = function () { install(); return sim0.apply(this, arguments); };
-    HK.simulate._lead = true;
-  }
+  if (HK.simulate && !HK.simulate._lead) HK.wrap(HK, 'simulate', function (sim0) {
+    /* 分割読み込み：このファイルは喘ぎのかたまり pack-lewd（中核のあと）にあるので、包みは HK.wrap で書く（素の代入だと、後から来るかたまりの HK.wrap（safe-room.js など）の並べ直しが切れる） */
+    var f = function () { install(); return sim0.apply(this, arguments); };
+    f._lead = true;
+    return f;
+  });
 })();

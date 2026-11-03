@@ -291,14 +291,24 @@
     if (CH[name].code != null && !CH[name].src) return injectCode(name);
     var src = CH[name].src;
     return new Promise(function (ok, ng) {
-      var tries = 0;
+      var tries = 0, busted = false, url = src;
       function go() {
         var s = document.createElement('script');
-        s.src = src; s.async = true;
+        s.src = url; s.async = true;
         s.onload = function () {
           if (S(name).done) { ok(); return; }
-          /* 読めたのに done が来ない＝中身が壊れている（構文エラーなど）。やり直しても同じなので止める */
           if (s.parentNode) s.parentNode.removeChild(s);
+          /* 読めたのに done が来ない＝中身が壊れている（構文エラーなど）。かたまりは1年キャッシュなので、
+             アップロード中に途中まで届いた版がブラウザに残ると読み込み直しても治らない。
+             1回だけキャッシュを通らずに取り直す（元の URL のキャッシュも新しい版で上書きして、次に開いたときも治るように） */
+          if (!busted && web()) {
+            busted = true;
+            url = src + (src.indexOf('?') < 0 ? '?' : '&') + 'r=' + Date.now();
+            var again = function () { go(); };
+            if (window.fetch) { try { window.fetch(src, { cache: 'reload' }).then(again, again); return; } catch (e) { /* 古いブラウザ */ } }
+            again();
+            return;
+          }
           ng(fail('broken', name));
         };
         s.onerror = function () {

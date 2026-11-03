@@ -5,6 +5,7 @@
    - when: 'att>30&ten<20'
    - effects: 'ab:aff4,trust2;ba:aff6;as:-8;bs:5;ahp:-5;bhp:10;food:8;ga:aff2;gab:trust3;sec;jea'
    - texts: '|' 区切り。{a}{b}{c} が名前に置き換わる */
+/* @event-ok 関係ごとの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -227,6 +228,101 @@
     if (/\{a\}(?:が|は|の方が|のほうが)年下/.test(t)) return a.age < b.age;
     return true;
   }
+  /* 関係に合わない前提の文（2026-10-30 担当W1。利用者の報告：親子なのに「友達じゃいられなくなるかも」的な話が入る）：
+     ・友達の前提（ずっと友達・友達のまま・友達に戻れない など）は、家族（親子・擬似親子・きょうだい・親族）か恋人どうしの組には使わない
+     ・「付き合ってもいない」の前提は、恋人どうし（箱庭の中で恋人になった組・恋人の関係）には使わない */
+  var FRIEND_TXT = /ずっとも|ずっと友|友達(?:じゃ|では|で|に|の)(?:いられ|戻れ|まま)|友人(?:では|で|に|の)(?:いられ|戻れ|まま)/, UNPAIRED_TXT = /付き合って(?:も)?いない|付き合ってない/;
+  var FAM_TIES = ['parent', 'pparent', 'sibling', 'sibprot', 'sibclose', 'twin', 'sibbad', 'stepsib', 'relative'], LOVE_TIES = ['lover', 'spouse', 'mate', 'fiance', 'fated'];
+  function tieAny(ctx, a, b, l) { return !!(HK.Ties && HK.Ties.has && ctx.ties) && l.some(function (t) { return HK.Ties.has(ctx, a, b, t); }); }
+  /* 閉じ込められた部屋（出られない部屋）で、目覚めの区切りよりあとに「初めまして」「名前、なんて呼べばいい？」などの出会いの文を出さない（2026-10-31 担当RC。
+     利用者の報告：殺さないと出られない部屋の二人で、部屋の後半に出会いの文が出る） */
+  var FIRSTMEET_TXT = /初めまして|はじめまして|名前(?:くらい)?(?:を)?教え合|名前、なんて呼べば|名前、なんと呼べば|なんとお呼びすれば|名前は、何と呼べば|名前は、なんと呼べば|自己紹介|名乗り合|会ったばかり/;
+  function sealedLate(ctx) { return !!(ctx && ctx.scen && (ctx.scen.id === 'whiteroom' || ctx.scen.sealedRoom) && ctx.stepIndex >= 1); }
+  function relFits(ctx, t, a, b) {
+    if (FIRSTMEET_TXT.test(t) && sealedLate(ctx)) return false;
+    if (!b) return true;
+    var fr = FRIEND_TXT.test(t), un = UNPAIRED_TXT.test(t);
+    if (REL_ANY.test(t) && !relTextFits(relClass(ctx, a, b), t)) return false;
+    if (!fr && !un) return true;
+    var cp = !!ctx.pair(a, b).couple || tieAny(ctx, a, b, LOVE_TIES);
+    if (un && cp) return false;
+    if (fr && (cp || tieAny(ctx, a, b, FAM_TIES))) return false;
+    return true;
+  }
+  /* 知らない人どうし／知り合いどうし／混在 の展開の不整合（2026-10-31 担当RC。利用者の報告：出られない部屋で、家族なのに連絡先を交換する。
+     設計と判定の表は docs/reports/2026-10-31/rel-consistency.md、点検は hakoniwa-tools/tone-check/relcons-audit.js）
+     ・relClass：二人の関係のまとめ。none（関係なし）／weak（知人）／fam（家族。擬似親子は pfam）／spouse（夫婦）／lover（恋人・婚約者・番）／
+       work（同僚・上司・先輩後輩）／school（同級生・教師・師弟）／ex（元恋人）／known（そのほか：友人・幼馴染・親友 など）。執着なし・運命の番は数えない
+     ・MEET_TXT（初対面・連絡先・また会えたら）は関係のある組（知人を除く）に、WARM_TXT（部屋で初めて打ち解けた・初めて知り合う人への質問。2026-10-31 担当CL：「こんな場所でなければ話さなかった昔の話」「将来なりたいものを初めて話した」「家族は何人」も）は家族・夫婦・恋人に、
+       KNOWN_TXT（昔からの知り合いの前提）は関係のない組に、NEWCP_TXT（部屋で出会って付き合い始めた前提）は恋人・夫婦・家族に、
+       HOME_TXT（別々の家に帰る）は夫婦に、OUT_TXT（会釈・どこに住んでいるのか などの他人行儀）は家族・夫婦に、WORKQ_TXT（仕事を尋ねる）は同じ職場の組に使わない。relFits がこの表でも見る（HK.E の出来事は自動で外れる）。ほかの箱庭の部品は HK.relFilter で候補を絞る */
+  var REL_CLS = { parent: 'fam', sibling: 'fam', sibprot: 'fam', sibclose: 'fam', sibbad: 'fam', twin: 'fam', stepsib: 'fam', relative: 'fam', pparent: 'pfam',
+    spouse: 'spouse', lover: 'lover', fiance: 'lover', mate: 'lover', colleague: 'work', boss: 'work', senpai: 'work', classmate: 'school', teacher: 'school', mentor: 'school', ex: 'ex', acq: 'weak' };
+  var REL_SKIP = { noobs: 1, fated: 1 }, REL_ORDER = ['spouse', 'fam', 'pfam', 'lover', 'ex', 'work', 'school', 'known', 'weak'];
+  function relClass(ctx, a, b) {
+    if (!b || !HK.Ties || !HK.Ties.all || !ctx.ties) return 'none';
+    var best = 'none', tl = HK.Ties.all(ctx, a, b);
+    /* 物語の箱庭（邪神村など。HK.Story の S）は ctx.tiesAll を持たないので、配役の関係（ctx.ties：{a, b, type}）から直接拾う（2026-10-31 担当CL） */
+    if (!ctx.tiesAll && Array.isArray(ctx.ties) && a && b) tl = ctx.ties.filter(function (t) { return t && ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)); });
+    tl.forEach(function (t) {
+      if (!t || REL_SKIP[t.type]) return;
+      var c = REL_CLS[t.type] || (t.like && REL_CLS[t.like]) || 'known';
+      /* 夫婦は ties.js で恋人（spouse の印つき）に直る。別居中は恋人と同じ扱い（同じ家に帰らない）、離婚は元恋人 */
+      if (t.spouse && c === 'lover') c = t.married === 'separated' ? 'lover' : 'spouse';
+      if (best === 'none' || REL_ORDER.indexOf(c) < REL_ORDER.indexOf(best)) best = c;
+    });
+    return best;
+  }
+  var MEET_TXT = /初めまして|はじめまして|名前、なんて呼べば|名前、なんと呼べば|なんとお呼びすれば|名前(?:くらい)?(?:を)?教え合|初対面|見知らぬ(?:誰か|相手|人|者|他人)|赤の他人|名前も知らな|名前しか知らな|名前を知っているだけ|名前のほかは|互いのことを(?:ほとんど|何も|よく)知らな|会ったばかりの|連絡先を(?:交換(?!し直)|聞|訊|教え|渡)|連絡先(?:だけ|も交換)|互いの連絡先|全員の連絡先|住所を(?:聞|訊|教え|交換)|また会えたら|またどこかで|今度、?ご飯でも|名刺を(?:渡|交換|差し出)/;
+  var WARM_TXT = /すっかり打ち解け|打ち解けていた|仲間になった気が|話すほど、相手の考え方|こんな顔で話す人だった|本当の名前を教え|名前を教え合|(?:子ども|子供)の頃の夢(?:って|は)|好きな食べ物(?:って|は)何|休みの日は何(?:して|を)|どんな人が(?:タイプ|好み)|どんな人に惹かれ|出身はどこ|こんな場所でなければ、?話さなかった|昔の話をした。誰にも話したことのない|将来なりたいものを初めて|家族は何人|(?:きょうだい|兄弟)(?:、|は)いる|ご兄弟は/;
+  var KNOWN_TXT = /久しぶりに会(?!え)|久しぶりだな|卒業以来|何年ぶり|昔から(?:の知り合い|知って)|(?:子ども|子供|幼い|小さい)(?:の)?頃から(?:知って|一緒|の仲|の付き合い|の知り合い)|昔みたいに|家に帰ったら|また家で|うちに帰ったら|同じ家に帰/;
+  var NEWCP_TXT = /馴れ初め|付き合い始めた(?:という|らしい|って)|付き合うことになっ|二人が付き合い|恋人(?:になった|同士になった|どうしになった)|改めて待ち合わせ|それからも会うようになっ|初めてのデート|条件(?:じゃ|で)なくても、またしたい/;
+  var HOME_TXT = /家まで送|それぞれの家|別々の家|上がっていく|家に帰ったら会えな|家の前で別れ|うちに来(?:て|い)|うちにいらして|一番近い[^。]{0,8}の部屋|次の約束を口に/;
+  var OUT_TXT = /会釈|他人行儀に|どこに住んで|何の仕事を|お仕事は|ご職業/, WORKQ_TXT = /どこで働い|何の仕事を|お仕事は|ご職業|職場はどこ/;
+  var REL_ANY = new RegExp([MEET_TXT, WARM_TXT, KNOWN_TXT, NEWCP_TXT, HOME_TXT, OUT_TXT, WORKQ_TXT].map(function (r) { return r.source; }).join('|'));
+  function relTextFits(c, t) {
+    if (c === 'none') return !KNOWN_TXT.test(t);
+    if (c !== 'weak' && MEET_TXT.test(t)) return false;
+    if ((c === 'fam' || c === 'pfam' || c === 'spouse' || c === 'lover') && WARM_TXT.test(t)) return false;
+    if ((c === 'fam' || c === 'spouse' || c === 'lover') && NEWCP_TXT.test(t)) return false;
+    if (c === 'spouse' && HOME_TXT.test(t)) return false;
+    if ((c === 'fam' || c === 'pfam' || c === 'spouse') && OUT_TXT.test(t)) return false;
+    if (c === 'work' && WORKQ_TXT.test(t)) return false;
+    return true;
+  }
+  /* 三人以上（{G}）の文：関係のない組が一つもなければ初対面の文を外し、関係のある組が一つもなければ知り合い前提の文を外す */
+  function relGroupFits(ctx, g, t) {
+    if (!g || g.length < 2 || !REL_ANY.test(t)) return true;
+    var cs = [];
+    for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) cs.push(relClass(ctx, g[i], g[j]));
+    var allKnown = cs.every(function (c) { return c !== 'none' && c !== 'weak'; }), noneKnown = cs.every(function (c) { return c === 'none'; });
+    if (allKnown && MEET_TXT.test(t)) return false;
+    if (noneKnown && KNOWN_TXT.test(t)) return false;
+    return true;
+  }
+  /* 候補の文の並びを、二人の関係に合うものに絞る（全部外れたら空の配列） */
+  function relFilter(ctx, list, a, b) {
+    if (!list || !b) return list;
+    var c = relClass(ctx, a, b);
+    var late = sealedLate(ctx);
+    return list.filter(function (t) { return !(late && FIRSTMEET_TXT.test(t)) && (!REL_ANY.test(t) || relTextFits(c, t)); });
+  }
+  /* 二人だけの配役（場にいるのがいつも二人以下）の記録に、居合わせた第三者の文（周りが割って入った・居合わせた人たち など）を出さない（2026-10-31 担当RC。
+     利用者の報告：殺さないと出られない部屋の二人で、閉じ込められているにしては不整合な文が目立つ）。engine.js が結果をまとめるとき、地の文から一文ごとに外す
+     （台詞の文と、外すと何も残らない文は残す）。ctx を渡したときは、場にいるのが二人以下のときだけ外す */
+  var BYSTAND_TXT = /周り(?:が|は|の誰か|の人|のほう)|居合わせた人|周囲(?:が|の人)/;
+  function dropBystand(ctx, t) {
+    if (typeof t !== 'string' || !BYSTAND_TXT.test(t) || (ctx && (!ctx.present || ctx.present().length > 2))) return t;
+    var ss = [], cur = '', d = 0;
+    for (var i = 0; i < t.length; i++) { var ch = t.charAt(i); cur += ch; if (ch === '「') d++; else if (ch === '」') d = Math.max(0, d - 1); if (ch === '。' && d === 0) { ss.push(cur); cur = ''; } }
+    if (cur) ss.push(cur);
+    var keep = ss.filter(function (x) { return x.indexOf('「') >= 0 || !BYSTAND_TXT.test(x); });
+    return keep.length && keep.length < ss.length ? keep.join('') : t;
+  }
+  HK.dropBystand = dropBystand; HK.BYSTAND_TXT = BYSTAND_TXT;
+  HK.relClass = relClass; HK.relFilter = relFilter; HK.sealedLate = sealedLate; HK.relGroupFits = relGroupFits; HK.relTextFits = relTextFits;
+  HK.REL_TXT = { FIRSTMEET: FIRSTMEET_TXT, MEET: MEET_TXT, WARM: WARM_TXT, KNOWN: KNOWN_TXT, NEWCP: NEWCP_TXT, HOME: HOME_TXT, OUT: OUT_TXT, WORKQ: WORKQ_TXT, ANY: REL_ANY };
+  HK.relFits = relFits;
   /* DSL → エンジンのイベント形式 */
   HK.E = function (id, cat, scope, w, when, fx, texts) {
     var terms = parseExpr(w), conds = parseWhen(when), effects = parseFx(fx);
@@ -273,6 +369,7 @@
         if (hasLove && !loveTalkOk(ctx, [a, b, c])) { var nl = cand.filter(function (t) { return !LOVE_TXT.test(t); }); if (nl.length) cand = nl; }
         /* 年齢が決まっている二人なら、「同い年」「年上」の文は実際の年齢に合うものだけ */
         if (b && a.age && b.age) { var ag = cand.filter(function (t) { return ageFits(t, a, b); }); if (ag.length) cand = ag; else return null; }
+        if (b && cand.some(function (t) { return FRIEND_TXT.test(t) || UNPAIRED_TXT.test(t) || REL_ANY.test(t) || FIRSTMEET_TXT.test(t); })) { var rf = cand.filter(function (t) { return relFits(ctx, t, a, b); }); if (rf.length) cand = rf; else return null; }
         var text = ctx.t(ctx.pick(cand.length ? cand : list), a, b, c);
         /* 問いで終わる文には、いつも相手の答え（HK.TAILS_Q）を続ける。問いでない文は今までどおり（乱数の引き方も同じ） */
         var isQ = withTail && b ? askEnd(text, a, b) : '', ans = isQ === 'a' ? a : b;

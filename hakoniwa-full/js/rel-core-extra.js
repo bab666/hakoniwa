@@ -17,7 +17,7 @@
   if (!HK || !HK.buildPool || !HK.TIES) return;
   function L(s) { return s.split('|'); }
   /* ties.js の種類 → このファイルのまとまり（きょうだい（庇護）は無人島・ゾンビの街に専用の場面があり、不仲なきょうだいは rel-bad-engine.js が受け持つ） */
-  var GROUP = { classmate: 'classmate', friend: 'friend', best: 'friend', childhood: 'childhood', sibling: 'sib', sibclose: 'sib', stepsib: 'sib', parent: 'parent', pparent: 'parent', boss: 'boss', mentor: 'mentor', ex: 'ex' };
+  var GROUP = { classmate: 'classmate', friend: 'friend', best: 'friend', childhood: 'childhood', sibling: 'sib', sibclose: 'sib', twin: 'sib', stepsib: 'sib', parent: 'parent', pparent: 'parent', boss: 'boss', mentor: 'mentor', ex: 'ex' };
   function here(c) { return !!c && (HK.State ? HK.State.here(c) : c.alive !== false) && !(c.flags && c.flags.caged != null); }
   /* a と b のあいだの、まとまり g の関係（なければ null）。side は向きのある関係で a がどちらの側か */
   function find(ctx, a, b, g) {

@@ -16,7 +16,7 @@
   RK.kind = function (ctx, a, b) {
     var t;
     if ((t = exact(ctx, a, b, 'sibprot'))) return t.a === a.i ? 'protA' : 'protB';
-    if (exact(ctx, a, b, 'sibclose')) return 'sibclose';
+    if (exact(ctx, a, b, 'sibclose') || exact(ctx, a, b, 'twin')) return 'sibclose';
     if ((t = exact(ctx, a, b, 'teacher'))) return t.a === a.i ? 'teacherA' : 'teacherB';
     if ((t = exact(ctx, a, b, 'mentor'))) return t.a === a.i ? 'mentorA' : 'mentorB';
     return null;

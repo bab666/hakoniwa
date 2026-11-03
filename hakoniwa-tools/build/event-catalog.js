@@ -615,7 +615,7 @@ function judgeTables(src, csrc) {
     const solo = !!(sc && sc.solo);
     if (tag === 'preg') { const st = PS[id]; if (st === 'any') return { s: 'yes', t: 'いつも（疑似妊娠）' }; if (NO[id] || (!st && solo)) return { s: 'no', t: '妊娠の場面なし' }; return { s: 'cond', t: '重いのとき' }; }
     if (tag === 'force') { if (CORE[id]) return { s: 'yes', t: '題材（いつも入）' }; if (id === 'saimin') return { s: 'yes', t: '同意のない催眠' }; if (MOBF[id]) return { s: 'yes', t: MOBF[id] + 'に襲われる' }; if (id === 'jinro') return { s: 'cond', t: '人狼が勝ったとき' }; if (!ENG[id]) return { s: 'no', t: '場面なし' }; return { s: HATE[id] || OBS[id] ? 'cond' : 'cond', t: '関係（敵対・執着・主従・歪んだ関係）しだい' }; }
-    if (tag === 'violence') { if (id === 'yakata') return { s: 'cond', t: '快楽殺人の動機' }; if (!ENG[id] || id === 'classroom') return { s: 'no', t: '場面なし' }; return { s: 'cond', t: '重いのとき' }; }
+    if (tag === 'violence') { if (id === 'yakata') return { s: 'cond', t: '快楽殺人の動機' }; if (id === 'ship') return { s: 'cond', t: '生命体の取引の実験' }; if (!ENG[id] || id === 'classroom') return { s: 'no', t: '場面なし' }; return { s: 'cond', t: '重いのとき' }; }
     if (tag === 'abuse') { if (id === 'saimin') return { s: 'cond', t: '重いのとき' }; if (!ENG[id]) return { s: 'no', t: 'スイッチで足す場面なし（関係としては出る）' }; return { s: 'cond', t: '関係「歪んだ関係」か、重いとき' }; }
     return { s: 'yes', t: '' };
   };

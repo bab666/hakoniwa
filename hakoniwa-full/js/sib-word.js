@@ -26,8 +26,8 @@
   if (!HK) return;
   var S = (HK.Sib = HK.Sib || {});
 
-  var SIB_TYPES = { sibling: 1, sibprot: 1, sibclose: 1, sibbad: 1, stepsib: 1 };
-  var SUFFIX = { sibling: '', sibprot: '（庇護）', sibclose: '（親友のよう）', sibbad: '（不仲）', stepsib: '', relative: '' };
+  var SIB_TYPES = { sibling: 1, sibprot: 1, sibclose: 1, sibbad: 1, twin: 1, stepsib: 1 };
+  var SUFFIX = { sibling: '', sibprot: '（庇護）', sibclose: '（親友のよう）', sibbad: '（不仲）', twin: '', stepsib: '', relative: '' };
 
   function gen(x) { var g = x && x.gender; return g === 'm' || g === 'f' ? g : ''; }
   function age(x) { var n = +(x && x.age); return n > 0 && isFinite(n) ? n : 0; }
@@ -69,6 +69,13 @@
     var t = findTie(env, a, b), ia = idx(a), ib = idx(b), el = elderOf(t);
     var o = { g: gen(b), ga: gen(a), pos: '', twin: false, dir: false, set: false, flat: false, step: S.isStep(t), tie: t };
     var aa = age(a), ab = age(b);
+    /* 関係「双子」（2026-10-31）：年齢によらず双子。上下の欄で一人目・二人目を選べば「双子の姉」「双子の弟」の形、ほかは上下なし（呼びかけは名前） */
+    if (t && t.type === 'twin') {
+      o.twin = true;
+      if ((el === 'a' || el === 'b') && ia != null && ib != null && (t.a === ia || t.a === ib) && (t.b === ia || t.b === ib)) { var up0 = el === 'a' ? t.a : t.b; o.set = true; o.pos = up0 === ib ? 'ue' : 'shita'; }
+      else { o.pos = 'twin'; if (el === 'none') o.flat = true; }
+      return o;
+    }
     /* 上下なし：年齢差があっても上下を付けない（双子にもしない） */
     if (el === 'none') { o.flat = true; return o; }
     /* 義理のきょうだいは、同じ年齢でも双子にしない（上下は決めない） */
@@ -138,7 +145,7 @@
     if (kind === 'pair') return S.pairWord(a, b, env);
     if (kind === 'call') {
       var o = S.info(a, b, env);
-      if (!o.g || o.pos !== 'ue') return [];
+      if (!o.g || o.pos !== 'ue' || (o.tie && o.tie.type === 'twin')) return [];
       return CALL[S.callGroup(a)][o.g].slice();
     }
     return S.rel(a, b, env) || S.pairWord(a, b, env);
@@ -246,7 +253,7 @@
         if (A.calls && A.calls[B.name]) return;
         if (A.youFor && A.youFor[p[1]]) return;
         var a = withI(A, p[0]), b = withI(B, p[1]), o = S.info(a, b, { tie: t });
-        if (o.pos !== 'ue' || !o.g) return;
+        if (o.pos !== 'ue' || !o.g || t.type === 'twin') return;
         out.push({ who: p[0], to: p[1], name: B.name, call: CALL[S.callGroup(a)][o.g][0] });
       });
     });
@@ -285,8 +292,14 @@
     var r = { rel: S.rel(a, b, env) || '', call: '', auto: false, notes: [], src: inf.flat ? 'none' : inf.set ? 'set' : inf.dir ? 'dir' : 'auto', pair: S.pairWord(a, b, env) };
     var own = c.calls && c.calls[o.id];
     if (own) r.call = own;
-    else if (inf.pos === 'ue' && inf.g && !(c.youFor && c.youFor[o.id])) { r.call = CALL[S.callGroup(c)][inf.g][0]; r.auto = true; }
+    else if (inf.pos === 'ue' && inf.g && t.type !== 'twin' && !(c.youFor && c.youFor[o.id])) { r.call = CALL[S.callGroup(c)][inf.g][0]; r.auto = true; }
     var aa = age(c), ab = age(o), gw = { f: '姉か妹', m: '兄か弟' }[inf.g] || '上か下';
+    if (t.type === 'twin') {
+      /* 双子：年齢が違っても双子として扱う。上下は「上下」の欄で選んだときだけ */
+      if (aa && ab && aa !== ab) r.notes.push('双子なので、年齢の違いは見ずに同い年として扱います');
+      if (inf.set) r.notes.push('上下の設定どおり' + (inf.pos === 'ue' ? o : c).name + 'を上にします（文では『' + r.pair + '』）');
+      return r;
+    }
     if (inf.dir) {
       /* 庇護の向きと年齢が逆 */
       var upIsO = inf.pos === 'ue';

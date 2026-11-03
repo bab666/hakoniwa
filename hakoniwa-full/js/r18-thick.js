@@ -346,7 +346,7 @@
     var mood = moodOf(opt.mood), rng = S.rng, m = { x: x.name, y: y.name };
     var ctx = { pick: function (a) { return pick(S, a); } }, K = kind === 'ff' ? HK.FF : HK.FM;
     var st = mood === 'rough' ? 'rough' : mood === 'love' ? 'gentle' : HK.FF && HK.FF.styleOf ? HK.FF.styleOf(x) : 'gentle';
-    if (HK.Attr && HK.Attr.styleFor) st = HK.Attr.styleFor(HK.Attr.nightOf(x, y), st);
+    if (HK.Attr && HK.Attr.styleFor) st = HK.Attr.styleFor((HK.Attr.nightKey || HK.Attr.nightOf)(x, y), st);
     var fill = function (s) { return F(s.replace(/\{a\}/g, x.name).replace(/\{b\}/g, y.name), m); };
     var riba = !!(kind === 'ff' && HK.Pos && HK.Pos.bothRiba && HK.Pos.bothRiba(x, y)), again = kind === 'ff' && seen(S, x, y);
     var tech = R.tech ? R.tech(S, x, y, kind, mood, opt) : null;

@@ -80,7 +80,8 @@
   var RULE_JA = { neg: '否定', prog: '進行', copula: '断定', drop: '助詞落とし', contract: '縮約', emph: '強調語', emphRate: '強調語の割合', exist: '存在', shortCasual: '短い文はため口', mixK: 'ため口を混ぜる',
     lead: '前置き', leadRate: '前置きの割合', surprise: '驚き', laugh: '笑い', flat: '言い切り', shaken: '動揺', shakenRate: '動揺の割合' };
   var FX_JA = { bangOff: '感嘆符を落とす', stretch: '伸ばす', bangOn: '言い切りに！', short: '短くする', stammer: '言いよどみ', dots: '前に……', pause: '間を置く' };
-  function endLine(e) { return e[0] + (e[2] ? '(' + e[2].source.replace(/\$$/, '') + ')' : '') + '=' + e[1].join('／'); }
+  /* 条件（後読み e[2]・先読み e[3]）も書き戻す */
+  function endLine(e) { return e[0] + (e[2] || e[3] ? '(' + (e[2] ? e[2].source.replace(/\$$/, '') : '') + (e[3] ? e[3].source.replace(/^\^/, '') : '') + ')' : '') + '=' + e[1].join('／'); }
   function ruleVal(k, v) { return Array.isArray(v) ? v.join('／') : v === true ? 'はい' : String(v); }
   var ASK_FROM = /(?:か|かな|かね|かい|の)[？?]?$|[？?]$/;
 

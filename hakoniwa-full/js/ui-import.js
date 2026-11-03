@@ -96,14 +96,14 @@
   function html(o) {
     o = o || {};
     var dis = o.full ? ' disabled' : '';
-    return '<h2 class="sec imphead">住人をまとめて登録' + (HK.Tips ? HK.Tips.btn('cast-import') : '') + '<span class="secnote" data-note="診断結果の文章をそのまま貼るだけ。複数行を一度に読み込めます。"></span></h2>' +
-      '<div class="impgrid"><div class="impmain">' +
+    /* 2026-11-01 担当UA：見出しは住人タブの取り込みの欄（ui.js の renderCast の details#castimp の summary）に置く。ここは中身だけ（書き方の ？ は押すボタンの行の端に） */
+    return '<div class="impgrid"><div class="impmain">' +
       '<label for="bulk" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">診断結果を貼り付け</label>' +
       '<textarea id="bulk" rows="6" spellcheck="false" placeholder="ここに診断結果を貼り付け（書き方は FORMAT の欄）">' + esc(text) + '</textarea>' +
       '<div class="impbar"><button class="btn primary" data-act="import-add"' + dis + ' title="今の住人に足します（同じ名前の住人はエゴグラムを書き換え。サンプルの住人だけのときは入れ替え）">取り込む</button>' +
       '<button class="btn" data-act="quiz"' + dis + ' title="「ふたりのエゴグラム」と同じ25問に答えて、エゴグラムを出して住人にします">質問に答えて診断</button>' +
       '<button class="btn ghost" data-act="impsample" title="書き方の見本（3人分）を欄に入れます">サンプルを入れる</button>' +
-      '<span class="spacer"></span><span class="impcnt" id="bulkcount" aria-live="polite">' + countHtml(text) + '</span></div>' +
+      '<span class="spacer"></span><span class="impcnt" id="bulkcount" aria-live="polite">' + countHtml(text) + '</span>' + (HK.Tips ? HK.Tips.btn('cast-import') : '') + '</div>' +
       '<ul class="warn" id="warns" hidden></ul></div>' + fmtBox() + '</div>';
   }
   document.addEventListener('input', function (ev) {
@@ -121,6 +121,8 @@
   });
   HK.CastImport = {
     html: html, ioHtml: ioHtml, count: countHtml,
+    /* 貼り付け欄に書きかけがあるか（あれば住人タブを描き直しても取り込みの欄を開いておく） */
+    hasText: function () { return !!String(text || '').trim(); },
     /* 取り込めたら欄を空にする（ui.js の importRoster） */
     clear: function () { text = ''; }
   };

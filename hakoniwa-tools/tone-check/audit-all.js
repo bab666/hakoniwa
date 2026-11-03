@@ -2,8 +2,10 @@
    使い方:
      node hakoniwa-tools/tone-check/audit-all.js                       # 既定の一式（R18版・全年齢モード・全年齢版。2 本並べて約 4 分）
      node hakoniwa-tools/tone-check/audit-all.js --modes=r18           # モードを絞る（r18,safe,zen）
-     node hakoniwa-tools/tone-check/audit-all.js --extra=sexgate,feud,group,state-hot,name  # 追加の配役パスも回す（--extra=all で全部）
+     node hakoniwa-tools/tone-check/audit-all.js --extra=sexgate,feud,group,state-hot,name,relcons  # 追加の配役パスも回す（--extra=all で全部）
      node hakoniwa-tools/tone-check/audit-all.js --only-extra --extra=group             # 追加の配役パスだけ
+     （既定の一式と --extra=relcons には、見本の話題を入れた回 topics-state・topics-seg・topics-relcons も入る。audit/topics-sample.js）
+     （既定の一式には、名前の呼びかけの点検 call（call-audit.js。台詞に占める呼びかけの割合は参考、違和感の型は件数で 0 が合格）も入る。2026-11-01）
      node hakoniwa-tools/tone-check/audit-all.js --print=出力のフォルダ                 # 今までの道具の形の出力もパスごとに書く（単独実行の出力と同じになる）
      node hakoniwa-tools/tone-check/audit-all.js --cross                                # 判定をほかのパスの回にも当てる（調べもの用。誤判定を含む。下の注）
    ほかの指定：--jobs=1（ページを 1 枚ずつ。既定 2）、--scale=0.5（回数を一律に何倍にするか。seed の範囲が変わるので、件数は単独実行と比べられない）、
@@ -23,12 +25,12 @@ const misc = require('./audit/misc.js');
 const TOOLS = {
   orient: require('./orient-audit.js'), pos: require('./pos-audit.js'), state: require('./state-audit.js'), loveflag: require('./love-flag-audit.js'),
   seg: require('./seg-audit.js'), qa: require('./qa-audit.js'), sexgate: require('./sex-gate-audit.js'), feud: require('./feud-audit.js'), group: require('./group-audit.js'),
-  name: require('./name-audit.js'),
+  name: require('./name-audit.js'), relcons: require('./relcons-audit.js'), call: require('./call-audit.js'),
   misc
 };
 const MODS = Object.keys(TOOLS).map(k => TOOLS[k]);
 /* 判定の名前（まとめの見出し） */
-const JNAME = { orient: '恋愛対象', pos: '受け攻め・体の語', state: '状態', loveflag: '恋愛：なし', seg: '台詞の区分', qa: '問いと返事', sexgate: '性的な出来事の門', feud: '不仲の組', group: '複数人の恋愛', name: '名前の言い換え', misc: '文の崩れ' };
+const JNAME = { orient: '恋愛対象', pos: '受け攻め・体の語', state: '状態', loveflag: '恋愛：なし', seg: '台詞の区分', qa: '問いと返事', sexgate: '性的な出来事の門', feud: '不仲の組', group: '複数人の恋愛', name: '名前の言い換え', relcons: '展開の不整合', call: '名前の呼びかけ', misc: '文の崩れ' };
 
 /* ---------- パス（配役の決め方）：今までの道具の既定の回数と同じ。est は 1 回分の目安の秒数（ページの割り振りに使う） ---------- */
 const PASSES = {
@@ -40,14 +42,25 @@ const PASSES = {
   loveflag: { tool: 'loveflag', id: 'loveflag', opt: { N: 24 }, lewd: 'direct', est: 30, out: m => 'loveflag-' + m },
   seg: { tool: 'seg', id: 'seg', opt: { N: 10 }, lewd: '', est: 12, out: m => 'seg-' + m },
   qa: { tool: 'qa', id: 'qa', opt: { N: 12 }, lewd: '', est: 14, modes: ['r18', 'zen'], out: m => 'qa-' + m },
+  /* 名前の無い住人を含む配役（2026-10-31 担当JN。audit/misc.js のパス noname。判定は misc だけ） */
+  noname: { tool: 'misc', id: 'noname', opt: { N: 2 }, lewd: '', est: 3, out: m => 'noname-' + m },
+  /* 名前の呼びかけ（2026-11-01 担当NC。call-audit.js）：敬称の設定を回した配役で、台詞に占める呼びかけの割合（参考）と違和感の型（件数） */
+  call: { tool: 'call', id: 'call', opt: { N: 8 }, lewd: '', est: 10, out: m => 'call-' + m },
   /* 追加の配役パス（--extra） */
   sexgate: { tool: 'sexgate', id: 'sexgate', opt: { N: 24, cond: TOOLS.sexgate.COND }, lewd: 'direct', est: 165, modes: ['r18'], extra: true, out: () => 'sexgate-r18' },
   feud: { tool: 'feud', id: 'feud', opt: { N: 24 }, lewd: '', est: 28, modes: ['r18', 'zen'], extra: true, out: m => 'feud-' + m },
   group: { tool: 'group', id: 'group', opt: { N: 40 }, lewd: '', est: 24, modes: ['r18', 'zen'], extra: true, out: m => 'group-' + m },
   'state-hot': { tool: 'state', id: 'state', opt: { N: 24, hot: true }, lewd: 'direct', est: 66, extra: true, out: m => 'state-hot-' + m },
-  name: { tool: 'name', id: 'name', opt: { N: 6 }, lewd: '', est: 22, extra: true, out: m => 'name-' + m }
+  name: { tool: 'name', id: 'name', opt: { N: 6 }, lewd: '', est: 22, extra: true, out: m => 'name-' + m },
+  /* 知らない人どうし／知り合いどうし／混在 と関係に合わない文（2026-10-31 担当RC。relcons-audit.js） */
+  relcons: { tool: 'relcons', id: 'relcons', opt: { N: 24 }, lewd: '', est: 55, extra: true, out: m => 'relcons-' + m },
+  /* 見本の話題を入れた回（2026-11-01 担当TB。audit/topics-sample.js）：同じ配役に話題（js/topics.js）を足して、話題の文を状態・台詞の区分・文の崩れ・展開の不整合の判定に当てる。
+     話題があると回の中身が変わるので、元のパスとは別に回す（元のパスの件数は変わらない）。topics-relcons は --extra=relcons のときにいっしょに回す */
+  'topics-state': { tool: 'state', id: 'state', opt: { N: 6, topics: true }, lewd: 'direct', est: 17, out: m => 'topics-state-' + m },
+  'topics-seg': { tool: 'seg', id: 'seg', opt: { N: 4, topics: true }, lewd: '', est: 5, out: m => 'topics-seg-' + m },
+  'topics-relcons': { tool: 'relcons', id: 'relcons', opt: { N: 6, topics: true }, lewd: '', est: 14, extra: true, out: m => 'topics-relcons-' + m }
 };
-const DEFAULT = ['orient', 'pos', 'pos-hot', 'pos-ffhot', 'state', 'loveflag', 'seg', 'qa'];
+const DEFAULT = ['orient', 'pos', 'pos-hot', 'pos-ffhot', 'state', 'loveflag', 'seg', 'qa', 'noname', 'call', 'topics-state', 'topics-seg'];
 /* 判定：cross＝ほかのパスの回にも当てる。modes＝当てるモード */
 const JUDGES = {
   orient: { cross: true, opt: () => ({ why: true }) },
@@ -60,7 +73,9 @@ const JUDGES = {
   sexgate: { cross: false, opt: () => ({ cond: TOOLS.sexgate.COND }) },
   feud: { cross: false, opt: () => ({}) },
   group: { cross: false, opt: () => ({}) },
-  name: { cross: false, opt: () => ({}) }
+  name: { cross: false, opt: () => ({}) },
+  relcons: { cross: false, opt: () => ({}) },
+  call: { cross: false, opt: () => ({}) }
 };
 const MODE = { r18: { name: 'R18版', build: 'full', mode: 'r18' }, safe: { name: '全年齢モード', build: 'full', mode: 'safe' }, zen: { name: '全年齢版', build: 'zen', mode: '' } };
 
@@ -146,7 +161,8 @@ function report(sums, o) {
       bad += nz.length;
       const cells = ks.map(k => k + ' ' + T.items[k]).join('・');
       lines.push('  ' + (JNAME[id] + '（' + id + '）').padEnd(16, '　') + ' ' + (ks.length ? (nz.length ? '★ ' + nz.length + ' 項目が 0 でない' : 'すべて 0 件') + '［' + cells + '］' : '（比率の点検）') + (T.err ? '・失敗 ' + T.err : ''));
-      if (o.info || !ks.length) lines.push('      参考：' + fmtInfo(T.info));
+      /* 名前の呼びかけ（call）は、台詞に占める呼びかけの割合をいつも参考に出す */
+      if (o.info || !ks.length || id === 'call') lines.push('      参考：' + fmtInfo(T.info));
       nz.forEach(k => {
         lines.push('    ★ ' + id + ' ' + k + '（' + (L[k] || '') + '）' + T.items[k] + ' 件');
         (T.ex[k] || []).forEach(x => lines.push('        例：' + String(x).replace(/\n/g, ' ').slice(0, 300)));
@@ -169,6 +185,8 @@ function report(sums, o) {
     onlyExtra: has('only-extra'), compat: has('compat'), cross: has('cross'), print: arg('print', ''), jobs: Math.max(1, +arg('jobs', 2) || 1), scale: +arg('scale', 1) || 1,
     json: arg('json', ''), info: has('info'), noMisc: has('no-misc')
   };
+  /* 展開の不整合（relcons）を回すときは、見本の話題を入れた回（topics-relcons）もいっしょに回す */
+  if (o.extra.indexOf('relcons') >= 0 && o.extra.indexOf('topics-relcons') < 0) o.extra.push('topics-relcons');
   const bad = o.extra.filter(p => !PASSES[p] || !PASSES[p].extra);
   if (bad.length) { console.error('知らない追加のパス：' + bad.join(',') + '（使えるもの：' + Object.keys(PASSES).filter(p => PASSES[p].extra).join(',') + '）'); process.exit(2); }
   const T0 = Date.now();

@@ -86,9 +86,9 @@
   EQ.open = function (target) {
     Z = { open: true, name: '', i: -1, ans: [], target: target || '' };
     if (target) { var c = EQ.chars().filter(function (x) { return x.id === target; })[0]; if (c) Z.name = c.name; }
-    host().hidden = false; draw();
+    host().hidden = false; if (HK.Modal) HK.Modal.lock(host()); draw();
   };
-  EQ.close = function () { Z.open = false; host().hidden = true; };
+  EQ.close = function () { Z.open = false; host().hidden = true; if (HK.Modal) HK.Modal.unlock(host()); };
   document.addEventListener('click', function (ev) {
     var t = ev.target.closest('[data-eq]');
     if (!t) return;

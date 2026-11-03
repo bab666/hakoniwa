@@ -3,12 +3,14 @@
    ・きょうだい（不仲）：口喧嘩・比べられてきた恨み・文句を言いながら助ける・他人に悪く言われるとかばう・昔の思い出・歩み寄り
    ・不仲：意見の衝突・皮肉・しぶしぶの協力・手柄と責任の押し付け合い・見直す瞬間・大喧嘩
    {a}=動く人 {b}=相手 {c}=居合わせた第三者 */
+/* @event-ok 閉じ込められた部屋・二人きりの分岐（展開の不整合。2026-10-31 担当RC） */
 (function () {
   'use strict';
   var HK = window.HK, RK = HK.RelKit;
   if (!RK || !HK.Ties) return;
   var L = RK.L, fill = RK.fill;
-  function is(k) { return function (ctx, a, b) { return !!(b && HK.Ties.has(ctx, a, b, k)); }; }
+  /* 不仲の相手の気持ちが決まっている片方向の関係は、二人とも嫌い合う場面にしない（敵視する側の場面は hate-kit.js。2026-11-02） */
+  function is(k) { return function (ctx, a, b) { return !!b && HK.Ties.all(ctx, a, b).some(function (t) { return (t.type === k || t.like === k) && !((t.type === 'bad' || t.type === 'enemy') && t.cold); }); }; }
   function third(ctx, a, b) { var o = ctx.others(a).filter(function (c) { return c !== b; }); return o.length ? ctx.pick(o) : null; }
   function hurt(ctx, b) { return b.stress > 40 || (b.hp != null && b.hp < 60); }
 
@@ -177,7 +179,10 @@
           RK.mark(ctx, a, b, k);
           var c = third(ctx, a, b);
           var r = D.run(ctx, a, b, c) || {};
-          r.text = fill(ctx.pick(pool), { a: a.name, b: b.name, c: c ? c.name : '周りの誰か' });
+          /* 第三者のいない場面では、{c}（第三者）の文と、居合わせた人の文を使わない（2026-10-31 担当RC） */
+          var pl = pool;
+          if (!c) { var p2 = pool.filter(function (t) { return t.indexOf('{c}') < 0 && !(HK.BYSTAND_TXT && HK.BYSTAND_TXT.test(t)); }); if (p2.length) pl = p2; }
+          r.text = fill(ctx.pick(pl), { a: a.name, b: b.name, c: c ? c.name : '周りの誰か' });
           if (!/[。」！？]$/.test(r.text)) r.text += '。';
           /* 関係の表示名は、きょうだいなら二人の性別・年齢で「姉弟（不仲）」など（HK.tieLabel）。続柄の印（{sib:a→b}・{sibs}）はここで解く */
           var tie = HK.Ties.has(ctx, a, b, D.k);

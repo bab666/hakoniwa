@@ -88,7 +88,7 @@
       if (T.get && HK.tieFamLove && HK.tieFamLove(T.get(ctx, a, b)) && (ctx.pair(a, b).couple || (ctx.R(a, b).att > 40 && ctx.R(b, a).att > 30))) return 'crushA';
       if (T.from(ctx, a, b, 'sibprot') && T.has(ctx, a, b, 'sibprot').type === 'sibprot') return 'protA';
       if (T.from(ctx, b, a, 'sibprot') && T.has(ctx, a, b, 'sibprot').type === 'sibprot') return 'protB';
-      if (T.has(ctx, a, b, 'sibclose')) return 'sibclose';
+      if (T.has(ctx, a, b, 'sibclose') || T.has(ctx, a, b, 'twin')) return 'sibclose';
       if (T.from(ctx, a, b, 'teacher')) return 'teacherA';
       if (T.from(ctx, b, a, 'teacher')) return 'teacherB';
       if (T.from(ctx, a, b, 'mentor')) return 'mentorA';

@@ -19,26 +19,29 @@
 <title>箱庭シミュレーター</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <script>
-/* 表示の切り替え（色の量 data-palette：mono 藍のみ／chars キャラ色／full フル、白黒 data-theme：auto 端末に合わせる／light／gray／dark。ヘッダーの丸を三分割したボタン（白・グレー・黒。選んでいる区画の下に印、自動は「A」）で 自動→白→グレー→黒 と巡る）。見た目だけで結果には影響しない。鍵：hakoniwa-z:palette・hakoniwa-z:theme（描く前に付けて、ちらつかないように） */
+/* 表示の切り替え（色の量 data-palette：mono 単色／chars キャラ色／full フル、白黒 data-theme：auto 端末に合わせる／light／gray／dark。ヘッダーの丸を三分割したボタン（白・グレー・黒。選んでいる区画の下に印、自動は「A」）で 自動→白→グレー→黒 と巡る）。見た目だけで結果には影響しない。鍵：hakoniwa-z:palette・hakoniwa-z:theme（描く前に付けて、ちらつかないように）。
+   色味 data-scheme（2026-11-02 担当UD）：std 標準（いまの配色。属性を付けない）／blue ブルー（前の藍の単色。:root[data-scheme="blue"] が --ui-* を藍と紙に差し替える）。「表示」のメニューの data-scm で選ぶ。鍵：hakoniwa-z:scheme */
 (function () {
-  var P = 'hakoniwa-z:', R = document.documentElement, PAL = ['mono', 'chars', 'full'], THM = ['auto', 'light', 'gray', 'dark'];
+  var P = 'hakoniwa-z:', R = document.documentElement, PAL = ['mono', 'chars', 'full'], THM = ['auto', 'light', 'gray', 'dark'], SCM = ['std', 'blue'];
   function get(k, ok, d) { try { var v = window.localStorage.getItem(P + k); return ok.indexOf(v) >= 0 ? v : d; } catch (e) { return d; } }
   function put(k, v) { try { window.localStorage.setItem(P + k, v); } catch (e) { /* 保存できない環境では、このページを開いているあいだだけ */ } }
-  var pal = get('palette', PAL, 'full'), thm = get('theme', THM, 'auto');
+  var pal = get('palette', PAL, 'full'), thm = get('theme', THM, 'auto'), scm = get('scheme', SCM, 'std');
   function apply() {
     R.setAttribute('data-palette', pal);
     if (thm === 'auto') R.removeAttribute('data-theme'); else R.setAttribute('data-theme', thm);
-    var bs = document.querySelectorAll('[data-pal],[data-thm]');
-    for (var i = 0; i < bs.length; i++) { var b = bs[i], on = b.hasAttribute('data-pal') ? b.getAttribute('data-pal') === pal : b.getAttribute('data-thm') === thm; b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+    if (scm === 'blue') R.setAttribute('data-scheme', 'blue'); else R.removeAttribute('data-scheme');
+    var bs = document.querySelectorAll('[data-pal],[data-thm],[data-scm]');
+    for (var i = 0; i < bs.length; i++) { var b = bs[i], on = b.hasAttribute('data-pal') ? b.getAttribute('data-pal') === pal : b.hasAttribute('data-scm') ? b.getAttribute('data-scm') === scm : b.getAttribute('data-thm') === thm; b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
     var T = { auto: '自動（端末に合わせる）', light: '白', gray: 'グレー', dark: '黒' }, tb = document.querySelectorAll('[data-thmcycle]');
     for (var j = 0; j < tb.length; j++) { tb[j].title = '白／グレー／黒：' + T[thm] + '。押すと 自動→白→グレー→黒 の順に切り替え'; tb[j].setAttribute('aria-label', '白／グレー／黒の切り替え（いま：' + T[thm] + '）'); tb[j].setAttribute('data-now', thm); }
   }
   apply();
   document.addEventListener('DOMContentLoaded', apply);
   document.addEventListener('click', function (ev) {
-    var b = ev.target && ev.target.closest && ev.target.closest('[data-pal],[data-thm],[data-thmcycle]');
+    var b = ev.target && ev.target.closest && ev.target.closest('[data-pal],[data-thm],[data-thmcycle],[data-scm]');
     if (!b) return;
-    if (b.hasAttribute('data-pal')) { pal = b.getAttribute('data-pal'); put('palette', pal); } else { thm = b.hasAttribute('data-thmcycle') ? THM[(THM.indexOf(thm) + 1) % THM.length] : b.getAttribute('data-thm'); put('theme', thm); }
+    if (b.hasAttribute('data-scm')) { scm = SCM.indexOf(b.getAttribute('data-scm')) >= 0 ? b.getAttribute('data-scm') : 'std'; put('scheme', scm); }
+    else if (b.hasAttribute('data-pal')) { pal = b.getAttribute('data-pal'); put('palette', pal); } else { thm = b.hasAttribute('data-thmcycle') ? THM[(THM.indexOf(thm) + 1) % THM.length] : b.getAttribute('data-thm'); put('theme', thm); }
     apply();
     /* 押した直後 1.2 秒だけ、ボタンの下に今の白黒を小さな札で出す（スマホはホバーの title が出ないため。CSS は 担当HY の節の .thmbtn[data-flash]） */
     if (b.hasAttribute('data-thmcycle')) { b.setAttribute('data-flash', { auto: '自動', light: '白', gray: 'グレー', dark: '黒' }[thm]); clearTimeout(b._flash); b._flash = setTimeout(function () { b.removeAttribute('data-flash'); }, 1200); }
@@ -53,12 +56,16 @@
     if (fnt === 'mincho') R.setAttribute('data-font', 'mincho'); else R.removeAttribute('data-font');
     var bs = document.querySelectorAll('[data-fntcycle]');
     for (var i = 0; i < bs.length; i++) { bs[i].title = '書体：明朝体／ゴシック（いま：' + NAME[fnt] + '）。押すと' + (fnt === 'mincho' ? 'ゴシック' : '明朝体') + 'に切り替え'; bs[i].setAttribute('aria-label', '書体の切り替え（いま：' + NAME[fnt] + '）'); bs[i].setAttribute('data-now', fnt); }
+    /* 「表示」のメニューの書体の切り替え（data-fnt。2026-11-01 担当UA） */
+    var fs = document.querySelectorAll('[data-fnt]');
+    for (var j = 0; j < fs.length; j++) fs[j].setAttribute('aria-pressed', fs[j].getAttribute('data-fnt') === fnt ? 'true' : 'false');
   }
   apply();
   document.addEventListener('DOMContentLoaded', apply);
   document.addEventListener('click', function (ev) {
-    var b = ev.target && ev.target.closest && ev.target.closest('[data-fntcycle]');
+    var b = ev.target && ev.target.closest && ev.target.closest('[data-fntcycle],[data-fnt]');
     if (!b) return;
+    if (b.hasAttribute('data-fnt')) { fnt = b.getAttribute('data-fnt') === 'mincho' ? 'mincho' : 'gothic'; try { window.localStorage.setItem(K, fnt); } catch (e) { /* 同下 */ } apply(); return; }
     fnt = fnt === 'mincho' ? 'gothic' : 'mincho';
     try { window.localStorage.setItem(K, fnt); } catch (e) { /* 保存できない環境では、このページを開いているあいだだけ */ }
     apply();
@@ -69,7 +76,7 @@
 </script>
 <style>
 /* 一色＋白のミニマル UI（2026-10-27）：UI の色は藍（--ai）一色と紙（--paper）。文字＝藍 100%、補助＝68%、罫線＝14%、面＝4〜9%。
-   黒版は藍と紙と比率を差し替えるだけ。「色の量」（html の data-palette：mono 藍のみ／chars キャラ色／full フル）で、
+   黒版は藍と紙と比率を差し替えるだけ。「色の量」（html の data-palette：mono 単色／chars キャラ色／full フル）で、
    住人のイメカラ・関係・重要な出来事の色を出すかを切り替える（どの段階でも、関係は塗り・輪郭・破線でも見分けられる）。
    ※ --c は住人のイメカラ（.av などに JS が付ける）に使っているので、藍は --ai と呼ぶ */
 :root {
@@ -84,11 +91,13 @@
   --sand: var(--bg1); --sand-line: var(--line2); --tray: var(--ai);
   --warn: var(--ai); --warn-line: var(--line2); --warn-ink: var(--ai); --odd: var(--ai); --none: var(--muted);
   --hot: #D7263D;
-  /* 関係・出来事の色（「フル」のとき。藍のみ・キャラ色では藍に落とす） */
+  /* 関係・出来事の色（「フル」のとき。単色・キャラ色では藍に落とす） */
   --love: #B83F66; --pine: #C5698B; --night: #9550AD; --obsess: #6F48A8; --enemy: #B0442F;
   --kill: #4B1F1F; --partner: #2C7D61; --friend: #3F7F8B; --guard: #4A5A9C;
   /* R-18 は色の面を使わず、枠線とモノスペースのタグで示す */
   --adult-bg: var(--paper); --adult-line: var(--line2); --adult-tag: var(--ai); --adult-tag-ink: var(--paper);
+  /* R18版にしかない箱庭のカード（.scen.r18only）：成人向けのピンク（2026-10-31 利用者の指示） */
+  --r18only-bg: #FDF1F5; --r18only-line: #E9A9C0;
   /* 派閥の色（view-map.js） */
   --fc0: #e8590c; --fc1: #1c7ed6; --fc2: #2b8a3e; --fc3: #ae3ec9; --fc4: #c92a2a; --fc5: #0c8599;
   --p0: #c0392b; --p1: #2471a3; --p2: #1e8449; --p3: #9a6f00; --p4: #7d3c98; --p5: #b0498a;
@@ -103,6 +112,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"], [data-theme="gray"]) {
     --ai: #BAC4DA; --paper: #111217;   /* 担当JG（2026-10-28）：黒版のまぶしさを抑える（前は #C9D4EC／#0A0B0F、本文 13.2:1 → 10.7:1） */
+    --r18only-bg: #2A1820; --r18only-line: #6E3A4E;
     --k-muted2: 78%; --k-muted: 72%; --k-mid: 68%; --k-line2: 32%; --k-line: 17%; --k-soft: 12%; --k-bg1: 5%;
     --hot: #FF5C7A;
     --love: #EC7A9C; --pine: #E39AB5; --night: #C597DE; --obsess: #A98BE0; --enemy: #E57A62;
@@ -116,6 +126,7 @@
 }
 :root[data-theme="dark"] {
   --ai: #BAC4DA; --paper: #111217;   /* 担当JG（2026-10-28）：黒版のまぶしさを抑える（前は #C9D4EC／#0A0B0F、本文 13.2:1 → 10.7:1） */
+  --r18only-bg: #2A1820; --r18only-line: #6E3A4E;
   --k-muted2: 78%; --k-muted: 72%; --k-mid: 68%; --k-line2: 32%; --k-line: 17%; --k-soft: 12%; --k-bg1: 5%;
   --hot: #FF5C7A;
   --love: #EC7A9C; --pine: #E39AB5; --night: #C597DE; --obsess: #A98BE0; --enemy: #E57A62;
@@ -126,13 +137,83 @@
   --sel-arrow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23BAC4DA' stroke-width='1.5'/></svg>");
   color-scheme: dark;
 }
-/* グレー（data-theme="gray"）：端末が暗い設定でも「自動」の黒にしない（上の :not(…, [data-theme="gray"])。:not に並べて書くのは、詳しさを上げて「藍のみ」の規則に勝たないように）。以前の版に近い落ち着いたグレーの紙。文字は藍のまま、面・罫線は紙に藍を混ぜて少し暗いグレー。まぶしさを抑える（本文・補助の文字は 4.5:1 以上） */
+/* グレー（data-theme="gray"）：端末が暗い設定でも「自動」の黒にしない（上の :not(…, [data-theme="gray"])。:not に並べて書くのは、詳しさを上げて「単色」の規則に勝たないように）。以前の版に近い落ち着いたグレーの紙。文字は藍のまま、面・罫線は紙に藍を混ぜて少し暗いグレー。まぶしさを抑える（本文・補助の文字は 4.5:1 以上） */
 :root[data-theme="gray"] {
   --paper: #E9EBEE;
+  --r18only-bg: #F3E3E9; --r18only-line: #D59DB3;
   --k-muted2: 80%; --k-muted: 74%; --k-mid: 72%; --k-line2: 30%; --k-line: 16%; --k-soft: 9%; --k-bg1: 4%;
   --hot: #C11F38;
   color-scheme: light;
 }
+/* ── 担当UA（2026-11-01）：参考デザイン（docs/reports/2026-11-01/ui-redesign.md の見本 01〜14）の土台の変数 --ui-*。
+   ページの地・カード・文字・罫線・薄い地・強調（リンク・選択）・主ボタン（濃紺に白字）・角丸・影。白（既定）・グレー・黒（明るさを反転）の 3 通りを持つ。
+   「単色」のときは強調の青も文字の色に落とす（キャラ色・フルは青のまま）。既存の --ai・--paper・--line などはそのまま（既存の部品はそちらを使う） */
+:root {
+  --ui-page: #f4f5f7; --ui-card: #ffffff; --ui-input: #ffffff; --ui-ink: #17202b; --ui-muted: #5b6672; --ui-muted2: #4a5562;
+  --ui-line: #dde2e7; --ui-line2: #cfd6dd; --ui-line3: #aab4be; --ui-soft: #f1f3f5; --ui-soft2: #edf0f2; --ui-head: #f8f9fa; --ui-seg: #e6e9ed; --ui-nav: #f8f9fa;
+  --ui-accent: #1d4f7a; --ui-accent2: #2a6f9e; --ui-accent-soft: #eaf1f7; --ui-primary: #1b2a3d; --ui-primary-ink: #ffffff; --ui-primary-hover: #2c3e55;
+  --ui-info-bg: #eaf1f7; --ui-info-line: #c7d8e8; --ui-info-ink: #1f3a52; --ui-info-btn: #9fbad3;
+  --ui-danger: #b42318; --ui-ok: #2e7d4f;
+  /* 強調の色（2026-11-02 担当UI）：主な操作（箱庭を動かす・別の運命で動かす・選んでいる箱庭の枠）だけ。紺と系統を変えた明るい朱色に濃い文字（6.1:1）。枠・字は --ui-hot-line */
+  --ui-hot: #f26b1d; --ui-hot-ink: #1a1208; --ui-hot-hover: #e05d12; --ui-hot-soft: #fff1e6; --ui-hot-line: #c2410c;
+  --ui-radius: 12px; --ui-radius-l: 14px; --ui-radius-s: 8px; --ui-radius-xs: 6px;
+  --ui-shadow: 0 1px 2px rgba(0, 0, 0, .12); --ui-shadow-dlg: 0 8px 24px rgba(23, 32, 43, .16); --ui-shadow-win: 0 20px 60px rgba(0, 0, 0, .3); --ui-scrim: rgba(52, 60, 70, .62);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"], [data-theme="gray"]) {
+    --ui-page: #0c0d10; --ui-card: #16181d; --ui-input: #111217; --ui-ink: #e3e8f0; --ui-muted: #9aa4b3; --ui-muted2: #b3bcc9;
+    --ui-line: #2b2f37; --ui-line2: #3b404a; --ui-line3: #59606c; --ui-soft: #1e2127; --ui-soft2: #22252c; --ui-head: #1a1c22; --ui-seg: #23262d; --ui-nav: #131519;
+    --ui-accent: #8ab4dc; --ui-accent2: #9cc3e6; --ui-accent-soft: #1a2633; --ui-primary: #c6d2e6; --ui-primary-ink: #111217; --ui-primary-hover: #dbe4f2;
+    --ui-info-bg: #16212c; --ui-info-line: #2c3f52; --ui-info-ink: #c3d6e8; --ui-info-btn: #3d5670;
+    --ui-danger: #ff8a7a; --ui-ok: #6cc9a5;
+    --ui-hot: #ff8a3d; --ui-hot-ink: #16181d; --ui-hot-hover: #ffa060; --ui-hot-soft: #3a2416; --ui-hot-line: #ff9a55;
+    --ui-shadow: 0 1px 2px rgba(0, 0, 0, .5); --ui-shadow-dlg: 0 8px 24px rgba(0, 0, 0, .5); --ui-shadow-win: 0 20px 60px rgba(0, 0, 0, .6); --ui-scrim: rgba(0, 0, 0, .66);
+  }
+}
+:root[data-theme="dark"] {
+  --ui-page: #0c0d10; --ui-card: #16181d; --ui-input: #111217; --ui-ink: #e3e8f0; --ui-muted: #9aa4b3; --ui-muted2: #b3bcc9;
+  --ui-line: #2b2f37; --ui-line2: #3b404a; --ui-line3: #59606c; --ui-soft: #1e2127; --ui-soft2: #22252c; --ui-head: #1a1c22; --ui-seg: #23262d; --ui-nav: #131519;
+  --ui-accent: #8ab4dc; --ui-accent2: #9cc3e6; --ui-accent-soft: #1a2633; --ui-primary: #c6d2e6; --ui-primary-ink: #111217; --ui-primary-hover: #dbe4f2;
+  --ui-info-bg: #16212c; --ui-info-line: #2c3f52; --ui-info-ink: #c3d6e8; --ui-info-btn: #3d5670;
+  --ui-danger: #ff8a7a; --ui-ok: #6cc9a5;
+  --ui-hot: #ff8a3d; --ui-hot-ink: #16181d; --ui-hot-hover: #ffa060; --ui-hot-soft: #3a2416; --ui-hot-line: #ff9a55;
+  --ui-shadow: 0 1px 2px rgba(0, 0, 0, .5); --ui-shadow-dlg: 0 8px 24px rgba(0, 0, 0, .5); --ui-shadow-win: 0 20px 60px rgba(0, 0, 0, .6); --ui-scrim: rgba(0, 0, 0, .66);
+}
+:root[data-theme="gray"] {
+  --ui-page: #dcdfe3; --ui-card: #e9ebee; --ui-input: #f3f4f6; --ui-ink: #17202b; --ui-muted: #4b5562; --ui-muted2: #3e4854;
+  --ui-line: #c6ccd3; --ui-line2: #b4bbc4; --ui-line3: #8f98a3; --ui-soft: #e0e3e7; --ui-soft2: #dde1e5; --ui-head: #e2e5e9; --ui-seg: #d0d5db; --ui-nav: #e2e5e9;
+  --ui-accent: #1d4f7a; --ui-accent2: #245f89; --ui-accent-soft: #dbe5ee; --ui-primary: #1b2a3d; --ui-primary-ink: #ffffff; --ui-primary-hover: #2c3e55;
+  --ui-info-bg: #d9e4ee; --ui-info-line: #b3c7da; --ui-info-ink: #1f3a52; --ui-info-btn: #8eaac4;
+  --ui-hot-soft: #f6dfcd; --ui-hot-line: #b23c0b;
+}
+/* ── 色味「ブルー」（data-scheme="blue"。2026-11-02 担当UD、利用者の依頼「前の藍色単色デザインもブルーとしてテーマの候補に」）：
+   2026-11-01 より前の「一色＋白」の見た目を、新しい配置（カード・段階ナビ・窓）のまま --ui-* の差し替えで出す。
+   地もカードも紙（--paper）、文字＝藍 100%（--ai）、補助＝68%（--muted）・76%（--muted2）、濃い線＝40%、ボタン枠＝26%（--line2）、罫線＝14%（--line）、面＝4〜9%。
+   主ボタン・選んだ札・段階ナビの丸は藍の塗りに紙の文字。影は使わず線で分ける。藍と紙は明るさ（白・グレー・黒）の変数をそのまま使うので、
+   黒は前の黒版（藍 #BAC4DA・地 #111217）、グレーは前のグレーの紙（#E9EBEE）になる。「色の量」（data-palette）はそのまま効く。
+   文字と地の比：本文 8.5:1 以上、補助 4.3:1 以上（白・グレー・黒、面 12% まで） */
+:root[data-scheme="blue"] {
+  --ui-page: var(--paper); --ui-card: var(--paper); --ui-input: var(--paper); --ui-ink: var(--ai); --ui-muted: var(--muted); --ui-muted2: var(--muted2);
+  --ui-line: var(--line); --ui-line2: var(--line2); --ui-line3: var(--mid); --ui-soft: var(--bg1); --ui-soft2: var(--accent-soft); --ui-head: var(--bg1); --ui-seg: var(--bg1); --ui-nav: var(--bg1);
+  --ui-accent: var(--ai); --ui-accent2: var(--ai); --ui-accent-soft: var(--accent-soft); --ui-primary: var(--ai); --ui-primary-ink: var(--paper); --ui-primary-hover: var(--muted2);
+  --ui-info-bg: var(--bg1); --ui-info-line: var(--line2); --ui-info-ink: var(--ai); --ui-info-btn: var(--line2);
+  --ui-shadow: none;
+  --ui-hot: #f2743a; --ui-hot-hover: #e4622a; --ui-hot-soft: #fdeee4; --ui-hot-line: #b8400e;
+}
+:root[data-scheme="blue"][data-theme="dark"] { --ui-hot: #ff9a5c; --ui-hot-ink: #111217; --ui-hot-hover: #ffb07e; --ui-hot-soft: #33221a; --ui-hot-line: #ffa36a; }
+@media (prefers-color-scheme: dark) { :root[data-scheme="blue"]:not([data-theme="light"], [data-theme="gray"]) { --ui-hot: #ff9a5c; --ui-hot-ink: #111217; --ui-hot-hover: #ffb07e; --ui-hot-soft: #33221a; --ui-hot-line: #ffa36a; } }
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+  :root[data-scheme="blue"] { --ui-line3: color-mix(in srgb, var(--ai) 40%, var(--paper)); --ui-soft: color-mix(in srgb, var(--ai) 6%, var(--paper)); --ui-seg: color-mix(in srgb, var(--ai) 6%, var(--paper)); --ui-info-btn: color-mix(in srgb, var(--ai) 40%, var(--paper)); }
+}
+/* ブルーの部品：切替（セグメント・住人タブの節・箱庭の設定の切替）は前と同じ「藍の線で囲み、選んだものを藍の塗り」。住人の設定の目次は左に藍の線 */
+:root[data-scheme="blue"] .uiseg, :root[data-scheme="blue"] .uitabs { background: var(--paper); box-shadow: inset 0 0 0 1px var(--line2); }
+@media (min-width: 601px) { :root[data-scheme="blue"] #view-box .bxtl { background: var(--paper); box-shadow: inset 0 0 0 1px var(--line2); } }   /* スマホ幅の箱庭の切替は札を横に並べる形（ui-box-style.js）なので囲まない */
+:root[data-scheme="blue"] .uiseg button[aria-pressed="true"], :root[data-scheme="blue"] .uitabs [role=tab][aria-selected="true"], :root[data-scheme="blue"] #view-box .bxtl button[aria-current="true"] { background: var(--ai); color: var(--paper); box-shadow: none; }
+:root[data-scheme="blue"] .uitabs [role=tab][aria-selected="true"] .uitn, :root[data-scheme="blue"] #view-box .bxtl button[aria-current="true"] .bxtn { color: inherit; opacity: .85; }
+:root[data-scheme="blue"] #view-box .bxtl button[aria-current="true"] .bxdot { background: var(--paper); }
+:root[data-scheme="blue"] .uiseg button:hover:not([aria-pressed="true"]) { background: var(--accent-soft); }
+:root[data-scheme="blue"] .gearov .geartoc button[aria-current="true"] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--ai); }
+:root[data-palette="mono"] { --ui-accent: var(--ui-ink); --ui-accent2: var(--ui-ink); --ui-accent-soft: var(--ui-soft); --ui-info-bg: var(--ui-soft); --ui-info-line: var(--ui-line2); --ui-info-ink: var(--ui-ink); --ui-info-btn: var(--ui-line3); }
 /* 藍と紙から段階の色を作る（対応していないブラウザでは上の同じ色のまま。黒版の同じ色は下の @supports not） */
 @supports (color: color-mix(in srgb, red 50%, blue)) {
   :root {
@@ -147,7 +228,7 @@
   :root[data-theme="dark"] { --muted2: #959DAF; --muted: #8B92A3; --mid: #848B9C; --line2: #474B55; --line: #2E3038; --accent-soft: #25272E; --bg1: #191B21; }
   :root[data-theme="gray"] { --muted2: #404B5F; --muted: #4D576A; --mid: #515B6D; --line2: #AAAFB8; --line: #C7CBD1; --accent-soft: #D6D9DE; --bg1: #E1E3E7; }
 }
-/* 色の量：藍のみ（イメカラ・関係・出来事も藍）／キャラ色（イメカラだけ） */
+/* 色の量：単色（イメカラ・関係・出来事も藍）／キャラ色（イメカラだけ） */
 :root[data-palette="mono"], :root[data-palette="chars"] {
   --love: var(--ai); --pine: var(--ai); --night: var(--ai); --obsess: var(--ai); --enemy: var(--muted2);
   --kill: var(--ai); --partner: var(--mid); --friend: var(--ai); --guard: var(--ai);
@@ -476,7 +557,7 @@ table.per td:nth-child(2) b { white-space: nowrap; overflow: hidden; text-overfl
 .runbar .btn:focus-visible { outline-color: var(--paper); }
 .runbar input { width: 110px; }
 /* ── 担当IA（2026-10-28）：参加表の縮尺と表の形（ui-perzoom.js）・PC の「箱庭を動かす」の浮いたボタン ──
-   参加表の上の「表示：縮尺 [−] 100% [＋] 全体を表示｜表の形：積む／並べる」。押している札は藍の塗り（藍のみでも塗りと輪郭で分かる）。
+   参加表の上の「表示：縮尺 [−] 100% [＋] 全体を表示｜表の形：積む／並べる」。押している札は藍の塗り（単色でも塗りと輪郭で分かる）。
    縮尺は表（table.per）だけに zoom（--pz）。zoom の無いブラウザは transform（.pz-tf。余白は JS が詰める）。
    スマホ（〜760px・指で触る画面）は、触った・選んだ入力欄（.pz-focus。ui-perzoom.js）だけ文字を 16px ÷ 縮尺にして、実際の大きさを 16px 以上に（iOS の自動ズームを避ける。
    ほかの欄は表といっしょに縮むので、全体を表示しても縮図のまま一覧できる）。
@@ -523,7 +604,19 @@ html body #view-box .perzoom[data-form="stack"] + .tblhint, html body #view-box 
 @media print { .runfab, .perzoom { display: none !important; } }
 
 /* 結果 */
-.resulthead { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+/* 結果の見出し（view.js・solo-story-kit.js・dungeon-view.js の .resulthead）：題名・メタ（シード・経過・結末の一行）・箱庭の注記を左、ボタンの行（別の運命で動かす／コピー／条件を変える）を右上に置く。
+   ボタンの行の位置を結末の文の長さに左右させない（「別の運命で動かす」を連打しても同じ場所に留まり、マウスを動かさずに次も押せるように。
+   以前は flex の折り返しで、メタが長い回だけボタンの行が下の段の左端へ飛び、スマホ幅ではメタの行数の分だけ上下にずれていた）。
+   左の div は display: contents にして、題名・メタ・注記を格子に直接並べる。スマホ幅（760px 以下）は 1 列で、題名→ボタンの行→メタ・注記の順（ボタンより上は毎回同じ題名だけ） */
+.resulthead { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: start; }
+.resulthead > div:first-child { display: contents; }
+.resulthead > div:first-child > * { grid-column: 1; min-width: 0; }
+.resulthead > .spacer { display: none; }
+.resulthead > .row { grid-column: 2; grid-row: 1 / span 3; justify-content: flex-end; }
+@media (max-width: 760px) {
+  .resulthead { grid-template-columns: minmax(0, 1fr); }
+  .resulthead > .row { grid-column: 1; grid-row: 2; justify-content: flex-start; margin: 10px 0 8px; }
+}
 .resulthead h2 { font-family: var(--f-body); font-size: 28px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.25; margin: 0; }
 .resulthead .meta { color: var(--muted); font-size: 12.5px; font-family: var(--f-num); }
 .trayfig { margin: 14px 0 0; }
@@ -546,7 +639,7 @@ html body #view-box .perzoom[data-form="stack"] + .tblhint, html body #view-box 
 .pcard.sur { border-color: var(--odd); border-style: dashed; }
 .pcard .hd { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pcard .nm { font-weight: 700; }
-/* 関係ラベル：色相だけでなく、塗り・輪郭・破線で区別（色の量が「藍のみ／キャラ色」なら色は藍に落ちる） */
+/* 関係ラベル：色相だけでなく、塗り・輪郭・破線で区別（色の量が「単色／キャラ色」なら色は藍に落ちる） */
 .lbl { display: inline-flex; align-items: center; gap: 5px; min-height: 22px; padding: 0 9px; border-radius: 3px; border: 1px solid transparent; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.4; white-space: nowrap; color: var(--paper); }
 .lbl.love { background: var(--love); }
 .lbl.obsess { background: var(--obsess); box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--obsess); margin: 0 3px; }
@@ -606,7 +699,7 @@ html body #view-box .perzoom[data-form="stack"] + .tblhint, html body #view-box 
 .fgroup.lone { border-style: dashed; color: var(--muted); }
 .fhist { list-style: none; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px dashed var(--line); display: grid; gap: 4px; font-size: 13px; }
 .fhist .st { font-family: var(--f-num); font-size: 11px; color: var(--muted2); display: inline-block; min-width: 72px; }
-/* ── 担当HX（2026-10-28）：関係図の時点のチップ（最終／開始時／転機）と、派閥の見分け（番号ごとの形の印・藍のみ／キャラ色では線の形） ── */
+/* ── 担当HX（2026-10-28）：関係図の時点のチップ（最終／開始時／転機）と、派閥の見分け（番号ごとの形の印・単色／キャラ色では線の形） ── */
 /* 関係図の見出しの右に時点のチップ（view-map.js の HK.MapView.atBar）。文字は data-l から出す（見出しの文字＝折りたたみの鍵を「関係図」のまま保つため。読み上げは aria-label） */
 h2.sec.mapsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
 .mapat { margin-left: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: var(--f-body); letter-spacing: 0; }
@@ -623,7 +716,7 @@ h2.sec.mapsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10
 .fgroup.fg { border-color: var(--fc); }
 .kcell { position: relative; }
 .kcell .kfm { position: absolute; left: 3px; top: 3px; line-height: 0; font-style: normal; }
-/* 藍のみ・キャラ色（派閥の色が藍に落ちる）：囲み・枠・縁を番号ごとの線の形と塗りの濃さで描き分ける */
+/* 単色・キャラ色（派閥の色が藍に落ちる）：囲み・枠・縁を番号ごとの線の形と塗りの濃さで描き分ける */
 :root[data-palette="mono"] .fhull, :root[data-palette="chars"] .fhull { stroke-width: 1.8; stroke-opacity: .85; stroke-dasharray: none; fill: color-mix(in srgb, var(--ai) 9%, transparent); }
 :root[data-palette="mono"] .fhull.fp1, :root[data-palette="chars"] .fhull.fp1 { stroke-dasharray: 6 3; fill: color-mix(in srgb, var(--ai) 5%, transparent); }
 :root[data-palette="mono"] .fhull.fp2, :root[data-palette="chars"] .fhull.fp2 { stroke-dasharray: 0.1 4; stroke-linecap: round; stroke-width: 2.4; fill: color-mix(in srgb, var(--ai) 13%, transparent); }
@@ -664,7 +757,7 @@ h2.sec.mapsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10
 /* 時系列（仕様 6）：左 88px にターン番号（Mono 14px／600）と局面名（11px 藍 68%）、右に1本の細いレール（左罫線）と出来事ごとの 7px の点。
    通常の出来事は藍の単色、種類の札（.c）は Mono 10px の藍 26% の枠だけで色を付けない。会話は吹き出しにせず「」の引用（.q 500）と小さなアバター。
    転機・情事・死亡だけ --hot：view.js が .hot を付ける（ひとり用の記録 #dgtl・#sttl は 転機 .key・絶頂 .climax・死 .death）。
-   点は 11px の赤丸＋薄い赤の輪、ターン番号・札（赤の塗り＋紙の文字）・死亡の † を赤に。本文は藍の 700（赤くしない。名前はふだんの色のまま）。補足（.why）は藍 68% のまま。「藍のみ」では --hot が藍 */
+   点は 11px の赤丸＋薄い赤の輪、ターン番号・札（赤の塗り＋紙の文字）・死亡の † を赤に。本文は藍の 700（赤くしない。名前はふだんの色のまま）。補足（.why）は藍 68% のまま。「単色」では --hot が藍 */
 .tlbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
 .tlbar .chip .hotdot { margin-right: 2px; }
 .tlsep { flex: none; width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
@@ -703,7 +796,7 @@ h2.sec .hotleg { display: inline-flex; align-items: center; gap: 6px; margin-lef
 /* ── 担当HZ（2026-10-28）：重要な出来事の細い枠と、フルでは種類ごとの薄い背景 ── */
 /* view.js（evLi・HK.View.hotKindSolo）が重要な出来事の li に data-hot（death 死亡／lewd 情事／turn 転機／goal 目標／trouble トラブル）を付ける。
    どの色の量でも細い枠（角丸 4px）で囲む。左の点の位置は変えない（枠の分だけ左へ出すので、点は --hfx と左の線の太さ --hbl で戻す）。
-   藍のみ・キャラ色：色は使わず線の種類で分ける（死亡＝藍の実線 2px／転機＝藍の実線 1px／情事＝破線／目標＝二重線／トラブル＝点線）。
+   単色・キャラ色：色は使わず線の種類で分ける（死亡＝藍の実線 2px／転機＝藍の実線 1px／情事＝破線／目標＝二重線／トラブル＝点線）。
    フル：種類ごとの色（--hot-○○）を紙に混ぜた薄い背景と、左の縁 3px。本文は藍の太字のまま（白・グレー・黒で 4.5:1 以上）。印刷は背景を消してグレーの線の種類だけ */
 :root { --hot-death: #D7263D; --hot-lewd: #8E44AD; --hot-turn: #E8590C; --hot-goal: #D9A400; --hot-trouble: #0C8599; --hk-mix: 10%; --hk-leg: 28%; }
 :root[data-theme="gray"] { --hot-death: #C11F38; --hot-lewd: #7D3C98; --hot-turn: #C9500C; --hot-goal: #B8860B; --hot-trouble: #0B7285; --hk-mix: 14%; --hk-leg: 32%; }
@@ -724,7 +817,7 @@ h2.sec .hotleg { display: inline-flex; align-items: center; gap: 6px; margin-lef
 :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot]:is(.hot, #dgtl .key, #dgtl .climax, #dgtl .death, #sttl .key, #sttl .climax, #sttl .death)::before { left: calc(-1 * var(--rail) - 6px + var(--hfx) - var(--hbl)); top: 12px; }
 /* 出られない部屋の「条件達成」の左罫は、枠と重ならないように外す（枠の種類が目標を示す） */
 :is(#tl, #dgtl, #sttl, .tl) .ev.goal[data-hot] .evb { border-left: 0; padding-left: 0; }
-/* 藍のみ・キャラ色：線の種類 */
+/* 単色・キャラ色：線の種類 */
 :root:not([data-palette="full"]) :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="death"] { --hbl: 2px; border: 2px solid var(--ink); }
 :root:not([data-palette="full"]) :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="turn"] { border-color: var(--ink); }
 :root:not([data-palette="full"]) :is(#tl, #dgtl, #sttl, .tl) .stepblk ol > .ev[data-hot="lewd"] { border: 1px dashed var(--ink); }
@@ -824,7 +917,7 @@ h2.sec .hotleg { flex-wrap: wrap; gap: 4px 10px; }
 .support { margin: 12px 0 8px; }
 .ctbox { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; }
 
-/* キャラアイコン：イメカラ（--c）の輪と薄い面（16%）。画像があれば画像＋外の輪。「藍のみ」では --c が藍に落ちる */
+/* キャラアイコン：イメカラ（--c）の輪と薄い面（16%）。画像があれば画像＋外の輪。「単色」では --c が藍に落ちる */
 .av { --k: var(--c); display: inline-flex; align-items: center; justify-content: center; flex: none; border-radius: 50%; overflow: hidden; vertical-align: middle; position: relative;
   background: var(--paper); background: color-mix(in srgb, var(--k) 16%, var(--paper)); color: var(--k);
   box-shadow: inset 0 0 0 1.5px var(--k); font-weight: 700; line-height: 1; letter-spacing: 0; }
@@ -881,7 +974,9 @@ button:where(:not([class])):focus-visible { outline: 2px solid var(--ink); outli
 .scen .ftag:hover, .scen .ftag:focus-visible { border-color: var(--ink); color: var(--ink); outline: none; }
 .scen.adult { background: var(--adult-bg); border-color: var(--adult-line); }
 .scen.adult.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--bg1); }
-/* 箱庭カードの R18 の札：重要の赤（--hot。黒版は #FF5C7A、色の量「藍のみ」では藍に落ちる）。文字と細い枠を赤に */
+.scen.r18only { background: var(--r18only-bg); border-color: var(--r18only-line); }
+.scen.r18only.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--r18only-bg); }
+/* 箱庭カードの R18 の札：重要の赤（--hot。黒版は #FF5C7A、色の量「単色」では藍に落ちる）。文字と細い枠を赤に */
 .r18tag { display: inline-block; padding: 0 5px; margin-left: 2px; border: 1px solid var(--hot); border-radius: 2px; background: none; color: var(--hot); font-family: var(--f-num); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; line-height: 1.5; }
 .site-foot .updated { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
 .scen.r18link { color: inherit; text-decoration: none; border-style: dashed; cursor: default; }
@@ -1015,7 +1110,7 @@ details.zmap > summary:hover { background: var(--bg1); }
     --p6: #117a8b !important; --p7: #a04000 !important; --p8: #4a5a9c !important; --p9: #5d7a14 !important; --p10: #8e3b5b !important; --p11: #2e6f5a !important;
     color-scheme: light !important;
   }
-  /* 関係・派閥・重要の色は「フル」のときだけ明るい紙の色に戻す（藍のみ・キャラ色は上の規則が藍に落とす） */
+  /* 関係・派閥・重要の色は「フル」のときだけ明るい紙の色に戻す（単色・キャラ色は上の規則が藍に落とす） */
   :root:not([data-palette="mono"], [data-palette="chars"]) {
     --love: #B83F66; --pine: #C5698B; --night: #9550AD; --obsess: #6F48A8; --enemy: #B0442F;
     --kill: #4B1F1F; --partner: #2C7D61; --friend: #3F7F8B; --guard: #4A5A9C;
@@ -1060,6 +1155,419 @@ details.zmap > summary:hover { background: var(--bg1); }
   .ev .why { color: var(--muted2); }
   a { color: var(--ink); text-decoration: none; }
 }
+/* ══ 担当UA（2026-11-01）：参考デザインの土台（見本 01〜04。docs/reports/2026-11-01/ui-redesign.md）══
+   上の既存の規則は消さずに、ここで見た目だけを上書きする（クラスの名前・欄・data-* は変えない）。色は --ui-*（上の :root）。
+   ページの地は薄いグレー、カードは白、罫線は細く、ボタン・入力は角丸 8px、主ボタンは濃紺に白字、副ボタンは白地に罫線。 */
+:root { --r: 8px; --r-card: 12px; }
+body { background: var(--ui-page); color: var(--ui-ink); }
+body::before { background: var(--ui-card); }
+a { color: var(--ui-accent); }
+/* 共通の部品：ボタン（主・副・ghost・小・アイコン） */
+.btn { border-color: var(--ui-line2); background: var(--ui-card); color: var(--ui-ink); border-radius: var(--ui-radius-s); font-weight: 500; }
+.btn:hover { border-color: var(--ui-line3); background: var(--ui-soft); }
+.btn.primary { background: var(--ui-primary); border-color: var(--ui-primary); color: var(--ui-primary-ink); font-weight: 700; padding: 6px 20px; }
+.btn.primary:hover { background: var(--ui-primary-hover); border-color: var(--ui-primary-hover); }
+.btn.primary:disabled { background: var(--ui-soft2); border-color: var(--ui-soft2); color: var(--ui-muted); opacity: 1; }
+.btn.ghost { border-color: transparent; background: none; color: var(--ui-muted2); }
+.btn.ghost:hover { background: var(--ui-soft); color: var(--ui-ink); }
+.btn.small { border-radius: var(--ui-radius-s); }
+.btn svg { flex: none; }
+/* 入力欄 */
+textarea, input[type="text"], input[type="number"], input[type="search"], input[type="password"], select { background-color: var(--ui-input); color: var(--ui-ink); border-color: var(--ui-line2); border-radius: var(--ui-radius-s); }
+textarea:focus, input[type="text"]:focus, input[type="number"]:focus, input[type="search"]:focus, input[type="password"]:focus, select:focus { outline: 2px solid var(--ui-accent2); outline-offset: 0; border-color: var(--ui-accent2); }
+::placeholder { color: var(--ui-muted); }
+/* 札（chip）・セグメント（.uiseg） */
+.chip { border-color: var(--ui-line2); background: var(--ui-card); color: var(--ui-muted2); }
+button.chip:hover { border-color: var(--ui-line3); color: var(--ui-ink); }
+.chip[aria-pressed="true"] { background: var(--ui-primary); border-color: var(--ui-primary); color: var(--ui-primary-ink); }
+.uiseg { display: inline-flex; gap: 2px; padding: 3px; border: 0; border-radius: 10px; background: var(--ui-seg); overflow: visible; }
+.uiseg button { border: 0; border-radius: var(--ui-radius-s); background: none; color: var(--ui-muted2); min-height: 32px; padding: 0 12px; font-size: 13px; }
+.uiseg button:hover { background: none; color: var(--ui-ink); }
+.uiseg button[aria-pressed="true"] { background: var(--ui-card); color: var(--ui-ink); font-weight: 700; box-shadow: var(--ui-shadow); }
+.panel { background: var(--ui-card); border-color: var(--ui-line); border-radius: var(--ui-radius); }
+.toast { background: var(--ui-primary); color: var(--ui-primary-ink); border-radius: var(--ui-radius-s); box-shadow: var(--ui-shadow-dlg); }
+.tab:focus-visible, .btn:focus-visible, .chip:focus-visible, .chip-link:focus-visible { outline: 2px solid var(--ui-accent2); outline-offset: 2px; }
+/* 共通のカード・札・表（ほかの担当も使える部品。.uicard＝白いカード、.uibadge＝小さな札、.uitbl＝罫線の表） */
+.uicard { background: var(--ui-card); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
+.uibadge { display: inline-flex; align-items: center; padding: 1px 8px; border: 1px solid var(--ui-line2); border-radius: 10px; font-size: 12px; color: var(--ui-muted2); background: var(--ui-card); white-space: nowrap; }
+.uitbl { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--ui-card); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); overflow: hidden; }
+.uitbl th { background: var(--ui-head); color: var(--ui-muted); font-size: 12px; font-weight: 500; letter-spacing: .04em; text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--ui-line); }
+.uitbl td { padding: 10px 12px; border-bottom: 1px solid var(--ui-soft2); }
+.uitbl tr:last-child td { border-bottom: 0; }
+
+/* ── ヘッダー（見本 01）：白い帯に ロゴ・題名、右に「遊び方・注意事項・更新履歴」と「表示（色・明るさ・書体）▾」 ── */
+.wrap > .tabs { background: var(--ui-card); box-shadow: 0 0 0 100vmax var(--ui-card); clip-path: inset(0 -100vmax); }
+/* ヘッダーの白い帯は ::before で画面の幅いっぱいに（ヘッダー自体は切り抜かない：「表示」のメニューが下へはみ出せるように。工程タブより手前に重ねる） */
+.wrap > header.top { position: relative; z-index: 7; background: var(--ui-card); }
+.wrap > header.top::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--ui-card); box-shadow: 0 0 0 100vmax var(--ui-card); clip-path: inset(0 -100vmax); pointer-events: none; }
+.wrap > header.top { align-items: center; padding-block: 12px 4px; gap: 8px 12px; flex-wrap: nowrap; }
+.top .brand { min-width: 0; flex: 0 1 auto; }
+.brandrow { gap: 12px; }
+.brandrow .logo { width: 28px; height: 28px; color: var(--ui-ink); }
+.brand h1 { font-size: 18px; letter-spacing: .08em; color: var(--ui-ink); }
+.brand p { display: none; }
+.brandrow .r18mark { align-self: center; margin-left: 2px; border-color: var(--ui-line3); color: var(--ui-muted2); }
+.brand .agemode { display: none; }
+.wrap > header.top .brandlinks { margin: 0 0 0 auto; gap: 4px; flex-wrap: nowrap; }
+.brandlinks .chip-link { border: 0; background: none; min-height: 36px; padding: 0 10px; border-radius: var(--ui-radius-s); color: var(--ui-muted2); font-size: 13px; }
+.brandlinks .chip-link:hover { background: var(--ui-soft); color: var(--ui-ink); }
+.brandlinks #agemode-slot .agemode { margin: 0; flex-wrap: nowrap; }
+.brandlinks #agemode-slot .agemode .btn.small, .brandlinks #agemode-slot .agemode a.btn { min-height: 32px; border-radius: var(--ui-radius-s); padding: 0 10px; font-size: 12px; }
+.uidisp { position: relative; flex: none; margin-left: 6px; }
+.uidispbtn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid var(--ui-line2); border-radius: var(--ui-radius-s); background: var(--ui-card); color: var(--ui-ink); font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.uidispbtn:hover { background: var(--ui-soft); }
+.uidispbtn:focus-visible { outline: 2px solid var(--ui-accent2); outline-offset: 2px; }
+.uidispmenu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; width: 320px; max-width: calc(100vw - 24px); padding: 14px 16px; display: grid; gap: 12px; background: var(--ui-card); color: var(--ui-ink); border: 1px solid var(--ui-line2); border-radius: 10px; box-shadow: var(--ui-shadow-dlg); }
+.uidispmenu[hidden] { display: none; }
+.uidm-row { display: grid; gap: 6px; }
+.uidm-h { font-size: 12px; font-weight: 700; color: var(--ui-muted2); }
+.uidm-note { font-size: 11.5px; color: var(--ui-muted); line-height: 1.5; }
+.uidm-row .uiseg { width: 100%; }
+.uidm-row .uiseg button { flex: 1 1 0; padding: 0 6px; }
+.uidm-row select { width: 100%; }
+/* 工程タブ（段階ナビ）：番号の丸＋名前＋副題（住人の人数・選んだ箱庭の名前。ui-filter.js の .tabn）。右端にセーブ */
+.wrap > .tabs { gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--ui-line); padding: 0; }
+.tab { padding: 10px 14px 9px; border-bottom: 3px solid transparent; color: var(--ui-muted2); gap: 0; }
+.tab:hover { color: var(--ui-ink); }
+.tab b { width: 22px; height: 22px; font-size: 12px; border-color: var(--ui-line3); color: var(--ui-muted2); margin-right: 8px; }
+.tab[aria-selected="true"] { color: var(--ui-ink); border-bottom-color: var(--ui-primary); }
+.tab[aria-selected="true"]:not(.tab-saves) b { background: var(--ui-primary); border-color: var(--ui-primary); color: var(--ui-primary-ink); }
+.tab:not(.tab-saves):has(~ .tab:not(.tab-saves)[aria-selected="true"]) b { background: var(--ui-soft2); border-color: transparent; }
+.tab .tabn { margin-left: 8px; font-size: 12px; font-weight: 400; color: var(--ui-muted); max-width: 12em; overflow: hidden; text-overflow: ellipsis; }
+.tab-saves b { border: 0; width: auto; }
+@media (max-width: 760px) { .wrap > header.top .brandlinks .chip-link { padding: 0 6px; font-size: 12px; } .uidispbtn .uidl { display: none; } }
+/* スマホ（見本 03）：題名と表示のボタンを 1 行、案内のリンクはその下に小さく。工程タブは「1 住人／2 箱庭／3 結末」の 3 つ＋セーブのアイコン（下線で選択を示す） */
+@media (max-width: 600px) {
+  .wrap > header.top { flex-wrap: wrap; padding-block: 10px 2px; }
+  .brand h1 { font-size: 16px; letter-spacing: .04em; }
+  .wrap > header.top .brandlinks { order: 3; flex: 1 1 100%; margin: 0; flex-wrap: wrap; justify-content: flex-start; }
+  .wrap > header.top .brandlinks .uidisp { margin-left: auto; }
+  .wrap > header.top .brandlinks .chip-link { min-height: 32px; }
+  .wrap > .tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 44px; gap: 0; padding: 0; margin-bottom: 16px; }
+  .tab { min-height: 44px; padding: 4px 2px 3px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; color: var(--ui-muted2); font-size: 13px; }
+  .tab:first-child, .tab:nth-child(3) { border-radius: 0; border-left-width: 0; }
+  .tab[aria-selected="true"] { background: none; color: var(--ui-ink); border-bottom-color: var(--ui-primary); }
+  .tab b, .tab[aria-selected="true"]:not(.tab-saves) b, .tab:not(.tab-saves):has(~ .tab:not(.tab-saves)[aria-selected="true"]) b { display: inline; width: auto; height: auto; margin-right: 4px; border: 0; background: none; color: inherit; font-size: 12px; }
+  .tab .tabw, .tab .tabn { display: none; }
+  .tab-saves { margin-left: 0; font-size: 0; justify-content: center; }
+  .tab-saves b { display: inline-flex; margin: 0; font-size: 16px; }
+}
+
+/* ── 住人タブ（見本 01）：見出し「住人 n / 上限 人」＋右に節の切替（住人一覧｜口調の全体設定｜話題 n｜関係 n） ── */
+#view-cast { --res-cols: 28px minmax(200px, 230px) minmax(170px, 210px) minmax(0, 1fr) minmax(0, 1fr) 128px; }
+.uihead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 16px; margin: 0 0 16px; }
+.uittl { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.uih1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: .04em; color: var(--ui-ink); border: 0; padding: 0; }
+.uicnt { color: var(--ui-muted); font-size: 13px; }
+.uitabs { display: flex; padding: 3px; background: var(--ui-seg); border-radius: 10px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.uitabs [role=tab] { flex: none; height: 36px; padding: 0 16px; border: 0; border-radius: var(--ui-radius-s); background: none; font: inherit; font-size: 14px; color: var(--ui-muted2); cursor: pointer; white-space: nowrap; }
+.uitabs [role=tab]:hover { color: var(--ui-ink); }
+.uitabs [role=tab][aria-selected="true"] { background: var(--ui-card); box-shadow: var(--ui-shadow); font-weight: 700; color: var(--ui-ink); }
+.uitabs [role=tab]:focus-visible { outline: 2px solid var(--ui-accent2); outline-offset: -2px; }
+.uitabs .uitn { font-size: 12px; font-weight: 400; color: var(--ui-muted); }
+.uitabs .uits { display: none; }
+.uipane[hidden] { display: none !important; }
+.uipane > h2.sec:first-child, .uipane > details.fold:first-child { margin-top: 0; }
+/* 道具の帯：探す（虫眼鏡）・並び・グループ、右に 取り込み・データ・＋住人を追加 */
+#view-cast .ctbar { border: 0; padding: 0; margin: 0 0 12px; gap: 8px; align-items: center; }
+#view-cast .ctbar .uisearch { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; max-width: 360px; height: 40px; padding: 0 12px; border: 1px solid var(--ui-line2); border-radius: var(--ui-radius-s); background: var(--ui-input); color: var(--ui-muted); box-sizing: border-box; }
+#view-cast .ctbar .uisearch:focus-within { outline: 2px solid var(--ui-accent2); border-color: var(--ui-accent2); }
+#view-cast .ctbar .uisearch input { flex: 1 1 auto; min-width: 0; max-width: none; border: 0; outline: 0; background: none; padding: 0; min-height: 0; height: 36px; font-size: 14px; }
+#view-cast .ctbar select { min-height: 40px; font-size: 13px; }
+#view-cast .ctsort .hint { font-size: 13px; color: var(--ui-muted2); }
+#view-cast .ctacts { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-left: auto; }
+#view-cast .ctacts .btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
+#view-cast .ctacts .csplit .btn.primary { padding: 0 16px; }
+#view-cast .ctacts .csplit-c { padding: 0 12px; }
+#view-cast .csplit > .btn.primary.csplit-c { border-left-color: rgba(255, 255, 255, .3); }
+#view-cast .ctchips { margin: -4px 0 12px; }
+#view-cast .ctchips::before { content: "グループ"; font-size: 13px; color: var(--ui-muted2); margin-right: 4px; white-space: nowrap; flex: none; }
+#view-cast .cptags { margin: -4px 0 12px; }
+/* 取り込みの欄（折りたたみ。ふだんは閉じる。「診断結果をまとめて取り込む」で開く） */
+details.uiimp { margin: 0 0 16px; padding: 0; }
+details.uiimp:not([open]) { display: none; }
+details.uiimp > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 14px 18px; font-weight: 700; font-size: 15px; }
+details.uiimp > summary::-webkit-details-marker { display: none; }
+details.uiimp > summary::after { content: "閉じる ×"; margin-left: auto; font-size: 12px; font-weight: 400; color: var(--ui-muted); }
+details.uiimp .uiimpsub { font-size: 12px; font-weight: 400; color: var(--ui-muted); }
+details.uiimp > .impgrid { padding: 0 18px 18px; }
+details.uiimp .impfmt { background: var(--ui-head); border-color: var(--ui-line); border-radius: 10px; }
+details.uiimp .impfmt .ex { background: var(--ui-card); border-radius: var(--ui-radius-xs); }
+/* サンプルの住人の案内 */
+.uinote { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin: 0 0 16px; background: var(--ui-info-bg); border: 1px solid var(--ui-info-line); border-radius: var(--ui-radius-s); color: var(--ui-info-ink); font-size: 13px; }
+.uinote[hidden] { display: none; }
+.uinote > svg { flex: none; }
+.uinote-t { flex: 1 1 auto; min-width: 0; }
+.uinote .btn.small { min-height: 32px; border-color: var(--ui-info-btn); background: var(--ui-card); color: var(--ui-info-ink); }
+.uinote .btn.icon { width: 32px; min-height: 32px; color: var(--ui-info-ink); }
+/* 表：白いカードに列の見出し・住人の行・「＋住人を1人追加」 */
+.uitable { background: var(--ui-card); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); overflow: visible; }
+.reshd { display: grid; grid-template-columns: var(--res-cols); gap: 12px; align-items: center; padding: 10px 16px; background: var(--ui-head); border-bottom: 1px solid var(--ui-line); border-radius: var(--ui-radius) var(--ui-radius) 0 0; font-size: 12px; color: var(--ui-muted); letter-spacing: .04em; }
+.reshd .reshd-eg { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; text-align: center; font-family: var(--f-num); }
+.reshd .r { text-align: right; }
+#view-cast .cast { margin: 0; border: 0; display: block; }
+#view-cast .res { position: relative; display: grid; grid-template-columns: var(--res-cols); gap: 12px; align-items: center; padding: 10px 16px; background: none; border: 0; border-bottom: 1px solid var(--ui-soft2); border-radius: 0; }
+#view-cast .res:hover { background: var(--ui-head); }
+#view-cast .res.menuon { z-index: 3; }
+#view-cast .res .draghandle { position: static; transform: none; width: 28px; height: 40px; color: var(--ui-line3); display: flex; align-items: center; justify-content: center; border-radius: 6px; }
+#view-cast .res .draghandle:hover, #view-cast .res .draghandle:focus-visible { color: var(--ui-ink); background: var(--ui-soft); }
+#view-cast .rwho { display: flex; align-items: center; gap: 10px; min-width: 0; }
+#view-cast .res .avset { position: relative; flex: none; }
+#view-cast .res .avbtn { padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%; display: block; }
+#view-cast .res .avbtn .av { box-shadow: none; }
+#view-cast .res .avdel { position: absolute; right: -4px; top: -4px; width: 18px; height: 18px; padding: 0; border-radius: 50%; border: 1px solid var(--ui-line2); background: var(--ui-card); color: var(--ui-muted); font-size: 11px; line-height: 1; cursor: pointer; opacity: 0; }
+#view-cast .res:hover .avdel, #view-cast .res .avdel:focus-visible { opacity: 1; }
+#view-cast .res .who { min-width: 0; flex: 1 1 auto; }
+#view-cast .res .who input[data-f="name"] { width: 100%; min-height: 28px; height: 28px; padding: 0 6px; margin-left: -6px; border-color: transparent; background: none; font-weight: 700; font-size: 15px; }
+#view-cast .res .who input[data-f="name"]:hover { border-color: var(--ui-line2); background: var(--ui-input); }
+#view-cast .res .codeline { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; margin: 0; min-width: 0; }
+#view-cast .res .codeline .code { flex: none; width: 64px; min-height: 22px; height: 22px; padding: 0 4px; margin-left: -4px; border-color: transparent; background: none; font-size: 12px; letter-spacing: .1em; text-align: left; color: var(--ui-ink); }
+#view-cast .res .codeline .code:hover { border-color: var(--ui-line2); background: var(--ui-input); }
+#view-cast .res .codeline .code.bad { border: 2px dashed var(--ui-danger); }
+#view-cast .res .codeline .egatt { margin: 0; padding: 0; border: 0; font-size: 12px; color: var(--ui-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+#view-cast .res .who .ty { display: none; }
+#view-cast .res .rsub { display: none; }
+#view-cast .res .ego { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+#view-cast .res .ego label { display: block; position: relative; }
+#view-cast .res .ego .egk { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#view-cast .res .ego input { width: 100%; min-height: 30px; height: 30px; padding: 0 2px; border: 1px solid transparent; border-radius: 4px; background: var(--ui-soft); text-align: center; font-family: var(--f-num); font-size: 13px; font-weight: 500; -moz-appearance: textfield; }
+#view-cast .res .ego input::-webkit-inner-spin-button, #view-cast .res .ego input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+#view-cast .res .ego input:hover { border-color: var(--ui-line2); }
+#view-cast .res .ego input:focus { background: var(--ui-input); }
+#view-cast .res .rtone { display: flex; flex-direction: column; min-width: 0; font-size: 13px; line-height: 1.5; }
+#view-cast .res .rtone .egtone { color: var(--ui-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#view-cast .res .rsex { font-size: 12px; color: var(--ui-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#view-cast .res .gwrap { display: none; }
+#view-cast .res .memo { grid-column: auto; display: flex; flex-direction: column; flex-wrap: nowrap; gap: 2px; min-width: 0; }
+#view-cast .res .memo .memo1 { display: flex; gap: 6px; min-width: 0; }
+#view-cast .res .memo input { flex: none; min-height: 24px; height: 24px; font-size: 12px; }
+#view-cast .res .memo input.grp, #view-cast .res .memo input.tags { flex: 0 1 50%; min-width: 0; max-width: 9.5em; padding: 0 8px; border-radius: 10px; border-color: var(--ui-line2); background: var(--ui-card); color: var(--ui-muted2); }
+#view-cast .res .memo input.grp:placeholder-shown, #view-cast .res .memo input.tags:placeholder-shown { border-style: dashed; }
+#view-cast .res .memo input.mm { width: 100%; padding: 0 6px; margin-left: -6px; border-color: transparent; background: none; color: var(--ui-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#view-cast .res .memo input.mm:hover, #view-cast .res .memo input.mm:focus { border-color: var(--ui-line2); background: var(--ui-input); color: var(--ui-ink); }
+#view-cast .res .ract { position: relative; display: flex; justify-content: flex-end; gap: 6px; }
+#view-cast .res .gearbtn { min-height: 36px; padding: 0 12px; font-size: 13px; }
+#view-cast .res .gearbtn .gchev { display: none; }
+#view-cast .res .rmore { width: 36px; min-height: 36px; padding: 0; color: var(--ui-muted2); }
+#view-cast .res .rmore[aria-expanded="true"] { border-color: var(--ui-ink); }
+.rmenu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: 210px; padding: 6px; background: var(--ui-card); border: 1px solid var(--ui-line2); border-radius: 10px; box-shadow: var(--ui-shadow-dlg); display: flex; flex-direction: column; }
+.rmenu.up { top: auto; bottom: calc(100% + 6px); }
+.rmenu[hidden] { display: none; }
+.rmenu [role=menuitem] { display: flex; width: 100%; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border: 0; border-radius: var(--ui-radius-xs); background: none; font: inherit; font-size: 13px; color: var(--ui-ink); text-align: left; cursor: pointer; }
+.rmenu [role=menuitem]:hover, .rmenu [role=menuitem]:focus-visible { background: var(--ui-soft); outline: none; }
+.rmenu [role=menuitem]:disabled { opacity: .45; cursor: default; background: none; }
+.rmenu [role=menuitem].danger { color: var(--ui-danger); }
+.rmenu hr { width: auto; margin: 6px 4px; border: 0; border-top: 1px solid var(--ui-line); }
+#view-cast .res.drop-before { box-shadow: inset 0 2px 0 0 var(--ui-accent2); }
+#view-cast .res.drop-after { box-shadow: inset 0 -2px 0 0 var(--ui-accent2); }
+#view-cast .cast .res-ph { height: 61px; border: 0; border-bottom: 1px solid var(--ui-soft2); border-radius: 0; background: none; }
+.uiaddrow { display: flex; width: 100%; align-items: center; gap: 8px; height: 52px; padding: 0 24px; border: 0; background: none; border-radius: 0 0 var(--ui-radius) var(--ui-radius); font: inherit; font-size: 13px; color: var(--ui-accent); text-align: left; cursor: pointer; }
+.uiaddrow:hover { background: var(--ui-head); }
+.uiaddrow:disabled { color: var(--ui-muted); cursor: default; }
+.uiempty { margin: 0; padding: 24px; text-align: center; }
+/* グループの見出し（表の中の帯） */
+#view-cast .cgrp { margin: 0; padding: 8px 16px; border: 0; border-bottom: 1px solid var(--ui-line); border-radius: 0; background: var(--ui-soft); }
+#view-cast .cast > .cgrp:first-child { border-top: 0; }
+#view-cast .cppager { margin: 10px 0; }
+#view-cast .cppager button { border-radius: var(--ui-radius-s); border-color: var(--ui-line2); background: var(--ui-card); }
+#view-cast .cppager button[aria-current=page] { background: var(--ui-primary); border-color: var(--ui-primary); color: var(--ui-primary-ink); }
+/* 次の段階へのカード */
+.uinext { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding: 16px 20px; background: var(--ui-card); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); font-size: 13px; color: var(--ui-muted2); }
+.uinext .btn.primary { min-height: 44px; padding: 0 20px; gap: 8px; }
+.uimobar { display: none; }
+/* 口調の全体設定・話題・関係（節の中身）：白いカードに */
+#view-cast .uipane[data-pane="voice"], #view-cast .uipane[data-pane="topics"], #view-cast .uipane[data-pane="ties"] { background: var(--ui-card); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); padding: 18px 22px 22px; }
+#view-cast .uipane > h2.sec { margin: 0 0 12px; font-size: 18px; border-bottom: 1px solid var(--ui-line); }
+#view-cast #vs-panel { padding: 0; border: 0; background: none; }
+#view-cast #vs-panel details.vsf { border-color: var(--ui-line); border-radius: 10px; padding: 4px 16px 12px; }
+#view-cast #vs-panel details.vsf > summary { min-height: 40px; display: flex; flex-wrap: wrap; align-items: center; }
+#view-cast #vs-panel .vs-head { padding: 12px 14px; background: var(--ui-soft); border-radius: 10px; }
+#view-cast .tiebox, #view-cast .ties { border-color: var(--ui-line); border-radius: 10px; }
+#view-cast .tonesample { border-left: 0; border-radius: 10px; background: var(--ui-soft); padding: 12px 16px; }
+#view-cast details.gkeigo, #view-cast details.gdet { border-color: var(--ui-line); border-radius: 10px; }
+
+/* ── 住人タブ：幅の狭い PC（〜1100px）は列を詰める ── */
+@media (max-width: 1100px) {
+  #view-cast { --res-cols: 28px minmax(170px, 200px) minmax(150px, 180px) minmax(0, 1fr) minmax(0, 1fr) 96px; }
+  #view-cast .res .gearbtn { padding: 0 10px; }
+  #view-cast .res .gearbtn .gearic { display: none; }
+}
+/* タブレット（〜900px）：口調・性別の列を外し、住人の列に一行の要約を出す */
+@media (max-width: 900px) {
+  #view-cast { --res-cols: 28px minmax(170px, 1fr) minmax(150px, 180px) minmax(0, 1fr) 96px; }
+  #view-cast .reshd > span:nth-child(4), #view-cast .res .rtone { display: none; }
+  #view-cast .res .rsub { display: block; font-size: 12px; color: var(--ui-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #view-cast .res .codeline .egatt { display: none; }
+}
+/* スマホ（〜599px。見本 03）：1 行＝丸・名前・コード・一行の要約・「›」「⋯」。CP〜AC・グループ・メモは「設定」の窓と札で。下に固定の「取り込み」「＋住人を追加」 */
+@media (max-width: 599px) {
+  .uihead { align-items: stretch; gap: 10px; margin-bottom: 12px; }
+  .uittl { display: none; }
+  .uitabs { width: 100%; }
+  .uitabs [role=tab] { flex: 1 1 0; padding: 0 8px; font-size: 13px; }
+  .uitabs .uitl { display: none; }
+  .uitabs .uits { display: inline; }
+  #view-cast .ctbar { gap: 8px; }
+  #view-cast .ctbar .uisearch { flex: 1 1 100%; max-width: none; }
+  #view-cast .ctbar .ctsort .hint { display: none; }
+  #view-cast .ctacts { display: none; }
+  #view-cast .ctchips { flex-wrap: nowrap; overflow-x: auto; }
+  .reshd { display: none; }
+  .uitable { background: none; border: 0; }
+  #view-cast .cast { display: grid; gap: 8px; }
+  #view-cast .res { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 6px; padding: 8px 6px 8px 10px; background: var(--ui-card); border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
+  #view-cast .res:hover { background: var(--ui-card); }
+  #view-cast .res .draghandle, #view-cast .res .ego, #view-cast .res .memo, #view-cast .res .rtone { display: none; }
+  #view-cast .res .rwho { grid-column: 1; }
+  #view-cast .res .avbtn .av { width: 36px !important; height: 36px !important; font-size: 16px !important; }
+  #view-cast .res .avdel { display: none; }
+  #view-cast .res .who input[data-f="name"] { font-size: 15px; height: 26px; min-height: 26px; }
+  #view-cast .res .codeline .egatt { display: none; }
+  #view-cast .res .rsub { display: block; font-size: 12px; color: var(--ui-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #view-cast .res .ract { grid-column: 2; align-items: center; gap: 0; }
+  #view-cast .res .gearbtn { border: 0; background: none; min-height: 44px; width: 40px; padding: 0; justify-content: center; color: var(--ui-muted); }
+  #view-cast .res .gearbtn .gearic, #view-cast .res .gearbtn .gbl { display: none; }
+  #view-cast .res .gearbtn .gchev { display: inline-flex; }
+  #view-cast .res .rmore { border: 0; background: none; width: 40px; min-height: 44px; transform: rotate(90deg); }
+  #view-cast .res .rmore[aria-expanded="true"] { background: var(--ui-soft); }
+  .uiaddrow { justify-content: center; margin-top: 8px; border: 1px dashed var(--ui-line2); border-radius: var(--ui-radius); background: var(--ui-card); height: 48px; }
+  #view-cast .cgrp { border: 0; border-radius: var(--ui-radius-s); margin-top: 6px; }
+  .uinext { flex-direction: column; align-items: stretch; text-align: left; }
+  #view-cast[data-castpane="list"] .uimobar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--ui-card); border-top: 1px solid var(--ui-line); box-shadow: 0 -4px 12px rgba(0, 0, 0, .06); }
+  #view-cast[data-castpane="list"] .uimobar .btn { min-height: 48px; }
+  #view-cast[data-castpane="list"] .uimobar .btn:first-child { flex: 0 0 auto; padding: 0 16px; }
+  #view-cast[data-castpane="list"] .uimobar .btn.primary { flex: 1 1 auto; }
+  #view-cast[data-castpane="list"]:not([hidden]) { padding-bottom: 84px; }
+  body:has(#view-cast[data-castpane="list"]:not([hidden])) #pagejump { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  #view-cast .uipane[data-pane="voice"], #view-cast .uipane[data-pane="topics"], #view-cast .uipane[data-pane="ties"] { padding: 14px 12px 16px; }
+}
+
+/* ── 住人の設定の窓（見本 02・04）：頭（丸・「○○の設定」・コードと型・前後の住人・×）、左に節の目次、右に 1 節ずつ、足に保存の一言・次の節・閉じる ── */
+.gearov { background: var(--ui-scrim); padding: max(24px, env(safe-area-inset-top, 0px)) 16px 24px; align-items: center; }
+.gearov .gearbox { max-width: 1040px; width: 100%; padding: 0; border: 0; border-radius: var(--ui-radius-l); background: var(--ui-card); color: var(--ui-ink); box-shadow: var(--ui-shadow-win); overflow: hidden; display: flex; flex-direction: column; max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); }
+.gearov .gearhd { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: 0; padding: 16px 20px; border-bottom: 1px solid var(--ui-line); }
+.gearov .gearhd .av { flex: none; }
+.gearov .gearhd .gback { display: none; }
+.gearov .ghtt { flex: 1 1 auto; min-width: 0; }
+.gearov .gearhd h2 { margin: 0; font-size: 18px; font-weight: 700; flex: none; }
+.gearov .ghsub { font-size: 12px; color: var(--ui-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gearov .ghcode { color: var(--ui-ink); letter-spacing: .1em; margin-right: 8px; }
+.gearov .gnav { display: flex; border: 1px solid var(--ui-line2); border-radius: var(--ui-radius-s); overflow: hidden; }
+.gearov .gnav button { display: inline-flex; align-items: center; gap: 4px; height: 38px; padding: 0 12px; border: 0; background: var(--ui-card); font: inherit; font-size: 13px; color: var(--ui-ink); cursor: pointer; white-space: nowrap; max-width: 16em; overflow: hidden; text-overflow: ellipsis; }
+.gearov .gnav button + button { border-left: 1px solid var(--ui-line2); }
+.gearov .gnav button:hover:not(:disabled) { background: var(--ui-soft); }
+.gearov .gnav button:disabled { color: var(--ui-muted); opacity: .55; cursor: default; }
+.gearov .gx { width: 40px; height: 40px; border: 0; border-radius: var(--ui-radius-s); background: var(--ui-soft); color: var(--ui-ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.gearov .gx:hover { background: var(--ui-soft2); }
+.gearov .gearmain { flex: 1 1 auto; min-height: 0; display: flex; }
+.gearov .geartoc { flex: 0 0 240px; padding: 12px; background: var(--ui-nav); border-right: 1px solid var(--ui-line); overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.gearov .geartoc button { display: block; width: 100%; padding: 10px 12px; border: 0; border-radius: var(--ui-radius-s); background: none; font: inherit; color: var(--ui-ink); text-align: left; cursor: pointer; }
+.gearov .geartoc button:hover { background: var(--ui-soft); }
+.gearov .geartoc button[aria-current="true"] { background: var(--ui-card); box-shadow: var(--ui-shadow); }
+.gearov .geartoc .gtn { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 500; }
+.gearov .geartoc button[aria-current="true"] .gtn { font-weight: 700; }
+.gearov .geartoc .gtb { flex: none; font-weight: 400; font-size: 11px; color: var(--ui-muted); }
+.gearov .geartoc .gtb.on { color: var(--ui-ok); }
+.gearov .geartoc .gts { display: block; font-size: 12px; color: var(--ui-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.2em; }
+.gearov .gearpane { flex: 1 1 auto; min-width: 0; overflow-y: auto; padding: 20px 28px 0; display: flex; flex-direction: column; }
+.gearov .gearsec { margin: 0; padding: 0 0 20px; border: 0; }
+.gearov .gearsec[hidden] { display: none; }
+.gearov .gearsec > h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 17px; font-weight: 700; outline: none; }
+.gearov .gsecdesc { margin: 4px 0 16px; font-size: 13px; color: var(--ui-muted); }
+/* 欄：2 列・ラベル太字・欄は全幅（チェックの欄は 1 行で全幅） */
+.gearov .gearsec .gearrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; align-items: start; margin: 0 0 16px; }
+.gearov .gearsec .gearrow > label { display: flex; flex-direction: column; align-items: stretch; gap: 6px; font-size: 13px; font-weight: 700; color: var(--ui-ink); min-width: 0; }
+.gearov .gearsec .gearrow > label > input[type="text"], .gearov .gearsec .gearrow > label > input[type="number"], .gearov .gearsec .gearrow > label > select { width: 100% !important; max-width: 100%; min-height: 42px; font-weight: 400; font-size: 14px; }
+.gearov .gearsec .gearrow > label:has(> input[type="checkbox"]), .gearov .gearsec .gearrow > label:has(> input[type="radio"]) { flex-direction: row; align-items: center; gap: 8px; font-weight: 400; grid-column: 1 / -1; }
+.gearov .gearsec .gearrow > :not(label):not(.gfield) { grid-column: 1 / -1; }
+.gearov .gearsec .gearrow > .gnote, .gearov .gearsec .gearrow > p { grid-column: 1 / -1; }
+.gearov .gearsec .gearrow > button { justify-self: start; }
+.gearov .gearsec .gearrow:empty { display: none; }
+.gearov .gearsec .gearhint { margin: -8px 0 16px; font-size: 12px; color: var(--ui-muted); }
+.gearov .gearsec .gfield { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.gearov .gearsec .gfield.gwide { grid-column: 1 / -1; }
+.gearov .gearsec .glab { font-size: 13px; font-weight: 700; }
+.gearov .gseg { display: flex; border: 1px solid var(--ui-line2); border-radius: var(--ui-radius-s); overflow: hidden; max-width: 480px; }
+.gearov .gseg label { flex: 1 1 0; position: relative; margin: 0; cursor: pointer; }
+.gearov .gseg label + label { border-left: 1px solid var(--ui-line2); }
+.gearov .gseg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.gearov .gseg span { display: flex; align-items: center; justify-content: center; height: 42px; padding: 0 6px; font-size: 13px; color: var(--ui-ink); background: var(--ui-card); }
+.gearov .gseg input:checked + span { background: var(--ui-primary); color: var(--ui-primary-ink); font-weight: 700; }
+.gearov .gseg input:focus-visible + span { outline: 2px solid var(--ui-accent2); outline-offset: -3px; }
+.gearov .gcolor { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; margin: 0 0 16px; border: 1px solid var(--ui-line); border-radius: 10px; }
+.gearov .gcsw { flex: none; width: 28px; height: 28px; border-radius: 6px; }
+.gearov .gct { flex: 1 1 auto; display: flex; flex-direction: column; font-size: 12px; color: var(--ui-muted); }
+.gearov .gct b { font-size: 13px; color: var(--ui-ink); }
+.gearov .gcauto, .gearov .gcpick { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.gearov .tonesample { margin: 0 0 20px; padding: 14px 16px; border: 0; border-radius: 10px; background: var(--ui-soft); font-size: 15px; }
+.gearov details.gdet, .gearov details.gkeigo, .gearov details.gego, .gearov .gend details { margin: 0 0 12px; padding: 0 16px; border: 1px solid var(--ui-line); border-radius: 10px; background: var(--ui-card); }
+.gearov details.gdet > summary, .gearov details.gkeigo > summary, .gearov details.gego > summary { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 700; font-size: 14px; color: var(--ui-ink); }
+.gearov details.gdet > summary .gkn, .gearov details.gkeigo > summary .gkn, .gearov details.gego > summary .gegc { font-weight: 400; font-size: 12px; color: var(--ui-muted); margin-left: auto; }
+.gearov details.gdet[open], .gearov details.gkeigo[open], .gearov details.gego[open] { padding-bottom: 12px; }
+.gearov details.gdet .gearrow { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.gearov details.gdet .gearrow > label { flex-direction: row; font-weight: 400; grid-column: auto; }
+.gearov .ggo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 16px; padding: 12px 16px; border: 1px dashed var(--ui-line2); border-radius: 10px; font-size: 13px; color: var(--ui-muted2); }
+.gearov .ggolink { min-height: 44px; font-weight: 700; color: var(--ui-accent); gap: 4px; }
+.gearov .gtie { border-color: var(--ui-line); border-radius: 10px; padding: 10px 14px; }
+.gearov .gtie .gtc { border-color: var(--ui-line); border-radius: var(--ui-radius-s); background: var(--ui-soft); }
+.gearov .gearfoot { position: sticky; bottom: 0; margin: auto -28px 0; padding: 14px 28px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--ui-line); background: var(--ui-card); }
+.gearov .gsaved { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ui-muted); }
+.gearov .gsaved svg { color: var(--ui-ok); }
+.gearov .gfbtns { display: flex; gap: 8px; }
+.gearov .gfbtns .btn { min-height: 42px; padding: 0 16px; font-size: 14px; }
+.gearov .gfbtns .btn.primary { padding: 0 20px; }
+/* 窓の幅が狭いとき（〜760px）：目次を上の横並びに */
+@media (max-width: 760px) {
+  .gearov .gearmain { flex-direction: column; }
+  .gearov .geartoc { flex: none; flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 8px 12px; border-right: 0; border-bottom: 1px solid var(--ui-line); scrollbar-width: thin; }
+  .gearov .geartoc button { flex: none; width: auto; padding: 6px 12px; }
+  .gearov .geartoc .gts, .gearov .geartoc .gtb { display: none; }
+  .gearov .gearpane { padding: 16px 16px 0; }
+  .gearov .gearfoot { margin: auto -16px 0; padding: 12px 16px; }
+  .gearov .gnav button span { display: none; }
+}
+/* スマホ（〜599px。見本 04）：全画面の窓。頭は「‹」・丸・名前・前後（∧∨）、欄は 1 列（短い欄は 2 列のまま）、足に「次の節」 */
+@media (max-width: 599px) {
+  .gearov { padding: 0; align-items: stretch; }
+  .gearov .gearbox { max-width: none; max-height: none; height: 100vh; height: 100dvh; border-radius: 0; box-shadow: none; }
+  .gearov .gearhd { flex-wrap: nowrap; gap: 8px; padding: 8px 8px 8px 4px; padding-top: max(8px, env(safe-area-inset-top, 0px)); }
+  .gearov .gearhd .gback { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 44px; border: 0; background: none; color: var(--ui-ink); cursor: pointer; flex: none; }
+  .gearov .gearhd .av { width: 36px !important; height: 36px !important; font-size: 16px !important; }
+  .gearov .gearhd h2 { font-size: 16px; }
+  .gearov .gx { display: none; }
+  .gearov .gnav { border: 0; }
+  .gearov .gnav button { width: 44px; height: 44px; padding: 0; justify-content: center; border: 0 !important; }
+  .gearov .gnav button svg { transform: rotate(90deg); }
+  .gearov .gearsec .gearrow { grid-template-columns: minmax(0, 1fr); }
+  .gearov .gseg { max-width: none; }
+  .gearov .gearfoot { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .gearov .gearfoot .gsaved { display: none; }
+  .gearov .gfbtns { width: 100%; }
+  .gearov .gfbtns .btn { flex: 1 1 auto; min-height: 48px; }
+  .gearov .gfbtns .btn.primary { flex: 0 0 auto; }
+}
+@media print { .uimobar, .uidisp, .rmenu { display: none !important; } }
+/* 担当UA：設定の窓は節を切り替えても高さを変えない（PC・タブレット） */
+@media (min-width: 600px) { .gearov .gearbox { height: min(860px, calc(100vh - 48px)); height: min(860px, calc(100dvh - 48px)); } }
+/* 担当UA：性別のセグメントの升を埋める。窓を開いているあいだは右下の上へ／下へを出さない。折りたたみの見出しに開閉の矢印（flex にすると既定の三角が消えるため） */
+.gearov .gseg label { display: flex; }
+.gearov .gseg span { flex: 1 1 auto; }
+body:has(.gearov:not([hidden])) #pagejump { display: none; }
+.gearov details.gdet > summary::after, .gearov details.gkeigo > summary::after, .gearov details.gego > summary::after { content: ""; flex: none; width: 7px; height: 7px; margin: 0 2px 3px 4px; border-right: 1.5px solid var(--ui-muted); border-bottom: 1.5px solid var(--ui-muted); transform: rotate(45deg); transition: transform .15s; }
+.gearov details[open] > summary::after { transform: rotate(-135deg); margin-bottom: -3px; }
+.gearov details.gdet > summary::-webkit-details-marker, .gearov details.gkeigo > summary::-webkit-details-marker, .gearov details.gego > summary::-webkit-details-marker { display: none; }
+.gearov details.gdet > summary, .gearov details.gkeigo > summary, .gearov details.gego > summary { list-style: none; }
+#view-cast #vs-panel details.vsf > summary { display: list-item; min-height: 0; padding: 8px 0; }
+/* 行の描画の後回し（ui.js の content-visibility）は行の外を切り抜くので、「⋯」のメニューを開いた行だけ外す。行の高さの見込みも新しい行に合わせる */
+#view-cast #castlist .res { contain-intrinsic-size: auto 61px; }
+#view-cast #castlist .res.menuon { content-visibility: visible; }
+@media (max-width: 599px) { #view-cast #castlist .res { contain-intrinsic-size: auto 66px; } }
+/* 担当UA：住人タブの肩見出し（Step 1 / Cast）は、段階ナビと見出しがあるので出さない。工程タブの下の罫線を画面の幅いっぱいに */
+#view-cast::before { content: none; display: none; }
+.wrap > .tabs { border-bottom: 0; box-shadow: 0 0 0 100vmax var(--ui-card), 0 1px 0 100vmax var(--ui-line); clip-path: inset(0 -100vmax -1px); }
+.uitabs .uitn { margin-left: 4px; }
+.uinote .btn.icon.ghost { border-color: transparent; background: none; }
+@media (max-width: 599px) { .uinote { flex-wrap: wrap; gap: 8px 10px; } .uinote-t { flex: 1 1 calc(100% - 30px); } .uinote .btn.small:not(.icon) { margin-left: 26px; } .uinote .btn.icon { margin-left: auto; } }
 </style>
 
 <div class="modal notice" id="notice" hidden role="dialog" aria-modal="true" aria-labelledby="notice-title">
@@ -1072,6 +1580,7 @@ details.zmap > summary:hover { background: var(--bg1); }
         <li>受け攻め・恋愛対象・恋愛相手の固定・「R18に参加しない」などの設定は毎回点検していますが、文の組み合わせによって、受け攻めが入れ替わって読める文や、固定した相手以外と親しくなる取り違えが残っている可能性があります。あらかじめご了承ください</li>
         <li>文は乱数と設定から自動で組み上げています。名前・性別・口調・関係の組み合わせによって、一人称や呼び方、前後のつながりがかみ合わないことがあります</li>
         <li>住人は、入力したエゴグラムと設定から動く架空の人物です。実在の人物・団体とは関係がなく、登場人物はすべて成人として扱います</li>
+        <li>遊びやすいようにサイトとして公開していますが、動作を確かめているのは Windows の Chromium 系ブラウザ（Chrome・Edge など）だけです。スマートフォン・Mac・ほかのブラウザでも動くことはありますが、表示や保存がうまくいかないことがあります。その点をご留意のうえお使いください</li>
         <li>セーブはこのブラウザの中にだけ残ります。ブラウザのデータを消したり、別の端末で開いたりすると見られません。残したい結果は、テキストの書き出しや画像の保存をお使いください</li>
         <li>仕様は予告なく変わることがあります。変わった点は更新履歴に書いています</li>
         <li>気になった文・不具合・ご質問は、ご意見箱（<a href="https://wavebox.me/wave/2qqyh460op1f1o00/" target="_blank" rel="noopener">Wavebox</a>）へお寄せください。現状数が多いため、申し訳ありませんが原則としてご質問以外には返信しておりません（ご質問と不具合のご報告は、気づき次第対応する予定です）</li>
@@ -1086,20 +1595,29 @@ details.zmap > summary:hover { background: var(--bg1); }
       <h1>箱庭シミュレーター</h1>
       <p>エゴグラムの住人を箱庭に放ち、誰と誰がどんな関係に落ち着くか見届ける。</p>
       </div></div>
+    </div>
+      <!-- 2026-11-01 担当UA：案内（遊び方・注意事項・更新履歴）と「表示（色・明るさ・書体）▾」のメニュー（中の切り替えは上のスクリプト、開け閉めと先読みは js/ui-shell.js） -->
       <nav class="brandlinks" aria-label="ご案内">
         <button type="button" class="chip-link" data-tip="howto" aria-haspopup="dialog">遊び方</button>
-        <a class="chip-link" href="https://docs.google.com/document/d/1o6UgdEEMXhUEZeODa3pWeVgMBlIEBi-cyktbtUmSNe0/edit?tab=t.0" target="_blank" rel="noopener">更新履歴</a>
         <button type="button" class="chip-link" data-act="notice-open" aria-haspopup="dialog" aria-controls="notice">注意事項</button>
-        <span class="navsep" aria-hidden="true"></span>
-        <div class="uiseg" role="group" aria-label="色の量"><button type="button" data-pal="mono" aria-pressed="false">藍のみ</button><button type="button" data-pal="chars" aria-pressed="false">キャラ色</button><button type="button" data-pal="full" aria-pressed="true">フル</button></div><button type="button" class="btn icon thmbtn" data-thmcycle title="白／グレー／黒：自動（端末に合わせる）。押すと 自動→白→グレー→黒 の順に切り替え" aria-label="白／グレー／黒の切り替え（いま：自動）"><svg class="tz" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path class="tz-w" d="M7.67 1.9A7 7 0 0 0 7.67 15.1z"/><path class="tz-g" d="M7.67 1.9A7 7 0 0 1 12.33 1.9V15.1A7 7 0 0 1 7.67 15.1z"/><path class="tz-k" d="M12.33 1.9A7 7 0 0 1 12.33 15.1z"/><path class="tz-o" d="M7.67 1.9V15.1M12.33 1.9V15.1"/><circle class="tz-o" cx="10" cy="8.5" r="7"/><rect class="tz-mk" data-k="light" x="3.3" y="17.2" width="4" height="2.4" rx=".7"/><rect class="tz-mk" data-k="gray" x="8" y="17.2" width="4" height="2.4" rx=".7"/><rect class="tz-mk" data-k="dark" x="12.7" y="17.2" width="4" height="2.4" rx=".7"/></svg></button><button type="button" class="btn icon fntbtn" data-fntcycle data-now="gothic" title="書体：明朝体／ゴシック（いま：ゴシック）。押すと明朝体に切り替え" aria-label="書体の切り替え（いま：ゴシック）"><span class="fz" aria-hidden="true">文</span></button>
+        <a class="chip-link" href="https://docs.google.com/document/d/1o6UgdEEMXhUEZeODa3pWeVgMBlIEBi-cyktbtUmSNe0/edit?tab=t.0" target="_blank" rel="noopener">更新履歴</a>
+        <div class="uidisp">
+          <button type="button" class="uidispbtn" data-uidisp aria-haspopup="true" aria-expanded="false" aria-controls="uidisp-menu" title="色味・色の量・白／グレー／黒・書体"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 2v12"/><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"/></svg><span class="uidl">表示（色・明るさ・書体）</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg></button>
+          <div class="uidispmenu" id="uidisp-menu" role="group" aria-label="表示の設定" hidden>
+            <div class="uidm-row"><span class="uidm-h">色味</span><div class="uiseg" role="group" aria-label="色味"><button type="button" data-scm="std" aria-pressed="true">標準</button><button type="button" data-scm="blue" aria-pressed="false">ブルー</button></div><span class="uidm-note">ブルーは紙の地に藍一色の、前の落ち着いた見た目です</span></div>
+            <div class="uidm-row"><span class="uidm-h">色の量</span><div class="uiseg" role="group" aria-label="色の量"><button type="button" data-pal="mono" aria-pressed="false">単色</button><button type="button" data-pal="chars" aria-pressed="false">キャラ色</button><button type="button" data-pal="full" aria-pressed="true">フル</button></div><span class="uidm-note">単色は藍だけ、キャラ色は住人の色だけ、フルは関係・出来事の色も出します</span></div>
+            <div class="uidm-row"><span class="uidm-h">明るさ</span><div class="uiseg" role="group" aria-label="明るさ（白／グレー／黒）"><button type="button" data-thm="auto" aria-pressed="true">自動</button><button type="button" data-thm="light" aria-pressed="false">白</button><button type="button" data-thm="gray" aria-pressed="false">グレー</button><button type="button" data-thm="dark" aria-pressed="false">黒</button></div></div>
+            <div class="uidm-row"><span class="uidm-h">書体</span><div class="uiseg" role="group" aria-label="書体"><button type="button" data-fnt="gothic" aria-pressed="true">ゴシック</button><button type="button" data-fnt="mincho" aria-pressed="false">明朝体</button></div></div>
+            <div class="uidm-pref"></div>
+          </div>
+        </div>
       </nav>
-    </div>
     <div class="row" id="topmeta"></div>
   </header>
   <nav class="tabs" role="tablist" aria-label="工程">
     <button class="tab" role="tab" id="tab-cast" data-tab="cast"><b>1</b>住人</button>
     <button class="tab" role="tab" id="tab-box" data-tab="box"><b>2</b>箱庭</button>
-    <button class="tab" role="tab" id="tab-result" data-tab="result"><b>3</b>経過と結末</button>
+    <button class="tab" role="tab" id="tab-result" data-tab="result"><b>3</b><span class="tabw">経過と</span>結末</button>
     <button class="tab tab-saves" role="tab" id="tab-saves" data-tab="saves"><b aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 2.5h7.5L12 5v6.5H2z M4.5 2.5v3h4v-3 M4 11.5V8h6v3.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></b>セーブ</button>
   </nav>
   <main>
@@ -1135,68 +1653,69 @@ details.zmap > summary:hover { background: var(--bg1); }
 
 <script>window.HK_SAFE_BUILD = 1;</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"be2e4a2b24","api":1,"build":"zenrei","core":"js/c/core.1078ba0e9f.js",
+<script>window.HK_MANIFEST={"v":"08c35700e6","api":1,"build":"zenrei","core":"js/c/core.675d854638.js",
 "chunks":{
-  "late":{"src":"js/c/late.d79fa7e115.js","br":90272,"deps":[]},
-  "pack-rel":{"src":"js/c/pack-rel.2f9b1e9eb2.js","br":239049,"deps":[]},
-  "scen-goukon":{"src":"js/c/scen-goukon.65e1c9b557.js","br":72022,"deps":["pack-rel"]},
-  "scen-classroom":{"src":"js/c/scen-classroom.8a385b3c05.js","br":98670,"deps":["pack-rel"]},
-  "scen-island":{"src":"js/c/scen-island.68ca8a8224.js","br":84204,"deps":["pack-rel"]},
-  "scen-br":{"src":"js/c/scen-br.2fc1096f50.js","br":37181,"deps":["pack-rel"]},
-  "pack-trap":{"src":"js/c/pack-trap.84ad50ec82.js","br":33300,"deps":[]},
-  "scen-whiteroom":{"src":"js/c/scen-whiteroom.bc27ee5a89.js","br":178253,"deps":["pack-rel","pack-trap"]},
-  "scen-trial":{"src":"js/c/scen-trial.a1b17fbbcf.js","br":53517,"deps":["pack-rel"]},
-  "scen-omega":{"src":"js/c/scen-omega.a38e48ed34.js","br":134475,"deps":["pack-rel"]},
-  "scen-massage":{"src":"js/c/scen-massage.b3e6722350.js","br":44322,"deps":[]},
-  "scen-zombie":{"src":"js/c/scen-zombie.2cb6068b38.js","br":139667,"deps":["pack-rel"]},
-  "scen-rpg":{"src":"js/c/scen-rpg.241a8884d5.js","br":26995,"deps":["pack-story"]},
-  "scen-saimin":{"src":"js/c/scen-saimin.b51a43c7d3.js","br":37412,"deps":[]},
-  "scen-locker":{"src":"js/c/scen-locker.c4e5c5c3cc.js","br":96692,"deps":["pack-trap"]},
-  "scen-jashin":{"src":"js/c/scen-jashin.f418c7eb9a.js","br":231375,"deps":["pack-story"]},
-  "scen-yakata":{"src":"js/c/scen-yakata.2aa47c90d3.js","br":83103,"deps":["pack-story"]},
-  "scen-ship":{"src":"js/c/scen-ship.5e7172d00a.js","br":105537,"deps":["pack-story"]},
-  "scen-jinro":{"src":"js/c/scen-jinro.a0ea6e2dfc.js","br":62981,"deps":["pack-story"]},
-  "pack-story":{"src":"js/c/pack-story.8834b774f6.js","br":2705,"deps":["pack-rel"]},
-  "pack-catalog":{"src":"js/c/pack-catalog.514f520641.js","br":43677,"deps":[]},
-  "tone-base":{"src":"js/c/tone-base.342c78f80e.js","br":49564,"deps":[]},
-  "tone-ane":{"src":"js/c/tone-ane.46d7a5eaf4.js","br":8042,"deps":[]},
-  "tone-boku-n":{"src":"js/c/tone-boku-n.59149d8997.js","br":576,"deps":[]},
-  "tone-calm":{"src":"js/c/tone-calm.745519699c.js","br":8092,"deps":[]},
-  "tone-chara":{"src":"js/c/tone-chara.657b4c103e.js","br":14502,"deps":[]},
-  "tone-chara-down":{"src":"js/c/tone-chara-down.23f29ea6d2.js","br":2085,"deps":[]},
-  "tone-cool-soft":{"src":"js/c/tone-cool-soft.a3882f32a7.js","br":2308,"deps":[]},
-  "tone-darui":{"src":"js/c/tone-darui.6f82756160.js","br":7093,"deps":[]},
-  "tone-darui-lite":{"src":"js/c/tone-darui-lite.050c351b97.js","br":934,"deps":[]},
-  "tone-devoted-p":{"src":"js/c/tone-devoted-p.a25d400387.js","br":5335,"deps":[]},
-  "tone-flat-plain":{"src":"js/c/tone-flat-plain.501e6a1912.js","br":313,"deps":[]},
-  "tone-genki":{"src":"js/c/tone-genki.24524aaa23.js","br":4244,"deps":[]},
-  "tone-gentle-m":{"src":"js/c/tone-gentle-m.2d3c146383.js","br":563,"deps":[]},
-  "tone-gentle-n":{"src":"js/c/tone-gentle-n.60aebbcb22.js","br":5701,"deps":[]},
-  "tone-gentleman":{"src":"js/c/tone-gentleman.e382a764d0.js","br":11228,"deps":[]},
-  "tone-god":{"src":"js/c/tone-god.2843c0bb7c.js","br":3134,"deps":[]},
-  "tone-gyaru":{"src":"js/c/tone-gyaru.e6f5458b20.js","br":16874,"deps":[]},
-  "tone-hero":{"src":"js/c/tone-hero.4162c4205f.js","br":8156,"deps":[]},
-  "tone-honwaka":{"src":"js/c/tone-honwaka.da3dfef7d2.js","br":770,"deps":[]},
-  "tone-kansai":{"src":"js/c/tone-kansai.3013aef9a0.js","br":18373,"deps":[]},
-  "tone-keigo-bossy":{"src":"js/c/tone-keigo-bossy.cc9b66e2c3.js","br":941,"deps":[]},
-  "tone-keigo-flat":{"src":"js/c/tone-keigo-flat.4b885398da.js","br":764,"deps":[]},
-  "tone-keigo-sarc":{"src":"js/c/tone-keigo-sarc.e9fe9047db.js","br":1112,"deps":[]},
-  "tone-keigo-twist":{"src":"js/c/tone-keigo-twist.718e53c73c.js","br":494,"deps":[]},
-  "tone-kohai":{"src":"js/c/tone-kohai.84053bbabb.js","br":9223,"deps":[]},
-  "tone-mixed":{"src":"js/c/tone-mixed.d88217e79b.js","br":22112,"deps":[]},
-  "tone-mukuchi":{"src":"js/c/tone-mukuchi.e3ded0d6a2.js","br":13545,"deps":[]},
-  "tone-mukuchi-ne":{"src":"js/c/tone-mukuchi-ne.878ceb069c.js","br":1129,"deps":[]},
-  "tone-mystic":{"src":"js/c/tone-mystic.6823f81f05.js","br":11218,"deps":[]},
-  "tone-noja":{"src":"js/c/tone-noja.e9bf17a962.js","br":17907,"deps":[]},
-  "tone-ojou":{"src":"js/c/tone-ojou.040173c657.js","br":6271,"deps":[]},
-  "tone-otaku":{"src":"js/c/tone-otaku.0caefd49ec.js","br":752,"deps":[]},
-  "tone-ronkyaku":{"src":"js/c/tone-ronkyaku.5ae3089a08.js","br":3430,"deps":[]},
-  "tone-sondai":{"src":"js/c/tone-sondai.640a5d4269.js","br":7900,"deps":[]},
-  "tone-tame":{"src":"js/c/tone-tame.a9254f4efb.js","br":438,"deps":[]},
-  "tone-tsun-n":{"src":"js/c/tone-tsun-n.9b0987130a.js","br":5555,"deps":[]},
-  "tone-tsun-soft":{"src":"js/c/tone-tsun-soft.7cc65679cd.js","br":412,"deps":[]},
-  "tone-usan":{"src":"js/c/tone-usan.d43bc34c32.js","br":10034,"deps":[]},
-  "tone-yankee":{"src":"js/c/tone-yankee.31b6694ae8.js","br":13101,"deps":[]}},
+  "late":{"src":"js/c/late.223f3944c4.js","br":116150,"deps":[]},
+  "pack-rel":{"src":"js/c/pack-rel.2d12624203.js","br":248784,"deps":[]},
+  "scen-goukon":{"src":"js/c/scen-goukon.6bf909550f.js","br":75995,"deps":["pack-rel"]},
+  "scen-classroom":{"src":"js/c/scen-classroom.e9becaa77b.js","br":98776,"deps":["pack-rel"]},
+  "scen-island":{"src":"js/c/scen-island.67dafaa465.js","br":86795,"deps":["pack-rel"]},
+  "scen-br":{"src":"js/c/scen-br.68dd8d7556.js","br":37181,"deps":["pack-rel"]},
+  "pack-trap":{"src":"js/c/pack-trap.6c4c043b39.js","br":33303,"deps":[]},
+  "scen-whiteroom":{"src":"js/c/scen-whiteroom.1bb0feaa54.js","br":220976,"deps":["pack-rel","pack-trap"]},
+  "scen-trial":{"src":"js/c/scen-trial.280a76a291.js","br":53518,"deps":["pack-rel"]},
+  "scen-omega":{"src":"js/c/scen-omega.73b866b1ab.js","br":135071,"deps":["pack-rel"]},
+  "scen-massage":{"src":"js/c/scen-massage.10e4126869.js","br":45077,"deps":[]},
+  "scen-zombie":{"src":"js/c/scen-zombie.3f447f071a.js","br":141983,"deps":["pack-rel"]},
+  "scen-rpg":{"src":"js/c/scen-rpg.ea44c8c8b8.js","br":27003,"deps":["pack-story"]},
+  "scen-saimin":{"src":"js/c/scen-saimin.46efda8ad6.js","br":44980,"deps":[]},
+  "scen-locker":{"src":"js/c/scen-locker.392d61d2e5.js","br":97244,"deps":["pack-trap"]},
+  "scen-jashin":{"src":"js/c/scen-jashin.1c708508bb.js","br":234716,"deps":["pack-story"]},
+  "scen-yakata":{"src":"js/c/scen-yakata.5a56f59aee.js","br":84834,"deps":["pack-story"]},
+  "scen-ship":{"src":"js/c/scen-ship.f673bc4ef1.js","br":127006,"deps":["pack-story"]},
+  "scen-jinro":{"src":"js/c/scen-jinro.2ef5e3e22e.js","br":70525,"deps":["pack-story"]},
+  "pack-story":{"src":"js/c/pack-story.188c71c18c.js","br":16173,"deps":["pack-rel"]},
+  "pack-catalog":{"src":"js/c/pack-catalog.6291bbd625.js","br":45025,"deps":[]},
+  "tone-base":{"src":"js/c/tone-base.8977f5f7a7.js","br":54726,"deps":[]},
+  "tone-ane":{"src":"js/c/tone-ane.5a2f3686d1.js","br":10415,"deps":[]},
+  "tone-boku-n":{"src":"js/c/tone-boku-n.977b755a1a.js","br":943,"deps":[]},
+  "tone-calm":{"src":"js/c/tone-calm.535b36ab81.js","br":8322,"deps":[]},
+  "tone-chara":{"src":"js/c/tone-chara.2895245acb.js","br":18163,"deps":[]},
+  "tone-chara-down":{"src":"js/c/tone-chara-down.b158181c5e.js","br":5332,"deps":[]},
+  "tone-cool-soft":{"src":"js/c/tone-cool-soft.16eaf72215.js","br":2729,"deps":[]},
+  "tone-darui":{"src":"js/c/tone-darui.aaca678fee.js","br":10353,"deps":[]},
+  "tone-darui-lite":{"src":"js/c/tone-darui-lite.7a78546cab.js","br":5309,"deps":[]},
+  "tone-darui-talk":{"src":"js/c/tone-darui-talk.c6e1d6628a.js","br":763,"deps":[]},
+  "tone-devoted-p":{"src":"js/c/tone-devoted-p.93ac07844d.js","br":5454,"deps":[]},
+  "tone-flat-plain":{"src":"js/c/tone-flat-plain.b92e7e38b0.js","br":343,"deps":[]},
+  "tone-genki":{"src":"js/c/tone-genki.ebbb9b02e2.js","br":5573,"deps":[]},
+  "tone-gentle-m":{"src":"js/c/tone-gentle-m.373bd350b0.js","br":955,"deps":[]},
+  "tone-gentle-n":{"src":"js/c/tone-gentle-n.21a3d4ad61.js","br":5874,"deps":[]},
+  "tone-gentleman":{"src":"js/c/tone-gentleman.9128e5605c.js","br":11588,"deps":[]},
+  "tone-god":{"src":"js/c/tone-god.e327c29602.js","br":3679,"deps":[]},
+  "tone-gyaru":{"src":"js/c/tone-gyaru.1b0ca175c4.js","br":21227,"deps":[]},
+  "tone-hero":{"src":"js/c/tone-hero.522d366a50.js","br":10242,"deps":[]},
+  "tone-honwaka":{"src":"js/c/tone-honwaka.3c6dd598bc.js","br":1039,"deps":[]},
+  "tone-kansai":{"src":"js/c/tone-kansai.5f7322a59b.js","br":22554,"deps":[]},
+  "tone-keigo-bossy":{"src":"js/c/tone-keigo-bossy.ed737ded15.js","br":1318,"deps":[]},
+  "tone-keigo-flat":{"src":"js/c/tone-keigo-flat.e52e6e3579.js","br":1266,"deps":[]},
+  "tone-keigo-sarc":{"src":"js/c/tone-keigo-sarc.1564780aca.js","br":1519,"deps":[]},
+  "tone-keigo-twist":{"src":"js/c/tone-keigo-twist.46eebfb817.js","br":674,"deps":[]},
+  "tone-kohai":{"src":"js/c/tone-kohai.5ce9e0ee10.js","br":12051,"deps":[]},
+  "tone-mixed":{"src":"js/c/tone-mixed.7a1bf3697a.js","br":22703,"deps":[]},
+  "tone-mukuchi":{"src":"js/c/tone-mukuchi.69e7e24a28.js","br":15270,"deps":[]},
+  "tone-mukuchi-ne":{"src":"js/c/tone-mukuchi-ne.4d2ee6a40f.js","br":2953,"deps":[]},
+  "tone-mystic":{"src":"js/c/tone-mystic.9eb9a305ac.js","br":11414,"deps":[]},
+  "tone-noja":{"src":"js/c/tone-noja.3d687196e0.js","br":20784,"deps":[]},
+  "tone-ojou":{"src":"js/c/tone-ojou.55b95c143e.js","br":6471,"deps":[]},
+  "tone-otaku":{"src":"js/c/tone-otaku.60be7f8382.js","br":3033,"deps":[]},
+  "tone-ronkyaku":{"src":"js/c/tone-ronkyaku.36b6dbeab4.js","br":3430,"deps":[]},
+  "tone-sondai":{"src":"js/c/tone-sondai.c9139bb818.js","br":8247,"deps":[]},
+  "tone-tame":{"src":"js/c/tone-tame.5674fd2eb6.js","br":666,"deps":[]},
+  "tone-tsun-n":{"src":"js/c/tone-tsun-n.c356ed36b7.js","br":5868,"deps":[]},
+  "tone-tsun-soft":{"src":"js/c/tone-tsun-soft.af2b3de45f.js","br":441,"deps":[]},
+  "tone-usan":{"src":"js/c/tone-usan.dd93a7f071.js","br":14114,"deps":[]},
+  "tone-yankee":{"src":"js/c/tone-yankee.4bd692f81e.js","br":16193,"deps":[]}},
 "order":["goukon","whiteroom","classroom","island","ship","br","trial","zombie","jashin","yakata","omega","massage","saimin","locker","rpg","jinro"],
 "scen":{
   "goukon":{"id":"goukon","name":"合コン","kicker":"恋愛・社交","desc":"居酒屋の個室で一晩。酒が回るほど本音と衝動が出る。最後に誰と帰ったかで決着。","unit":"時刻","preRel":0,"lethal":false,"env":[{"id":"alcohol","label":"酒の進み"},{"id":"mood","label":"場の空気"},{"id":"second","label":"二次会"},{"id":"kingsgame","label":"王様ゲーム"},{"id":"mobs","label":"モブの参加者"},{"id":"rel","label":"住人どうしの関係"},{"id":"lewd","label":"描写の有無"}],"stats":[{"id":"drink","label":"酒の強さ"},{"id":"looks","label":"見た目の自信"}],"card":{"desc":"居酒屋の個室で一晩、最後に誰と一緒に帰るか。","descLong":"居酒屋の個室で一晩の合コン。酒が回るほど本音と衝動があふれ出す。最後に誰と誰が一緒に帰ったかで決着がつく。"},"tags":["relCore","night","race","food","drink","mob","romance"],"chunks":["scen-goukon"]},
@@ -1215,8 +1734,8 @@ details.zmap > summary:hover { background: var(--bg1); }
   "locker":{"id":"locker","name":"媚薬ロッカー","kicker":"1〜6人・密室","solo":true,"maxCast":6,"minCast":1,"note":"※登場人物はすべて成人として扱います。","unit":"コマ","castHint":"1〜6人。2人のときが本筋で、二人の関係（恋人・主従・ライバルなど）は「既存の関係」から決まります。まれに、自分から望んで閉じ込められている人がいます（役割で指定もできます。2人のときだけ）。1人なら一人きりのロッカー、3人以上なら倉庫のロッカーに二人ずつ・三人ずつ分かれて閉じ込められます。","desc":"媚薬の充満する狭いロッカーに閉じ込められた二人。仕掛けを解いて無事に脱出できるか。先に理性が揺らぐのは誰か、乗るのか嗜めるのか。扉が開いたあと、二人の関係はどう変わるのか。一人なら、ひとりきりで熱に耐え抜けるか。三人以上なら、倉庫のロッカーに分かれて押し込まれ、誰と誰がくっつくかは運しだい。ロッカー越しのやきもちも、励まし合いも。","env":[{"id":"bind","label":"拘束"},{"id":"dose","label":"媚薬の濃さ"},{"id":"diff","label":"仕掛けの難しさ"},{"id":"turns","label":"制限時間"},{"id":"ev","label":"ハプニングの頻度"},{"id":"night","label":"抱き合う場面の起こりやすさ"},{"id":"romance","label":"恋愛の起こりやすさ"},{"id":"layout","label":"ロッカーの分け方（3人以上）"},{"id":"finder","label":"見回りの人（1人のとき）"},{"id":"lewd","label":"描写の有無"}],"stats":[{"id":"gaman","label":"我慢"},{"id":"dex","label":"器用さ"},{"id":"luck","label":"運"}],"perFields":[{"id":"role","label":"役割","auto":"おまかせ（まれに自分から閉じ込められている）","options":[{"id":"normal","label":"巻き込まれた"},{"id":"plotter","label":"自分から望んで閉じ込められた"}]}],"card":{"desc":["媚薬の満ちたロッカーに二人きり、仕掛けを解いて脱出。","媚薬の満ちたロッカーに二人きり、先に手を出すのは誰か。"],"descLong":["媚薬の充満する狭いロッカーに閉じ込められた二人。仕掛けを解いて脱出できるか。扉が開いたあと、二人の関係はどう変わる？","媚薬の充満する狭いロッカーに閉じ込められた二人。仕掛けを解いて脱出できるか。先に手を出すのは誰か、出たあと続きをするか。"],"kicker":"密室"},"tags":["relSome","night","raceNight","mob"],"chunks":["scen-locker"]},
   "rpg":{"id":"rpg","name":"ダンジョンRPG","kicker":"パーティ・冒険","desc":"パーティを組んでダンジョンへ。階ごとにランダムな戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、誰が宝箱に手を伸ばし、どこで引き返すのか。地下30階の主を倒せば踏破、引き返せば帰還、全員倒れれば全滅。","solo":true,"minCast":1,"maxCast":6,"unit":"階","castHint":"1〜6人のパーティで潜ります。職業は「おまかせ」ならエゴグラムから決まります。前に出るか、宝箱を開けるか、引き返すかは気質の数値で決まります。踏破できるのは一割ほど。多くは途中で引き返します。","env":[{"id":"floors","label":"目標の階層"},{"id":"danger","label":"魔物の強さ"},{"id":"loot","label":"お宝の多さ"},{"id":"retreat","label":"撤退"}],"stats":[{"id":"str","label":"腕っぷし"},{"id":"luck","label":"運"},{"id":"int","label":"知能"}],"perFields":[{"id":"job","label":"職業","auto":"おまかせ（エゴグラムから）","options":[{"id":"warrior","label":"戦士"},{"id":"mage","label":"魔法使い"},{"id":"priest","label":"僧侶"},{"id":"thief","label":"盗賊"},{"id":"hunter","label":"狩人"},{"id":"bard","label":"吟遊詩人"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"パーティでダンジョンに潜り、いくら持ち帰れるか。","descLong":"パーティを組んでダンジョンへ。階ごとに戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、どこで引き返し、いくら持ち帰れるか。"},"tags":["relSome","race","job","undead","death"],"chunks":["scen-rpg"]},
   "jinro":{"id":"jinro","name":"人狼","kicker":"ゲーム・推理","desc":"住人どうしで人狼ゲーム。配役は人狼・狩人・占い師・霊媒師・村人からランダム。人狼は性格で戦法（騙り・潜伏・仲間切り・庇い合い）を選び、村は仕切り役しだいで方針（ローラー・真贋の見極め・グレー吊り）が変わる。信頼と協力、そして裏切り。知能は性格とは別に決まる。","solo":true,"minCast":4,"maxCast":15,"unit":"日","castHint":"4〜15人。配役の数は環境値で決めます（人狼は全体の半分未満に自動で調整）。ゲームなので、襲う相手や投票先は既存の関係と関係なく、推理と立ち回りで決まります。","env":[{"id":"wolves","label":"人狼の数"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"lovemode","label":"好意モード"},{"id":"prize","label":"賞品"},{"id":"prizeText","label":"賞品（自由に書く）"}],"stats":[{"id":"int","label":"知能"},{"id":"poker","label":"ポーカーフェイス"}],"perFields":[{"id":"role","label":"配役","auto":"ランダム","options":[{"id":"wolf","label":"人狼"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"vill","label":"村人"}]}],"card":{"desc":"住人どうしの人狼ゲーム、騙りと推理と裏切り。","descLong":"住人どうしで人狼ゲーム。人狼は性格で騙りや潜伏を選び、村は仕切り役しだいで方針が変わる。信頼と協力、そして裏切り。"},"tags":["relSome","night","race","death"],"chunks":["scen-jinro"]}},
-"tones":{"auto":["aniki","proud","stern","tsun","gentle","devoted","cool","free","shy","polite"],"pack":{"mixed":"tone-mixed","cool_soft":"tone-cool-soft","boku_n":"tone-boku-n","noja":"tone-noja","kansai":"tone-kansai","mukuchi":"tone-mukuchi","gentleman":"tone-gentleman","ane":"tone-ane","calm":"tone-calm","chara":"tone-chara","darui":"tone-darui","devoted_p":"tone-devoted-p","genki":"tone-genki","gentle_n":"tone-gentle-n","gyaru":"tone-gyaru","hero":"tone-hero","kohai":"tone-kohai","mystic":"tone-mystic","ojou":"tone-ojou","tsun_n":"tone-tsun-n","usan":"tone-usan","yankee":"tone-yankee","sondai":"tone-sondai","god":"tone-god","darui_lite":"tone-darui-lite","keigo_sarc":"tone-keigo-sarc","keigo_bossy":"tone-keigo-bossy","keigo_flat":"tone-keigo-flat","keigo_twist":"tone-keigo-twist","mukuchi_ne":"tone-mukuchi-ne","otaku":"tone-otaku","ronkyaku":"tone-ronkyaku","chara_down":"tone-chara-down","flat_plain":"tone-flat-plain","tame":"tone-tame","tsun_soft":"tone-tsun-soft","gentle_m":"tone-gentle-m","honwaka":"tone-honwaka"}}};</script>
-<script src="js/c/core.1078ba0e9f.js"></script>
+"tones":{"auto":["aniki","proud","stern","tsun","gentle","devoted","cool","free","shy","polite"],"pack":{"mixed":"tone-mixed","cool_soft":"tone-cool-soft","boku_n":"tone-boku-n","god":"tone-god","noja":"tone-noja","kansai":"tone-kansai","mukuchi":"tone-mukuchi","gentleman":"tone-gentleman","ane":"tone-ane","calm":"tone-calm","chara":"tone-chara","darui":"tone-darui","devoted_p":"tone-devoted-p","genki":"tone-genki","gentle_n":"tone-gentle-n","gyaru":"tone-gyaru","hero":"tone-hero","kohai":"tone-kohai","mystic":"tone-mystic","ojou":"tone-ojou","tsun_n":"tone-tsun-n","usan":"tone-usan","yankee":"tone-yankee","sondai":"tone-sondai","darui_lite":"tone-darui-lite","keigo_sarc":"tone-keigo-sarc","keigo_bossy":"tone-keigo-bossy","keigo_flat":"tone-keigo-flat","keigo_twist":"tone-keigo-twist","mukuchi_ne":"tone-mukuchi-ne","otaku":"tone-otaku","ronkyaku":"tone-ronkyaku","chara_down":"tone-chara-down","flat_plain":"tone-flat-plain","tame":"tone-tame","tsun_soft":"tone-tsun-soft","gentle_m":"tone-gentle-m","honwaka":"tone-honwaka","darui_talk":"tone-darui-talk"}}};</script>
+<script src="js/c/core.675d854638.js"></script>
 <!-- scripts:end -->
 
 </body></html>

@@ -17,9 +17,9 @@
 
 | ファイル | 役目 |
 | --- | --- |
-| `js/pack-crypto.js`（中核） | 暗号（`HK.PackCrypto`）。SHA-256・HMAC・PBKDF2・ChaCha20 を素の JavaScript で書く（`crypto.subtle` は file:// や古い Safari で使えないため）。組み立て道具も同じファイルを読む |
-| `js/packs.js`（中核） | `HK.Packs`。枠を読みに行く・コードで開ける・覚えたコードで自動で開ける・版の確かめ |
-| `js/packs-ui.js`（中核） | `HK.PacksUI`。一覧の「箱庭を追加」のカードと、コードの入力 |
+| `js/pack-crypto.js`（late） | 暗号（`HK.PackCrypto`）。SHA-256・HMAC・PBKDF2・ChaCha20 を素の JavaScript で書く（`crypto.subtle` は file:// や古い Safari で使えないため）。組み立て道具も同じファイルを読む |
+| `js/packs.js`（late） | `HK.Packs`。枠を読みに行く・コードで開ける・覚えたコードで自動で開ける・版の確かめ |
+| `js/packs-ui.js`（late） | `HK.PacksUI`。一覧（「箱庭を選ぶ」の窓と PC の上の一覧 ui-box-list.js）の「箱庭を追加」のカードと、コードの入力 |
 | `js/load.js` | `HK.Load.addPack`（パックのかたまり・目録・並びを足し、取り付け役を当て直す）・`HK.Load.missing`。パックのかたまりは手元に中身があるので、Blob の URL を script 要素で読む（file:// でも動く。だめなら Function） |
 | `js/ui.js` | 一覧にカードを足す（1行）。開けていない箱庭のセーブ・履歴を開いたときの知らせ |
 | `hakoniwa-tools/build/build-pack.js` | パックを組み立てる |
@@ -87,3 +87,10 @@ node hakoniwa-tools/build/build-dist.js hakoniwa-full
   - パックだけ作り直す → 覚えたコードで自動で開く。本体より新しいパック → 開かずに「本体が古い」と出る。開けていない箱庭のセーブ → 「この画面にありません」。
   - build-dist.js の zip を解凍した本体：パックなしでボタンなし → パックの zip を解凍して入れると開ける。
 - 本体の結果が変わらないこと：regress.js の指紋が変更前と一致（R18版 19箱庭・全年齢モード 14・全年齢版 16）。chunk-audit.js 0件（両版）。
+
+## 7. main への取り込み（2026-11-03）
+
+- main（箱庭を選ぶ窓・PC の上の一覧・吹き出しなどの画面の整え直し）を取り込んだ。中核を小さく保つ決まり（2026-11-01）に合わせ、`pack-crypto.js`・`packs.js`・`packs-ui.js` は late に移した（画面が出たあとで読み、パックが届いたら一覧を描き直す。中核の増減なし）。
+- 「箱庭を追加」は窓の一覧の最後と、PC の上の一覧の最後の両方に出す。
+- 確かめ：regress の指紋が取り込む前の main と一致（R18版 19・全年齢モード 14・全年齢版 16）、chunk-audit・chunk-regress・catalog-check 0件、audit-all すべて 0 件、画面の試し（サイトの R18版・全年齢版・スマホ幅、配布版のフォルダあり・なし）すべて OK。
+- 知っていること：前に選んでいた箱庭がパックの箱庭だと、読み込み直した直後（パックが開く前）は一覧の最初の箱庭が選ばれる（パックが開いたあとで選び直す）。

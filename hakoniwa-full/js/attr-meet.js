@@ -289,7 +289,7 @@
     crushed: L('{y}「その{feat}、いいね｜その{feat}は、いいな｜その{feat}、いいですね」何気ない一言だった。{x}はその日一日、その言葉を何度も思い返した。|{y}は{x}の{feat}に目を留めて、ふっと笑った。{y}「あなたらしい｜あなたらしいな｜あなたらしいですね」{x}は、うまく返事ができなかった。')
   };
   A.LOOKS_TALK = TALK;
-  var FRIEND = /^(best|childhood|buddy|sibclose|almost)$/, LOVER = /^(lover|mate|fated)$/;
+  var FRIEND = /^(best|childhood|buddy|sibclose|twin|almost)$/, LOVER = /^(lover|mate|fated)$/;
   function tiesOf(owner, a, b) {
     if (owner && owner.tiesAll && HK.Ties && HK.Ties.all) return HK.Ties.all(owner, a, b);
     var ia = idx(a), ib = idx(b), src = owner && Array.isArray(owner.ties) ? owner.ties : curIn && Array.isArray(curIn.ties) ? curIn.ties : [];

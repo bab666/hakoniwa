@@ -309,6 +309,8 @@
   /* ⚙設定の「口調・喘ぎをより細かく設定する」：その住人を選び、節を開いて頭へ */
   VS.open = function (id) {
     VIEW.t = byId(id) ? id : '';
+    /* 住人タブの節の切替を「口調の全体設定」に（ui-shell.js。2026-11-01 担当UA） */
+    if (HK.Shell) HK.Shell.setPane('voice');
     VIEW.fold[foldKey(true, 'tone')] = true;
     keep();
     if (!document.getElementById('vs-panel')) UI.refresh(); else VS.refresh();

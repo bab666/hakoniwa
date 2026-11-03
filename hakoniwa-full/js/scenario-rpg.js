@@ -114,7 +114,7 @@
   function run(input) {
     var ST = HK.Story, S = ST.state(input, 'rpg'), rng = S.rng, env = S.env, P = S.P;
     /* 結果に「最も心を寄せた相手」とエゴグラムとの比較を出す（solo-story-kit.js）。関係の値はないので、設定した関係と記録のやりとりから */
-    S.egoNotes = true; S.bondFn = function (S0, a, b) { var t = tieOf(input, a, b); return /lover|mate|fated|best|crush|almost|yan/.test(t) ? 0.4 : /friend|buddy|childhood|sibling|sibclose|sibprot|parent|mentor/.test(t) ? 0.25 : /enemy|bad|rival/.test(t) ? -0.35 : 0; };
+    S.egoNotes = true; S.bondFn = function (S0, a, b) { var t = tieOf(input, a, b); return /lover|mate|fated|best|crush|almost|yan/.test(t) ? 0.4 : /friend|buddy|childhood|sibling|sibclose|twin|sibprot|parent|mentor/.test(t) ? 0.25 : /enemy|bad|rival/.test(t) ? -0.35 : 0; };
     var dmul = 0.7 + env.danger / 100 * 0.9, lmul = 0.6 + env.loot / 100 * 1.2;
     var pot = Math.max(1, Math.round(P.length * 0.7)), gold = 0, floor = 0, banked = 0, ended = '', bossDown = 0, retreatBy = null, retreatWhy = '', retreatMad = false, eternal = null;
     /* 同じ階層の主に挑める回数。これを超えたら、決着のつかない戦いとして終わる */
@@ -209,7 +209,7 @@
     var RD = HK.RPGData, usedBoss = {}, captive = null, grudges = [], hostUsed = false, lastSp = {};
     function F(t, m) { return String(t).replace(/\{(\w+)\}/g, function (x, k) { return m[k] != null ? m[k] : x; }); }
     function pick2(arr) { return arr[Math.floor(rng() * arr.length)]; }
-    function tieStrong(a, b) { return /lover|mate|best|parent|sibprot|sibclose|sibling|buddy|childhood|crush|almost/.test(tieOf(input, a, b)); }
+    function tieStrong(a, b) { return /lover|mate|best|parent|sibprot|sibclose|twin|sibling|buddy|childhood|crush|almost/.test(tieOf(input, a, b)); }
     /* again があれば、倒しきれなかった同じ主への再戦（削った分は残る。仕掛けはもう一度は起きない） */
     function nextBoss() {
       var frac = floor / Math.max(5, maxF), tierB = Math.min(3, Math.floor(frac * 4 - 0.01));

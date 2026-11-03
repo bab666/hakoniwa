@@ -76,7 +76,7 @@
     /* 疑似親子・裏切りで連れ去られた人がいれば、名簿を取り直す（連れ去られた人を、このあとの場面に出さない） */
     P = live(S);
     if (P.length < 2 || rng() > 0.4) return;
-    var opts = [], lastDead = S.P.filter(function (p) { return !p.alive && p.i != null; }).pop();
+    var opts = [], lastDead = S.P.filter(function (p) { return !p.alive && p.i != null && !p.deathHidden; }).pop();   /* まだ死を知られていない人（成り代わり）は悼まない */
     P.forEach(function (a) {
       P.forEach(function (b) {
         if (a === b) return;
@@ -95,7 +95,8 @@
     });
     if (!opts.length) return;
     var o = HK.weighted(rng, opts, function (x) { return x[3]; }), a = o[0], b = o[1], k = o[2];
-    var m = { a: a.name, b: b.name, c: o[4] ? o[4].name : '', v: lastDead ? lastDead.name : '' }, t = F(ST.pick(S, T[k]), m), why = '';
+    /* 二人の関係に合わない文（家族・夫婦・恋人に「こんな場所でなければ、話さなかったはずの昔の話」など。mini.js の HK.relFilter）は外す（2026-10-31 担当CL） */
+    var m = { a: a.name, b: b.name, c: o[4] ? o[4].name : '', v: lastDead ? lastDead.name : '' }, tp = HK.relFilter ? HK.relFilter(S, T[k], a, b) : T[k], t = F(ST.pick(S, tp && tp.length ? tp : T[k]), m), why = '';
     if (k === 'talk') { setRel(S, a, b, 0.15, '打ち解けた'); why = '眠れない夜に、距離が縮まった'; }
     if (k === 'protect') { setRel(S, a, b, 0.2, '信頼', a); b.m.fear = clamp(b.m.fear - 12, 0, 100); why = a.name + 'は怯える' + b.name + 'を放っておけなかった（NP）'; }
     if (k === 'team') { setRel(S, a, b, 0.15, '相棒'); why = '二人で調べるうちに、息が合ってきた'; }
@@ -193,7 +194,7 @@
   /* ---------- 関係図 ---------- */
   function relmap(S) {
     var P = S.P, edges = [];
-    var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', classmate: 'friend', boss: 'partner', benefactor: 'guard', relative: 'guard', worship: 'guard', fond: 'friend', blind: 'guard', acq: 'none' };
+    var CLS = { lover: 'love', sibbad: 'enemy', bad: 'enemy', mate: 'love', fated: 'love', almost: 'love', fwb: 'night', crush: 'pine', enemy: 'enemy', rival: 'enemy', ex: 'obsess', buddy: 'partner', best: 'friend', friend: 'friend', childhood: 'friend', sibling: 'guard', sibprot: 'guard', sibclose: 'guard', twin: 'guard', parent: 'guard', pparent: 'guard', master: 'partner', mentor: 'partner', teacher: 'partner', senpai: 'friend', colleague: 'friend', classmate: 'friend', boss: 'partner', benefactor: 'guard', relative: 'guard', worship: 'guard', fond: 'friend', blind: 'guard', acq: 'none' };
     (S.ties || []).forEach(function (t) {
       /* 両片想い（向きを逆にした片想い二本）は、一本の「両片想い」にまとめる */
       if (t.type === 'crush' && (S.ties || []).some(function (u) { return u.type === 'crush' && u.a === t.b && u.b === t.a; })) { if (t.a < t.b) edges.push({ a: t.a, b: t.b, label: (t.born ? '★' : '') + '両片想い', cls: 'pine', dir: null }); return; }

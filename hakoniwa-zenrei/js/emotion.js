@@ -324,7 +324,8 @@
     }
     /* 死を見つけたら：その記録を覚えておき（最期の言葉を足す場所）、周りに悲しみと恐れ */
     P.forEach(function (p) {
-      if (!p || p.alive !== false || p._emoDead) return;
+      /* 仲間がまだ死を知らない人（成り代わられた人など：p.deathHidden）は、知られたときに数える */
+      if (!p || p.alive !== false || p._emoDead || p.deathHidden) return;
       p._emoDead = true;
       p._emoDeathN = o.actors.indexOf(p.i) >= 0 ? o.n : null;
       if (emo) P.forEach(function (q) {

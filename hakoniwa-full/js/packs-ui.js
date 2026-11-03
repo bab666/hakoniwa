@@ -1,5 +1,5 @@
 /* 箱庭シミュレーター: 追加パックの画面（HK.PacksUI）。両方のビルドに同じファイルを置く
-   ・箱庭の一覧の最後に「箱庭を追加」のカードを出す（まだ開けていない追加パックがあるときだけ。データ配布版でフォルダを置いていなければ出ない）
+   ・箱庭の一覧（窓の一覧と、PC の上の一覧 ui-box-list.js）の最後に「箱庭を追加」のカードを出す（まだ開けていない追加パックがあるときだけ。データ配布版でフォルダを置いていなければ出ない）
    ・押すとコードの入力を出す。入れたコードで開くパックを全部開け（まとめ用のコードなら一度に全部）、一覧に箱庭を足す
    ・開けていない部屋の名前は出さない（入力の画面にセットの名前と紹介だけ）
    ・ui.js の renderBox がカードの HTML（HK.PacksUI.card()）を一覧に足す。パックが開いたら HK.UI.refresh で描き直す
@@ -18,6 +18,11 @@
       '<p style="margin:8px 0 0"><button type="button" class="btn small primary" data-packadd="1">コードを入れる</button></p></div>';
   };
 
+  /* PC の上の一覧（js/ui-box-list.js）の最後に足す1枚 */
+  UI.listItem = function () {
+    if (!HK.Packs || !HK.Packs.ready() || !HK.Packs.hasLocked()) return '';
+    return '<li class="packadd"><button type="button" class="bxlc packadd" data-packadd="1" title="購入したコードを入れると、新しい箱庭のセットが一覧に加わります"><span class="bxlk">追加の箱庭</span><span class="bxln">＋ 箱庭を追加</span></button></li>';
+  };
   var ov = null, opener = null;
   function close() {
     if (!ov) return;

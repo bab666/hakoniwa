@@ -6,6 +6,8 @@
      参加表は行ごとに覚えて、変わった行だけ入れ替える（表の外の見出し・ボタン・注記は作り直す）。
      欄を手で変えた節（その場で表示を書き換える欄がある）は、文字列が同じでも次に描くときに作り直す
    ・タブを押した直後・箱庭を選び替えた直後（defer）は、カードだけ先に描き、作り直す節は次の描画のあとで1節ずつ描く。
+     節に now: true を付けたもの（2026-11-01 の整え直しで足した、選んだ箱庭のカードと切替）は、カードと同じくすぐに描く（箱庭を選んだらすぐ上のカードに出す）。
+     2026-11-01 から節は「箱庭を選ぶ」の窓（cards）・選んだ箱庭のカード（sel）・切替（tabs）・参加者と初動（per）・場の設定（env）・起こりやすさ（odds）・展開と内容（plot）・帯（run）。見出し（h2.sec）は無く、折りたたみは付かない
      作り直すまでの古い節には印（.bxstale。節ごと作り直すものは薄くする .bxdim）を付け、そこへの操作は箱庭の設定に届けない。描き終えるまで #view-box に data-pending と aria-busy を付ける
    ・節の作り直しは、外の要素の上で折りたたみ（ui-fold.js の HK.Fold.apply）まで済ませてから入れる（入れたあとに組み替えて二度レイアウトしないように）
    ・隠しているあいだの箱庭タブは display:none ではなく content-visibility:hidden にして、レイアウトを捨てない（対応していないブラウザでは今までどおり）
@@ -162,7 +164,7 @@
     segs.forEach(function (seg, i) {
       var r = rec[seg.k];
       if (r && r.html === seg.html && !r.dirty && !r.stale && !(r.t && (r.t.outerDirty || r.t.dirtyTr.length))) { BD.stat.kept++; if (seg.k === 'cards') patchCards(r, o); return; }
-      if (o.defer && i > 0) {
+      if (o.defer && i > 0 && !seg.now) {
         later.push(seg);
         if (r && !r.stale) {
           var sp = seg.rows && r.t && !r.dirty ? split(seg) : null, dim = !(sp && sp.head === r.t.sp.head);

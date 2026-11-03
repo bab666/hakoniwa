@@ -1,3 +1,4 @@
+/* @event-ok 名前の呼びかけを減らした（2026-11-01 担当NC） */
 /* 箱庭シミュレーター: ゾンビの街 ― 知り合いとの合流
    移動した先で、設定した関係（恋人・親子・きょうだい・親友・ライバル・敵対など）や、
    関係値（好意・信頼・緊張・惹かれ）、相手の状態（けが・咬み跡・連れている子ども）、
@@ -47,7 +48,7 @@
     good: L('{area}の物陰から現れたのは、{b}だった。{a}は構えた{w}を、ゆっくり下ろした。|{a}は{area}で、見覚えのある顔を見つけた。{b}だ。知った顔がこんなに嬉しいとは思わなかった。'),
     bad: L('{a}は{area}で{b}と鉢合わせた。どちらも、武器を下ろさなかった。|{area}にいたのは{b}だった。{a}は舌打ちをこらえた。よりによって、こいつか。'),
     /* 新しい関係：同級生・上司と部下・執着（信仰）・恩人・親族・執着（ヤンデレ） */
-    classmate: L('{area}で、{a}は見覚えのある横顔を見つけた。学生のころ同じクラスだった{b}だ。{a}「{b}……？　生きてたんだ｜{b}……？　生きていたのか｜{b}……？　生きていたんですね」――{b}は、あの頃と同じ顔で笑った。|{a}と{b}は、{area}の瓦礫越しに目が合った。一瞬の間のあと、二人は同時に、学生時代のあだ名を口にした。|{a}は{area}で{b}と鉢合わせた。卒業以来の再会が、こんな街の真ん中になるとは思わなかった。{a}「{b}、変わってないな｜{b}、変わっていないな｜{b}、変わっていませんね」'),
+    classmate: L('{area}で、{a}は見覚えのある横顔を見つけた。学生のころ同じクラスだった{b}だ。{a}「{b}……？　生きてたんだ｜{b}……？　生きていたのか｜{b}……？　生きていたんですね」――{b}は、あの頃と同じ顔で笑った。|{a}と{b}は、{area}の瓦礫越しに目が合った。一瞬の間のあと、二人は同時に、学生時代のあだ名を口にした。|{a}は{area}で{b}と鉢合わせた。卒業以来の再会が、こんな街の真ん中になるとは思わなかった。{a}「変わってないな｜変わっていないな｜変わっていませんね」'),
     bossA: L('{area}で、{a}は部下の{b}を見つけた。{a}「{b}、無事か。報告は後でいい｜＝｜{b}、無事ですか。報告は後で構いません」――{b}の肩を叩いた{a}の手は、わずかに震えていた。|{a}は{area}で{b}の姿を見つけると、真っ先に怪我の有無を確かめた。{a}「よく生き延びた。ここからは一緒に動く｜＝｜よく生き延びました。ここからは一緒に動きましょう」'),
     bossB: L('{area}で、{a}は上司の{b}を見つけた。{a}「{b}……！　無事だった｜{b}……！　無事だったか｜{b}……！　ご無事でしたか」――思わず駆け寄った{a}に、{b}はいつもの調子で「遅いよ｜遅いぞ｜遅いですよ」と返した。|{a}は{area}で{b}を見つけて、背筋を伸ばした。こんな状況でも、{b}の前では部下の顔に戻っていた。'),
     worshipA: L('{area}で{b}の姿を見つけた瞬間、{a}はその場に膝をついた。{a}「{b}……よかった。本当によかった｜＝｜{b}……よかった。本当によかったです」――{a}は祈るように両手を組んだまま、しばらく顔を上げられなかった。|{a}は{area}で{b}を見つけると、駆け寄って{b}の前に立ちはだかった。{a}「もう大丈夫。ここからは、私が{b}の盾になる｜＝｜もう大丈夫です。ここからは、私が{b}の盾になります」'),
@@ -56,7 +57,7 @@
     beneB: L('{area}で、{a}は恩人の{b}を見つけた。{a}「{b}……！　今度は、私が恩を返す番だ｜＝｜{b}……！　今度は、私が恩を返す番です」――{a}は{b}の荷物を、半ば奪うように背負った。|{a}は{area}で{b}を見つけて、言葉より先に頭を下げていた。あの日{b}に救われなければ、{a}は今ここにいなかった。'),
     relative: L('{area}にいたのは、親戚の{b}だった。{a}「{b}！　よかった、無事で｜{b}！　よかった、無事だったか｜{b}！　無事でよかったです」――二人はしばらく、互いの家族の消息を確かめ合った。|{a}は{area}で{b}を見つけて、思わず子どもの頃の呼び方で名前を呼んだ。親戚の集まりでしか会わなかった顔が、今はこんなにも心強かった。'),
     yanA: L('{area}で{b}を見つけた瞬間、{a}は駆け寄って{b}の手首を掴んだ。{a}「やっと見つけた。……もう、離さないから｜やっと見つけた。……もう、離さない｜やっと見つけました。……もう、離しませんから」――その指には、痛いほどの力がこもっていた。|{a}は{area}で{b}の姿を見つけて、息を呑んだ。{a}「{b}。ずっと、ずっと探してた｜{b}。ずっと、ずっと探していた｜{b}。ずっと、ずっと探していました」――{a}は{b}から一瞬も目を離さなかった。'),
-    yanB: L('{area}にいたのは{b}だった。{b}は{a}を見るなり、まっすぐ歩み寄ってきた。その目は、少しも笑っていなかった。|{a}が{area}に着くと、{b}が待っていたかのように立っていた。{b}「遅かったね、{a}｜遅かったな、{a}｜遅かったですね、{a}」'),
+    yanB: L('{area}にいたのは{b}だった。{b}は{a}を見るなり、まっすぐ歩み寄ってきた。その目は、少しも笑っていなかった。|{a}が{area}に着くと、{b}が待っていたかのように立っていた。{b}「遅かったね｜遅かったな｜遅かったですね」'),
     new: L('{a}は{area}で、{b}と出くわした。生きている人間を見るのは、半日ぶりだった。|{area}の暗がりから、{b}が両手を上げて出てきた。「噛まれてない。人間だ｜噛まれていない。人間だ｜噛まれていません。人間です」|{a}が{area}に着くと、先に{b}がいた。{b}は武器を握ったまま、{a}をじっと見ていた。|{a}は{area}で{b}と鉢合わせ、互いに武器を向けたまま十秒見つめ合った。先に「……ゾンビじゃないよな｜……ゾンビではないな｜……ゾンビじゃないですよね」と言ったのは{b}だった。')
   };
 
@@ -150,7 +151,7 @@
       /* 家族で「恋愛：あり」（ties.js の HK.tieFamLove）の二人が恋人になっていれば（惹かれ合っていれば）、恋人どうしの再会にする */
       if (HK.tieFamLove && HK.tieFamLove(t) && (ctx.pair(a, b).couple || (ra.att > 45 && rb.att > 40))) return 'lover';
       if (ty === 'sibprot') return first ? 'protA' : 'protB';
-      if (ty === 'sibclose') return 'sibclose';
+      if (ty === 'sibclose' || ty === 'twin') return 'sibclose';
       if (ty === 'teacher') return first ? 'teacherA' : 'teacherB';
       if (ty === 'mentor') return first ? 'mentorA' : 'mentorB';
       if (ty === 'pparent' && (ctx.pair(a, b).couple || (ra.att > 45 && rb.att > 40))) return 'lover';
@@ -169,9 +170,9 @@
     if (ra.aff + rb.aff > 40) return 'good';
     return 'new';
   }
-  var MOOD = { protA: 'joy', protB: 'joy', sibclose: 'joy', teacherA: 'joy', teacherB: 'joy', mentorA: 'joy', mentorB: 'joy', lover: 'joy', fwb: 'shy', almost: 'shy', crushA: 'shy', crushB: 'joy', crushM: 'shy', ex: 'shy', parent: 'joy', child: 'joy', sibling: 'joy', best: 'joy', childhood: 'joy', buddy: 'joy', friend: 'joy', colleague: 'joy', senpaiA: 'joy', senpaiB: 'joy', masterA: 'joy', masterB: 'joy', rival: 'tense', enemy: 'tense', acq: 'joy', spark: 'shy', good: 'joy', bad: 'tense', new: null, classmate: 'joy', bossA: 'joy', bossB: 'joy', worshipA: 'joy', worshipB: 'joy', beneA: 'joy', beneB: 'joy', relative: 'joy', yanA: 'shy', yanB: null };
+  var MOOD = { protA: 'joy', protB: 'joy', sibclose: 'joy', twin: 'joy', teacherA: 'joy', teacherB: 'joy', mentorA: 'joy', mentorB: 'joy', lover: 'joy', fwb: 'shy', almost: 'shy', crushA: 'shy', crushB: 'joy', crushM: 'shy', ex: 'shy', parent: 'joy', child: 'joy', sibling: 'joy', best: 'joy', childhood: 'joy', buddy: 'joy', friend: 'joy', colleague: 'joy', senpaiA: 'joy', senpaiB: 'joy', masterA: 'joy', masterB: 'joy', rival: 'tense', enemy: 'tense', acq: 'joy', spark: 'shy', good: 'joy', bad: 'tense', new: null, classmate: 'joy', bossA: 'joy', bossB: 'joy', worshipA: 'joy', worshipB: 'joy', beneA: 'joy', beneB: 'joy', relative: 'joy', yanA: 'shy', yanB: null };
   var FX = {
-    protA: [12, 10, 0, 0], protB: [12, 10, 0, 0], sibclose: [12, 12, 0, 0], teacherA: [8, 10, 0, 0], teacherB: [8, 10, 0, 0], mentorA: [8, 12, 0, 0], mentorB: [10, 14, 0, 0],
+    protA: [12, 10, 0, 0], protB: [12, 10, 0, 0], sibclose: [12, 12, 0, 0], twin: [12, 12, 0, 0], teacherA: [8, 10, 0, 0], teacherB: [8, 10, 0, 0], mentorA: [8, 12, 0, 0], mentorB: [10, 14, 0, 0],
     lover: [12, 10, 8, 0], fwb: [8, 6, 8, 0], almost: [10, 8, 10, 0], crushA: [8, 6, 10, 0], crushB: [8, 8, 4, 0], crushM: [8, 6, 10, 0], ex: [6, 4, 6, 4], parent: [12, 10, 0, 0], child: [12, 10, 0, 0], sibling: [10, 10, 0, 2],
     best: [12, 12, 0, 0], childhood: [10, 10, 2, 0], buddy: [8, 14, 0, 0], friend: [8, 8, 0, 0], colleague: [6, 8, 0, 0], senpaiA: [8, 8, 0, 0], senpaiB: [8, 10, 2, 0], masterA: [6, 8, 0, 0], masterB: [8, 12, 0, 0],
     rival: [3, 5, 2, 4], enemy: [0, -2, 0, 8], acq: [5, 5, 0, 0], spark: [6, 4, 8, 0], good: [8, 8, 0, 0], bad: [0, 0, 0, 6], new: [3, 5, 0, 0],
@@ -192,7 +193,7 @@
     if (bz.bitten && bz.aware && !bz.hiding && close && rng() < 0.7) {
       extra += fill(ctx.pick(STATE.bitten), m); mood = 'grief'; ctx.stress(a, 25);
       why += '／' + b.name + 'はすでに咬まれていた';
-      Z.later(ctx, function () { if (b.alive && !b.out && Z.groupReaction) Z.groupReaction(ctx, b); });
+      Z.later(ctx, function () { if (b.alive && !b.out && Z.groupReaction) Z.groupReaction(ctx, b); }, [b]);
     } else if (bz.bitten && bz.hiding) {
       if (a.tr.a + a.tr.caution * 0.5 > 0.7 + rng() * 0.5) { extra += fill(ctx.pick(STATE.bandageSee), m); ctx.pair(a, b).zsuspect = true; why += '／' + a.name + 'は' + b.name + 'の傷に引っかかった（A・慎重さ）'; }
       else if (close) extra += fill(ctx.pick(STATE.bandageMiss), m);

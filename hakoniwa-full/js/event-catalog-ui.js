@@ -157,9 +157,11 @@
   var ov = null, opener = null;
   function close() {
     if (!ov) return;
+    var o = ov;
     ov.remove(); ov = null;
+    if (HK.Modal) HK.Modal.unlock(o);
     document.removeEventListener('keydown', onKey, true);
-    if (opener && opener.focus) try { opener.focus(); } catch (e) { }
+    if (opener && opener.focus) try { opener.focus({ preventScroll: true }); } catch (e) { }
     opener = null;
   }
   function onKey(e) {
@@ -205,7 +207,7 @@
     ov = document.createElement('div');
     ov.className = 'gearov tipov evcov';
     ov.innerHTML = '<div class="gearbox" role="dialog" aria-modal="true" aria-labelledby="evctitle" tabindex="-1"><div class="gearhd"><h2 id="evctitle">' + esc((sc && sc.name) || (scenOf(id) || {}).name || id) + ' の出来事の一覧</h2><button type="button" class="btn small" data-evclose="1">閉じる</button></div>' +
-      '<div class="evcbody" aria-live="polite"' + (C() ? '>' : ' aria-busy="true"><p class="tiplead evcwait">出来事の一覧を読み込んでいます…</p>') + '</div></div>';
+      '<div class="evcbody gearbody" aria-live="polite"' + (C() ? '>' : ' aria-busy="true"><p class="tiplead evcwait">出来事の一覧を読み込んでいます…</p>') + '</div></div>';
     ov.addEventListener('click', function (e) {
       var t = e.target;
       if (t === ov || (t.closest && t.closest('[data-evclose]'))) { close(); return; }
@@ -222,8 +224,9 @@
       if (rt) { var b = ov.querySelector('.evcbody'); if (b) { b.setAttribute('aria-busy', 'true'); b.innerHTML = '<p class="tiplead evcwait">出来事の一覧を読み込んでいます…</p>'; } load(rt.getAttribute('data-evretry')); }
     });
     document.body.appendChild(ov);
+    if (HK.Modal) HK.Modal.lock(ov);
     document.addEventListener('keydown', onKey, true);
-    var bx = ov.querySelector('.gearbox'); if (bx) bx.focus();
+    var bx = ov.querySelector('.gearbox'); if (bx) try { bx.focus({ preventScroll: true }); } catch (e) { bx.focus(); }
     load(id);
   }
   document.addEventListener('click', function (e) {

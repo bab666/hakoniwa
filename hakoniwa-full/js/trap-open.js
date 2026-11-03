@@ -1089,7 +1089,7 @@
     lover: 'love', mate: 'love', fated: 'love', spouse: 'love', fiance: 'love', almost: 'almost', fwb: 'almost', ex: 'ex',
     crush: 'crush', honmei: 'crush', fond: 'crush', bad: 'host', enemy: 'host', sibbad: 'host', rival: 'rival',
     senpai: 'rank', mentor: 'rank', teacher: 'rank', boss: 'rank', benefactor: 'rank', master: 'master', abuse: 'master',
-    parent: 'kin', pparent: 'kin', sibling: 'kin', sibprot: 'kin', sibclose: 'kin', stepsib: 'kin', relative: 'kin',
+    parent: 'kin', pparent: 'kin', sibling: 'kin', sibprot: 'kin', sibclose: 'kin', twin: 'kin', stepsib: 'kin', relative: 'kin',
     yan: 'obsess', worship: 'obsess', blind: 'obsess', fear: 'fear', apathy: 'apathy'
   };
   var SCENES = { pal: ['pal_coop', 'pal_tease'], acq: ['acq_nod'], love: ['love_calm'], almost: ['almost_aware'], ex: ['ex_awk'], crush: ['crush_aware'],

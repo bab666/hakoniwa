@@ -470,7 +470,8 @@
     try {
       var P = S.P, key0 = P.map(function (p) { return p.name; }).join(',') + '|' + (input && input.seed);
       /* 蘇る人（不死・吸血鬼）は、終わりの時点で倒れていても遺言を残さない（このあと起き上がる。「その後」は IMM_AFTER） */
-      var dead = P.filter(function (p) { return p && p.alive === false && !revives(p); });
+      /* 最期の言葉の無い人（誰にも看取られずに殺され、成り代わられた人など：p.lwNone）は飛ばす */
+      var dead = P.filter(function (p) { return p && p.alive === false && !revives(p) && !p.lwNone; });
       dead.sort(function (x, y) { return (x._emoDeathN == null ? 1e9 : x._emoDeathN) - (y._emoDeathN == null ? 1e9 : y._emoDeathN); });
       var lastL = [];
       dead.forEach(function (p) {

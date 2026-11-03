@@ -76,6 +76,14 @@
     var prizeWinN = !prize ? '' : pPun ? '勝利' : pWish ? '勝者の命令権' : pSent ? '勝利' : prize;
     function pk(a) { return ST.pick(S, a); }
     function F(t, m) { return fill(t, m); }
+    /* 推理の台詞は「切り出し＋理由＋締め」をつなぐ。部品はどれも 3 本（くだけた常体｜硬い常体｜敬語。＝・空は左と同じ）なので、
+       本ごとにつないで 1 本の 3 本の台詞にする（切り出しの ¦ より前は地の文。台詞は「」で挟む）。2026-10-31 口調直し第8回 */
+    function tri(t) { var a = String(t).split('｜'); if (a.length < 3) return [t, t, t]; for (var i = 1; i < 3; i++) if (a[i] === '＝' || a[i] === '') a[i] = a[i - 1]; return a.slice(0, 3); }
+    var QUIET = /^(mukuchi|mukuchi_ne|darui)$/, BRIEF = /^(aniki|yankee|usan|chara_down|otaku|kohai|mystic|noja|sondai|kansai)$/;
+    function joinTri(op, rs, cl) {
+      var k = op.indexOf('¦'), head = op.slice(0, k) + '「', A = tri(op.slice(k + 1)), B = tri(rs), C = tri(cl.replace(/」$/, ''));
+      return head + [0, 1, 2].map(function (i) { return A[i] + B[i] + C[i]; }).join('｜') + '」';
+    }
     function say(o) { return ST.say(S, o); }
     function avg(list, f) { return list.length ? list.reduce(function (s0, x) { return s0 + f(x); }, 0) / list.length : 0; }
 
@@ -353,7 +361,7 @@
       if (B.gray.length) { put('gray', { g: nm(B.gray), n: B.gray.length }); data.gray = B.gray.map(function (q) { return q.name; }); }
       if (B.wolfMax) put(B.exact ? 'wolfExact' : 'wolfMax', { n: B.wolfMax });
       if (parts.length < 2) return false;
-      var head = BP.head, line = [0, 1, 2].map(function (k) { return head[k] + parts.map(function (x) { return x[k]; }).join(''); });
+      var head = BP.head, line = [0, 1, 2].map(function (k) { return head[k] + parts.map(function (x, i) { return k < 2 && i < parts.length - 1 ? x[k].replace(/だ?。$/, '、') : x[k]; }).join(''); });
       S._jrBoard = data;   /* 点検用（記録には入れない） */
       say({ actors: [sp.i], tag: '盤面整理', text: sp.name + '\u300c' + line.map(function (x) { return x.replace(/。$/, ''); }).join('\uff5c') + '\u300d', why: sp.name + 'が記録（CO・占い結果・霊媒結果・吊り・噛み）から盤面を整理した' });
       S._jrBoard = null;
@@ -416,7 +424,7 @@
           var pressure = avg(A.filter(function (q) { return q !== seer && !isW(q); }), function (q) { return q.sus[seer.i]; });
           if (foundW || seer.tr.honesty > 0.6 || pressure > 55 || (plan.fake && day >= 1 && rng() < 0.4) || day >= 2 && rng() < 0.6) {
             seerCO.push(seer); setBelief();
-            say({ actors: [seer.i, seer.lastDiv.i], tag: '占い師CO', text: F(pk(J.seerCO), { a: seer.name, x: seer.lastDiv.name, r: foundW ? '人狼でした' : '人狼ではありませんでした' }), why: seer.name + 'は本物の占い師（' + (foundW ? '人狼を見つけた' : seer.tr.honesty > 0.6 ? '正直さ' : pressure > 55 ? '疑いをかわすため' : '頃合いを見て') + '）' });
+            say({ actors: [seer.i, seer.lastDiv.i], tag: '占い師CO', text: F(pk(J.seerCO), { a: seer.name, x: seer.lastDiv.name, r: foundW ? '人狼' : '人間' }), why: seer.name + 'は本物の占い師（' + (foundW ? '人狼を見つけた' : seer.tr.honesty > 0.6 ? '正直さ' : pressure > 55 ? '疑いをかわすため' : '頃合いを見て') + '）' });
             said(seer, seer.lastDiv, foundW, day); spoke[seer.i] = 1;
             hearResult(seer, seer.lastDiv, foundW);
           }
@@ -435,7 +443,7 @@
         var tgt = ft || A.filter(function (q) { return !isW(q) && q !== fw; }).sort(function (a, b) { return (b.acc + (b === seer ? 0.5 : 0)) - (a.acc + (a === seer ? 0.5 : 0)); })[0];
         if (tgt) {
           fw.fakeLast = tgt; fw.cnt.lies++;
-          say({ actors: [fw.i, tgt.i], tag: seerCO.length > 1 ? '対抗CO' : '占い師CO', text: F(pk(seerCO.length > 1 ? J.fakeCO : J.seerCO), { a: fw.name, x: tgt.name, r: ft ? '人狼ではありませんでした' : '人狼でした' }), why: fw.name + 'は人狼。占い師を騙った（' + (ft ? '仲間に白を出して守る' : '推理役に黒を出す') + '・堂々さ ' + Math.round(fw.bold * 100) + '）' });
+          say({ actors: [fw.i, tgt.i], tag: seerCO.length > 1 ? '対抗CO' : '占い師CO', text: F(pk(seerCO.length > 1 ? J.fakeCO : J.seerCO), { a: fw.name, x: tgt.name, r: ft ? '人間' : '人狼' }), why: fw.name + 'は人狼。占い師を騙った（' + (ft ? '仲間に白を出して守る' : '推理役に黒を出す') + '・堂々さ ' + Math.round(fw.bold * 100) + '）' });
           said(fw, tgt, !ft, day); spoke[fw.i] = 1;
           hearResult(fw, tgt, !ft);
         }
@@ -447,7 +455,7 @@
       if (lastEx) {
         if (med && med.alive && (medCO.indexOf(med) >= 0 || med.tr.honesty > 0.45 || isW(lastEx) || claimants().length > 1 || rng() < 0.5)) {
           if (medCO.indexOf(med) < 0) medCO.push(med);
-          say({ actors: [med.i, lastEx.i], tag: '霊媒', text: F(pk(J.medCO), { a: med.name, x: lastEx.name, r: isW(lastEx) ? '人狼でした' : '人狼ではありませんでした' }), why: med.name + 'は本物の霊媒師' });
+          say({ actors: [med.i, lastEx.i], tag: '霊媒', text: F(pk(J.medCO), { a: med.name, x: lastEx.name, r: isW(lastEx) ? '人狼' : '人間' }), why: med.name + 'は本物の霊媒師' });
           pub.med.push({ c: med, x: lastEx, black: isW(lastEx) }); spoke[med.i] = 1;
           /* 霊媒結果で占い師の真贋が見える */
           alive().forEach(function (q) { if (isW(q) || q === med) return; claimants().forEach(function (c) { var said0 = c === seer ? seer.known[lastEx.i] : c.fakeLast === lastEx ? 'wolf' : null; if (said0) q.belief[c.i] = clamp((q.belief[c.i] || 0.5) + ((said0 === 'wolf') === isW(lastEx) ? 0.2 : -0.35) * (0.5 + q.acc * 0.5), 0.02, 0.98); }); });
@@ -455,7 +463,7 @@
         var fm = plan.fakeMed;
         if (fm && fm.alive && medCO.indexOf(fm) < 0 && (medCO.length || rng() < 0.5)) {
           medCO.push(fm); fm.cnt.lies++;
-          say({ actors: [fm.i, lastEx.i], tag: '霊媒騙り', text: F(pk(J.medCO), { a: fm.name, x: lastEx.name, r: isW(lastEx) ? '人狼ではありませんでした' : '人狼でした' }), why: fm.name + 'は人狼。霊媒師を騙った' });
+          say({ actors: [fm.i, lastEx.i], tag: '霊媒騙り', text: F(pk(J.medCO), { a: fm.name, x: lastEx.name, r: isW(lastEx) ? '人間' : '人狼' }), why: fm.name + 'は人狼。霊媒師を騙った' });
           pub.med.push({ c: fm, x: lastEx, black: !isW(lastEx) }); spoke[fm.i] = 1;
           alive().forEach(function (q) { if (!isW(q)) { bump(q, fm, 8 * q.acc, 'claim'); if (med && med.alive && medCO.indexOf(med) >= 0) bump(q, med, 6 * (1 - q.acc), 'claim'); } });
         }
@@ -599,7 +607,12 @@
           }
           if (!rtx) { rt = 'feel'; yy = y0; m0 = { a: p.name, x: top.name, y: y0 ? y0.name : top.name }; rtx = pf(J.reason.feel, { p: p, x: top }) || J.reason.feel[1]; }
           var op = F(pf(J.open, { p: p, x: top }) || pk(J.open), m0);
-          var text = op + F(rtx, m0) + F(pf(J.close, { p: p, x: top }) || pk(J.close), m0);
+          var text = joinTri(op, F(rtx, m0), F(pf(J.close, { p: p, x: top }) || pk(J.close), m0));
+          /* 口数の少ない口調（無口・無口（……だね）・けだるげ）は、切り出しと締めを言わず、理由をひと言で（J.quiet。乱数は使わない。2026-10-31 口調直し第8回） */
+          var tn = HK.toneOf ? HK.toneOf(p) : p.tone || '';
+          if (J.quiet && J.quiet[rt] && QUIET.test(tn)) text = p.name + '「' + F(J.quiet[rt], m0) + '」';
+          /* 一文ごとに口癖が付く・長いと言い切れない口調は、理由だけを言う（切り出し・締めの地の文は残す） */
+          else if (BRIEF.test(tn)) text = joinTri(op.slice(0, op.indexOf('¦') + 1), F(rtx, m0), '');
           p.cnt.talk++;
           say({ actors: [p.i, top.i], tag: '推理', text: text, why: p.name + 'の推理（' + STYLE[p.style] + '・正確さ ' + Math.round(p.acc * 100) + '）' });
           accuse(p, top, text);
@@ -816,3 +829,4 @@
     });
   }
 })();
+/* @event-ok 台詞を3本に（口調直し第8回） */
