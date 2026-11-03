@@ -114,6 +114,7 @@ js/moan-said-more.js @pack:lewd
 js/moan-engine.js @pack:lewd
 js/moan-cut.js @pack:lewd
 js/trio-talk-r18.js @pack:lewd
+js/trio-form-text-r18.js @pack:lewd
 js/moan-mob.js @pack:lewd
 js/thick-sex.js @pack:lewd
 js/thick-sex-ero.js @pack:lewd
@@ -525,6 +526,7 @@ tone js/tone-fix-g4.js
 tone js/tone-fix-g4-r18.js
 tone js/tone-fix-g5.js
 tone js/tone-fix-g5-r18.js
+tone js/tone-fix-trio-r18.js
 tone js/tone-fix-g6.js
 tone js/tone-fix-g6-r18.js
 tone js/tone-fix-gc.js

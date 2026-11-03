@@ -897,6 +897,8 @@
       var up = ox[0] === h ? y : x, dn = ox[0] === h ? x : y;
       /* 前を抱きながら後ろから抱かれる形は、後ろの人が跨る組（女性の攻め×男性）では起こらない */
       if (modeOf(up, h) === 'fm') return null;
+      /* 真ん中（前を抱き、後ろから抱かれる人）はリバかおまかせの人だけ（HK.Pos.midOk。2026-11-03） */
+      if (Pos && Pos.midOk && !Pos.midOk(h, up, dn)) return null;
       return { p: 'sandwich', t: up, m: h, u: dn, hub: true, h: h };
     }
     var es = trioPairs(m).map(function (pr) { return Pos ? Pos.order(pr[0], pr[1], pr) : pr; });
@@ -906,6 +908,8 @@
       var M = m.filter(function (c) { return c !== T2 && c !== B0; })[0], ks = ['oneTwo', 'twoOne', 'sandwich'];
       /* 真ん中の人が自分で攻めを選んでいれば、受けに回る形（oneTwo・sandwich）にしない */
       if (HK.Pos && HK.Pos.hardTop(M, T2)) ks = ['twoOne'];
+      /* 形は受け攻めの設定から（HK.Pos.trioPool：真ん中が攻めなら twoOne、受けなら oneTwo、リバ・おまかせなら三つとも。sandwich は真ん中になれる人だけ。2026-11-03） */
+      if (HK.Pos && HK.Pos.trioPool) { var tp = HK.Pos.trioPool(T2, M, B0); ks = ks.filter(function (x) { return tp.indexOf(x) >= 0; }); }
       /* 前を抱きながら後ろから抱かれる形（sandwich）は、後ろの人が跨る組（女性の攻め×男性）では起こらない */
       if (modeOf(T2, M) === 'fm') ks = ks.filter(function (x) { return x !== 'sandwich'; });
       if (!ks.length) ks = ['oneTwo'];
@@ -923,6 +927,7 @@
     if (ht === 0) return { p: 'twoOne', t: x, m: y, u: h, hub: true, h: h };
     var up = ox[0] === h ? y : x, dn = ox[0] === h ? x : y;
     if (modeOf(up, h) === 'fm') return null;
+    if (Pos && Pos.midOk && !Pos.midOk(h, up, dn)) return null;
     return { p: 'sandwich', t: up, m: h, u: dn, hub: true, h: h };
   }
   function trioTurn(S, Lk, turn) {

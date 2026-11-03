@@ -530,6 +530,22 @@
     var hub = m.filter(function (x) { return pairs[0].indexOf(x) >= 0 && pairs[1].indexOf(x) >= 0; })[0];
     return { pairs: pairs, hub: hub, all: false, watch: all.filter(function (pr) { return pairs.indexOf(pr) < 0; }) };
   };
+  /* 三人の形の可否（2026-11-03 利用者の指示「攻め×攻め×受け／攻め×受け・受け／攻め→リバ→受け の挿入方向を書き分ける」。設計は docs/reports/2026-11-03/trio-sex-design.md）
+     P.midOk(m, t, u)：m が「攻め→リバ→受け」の真ん中（t に抱かれながら u を抱く）になれるか。t と u のどちらに向けても、自分で決めた受け攻めが「リバ」か、決めていない（おまかせ）人だけ
+       （自分で攻めを選んだ人は受けにしない・自分で受けを選んだ人は真ん中で抱く側に回さない）
+     P.trioPool(T, M, B)：三組とも直接できる三人で、二人を抱く人 T・抱かれるだけの人 B・残り M のとき、取れる形（'twoOne'＝T と M が B を／'oneTwo'＝T が M と B を／'sandwich'＝T→M→B）。
+       M が自分で攻めを選んでいれば twoOne だけ、受けを選んでいれば oneTwo だけ、リバ・おまかせなら三つとも（sandwich は midOk のときだけ） */
+  P.midOk = function (m, t, u) {
+    if (!m || !t || !u) return false;
+    var ok = function (o) { return !explicit(m, o) || P.of(m, o) === 'riba'; };
+    return ok(t) && ok(u);
+  };
+  P.trioPool = function (T, M, B) {
+    if (!T || !M || !B) return [];
+    if (P.hardTopIn(M, [T, B])) return ['twoOne'];
+    if ((explicit(M, T) && P.of(M, T) === 'bottom') || (explicit(M, B) && P.of(M, B) === 'bottom')) return ['oneTwo'];
+    return P.midOk(M, T, B) ? ['twoOne', 'oneTwo', 'sandwich'] : ['twoOne', 'oneTwo'];
+  };
 
   /* ---------- 性的な出来事の起こりやすさ（2026-10-28 担当MC。利用者の指示「性的イベントは性欲＋衝動性で判定し、恋愛感情が発生を防がないように」） ----------
      可否は P.okSex（＋R18に参加しない・性欲「なし」・固定。HK.State.pairSex）だけで決め、恋愛の可否（HK.canLove）は門にしない。

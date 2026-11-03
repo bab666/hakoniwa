@@ -191,10 +191,15 @@
     put('fore', ST.fmt(pick(S, TB.STRIP), vv), sh3 ? 3 : 2);
     put('fore', ST.fmt(pick(S, TB.OPEN[sp.p]), vv), th3 ? 1 : 2);
     var used = {}, nUsed = {};
+    /* 形ごとの繋がる段（trio-form-text-r18.js：攻め×攻め×受け／攻め×受け・受け／攻め→リバ→受け を組ごとの体で書き分けた 3 文。2026-11-03 利用者の指示）：
+       七割はこちらを使い、二人ずつの文（TB.TP）は置かない */
+    var r01 = typeof S.rng === 'function' ? S.rng() : S.rng.int(1000) / 1000;
+    var fIn = T3 && T3.formIn && r01 < 0.7 ? T3.formIn() : '';
+    if (fIn) put('in', fIn, 1);
     prs.forEach(function (z, i) {
       var k = tpKey(api, z[0], z[1]), pool = TB.TP[k].filter(function (l) { return !used[l]; }), l = pick(S, pool.length ? pool : TB.TP[k]);
       used[l] = 1;
-      put(i ? 'mid' : 'in', ST.fmt(l, { a: z[0].name, b: z[1].name, c: z[2].name }), i === 0 && th3 ? 1 : i <= 1 ? 2 : 3);
+      if (!fIn) put(i ? 'mid' : 'in', ST.fmt(l, { a: z[0].name, b: z[1].name, c: z[2].name }), i === 0 && th3 ? 1 : i <= 1 ? 2 : 3);
       if (i === 0) put('in', ST.fmt(pick(S, (sp.p === 'oneTwo' ? TB.TOP : TB.TOP1)[ps(z[0])]), { a: z[0].name }), 3);
       /* 夜の性格（locker-night.js の LK.nightLine）：ロッカーの中の三人の場面（locker-crowd.js の trioScene）と同じく、攻め→受けの deep の一文。
          同じ人の同じ役（攻め／受け）は一度だけ（2026-10-31 担当LK3：別のロッカーから加わる三人のベッドが増えたので、夜の性格の出方をロッカーの中とそろえる） */

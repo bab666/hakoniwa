@@ -124,7 +124,10 @@
       return text.replace(/[^。！？」]*(?:「[^」]*」[^。！？」]*)*[。！？]?/g, function (sen) {
         if (!sen || !RE.test(sen)) return sen;
         /* 差し替える文の役目（書き出し・縛った場面・二度目・事後・果てる・最中）に合わせて、その段の文を使う */
-        var arr = sentenceKind(sen, st, drug, riba, opt), cand = arr.filter(function (x) { return !used[x]; }), r = pickArr(ctx, cand.length ? cand : arr);
+        /* 一つの記録で同じ差し替えの文を二度使わない（もう本文にある文も避ける）。使い切ったら、その文は外す（三人の場面で台詞の中の文がいくつも当たると、同じ文が並んでいた。2026-11-03） */
+        var arr = sentenceKind(sen, st, drug, riba, opt), cand = arr.filter(function (x) { return !used[x] && text.indexOf(fill(ctx, x, A, B)) < 0; });
+        if (!cand.length) return /」$/.test(sen) ? '」' : '';
+        var r = pickArr(ctx, cand);
         used[r] = 1;
         return fill(ctx, r, A, B);
       });
@@ -134,12 +137,15 @@
       if (HK.SAFE_ON || typeof text !== 'string' || !MUTUAL_RE.test(text)) return text;
       /* 性的な場面の記録だけ直す（「二人が見た幻を重ね合わせると」「意見を擦り合わせ」のような文の記録は直さない。2026-10-26） */
       if (!FF_SURE.test(text.replace(/「[^」]*」/g, ''))) return text;
-      var o = HK.Pos.order(a, b, [a, b]), A = o[0], B = o[1], st = (opt && opt.st) || styleOf(A);
+      var o = HK.Pos.order(a, b, [a, b]), A = o[0], B = o[1], st = (opt && opt.st) || styleOf(A), used = {};
       return text.replace(/[^。！？」\n]*(?:「[^」]*」[^。！？」\n]*)*[。！？]?/g, function (sen) {
         if (!sen || !MUTUAL_RE.test(sen)) return sen;
         /* 「入れ替わ」「重ね合わせ」「擦り合わせ」は、ふつうの文（見張りの番を入れ替わる・幻を重ね合わせる など）にも出るので、体の描写の文のときだけ直す */
         if (!/双頭|貝合わせ|上になったり|ところ同士|ところを重ね/.test(sen) && !MUT_SEX.test(sen)) return sen;
-        return fill(ctx, pickArr(ctx, noMutual(/果て|達し|イ[っか]|絶頂/.test(sen) ? (CLIMAX[st] || CLIMAX.gentle) : (BODY[st] || BODY.gentle), false)), A, B);
+        /* 一つの記録で同じ差し替えの文を二度使わない（もう本文にある文も避ける。2026-11-03） */
+        var arr = noMutual(/果て|達し|イ[っか]|絶頂/.test(sen) ? (CLIMAX[st] || CLIMAX.gentle) : (BODY[st] || BODY.gentle), false), cand = arr.filter(function (x) { return !used[x] && text.indexOf(fill(ctx, x, A, B)) < 0; }), r = pickArr(ctx, cand.length ? cand : arr);
+        used[r] = 1;
+        return fill(ctx, r, A, B);
       });
     }
   };

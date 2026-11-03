@@ -179,7 +179,20 @@
     if (!pl) return null;
     if (pl.all && !hubOnly) return { sg: g, hubOnly: false, plan: pl };
     var h = pl.all ? g[0] : pl.hub;
-    return { sg: [h].concat(g.filter(function (c) { return c !== h; })), hubOnly: true, plan: pl };
+    var sg = [h].concat(g.filter(function (c) { return c !== h; }));
+    /* 中心が一人を抱き、もう一人に抱かれる三人（攻め→リバ→受け）は、中心が真ん中になれる人（HK.Pos.midOk：リバかおまかせ）のときだけ。
+       なれなければ三人にしない（二人の場面に落とす。2026-11-03） */
+    if (!hubMidOk(sg)) return null;
+    return { sg: sg, hubOnly: true, plan: pl };
+  }
+  function hubMidOk(sg) {
+    var P = HK.Pos, h = sg[0], x = sg[1], y = sg[2];
+    if (HK.SAFE_ON || !P || !P.midOk || !P.order) return true;
+    var cx = HK._curCtx, ox = cx ? ord(cx, h, x) : P.order(h, x, [h, x]), oy = cx ? ord(cx, h, y) : P.order(h, y, [h, y]), ht = (ox[0] === h ? 1 : 0) + (oy[0] === h ? 1 : 0);
+    if (ht !== 1) return true;
+    var up = ox[0] === h ? y : x, dn = ox[0] === h ? x : y;
+    if (P.isF && P.hasM && P.isF(up, h) && P.hasM(h) && !P.isF(h, up)) return false;
+    return P.midOk(h, up, dn);
   }
   /* きっかけごとの形。取り合われた人・誘われた人が中心のきっかけでは、その人が中心になれなければ成り立たない */
   function shapeFor(ctx, g, kind) {
@@ -328,10 +341,27 @@
     var es = pairsOf(g).map(function (p) { return ord(ctx, p[0], p[1]); });
     var top = function (c) { return es.filter(function (e) { return e[0] === c; }).length; };
     var Tn = g.filter(function (c) { return top(c) === 2; })[0], Bn = g.filter(function (c) { return top(c) === 0; })[0];
-    if (!Tn || !Bn) { var e0 = es[0], e1 = es.filter(function (e) { return e[1] === e0[0]; })[0] || es[1]; return { p: 'ring', t: e0[0], m: e0[1], u: e1[0] === e0[0] ? e1[1] : e1[0] }; }
+    if (!Tn || !Bn) {
+      /* 向きが三すくみ（a が b を、b が c を、c が a を）：真ん中になれる人（HK.Pos.midOk：リバかおまかせ）がいれば、攻め→リバ→受け（sandwich）にする（2026-11-03） */
+      var e0 = es[0], e1 = es.filter(function (e) { return e[1] === e0[0]; })[0] || es[1];
+      var cyc = [e0[0], e0[1], e1[0] === e0[0] ? e1[1] : e1[0]];
+      for (var ci = 0; !HK.SAFE_ON && HK.Pos && HK.Pos.midOk && ci < 3; ci++) {
+        var mt = cyc[ci], mm = cyc[(ci + 1) % 3], mu = cyc[(ci + 2) % 3];
+        if (HK.Pos.midOk(mm, mt, mu) && !(HK.Pos.isF(mt, mm) && HK.Pos.hasM(mm) && !HK.Pos.isF(mm, mt))) return { p: 'sandwich', t: mt, m: mm, u: mu };
+      }
+      return { p: 'ring', t: cyc[0], m: cyc[1], u: cyc[2] };
+    }
     var M = g.filter(function (c) { return c !== Tn && c !== Bn; })[0];
-    /* 真ん中の人が自分で「受け」を選んでいれば、攻め×受け・受け（oneTwo）に寄せる。受け×受けの組で動く側に回るのは、ときどきだけ */
-    var P = HK.Pos, pool = P && P.explicit(M, Tn) && P.isBottom(M, Tn) ? ['oneTwo', 'oneTwo', 'oneTwo', 'sandwich', 'twoOne'] : ['sandwich', 'sandwich', 'twoOne', 'oneTwo'];
+    /* 形は受け攻めの設定から（HK.Pos.trioPool。2026-11-03）：真ん中の人が自分で攻めを選んでいれば攻め×攻め×受け（twoOne）だけ、受けを選んでいれば攻め×受け・受け（oneTwo）だけ、
+       リバ・おまかせなら三つとも（攻め→リバ→受け（sandwich）は真ん中になれる人だけ）。後ろの人が跨る組（女性の攻め×男性）は sandwich にしない */
+    /* 全年齢版・全年齢モード（場面は暗転の一文）は今までの選び方のまま（結果の指紋を変えない） */
+    var P = HK.Pos;
+    if (HK.SAFE_ON || !P || !P.trioPool) return { p: ctx.rng.pick(P && P.explicit(M, Tn) && P.isBottom(M, Tn) ? ['oneTwo', 'oneTwo', 'oneTwo', 'sandwich', 'twoOne'] : ['sandwich', 'sandwich', 'twoOne', 'oneTwo']), t: Tn, m: M, u: Bn };
+    var pool0 = P.trioPool(Tn, M, Bn);
+    if (P && P.isF && P.hasM && P.isF(Tn, M) && P.hasM(M) && !P.isF(M, Tn)) pool0 = pool0.filter(function (x) { return x !== 'sandwich'; });
+    if (!pool0.length) pool0 = ['twoOne'];
+    var pool = [];
+    pool0.forEach(function (x) { pool.push(x); if (x === 'sandwich' || (x === 'oneTwo' && P && P.explicit(M, Tn) && P.isBottom(M, Tn))) pool.push(x); });
     return { p: ctx.rng.pick(pool), t: Tn, m: M, u: Bn };
   }
   /* {t}=上 {m}=真ん中 {u}=下。oneTwo：{t}が{m}と{u}を抱く／twoOne：{t}と{m}が{u}を抱く／sandwich：{t}が{m}を、{m}が{u}を／ring：{t}→{m}→{u}→{t} */
@@ -558,7 +588,13 @@
     var ml0 = X.MAIN[sp.p].filter(swapOK), ml1 = ml0.filter(function (l) { return apartOK(l); });
     /* 直接は繋がらない二人がいるときは、触れ合う文に戻さない（ml1 も空なら、形の文 SEX のうち触れ合わない文） */
     var mlA = ml.length ? ml : ml1.length ? ml1 : apart.length ? (SEX0[sp.p] || []).filter(function (l) { return apartOK(l); }) : ml0;
-    if (!(rvR && rvR.noMain)) put('in', X.fill(fpk(mlA.length ? mlA : ml0), r), 1);
+    /* 形ごとの繋がる段（R18版の trio-form-text-r18.js：攻め×攻め×受け／攻め×受け・受け／攻め→リバ→受け を、組ごとの体（男性器の有無・女性どうし・女性の攻め×男性）で書き分ける。
+       2026-11-03 利用者の指示）を、七割はこの部屋の形の文の代わりに使う。全年齢版・全年齢モードでは T3 が無いので使わない */
+    /* 攻めに男性器のない組がある三人は、この部屋の形の文（男性の攻めを前提にした「奥を突く」など）を使わず、いつも形ごとの文にする */
+    var allMT = !!(T3 && HK.Trio3.edgeKind && E.every(function (e) { return HK.Trio3.edgeKind(e[0], e[1]) === 'm'; }));
+    var fIn = T3 && T3.formIn && !(rvR && rvR.noMain) && (!allMT || ctx.rng() < 0.7) ? T3.formIn() : '';
+    if (fIn) put('in', fIn, 1);
+    else if (!(rvR && rvR.noMain)) { var mlP = T3 && T3.penOK ? (mlA.length ? mlA : ml0).filter(function (l) { return T3.penOK(X.fill(l, r)); }) : []; put('in', X.fill(fpk(mlP.length ? mlP : mlA.length ? mlA : ml0), r), 1); }
     /* 中心のある三人：直接は繋がらない二人（apart）は、同じ場にいても見ている・声をかけるだけ（態度9種。room-trio-lines.js の X.WATCH。2026-10-27 担当HN） */
     if (apart.length && X.WATCH) {
       var wp = apart[0], wa = ctx.rng() < 0.5 ? wp : [wp[1], wp[0]], wh = g.filter(function (c) { return wp.indexOf(c) < 0; })[0];
@@ -581,7 +617,8 @@
     if (TE) {
       var pens = { oneTwo: [sp.t], twoOne: [sp.t, sp.m], sandwich: [sp.t, sp.m], ring: [sp.t, sp.m, sp.u] }[sp.p] || [sp.t];
       var penM = !ffE && !ngE && HK.Pos && pens.every(function (c) { return !HK.Pos.isF(c); }) && TE.TRIO.pen[sp.p];
-      var teL = pickA(penM ? TE.TRIO.pen[sp.p] : ngE ? TE.TRIO.soft.filter(function (l) { return !/ナカ|沈め|挿|貫|奥/.test(l); }) : TE.TRIO.soft);
+      /* 一回の遊びで同じ文を 3 回使わない（pickR。2026-11-03：state の S10） */
+      var teL = pickR(penM ? TE.TRIO.pen[sp.p] : ngE ? TE.TRIO.soft.filter(function (l) { return !/ナカ|沈め|挿|貫|奥/.test(l); }) : TE.TRIO.soft);
       if (teL) put('in', efill(teL), 2);
     }
     /* 受けの二人が攻めを取り合う見所（一つは必ず、初回はもう一つのことも） */

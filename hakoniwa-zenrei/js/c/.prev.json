@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.42bafffcde.js",
+  "core": "core.97c62c81c9.js",
   "late": "late.b411258bad.js",
   "pack-rel": "pack-rel.ba9ca78bdf.js",
   "scen-goukon": "scen-goukon.cca9829cdd.js",
@@ -8,14 +8,14 @@
   "scen-island": "scen-island.7ce7699a68.js",
   "scen-br": "scen-br.75a08d6047.js",
   "pack-trap": "pack-trap.6c4c043b39.js",
-  "scen-whiteroom": "scen-whiteroom.2ed0fb32ea.js",
+  "scen-whiteroom": "scen-whiteroom.2598c3521b.js",
   "scen-trial": "scen-trial.280a76a291.js",
   "scen-omega": "scen-omega.f40701c4d7.js",
   "scen-massage": "scen-massage.7751f34ec8.js",
   "scen-zombie": "scen-zombie.5583aa9b6e.js",
   "scen-rpg": "scen-rpg.ea44c8c8b8.js",
   "scen-saimin": "scen-saimin.46efda8ad6.js",
-  "scen-locker": "scen-locker.392d61d2e5.js",
+  "scen-locker": "scen-locker.38ff281a8b.js",
   "scen-jashin": "scen-jashin.071a8dd4fe.js",
   "scen-yakata": "scen-yakata.5a56f59aee.js",
   "scen-ship": "scen-ship.f673bc4ef1.js",
@@ -65,7 +65,7 @@
   "tone-yankee": "tone-yankee.e045762f0d.js"
  },
  "prev": {
-  "core": "core.42bafffcde.js",
+  "core": "core.97c62c81c9.js",
   "late": "late.b411258bad.js",
   "pack-rel": "pack-rel.ba9ca78bdf.js",
   "scen-goukon": "scen-goukon.cca9829cdd.js",
@@ -73,14 +73,14 @@
   "scen-island": "scen-island.7ce7699a68.js",
   "scen-br": "scen-br.75a08d6047.js",
   "pack-trap": "pack-trap.6c4c043b39.js",
-  "scen-whiteroom": "scen-whiteroom.2ed0fb32ea.js",
+  "scen-whiteroom": "scen-whiteroom.c6b56b89e2.js",
   "scen-trial": "scen-trial.280a76a291.js",
   "scen-omega": "scen-omega.f40701c4d7.js",
   "scen-massage": "scen-massage.7751f34ec8.js",
   "scen-zombie": "scen-zombie.5583aa9b6e.js",
   "scen-rpg": "scen-rpg.ea44c8c8b8.js",
   "scen-saimin": "scen-saimin.46efda8ad6.js",
-  "scen-locker": "scen-locker.392d61d2e5.js",
+  "scen-locker": "scen-locker.38ff281a8b.js",
   "scen-jashin": "scen-jashin.071a8dd4fe.js",
   "scen-yakata": "scen-yakata.5a56f59aee.js",
   "scen-ship": "scen-ship.f673bc4ef1.js",
@@ -93,7 +93,7 @@
   "tone-boku-n": "tone-boku-n.f6870cdabd.js",
   "tone-calm": "tone-calm.70d8777ab7.js",
   "tone-chara": "tone-chara.8016fa9b19.js",
-  "tone-chara-down": "tone-chara-down.c6606c78fa.js",
+  "tone-chara-down": "tone-chara-down.66cff3781a.js",
   "tone-cool-soft": "tone-cool-soft.7ffdf28eca.js",
   "tone-darui": "tone-darui.a59f701b23.js",
   "tone-darui-lite": "tone-darui-lite.f093ea5d06.js",
@@ -113,7 +113,7 @@
   "tone-keigo-flat": "tone-keigo-flat.e0b6cb6a5f.js",
   "tone-keigo-sarc": "tone-keigo-sarc.e53056794a.js",
   "tone-keigo-twist": "tone-keigo-twist.8ba8249528.js",
-  "tone-kohai": "tone-kohai.0511ecd6ff.js",
+  "tone-kohai": "tone-kohai.4d3964b7a3.js",
   "tone-mixed": "tone-mixed.7fa22b293d.js",
   "tone-mukuchi": "tone-mukuchi.b828daede8.js",
   "tone-mukuchi-ne": "tone-mukuchi-ne.16a5c3c076.js",
@@ -399,8 +399,8 @@
    917
   ],
   "js/pos.js": [
-   18026,
-   6221
+   18439,
+   6368
   ],
   "js/attr.js": [
    58225,
