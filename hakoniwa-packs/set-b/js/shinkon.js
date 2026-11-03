@@ -165,7 +165,7 @@
     });
     day.dailyI = D[src].indexOf(day.daily);
     if (ctx.rng() < 0.35) { day.item = J.pick(ctx, 'item', D.ITEM); day.itemI = D.ITEM.indexOf(day.item); }
-    if (!apart && ctx.rng() < 0.4) { day.mealK = hol && ctx.rng() < 0.4 ? 'LUNCH' : 'DINNER'; day.meal = J.pick(ctx, day.mealK, D[day.mealK]); day.mealI = D[day.mealK].indexOf(day.meal); }
+    if (!apart && ctx.rng() < 0.4) { var mr = ctx.rng(); day.mealK = mr < 0.3 ? 'BREAKFAST' : hol && mr < 0.6 ? 'LUNCH' : 'DINNER'; day.meal = J.pick(ctx, day.mealK, D[day.mealK]); day.mealI = D[day.mealK].indexOf(day.meal); }
     if (ctx.rng() < 0.12 || (day.daily && /記念日/.test(day.daily.k))) day.special = J.pick(ctx, 'special', D.SPECIAL);
     if (day.daily && /喧嘩/.test(day.daily.t + (day.intro && day.intro.t))) day.fight = J.pick(ctx, 'fight', D.FIGHT);
     /* 日替わりの行そのものが小さな喧嘩のとき（買い物の喧嘩など）は、喧嘩の段を重ねない（記録と夜の仲直りは出す） */
@@ -219,6 +219,7 @@
       /* シーン導入で増える願望pt（ムラムラしている朝は、その人だけ 1〜10） */
       var k1 = gain(ctx, who, it === 9 ? 1 + Math.floor(ctx.rng() * 10) : 1 + Math.floor(ctx.rng() * 3)), k2 = gain(ctx, other, 1 + Math.floor(ctx.rng() * 2));
       day.pend = [[who, k1], [other, k2]];
+      if (day.meal && day.mealK === 'BREAKFAST') meal(ctx, day);
       return;
     }
     var day2 = S.day;
@@ -251,13 +252,7 @@
       return;
     }
     /* 夜 */
-    if (day2.meal) {
-      var mt = prose(ctx, day2.mealK, day2.mealI, '{a}と{b}の' + (day2.mealK === 'LUNCH' ? '昼' : '夜') + 'ご飯――' + day2.meal.k + '。' + day2.meal.t + '。');
-      var food = pickOf(ctx, D.FOOD);
-      J.prompt(ctx, [A, B], [[day2.mealK === 'LUNCH' ? '昼ご飯表' : '夜ご飯表', day2.meal.k + '／' + day2.meal.t], ['食材表', food]]);
-      var cook = LF.chorePerson(A, B);
-      ctx.act2({ actors: [cook, cook === A ? B : A], cat: S.love ? 'romance' : 'bond', text: fill(ctx, mt, cook, cook === A ? B : A, { food: food }), why: '新婚部屋：ご飯（' + day2.meal.k + '）' });
-    }
+    if (day2.meal && day2.mealK !== 'BREAKFAST') meal(ctx, day2);
     if (day2.fought) {
       var mk = prose(ctx, 'MAKEUP', 0, '寝る前に、{a}のほうから「さっきはごめん｜さっきは悪かった｜先ほどはすみませんでした」と切り出した。{b}は小さくうなずいた。');
       if (ctx.act2({ actors: [day2.lo, day2.hi], cat: 'bond', text: fill(ctx, mk, day2.lo, day2.hi), why: '新婚部屋：仲直り', fx: function () { ctx.mod2(day2.lo, day2.hi, { aff: 4, ten: -6 }, { aff: 4, ten: -6 }); } })) S.makeups++;
@@ -281,6 +276,16 @@
     }
     if (d === S.days - 1) { ending(ctx); return; }
     distance(ctx, day2);
+  }
+  /* ご飯（朝ご飯は朝の区切り、昼・夜ご飯は夜の区切り。作るのは家事を多くする人） */
+  var MEAL_NAME = { BREAKFAST: ['朝ご飯表', '朝'], LUNCH: ['昼ご飯表', '昼'], DINNER: ['夜ご飯表', '夜'] };
+  function meal(ctx, day) {
+    var S = f(ctx), A = S.A, B = S.B, nm = MEAL_NAME[day.mealK];
+    var mt = prose(ctx, day.mealK, day.mealI, '{a}と{b}の' + nm[1] + 'ご飯――' + day.meal.k + '。' + day.meal.t + '。');
+    var food = pickOf(ctx, D.FOOD);
+    J.prompt(ctx, [A, B], [[nm[0], day.meal.k + '／' + day.meal.t], ['食材表', food]]);
+    var cook = LF.chorePerson(A, B);
+    ctx.act2({ actors: [cook, cook === A ? B : A], cat: S.love ? 'romance' : 'bond', text: fill(ctx, mt, cook, cook === A ? B : A, { food: food }), why: '新婚部屋：ご飯（' + day.meal.k + '）' });
   }
   /* ふたりの距離（その日の関係の動き） */
   function distance(ctx, day) {
