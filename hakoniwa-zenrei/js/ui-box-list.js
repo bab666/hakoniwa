@@ -144,12 +144,13 @@
 
   /* ---------- 目次（HK.Toc） ---------- */
   var pin = null, raf = 0, lastStick = -1;
-  /* 上の段の切替（.tabs）が画面の上に貼り付いているときの高さ。目次はその下に貼り付く（CSS の --hk-stick） */
+  /* 上の段の切替（.tabs）が画面の上に貼り付いているときの下端（貼り付く位置 top＋高さ）。目次はその下に貼り付く（CSS の --hk-stick）。
+     top は iPhone の画面上の切り欠き・状態表示の分（env(safe-area-inset-top)）だけ下がるので、高さだけだと目次が .tabs に重なって文が隠れた（2026-11-03） */
   function stickH() {
     var tb = document.querySelector('.tabs');
     if (!tb) return 0;
-    var p = getComputedStyle(tb).position;
-    return p === 'sticky' || p === 'fixed' ? Math.round(tb.getBoundingClientRect().height) : 0;
+    var cs = getComputedStyle(tb), p = cs.position;
+    return p === 'sticky' || p === 'fixed' ? Math.round((parseFloat(cs.top) || 0) + tb.getBoundingClientRect().height) : 0;
   }
   function setStick() { var h = stickH(); if (h !== lastStick) { lastStick = h; document.documentElement.style.setProperty('--hk-stick', h + 'px'); } return h; }
   /* el の頭が目次の下に来るようにスクロールする（kind・k：押した目次。スクロールが終わるまで、その節を強調する） */
