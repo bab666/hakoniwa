@@ -18,6 +18,10 @@
      ・KN.run(ctx, S, day, a, b, sh, v)：前半の段（エッチの場面。直前の段はきっかけ）→ 邪魔と応対（来た人の名前は地の文だけ。性的な文の記録には名前を出さない）→
        stop ならその夜の終わり（'stop' を返す）／ほかは再開の理由の段（きっかけの段。元恋人ならヤキモチ）を出して true を返す（呼ぶ側が本番の場面を続ける）。
        前半の段が出せなければ null（ふつうの夜に戻す）
+     ・邪魔の段は必ず出す（2026-11-03 利用者の報告「来客がある描写がなく、理由にだけ書かれているのが分かりづらい」）。以前は来た人（名簿の住人 g）を actors に入れていたので、
+       恋愛の出来事の門（romanceOk：家族・恋愛にならない相手との組）で act2 が弾かれ、前半の段のあとに邪魔の段が無いまま再開していた（名簿の住人が来た回の約 4 割）。
+       来た人は actors に入れず（名前は地の文だけ）、二人だけの段にする。弾かれても ctx.say で出す。前半の段の理由には、まだ起きていない来客を書かない
+       来られる人：玄関は今その場に来られる人（HK.ShinkonVisit.here）、電話は生きていて連れ去られ・閉じ込められていない人（出番の外の留守でも、よそにいてもかけられる）
    登場人物はすべて成人として扱う。合意の上。家の外の人には見られない・気づかれない */
 (function () {
   'use strict';
@@ -30,6 +34,7 @@
   var DOOR_CLS = { fam: 1, pfam: 1, known: 1, ex: 1, weak: 1 };
   var TYPE_NAME = { ignore: '無視して続けた', answer: '中断して出た', hush: '声を殺して続けた', tease: '電話に出させていたずら', stop: 'その夜はお預け' };
   KN.TYPE_NAME = TYPE_NAME;
+  function canCall(g) { return !!g && g.alive !== false && !g.taken && !(g.flags && (g.flags.caged != null || g.flags.knocked)); }
   function choose(ctx, v, a, b) {
     var px = att(v.x, v.y), pa = att(a, b), pb = att(b, a), A0 = HK.Attr, P = HK.Pos;
     var kdA = A0 && A0.nightKind ? A0.nightKind(a, b) : '', hiL = P && P.libOf && (P.libOf(a) === 'high' || P.libOf(b) === 'high');
@@ -54,11 +59,13 @@
     if (!T || (S.knockN || 0) >= (S.days >= 10 ? 2 : 1)) return null;
     var cands = [];
     (S.G || []).forEach(function (g) {
-      if (!VI || !VI.here(g)) return;
+      if (!VI) return;
+      var door = VI.here(g), call = door || canCall(g);
+      if (!call) return;
       [a, b].forEach(function (x) {
         var c = VI.cls(ctx, x, g); if (!c) return;
         var y = x === a ? b : a, gl = VI.word(ctx, x, g), who = gl + 'の' + g.name;
-        if (DOOR_CLS[c]) cands.push({ via: 'door', x: x, y: y, g: g, cls: c, who: who, w: 0.8 });
+        if (door && DOOR_CLS[c]) cands.push({ via: 'door', x: x, y: y, g: g, cls: c, who: who, w: 0.8 });
         cands.push({ via: 'phone', x: x, y: y, g: g, cls: c, who: who, w: 1 });
       });
     });
@@ -79,33 +86,34 @@
     var fx = function (t) { return K.fill(ctx, t, a, b, ex); };
     var via = v.via === 'door' ? '来客' : '電話';
     /* 1. 前半（エッチの場面。直前はきっかけの段） */
-    var e1 = ctx.act2({ actors: [a, b], cat: cat, text: fx(pickOf(ctx, T.OPEN[sh] || T.OPEN.mf)), why: '新婚部屋：夜（前半・最中に' + via + '）', sex: true, lewd: true,
+    var e1 = ctx.act2({ actors: [a, b], cat: cat, text: fx(pickOf(ctx, T.OPEN[sh] || T.OPEN.mf)), why: '新婚部屋：夜（前半）', sex: true, lewd: true,
       fx: function () { ctx.mod2(a, b, { att: 3 }, { att: 3 }); } });
     if (!e1) return null;
-    /* 2. 邪魔が入る・応対 */
-    var t = v.type, g = v.g, dec = t === 'hush' ? b : t === 'tease' ? a : v.x, decO = dec === a ? b : a;
-    var say = T.SAY[t] ? (T.SAY[t][att(dec, decO)] || T.SAY[t].gentle) : null;
-    var t2 = pickOf(ctx, T.BELL[v.via]) + (t === 'ignore' || t === 'answer' || t === 'stop' ? pickOf(ctx, T.RESP[t][v.via]) : '') + (say ? pickOf(ctx, say) : '');
-    var why2 = '新婚部屋：最中に' + via + '（' + v.who + '・' + TYPE_NAME[t] + '）';
-    var g0 = g ? g.gone : null;
-    if (g) g.gone = false;
-    try {
-      ctx.act2({ actors: g ? [v.x, g, v.y] : [v.x, v.y], cat: cat, text: fx(t2), why: why2 });
-    } finally { if (g) g.gone = g0; }
+    /* 2. 邪魔が入る（鳴る・叩く。誰が来たか・誰からか）・応対。来た人は actors に入れない（名前は地の文だけ。弾かれても必ず出す）。
+       一言は、無視・中断して出るなら応対の前（決めてから動く）、お預けなら応対のあと（長引いてから諦める） */
+    var t = v.type, dec = t === 'hush' ? b : t === 'tease' ? a : v.x, decO = dec === a ? b : a;
+    var say = T.SAY[t] ? (T.SAY[t][att(dec, decO)] || T.SAY[t].gentle) : null, sy = say ? pickOf(ctx, say) : '';
+    var rs = t === 'ignore' || t === 'answer' || t === 'stop' ? pickOf(ctx, T.RESP[t][v.via]) : '';
+    var t2 = fx(pickOf(ctx, T.BELL[v.via]) + (t === 'stop' ? rs + sy : sy + rs));
+    var why2 = '新婚部屋：最中に' + via + '（' + v.who + '）・' + TYPE_NAME[t];
+    if (!ctx.act2({ actors: [v.x, v.y], cat: cat, text: t2, why: why2 })) ctx.say({ kind: 'event', cat: cat, actors: [v.x, v.y], text: t2, why: why2, mag: 0 });
     /* 3. 声を殺して続ける・電話でいたずら（性的な文の記録。来た人の名前は出さない） */
     if (t === 'hush' || t === 'tease') {
       var rl = t === 'hush' ? T.RESP.hush[v.via][sh] || T.RESP.hush[v.via].mf : T.RESP.tease[sh] || T.RESP.tease.mf;
       var st = T.STIFLE[att(b, a)] || T.STIFLE.gentle;
-      ctx.act2({ actors: [a, b], cat: cat, text: fx(pickOf(ctx, rl) + pickOf(ctx, st)), why: '新婚部屋：最中に' + via + '（' + TYPE_NAME[t] + '）', lewd: true });
+      var t3 = fx(pickOf(ctx, rl) + pickOf(ctx, st)), why3 = '新婚部屋：最中に' + via + '（' + TYPE_NAME[t] + '）';
+      if (!ctx.act2({ actors: [a, b], cat: cat, text: t3, why: why3, lewd: true })) ctx.say({ kind: 'event', cat: cat, actors: [a, b], text: t3, why: why3, mag: 0, lewd: true });
     }
     /* 4. その夜はそこまで */
     if (t === 'stop') {
-      ctx.act2({ actors: [v.x, v.y], cat: 'bond', text: fx(pickOf(ctx, T.STOP_END[v.via])), why: '新婚部屋：最中に' + via + '（その夜はお預け）' });
+      var t4 = fx(pickOf(ctx, T.STOP_END[v.via])), why4 = '新婚部屋：最中に' + via + '（その夜はお預け）';
+      if (!ctx.act2({ actors: [v.x, v.y], cat: 'bond', text: t4, why: why4 })) ctx.say({ kind: 'event', cat: 'bond', actors: [v.x, v.y], text: t4, why: why4, mag: 0 });
       return 'stop';
     }
     /* 5. 再開の理由（きっかけの段）。元恋人なら、もう一人のヤキモチから */
     var exJ = v.cls === 'ex' && S.love;
-    var rt = exJ ? T.RESUME.ex : T.RESUME[t];
+    /* 元恋人のヤキモチの文：1 本目はどの応対でも、2 本目（連絡を手短に済ませた）は電話に出たときだけ、3 本目（戻ってくると）は中断して出たときだけ */
+    var rt = exJ ? T.RESUME.ex.filter(function (x, i) { return i === 0 || (t === 'answer' && (i === 2 || v.via === 'phone')); }) : T.RESUME[t];
     var le = ctx.say({ kind: 'event', cat: cat, actors: t === 'answer' || exJ ? [v.y, v.x] : [b, a], text: fx(pickOf(ctx, rt)), why: 'きっかけ：再開の理由（' + TYPE_NAME[t] + (exJ ? '・' + v.y.name + 'のヤキモチ' : '') + '）', mag: 0 });
     if (le) le.tag = 'きっかけ';
     return true;
