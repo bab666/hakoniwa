@@ -206,6 +206,8 @@
       }
       /* 恋愛・R18にしない組（HK.ngPair）では、住人のかけ手を恋人・ストーカーにしない */
       if (HY && HK.ngPair && HK.ngPair(HY, p) && (ty === 'lover' || ty === 'stalker')) ty = ty === 'lover' ? 'friend' : 'colleague';
+      /* 恐怖の二人（体の関係「あり」・恐怖が和らぐ前の「恋愛：あり」。恋愛にならないが体の関係は止めない組）は、恋人の種類にしない（2026-11-03） */
+      if (HY && ty === 'lover' && (input.ties || []).some(function (t) { return t && t.type === 'fear' && ((t.a === HY.i && t.b === p.i) || (t.a === p.i && t.b === HY.i)); }) && HK.canLove && !(HK.canLove(HY, p) && HK.canLove(p, HY))) ty = 'friend';
       p.ty = ty; p.T = famL && ty === 'friend' ? Object.assign({}, SM.TYPES[ty], { label: famL }) : SM.TYPES[ty];
       /* 住人のかけ手との関係（同意の上の逆催眠で、恋人になる分岐を見るとき。すでに恋愛の関係なら「付き合い始める」にしない） */
       p.tie = HY ? (tt || null) : null;

@@ -77,7 +77,8 @@
   /* 恐怖の二人の夜の扱い（R18版は、合意のない展開でだけ恐れられる側が迫る。2026-10-30 担当FS） */
   var FEAR_NIGHT = 'この二人は恋愛にも夜にもならない';
   /* r18:begin */
-  FEAR_NIGHT = 'この二人は恋愛にならない。体の関係は、内容のスイッチ「合意のない展開」が入のときだけ、恐れられる側が力ずくで迫る形で起きる（恐れられる側の性欲が「なし」・性行為の相手の固定などで止まるときは起きない）';
+  FEAR_NIGHT = 'この二人は恋愛にならない。体の関係は、内容のスイッチ「合意のない展開」が入のときだけ、恐れられる側が力ずくで迫る形で起きる（恐れられる側の性欲が「なし」・性行為の相手の固定などで止まるときは起きない）。' +
+    '関係の欄の「体の関係：あり」にすると、夜の場面も止めない（怖いのか、興奮なのか分からないまま）。「恋愛：あり」は恐怖が和らぐ見込みがあるという意味で、和らいだあとにだけ恋愛になる';
   /* r18:end */
   T.fear = { mods: {}, modsA: { trust: 0.5, aff: 0.6 }, effect: '恐れる側は相手を避け（同じ場所にいたがらない・目を合わせない・話しかけられると固まる）、命じられると逆らえずに従い、ほかの人に庇護を求める。' + FEAR_NIGHT, label: '恐怖', dir: true, roleA: '恐れる側', roleB: '恐れられる側', ab: { ten: 42, aff: -12, trust: -18 }, ba: {}, pol: -1, chem: 0.05, fric: 1.2, pull: 1.1, fear: true, stiffA: { ten: 0.4 }, biasA: { romance: 0, help: 0.3, bond: 0.25, conflict: 0.35, combat: 0.25, betray: 0.7 }, biasB: { romance: 0.2 } };
   /* 気持ちの関係（2026-10-29。docs/reports/2026-10-29/lovehate-design.md）：どの関係にも重ねられる、向きのある気持ち。表の顔は重ねた関係が決める。
@@ -245,8 +246,20 @@
     off: { label: '出来事：起こさない（関係の色は残す）', short: '出来事なし' }
   };
   HK.TIE_NOEV_ORDER = ['', 'off'];
+  /* 恐怖の二人の「体の関係」の欄 t.body（2026-11-03 利用者の指示「体の関係『あり』なら開けているべき」）：''＝自動（今までどおり止める）／'ok'＝あり（夜の場面を止めない）／'no'＝なし。
+     R18版だけの欄（全年齢版には表が無く、全年齢モードでは欄を隠して値だけ残す。判定は HK.tieBodyOK） */
+  HK.FEAR_BODY = null; HK.FEAR_BODY_ORDER = ['', 'ok', 'no'];
+  /* r18:begin */
+  HK.FEAR_BODY = {
+    '': { label: '体の関係：自動（なし）', short: '' },
+    ok: { label: '体の関係：あり（怖さと興奮の区別がつかない夜も）', short: '体の関係あり' },
+    no: { label: '体の関係：なし', short: '' }
+  };
+  /* r18:end */
+  /* 恐怖の関係で「体の関係：あり」を選んだか（全年齢版・全年齢モードでは常に偽） */
+  HK.tieBodyOK = function (t) { return !!(t && t.type === 'fear' && t.body === 'ok' && HK.FEAR_BODY && !HK.SAFE_ON); };
   /* 追加の欄の名前の一覧（保存・書き出し・読み込み・まとめて読み込むで通す。ui.js も使う） */
-  HK.TIE_XF = ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh', 'elder', 'heavy', 'kg', 'past', 'pastB', 'noev'];
+  HK.TIE_XF = ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh', 'elder', 'heavy', 'kg', 'past', 'pastB', 'noev', 'body'];
   /* 関係ごとの追加の選択肢（「相手の気持ち」cold とは別の欄）。f＝関係の欄の名前、who＝その欄がどちらの側の気持ちか（表示用） */
   HK.tieExtra = function (type) {
     var X = {
@@ -266,6 +279,8 @@
     if (/^(lover|spouse)$/.test(type)) X[type] = [LW];
     if (type === 'honmei') X[type] = [{ f: 'heavy', map: HK.LOVE_WEIGHT, order: HK.LOVE_WEIGHT_ORDER, aria: '想う人の気持ちの重さ' }];
     if (type === 'ex') X[type] = [{ f: 'feel', who: 'a', map: HK.EX_FEEL, order: HK.EX_FEEL_ORDER, aria: '一人目の気持ち' }, { f: 'feelB', who: 'b', map: HK.EX_FEEL, order: HK.EX_FEEL_ORDER, aria: '二人目の気持ち' }];
+    /* 恐怖の「体の関係」（R18版だけ。全年齢モードでは隠す：値は残す） */
+    if (type === 'fear' && HK.FEAR_BODY) X[type] = [{ f: 'body', map: HK.FEAR_BODY, order: HK.FEAR_BODY_ORDER, aria: '体の関係', hide: !!HK.SAFE_ON }];
     if (HK.KIN_GRADE_RE.test(type)) X[type] = (X[type] || []).concat([{ f: 'kg', map: HK.KIN_GRADE, order: HK.KIN_GRADE_ORDER, aria: '二人の仲' }]);
     if (T[type] && !T[type].hidden && type !== 'noobs') X[type] = (X[type] || []).concat([{ f: 'past', from: 'a', map: HK.TIE_PAST, order: HK.TIE_PAST_ORDER, aria: '一人目から見た過去', names: true }, { f: 'pastB', from: 'b', map: HK.TIE_PAST, order: HK.TIE_PAST_ORDER, aria: '二人目から見た過去', names: true }, { f: 'noev', map: HK.TIE_NOEV, order: HK.TIE_NOEV_ORDER, aria: 'この関係の出来事' }]);
     return X[type] || [];
@@ -310,8 +325,8 @@
   var FEAR_DROP = /^(lover|mate|fated|fwb|almost|crush|abuse|honmei|spouse)$/;
   HK.fearTies = function (ties) {
     var l = ties || [], nl = {};
-    /* 「恋愛：あり」にした無関心・恐怖（HK.tieLoveOK）は、恋愛の関係を外さない */
-    l.forEach(function (t) { if (t && (t.type === 'apathy' || t.type === 'fear') && t.a !== t.b && !(HK.tieLoveOK && HK.tieLoveOK(t))) nl[Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b)] = 1; });
+    /* 「恋愛：あり」にした無関心（HK.tieLoveOK）は、恋愛の関係を外さない。恐怖は「恋愛：あり」でも外す（恐怖が和らぐまで恋人にしない。2026-11-03 利用者の指示） */
+    l.forEach(function (t) { if (t && (t.type === 'apathy' || t.type === 'fear') && t.a !== t.b && (t.type === 'fear' || !(HK.tieLoveOK && HK.tieLoveOK(t)))) nl[Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b)] = 1; });
     if (!Object.keys(nl).length) return ties;
     return l.filter(function (t) { return !(t && FEAR_DROP.test(t.type) && nl[Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b)]); });
   };
@@ -1035,6 +1050,8 @@
         if (t.type === 'ex') { if (xf.feel) o.feel = xf.feel; if (xf.feelB) o.feelB = xf.feelB; }
         if (xf.past) o.past = xf.past;
         if (xf.pastB) o.pastB = xf.pastB;
+        /* 恐怖の「体の関係」（HK.tieBodyOK） */
+        if (t.type === 'fear' && xf.body) o.body = xf.body;
         if (xf.noev) o.noev = xf.noev;
         if (t.type === 'fiance') {
           o.feel = xf.feel; o.feelB = xf.feelB;
@@ -1079,6 +1096,17 @@
           var A = ctx.chars[t.a], B = ctx.chars[t.b];
           /* 「恋愛：あり」にした無関心・恐怖：恋愛は止めず、体の関係・夜だけを今までどおり止める（noSex：engine.js の HK.sexBlocked） */
           var lv = HK.tieLoveOK(t);
+          /* 恐怖の「体の関係：あり」（HK.tieBodyOK。2026-11-03 利用者の指示）：noLove・noSex を入れない（夜の場面を止めない）。
+             恋愛は、「恋愛：なし／自動」なら loveOff（上の off0）で止め、「恋愛：あり」なら恐怖が和らぐまで止める（HK.fearHold。和らいだら cold-fear.js が外す） */
+          var bo = t.type === 'fear' && HK.tieBodyOK && HK.tieBodyOK(t);
+          if (t.type === 'fear' && lv && HK.fearHold) HK.fearHold(A, B);
+          if (bo) {
+            var fo0 = A.fearOf = A.fearOf || []; if (fo0.indexOf(B.i) < 0) fo0.push(B.i);
+            var bodyOf = A.fearBody = A.fearBody || []; if (bodyOf.indexOf(B.i) < 0) bodyOf.push(B.i);
+            (ctx._fear = ctx._fear || {})[t.a + '>' + t.b] = 1;
+            var p0 = ctx.pair(A, B); p0.couple = false; p0.night = false;
+            return;
+          }
           /* 恐怖で入れた印は _fearNL（noLove）・_fearNS（noSex）にも覚え、恐れる側に fearOf（恐れている相手）を付ける（pos.js の HK.Pos.fearSexInfo：
              合意のない展開として、恐れられる側が迫る場面だけ、この印を外して体の関係を見る。2026-10-30 担当FS） */
           [[A, B], [B, A]].forEach(function (q) {
@@ -1090,7 +1118,7 @@
           if (t.type === 'fear') { var fo = A.fearOf = A.fearOf || []; if (fo.indexOf(B.i) < 0) fo.push(B.i); }
           var m = t.type === 'apathy' ? (ctx._apathy = ctx._apathy || {}) : (ctx._fear = ctx._fear || {});
           m[t.a + '>' + t.b] = 1;
-          if (lv) { ctx.pair(A, B).night = false; return; }
+          if (lv) { ctx.pair(A, B).night = false; if (t.type === 'fear') ctx.pair(A, B).couple = false; return; }
           /* 恋人・セフレなどを重ねていても、無関心・恐怖のほうを優先する（恋人の扱い・夜の印を外す） */
           var p = ctx.pair(A, B);
           p.couple = false; p.night = false;

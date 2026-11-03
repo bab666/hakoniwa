@@ -205,6 +205,21 @@
     if (isCtx(Z)) { var l = Z.flags.endNotes = Z.flags.endNotes || []; if (l.indexOf(s) < 0) l.push(s); }
     p.end = k;
   }
+  /* 恐怖が和らぐ（2026-11-03 利用者の指示「恋愛ありは、恐怖が和らぐ可能性があるという意味」）：和らいだ回数 p.soft を数え、
+     「恋愛：あり」の恐怖（p.lv）は CF.SOFT_N 回で（恋に転じたときはすぐ）、恋愛の止め（engine.js の HK.fearHold）を外す。理由に足す文を返す */
+  CF.SOFT_N = 2;
+  CF.soften = function (Z, p, love) {
+    if (!p || p.type !== 'fear') return '';
+    p.soft = (p.soft || 0) + 1;
+    if (!p.lv || p.freed || (!love && p.soft < CF.SOFT_N)) return '';
+    var P = isCtx(Z) ? Z.chars : Z.P, a = P && P[p.h], b = P && P[p.t];
+    if (!a || !b || !HK.fearRelease) return '';
+    HK.fearRelease(a, b);
+    p.freed = true; note(Z, p, 'freed');
+    return '／恐怖の和らぎ：' + a.name + 'の' + b.name + 'への恐怖が和らいだ（「恋愛：あり」の二人なので、ここから恋愛になりうる）';
+  };
+  /* 和らいだか（「恋愛：あり」の恐怖の止めが外れたか） */
+  CF.freed = function (Z, a, b) { var p = CF.pairOf(Z, a, b); return !!(p && p.freed); };
   CF.raw = raw; CF.apaBreak = apaBreak; CF.fearEnd = fearEnd; CF.endNote = endNote; CF.note = note;
   CF.per = per; CF.trOf = trOf; CF.fill = fill; CF.pickOf = pickOf; CF.here = here; CF.isCtx = isCtx;
 
@@ -360,7 +375,7 @@
       raw(ctx, a, b, { ten: -14, trust: 8, aff: 5 });
       fearEnd(ctx, p, 'eased'); p.eased = (p.eased || 0) + 1;
       if (!p.end || p.end === 'deep') endNote(ctx, p, 'eased');
-      head = '恐怖の変化：' + a.name + 'の' + b.name + 'への恐怖が、少し和らいだ（恐怖は消えない）';
+      head = '恐怖の変化：' + a.name + 'の' + b.name + 'への恐怖が、少し和らいだ（恐怖は消えない）' + CF.soften(ctx, p);
     }
     note(ctx, p, 'rescue');
     return head;
@@ -395,7 +410,7 @@
     if (k === 'love') { var r = ctx.R(a, b); if (r.att < 46) r.att = 46; }
     ctx.stress(a, k === 'push' || k === 'let' ? 15 : k === 'flee' ? -10 : 5);
     fearEnd(ctx, p, KTO[k]); endNote(ctx, p, KTO[k]); note(ctx, p, k);
-    var why = '恐怖の変化：' + a.name + 'は' + b.name + 'を恐れていたが、' + b.name + 'が' + w + 'のを見て、恐怖を保てなくなった（' + c.why + '）→ ' + KNAME[k] + (dead ? '（' + b.name + 'は命を落とした）' : '');
+    var why = '恐怖の変化：' + a.name + 'は' + b.name + 'を恐れていたが、' + b.name + 'が' + w + 'のを見て、恐怖を保てなくなった（' + c.why + '）→ ' + KNAME[k] + (dead ? '（' + b.name + 'は命を落とした）' : '') + (k === 'love' ? CF.soften(ctx, p, true) : '');
     return { text: text, why: why, k: k, dead: dead };
   }
 
@@ -546,8 +561,9 @@
       if ((k === 'abandon' || k === 'let') && !(fx && fx.gone) && id !== 'jinro' && id !== 'yakata') text += fill(pickOf(S, X.SURVIVE), m);
       relS(S, a, b, RELD[KTO[k]]);
       p.st = KTO[k]; p.end = KTO[k]; note(S, p, k);
+      var fz = k === 'love' ? CF.soften(S, p, true) : '';
       if (k === 'flee') (S._cfFled = S._cfFled || {})[a.i + '>' + b.i] = 1;
-      var o = ST.say(S, { actors: [a, b], tag: '恐怖の変化', text: text, why: '恐怖の変化：' + a.name + 'は' + b.name + 'を恐れていたが、' + b.name + 'が' + w + 'のを見て、恐怖を保てなくなった（' + c.why + '）→ ' + KNAME[k] + (fx && fx.t ? '（' + fx.t + '）' : ''), mag: 26 });
+      var o = ST.say(S, { actors: [a, b], tag: '恐怖の変化', text: text, why: '恐怖の変化：' + a.name + 'は' + b.name + 'を恐れていたが、' + b.name + 'が' + w + 'のを見て、恐怖を保てなくなった（' + c.why + '）→ ' + KNAME[k] + (fx && fx.t ? '（' + fx.t + '）' : '') + fz, mag: 26 });
       /* 連れ去り・疑いなどは、記録を書いたあとに当てる（記録の中で、場を離れた人が動く文にならないように） */
       if (fx && fx.go) fx.go();
       if (o && ST.key && (k === 'sell' || (fx && fx.gone))) ST.key(S, o, a.name + 'が' + b.name + 'を' + (k === 'sell' ? '売り渡した' : '見捨てた'));
@@ -563,7 +579,7 @@
       p.pend = null;
       var m = { a: a, b: b }, head;
       if (p.type === 'apathy') { p.st = 'moved'; p.end = 'moved'; relS(S, a, b, RELD.moved); head = '無関心の変化：' + a.name + 'は' + b.name + 'に無関心だったが、劇的なことで心が動いた'; }
-      else { p.st = 'eased'; if (!p.end || p.end === 'deep') p.end = 'eased'; relS(S, a, b, RELD.eased); head = '恐怖の変化：' + a.name + 'の' + b.name + 'への恐怖が、少し和らいだ（恐怖は消えない）'; }
+      else { p.st = 'eased'; if (!p.end || p.end === 'deep') p.end = 'eased'; relS(S, a, b, RELD.eased); head = '恐怖の変化：' + a.name + 'の' + b.name + 'への恐怖が、少し和らいだ（恐怖は消えない）' + CF.soften(S, p); }
       note(S, p, 'rescue');
       ST.say(S, { actors: [a, b], tag: p.type === 'apathy' ? '無関心の変化' : '恐怖の変化', text: fill(pickOf(S, X.AFTER_HELP), m) + fill(pickOf(S, p.type === 'apathy' ? X.MOVED : X.EASED), m), why: head + '／' + b.name + 'に庇われた・救われたあと', mag: 16 });
       return true;
