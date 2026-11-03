@@ -21,13 +21,18 @@
         ]
       },
       "files": [
+        "js/shinkon-kit.js",
         "js/shinkon-data.js",
         "js/shinkon-text-a.js",
         "js/shinkon-text-b.js",
         "js/shinkon-text-c.js",
+        "js/shinkon-react.js",
+        "js/shinkon-trouble.js",
+        "js/shinkon-visit.js",
         "js/shinkon-r18-data.js",
         "js/shinkon-r18-text-a.js",
         "js/shinkon-r18-text-b.js",
+        "js/shinkon-r18-more.js",
         "js/shinkon-r18.js",
         "js/shinkon-tone.js",
         "js/shinkon.js"

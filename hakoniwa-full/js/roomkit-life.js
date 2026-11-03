@@ -5,6 +5,9 @@
    ・HK.Life.work(ctx, c, pick)／role(ctx, c, pick)：おまかせ（auto）なら気質から選ぶ。決めたものは c.life に覚える
    ・HK.Life.day(ctx, c, d, hol)：その日の予定 { trip, late, home: { m, d, n }（朝・日中・夜に家にいるか） }。同じ日は同じ答え
    ・HK.Life.line(ctx, c, plan)：日中の一言（仕事の型と職業名から）。家事の一言は roleLine(ctx, c)
+   ・家事をしない人（役割の家事・料理が 0.2 未満：忙しい仕事人・ヒモタイプ）は、家事・料理の担い手にしない（2026-11-03 利用者の指示「家事をしないキャラが料理をしてしまう」）：
+     canChore(c)／canCook(c) で確かめ、chorePerson・cookOf は担い手がいなければ null を返す（呼ぶ側は外食・出来合いの文にする）。roleLine の「家事をしない人」の一言も家事をしない文だけ
+   ・家事が苦手（ポンコツ）なのは役割「家事をしているが得意ではない（ポンコツ）」の人だけ（clumsy(c)）
    設計：docs/reports/2026-11-03/shinkon-design.md */
 (function () {
   'use strict';
@@ -30,7 +33,7 @@
     { v: 'r5', label: '自宅で在宅ワークを中心に行っている', chores: 0.5, cook: 0.5, work: 'remote' },
     { v: 'r6', label: '家事はそこそこ。趣味優先型', chores: 0.35, cook: 0.35 },
     { v: 'r7', label: '家事も仕事も二人で協力している', chores: 0.5, cook: 0.5 },
-    { v: 'r8', label: '家事をしているが得意ではない', chores: 0.55, cook: 0.3, clumsy: true },
+    { v: 'r8', label: '家事をしているが得意ではない（ポンコツ）', chores: 0.55, cook: 0.3, clumsy: true },
     { v: 'r9', label: '家事も仕事も、なんでもこなす万能タイプ', chores: 0.7, cook: 0.75 },
     { v: 'r10', label: '家事も仕事も相手に任せきりなヒモタイプ', chores: 0.05, cook: 0.05, work: 'home' }
   ];
@@ -47,7 +50,8 @@
   var ROLE_LINE = {
     hi: L('{a}は手際よく洗い物を片づけ、台所をぴかぴかにした。|{a}は二人分の夕飯の下ごしらえを、鼻歌まじりに済ませた。|{a}は家計簿をつけながら、来週の献立を考えた。'),
     mid: L('{a}は、気づいた家事から少しずつ片づけた。|{a}は帰り道でパンと牛乳を買ってきた。|{a}は休みの朝に、まとめて掃除機をかけた。'),
-    lo: L('{a}は脱いだ靴下をそのままにして、あとで気まずそうに拾った。|{a}は冷蔵庫を開けて、何を作ればいいのか途方に暮れた。|{a}は家事を手伝おうとして、かえって仕事を増やしてしまった。'),
+    /* 家事をしない人：家事・料理をする文は書かない（2026-11-03） */
+    lo: L('{a}は家のことは任せきりで、ソファで仕事の資料を広げていた。|{a}は帰りにコンビニへ寄って、二人分のデザートを買ってきた。|{a}は休みの朝、遠くに聞こえる生活の音を聞きながら二度寝を決め込んだ。'),
     clumsy: L('{a}は張り切って料理を始めたが、鍋をひとつ焦がしてしまった。|{a}は洗濯物を畳んだつもりが、なぜか前より散らかっていた。|{a}は皿を割らずに洗い終えて、小さく胸を張った。')
   };
   function find(list, v) { for (var i = 0; i < list.length; i++) if (list[i].v === v) return list[i]; return null; }
@@ -96,7 +100,11 @@
     },
     line: function (ctx, c, plan) {
       var w = plan && plan.trip ? 'trip' : (c.life && c.life.work) || 'regular';
-      var t = pick(ctx, LINE[w] || LINE.regular);
+      /* 家にいる仕事の型（専業）でも、家事をしない人には家事の一言を出さない */
+      if (w === 'home' && !HK.Life.canChore(c)) return pick(ctx, ROLE_LINE.lo);
+      var ok = c.life && (find(ROLE, c.life.role) || ROLE[2]).chores >= 0.2;
+      var arr = (LINE[w] || LINE.regular).filter(function (l) { return ok || !/洗濯|掃除|家のこと|畳ん|洗い物/.test(l); });
+      var t = pick(ctx, arr.length ? arr : LINE.regular);
       if (c.life && c.life.job && w !== 'home') t = t.replace(/^\{a\}は/, '{a}は' + c.life.job + 'の仕事で、').replace(/^\{a\}の職場は/, '{a}の' + c.life.job + 'の職場は');
       return t;
     },
@@ -104,10 +112,24 @@
       var r = find(ROLE, c.life && c.life.role) || ROLE[2];
       return pick(ctx, ROLE_LINE[r.clumsy ? 'clumsy' : r.chores >= 0.7 ? 'hi' : r.chores >= 0.35 ? 'mid' : 'lo']);
     },
-    /* 二人のうち家事を多くする人（家事の出来事の主役に） */
+    /* 家事・料理をする人か（役割の家事・料理が 0.2 以上）。家事が苦手（ポンコツ）か */
+    canChore: function (c) { var r = find(ROLE, c && c.life && c.life.role) || ROLE[2]; return r.chores >= 0.2; },
+    canCook: function (c) { var r = find(ROLE, c && c.life && c.life.role) || ROLE[2]; return r.cook >= 0.2; },
+    clumsy: function (c) { var r = find(ROLE, c && c.life && c.life.role); return !!(r && r.clumsy); },
+    /* 二人のうち家事を多くする人（家事の出来事の主役に）。家事をする人がいなければ null */
     chorePerson: function (a, b) {
       var ra = find(ROLE, a.life && a.life.role) || ROLE[2], rb = find(ROLE, b.life && b.life.role) || ROLE[2];
+      var oa = ra.chores >= 0.2, ob = rb.chores >= 0.2;
+      if (!oa && !ob) return null;
+      if (oa !== ob) return oa ? a : b;
       return ra.chores >= rb.chores ? a : b;
+    },
+    /* ご飯を作る人（料理をする人の中から、料理の多さで重みをつけて選ぶ）。list の誰も料理をしなければ null */
+    cookOf: function (ctx, list) {
+      var ok = (list || []).filter(function (c) { return c && (find(ROLE, c.life && c.life.role) || ROLE[2]).cook >= 0.2; });
+      if (!ok.length) return null;
+      if (ok.length === 1 || !HK.weighted) return ok[0];
+      return HK.weighted(rngOf(ctx), ok, function (c) { return (find(ROLE, c.life && c.life.role) || ROLE[2]).cook; });
     },
     label: function (c) {
       var w = find(WORK, c.life && c.life.work), r = find(ROLE, c.life && c.life.role);
