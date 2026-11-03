@@ -56,6 +56,20 @@ hakoniwa-packs/
 
 足したら `sex-flow-audit.js` を部屋のある試しのフォルダで回し、(a)〜(h)（(h) は型の矛盾）を 0 件にする。
 
+## キスの場面（HK.Kiss・2026-11-03）
+
+キスの文は本体の共通部品 `HK.Kiss`（`js/kiss.js`。文の表は `js/kiss-text.js`・`js/kiss-text2.js` の `HK.KissText`）の型で組む。両方のビルドにある（R18版は本体のかたまり pack-lewd、全年齢版は pack-rel。どちらもパックの依存に入っていれば使える）。設計は `docs/reports/2026-11-03/kiss-design.md`。
+
+- `HK.Kiss.scene(ctx, a, b, opt)`：キスだけの場面を記録に一件出す（`ctx.act2`。cat は romance、夜には数えない）。a・b はどちらが先でもよい（受け攻めは `HK.Pos.order` で決める）。戻り値 `{ e, plan, text }` か null。
+  - `opt.trig`：きっかけ（`itte` いってらっしゃい・`okaeri` おかえり・`oyasumi` おやすみ・`neoki` 寝起き・`gochi` ごちそうさま・`fui` ふいに・`naka` 仲直り・`hobi` ご褒美・`karakai` からかい・`amayadori` 雨宿り・`amae` おねだり・`kinen` お祝い）
+  - `opt.len`（`'s'`｜`'m'`｜`'l'`）・`opt.end`（`tere`・`again`・`nagori`・`hold`・`oazuke`・`promise`・`late`・`out`・`night`）を渡すと固定、省くと二人の態度・夜の性格・気分で選ぶ。`opt.place`（`genkan`・`kitchen`・`sofa`・`futon`・`soto`）は場所の決まっていないきっかけの頭に一文を置く
+  - `opt.x`・`opt.y`：いってらっしゃい・おかえりの出かける人（帰った人）と見送る人。`opt.promise: true` で「続きは帰ってから」、`opt.night: true` で「そのまま夜へ」（R18 だけ）を候補にする
+  - `opt.lead`・`opt.tail`：始まりの段を部屋の文（`{a}{b}` のまま）に替える・最後の段の後ろに文を足す（新婚部屋の最後の夜の幸せなキスで使用）
+  - `opt.whyPre`（理由の欄の頭。既定は「キスだけの触れ合い：」）・`opt.fx`・`opt.tag`
+- `HK.Kiss.text(ctx, a, b, opt)`：記録に出さずに本文だけ返す（`{ text, plan, why, label }`）。`HK.Kiss.trio(ctx, a, b, c)`（三人のキス）・`HK.Kiss.seen(ctx, a, b, c, 'warm'|'jeal')`（三人目 c に見られる）。
+- 本体の共通の出来事のキス（kiss-events.js）は、id が `set-` で始まる箱庭には出ない。部屋でキスを出すときは、部屋のファイルから `HK.Kiss.scene` を呼び、出来事の印（`/* @event scen=<部屋の id> id=… label=… */`）を付ける。
+- 例：新婚部屋は `js/shinkon-kiss.js`（shinkon.js を書き換えず、`HK.wrap` で区切りの関数 `phase`・`HK.Journal.add`・`HK.ShinkonR18.night` を包んで差し込む）。
+
 ## 出来事の一覧（2026-11-03）
 
 パックの箱庭も、本体と同じく箱庭カードの「出来事の一覧」に出る（コードで開けたときだけ。一覧はパックの中身に暗号化して入り、ボタンを押したときだけ読む）。印は本体と同じ：

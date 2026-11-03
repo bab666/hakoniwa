@@ -66,7 +66,8 @@
         "js/shinkon-trio.js",
         "js/shinkon-r18-special.js",
         "js/shinkon-r18-trio.js",
-        "js/shinkon.js"
+        "js/shinkon.js",
+        "js/shinkon-kiss.js"
       ]
     },
     {

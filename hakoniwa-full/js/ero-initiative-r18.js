@@ -83,10 +83,13 @@
   I.rngFor = function (T, U, text) { var t = String(text || ''); return rngOf(hashOf((T && T.name) + '\u0001' + (U && U.name) + '\u0001' + t.length + '\u0001' + t.slice(0, 80) + t.slice(-80))); };
   function pickR(r, arr) { return arr && arr.length ? arr[r.int(arr.length)] : ''; }
   /* 導入の台詞・応じ方は、一回の遊び（シミュレーション）の中で同じものを続けて出さない（使ったものを HK.SexFlow.memo に覚え、全部使ったら戻す。2026-11-03） */
-  function pickU(r, arr) {
+  /* who を渡すと、その住人ごとに使った文を覚える（2026-11-03：皆で一つの覚えだと、ほかの住人が使い切ったところで戻り、同じ人に同じ導入の台詞が二度出ていた） */
+  function pickU(r, arr, who) {
     var M = HK.SexFlow && HK.SexFlow.memo;
     if (!M || !arr || arr.length < 2) return pickR(r, arr);
-    var u = M._ini || (M._ini = {}), f = arr.filter(function (x) { return !u[x]; });
+    var u0 = M._ini || (M._ini = {}), u = who ? (u0['@' + who.name] || (u0['@' + who.name] = {})) : u0, f = arr.filter(function (x) { return !u[x]; });
+    /* 全部使ったら戻す。住人ごとの覚え（who）では、台詞（「」）のある文はほかが尽きるまで戻さない（同じ人に同じ導入の台詞を二度言わせない） */
+    if (!f.length && who) { arr.forEach(function (x) { if (!/「/.test(x)) delete u[x]; }); f = arr.filter(function (x) { return !u[x] && x !== u._last; }); }
     if (!f.length) { arr.forEach(function (x) { delete u[x]; }); f = arr.filter(function (x) { return x !== u._last; }); if (!f.length) f = arr; }
     var v = pickR(r, f); u[v] = 1; u._last = v; return v;
   }
@@ -195,12 +198,12 @@
       var lt;
       if (pl.bind) lt = pickR(r, T.BIND);
       else if (T.LSTY[pl.lsty]) lt = pickR(r, T.LSTY[pl.lsty]);
-      else if (T.ATT_LEAD[pl.lsty]) lt = pickU(r, T.ATT_LEAD[pl.lsty]);
-      else lt = pickU(r, T.LSTY0[pl.lead] || T.LSTY0.sasoi);
+      else if (T.ATT_LEAD[pl.lsty]) lt = pickU(r, T.ATT_LEAD[pl.lsty], U);
+      else lt = pickU(r, T.LSTY0[pl.lead] || T.LSTY0.sasoi, U);
       /* 受けが「相手に合わせる」で、攻めがマゾ：付き合って襲う側に回る */
       if (pl.accU && pl.kind === 'maso') lt = pickR(r, T.ACCOM.leadPre) + lt;
       var rs = '';
-      if (pl.tresp) rs = pl.tresp !== 'att' && T.TRESP[pl.tresp] ? pickU(r, T.TRESP[pl.tresp]) : pickU(r, T.ATT_RESP[pl.att] || T.ATT_RESP.gentle);
+      if (pl.tresp) rs = pl.tresp !== 'att' && T.TRESP[pl.tresp] ? pickU(r, T.TRESP[pl.tresp], pl.a) : pickU(r, T.ATT_RESP[pl.att] || T.ATT_RESP.gentle, pl.a);
       out.lead = lt + (rs ? '\n\n' + rs : '');
     }
     var mid = [];
@@ -226,7 +229,7 @@
       if (!cl.length) cl = poolH(okBody((pl.change === 'ride_b' ? T.RIDE_B : T.SHIFT)[m], pl), pl.H);
       if (cl.length) {
         var ct = untag(pickR(r, cl));
-        ct = ct.replace('{why}', pickR(r, T.WHY[pl.why] || T.WHY.lead)).replace('{say}', e ? '' : '{b}' + pickU(r, sayUe(T, U, pl.change)));
+        ct = ct.replace('{why}', pickR(r, T.WHY[pl.why] || T.WHY.lead)).replace('{say}', e ? '' : '{b}' + pickU(r, sayUe(T, U, pl.change), U));
         if (pl.change === 'ride_b') ct = ct.replace(/\{b\}「\{mb\}」$/, '{b}「{mb}」' + pickR(r, T.RIDE_END[m]));
         pl.pose = pl.change === 'ride_b' ? (m === 'fm' ? 'face' : 'ride') : pl.pose;
         mid.push(ct);
@@ -241,7 +244,7 @@
     /* 役割の入れ替え（果てたあとの二度目） */
     if (pl.change === 'swap') {
       var sl = (e ? T.SWAP_E : T.SWAP)[m] || T.SWAP[m];
-      out.end = untag(pickR(r, sl)).replace('{why}', pickR(r, T.WHY[pl.why] || T.WHY.lead)).replace('{say}', e ? '' : '{b}' + pickU(r, T.SAY.swap[persona(U)] || T.SAY.swap.gentle));
+      out.end = untag(pickR(r, sl)).replace('{why}', pickR(r, T.WHY[pl.why] || T.WHY.lead)).replace('{say}', e ? '' : '{b}' + pickU(r, T.SAY.swap[persona(U)] || T.SAY.swap.gentle, U));
     }
     /* 喘ぎ */
     var fill = function (s) {
