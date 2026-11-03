@@ -62,12 +62,14 @@
      grp（出来事の文の分かれ目）：love（夫婦・恋人）／pine（両片想い・片想い）／close（友人・幼なじみ・同級生）／work（同僚・先輩後輩・師弟）／fam（家族・擬似親子）／awk（元恋人・不仲・知人・関係なし） */
   var RK_OF = { spouse: 'spouse', lover: 'lover', fiance: 'lover', mate: 'lover', fated: 'lover', honmei: 'lover',
     parent: 'fam', sibling: 'fam', sibprot: 'fam', sibclose: 'fam', sibbad: 'fam', twin: 'fam', stepsib: 'fam', relative: 'fam', pparent: 'pfam',
-    ex: 'ex', almost: 'almost', crush: 'crush', yan: 'crush', enemy: 'bad', bad: 'bad', rival: 'bad', abuse: 'bad',
+    ex: 'ex', almost: 'almost', crush: 'crush', yan: 'crush', enemy: 'bad', bad: 'bad', rival: 'rival', lovehate: 'lovehate', abuse: 'bad',
     teacher: 'mentor', mentor: 'mentor', master: 'mentor', worship: 'mentor', senpai: 'senpai', colleague: 'work', boss: 'work', childhood: 'childhood',
     friend: 'friend', best: 'friend', buddy: 'friend', benefactor: 'friend', fwb: 'friend', comrade: 'friend', classmate: 'school', acq: 'weak' };
-  var RK_ORD = ['spouse', 'lover', 'fam', 'pfam', 'ex', 'almost', 'crush', 'bad', 'mentor', 'senpai', 'work', 'childhood', 'friend', 'school', 'weak'];
-  var RK_GRP = { spouse: 'love', lover: 'love', almost: 'pine', crush: 'pine', friend: 'close', childhood: 'close', school: 'close', work: 'work', senpai: 'work', mentor: 'work', fam: 'fam', pfam: 'fam', ex: 'awk', bad: 'awk', weak: 'awk', none: 'awk' };
-  var RK_NAME = { spouse: '夫婦', lover: '恋人', fam: '家族', pfam: '家族同然', ex: '元恋人', almost: '両片想い', crush: '片想い', bad: '不仲', mentor: '師弟', senpai: '先輩と後輩', work: '同僚', childhood: '幼なじみ', friend: '友人', school: '同級生', weak: '知り合い', none: '特に関係なし' };
+  var RK_ORD = ['spouse', 'lover', 'fam', 'pfam', 'ex', 'almost', 'crush', 'lovehate', 'bad', 'rival', 'mentor', 'senpai', 'work', 'childhood', 'friend', 'school', 'weak'];
+  var RK_GRP = { spouse: 'love', lover: 'love', almost: 'pine', crush: 'pine', friend: 'close', childhood: 'close', school: 'close', work: 'work', senpai: 'work', mentor: 'work', fam: 'fam', pfam: 'fam', ex: 'awk', bad: 'awk', rival: 'awk', lovehate: 'awk', weak: 'awk', none: 'awk' };
+  /* 仲の悪い関係（不仲・ライバル・愛憎・元恋人）：素直になれない看病の文（feud の表） */
+  var FEUD_RK = /^(bad|rival|lovehate|ex)$/;
+  var RK_NAME = { spouse: '夫婦', lover: '恋人', fam: '家族', pfam: '家族同然', ex: '元恋人', almost: '両片想い', crush: '片想い', bad: '不仲', rival: 'ライバル', lovehate: '愛憎', mentor: '師弟', senpai: '先輩と後輩', work: '同僚', childhood: '幼なじみ', friend: '友人', school: '同級生', weak: '知り合い', none: '特に関係なし' };
   function relKind(ctx, A, B) {
     var tl = HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, A, B) || [] : [], best = 'none';
     tl.forEach(function (t) {
@@ -122,9 +124,9 @@
     return t;
   }
   /* 関係ごとの文の表 T（{ 向きのある鍵, 関係, まとめ, all }）から：その関係の文を先に、使い切ったら共通（all）の文から */
-  function relList(T, S) { if (!T) return []; return (S.rkKey && T[S.rkKey] || []).concat(T[S.rk] || [], T[S.grp] || [], T.all || []); }
+  function relList(T, S) { if (!T) return []; return (S.rkKey && T[S.rkKey] || []).concat(T[S.rk] || [], S.feud && T.feud || [], T[S.grp] || [], T.all || []); }
   function relPick(ctx, T, a, b, rep) {
-    var S = f(ctx), own = T ? (S.rkKey && T[S.rkKey] ? T[S.rkKey] : []).concat(T[S.rk] || [], T[S.grp] || []) : [];
+    var S = f(ctx), own = T ? (S.rkKey && T[S.rkKey] ? T[S.rkKey] : []).concat(T[S.rk] || [], S.feud && T.feud || [], T[S.grp] || []) : [];
     return pickT(ctx, own, a, b) || pickT(ctx, T && T.all, a, b) || (rep ? pickT(ctx, own.concat(T && T.all || []), a, b, true) : '');
   }
   /* 表 T に、まだ使っていない合う文があるか */
@@ -162,6 +164,22 @@
   function sickScore(c) { var t = c.tr || {}; return 0.2 + (WORK_SICK[c.life && c.life.work] || 0.2) + (1 - (t.a != null ? t.a : 0.5)) * 0.3 + (t.cp || 0.5) * 0.2; }
   function careScore(c) { var t = c.tr || {}; return 0.2 + (t.np || 0.5) * 0.5 + (t.warmth || 0.5) * 0.3 + (c.life && /home|remote/.test(c.life.work) ? 0.15 : 0); }
 
+  /* ---------- 目標（立場 × 態度9種 × 関係。行動の選ばれやすさと結末に効く） ----------
+     GK[種]：b＝後押しする行動、e＝結末の点（恋人に・デートになりやすさ） */
+  var GK = { ongaeshi: { b: 'over', e: 2 }, amayakasu: { b: 'over', e: 6 }, tayorare: { b: 'over', e: 3 }, tekipaki: { b: '', e: 0 }, kakusu: { b: '', e: 0 }, gimu: { b: 'clumsy', e: -8 },
+    chikazuku: { b: 'over', e: 10 }, kashi: { b: '', e: -4 }, mamoru: { b: 'over', e: 4 },
+    misenai: { b: 'hide', e: -2 }, karinashi: { b: 'hide', e: -5 }, amaetai: { b: 'amae', e: 6 }, hayaku: { b: 'hide', e: 0 }, sobani: { b: 'amae', e: 8 }, orei: { b: '', e: 3 }, meiwaku: { b: 'hide', e: 0 }, shigoto: { b: 'hide', e: -2 } };
+  function goalOf(ctx, c, side) {
+    var S = f(ctx), G = TX().GOAL || {}, GR = TX().GOAL_REL || {}, p = per(c);
+    var base = ((G[side] || {})[p] || (G[side] || {}).gentle || []), rel = ((GR[side] || {})[S.feud ? 'feud' : S.grp] || []).filter(function (g) { return S.love || !ROM.test(g.t); });
+    var list = rel.length && ctx.rng() < 0.45 ? rel : base;
+    if (!list.length) return null;
+    var g = list[Math.floor(ctx.rng() * list.length)];
+    /* 名簿の目標の欄（おまかせ）に、この部屋の目標を出す */
+    if (!c.goal || c.goal.id === 'kb') c.goal = { id: 'kb_' + side + '_' + g.k, label: g.t };
+    return g;
+  }
+
   /* ---------- 性格で分かれる行動 ----------
      看る側：over（世話を焼きすぎる）／clumsy（不器用に失敗する）。看られる側：hide（強がって隠す）／amae（甘える）。
      態度9種と気質で選び、運命の揺らぎ（HK.PairReact.pOdd）でらしくない方に入れ替わる（記録の「らしくない」の印） */
@@ -171,6 +189,9 @@
     var t = c.tr || {}, p = per(c), base = side === 'carer' ? CB_FIT[p] : PB_FIT[p];
     if (side === 'carer') { var cl = (LF.clumsy(c) ? 0.6 : 0) + (1 - (t.a != null ? t.a : 0.5)) * 0.3 + (t.impulse || 0.4) * 0.3, ov = (t.np || 0.5) * 0.6 + (t.warmth || 0.5) * 0.3; base = cl > ov + 0.15 ? 'clumsy' : ov > cl + 0.15 ? 'over' : base; }
     else { var hd = (t.cp || 0.5) * 0.5 + (1 - (t.honesty || 0.5)) * 0.4, am = (t.ac || 0.5) * 0.5 + (t.np || 0.5) * 0.3; base = hd > am + 0.15 ? 'hide' : am > hd + 0.15 ? 'amae' : base; }
+    /* 目標が行動を後押しする（恩返し・甘やかしたい→世話を焼きすぎる、見せたくない→強がる、甘えたい→甘える） */
+    var gl = side === 'carer' ? f(ctx).goalA : f(ctx).goalB, gb = gl && GK[gl.k] && GK[gl.k].b;
+    if (gb && ctx.rng() < 0.55) base = gb;
     var odd = RC() && ctx.rng() < RC().pOdd(ctx);
     var opp = { over: 'clumsy', clumsy: 'over', hide: 'amae', amae: 'hide' };
     return { k: odd ? opp[base] : base, odd: !!odd };
@@ -204,7 +225,8 @@
     env: [
       { id: 'days', label: '日数', min: 3, max: 7, def: 5, lo: '3日', hi: '7日', unit: '日', desc: '見守る日数。1日は朝・日中・夜の3区切り。熱は上がって、いちばん高い夜を越え、治ったあとの日も少し残る' },
       { id: 'sev', label: '病の重さ', type: 'select', def: 'mid', options: [{ v: 'light', label: '軽い風邪（微熱とだるさ）' }, { v: 'mid', label: '熱が出る（ふつう）' }, { v: 'heavy', label: '寝込む（高い熱が続く）' }], desc: '重いほど熱が高く、治るまでの日数が長い' },
-      { id: 'live', label: '同居か通いか', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ（二人の関係から）' }, { v: 'together', label: '同居（同じ家で看病する）' }, { v: 'visit', label: '通い（看病する人が毎日訪ねてくる）' }], desc: '通いなら、看病する人が朝に来て夜に帰る（熱がいちばん高い夜は泊まり込む）' },
+      { id: 'live', label: '同居か通いか', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ（二人の関係から）' }, { v: 'together', label: '同居（同じ家で看病する）' }, { v: 'visit', label: '通い（同居していないが、毎日看に来る）' }, { v: 'apart', label: '同居していない（来られる日だけ。連絡と差し入れが中心）' }],
+        desc: '通いなら、看病する人が朝に来て夜に帰る（熱がいちばん高い夜は泊まり込む）。同居していないなら、来られる日だけ顔を出し、ほかの日は電話やメッセージで様子を聞く（泊まる日は特別）。おまかせは、夫婦・家族は同居、恋人は同居か通い、友人・同僚・片想いなどは同居していない寄り' },
       { id: 'cont', label: 'うつりやすさ', type: 'select', def: 'mid', options: [{ v: 'low', label: 'うつりにくい' }, { v: 'mid', label: 'ふつう' }, { v: 'high', label: 'うつりやすい' }], desc: '高いほど、治ったあとに看病した人へうつり、今度は看病し返す結末になりやすい（日数が足りないときは起きない）' },
       { id: 'outsideNames', label: '登場しない住人を出す', type: 'select', def: 'yes', options: [{ v: 'yes', label: '出す（名簿の住人のうち、二人と関係のある人が見舞いに来る・差し入れ・連絡をくれる）' }, { v: 'no', label: '出さない（二人と、参加者だけ）' }],
         desc: '名簿にいて今回は参加していない住人のうち、二人のどちらかと関係（家族・擬似親子・友人・同僚・先輩後輩・同級生・元恋人・知人）がある人（三人まで）が、名簿の性格・口調・関係のまま、見舞いに来たり、差し入れを届けたり、連絡をくれたりします。見舞いに来る住人は関係図に出ず、その人との恋愛も始まりません。参加者の三人目（住人ごとの「立場」で「見舞いに来る側」にした人）は、この設定にかかわらず同じように出ます' }
@@ -217,7 +239,8 @@
       { id: 'role', label: '家事の得意さ', auto: 'おまかせ（気質から）', options: LF.ROLE.map(function (r) { return { id: r.v, label: r.label }; }) }
     ],
     actions: [{ id: 'live', label: 'いつもどおりに過ごす', fit: function () { return 0.5; } }],
-    goals: [{ id: 'well', label: '早く元気になってほしい', fit: function () { return 0.5; } }],
+    /* 目標は立場（看る側・看られる側）と態度9種・関係から、始まりのときに決める（kanbyo-text-d.js の GOAL。この欄は「おまかせ」用） */
+    goals: [{ id: 'kb', label: '立場と性格から決める', fit: function () { return 0.5; } }],
     stepGroup: function (label) { var m = /^(DAY\d+（.）)(.+)$/.exec(label); return m ? { group: m[1], sub: m[2] } : null; },
     steps: function (env) {
       var n = Math.max(3, Math.min(7, +env.days || 5)), s = [];
@@ -230,7 +253,7 @@
     finish: function (ctx) { finish(ctx); },
     events: []
   };
-  if (!HK.SAFE_BUILD) scen.env.push({ id: 'lewdN', label: 'エッチの回数（R18）', type: 'select', def: 'high', options: [{ v: 'none', label: 'なし' }, { v: 'low', label: '1回まで' }, { v: 'high', label: '2回まで（一度は長い場面）' }], desc: '治ったあとに起きるエッチの場面の回数の上限（恋人どうしになった二人・体の関係にしてよい二人だけ。病気の間は起きない）。2回までなら、最後のエッチは段落を分けた長い場面になる（描写の長さが「数行で短く」のときを除く）' });
+  if (!HK.SAFE_BUILD) scen.env.push({ id: 'lewdN', label: 'エッチの回数（R18）', type: 'select', def: 'high', options: [{ v: 'none', label: 'なし' }, { v: 'low', label: '1回まで' }, { v: 'high', label: '2回まで（一度は長い場面）' }], desc: 'エッチの場面の回数の上限（体の関係にしてよい二人だけ）。多くは治ったあとに起きるが、治る前の熱のある夜にも、看る人が来ている夜にまれに起こりうる（寝込むほど重いときの熱がいちばん高い夜は無し。翌日は熱がぶり返したり、看る人にうつりやすくなったりする）。2回までなら、最後のエッチは段落を分けた長い場面になる（描写の長さが「数行で短く」のときを除く）' });
   /* 本体の共通の出来事から外すもの：体の関係の出来事（夜は kanbyo-r18.js がきっかけの段を付けて出す）・合意のない展開・三人以上の恋愛・告白（この部屋の結末で扱う）など */
   var EX_ID = /^(?:confess|take_charge|brood|lighten|mob_after|tie_spouse|grp_|poly_|ct_|cf_)/;
   function exList() { return (HK.COMMON || []).filter(function (e) { return e.sex || e.force || EX_ID.test(e.id); }).map(function (e) { return e.id; }); }
@@ -262,10 +285,17 @@
     S.pine = S.love && /^(almost|crush)$/.test(rk);
     S.rkKey = relDir(ctx, A, B, rk);
     /* 同居か通いか（おまかせ：夫婦・家族はいつも同居、恋人は半々、ほかは通い） */
-    S.live = env.live === 'together' || env.live === 'visit' ? env.live : rk === 'spouse' || rk === 'fam' || rk === 'pfam' ? 'together' : rk === 'lover' ? (ctx.rng() < 0.5 ? 'together' : 'visit') : 'visit';
+    S.feud = FEUD_RK.test(rk);
+    S.live = /^(together|visit|apart)$/.test(env.live) ? env.live : rk === 'spouse' || rk === 'fam' || rk === 'pfam' ? 'together' : rk === 'lover' ? (ctx.rng() < 0.5 ? 'together' : 'visit') : (ctx.rng() < 0.6 ? 'apart' : 'visit');
     S.G.forEach(function (g) { g.gone = true; g.life = g.life || { job: '' }; if (pickOfChar(ctx, g, 'outside')) g.outside = true; });
     plan(ctx, S);
+    S.goalA = goalOf(ctx, A, 'carer'); S.goalB = goalOf(ctx, B, 'patient');
     S.cb = behOf(ctx, A, 'carer'); S.pb = behOf(ctx, B, 'patient');
+    /* 同居していない：看る人が来られる日（熱がいちばん高い日は 75%、治った日はいつも来る。来られない山場は電話越しの弱音） */
+    S.come = {};
+    for (var cd = 0; cd < days; cd++) S.come[cd] = S.live !== 'apart' || cd >= S.heal || (cd === S.peak ? ctx.rng() < 0.75 : ctx.rng() < 0.5);
+    /* 病気の間に一度も来られない配置にはしない（来られる日が無ければ、熱が下がり始めた日か、いちばん高い日に来る） */
+    if (S.live === 'apart' && !Object.keys(S.come).some(function (k) { return +k < S.heal && S.come[k]; })) S.come[S.heal - 1 > S.peak ? S.heal - 1 : S.peak] = true;
     /* うつる：治った日の翌日から看病した人が寝込む（日数が足りるときだけ）。うつりやすさ・同居・近くで世話をする行動で起こりやすく */
     var pc = { low: 0.08, mid: 0.2, high: 0.45 }[S.cont] * (S.live === 'together' ? 1.25 : 1) + (S.pb.k === 'amae' ? 0.08 : 0) + (S.cb.k === 'over' ? 0.06 : 0);
     if (S.heal <= days - 3 && ctx.rng() < pc) { var len = ctx.rng() < 0.5 ? 1 : 2; S.kaeshi = { from: S.heal + 1, heal: S.heal + 1 + len }; }
@@ -273,9 +303,10 @@
     ctx.place = S.live === 'together' ? '二人の家' : B.name + 'の部屋';
     /* 導入：なぜ看病することになったか（関係ごとの段）と、体調を崩したわけ（仕事の型・重さ） */
     var Tx = TX(), intro = relPick(ctx, Tx.INTRO, A, B) || '{b}が体調を崩した。{a}は、その看病をすることになった。';
-    var cause = pickT(ctx, (Tx.CAUSE || {})[B.life.work] || [], A, B) || pickT(ctx, (Tx.CAUSE || {}).all, A, B);
+    var cause = pickT(ctx, ((Tx.CAUSE || {})[B.life.work] || []).concat((Tx.CAUSE || {}).all || []), A, B);
     var liv = pickT(ctx, (Tx.LIVE || {})[S.live], A, B);
-    var tx = fill(ctx, cause, A, B) + fill(ctx, intro, A, B, { rel: RK_NAME[rk] }) + (liv ? fill(ctx, liv, A, B) : '');
+    var fw = S.feud ? pickT(ctx, (Tx.FEUD_WHY || {})[per(A)] || (Tx.FEUD_WHY || {}).gentle, A, B) : '';
+    var tx = fill(ctx, cause, A, B) + fill(ctx, intro, A, B, { rel: RK_NAME[rk] }) + (fw ? fill(ctx, fw, A, B) : '') + (liv ? fill(ctx, liv, A, B) : '');
     ctx.act2({ actors: [A, B], cat: 'bond', text: tx, why: '看病の部屋：始まり（' + RK_NAME[rk] + '・' + B.name + 'が体調を崩した）' });
   }
 
@@ -293,9 +324,13 @@
     var day = S.day, last = d === S.days - 1;
     if (ks === 'ksick' || ks === 'kheal') { kaeshiStep(ctx, day, t, last); return; }
     if (st === 'heal' || st === 'after') { healStep(ctx, day, t, last); return; }
-    /* 病気の間（rise・peak・fall） */
+    /* 病気の間（rise・peak・fall）。同居していない日で看る人が来ない日は、ひとりで寝込む段と連絡の段（alone） */
+    var here = S.come[d];
+    if (!here) { aloneStep(ctx, day, t, last); return; }
     if (t === 0) {
-      if (S.live === 'visit' && d > 0) say1(ctx, (TX().ARRIVE || {}), A, B, 'kb_arrive', '看病の部屋：通いの看病（' + A.name + 'が来た）', 'bond');
+      if (S.live === 'apart') say1(ctx, TX().ARRIVE_APART || {}, A, B, 'kb_arrive', '看病の部屋：看病に来られた日（' + A.name + 'が来た）', 'bond');
+      else if (S.live === 'visit' && d > 0) say1(ctx, (TX().ARRIVE || {}), A, B, 'kb_arrive', '看病の部屋：通いの看病（' + A.name + 'が来た）', 'bond');
+      if (S.sickSexDay === d - 1) afterIll(ctx, day);
       morning(ctx, day);
       care(ctx, day, 'm');
       return;
@@ -303,9 +338,9 @@
     if (t === 1) {
       if (d === 0 && !day.hol) rest(ctx, day);
       care(ctx, day, 'd');
-      behave(ctx, day);
+      if (!chores(ctx, day)) { if (S.feud && ctx.rng() < 0.55) feud(ctx, day); else behave(ctx, day); }
       visit(ctx, day, 'd');
-      if (ctx.rng() < 0.45) care(ctx, day, 'd');
+      if (ctx.rng() < 0.4) care(ctx, day, 'd');
       return;
     }
     /* 夜 */
@@ -315,9 +350,122 @@
       var nt = pickT(ctx, ((TX().NIGHT || {})[st]) || [], A, B);
       if (nt) ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, nt, A, B, { temp: TEMP[S.sev][st] || '' }) + careReact(ctx, A, B, 0.35), why: '看病の部屋：看病の夜（' + (st === 'rise' ? '熱が上がっていく' : '熱が下がり始めた') + '）', fx: function () { ctx.mod2(A, B, { aff: 1, trust: 1 }, { aff: 2, trust: 2 }); } });
       visit(ctx, day, 'n');
-      if (S.live === 'visit') say1(ctx, TX().LEAVE || {}, A, B, 'kb_leave', '看病の部屋：通いの看病（' + A.name + 'が帰った）', 'bond');
     }
+    if (day.scold) scoldLater(ctx, day);
+    /* 病気の道中の夜（R18。看る人が来ている夜だけ。寝込むほどの熱のいちばん高い夜は無し） */
+    var ill = illNight(ctx, day, last);
+    if (!ill && st !== 'peak' && S.live !== 'together') say1(ctx, S.live === 'apart' ? TX().LEAVE_APART || TX().LEAVE || {} : TX().LEAVE || {}, A, B, 'kb_leave', '看病の部屋：' + A.name + 'が帰った', 'bond');
     if (last) ending(ctx);
+  }
+  /* ---------- 同居していない日（看る人が来ない日）：ひとりで寝込む人（{b}）の段と、連絡（電話・メッセージ）の段 ---------- */
+  function aloneStep(ctx, day, t, last) {
+    var S = f(ctx), A = S.A, B = S.B, Tx = TX();
+    if (t === 0) {
+      var AL = Tx.ALONE || {}, at = pickT(ctx, AL[per(B)] || AL.gentle, A, B);
+      if (at) ctx.act2({ actors: [B], cat: 'solo', text: fill(ctx, at, A, B, { temp: TEMP[S.sev][day.st] || '' }), why: '看病の部屋：ひとりで寝込む朝（' + B.name + '・' + TEMP[S.sev][day.st] + '）' });
+      return;
+    }
+    if (t === 1) {
+      if (day.d === 0 && !day.hol) rest(ctx, day);
+      say1(ctx, Tx.TEL || {}, A, B, 'kb_tel', '看病の部屋：電話・メッセージで様子を聞いた（' + A.name + 'から）', 'bond');
+      visit(ctx, day, 'd');
+      return;
+    }
+    if (day.st === 'peak') { weakTel(ctx, day); }
+    else { var nt = pickT(ctx, Tx.ALONE_N, A, B); if (nt) ctx.act2({ actors: [B, A], cat: 'bond', text: fill(ctx, nt, A, B), why: '看病の部屋：ひとりで寝込む夜（' + B.name + '）' }); }
+    if (last) ending(ctx);
+  }
+  /* 来られなかった山場：電話越しの弱音（必ず出す） */
+  function weakTel(ctx, day) {
+    var S = f(ctx), A = S.A, B = S.B, Tx = TX();
+    var w = pickT(ctx, (Tx.WEAK_TEL || {})[per(B)] || (Tx.WEAK_TEL || {}).gentle, A, B, true) || '夜中、{b}は{a}に電話をかけた。「……声が、聞きたくて｜……声が聞きたかった｜……声が、聞きたかったんです」';
+    var ans = pickT(ctx, (Tx.WEAK_TEL_ANS || {}).all, A, B, true);
+    var e = ctx.act2({ actors: [B, A], cat: S.love && (S.couple || S.pine) ? rcat(ctx, A, B) : 'bond', text: fill(ctx, w, A, B, { temp: TEMP[S.sev].peak }) + (ans ? fill(ctx, ans, A, B) : ''), why: '看病の部屋：熱がいちばん高い夜の弱音（' + B.name + '・' + TEMP[S.sev].peak + '・電話越し）', fx: function () { ctx.mod2(A, B, { aff: 3, trust: 3 }, { aff: 4, trust: 4 }); } });
+    if (e) { e.tag = '山場'; S.weak = true; }
+  }
+  /* ---------- 家事の設定で変わる出来事（HK.Life の役割で。担い手の決まりは HK.PairKit.choreOk が文ごとに見る） ----------
+     ・普段家事をしている人（役割の家事の度合い 0.5 以上）が倒れた：看る人（家事をする設定の人だけ）がたどたどしい家事を頑張る（失敗・意外とできる・指示される）
+     ・倒れた人が寝ていられずに家事をやろうとして悪化させる（看る人が止める／気づかず、あとで叱る）。一回の遊びで一度
+     ・普段家事をしない人（家事をしない設定）が倒れた：世話されるのに慣れている・申し訳なさ（態度9種）。一回の遊びで一度 */
+  function choreLv(c) { var r = LF.roleInfo(c.life && c.life.role); return r ? r.chores : 0.5; }
+  function chores(ctx, day) {
+    var S = f(ctx), A = S.A, B = S.B, Tx = TX(), keeper = LF.canChore(B) && choreLv(B) >= 0.5;
+    if (keeper && !S.choreTry && day.st !== 'peak' && ctx.rng() < 0.4) {
+      S.choreTry = true;
+      var t = pickT(ctx, Tx.CHORE_TRY, A, B);
+      if (!t) return false;
+      var stop = ctx.rng() < 0.55, R = stop ? Tx.CHORE_STOP || {} : {}, rt = stop ? pickT(ctx, R[per(A)] || R.gentle, A, B) : pickT(ctx, Tx.CHORE_MISS, A, B);
+      if (!stop) day.scold = true;
+      ctx.act2({ actors: [B, A], cat: 'bond', text: fill(ctx, t, A, B) + (rt ? fill(ctx, rt, A, B) : ''), why: '看病の部屋：寝ていられずに家事をしようとした（' + B.name + (stop ? '・' + A.name + 'が止めた' : '・' + A.name + 'は気づかなかった') + '）', fx: function () { ctx.mod2(A, B, { aff: 1, ten: 2 }, { aff: 1 }); } });
+      relapse(ctx, day, stop ? 0.3 : 0.7);
+      return true;
+    }
+    if (keeper && LF.canChore(A) && !day.choreA && ctx.rng() < 0.45) {
+      day.choreA = true;
+      var ta = A.tr || {}, oc = LF.clumsy(A) || (ctx.rng() < 0.35 + (1 - (ta.a != null ? ta.a : 0.5)) * 0.3) ? 'fail' : /stern|polite|devoted/.test(per(B)) && ctx.rng() < 0.6 ? 'told' : 'ok';
+      var ct = pickT(ctx, (Tx.CHORE_A || {})[oc], A, B);
+      if (!ct) return false;
+      var RE = Tx.CHORE_A_RE || {}, cr = pickT(ctx, RE[per(B)] || RE.gentle, A, B);
+      ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, ct, A, B) + (cr ? fill(ctx, cr, A, B) : ''), why: '看病の部屋：慣れない家事を頑張った（' + A.name + '・' + { fail: '失敗した', ok: '意外とできた', told: B.name + 'に教わった' }[oc] + '）', fx: function () { ctx.mod2(A, B, { aff: 1 }, { aff: 2, trust: 1 }); } });
+      return true;
+    }
+    if (!LF.canChore(B) && !S.noChore && ctx.rng() < 0.35) {
+      S.noChore = true;
+      var NC = Tx.NOCHORE || {}, nt = pickT(ctx, NC[per(B)] || NC.gentle, A, B);
+      if (!nt) return false;
+      ctx.act2({ actors: [B, A], cat: 'bond', text: fill(ctx, nt, A, B), why: '看病の部屋：世話をされる側の顔（' + B.name + '・普段は家事をしない）' });
+      return true;
+    }
+    return false;
+  }
+  function scoldLater(ctx, day) {
+    var S = f(ctx), A = S.A, B = S.B, R = TX().CHORE_SCOLD || {}, t = pickT(ctx, R[per(A)] || R.gentle, A, B);
+    if (t) ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, t, A, B), why: '看病の部屋：家事をしようとしたのをあとで叱った（' + A.name + 'から）' });
+  }
+  /* 熱のぶり返し：治る日を一日のばす（うつる予定・日数が足りないときは、のばさずに文だけ） */
+  function relapse(ctx, day, p) {
+    var S = f(ctx);
+    if (ctx.rng() > p) return false;
+    S.relapse = (S.relapse || 0) + 1;
+    var cap = S.days >= 4 ? S.days - 2 : S.days - 1;
+    if (!S.kaeshi && S.heal + 1 <= cap && day.d < S.heal) { S.heal++; S.healMoved = (S.healMoved || 0) + 1; }
+    return true;
+  }
+  /* ---------- 仲の悪い二人の、素直になれない看病（不仲・ライバル・愛憎・元恋人） ---------- */
+  function feud(ctx, day) {
+    var S = f(ctx), A = S.A, B = S.B, Tx = TX();
+    var t = relPick(ctx, Tx.FEUD_CARE || {}, A, B);
+    if (!t) return behave(ctx, day);
+    var BK = Tx.FEUD_BACK || {}, bk = ctx.rng() < 0.6 ? pickT(ctx, BK[per(B)] || BK.gentle, A, B) : '';
+    ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, t, A, B, { temp: TEMP[S.sev][day.st] || '' }) + (bk ? fill(ctx, bk, A, B) : ''), why: '看病の部屋：素直になれない看病（' + RK_NAME[S.rk] + '）', fx: function () { ctx.mod2(A, B, { aff: 2, ten: -2 }, { aff: 2, ten: -2 }); } });
+  }
+  /* ---------- 病気の道中の夜（R18。kanbyo-r18.js の HK.KanbyoR18.ill） ---------- */
+  function illNight(ctx, day, last) {
+    var S = f(ctx);
+    if (HK.SAFE_ON || !HK.KanbyoR18 || !HK.KanbyoR18.ill) return false;
+    /* 別室でひとりでしていた翌晩：「今日もするのか……？」（そこから始まる夜か、大人しく寝る） */
+    if (S.jiiDay != null && S.jiiDay === day.d - 1 && HK.KanbyoR18.jiiNext) {
+      var jn = HK.KanbyoR18.jiiNext(ctx, day, S.sex < S.lewdMax && !(S.sev === 'heavy' && day.st === 'peak'));
+      if (jn) { S.sex++; S.sickSexDay = day.d; }
+      return jn;
+    }
+    if (S.sex >= S.lewdMax || S.illSex) return false;
+    /* 寝込むほど重いときのいちばん高い夜は無し。重いときは熱が下がってきた日だけ、ふつうは上がる日・下がる日、軽い風邪はいつでも */
+    var st = day.st, ok = S.sev === 'light' || st === 'fall' || (S.sev === 'mid' && st === 'rise');
+    if (!ok) return false;
+    /* 治る分の夜を残す（2回までのとき、治ったあとにも起きる余地を残す） */
+    if (S.lewdMax < 2 && ctx.rng() < 0.5) return false;
+    var r = HK.KanbyoR18.ill(ctx, day, last);
+    if (r) { S.sex++; S.illSex = true; if (S.illEntry !== 'jii') S.sickSexDay = day.d; }
+    return r;
+  }
+  /* 病気の道中のエッチの翌朝：反省・甘やかし。熱がぶり返す・看る人にうつりやすくなる */
+  function afterIll(ctx, day) {
+    var S = f(ctx), A = S.A, B = S.B, Tx = TX();
+    var rel = relapse(ctx, day, 0.5);
+    if (!S.kaeshi && S.heal <= S.days - 3 && ctx.rng() < { low: 0.2, mid: 0.35, high: 0.55 }[S.cont]) { var len = ctx.rng() < 0.5 ? 1 : 2; S.kaeshi = { from: S.heal + 1, heal: S.heal + 1 + len }; S.kaeshiBy = 'near'; S.endK = null; }
+    var t = pickT(ctx, rel ? Tx.ILL_AFTER_RE : Tx.ILL_AFTER, A, B);
+    if (t) ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, t, A, B), why: '看病の部屋：夜のあとの朝' + (rel ? '（熱がぶり返した）' : '') });
   }
   /* 関係ごとの表から一つ言う（{ rk/grp/all }） */
   function say1(ctx, T, a, b, id, why, cat, ex) {
@@ -387,15 +535,18 @@
   /* 山場：熱がいちばん高い夜の弱音（必ず出す）。通いなら泊まり込む段から。弱音は看られる側の態度・関係で、受け答えは看る側の態度で */
   function weakNight(ctx, day) {
     var S = f(ctx), A = S.A, B = S.B, Tx = TX();
-    if (S.live === 'visit') say1(ctx, Tx.STAY || {}, A, B, 'kb_stay', '看病の部屋：熱が高いので泊まり込んだ（' + A.name + '）', 'bond');
+    if (S.live === 'apart') say1(ctx, Tx.STAY_APART || Tx.STAY || {}, A, B, 'kb_stay', '看病の部屋：特別に泊まっていった（' + A.name + '）', 'bond');
+    else if (S.live === 'visit') say1(ctx, Tx.STAY || {}, A, B, 'kb_stay', '看病の部屋：熱が高いので泊まり込んだ（' + A.name + '）', 'bond');
     var W = Tx.WEAK || {}, Wa = Tx.WEAK_ANS || {}, Wt = Tx.WEAK_REL || {};
     var w = pickT(ctx, W[per(B)] || W.gentle, A, B, true) || '夜中、{b}は熱にうかされて、{a}の名前を呼んだ。「……そばにいて｜……そばにいてくれ｜……そばにいてください」';
-    var ans = pickT(ctx, Wa[per(A)] || Wa.gentle, A, B);
+    var Wf = Tx.WEAK_ANS_FEUD || {}, ans = S.feud ? pickT(ctx, Wf[per(A)] || Wf.gentle, A, B) || pickT(ctx, Wa[per(A)] || Wa.gentle, A, B) : pickT(ctx, Wa[per(A)] || Wa.gentle, A, B);
     var tail = relPick(ctx, Wt, A, B);
     var lv = S.love && (S.couple || S.pine) ? pickT(ctx, Tx.WEAK_LOVE, A, B) : '';
     var tx = fill(ctx, w, A, B, { temp: TEMP[S.sev].peak }) + (ans ? fill(ctx, ans, A, B) : '') + (tail ? fill(ctx, tail, A, B) : '') + (lv ? fill(ctx, lv, A, B) : '');
     var e = ctx.act2({ actors: [B, A], cat: S.love && (S.couple || S.pine) ? rcat(ctx, A, B) : 'bond', text: tx, why: '看病の部屋：熱がいちばん高い夜の弱音（' + B.name + '・' + TEMP[S.sev].peak + '）', fx: function () { ctx.mod2(A, B, { aff: 4, trust: 3, att: S.love ? 4 : 0 }, { aff: 5, trust: 5, att: S.love ? 4 : 0 }); } });
     if (e) { e.tag = '山場'; S.weak = true; }
+    /* 看病の最中に近づきすぎた（恋人・両片想いの夜の一文）：うつりやすさで、看る人にうつることがある */
+    if (lv && !S.kaeshi && S.heal <= S.days - 3 && ctx.rng() < { low: 0.08, mid: 0.15, high: 0.28 }[S.cont]) { var ln = ctx.rng() < 0.5 ? 1 : 2; S.kaeshi = { from: S.heal + 1, heal: S.heal + 1 + ln }; S.kaeshiBy = 'near'; }
   }
   /* ---------- 治った日・治ったあと ---------- */
   function decideEnd(ctx) {
@@ -406,17 +557,20 @@
     if (S.couple) return (S.endK = 'amai');
     var r = ctx.rel[A.i][B.i], q = ctx.rel[B.i][A.i];
     var sc = ((r.att || 0) + (q.att || 0)) / 2 + ((r.aff || 0) + (q.aff || 0)) / 6 + (S.pine ? 18 : 0) + ((A.tr.honesty || 0.5) + (B.tr.honesty || 0.5)) * 8 + (S.rk === 'bad' ? -12 : 0) + (ctx.rng() - 0.5) * 20;
-    S.endScore = Math.round(sc);
     /* 関係ごとの線（恋人に／お礼のデート）。両片想い・片想いはもともと高いので線も高く、半分ほどが恋人に、残りはデートか両片想いのまま */
+    sc += ((S.goalA && GK[S.goalA.k]) ? GK[S.goalA.k].e : 0) + ((S.goalB && GK[S.goalB.k]) ? GK[S.goalB.k].e : 0);
+    S.endScore = Math.round(sc);
     var th = END_TH[S.rk] || END_TH.def;
     return (S.endK = sc >= th[0] ? 'koi' : sc >= th[1] ? 'date' : 'mama');
   }
-  var END_TH = { almost: [118, 102], crush: [104, 92], ex: [82, 70], bad: [22, 10], def: [64, 49] };
+  var END_TH = { almost: [118, 102], crush: [104, 92], ex: [82, 70], bad: [22, 10], rival: [30, 16], lovehate: [40, 22], def: [64, 49] };
   function healStep(ctx, day, t, last) {
     var S = f(ctx), A = S.A, B = S.B, Tx = TX(), ek = decideEnd(ctx);
     if (day.st === 'heal') {
       if (t === 0) {
         if (S.live === 'visit') say1(ctx, Tx.ARRIVE || {}, A, B, 'kb_arrive', '看病の部屋：通いの看病（' + A.name + 'が来た）', 'bond');
+        else if (S.live === 'apart') say1(ctx, Tx.ARRIVE_APART || {}, A, B, 'kb_arrive', '看病の部屋：看病に来られた日（' + A.name + 'が来た）', 'bond');
+        if (S.sickSexDay === day.d - 1) afterIll(ctx, day);
         var ht = relPick(ctx, Tx.HEAL || {}, A, B);
         if (ht) ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, ht, A, B), why: '看病の部屋：熱が下がった朝（' + B.name + '）', fx: function () { ctx.mod2(A, B, { aff: 2, trust: 2 }, { aff: 2, trust: 2 }); } });
         return;
@@ -485,7 +639,7 @@
       return;
     }
     /* B（治った人）が A を看る。{a}＝看る人（B）、{b}＝寝込んだ人（A） */
-    if (t === 0) { say1(ctx, first ? Tx.KAESHI || {} : Tx.KMORN || {}, B, A, first ? 'kb_kaeshi' : 'kb_kcare', '看病の部屋：' + (first ? A.name + 'に風邪がうつった' : '看病し返す朝'), 'bond'); return; }
+    if (t === 0) { say1(ctx, first ? (S.kaeshiBy && Tx.KAESHI_NEAR ? Tx.KAESHI_NEAR : Tx.KAESHI || {}) : Tx.KMORN || {}, B, A, first ? 'kb_kaeshi' : 'kb_kcare', '看病の部屋：' + (first ? A.name + 'に風邪がうつった' : '看病し返す朝'), 'bond'); return; }
     if (t === 1) {
       if (first && !day.hol && A.life.work !== 'home') { var rt = pickT(ctx, (Tx.REST || {}).patient, B, A); if (rt) ctx.act2({ actors: [A], cat: 'solo', text: fill(ctx, rt, B, A), why: '看病の部屋：体調を崩して休んだ（' + A.name + '）' }); }
       say1(ctx, Tx.KCARE || {}, B, A, 'kb_kcare', '看病の部屋：看病し返す（' + B.name + 'が' + A.name + 'を）', 'bond');
@@ -545,9 +699,14 @@
     if (S.ended) return;
     S.ended = true;
     /* お礼のデート・お礼に出かける前に終わった（日数が足りない）ときは「約束」の文 */
-    var key = (ek === 'date' || ek === 'rei') && !S.dated ? ek + '_promise' : ek;
+    var key = (ek === 'date' || ek === 'rei') && !S.dated ? ek + '_promise' : ek === 'kaeshi' && S.kaeshiBy ? 'kaeshi_near' : ek;
     var E = (TX().END || {})[key] || (TX().END || {})[ek] || {}, t = relPick(ctx, E, A, B, true);
     if (!t) t = '{a}と{b}の看病の日々は、こうして終わった。';
+    /* 二人の目標の結末の一文（目標の種で） */
+    var GE = TX().GOAL_END || {}, ga = S.goalA && pickT(ctx, GE[S.goalA.k], A, B), gb = S.goalB && pickT(ctx, GE[S.goalB.k], B, A);
+    if (ga) t += K.mark(ga).split('{a}').join('{A}').split('{b}').join('{B}');
+    if (gb) t += K.mark(gb).split('{a}').join('{B}').split('{b}').join('{A}');
+    t = t.split('{A}').join('{a}').split('{B}').join('{b}');
     ctx.act2({ actors: [A, B], cat: /koi|date|amai/.test(ek) ? rcat(ctx, A, B) : 'bond', text: fill(ctx, t, A, B), why: '看病の部屋：結末（' + endName(S) + '）', fx: function () { ctx.mod2(A, B, { aff: 4, trust: 3 }, { aff: 4, trust: 3 }); } });
   }
   function finish(ctx) {
@@ -556,7 +715,7 @@
     decideEnd(ctx);
     S.G.forEach(function (g) { g.gone = false; g.fate = g.outside ? '見舞いに来た住人（名簿から）' : '見舞いに来る住人'; g.fateNote = (S.gUsed && S.gUsed[g.i]) ? B.name + 'の具合を気にかけていた' : ''; });
     ctx.flags.kanbyo = { days: S.days, a: A.i, b: B.i, rel: RK_NAME[S.rk], rk: S.rk, sev: S.sev, live: S.live, peak: S.peak + 1, heal: S.heal + 1, kaeshi: S.kaeshi ? { from: S.kaeshi.from + 1, heal: S.kaeshi.heal + 1 } : null,
-      cb: BEH_NAME[S.cb.k], pb: BEH_NAME[S.pb.k], cbOdd: S.cb.odd, pbOdd: S.pb.odd, endK: S.endK, end: endName(S), score: S.endScore, cares: S.cares, visits: S.visits, sex: S.sex, love: S.love, confessed: S.confessed, weak: !!S.weak };
+      cb: BEH_NAME[S.cb.k], pb: BEH_NAME[S.pb.k], ga: S.goalA ? S.goalA.t : '', gb: S.goalB ? S.goalB.t : '', illSex: !!S.illSex, relapse: S.relapse || 0, cbOdd: S.cb.odd, pbOdd: S.pb.odd, endK: S.endK, end: endName(S), score: S.endScore, cares: S.cares, visits: S.visits, sex: S.sex, love: S.love, confessed: S.confessed, weak: !!S.weak };
     A.fate = '看病した人'; A.fateNote = B.name + 'を看病した';
     B.fate = S.kaeshi ? '看病された人（そして看病し返した人）' : '看病された人'; B.fateNote = A.name + 'に看病された';
     if (S.kaeshi) A.fateNote += '。最後は風邪がうつって、看病し返してもらった';
@@ -569,8 +728,9 @@
     if (!R) return { headline: res.outcome || '', stats: [], lines: [] };
     var a = X.nm(R.a), b = X.nm(R.b);
     lines.push('看病の' + R.days + '日（' + a + 'が' + b + 'を看病した・' + R.rel + '）');
-    lines.push('病の重さ：' + SEV_NAME[R.sev] + '／' + (R.live === 'together' ? '同居で看病' : '通いで看病') + '／熱がいちばん高かったのは DAY' + R.peak + '、治ったのは DAY' + R.heal + (R.kaeshi ? '／DAY' + R.kaeshi.from + 'に' + a + 'へうつった' : ''));
+    lines.push('病の重さ：' + SEV_NAME[R.sev] + '／' + ({ together: '同居で看病', visit: '通いで看病', apart: '同居していない（来られる日に看病）' }[R.live] || '')  + '／熱がいちばん高かったのは DAY' + R.peak + '、治ったのは DAY' + R.heal + (R.kaeshi ? '／DAY' + R.kaeshi.from + 'に' + a + 'へうつった' : ''));
     lines.push(a + '：' + R.cb + (R.cbOdd ? '（らしくない）' : '') + '／' + b + '：' + R.pb + (R.pbOdd ? '（らしくない）' : ''));
+    if (R.ga || R.gb) lines.push('目標：' + a + '「' + R.ga + '」／' + b + '「' + R.gb + '」');
     lines.push('看病 ' + R.cares + '回' + (R.visits ? '／見舞い・差し入れ・連絡 ' + R.visits + '回' : '') + (HK.SAFE_ON ? '' : '／エッチ ' + R.sex + '回'));
     lines.push('結末：' + R.end);
     X.C.forEach(function (c) { c.afterDone = true; });

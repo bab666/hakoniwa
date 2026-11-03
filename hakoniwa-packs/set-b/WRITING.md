@@ -92,3 +92,5 @@ node hakoniwa-tools/build/pack-site.js hakoniwa-packs/set-b --out=<試しのフ�
 - 台詞は 3 本「くだけた常体｜硬い常体｜敬語」（一人称「私」・二人称「あなた」、敬語のベースに尊敬語・謙譲語を書かない）。名前が 2 人以上出る文は話し手の目印が自動で付くが、決めにくい文は `「＠{a}＠…」` を直に書く。
 - R18：病み上がりの相手を気づかう合意の上の場面だけ。形 mf／ff／fm を書き分け、体の語は印、攻めを選んだ人を受けにしない。地の文は 3 文以上。
 - 足したら：`node hakoniwa-tools/tone-check/base-lint.js hakoniwa-packs/set-b`、tone-feel（`--scen=set-b-kanbyo`。崩れは `kanbyo-tone.js` に書き下ろし）、出来事を足したら `kanbyo.js`／`kanbyo-r18.js` の `@event` と出来事の一覧。
+- 追加の表（`js/kanbyo-text-d.js`）：目標（GOAL・GOAL_REL・GOAL_END）、家事で変わる出来事（CHORE_*・NOCHORE）、同居していない日（ALONE・ALONE_N・TEL・WEAK_TEL・ARRIVE_APART・LEAVE_APART・STAY_APART）、仲の悪い二人（FEUD_*・WEAK_ANS_FEUD・関係 rival・lovehate の導入）、病中の夜の翌朝（ILL_AFTER）。
+  R18 の病中の夜は `kanbyo-r18-text.js` の ILL_*（理性が揺らぐ入口は、受けの「でも……」の段 ILL_HESIT を必ず書く）。
