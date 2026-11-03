@@ -24,13 +24,14 @@
     { v: 'shift', label: '夜勤・シフト勤務', home: 0.45, late: 0.5, trip: 0.01, fit: function (t) { return t.ac * 0.3 + 0.15; } },
     { v: 'home', label: '専業（家事が中心）', home: 1, late: 0, trip: 0, fit: function (t) { return t.np * 0.5 + (1 - t.cp) * 0.2; } }
   ];
-  /* 家庭での役割（利用者のソロジャーナルの「家庭での役割表」） */
+  /* 家庭での役割（利用者のソロジャーナルの「家庭での役割表」）。2026-11-03 利用者の指示で「自宅で在宅ワークを中心に行っている」（r5）を外した（仕事の型の「在宅ワーク」と重なるため）。
+     家にいる時間の長さは仕事の型「在宅ワーク」が持ち、在宅ワークの人のおまかせの役割は、家事を分け合う役割（家事の度合いが中くらい）を選びやすくする。
+     保存してあった設定に r5 が残っていても、選択肢に無い値はおまかせとして扱う（role の find が null → 気質から） */
   var ROLE = [
     { v: 'r1', label: '専業主婦・主夫', chores: 1, cook: 0.9, work: 'home' },
     { v: 'r2', label: '家事中心だが、少し仕事もしている', chores: 0.8, cook: 0.8 },
     { v: 'r3', label: '仕事をしつつ、家事も頑張っている', chores: 0.6, cook: 0.6 },
     { v: 'r4', label: '忙しい仕事人。なかなか家事にまで手が回らない', chores: 0.15, cook: 0.15 },
-    { v: 'r5', label: '自宅で在宅ワークを中心に行っている', chores: 0.5, cook: 0.5, work: 'remote' },
     { v: 'r6', label: '家事はそこそこ。趣味優先型', chores: 0.35, cook: 0.35 },
     { v: 'r7', label: '家事も仕事も二人で協力している', chores: 0.5, cook: 0.5 },
     { v: 'r8', label: '家事をしているが得意ではない（ポンコツ）', chores: 0.55, cook: 0.3, clumsy: true },
@@ -81,6 +82,7 @@
           var f = 0.2 + (x.chores * (t.np || 0.5) + (1 - x.chores) * (t.fc || 0.5)) * 0.6;
           if (w === 'home' && x.v !== 'r1' && x.v !== 'r10') f *= 0.3;
           if (w !== 'home' && (x.v === 'r1' || x.v === 'r10')) f *= 0.15;
+          if (w === 'remote' && x.chores >= 0.35 && x.chores <= 0.8) f *= 1.6;
           return f;
         }) : ROLE[2];
       }

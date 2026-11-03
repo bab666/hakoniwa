@@ -34,6 +34,9 @@
         "js/shinkon-r18-text-b.js",
         "js/shinkon-r18-more.js",
         "js/shinkon-r18.js",
+        "js/shinkon-r18-ini-text.js",
+        "js/shinkon-r18-knock-text.js",
+        "js/shinkon-r18-knock.js",
         "js/shinkon-tone.js",
         "js/shinkon.js"
       ]

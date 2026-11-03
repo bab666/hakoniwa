@@ -3,7 +3,8 @@
    2026-11-03 利用者のフィードバックで作り直し（docs/reports/2026-11-03/shinkon-feedback.md・shinkon-design.md）：
    ・利用者のソロジャーナルの表は「何が起きたか」の種として内部で引くだけ（記録の行・表の名前は画面に出さない）。願望は場面の文で表す
    ・受け止め方・決着は、性格（態度9種）・関係・らしくない行動（運命の揺らぎ）で変わる（shinkon-react.js）。本体の共通の出来事（関係ごとの出来事・らしくない行動など）も混ぜる
-   ・暮らしの困りごと 17 種（shinkon-trouble.js）、他の住人（参加者の三人目から）の訪れ（shinkon-visit.js）
+   ・暮らしの困りごと 17 種（shinkon-trouble.js）、他の住人（参加者の三人目から・名簿の登場しない住人＝設定 outsideNames）の訪れ（shinkon-visit.js）
+   ・離れていた日数・忙しい日の続きを前提にする文は、実際の日数で絞る（awayOk）
    ・家事をしない設定の人は料理・家事をしない（HK.Life.canCook／canChore）。ポンコツの出来事は「家事が苦手（ポンコツ）」の役割の人がいるときだけ
    ・なれそめ「元の関係のまま」（既定）：住人の関係の設定をそのまま使う。ほかを選ぶと二人の関係を新婚の夫婦に上書きする（家族などで「恋愛：なし」の関係は上書きしない）
    ・R18版の夜は shinkon-r18.js（描写の有無・長さ・作風は本体の共通の設定 HK.Lewd。エッチ多めなら一度は長い場面）
@@ -49,6 +50,46 @@
     if (S && !S.love && ROM.test(x)) return false;
     if (S && !S.wed && WED.test(x)) return false;
     if (!choreOk(x, a, b)) return false;
+    if (!awayOk(ctx, x, a, b)) return false;
+    return true;
+  }
+  /* ---------- 離れていた日数・忙しい日の続き（2026-11-03 利用者の指摘「2 日目なのに『数日ぶりに帰ってきた』という文が出る」）----------
+     away(ctx)：その日の前日までに、二人のどちらかが出張で家を空けていた日が何日続いたか（{ n, who: [出張していた人] }。今日も出張なら n は 0）
+     busy(ctx)：その日の前日までに、どちらかの帰りが遅い・出張の日が何日続いたか
+     文の候補は、離れていたことを前提にする語（数日ぶり・久しぶりに帰ってきた・ずっと会えなかった・出張から帰った など）があれば、実際の日数と出張していた人で絞る */
+  function lifeDay(c, d) { return c && c.life && c.life.days ? c.life.days[d] : null; }
+  function away(ctx) {
+    var S = f(ctx), day = S && S.day; if (!day) return { n: 0, who: [] };
+    var d = day.d, n = 0, who = [];
+    if (day.apart) return { n: 0, who: [] };
+    for (var k = d - 1; k >= 0; k--) {
+      var t = [S.A, S.B].filter(function (c) { var x = lifeDay(c, k); return x && x.trip; });
+      if (!t.length) break;
+      n++; t.forEach(function (c) { if (who.indexOf(c) < 0) who.push(c); });
+    }
+    return { n: n, who: who };
+  }
+  function busy(ctx) {
+    var S = f(ctx), day = S && S.day; if (!day) return 0;
+    var n = 0;
+    for (var k = day.d - 1; k >= 0; k--) { if (![S.A, S.B].some(function (c) { var x = lifeDay(c, k); return x && (x.trip || x.late); })) break; n++; }
+    return n;
+  }
+  var AW_MANY = /数日ぶり|何日ぶり|久しぶりに帰っ|会えなかった日数|ずっと会えな|久しぶりの(?:体温|熱)/, AW_ONE = /一晩、家を空けた/;
+  var AW_WHO = /(?:出張から(?:帰|戻)った|出張帰りの|ぶりに帰ってきた)\{([ab])\}|\{([ab])\}は出張から(?:帰|戻)/;
+  var BUSY_RE = /(?:遅い夜|忙しい日|すれ違い)(?:が|の)続いて|残業続き|久しぶりに早く帰/, KYUKA = /久しぶりの(?:お)?休み/;
+  function awayOk(ctx, t, a, b) {
+    if (typeof t !== 'string' || !f(ctx) || !f(ctx).day) return true;
+    var S = f(ctx), day = S.day, aw = null;
+    if (AW_MANY.test(t) || AW_ONE.test(t) || AW_WHO.test(t)) {
+      aw = away(ctx);
+      if (AW_MANY.test(t) && aw.n < 2) return false;
+      if (AW_ONE.test(t) && aw.n !== 1) return false;
+      var m = AW_WHO.exec(t);
+      if (m) { var c = (m[1] || m[2]) === 'a' ? a : b; if (!aw.n || aw.who.indexOf(c) < 0) return false; }
+    }
+    if (BUSY_RE.test(t) && busy(ctx) < 2) return false;
+    if (KYUKA.test(t) && !(day.hol && day.d > 0 && !holiday(day.d - 1))) return false;
     return true;
   }
   /* 家事・料理の文の担い手：文の中で家事・料理をしている人（その文の主語）が、家事をしない設定の人なら使わない */
@@ -89,7 +130,7 @@
     return fb && okText(ctx, fb, a, b) ? fb : '';
   }
   SKX();
-  function SKX() { HK.Shinkon = { okText: okText, choreOk: choreOk, ROM: ROM, WED: WED, COOK: COOK, CHORE: CHORE }; }
+  function SKX() { HK.Shinkon = { okText: okText, choreOk: choreOk, awayOk: awayOk, away: away, busy: busy, ROM: ROM, WED: WED, COOK: COOK, CHORE: CHORE, AW_MANY: AW_MANY, AW_ONE: AW_ONE, AW_WHO: AW_WHO, BUSY_RE: BUSY_RE, KYUKA: KYUKA }; }
   /* 恋愛にしてよい二人か（恋愛対象・恋愛相手の固定・関係の「恋愛：なし」（家族・無関心・恐怖など）を両方向で） */
   function canLove2(ctx, a, b) {
     if (HK.canLove && !(HK.canLove(a, b, ctx) && HK.canLove(b, a, ctx))) return false;
@@ -128,12 +169,11 @@
   var scen = {
     id: ID, name: '新婚部屋', kicker: 'ふたり・日常',
     desc: '結婚したばかりの二人の毎日を、朝・日中・夜ごとに眺める。暮らしの中で願望が高まると出来事が起き、困りごとや来客もある。同じ出来事でも、性格や関係で受け止め方が変わる。最後の夜は幸せなキスで一区切り。',
-    note: '※参加者の最初の二人（住人ごとの「立場」で選べます）が新婚の二人です。三人目からは「他の住人」として、遊びに来たり連絡をくれたりします。登場人物はすべて成人として扱います。',
+    note: '※参加者の最初の二人（住人ごとの「立場」で選べます）が新婚の二人です。三人目からは「他の住人」として、遊びに来たり連絡をくれたりします。「登場しない住人を出す」なら、名簿にいて参加していない、二人と関係のある住人も訪ねてきます。登場人物はすべて成人として扱います。',
     unit: '日', perUnit: 3, preRel: 0, lethal: false, minCast: 2, maxCast: 4,
     catBias: { romance: 1, bond: 1, help: 1, conflict: 0.3, combat: 0, betray: 0, kill: 0 },
     decay: 0.998, actRate: 0.2,
     derived: ['warmth', 'honesty', 'jealous', 'impulse'],
-    exclude: [],
     env: [
       { id: 'days', label: '日数', min: 5, max: 14, def: 7, lo: '5日', hi: '14日', unit: '日', desc: '見守る日数。1日は朝・日中・夜の3区切り。最後の夜は幸せなキスで一区切り' },
       { id: 'home', label: '二人の住まい', type: 'select', def: 'auto', options: opts(D.HOME), desc: '二人が暮らす家' },
@@ -141,7 +181,8 @@
         desc: '「元の関係のまま」なら、住人の関係の設定（友人・擬似親子・同僚など）をそのまま使って暮らします（関係が無ければ新婚の夫婦）。【注意】ほかを選ぶと、二人のあいだに設定した関係を「新婚の夫婦」に上書きします（家族などで恋愛が「なし」の関係は上書きしません）' },
       { id: 'meet', label: '出会いの場所', type: 'select', def: 'auto', options: opts(D.MEET.map(function (t) { return t.split(/\s/)[0]; })), desc: '二人が出会った場所' },
       { id: 'speed', label: '願望の高まりやすさ', type: 'select', def: 'normal', options: [{ v: 'slow', label: 'ゆっくり' }, { v: 'normal', label: 'ふつう' }, { v: 'fast', label: '早い' }], desc: '早いほど、願望から来る行動が多く起きる' },
-      { id: 'others', label: '他の住人を出す', type: 'select', def: 'on', options: [{ v: 'on', label: '出す（参加者の三人目からが遊びに来る・連絡をくれる）' }, { v: 'off', label: '出さない（二人だけ）' }], desc: '参加者の三人目から（住人ごとの「立場」で「他の住人」にした人）のうち、新婚の二人のどちらかと関係（家族・友人・同僚・同級生・元恋人など）がある人が、遊びに来たり、一緒に出かけたり、連絡をくれたりします。元恋人が来た日は、ヤキモチから始まる夜も' }
+      { id: 'outsideNames', label: '登場しない住人を出す', type: 'select', def: 'yes', options: [{ v: 'yes', label: '出す（名簿の住人のうち、二人と関係のある人が訪ねてくる・連絡をくれる）' }, { v: 'no', label: '出さない（二人と、参加者だけ）' }],
+        desc: '出られない部屋の「登場しない住人の名前を出す」と同じ読み方で、名簿にいて今回は参加していない住人のうち、新婚の二人のどちらかと関係（家族・擬似親子・友人・同僚・先輩後輩・同級生・元恋人・知人）がある人（三人まで）が、名簿の性格・口調・関係のまま、遊びに来たり、一緒に出かけたり、連絡をくれたりします。元恋人が来た日は、ヤキモチから始まる夜も。参加者の三人目から（住人ごとの「立場」で「他の住人」にした人）は、この設定にかかわらず同じように出ます' }
     ],
     stats: [],
     perFields: [
@@ -153,6 +194,8 @@
     ],
     actions: [{ id: 'live', label: 'いつもどおりに暮らす', fit: function () { return 0.5; } }],
     goals: [{ id: 'happy', label: '幸せに暮らしたい', fit: function () { return 0.5; } }],
+    /* 経過の目次を日ごとにまとめる（本体の目次の仕組み。無い版では使われないだけ） */
+    stepGroup: function (label) { var m = /^(DAY\d+（.）)(.+)$/.exec(label); return m ? { group: m[1], sub: m[2] } : null; },
     steps: function (env) {
       var n = Math.max(5, Math.min(14, +env.days || 7)), s = [];
       for (var d = 0; d < n; d++) for (var t = 0; t < 3; t++) s.push('DAY' + (d + 1) + '（' + WEEK[d % 7] + '）' + PART[t]);
@@ -192,7 +235,10 @@
   function pickOfChar(ctx, c, k) { var p = ctx.input && ctx.input.perChar && ctx.input.perChar[c.i]; return p && p.pick ? p.pick[k] : null; }
   /* 共通の出来事から外すもの：体の関係の出来事（この部屋の夜は shinkon-r18.js が、きっかけの段を付けて出す）・合意のない展開・三人以上の恋愛・告白（もう夫婦）など */
   var EX_ID = /^(?:confess|take_charge|brood|lighten|mob_after|tie_spouse|grp_|poly_|ct_|cf_)/;
-  function poolSetup() { scen.exclude = (HK.COMMON || []).filter(function (e) { return e.sex || e.force || EX_ID.test(e.id); }).map(function (e) { return e.id; }); }
+  /* 外す出来事は、その時点の共通の出来事の山から引く（読み取り専用の値。出来事の一覧（event-catalog.js の HK.buildPool）も、遊ぶときと同じものを外して数える。
+     2026-11-03 利用者の確かめごと：一覧に「セフレといつもの部屋で落ち合う」などが並んでいた＝以前は setup で書き込んでいたので、一覧を作るときは空だった） */
+  function exList() { return (HK.COMMON || []).filter(function (e) { return e.sex || e.force || EX_ID.test(e.id); }).map(function (e) { return e.id; }); }
+  Object.defineProperty(scen, 'exclude', { get: exList, enumerable: true, configurable: true });
   /* 元の関係のまま遊ぶときの、関係の種類と名前 */
   var LOVE_T = /^(lover|spouse|fiance|mate|fated|ex|crush|almost|fwb|honmei)$/;
   function relInfo(ctx, A, B) {
@@ -204,27 +250,29 @@
   }
 
   function setup(ctx) {
-    poolSetup();
     var C = ctx.chars, cp = couple(C, ctx.input), A = cp[0], B = cp[1] || cp[0], env = ctx.env;
     var days = Math.max(5, Math.min(14, +env.days || 7));
     ctx.place = '二人の新居';
     var keep = !env.rel || env.rel === 'keep';
     var ri = relInfo(ctx, A, B);
-    var S = ctx.sk = { days: days, A: A, B: B, G: C.filter(function (c) { return c !== A && c !== B; }), others: env.others === 'off' ? 'off' : 'on',
+    var S = ctx.sk = { days: days, A: A, B: B, G: C.filter(function (c) { return c !== A && c !== B; }),
       home: sel(ctx, 'home', D.HOME), rel: keep && ri.t && !/^(spouse|lover|fiance|mate)$/.test(ri.t.type) ? -1 : sel(ctx, 'rel', D.REL), keep: keep, ri: ri, meet: sel(ctx, 'meet', D.MEET), meet2: 0,
       speed: env.speed === 'slow' ? 0.7 : env.speed === 'fast' ? 1.45 : 1, love: canLove2(ctx, A, B), day: null, fights: 0, makeups: 0, acts: 0, sex: 0, kissed: false, best: null, lewdMax: 0,
       troubles: 0, visits: 0, odd: 0 };
     /* 結婚している二人か：元の関係のままで、二人の関係が恋人・夫婦などの関係（か、関係なし）。なれそめを選んだら、恋愛にしてよい二人は夫婦 */
     S.wed = S.love && (keep ? ri.loveTie : true);
     /* 他の住人：出番のときだけ場に出す（ほかの区切りは留守。共通の出来事に混ざらないように） */
-    S.G.forEach(function (g) { g.gone = true; g.life = g.life || { job: '' }; });
+    S.G.forEach(function (g) { g.gone = true; g.life = g.life || { job: '' }; if (pickOfChar(ctx, g, 'outside')) g.outside = true; });
     var night1 = !HK.SAFE_ON && S.love && !(HK.Pos && HK.Pos.libNone && HK.Pos.libNone([A, B]));
     S.meet2 = HK.weighted(ctx.rng, D.MEET2.map(function (x, i) { return i; }), function (i) { return i === 9 && !night1 ? 0 : 1; });
     [A, B].forEach(function (c) {
       var job = pickOfChar(ctx, c, 'job');
       c.life = { job: job ? String(job).slice(0, 20) : '' };
+      /* 仕事の型を選んでいれば先に決める（在宅ワークの人のおまかせの役割は、家事を分け合う役割になりやすい。roomkit-life.js） */
+      var pw = pickOfChar(ctx, c, 'work');
+      if (pw && pw !== 'auto') LF.work(ctx, c, pw);
       LF.role(ctx, c, pickOfChar(ctx, c, 'role'));
-      LF.work(ctx, c, pickOfChar(ctx, c, 'work'));
+      LF.work(ctx, c, pw);
       var w = wishOf(ctx, c, pickOfChar(ctx, c, 'wish'));
       J.wish(ctx, c, w, D.WISH[w].init);
     });
@@ -542,7 +590,7 @@
   function finish(ctx) {
     var S = f(ctx), A = S.A, B = S.B;
     if (A === B) return;
-    S.G.forEach(function (g) { g.gone = false; g.fate = '生存'; g.fateNote = S.visits ? A.name + 'と' + B.name + 'の暮らしを見守った' : ''; });
+    S.G.forEach(function (g) { g.gone = false; g.fate = g.outside ? '訪ねてきた住人（名簿から）' : '生存'; g.fateNote = (S.gUsed && S.gUsed[g.i]) || S.visits ? A.name + 'と' + B.name + 'の暮らしを見守った' : ''; });
     var wa = J.of(ctx, A), wb = J.of(ctx, B);
     ctx.flags.shinkon = { days: S.days, home: D.HOME[S.home], rel: S.rel >= 0 ? relShort(S.rel) : (S.ri.label || ''), keep: S.rel < 0, meet: D.MEET[S.meet].split(/\s/)[0], a: A.i, b: B.i,
       life: [LF.label(A), LF.label(B)], wish: [wishName(wa.d), wishName(wb.d)], wed: S.wed,
@@ -563,10 +611,60 @@
     cp2.ties = ts.filter(function (t) { return mine.indexOf(t) < 0; });
     return cp2;
   }
+  /* ---------- 登場しない住人（名簿の住人）を出す（2026-11-03 利用者の指示）----------
+     出られない部屋の「登場しない住人の名前を出す」（room-end.js の outsideOf：名簿 HK.UI.state() から、参加していない住人と参加者の関係を読む）と同じ読み方で、
+     新婚の二人のどちらかと関係（家族・擬似親子・友人・同僚・先輩後輩・同級生・元恋人・知人。恋人・敵対などの関係が一つでもある人は外す）がある住人を三人まで選び、
+     名簿の設定（性格・口調・呼び方・関係）のまま「他の住人」（立場 guest・印 outside）として配役に足す。足し方は画面の入力の組み立て（HK.UI.buildInput）を
+     その人たちを加えた参加者で呼び直すだけ（番号で持つ欄も一緒に組み直される）。入力が画面から来たものでない（点検の道具など）ときは何もしない。
+     結果は入力の outsideG に写す（記録の入力に残るので、同じ入力で回し直しても同じ。入力の参加者 chars は書き換えない） */
+  var OUT_CLS = { parent: 1, sibling: 1, sibprot: 1, sibclose: 1, twin: 1, stepsib: 1, relative: 1, pparent: 1, ex: 0, friend: 2, best: 2, buddy: 2, childhood: 2, benefactor: 2,
+    colleague: 3, boss: 3, senpai: 3, classmate: 4, teacher: 4, mentor: 4, acq: 5 };
+  var OUT_NG = /^(lover|spouse|mate|fated|fiance|fwb|crush|almost|honmei|yan|enemy|bad|sibbad|rival|abuse|master|worship|apathy|fear|noobs)$/;
+  function outsideOf(input) {
+    var UI = HK.UI, S = UI && UI.state ? UI.state() : null;
+    if (!S || !UI.buildInput || !Array.isArray(S.chars) || !Array.isArray(S.ties) || !Array.isArray(input.chars) || !input.chars.length) return null;
+    var byName = {}, dup = {}, mine = [];
+    S.chars.forEach(function (c) { if (!c || !c.name) return; if (byName[c.name]) dup[c.name] = 1; byName[c.name] = c; });
+    for (var i = 0; i < input.chars.length; i++) { var r = input.chars[i] && byName[input.chars[i].name]; if (!r || dup[r.name]) return null; mine.push(r.id); }
+    var cpI = couple(input.chars.map(function (c, k) { return { i: k }; }), input).map(function (c) { return mine[c.i]; });
+    var best = {};
+    S.ties.forEach(function (t) {
+      [[t.a, t.b], [t.b, t.a]].forEach(function (p) {
+        if (cpI.indexOf(p[0]) < 0 || mine.indexOf(p[1]) >= 0) return;
+        var o = best[p[1]] = best[p[1]] || { id: p[1], pr: 9, ng: false };
+        if (OUT_NG.test(t.type) || t.cold === 'fear' || t.cold === 'apathy') o.ng = true;
+        else if (OUT_CLS[t.type] != null && (t.type === 'ex' || (t.cold !== 'separated' && t.cold !== 'divorced'))) o.pr = Math.min(o.pr, OUT_CLS[t.type]);
+      });
+    });
+    var ord = {}; S.chars.forEach(function (c, k) { ord[c.id] = k; });
+    var add = Object.keys(best).map(function (k) { return best[k]; }).filter(function (o) { var c = S.chars.filter(function (x) { return x.id === o.id; })[0]; return !o.ng && o.pr < 9 && c && c.name && !dup[c.name]; })
+      .sort(function (x, y) { return x.pr - y.pr || ord[x.id] - ord[y.id]; }).slice(0, 3).map(function (o) { return o.id; });
+    if (!add.length) return [];
+    var sid0 = S.scenId, hadJ = !!S.join, j0 = S.join && S.join[ID], base, full;
+    try {
+      S.scenId = ID; S.join = S.join || {};
+      S.join[ID] = mine.slice(); base = UI.buildInput(input.seed);
+      /* 画面の入力と同じ参加者・同じ設定でなければ（点検の道具が名前の同じ住人で回したときなど）足さない */
+      if (JSON.stringify(base.chars) !== JSON.stringify(input.chars)) return null;
+      S.join[ID] = mine.concat(add); full = UI.buildInput(input.seed);
+    } finally { S.scenId = sid0; if (!hadJ) delete S.join; else if (j0 === undefined) delete S.join[ID]; else S.join[ID] = j0; }
+    full.perChar.forEach(function (p, k) { var c = full.chars[k]; if (c && add.indexOf(c.id) >= 0) { p.pick = p.pick || {}; p.pick.part = 'guest'; p.pick.outside = 1; } });
+    return { names: full.chars.filter(function (c) { return add.indexOf(c.id) >= 0; }).map(function (c) { return c.name; }), chars: full.chars, perChar: full.perChar, ties: full.ties, topics: full.topics || [] };
+  }
+  function withOutside(input) {
+    var env = input && input.env;
+    if (!env || env.outsideNames === 'no') return input;
+    if (input.outsideG === undefined) { try { var o = outsideOf(input); if (o && o.names && o.names.length) input.outsideG = o; } catch (e) { /* 名簿が読めなくても動かす */ } }
+    var G = input.outsideG;
+    if (!G || !Array.isArray(G.chars) || !Array.isArray(G.perChar)) return input;
+    var cp2 = {}; Object.keys(input).forEach(function (k) { cp2[k] = input[k]; });
+    cp2.chars = G.chars; cp2.perChar = G.perChar; cp2.ties = G.ties || []; cp2.topics = G.topics || [];
+    return cp2;
+  }
   if (HK.wrap && HK.simulate) HK.wrap(HK, 'simulate', function (sim0) {
     return function (input) {
       var mine = input && input.scenId === ID;
-      var r = sim0.apply(this, mine ? [override(input)].concat([].slice.call(arguments, 1)) : arguments), C0 = HK._curCtx;
+      var r = sim0.apply(this, mine ? [override(withOutside(input))].concat([].slice.call(arguments, 1)) : arguments), C0 = HK._curCtx;
       if (r && r.end && mine && C0 && C0.scen && C0.scen.id === ID && C0.flags) r.end.shinkon = C0.flags.shinkon || null;
       return r;
     };

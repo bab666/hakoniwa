@@ -90,6 +90,8 @@
     var arr = c.tr.t.filter(function (t) {
       if (/^\[c\]/.test(t) && !lf.canChore(c.who)) return false;
       if (/^\[h\]/.test(t) && (q.trip || !(q.home && (c.tr.part === 'd' ? q.home.d : true)))) return false;
+      /* 離れていた日数・遅い日の続きを前提にする文（「残業続き」など）は、実際の日数で絞る（shinkon.js の HK.Shinkon.awayOk） */
+      if (HK.Shinkon && HK.Shinkon.awayOk && !HK.Shinkon.awayOk(ctx, t.replace(/^\[[ch]\]/, ''), c.who, c.other)) return false;
       return true;
     });
     var t = arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : '';
