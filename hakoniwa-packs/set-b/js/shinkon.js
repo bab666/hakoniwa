@@ -3,7 +3,8 @@
    2026-11-03 利用者のフィードバックで作り直し（docs/reports/2026-11-03/shinkon-feedback.md・shinkon-design.md）：
    ・利用者のソロジャーナルの表は「何が起きたか」の種として内部で引くだけ（記録の行・表の名前は画面に出さない）。願望は場面の文で表す
    ・受け止め方・決着は、性格（態度9種）・関係・らしくない行動（運命の揺らぎ）で変わる（shinkon-react.js）。本体の共通の出来事（関係ごとの出来事・らしくない行動など）も混ぜる
-   ・暮らしの困りごと 17 種（shinkon-trouble.js）、他の住人（参加者の三人目から・名簿の登場しない住人＝設定 outsideNames）の訪れ（shinkon-visit.js）
+   ・暮らしの困りごと 17 種（shinkon-trouble.js）、他の住人（参加者の三人目・名簿の登場しない住人＝設定 outsideNames）の訪れ（shinkon-visit.js）
+   ・参加は 3 人まで（2026-11-03 利用者の指示）。名簿から訪れる住人は、関係図・二人ずつ・住人ごとの結果に出さず、関係の値も動かさない（strip。訪れから恋愛は始まらない）
    ・離れていた日数・忙しい日の続きを前提にする文は、実際の日数で絞る（awayOk）
    ・家事をしない設定の人は料理・家事をしない（HK.Life.canCook／canChore）。ポンコツの出来事は「家事が苦手（ポンコツ）」の役割の人がいるときだけ
    ・なれそめ「元の関係のまま」（既定）：住人の関係の設定をそのまま使う。ほかを選ぶと二人の関係を新婚の夫婦に上書きする（家族などで「恋愛：なし」の関係は上書きしない）
@@ -172,8 +173,8 @@
   var scen = {
     id: ID, name: '新婚部屋', kicker: 'ふたり・日常',
     desc: '結婚したばかりの二人の毎日を、朝・日中・夜ごとに眺める。暮らしの中で願望が高まると出来事が起き、困りごとや来客もある。同じ出来事でも、性格や関係で受け止め方が変わる。最後の夜は幸せなキスで一区切り。',
-    note: '※参加者の最初の二人（住人ごとの「立場」で選べます）が新婚の二人です。三人目からは「他の住人」として、遊びに来たり連絡をくれたりします。「登場しない住人を出す」なら、名簿にいて参加していない、二人と関係のある住人も訪ねてきます。登場人物はすべて成人として扱います。',
-    unit: '日', perUnit: 3, preRel: 0, lethal: false, minCast: 2, maxCast: 4,
+    note: '※参加は3人まで。参加者の最初の二人（住人ごとの「立場」で選べます）が新婚の二人です。三人目は「他の住人」として、遊びに来たり連絡をくれたりします。「登場しない住人を出す」なら、名簿にいて参加していない、二人と関係のある住人も訪ねてきます（関係図には出ず、恋愛も始まりません）。登場人物はすべて成人として扱います。',
+    unit: '日', perUnit: 3, preRel: 0, lethal: false, minCast: 2, maxCast: 3,
     catBias: { romance: 1, bond: 1, help: 1, conflict: 0.3, combat: 0, betray: 0, kill: 0 },
     decay: 0.998, actRate: 0.2,
     derived: ['warmth', 'honesty', 'jealous', 'impulse'],
@@ -185,7 +186,7 @@
       { id: 'meet', label: '出会いの場所', type: 'select', def: 'auto', options: opts(D.MEET.map(function (t) { return t.split(/\s/)[0]; })), desc: '二人が出会った場所' },
       { id: 'speed', label: '願望の高まりやすさ', type: 'select', def: 'normal', options: [{ v: 'slow', label: 'ゆっくり' }, { v: 'normal', label: 'ふつう' }, { v: 'fast', label: '早い' }], desc: '早いほど、願望から来る行動が多く起きる' },
       { id: 'outsideNames', label: '登場しない住人を出す', type: 'select', def: 'yes', options: [{ v: 'yes', label: '出す（名簿の住人のうち、二人と関係のある人が訪ねてくる・連絡をくれる）' }, { v: 'no', label: '出さない（二人と、参加者だけ）' }],
-        desc: '出られない部屋の「登場しない住人の名前を出す」と同じ読み方で、名簿にいて今回は参加していない住人のうち、新婚の二人のどちらかと関係（家族・擬似親子・友人・同僚・先輩後輩・同級生・元恋人・知人）がある人（三人まで）が、名簿の性格・口調・関係のまま、遊びに来たり、一緒に出かけたり、連絡をくれたりします。元恋人が来た日は、ヤキモチから始まる夜も。参加者の三人目から（住人ごとの「立場」で「他の住人」にした人）は、この設定にかかわらず同じように出ます' }
+        desc: '出られない部屋の「登場しない住人の名前を出す」と同じ読み方で、名簿にいて今回は参加していない住人のうち、新婚の二人のどちらかと関係（家族・擬似親子・友人・同僚・先輩後輩・同級生・元恋人・知人）がある人（三人まで）が、名簿の性格・口調・関係のまま、遊びに来たり、一緒に出かけたり、連絡をくれたりします。元恋人が来た日は、ヤキモチから始まる夜も。訪ねてくる住人は関係図に出ず、その人との恋愛も始まりません。参加者の三人目（住人ごとの「立場」で「他の住人」にした人）は、この設定にかかわらず同じように出ます（参加した住人なので関係図に出ます）' }
     ],
     stats: [],
     perFields: [
@@ -685,14 +686,15 @@
     try {
       var t = VI.text(ctx, v);
       var e = ctx.act2({ actors: v.kind === 'contact' ? [v.host, g] : [v.host, g, v.other], cat: 'bond', text: fill(ctx, t, v.host, v.other, ex), why: '新婚部屋：' + { visit: '他の住人が遊びに来た', out: '他の住人と出かけた', contact: '他の住人から連絡が来た' }[v.kind] + '（' + g.name + '・' + ex.gl + '）',
-        fx: function () { ctx.mod2(v.host, g, { aff: 3, trust: 2 }, { aff: 3, trust: 2 }); } });
+        fx: function () { if (!g.outside) ctx.mod2(v.host, g, { aff: 3, trust: 2 }, { aff: 3, trust: 2 }); } });
       if (e) S.visits++;
       /* 離れている日（出張）は、そばで妬く場面を出さない */
       var fk = e && !day.apart ? VI.follow(ctx, S, v) : null;
       if (fk) {
         var arr = VI.T[fk], jl = fk !== 'bless';
         var ft = fill(ctx, pickOf(ctx, arr), v.host, v.other, ex);
-        var e2 = ctx.act2({ actors: jl ? [v.other, v.host, g] : [g, v.host, v.other], cat: 'romance', text: ft, why: '新婚部屋：' + (jl ? v.other.name + 'のヤキモチ（' + g.name + 'が' + (v.cls === 'ex' ? '元恋人' : ex.gl) + '）' : g.name + 'が二人を祝福した'),
+        /* 恋愛の出来事は参加した二人のあいだだけ（ヤキモチは二人の出来事。祝福は他の住人が加わるので仲良しの出来事 bond） */
+        var e2 = ctx.act2({ actors: jl ? [v.other, v.host] : [g, v.host, v.other], cat: jl ? 'romance' : 'bond', text: ft, why: '新婚部屋：' + (jl ? v.other.name + 'のヤキモチ（' + g.name + 'が' + (v.cls === 'ex' ? '元恋人' : ex.gl) + '）' : g.name + 'が二人を祝福した'),
           fx: function () { if (jl) ctx.mod2(v.other, v.host, { att: 4, ten: 3 }, { att: 3 }); else ctx.mod2(v.host, v.other, { aff: 2, att: 2 }, { aff: 2, att: 2 }); } });
         if (e2 && jl) { day.jealBy = v.other; day.jealOf = v.host; day.jealG = g; day.jealEx = v.cls === 'ex'; }
       }
@@ -735,7 +737,7 @@
   function finish(ctx) {
     var S = f(ctx), A = S.A, B = S.B;
     if (A === B) return;
-    S.G.forEach(function (g) { g.gone = false; g.fate = g.outside ? '訪ねてきた住人（名簿から）' : '生存'; g.fateNote = (S.gUsed && S.gUsed[g.i]) || S.visits ? A.name + 'と' + B.name + 'の暮らしを見守った' : ''; });
+    S.G.forEach(function (g) { g.gone = false; g.fate = g.outside ? '訪ねてきた住人（名簿から）' : '二人を訪ねる住人'; g.fateNote = (S.gUsed && S.gUsed[g.i]) || S.visits ? A.name + 'と' + B.name + 'の暮らしを見守った' : ''; });
     var wa = J.of(ctx, A), wb = J.of(ctx, B);
     ctx.flags.shinkon = { days: S.days, home: D.HOME[S.home], rel: S.rel >= 0 ? relShort(S.rel) : (S.ri.label || ''), keep: S.rel < 0, meet: D.MEET[S.meet].split(/\s/)[0], a: A.i, b: B.i,
       life: [LF.label(A), LF.label(B)], wish: [wishName(wa.d), wishName(wb.d)], wed: S.wed,
@@ -785,14 +787,18 @@
     var add = Object.keys(best).map(function (k) { return best[k]; }).filter(function (o) { var c = S.chars.filter(function (x) { return x.id === o.id; })[0]; return !o.ng && o.pr < 9 && c && c.name && !dup[c.name]; })
       .sort(function (x, y) { return x.pr - y.pr || ord[x.id] - ord[y.id]; }).slice(0, 3).map(function (o) { return o.id; });
     if (!add.length) return [];
-    var sid0 = S.scenId, hadJ = !!S.join, j0 = S.join && S.join[ID], base, full;
+    var sid0 = S.scenId, hadJ = !!S.join, j0 = S.join && S.join[ID], ch0 = S.chars, base, full;
     try {
       S.scenId = ID; S.join = S.join || {};
       S.join[ID] = mine.slice(); base = UI.buildInput(input.seed);
       /* 画面の入力と同じ参加者・同じ設定でなければ（点検の道具が名前の同じ住人で回したときなど）足さない */
       if (JSON.stringify(base.chars) !== JSON.stringify(input.chars)) return null;
+      /* 名簿の並びを一時的に「参加者 → 訪れる住人 → ほか」にして組み立てる（参加者の番号を変えないため。訪れる住人は後ろにまとまり、結果から外しやすい） */
+      var head = ch0.filter(function (c) { return mine.indexOf(c.id) >= 0; }), mid = add.map(function (id) { return ch0.filter(function (c) { return c.id === id; })[0]; });
+      S.chars = head.concat(mid, ch0.filter(function (c) { return head.indexOf(c) < 0 && mid.indexOf(c) < 0; }));
       S.join[ID] = mine.concat(add); full = UI.buildInput(input.seed);
-    } finally { S.scenId = sid0; if (!hadJ) delete S.join; else if (j0 === undefined) delete S.join[ID]; else S.join[ID] = j0; }
+    } finally { S.chars = ch0; S.scenId = sid0; if (!hadJ) delete S.join; else if (j0 === undefined) delete S.join[ID]; else S.join[ID] = j0; }
+    if (JSON.stringify(full.chars.slice(0, input.chars.length).map(function (c) { return c.name; })) !== JSON.stringify(input.chars.map(function (c) { return c.name; }))) return null;
     full.perChar.forEach(function (p, k) { var c = full.chars[k]; if (c && add.indexOf(c.id) >= 0) { p.pick = p.pick || {}; p.pick.part = 'guest'; p.pick.outside = 1; } });
     return { names: full.chars.filter(function (c) { return add.indexOf(c.id) >= 0; }).map(function (c) { return c.name; }), chars: full.chars, perChar: full.perChar, ties: full.ties, topics: full.topics || [] };
   }
@@ -800,17 +806,43 @@
     var env = input && input.env;
     if (!env || env.outsideNames === 'no') return input;
     if (input.outsideG === undefined) { try { var o = outsideOf(input); if (o && o.names && o.names.length) input.outsideG = o; } catch (e) { /* 名簿が読めなくても動かす */ } }
-    var G = input.outsideG;
-    if (!G || !Array.isArray(G.chars) || !Array.isArray(G.perChar)) return input;
+    var G = input.outsideG, n = input.chars.length;
+    if (!G || !Array.isArray(G.chars) || !Array.isArray(G.perChar) || G.chars.length <= n) return input;
+    /* 参加者が先頭に同じ並びで入っているものだけ使う（以前の並び（名簿の順に混ざる）の入力では、訪れる住人を出さない） */
+    for (var i = 0; i < n; i++) if (!G.chars[i] || G.chars[i].name !== input.chars[i].name) return input;
     var cp2 = {}; Object.keys(input).forEach(function (k) { cp2[k] = input[k]; });
+    cp2._outN = n;
     cp2.chars = G.chars; cp2.perChar = G.perChar; cp2.ties = G.ties || []; cp2.topics = G.topics || [];
     return cp2;
+  }
+  /* 結果から、名簿から訪れた住人（参加者の後ろ n 番目から）を外す（2026-11-03 利用者の指示「人間関係図に表示するのは実際に選んだ住人だけ」）：
+     住人ごとの結果・二人ずつ（pairs）・区切りごとの記録（関係の値・在不在・気分）・出来事の顔ぶれ（actors）。名前は地の文にだけ残る。
+     住人ごとの結果の一言（「最も心を寄せた相手は…」）に訪れた住人の名前があれば外す */
+  function strip(r, n) {
+    if (!r || !Array.isArray(r.chars) || r.chars.length <= n) return;
+    var gone = r.chars.slice(n).map(function (c) { return c.name; }).filter(Boolean);
+    var hasG = function (t) { return typeof t === 'string' && gone.some(function (nm) { return t.indexOf(nm) >= 0; }); };
+    r.chars = r.chars.slice(0, n);
+    r.chars.forEach(function (c) {
+      if (c.focus != null && c.focus >= n) c.focus = null;
+      if (c.killedBy != null && c.killedBy >= n) c.killedBy = null;
+      if (Array.isArray(c.notes)) c.notes = c.notes.filter(function (t) { return !hasG(t); });
+    });
+    if (Array.isArray(r.pairs)) r.pairs = r.pairs.filter(function (p) { return p.a < n && p.b < n; });
+    (r.history || []).forEach(function (h) {
+      if (h.rel) Object.keys(h.rel).forEach(function (k) { var m = /^(\d+)-(\d+)$/.exec(k); if (m && (+m[1] >= n || +m[2] >= n)) delete h.rel[k]; });
+      if (Array.isArray(h.alive)) h.alive = h.alive.slice(0, n);
+      if (h.emo) Object.keys(h.emo).forEach(function (k) { if (+k >= n) delete h.emo[k]; });
+    });
+    (r.log || []).forEach(function (e) { if (Array.isArray(e.actors)) e.actors = e.actors.filter(function (i) { return typeof i !== 'number' || i < n; }); });
   }
   if (HK.wrap && HK.simulate) HK.wrap(HK, 'simulate', function (sim0) {
     return function (input) {
       var mine = input && input.scenId === ID;
-      var r = sim0.apply(this, mine ? [override(withOutside(input))].concat([].slice.call(arguments, 1)) : arguments), C0 = HK._curCtx;
+      var inp = mine ? override(withOutside(input)) : input;
+      var r = sim0.apply(this, mine ? [inp].concat([].slice.call(arguments, 1)) : arguments), C0 = HK._curCtx;
       if (r && r.end && mine && C0 && C0.scen && C0.scen.id === ID && C0.flags) r.end.shinkon = C0.flags.shinkon || null;
+      if (r && mine && inp && inp._outN) strip(r, inp._outN);
       return r;
     };
   });

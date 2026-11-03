@@ -1,4 +1,4 @@
-/* 新婚部屋：他の住人（参加者の三人目から・名簿の登場しない住人。shinkon.js の outsideOf）の訪れ（両方のビルド。2026-11-03 利用者のフィードバック「他の住人を出すにチェックを入れると、関係性のある知り合いなどが
+/* 新婚部屋：他の住人（参加者の三人目・名簿の登場しない住人。shinkon.js の outsideOf）の訪れ（両方のビルド。2026-11-03 利用者のフィードバック「他の住人を出すにチェックを入れると、関係性のある知り合いなどが
    遊びに来たり、出かけたり、連絡がきたりするイベントが発生するように。元恋人とかだとヤキモチエッチが発生したりする」）
    ■ HK.ShinkonVisit（VI）
      ・VI.cls(ctx, a, g)：新婚の二人の一人 a と、他の住人 g の関係の種類。fam（家族）／pfam（擬似親子）／known（友人・親友・幼なじみ・相棒・恩人）／weak（知人）／
@@ -8,13 +8,15 @@
        来る人は、生きていて閉じ込められていない人だけ（HK.State.here を、出番の外の「留守」の印 gone を外して確かめる）
      ・VI.follow(ctx, S, v)：恋愛にしてよい二人のとき、訪れのあとの三人の場面（bless 祝福・からかい＝仲良し系／jeal ヤキモチ＝すれ違い系）。元恋人は必ずヤキモチ、
        ほかは相手の嫉妬深さで決める（半々くらいになるように）
+   ■ 名簿から訪れた住人（印 outside）は関係図・二人ずつ・住人ごとの結果に出さず（shinkon.js の strip）、関係の値も動かさない。恋愛の出来事（cat romance）は参加した二人のあいだだけ
+     （ヤキモチは二人の出来事、祝福は bond）。訪れた住人から恋愛・告白・体の関係は始まらない（2026-11-03 利用者の指示）
    ■ 文：{a}＝訪れの相手と関係のある人（迎える人・出かける人・連絡を受ける人）、{b}＝その連れ合い、{g}＝他の住人、{gl}＝{a} から見た {g} の呼び名。
      {b} と {g} が知り合いかどうかは決めない書き方（初対面・久しぶり の文は {a} と {g} のあいだだけ）。家事・料理をする言い回しは書かない。
      台詞は3本（一人称「私」・二人称「あなた」）。登場人物はすべて成人として扱う */
 /* @event scen=set-b-shinkon id=sk_visit cat=bond tie=- label=他の住人が家に遊びに来る */
 /* @event scen=set-b-shinkon id=sk_visit_out cat=bond tie=- label=他の住人と一緒に出かける */
 /* @event scen=set-b-shinkon id=sk_visit_contact cat=bond tie=- label=他の住人から連絡が来る */
-/* @event scen=set-b-shinkon id=sk_visit_bless cat=romance tie=- label=訪れた住人が二人を祝福する */
+/* @event scen=set-b-shinkon id=sk_visit_bless cat=bond tie=- label=訪れた住人が二人を祝福する */
 /* @event scen=set-b-shinkon id=sk_visit_jeal cat=romance tie=- label=訪れた住人にヤキモチを焼く */
 (function () {
   'use strict';
