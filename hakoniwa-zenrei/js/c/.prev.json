@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.2c9462ba9f.js",
+  "core": "core.9082eab9c2.js",
   "late": "late.62e63f4a76.js",
   "pack-rel": "pack-rel.2d12624203.js",
   "scen-goukon": "scen-goukon.6bf909550f.js",
@@ -64,7 +64,7 @@
   "tone-yankee": "tone-yankee.60141ce907.js"
  },
  "prev": {
-  "core": "core.d82974ac3a.js",
+  "core": "core.2c9462ba9f.js",
   "late": "late.62e63f4a76.js",
   "pack-rel": "pack-rel.2d12624203.js",
   "scen-goukon": "scen-goukon.6bf909550f.js",
@@ -545,8 +545,8 @@
    3002
   ],
   "js/ui-box-list.js": [
-   12750,
-   4438
+   12780,
+   4458
   ],
   "js/ui-import.js": [
    8911,
@@ -605,8 +605,8 @@
    1872
   ],
   "js/ui-result-style.js": [
-   32148,
-   6376
+   32283,
+   6384
   ],
   "js/ui-scroll-style.js": [
    1236,

@@ -88,7 +88,7 @@
     '.rvw .rvpine button{display:flex;gap:8px;align-items:center;justify-content:flex-start}.rvw .rvarr{color:var(--rm)}' +
     '.rvw .rvmaplink{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;color:var(--ri)}.rvw .rvmaplink small{color:var(--rm);font-size:12px}' +
     /* 経過（見本 09・11）：目次・区切りのカード・右の絞り込み */
-    '.rvw .rvtoc{position:sticky;top:var(--rvst);max-height:calc(100vh - var(--rvst) - 12px);overflow:auto;font-size:12.5px}' +
+    '.rvw .rvtoc{position:sticky;top:var(--rvst);max-height:calc(100vh - var(--rvst) - 12px);max-height:calc(100dvh - var(--rvst) - 12px);overflow:auto;font-size:12.5px}' +
     '.rvw .rvtoct{font-size:12px;color:var(--rm);margin:4px 0 8px 8px}.rvw .rvtoc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}' +
     '.rvw .rvtocb{appearance:none;-webkit-appearance:none;background:none;border:0;border-radius:6px;width:100%;text-align:left;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;align-items:baseline;padding:5px 8px;font:inherit;color:var(--ri);cursor:pointer}' +
     '.rvw .rvtocb:hover{background:var(--rs)}.rvw .rvtocb .tn{font-family:var(--f-num);font-size:11px;color:var(--rm)}.rvw .rvtocb .lb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rvw .rvtocb .n{font-size:11px;color:var(--rm)}.rvw .rvtocb.hot .tn{color:var(--hot)}' +
@@ -171,7 +171,7 @@
     '@media (prefers-color-scheme: dark){:root:not([data-theme="light"],[data-theme="gray"]) .bbx .bbg{--bbf:18%;--bbl:42%}}:root[data-theme="dark"] .bbx .bbg{--bbf:18%;--bbl:42%}' +
     ':root[data-palette="mono"] .bbx .bbg{--c:var(--ai)!important;--bbf:6%;--bbl:24%}' +
     '@media print{.bbx .bb{background:none!important}}' +
-    '.rvw .rvrail{position:sticky;top:var(--rvst);max-height:calc(100vh - var(--rvst) - 12px);overflow:auto}' +
+    '.rvw .rvrail{position:sticky;top:var(--rvst);max-height:calc(100vh - var(--rvst) - 12px);max-height:calc(100dvh - var(--rvst) - 12px);overflow:auto}' +
     '.rvw .rvrailin{padding:16px 18px}.rvw .rvrs{padding:12px 0;border-top:1px solid var(--rl)}.rvw .rvrs:first-child{border-top:0;padding-top:0}.rvw .rvrs:last-child{padding-bottom:0}' +
     '.rvw .rvrt{font-size:12px;font-weight:700;margin:0 0 8px}' +
     '.rvw .rvwhos{display:flex;flex-wrap:wrap;gap:6px}' +
@@ -207,7 +207,7 @@
     '.rvw .rvselline .rvslh{margin:4px 0 0;font-size:15px}.rvw .rvselline .rvslt{font-size:13.5px;line-height:1.8;margin:8px 0 4px}' +
     '.rvw .rvsec2>h2.sec:first-child,.rvw .rvsec2 h2.sec{margin-top:0}' +
     /* 二人ずつ・住人ごと（見本 13・14）：左の一覧と右のカード */
-    '.rvw .rvlist{padding:10px;position:sticky;top:var(--rvst);max-height:calc(100vh - var(--rvst) - 12px);overflow:auto}' +
+    '.rvw .rvlist{padding:10px;position:sticky;top:var(--rvst);max-height:calc(100vh - var(--rvst) - 12px);max-height:calc(100dvh - var(--rvst) - 12px);overflow:auto}' +
     '.rvw .rvpills{display:flex;flex-wrap:wrap;gap:6px;padding:4px 4px 10px;border-bottom:1px solid var(--rl);margin-bottom:6px}' +
     '.rvw .rvpill{appearance:none;-webkit-appearance:none;border:1px solid var(--rl);background:var(--rc);border-radius:999px;padding:3px 10px;font:inherit;font-size:12px;color:var(--ri);cursor:pointer;min-height:30px}' +
     '.rvw .rvpill small{margin-left:4px;color:var(--rm)}.rvw .rvpill[aria-pressed="true"]{background:var(--rp);color:var(--rpi);border-color:var(--rp)}.rvw .rvpill[aria-pressed="true"] small{color:inherit;opacity:.8}' +

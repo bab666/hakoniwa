@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.298d68ede4.js",
+  "core": "core.6120b46988.js",
   "late": "late.31c70cd8ea.js",
   "pack-rel": "pack-rel.7b107559e7.js",
   "pack-lewd": "pack-lewd.806427163c.js",
@@ -72,7 +72,7 @@
   "tone-yankee": "tone-yankee.cf1b16d856.js"
  },
  "prev": {
-  "core": "core.fa78eda4f8.js",
+  "core": "core.298d68ede4.js",
   "late": "late.31c70cd8ea.js",
   "pack-rel": "pack-rel.7b107559e7.js",
   "pack-lewd": "pack-lewd.806427163c.js",
@@ -621,8 +621,8 @@
    3002
   ],
   "js/ui-box-list.js": [
-   12750,
-   4438
+   12780,
+   4458
   ],
   "js/ui-import.js": [
    8911,
@@ -681,8 +681,8 @@
    1872
   ],
   "js/ui-result-style.js": [
-   32148,
-   6376
+   32283,
+   6384
   ],
   "js/ui-scroll-style.js": [
    1236,
