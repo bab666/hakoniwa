@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.e964c7d500.js",
+  "core": "core.7de2c57cb0.js",
   "late": "late.62e63f4a76.js",
   "pack-rel": "pack-rel.b6031acc8c.js",
   "scen-goukon": "scen-goukon.6bf909550f.js",
@@ -64,9 +64,9 @@
   "tone-yankee": "tone-yankee.60141ce907.js"
  },
  "prev": {
-  "core": "core.aa0b47a934.js",
+  "core": "core.9082eab9c2.js",
   "late": "late.62e63f4a76.js",
-  "pack-rel": "pack-rel.b6031acc8c.js",
+  "pack-rel": "pack-rel.2d12624203.js",
   "scen-goukon": "scen-goukon.6bf909550f.js",
   "scen-classroom": "scen-classroom.e9becaa77b.js",
   "scen-island": "scen-island.67dafaa465.js",
@@ -75,7 +75,7 @@
   "scen-whiteroom": "scen-whiteroom.1bb0feaa54.js",
   "scen-trial": "scen-trial.280a76a291.js",
   "scen-omega": "scen-omega.73b866b1ab.js",
-  "scen-massage": "scen-massage.0443ff6c18.js",
+  "scen-massage": "scen-massage.10e4126869.js",
   "scen-zombie": "scen-zombie.3f447f071a.js",
   "scen-rpg": "scen-rpg.ea44c8c8b8.js",
   "scen-saimin": "scen-saimin.46efda8ad6.js",
@@ -545,8 +545,8 @@
    3002
   ],
   "js/ui-box-list.js": [
-   12750,
-   4438
+   12780,
+   4458
   ],
   "js/ui-import.js": [
    8911,
@@ -605,8 +605,8 @@
    1872
   ],
   "js/ui-result-style.js": [
-   32148,
-   6376
+   32283,
+   6384
   ],
   "js/ui-scroll-style.js": [
    1236,
