@@ -68,13 +68,15 @@
     var o = HK.Pos && HK.Pos.order ? HK.Pos.order(A, B) : [A, B], a = o[0], b = o[1], sh = shape(a, b);
     var who = day.urgeBy || (J.of(ctx, A).pt >= J.of(ctx, B).pt ? A : B);
     /* きっかけ：自慰の目撃（♦8）は、どちらかの帰りが遅い・留守番の日に起きやすい */
-    var lonely = day.pa.late || day.pb.late, trig = J.pick(ctx, 'trig', R.TRIGGER, function (x, i) { return i === 30 ? (lonely ? 3 : 0.8) : 1; });
+    var lonely = day.pa.late || day.pb.late, trig = J.pick(ctx, 'trig', R.TRIGGER, function (x, i) { return i === 30 ? (lonely && !lewdEv ? 3 : 0) : 1; });
     var ti = R.TRIGGER.indexOf(trig), witness = ti === 30;
     var play = J.pick(ctx, 'play', R.PLAY), pi = R.PLAY.indexOf(play), mid = ctx.rng() < 0.4;
     var af = J.pick(ctx, 'after', R.AFTER), afi = R.AFTER.indexOf(af);
     var rows = [];
+    /* ちょっとえっちな日替わりの夜は、その出来事がきっかけ（きっかけ表は振らない。二つの段が続くと流れが飛ぶため） */
     if (lewdEv) rows.push(['ちょっとえっちな日替わりイベント表', lewdEv.k + '／' + lewdEv.t]);
-    rows.push(['きっかけ表', trig.k + '／' + trig.t], ['プレイの内容表', play.t]);
+    else rows.push(['きっかけ表', trig.k + '／' + trig.t]);
+    rows.push(['プレイの内容表', play.t]);
     var bt = null, tp = null;
     if (mid) { bt = J.pick(ctx, 'bottom', R.BOTTOM); tp = J.pick(ctx, 'top', R.TOP); rows.push(['えっちな反応表 受け向け', bt.k + '／' + bt.t], ['えっちな反応表 攻め向け', tp.t]); }
     rows.push(['事後の反応表', af]);
@@ -83,8 +85,8 @@
     var s = witness ? (who === a || who === b ? who : b) : null, w = s ? (s === a ? b : a) : null;
     /* 1. きっかけの段 */
     var lt = witness ? text(ctx, 'WITNESS', 0, sh, pickOf(ctx, FB.witness)) : text(ctx, 'TRIGGER', ti, sh, pickOf(ctx, FB.lead));
-    if (lewdEv) { var le = text(ctx, 'LEWD', R.LEWD.indexOf(lewdEv), sh, ''); if (le) lt = le + '\n\n' + lt; }
-    ctx.say({ kind: 'event', cat: 'romance', actors: [who, who === A ? B : A], text: fill(ctx, lt, a, b, { who: who.name, trig: trig.t.replace(/。$/, ''), s: s ? s.name : '', w: w ? w.name : '' }), why: 'きっかけ：' + (witness ? '自慰を目撃して' : trig.k + '（' + trig.t + '）') + (day.urge ? '／' + who.name + 'の願望が高まった' : ''), mag: 0 }).tag = 'きっかけ';
+    if (lewdEv) { var le = text(ctx, 'LEWD', R.LEWD.indexOf(lewdEv), sh, ''); if (le) lt = le; }
+    ctx.say({ kind: 'event', cat: 'romance', actors: [who, who === A ? B : A], text: fill(ctx, lt, a, b, { who: who.name, trig: trig.t.replace(/。$/, ''), s: s ? s.name : '', w: w ? w.name : '' }), why: 'きっかけ：' + (witness ? '自慰を目撃して' : lewdEv ? lewdEv.k + '（' + lewdEv.t.slice(0, 24) + '）' : trig.k + '（' + trig.t + '）') + (day.urge ? '／' + who.name + 'の願望が高まった' : ''), mag: 0 }).tag = 'きっかけ';
     /* 2. 場面 */
     var body = text(ctx, 'PLAY', pi, sh, pickOf(ctx, FB.short[sh]));
     if (mid) {
