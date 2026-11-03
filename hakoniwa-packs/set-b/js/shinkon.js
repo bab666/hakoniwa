@@ -359,9 +359,11 @@
       } else if (S.wed) intro = pickOf(ctx, KEEP_WED);
       else intro = pickOf(ctx, NW_SETUP);
       rl = S.exLabel || (S.rel >= 0 && S.wed ? relShort(S.rel) : ri.label || '同居人');
-      tx = fill(ctx, intro, A, B, { home: home, rel: rl, meet: meet });
+      /* 恐怖の関係のままの二人（恋愛の設定が自動など。shinkon-past.js の PS.nfSetup）：「恐怖のまま暮らし始めた」とは書かず、怖がっていた人から見た始まりの段にする */
+      var nfs = !S.wed && PSX() ? PSX().nfSetup(ctx, S) : '';
+      tx = nfs ? fill(ctx, nfs.t, nfs.a, nfs.b, { home: home }) : fill(ctx, intro, A, B, { home: home, rel: rl, meet: meet });
       /* 元の関係のまま：関係の色の一文 */
-      if (S.rel < 0 && RC() && !S.exLabel) { var rc = RC().rel(ctx, ri.cls); if (rc) tx += fill(ctx, rc, A, B, { rel: rl }); }
+      if (S.rel < 0 && RC() && !S.exLabel && !nfs) { var rc = RC().rel(ctx, ri.cls); if (rc) tx += fill(ctx, rc, A, B, { rel: rl }); }
       ctx.act2({ actors: [A, B], cat: S.love ? 'romance' : 'bond', text: tx, why: '新婚部屋：二人の始まり（' + relLine(S) + '）' + (S.trioNG ? '（三人婚にならなかった：' + S.trioNG + '）' : '') });
     }
     /* もとは恐怖の関係だった二人（「恋愛：あり」にした恐怖を元○○にした・なれそめで上書きした）：本体の決まりどおり、体の関係・夜は止めたまま（住人の noSex。HK.sexBlocked が真を返す） */
@@ -372,6 +374,8 @@
     });
     /* 元○○の二人の導入（「まさか私たちが結婚するなんて……」）。三人婚は組ごとに */
     if (PSX()) pairsOf(S).forEach(function (p) { PSX().intro(ctx, S, p[0], p[1]); });
+    /* 恐怖の関係のままの二人の導入（「今は少し慣れてきた……多分」。shinkon-past.js の PS.nfIntro） */
+    if (PSX() && PSX().nfIntro) PSX().nfIntro(ctx, S);
   }
   function PSX() { return HK.ShinkonPast; }
   function pairsOf(S) { return S.trio ? [[S.A0, S.B0], [S.A0, S.C0], [S.B0, S.C0]] : [[S.A0, S.B0]]; }
@@ -940,6 +944,8 @@
   }
   function ending(ctx) {
     var S = f(ctx), A = S.A, B = S.B, k = Math.floor(ctx.rng() * D.KISS.length);
+    /* もとが恐怖の二人：恐怖のゆくえ（怖くなくなった／少し慣れた／まだ怖い日もある。shinkon-past.js の PS.fearEnd） */
+    if (!S.trio && PSX() && PSX().fearEnd) PSX().fearEnd(ctx, S);
     if (S.trio && HK.ShinkonTrio) {
       var T3 = [S.A0, S.B0, S.C0], kt = HK.ShinkonTrio.say(ctx, HK.ShinkonTrio.T.KISS, T3[0], T3[1], T3[2]);
       if (ctx.act2({ actors: T3, cat: 'romance', text: kt, why: '新婚部屋：最後の夜（三人の幸せなキス）', fx: function () { ctx.mod2(T3[0], T3[1], { aff: 5, att: 5 }, { aff: 5, att: 5 }); ctx.mod2(T3[0], T3[2], { aff: 5, att: 5 }, { aff: 5, att: 5 }); ctx.mod2(T3[1], T3[2], { aff: 5, att: 5 }, { aff: 5, att: 5 }); } })) S.kissed = true;
@@ -962,6 +968,7 @@
       life: P.map(function (c) { return LF.label(c); }), wish: P.map(function (c) { return wishName(J.of(ctx, c).d); }), wed: S.wed,
       relFrom: S.relFrom, relLine: relLine(S), start: S.cal && CL ? CL.label(S, 0) : '', end: S.cal && CL ? CL.label(S, S.days - 1) : '',
       bdays: (S.bdays || []).map(function (b) { return { i: b.c.i, label: b.label }; }), sea: S.calN || 0, past: S.pastN || 0, wedN: S.wedN || 0,
+      fear: S.fearP ? { x: S.fearP.x.i, y: S.fearP.y.i, ex: S.fearP.ex, lv: S.fearP.lv, n: S.fearN || 0, end: S.fearEnd || '' } : null,
       acts: S.acts, fights: S.fights, makeups: S.makeups, sex: S.sex, long: S.longN || 0, trioSex: S.trioSex || 0, kissed: S.kissed, love: S.love, best: S.best, troubles: S.troubles, visits: S.visits, odd: S.odd };
     P.forEach(function (c) { c.fate = S.trio ? '三人婚の新婚' : S.wed ? '新婚の夫婦' : S.love ? '一緒に暮らす恋人' : '同じ家で暮らす二人'; c.fateNote = P.filter(function (o) { return o !== c; }).map(function (o) { return o.name; }).join('と') + 'と、' + S.days + '日を過ごした'; });
     ctx.flags.outcome = S.trio ? P.map(function (c) { return c.name; }).join('と') + 'の三人の新婚の' + S.days + '日' + (S.kissed ? '――最後の夜、三人は幸せなキスを交わした' : '')
@@ -1014,6 +1021,8 @@
     who.forEach(function (nm, k) { lines.push(nm + '：' + (R.life[k] || '') + '／願望「' + (R.wish[k] || '') + '」'); });
     (R.bdays || []).forEach(function (b) { lines.push(X.nm(b.i) + 'の誕生日：' + b.label + '（日数の中で祝った）'); });
     lines.push('願望から来た行動 ' + R.acts + '回／困りごと ' + R.troubles + '回／喧嘩 ' + R.fights + '回' + (R.fights ? '（仲直り ' + R.makeups + '回）' : '') + (R.visits ? '／来客・連絡 ' + R.visits + '回' : '') + (R.sea ? '／季節の行事 ' + R.sea + '回' : '') + (R.wedN ? '／新婚らしい出来事 ' + R.wedN + '回' : '') + (HK.SAFE_ON ? '' : '／エッチ ' + R.sex + '回' + (R.trioSex ? '（三人で ' + R.trioSex + '回）' : '')));
+    /* もとが恐怖の二人：ぶり返しの回数と恐怖のゆくえ */
+    if (R.fear) lines.push('恐怖のゆくえ：' + X.nm(R.fear.x) + 'は' + X.nm(R.fear.y) + 'に' + (R.fear.lv === 'nf' ? '（恐怖の関係のまま）' : '（元恐怖）') + '――' + ((HK.ShinkonPast && HK.ShinkonPast.FEAR_END[R.fear.end]) || '少し慣れた') + '（恐怖がぶり返した日 ' + R.fear.n + '回）');
     if (R.best) lines.push('いちばん心に残った日：' + R.best.label + '――' + R.best.why);
     X.C.forEach(function (c) { c.afterDone = true; });
     return { headline: (res.outcome || '') + '。', stats: [['日数', R.days + '日'], ['願望の行動', R.acts + '回'], ['困りごと', R.troubles + '回'], ['喧嘩', R.fights + '回']].concat(HK.SAFE_ON ? [] : [['エッチ', R.sex + '回']]), lines: lines };
