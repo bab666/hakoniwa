@@ -220,7 +220,8 @@
      ・女性（男性的な語尾が個性の口調を除く）：〜ぜ・〜ぞ・断定の〜だろ・〜ねえ を外す。男性：女性的な語尾を外す（unfem）
      咄嗟の声（言葉のない声・「だめ」「むり」）はそのまま。利用者の辞書の行は直さない。全年齢モードでは何もしない */
   function grp(s) { var o = {}; s.split(' ').forEach(function (k) { o[k] = 1; }); return o; }
-  var FIT_FIRM = grp('proud aniki stern cool calm gentleman noja sondai god ronkyaku flat_plain yankee');
+  /* 熱血（hero）も、はっきりした口調に入れる（2026-11-03。「もう、やだぁ」「止めないで」「いいわ」が出ていた） */
+  var FIT_FIRM = grp('proud aniki stern cool calm gentleman noja sondai god ronkyaku flat_plain yankee hero');
   var FIT_SOFT = grp('gentle gentle_n gentle_m devoted devoted_p shy honwaka boku_n tsun_soft mukuchi_ne polite ojou kohai genki keigo_sarc keigo_bossy keigo_flat otaku keigo_twist chara_down');
   var FIT_GRAND = grp('gentleman sondai god'), FIT_MASC = grp('yankee aniki hero chara noja gentleman sondai god otaku ronkyaku flat_plain proud');
   var FE = '(?=[…‥。！？!?、」♡〜ー　\\sっッ]|$)', FL = '(^|[、。…‥「\\s　♡！!？?っ゛])';
@@ -265,6 +266,67 @@
   ];
   var FIT_GRAND_R = [[new RegExp('ちゃう' + FE, 'g'), 'てしまう'], [new RegExp('ちゃった' + FE, 'g'), 'てしまった'], [new RegExp('じゃう' + FE, 'g'), 'でしまう'], [new RegExp('じゃん' + FE, 'g'), 'ではないか'], [new RegExp('でしょ' + FE, 'g'), 'だろう']];
   function runR(s, R) { R.forEach(function (r) { s = s.replace(r[0], r[1]); }); return s; }
+  /* ---------- 強い口調の甘え・お願い・女性的な語尾（2026-11-03。点検は hakoniwa-tools/tone-check/moan-tone-audit.js） ----------
+     夜の性格（マゾ・甘々・恥じらい）やエゴグラムで、強い口調の人にも健気・恥じらい・穏やかの基盤が当たる。基盤の言葉はそのまま使い、語尾だけ口調の形にする：
+       〜ないで → 〜るな（荒い口調は 〜んな。紳士・尊大は 〜ないでくれたまえ、のじゃは 〜るでない）、もっと、して → もっと、しろ（紳士は してくれたまえ、のじゃは してたもれ、神は せよ）、
+       ちょうだい → くれ、イっちゃう → イっちまう（荒い口調）／イってしまう（そのほか）、だめなの → だめなんだ、〜だもん → 〜だ、〜てぇ・〜よぉ の伸ばし → 〜て・〜よ
+     区分：rough 荒い（強気・兄貴分・ヤンキー・熱血）／stiff 硬い（厳格・冷静・論客・無機質 など）／grand 紳士・尊大／god 神／noja のじゃ */
+  var FIT_ROUGH = grp('proud aniki yankee hero');
+  var FIT_POLITE = grp('polite devoted ojou kohai genki keigo_sarc keigo_bossy keigo_flat otaku keigo_twist chara_down mixed'), FIT_FEM = grp('ane ojou');
+  function strongKind(t, grand) { return t === 'noja' ? 'noja' : t === 'god' ? 'god' : grand ? 'grand' : FIT_ROUGH[t] ? 'rough' : 'stiff'; }
+  var GODAN = { 'か': 'く', 'さ': 'す', 'た': 'つ', 'な': 'ぬ', 'ま': 'む', 'ら': 'る', 'わ': 'う', 'が': 'ぐ', 'ば': 'ぶ' };
+  var ST_NAI = new RegExp('([一-鿿々ぁ-ゖ])ないで(?:ぇ+)?' + FE, 'g');
+  var ST_REQ_W = { 'して': 'しろ', 'してて': 'してろ', '来て': '来い', 'きて': 'こい', '入れて': '入れろ', 'いれて': 'いれろ', '抱いて': '抱け', '突いて': '突け', '動いて': '動け', 'うごいて': 'うごけ', '触って': '触れ', 'さわって': 'さわれ', '吸って': '吸え', '噛んで': '噛め', 'イかせて': 'イかせろ', 'いかせて': 'いかせろ', '見てて': '見てろ', '出して': '出せ', 'だして': 'だせ' };
+  var ST_REQ = new RegExp(FL + '(' + Object.keys(ST_REQ_W).sort(function (a, b) { return b.length - a.length; }).join('|') + ')(?:ぇ+)?' + FE, 'g');
+  var ST_CHAU = new RegExp('([っれけでしせてねえ])ちゃ(う|った|って|い|お)?(?:ぅ+)?(?=[…‥。！？!?、」♡〜ー　\\sっッそ]|$)', 'g'), ST_JAU = new RegExp('んじゃ(う|った)(?:ぅ+)?' + FE, 'g');
+  /* 後ろに「くれ」「もらえる」「ほしい」が続けば、もう頼みの形なので直さない（「見ないで、くれると……」「して……くれ」を「見るな、くれると」「してくれたまえ、くれ」にしない） */
+  var ST_ASK_AFTER = /^[、…‥っッ♡\s　]*(?:くれ|くん|もら|ほし|欲し|おくれ|たも|いただ|頂)/;
+  var ST_NANO = /(^|[^こそあど]ん|[^ん])(な|ない|いい)の(?=([…‥。！？!?」♡〜ー　\sっッ]|$))/g;
+  /* light（喘ぎの表にない、山場の台詞）は、甘えた語尾（〜ちゃう・ちょうだい・〜だもん）だけ直す（お願い・言い切りの形は台詞のまま） */
+  function strongFit(q, t, grand, light) {
+    var k = strongKind(t, grand);
+    if (light) return sweetFit(q, k);
+    /* 〜ないで（「止めないでくれ」のような頼みの言い切りは、後ろが「く」なので当たらない） */
+    q = q.replace(ST_NAI, function (m, c, off, all) {
+      if (ST_ASK_AFTER.test(all.slice(off + m.length))) return m;
+      if (k === 'grand') return c + 'ないでくれたまえ';
+      var v = c === 'し' ? 'する' : c === 'こ' ? 'くる' : GODAN[c] ? (k === 'rough' && c === 'ら' ? 'ん' : GODAN[c]) : c + (k === 'rough' ? 'ん' : 'る');
+      return v + (k === 'noja' ? 'でない' : 'な');
+    });
+    /* 頼みの「〜して」「来て」（「勝手に、動いて」は頼みではないので残す） */
+    q = q.replace(ST_REQ, function (m, b, w, off, all) {
+      if (/(?:勝手に|かってに)、?$/.test(all.slice(0, off + b.length)) || ST_ASK_AFTER.test(all.slice(off + m.length))) return m;
+      /* 「どこ、触って……」「何、して……」は問いなので頼みにしない */
+      if (/(?:どこ|何|なに|なん|どう)[、…‥っ]*$/.test(all.slice(0, off + b.length))) return m;
+      var to = k === 'grand' ? w + 'くれたまえ' : k === 'noja' ? w + 'たもれ' : k === 'god' && w === 'して' ? 'せよ' : ST_REQ_W[w];
+      return b + to;
+    });
+    q = sweetFit(q, k);
+    /* 女性的な言い切りの「〜なの」「〜いいの」（「こんなの」は名詞なので残す。問いは「〜のか」） */
+    q = q.replace(ST_NANO, function (m, b, w, nx, off, all) {
+      var ask = /^[…‥っッ♡〜ー　\s]*[？?]/.test(all.slice(off + m.length));
+      return b + w + (ask ? 'のか' : k === 'noja' ? 'のじゃ' : k === 'grand' || k === 'god' ? 'のだ' : 'んだ');
+    });
+    return q;
+  }
+  function sweetFit(q, k) {
+    q = q.replace(/ちょうだい/g, k === 'grand' ? 'くれたまえ' : k === 'god' ? 'よこせ' : k === 'noja' ? 'おくれ' : 'くれ');
+    /* 〜ちゃう（荒い口調は 〜ちまう、そのほかは 〜てしまう） */
+    q = q.replace(ST_CHAU, function (m, c, e) {
+      e = e || '';
+      if (k === 'rough') return c + 'ちま' + e;
+      return (c === 'っ' ? 'って' : c === 'で' ? 'でて' : c + 'て') + 'しま' + e;
+    }).replace(ST_JAU, function (m, e) { return k === 'rough' ? 'んじま' + e : 'んでしま' + e; });
+    q = q.replace(new RegExp('んだもん' + FE, 'g'), 'んだ').replace(new RegExp('だもん' + FE, 'g'), 'だ');
+    return q;
+  }
+  M._strongFit = strongFit;
+  /* 無口（「……」「……ん」）：伸ばした甘え（すきぃ・とまってぇ・イっちゃうぅ）・ちょうだい・女性的な言い切り（いいわ・だめなの）を、ひと言の素の形に（2026-11-03） */
+  var QUIET_R = [[new RegExp('(?<=[ぁ-ゖ一-鿿ー])([いきしちにひみりぎじびぴ])ぃ+' + FE, 'g'), '$1'], [new RegExp('(?<=[ぁ-ゖ一-鿿ー])([うくすつぬふむるぐずぶぷ])ぅ+' + FE, 'g'), '$1'], [new RegExp('(?<=[ぁ-ゖ一-鿿ー])([おこそとのほもろよごぞどぼぽ])ぉ+' + FE, 'g'), '$1'],
+    [/ちょうだい/g, 'ほしい'], [new RegExp('(いい|だめ|ダメ|いや|イく|くる)わ' + FE, 'g'), '$1'], [new RegExp('(?<![こそあど]ん)(な|ない|いい)の' + '(?=[…‥。！？!?」♡〜ー　\\sっッ]|$)', 'g'), function (m, w) { return w === 'な' ? '' : w; }], [new RegExp('(?:ん)?だもん' + FE, 'g'), '']];
+  function quietFit(q) { return runR(unLong(q), QUIET_R); }
+  /* 伸ばした甘え（〜てぇ・〜よぉ）を戻す（はっきりした口調の言い切りに直す前に。「しろよぉ」のような崩れた命令は残す） */
+  function unLong(q) { return q.replace(new RegExp('([てで])([…‥]*)ぇ+' + FE, 'g'), '$1$2').replace(new RegExp('(^|[^ろれえけせてめな、])よぉ+' + FE, 'g'), '$1よ'); }
   /* 利用者の辞書の行（書いたまま出すので直さない） */
   var USER_SET = null, USER_OF = null, OWN_OF = null;
   M.isUser = function (s) {
@@ -377,13 +439,17 @@
     /* 男性の女性的な語尾を先に外す（外したあとの「じょうず、だね」も、のじゃ・関西弁の語尾に直るように） */
     /* 男性的な語尾が個性の口調（チャラい・ヤンキー・熱血 など）の男性の「〜わ」（来るわ・頼むわ）は男性の言い方なので残す（関西弁の扱いで「〜わ」を外さない） */
     if (gm && g === 'm' && V && V.unfem) q = V.unfem(q, { tone: masc && t !== 'noja' ? 'kansai' : t });
+    if (gm && g === 'm' && !light && !FIT_FEM[t]) q = q.replace(new RegExp('んだもん' + FE, 'g'), 'んだ').replace(new RegExp('だもん' + FE, 'g'), 'だ');
+    /* 敬語でない口調の人に、敬語の基盤（恥じらい・健気の「〜です」「くださ……」）の敬語を残さない（2026-11-03） */
+    if (!light && !FIT_POLITE[t] && t !== 'kansai' && t !== 'noja') q = kForm(q);
     if (dia && (t === 'noja' || t === 'kansai')) { q = kForm(q); q = runR(q, t === 'noja' ? FIT_NOJA_R : FIT_KANSAI_R); }
     if (firm) {
-      q = runR(q, FIT_FIRM_R);
-      if (!light) q = runR(q, FIT_CRY_R);
+      q = runR(light ? q : unLong(q), FIT_FIRM_R);
+      q = light ? strongFit(q, t, grand, true) : strongFit(runR(q, FIT_CRY_R), t, grand);
       /* 女性的な語尾（〜のよ・〜かしら）。のじゃ・古風な口調の「〜わ」（笑わせるわ）は残す（関西弁の扱いで「〜わ」を外さない） */
       if (V && V.unfem && t !== 'noja') q = V.unfem(q, { tone: grand ? 'kansai' : t });
     }
+    if (t === 'mukuchi' && !light) q = quietFit(q);
     if (soft) {
       q = daro(runR(q, FIT_SOFT_R.concat(FIT_MASC_R)));
       if (t !== 'otaku') q = q.replace(FIT_ZO[0], FIT_ZO[1]);
@@ -475,7 +541,7 @@
   /* 敬語の基盤をくだけた形（K）に。長いもの・特別なものから */
   var KFORM = [
     kr('そのようなお顔を、?なさらないで(?:ください)?', 'そんな顔、しないで'), kr('(?:お願い|おねがい)、?(?:いたします|します|です)', 'おねがい'),
-    kr('お、おやめ、?(?:ください|くださ)', 'や、やめて'), kr('おやめ、?(?:ください|くださ)', 'やめて'), kr('もっと、?ください', 'もっと、して'), kr('お([一-鿿々]{1,2})し、?ください', '$1して'), kr('([てで])、?ください(?:まし)?', '$1'),
+    kr('お、おやめ、?(?:ください|くださ)', 'や、やめて'), kr('おやめ、?(?:ください|くださ)', 'やめて'), kr('もっと、?ください', 'もっと、して'), kr('お([一-鿿々]{1,2})し、?ください', '$1して'), kr('([てで])、?ください(?:まし)?', '$1'), kr('もっと、?くださ', 'もっと、'), kr('([てで])[、…‥]*くださ', '$1'), kr('ちゃい、?ます', 'ちゃう'), kr('(ちゃ[…‥]*[っッ]?)、ます', '$1'), kr('ちゃ、?います', 'ちゃう'), kr('イ、きます', 'イ、く'), kr('イきま', 'イく'),
     kr('く、ください', 'ちょ、ちょうだい'), kr('ください', 'ちょうだい'), kr('申し訳、?ありません', 'ごめん'), kr('す、すみません', 'ご、ごめん'), kr('すみません', 'ごめん'),
     kr('失礼、?いたしました', 'ごめん'), kr('いけません', 'だめ'), kr('ちが、?います', 'ちが、う'), kr('当たって、?い?ます', '当たって、る'), kr('もちません', 'もたない'),
     kr('止まれません', '止まれない'), kr('とまりません', 'とまらない'), kr('足りません', '足りない'), kr('出ます', '出る'), kr('いき、?ます', 'いく'), kr('イきます', 'イく'),
@@ -500,6 +566,8 @@
     if (!md || md.src !== d) md = END_DICT[tone] = { src: d, base: d.base, ends: d.ends.filter(function (e) { return e[0].replace(/[？?]$/, '').length >= 2; }), words: [], rules: {}, effects: {} };
     if (!md.ends.length) return s;
     var cut = s.lastIndexOf('　'), head = cut >= 0 ? s.slice(0, cut + 1) : '', tail = s.slice(cut + 1);
+    /* 「まっしろ」「真っ白」の「しろ」を命令の語尾と取り違えない（紳士の「まっしたまえ」。2026-11-03） */
+    if (/(?:まっしろ|まっ白|真っ白|おもしろ|面白)[…‥っッ♡！？!?。、　\s〜ー]*$/.test(tail)) return s;
     try { return head + T.apply(tail, md, who); } catch (e) { return s; }
   }
   /* 一人称・二人称だけそろえる（基盤には書いていないが、書いたときのため。「私」「あなた」） */
