@@ -34,6 +34,12 @@ js/rel-at.js @pack:rel
 js/tie-new.js @pack:rel
 js/daily-kit.js
 js/rel-group.js @pack:rel
+# キスだけの触れ合いの場面（2026-11-03。恋人どうし・両片想い・友人・不仲・見られる版。文は HK.Kiss の型。設計は docs/reports/2026-11-03/kiss-design.md）
+js/kiss-events.js @pack:rel
+# キスの描写の型（2026-11-03。HK.Kiss。R18版は pack-lewd、全年齢版は pack-rel）
+js/kiss-text.js @pack:rel
+js/kiss-text2.js @pack:rel
+js/kiss.js @pack:rel
 js/rel-core-extra.js @pack:rel
 js/tie-stage.js @pack:rel
 js/tie-abuse.js @pack:rel
@@ -392,6 +398,7 @@ tone js/tone-brush10f.js
 tone js/tone-brush-sa.js
 tone js/tone-brush10h.js
 tone js/tone-brush-sx.js
+tone js/tone-brush-kiss.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/incidents-social.js @pack:rel

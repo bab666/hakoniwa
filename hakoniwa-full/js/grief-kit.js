@@ -651,7 +651,7 @@
   /* 全年齢版だけの箱庭（R18版にはない） */
   HK.atScen('br', function (s) { G.install(s, {
     items: L('{b}の上着|{b}が持っていた地図|{b}の水筒'),
-    spots: L('岩陰|廃屋の陰|茂みの奥|崖の上'),
+    spots: L('岩陰|廃屋の陰|茂みの陰|崖の上'),
     reckless: SURVIVE, reactMax: 2
   }); });
   HK.atScen('trial', function (s) { G.install(s, {
