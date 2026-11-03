@@ -87,6 +87,13 @@ function runAll(dir, opt) {
   const readSrc = f => { let s = fs.readFileSync(path.join(dir, f), 'utf8').replace(/\s+$/, ''); if (SAFE) s = BM.strip(s, f, null); return s; };
   const srcs = {};
   const chunks = exec.map(name => ({ name, hash: '', files: entries.filter(e => e.chunk === name && !SKIP_RUN[e.f]).map(e => { const src = readSrc(e.f); srcs[e.f] = src; return { n: e.n, f: e.f, src }; }) }));
+  /* 追加パック（makePack）：本体の全部のあとに、パックのかたまりを足して読む（f は 'pack:<id>/js/xx.js'、abs は元のファイル） */
+  (opt.extra || []).forEach(c => chunks.push({ name: c.name, hash: '', files: c.files.map(x => {
+    let src = fs.readFileSync(x.abs, 'utf8').replace(/\s+$/, '');
+    if (SAFE) src = BM.strip(src, x.f, null);
+    srcs[x.f] = src;
+    return { n: x.n, f: x.f, src };
+  }) }));
   /* tone の行（口調の表だけのファイル）は実行しないが、印のコメントを拾うために読む */
   entries.filter(e => e.chunk === 'tone').forEach(e => { srcs[e.f] = readSrc(e.f); });
   const born = new WeakMap();
@@ -428,9 +435,38 @@ function make(dir, opt) {
   const t0 = Date.now();
   const safeBuild = opt.safeBuild != null ? opt.safeBuild : isSafeBuild(dir);
   const V = runAll(dir, { safeBuild });
+  return assemble(dir, V, { safeBuild, t0 });
+}
+/* 追加パックの一覧（build-pack.js・catalog-check.js から）。本体のソース（mainDir）を全部読んだあとに、パックのファイルを足して読み、
+   パックの箱庭（id がパックの id で始まるもの）だけの一覧を作る。数え方・印・表示名の決まりは本体と同じ
+   p = { id, dir: パックのフォルダ, builds, chunks: [{ name, files: [{ n, f: 'js/xx.js' }] }] }（build-pack.js の並びと通し番号） */
+function makePack(mainDir, p, opt) {
+  opt = opt || {};
+  mainDir = path.resolve(mainDir);
+  const t0 = Date.now();
+  const safeBuild = opt.safeBuild != null ? opt.safeBuild : isSafeBuild(mainDir);
+  const pf = f => 'pack:' + p.id + '/' + f;
+  const extra = p.chunks.map(c => ({ name: 'pk-' + (p.slot || p.id) + '-' + c.name, files: c.files.map(x => ({ n: x.n, f: pf(x.f), abs: path.join(p.dir, x.f) })) }));
+  const V = runAll(mainDir, { safeBuild, extra });
+  const own = f => f.indexOf('pack:' + p.id + '/') === 0;
+  const absOf = f => path.join(p.dir, f.slice(('pack:' + p.id + '/').length));
+  /* R18 だけ：全年齢版を作らないパックのファイル（本体の「R18専用のファイル」と同じ扱い） */
+  const r18pack = (p.builds || ['full']).indexOf('zenrei') < 0;
+  const only = Object.keys(V.HK.SCENARIOS || {}).filter(id => id.indexOf(p.id + '-') === 0 && V.HK.SCENARIOS[id] && !V.HK.SCENARIOS[id].stub);
+  const hk = V.HK.SCEN_ORDER || [];
+  only.sort((a, b) => { const ia = hk.indexOf(a), ib = hk.indexOf(b); return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib) || (a < b ? -1 : 1); });
+  const r = assemble(mainDir, V, { safeBuild, t0, only, own,
+    rawOf: f => own(f) ? (fs.existsSync(absOf(f)) ? fs.readFileSync(absOf(f), 'utf8') : '') : null,
+    fullOnly: f => own(f) ? !safeBuild && r18pack : null });
+  r.data.pack = { id: p.id, slot: p.slot || p.id, name: p.name || p.id };
+  return r;
+}
+function assemble(dir, V, o) {
+  const safeBuild = o.safeBuild, t0 = o.t0 || Date.now();
   const HK = V.HK;
   const otherJs = path.join(dir, '..', safeBuild ? 'hakoniwa-full' : 'hakoniwa-zenrei', 'js');
-  const fullOnly = f => !safeBuild && fs.existsSync(otherJs) && !fs.existsSync(path.join(otherJs, path.basename(f)));
+  const fullOnly0 = f => !safeBuild && fs.existsSync(otherJs) && !fs.existsSync(path.join(otherJs, path.basename(f)));
+  const fullOnly = f => { const v = o.fullOnly ? o.fullOnly(f) : null; return v != null ? v : fullOnly0(f); };
   /* 関係の鍵（並びは HK.TIE_ORDER、その後ろは鍵の順） */
   const TIES = {};
   Object.keys(HK.TIES || {}).forEach(k => { TIES[k] = HK.TIES[k].label || k; });
@@ -443,11 +479,11 @@ function make(dir, opt) {
   const CATN = Object.assign({}, HK.CAT_NAME || {}, { incident: 'ハプニング' });
   const marks = parseMarks(V.srcs);
   const raw = {};   /* ファイル → 生のソース（r18 の範囲を見る） */
-  const rawOf = f => raw[f] != null ? raw[f] : (raw[f] = fs.existsSync(path.join(dir, f)) ? fs.readFileSync(path.join(dir, f), 'utf8') : '');
+  const rawOf = f => { if (raw[f] != null) return raw[f]; const v = o.rawOf ? o.rawOf(f) : null; return (raw[f] = v != null ? v : fs.existsSync(path.join(dir, f)) ? fs.readFileSync(path.join(dir, f), 'utf8') : ''); };
   const files = [], fileIx = f => { let i = files.indexOf(f); if (i < 0) { files.push(f); i = files.length - 1; } return i; };
   const evs = [], evKey = new Map(), labelBy = [];
   const S = HK.SCENARIOS || {};
-  const order = (HK.SCEN_ORDER || []).filter(id => S[id]).concat(Object.keys(S).filter(id => (HK.SCEN_ORDER || []).indexOf(id) < 0).sort());
+  const order = o.only ? o.only.slice() : (HK.SCEN_ORDER || []).filter(id => S[id]).concat(Object.keys(S).filter(id => (HK.SCEN_ORDER || []).indexOf(id) < 0).sort());
   const base = e => { let x = e; for (let i = 0; i < 6; i++) { const p = Object.getPrototypeOf(x); if (!p || p === Object.prototype || p.id !== x.id) break; x = p; } return x; };
   /* 出どころの当て直し：かたまりの読み終わり（HK.Load.onChunk の取り付け役）で足された出来事や、生まれたファイルに id が書かれていない出来事は、
      id の引用（'xx_yy'）か工場の鍵名（yy:）が書かれたファイルにする */
@@ -800,14 +836,110 @@ function build(dir, opt) {
   const noName = d.ev.filter(e => !hasName(e)).length;
   return { line: '出来事の一覧 ' + d.order.length + '箱庭・' + d.ev.length + '件（' + Math.round(Buffer.byteLength(js) / 1024) + 'KB・' + r.ms + 'ms' + (same ? '・変わらず' : '・作り直し') + (nd ? '・表示側との食い違い ' + nd + '件' : '') + '・表示名の無い出来事 ' + noName + '件）' + (noName ? '　※ label か @labels で表示名を付けてください（catalog-check.js で一覧が出ます）' : ''), errs: r.errs, data: d };
 }
+/* ---------- 追加パックの一覧（2026-11-03） ----------
+   ・packSpec(パックのフォルダ)：pack.json を読んで makePack に渡す形にする（通し番号は build-pack.js と同じ：1000000＋枠の番号×10000＋並び）
+   ・packCatalogJs(data, かたまりの名前)：パックの中身のかたまり pk-<枠>-catalog の本文（HK.EVENT_CATALOG_PACKS[パックの id] に一覧を置く）。
+     build-pack.js がパックの中身（暗号化される）に入れる。画面 event-catalog-ui.js は、パックの箱庭の「出来事の一覧」を押したときに HK.Load.ensure で読む
+   ・作り手向けの md：docs/reports/2026-11-03/pack-event-catalog.md（パックごと・ビルドごとの節。<!-- pack:<id>:<ビルド>:begin -->〜end）。見本のパック（sample）は試しのフォルダに書く */
+const PACK_SLOTS = ['set-a', 'set-b', 'set-c', 'set-d', 'set-e', 'set-f', 'set-g', 'set-h', 'set-i', 'set-j', 'set-k', 'set-l'];   /* build-pack.js の SLOTS と同じ */
+const PACK_MD = path.join(__dirname, '../../docs/reports/2026-11-03/pack-event-catalog.md');
+function packSpec(pdir) {
+  pdir = path.resolve(pdir);
+  const P = JSON.parse(fs.readFileSync(path.join(pdir, 'pack.json'), 'utf8')), slot = P.slot || P.id;
+  const base = 1000000 + Math.max(0, PACK_SLOTS.indexOf(slot)) * 10000;
+  let seq = 0;
+  return { id: P.id, slot, name: P.name || P.id, dir: pdir, builds: P.builds || ['full'], sample: !!P.sample,
+    chunks: (P.chunks || []).map(c => ({ name: c.name, files: (c.files || []).map(f => ({ n: base + (++seq), f })) })) };
+}
+function packCatalogJs(data, name) {
+  const j = v => JSON.stringify(v).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  const body = '(function () { var HK = window.HK; if (!HK) return; (HK.EVENT_CATALOG_PACKS = HK.EVENT_CATALOG_PACKS || {})[' + j(data.pack.id) + '] = ' + j(data) + '; })();\n';
+  const h = require('crypto').createHash('sha1').update(body).digest('hex').slice(0, 10);
+  return body + 'HK.Load.done(' + j(name).replace(/"/g, "'") + ", '" + h + "', 1);\n";
+}
+/* 出来事がパックのファイルで書かれたものか（本体の共通の出来事でないか） */
+const packOwn = (data, e) => /^pack:/.test(data.files[e.f] || '');
+function packMdBlock(data) {
+  const L = [], E = data.ev, T = {}; data.ties.forEach(([k, l]) => { T[k] = l; });
+  const full = data.build === 'full', sorter = fullSorter(data), pk = data.pack;
+  L.push('### ' + esc(pk.name) + '（' + pk.id + '）・' + (full ? 'R18版' : '全年齢版'));
+  L.push('');
+  L.push('| 箱庭 | 型 | 出来事 | うちパックで書いた出来事 | ' + (full ? '夜（R18） | うちパックで書いた夜（エッチの入口） | うちモブ | ' : '') + '表（数だけ） |');
+  L.push('|' + ' --- |'.repeat(full ? 8 : 5));
+  data.order.forEach(id => {
+    const s = data.scen[id], ev = s.ev.map(i => E[i]), own = ev.filter(e => packOwn(data, e));
+    L.push('| ' + esc(s.name) + '（' + id + '） | ' + (s.story ? '物語型' : 'エンジン型') + ' | ' + ev.length + ' | ' + own.length + ' | ' + (full ? ev.filter(e => e.x).length + ' | ' + own.filter(e => e.x).length + ' | ' + ev.filter(e => e.x && e.mo).length + ' | ' : '') + (s.tables.map(t => esc(t.n) + ' ' + t.c + (t.p ? '組' : '件')).join('、') || '-') + ' |');
+  });
+  L.push('');
+  data.order.forEach(id => {
+    const s = data.scen[id], ev = s.ev.map(i => E[i]);
+    const own = ev.filter(e => packOwn(data, e)).sort(sorter), com = ev.filter(e => !packOwn(data, e)).sort(sorter);
+    L.push('#### ' + esc(s.name) + '（' + id + '）の出来事の全件（' + ev.length + ' 件）');
+    L.push('');
+    if (full) {
+      const n = own.filter(e => e.x), nc = com.filter(e => e.x);
+      L.push('R18：エッチの入口（夜の出来事）' + (n.length + nc.length) + ' 件 ＝ パックで書いた場面 ' + n.length + ' 件' + (n.length ? '（' + n.map(e => esc(nmMd(e))).join('、') + '）' : '') + '・本体の共通の出来事 ' + nc.length + ' 件。R18 だけの出来事は全部で ' + ev.filter(e => e.r).length + ' 件。');
+      L.push('');
+    }
+    const cats = {};
+    ev.forEach(e => { const k = e.k || '-'; cats[k] = (cats[k] || 0) + 1; });
+    L.push('種類：' + (Object.keys(cats).sort((a, b) => cats[b] - cats[a] || (a < b ? -1 : 1)).map(k => (data.cats[k] || (k === '-' ? 'そのほか' : k)) + ' ' + cats[k]).join('・') || 'なし'));
+    if (s.tables.length) { L.push(''); L.push('表（数だけ）：' + s.tables.map(t => esc(t.n) + ' ' + t.c + (t.p ? '組（職業×職業）' : '件') + (t.note ? '（' + esc(t.note) + '）' : '')).join('、')); }
+    [['パックで書いた出来事', own], ['本体の共通の出来事（この箱庭でも起きるもの）', com]].forEach(([h, l]) => {
+      L.push('');
+      L.push('**' + h + '**（' + l.length + ' 件）' + (l.length ? '' : '：なし'));
+      if (!l.length) return;
+      L.push('');
+      L.push('| 分類 | 関係 | 出来事（id） | 条件 |');
+      L.push('| --- | --- | --- | --- |');
+      l.forEach(e => L.push(fullRow(data, e, T, full)));
+    });
+    L.push('');
+  });
+  return L.join('\n');
+}
+const PACK_MD_HEAD = '# 追加パックの出来事の一覧（パックごと・箱庭ごと・R18 の夜）\n\n' +
+  'このファイルは `hakoniwa-tools/build/build-pack.js`（パックを組み立てるたび）か `node hakoniwa-tools/build/event-catalog.js --pack=hakoniwa-packs/<パック>`（コード無しで一覧だけ）が書き直します。手で追記しません。' +
+  '数え方・印の付け方・表示名の決まりは本体と同じです（`docs/reports/2026-10-28/event-catalog.md` の冒頭）。古くなっていないか・表示名の無い出来事・印の無い新しい場面は `catalog-check.js` が見ます。\n\n' +
+  '- 「パックで書いた出来事」は、パックのファイル（`hakoniwa-packs/<パック>/js/*.js`）の出来事と印（`@event`・`@event-table`）。「本体の共通の出来事」は、パックの箱庭の出来事の山（`HK.buildPool`）に入る本体の出来事です。\n' +
+  '- 「エッチの入口」は夜（R18）の出来事の数（出来事の種類の数。性格による言い回しの違いは数えない）。パックの場面を関数で書いたときは、場面ごとに `/* @event scen=<箱庭の id> id=… cat=… tie=… tags=night label=… */` の印を付けると数えられます（R18 の印は R18 専用のファイルか r18 の印の中）。\n' +
+  '- 画面では、コードを入れて開けたパックの箱庭カードの「出来事の一覧」に同じ表が出ます（データはパックの中身に暗号化して入れてあり、押したときだけ読む）。\n';
+function packMdText(cur, data) {
+  const key = 'pack:' + data.pack.id + ':' + data.build, b = '<!-- ' + key + ':begin -->', e = '<!-- ' + key + ':end -->';
+  const blocks = {};
+  (cur || '').replace(/<!-- (pack:[^ ]+):begin -->[\s\S]*?<!-- \1:end -->/g, (m0, k) => { blocks[k] = m0; return m0; });
+  blocks[key] = b + '\n' + packMdBlock(data) + '\n' + e;
+  /* 並びはパックの id → full → zenrei */
+  const ks = Object.keys(blocks).sort((x, y) => { const [, ix, bx] = x.split(':'), [, iy, by] = y.split(':'); return ix < iy ? -1 : ix > iy ? 1 : (bx === 'full' ? 0 : 1) - (by === 'full' ? 0 : 1); });
+  return PACK_MD_HEAD + '\n' + ks.map(k => blocks[k]).join('\n\n') + '\n';
+}
+function writePackMd(data, mdPath) {
+  const p = mdPath || PACK_MD, cur = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
+  const md = packMdText(cur, data);
+  if (md === cur) return false;
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, md);
+  return true;
+}
 /* 表示名がある（日本語を含む。id のままの英字は無いのと同じ） */
 function hasName(e) { return !!e.n && JP.test(e.n); }
-module.exports = { make, build, toJs, toMd, mdText, hasName, classify, tieKeysIn, OUT_JS, OUT_MD };
+module.exports = { make, makePack, packSpec, packCatalogJs, packMdText, writePackMd, packOwn, PACK_MD, build, toJs, toMd, mdText, hasName, classify, tieKeysIn, OUT_JS, OUT_MD };
 
 if (require.main === module) {
   const args = process.argv.slice(2).filter(a => !/^--/.test(a)), flags = process.argv.slice(2).filter(a => /^--/.test(a));
   const dir = path.resolve(args[0] || 'hakoniwa-full');
-  if (flags.indexOf('--print') >= 0) {
+  const pk = (flags.find(f => f.indexOf('--pack=') === 0) || '').slice(7);
+  if (pk) {
+    /* 追加パックの一覧の md だけを書き直す（コード無しで回せる。パックの中身のかたまりは build-pack.js が作る） */
+    const sp = packSpec(pk);
+    sp.builds.forEach(b => {
+      const r = makePack(path.join(__dirname, '../..', 'hakoniwa-' + b), sp, { safeBuild: b === 'zenrei' }), d = r.data;
+      if (!sp.sample) writePackMd(d);
+      const own = d.ev.filter(e => packOwn(d, e));
+      console.log(sp.id + '（' + b + '）：' + d.order.map(id => id + ' ' + d.scen[id].ev.length + '件').join('・') + '・パックで書いた出来事 ' + own.length + '件（夜 ' + own.filter(e => e.x).length + '）・表示名の無い出来事 ' + d.ev.filter(e => !hasName(e)).length + '件' + (r.errs.length ? '・vm の例外 ' + r.errs.length + '件' : ''));
+      r.errs.slice(0, 5).forEach(e => console.warn('  ' + e));
+    });
+  } else if (flags.indexOf('--print') >= 0) {
     const r = make(dir), d = r.data;
     d.order.forEach(id => { const s = d.scen[id]; console.log(id.padEnd(10), String(s.ev.length).padStart(4), '関係', s.ev.filter(i => d.ev[i].t.length).length, '夜', s.ev.filter(i => d.ev[i].x).length); });
     console.log(r.ms + 'ms', r.errs.length ? '例外 ' + r.errs.length : '');
