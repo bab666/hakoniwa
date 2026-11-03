@@ -305,11 +305,18 @@
     if (anyPair(B, function (a, b) { return lv(a, b); })) return J('maybe', '恋人になった二人に、支配的な気質（CP・ドライさ・攻撃性が高い）の人がいれば');
     return J('no', '恋人・夫婦・執着になれる組がありません（恋愛対象が合いません）');
   }
+  /* おもらし・放尿（room-water-r18.js）：出られない部屋で、条件1か条件2に「水を飲み切る」を選んだ部屋だけ（条件の欄は箱庭の環境値 cond・cond2。2026-11-03 担当MV） */
+  function jPee(o, B) {
+    if (B.id !== 'whiteroom') return J('no', '出られない部屋の条件「水を飲み切る」だけの場面です');
+    var env = o.env || {};
+    if (env.cond !== 'water' && env.cond2 !== 'water') return J('no', '部屋の条件に「水を飲み切る」がありません（条件1か条件2で選ぶと起きます）');
+    return J('yes', '条件「水を飲み切る」の部屋で、我慢の限界を超えた人が漏らす（それをきっかけにしたエッチも）');
+  }
   HK.Content.judge = function (tag, o) {
     o = o || {};
     if (HK.SAFE_ON) return J('no', '');
     var B = base(o);
-    return tag === 'preg' ? jPreg(o, B) : tag === 'force' ? jForce(o, B) : tag === 'violence' ? jViolence(o, B) : tag === 'abuse' ? jAbuse(o, B) : J('yes', '');
+    return tag === 'preg' ? jPreg(o, B) : tag === 'force' ? jForce(o, B) : tag === 'violence' ? jViolence(o, B) : tag === 'abuse' ? jAbuse(o, B) : tag === 'pee' ? jPee(o, B) : J('yes', '');
   };
   /* 起きないときの理由だけ（起きうるなら ''） */
   HK.Content.why = function (tag, o) { var r = HK.Content.judge(tag, o); return r.s === 'no' ? r.t : ''; };
