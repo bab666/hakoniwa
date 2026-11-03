@@ -114,3 +114,31 @@ node hakoniwa-tools/build/pack-site.js hakoniwa-packs/set-b --out=<試しのフ�
 | shinkon-r18-trio.js（R18） | `LEAD`・`FADE`・`MID[oneTwo/twoOne/sandwich/ring]`・`PEAK`・`AFTER` | LEAD・FADE・AFTER は {a}{b}{c} | | MID は `{t}`＝攻め・`{m}`＝真ん中・`{u}`＝受け。直接の行為は `HK.Pos.trioPlan` の組だけ（本体の `HK.Trio3` が組み立てる） |
 
 - 足したら：`node hakoniwa-tools/tone-check/base-lint.js hakoniwa-packs/set-b`、tone-feel（`--scen=set-b-shinkon`。元○○の台詞は `--tie=rival`・`--tie=fear` などでも見る。恐怖の二人の、怖がられていた側の台詞は `--tie=fear` では話し手にならないので、話し手と相手を入れ替えた回でも見る。崩れは `shinkon-tone.js` に書き下ろし）、`node hakoniwa-tools/build/event-catalog.js --pack=hakoniwa-packs/set-b` と catalog-check。
+
+# デートの日々の文の書き方（担当向け。2026-11-03）
+
+設計は `docs/reports/2026-11-03/date-design.md`。行き先の文は `js/date-places-a.js`〜`e.js`（`HK.DatePlaces`）、場面の文は `js/date-text-a/b/c.js`（`HK.DateText`）、R18 は `js/date-r18-text.js`（`HK.DateR18Text`。ファイル全体を r18 の印で挟む）。
+
+## 行き先を足す・直す
+
+`add({ id, name, label, size, cost, kind, trip, far, inn, sea, flags, spot, ev, tr, food })` で一か所。項目の意味は `date-places-a.js` の頭。
+
+- `label` は出来事の一覧の表示名（8〜25 字。「遊園地でアトラクションをめぐる」の形）。行き先の表は `@event-table … rows=1` で一覧に出る。
+- `size`：L（大型。一日一か所）／M（中。午前と午後で組む）／V（人や予算で長さが変わる）。泊まりの旅行は `trip: true` と `inn`（宿・ホテル・船室 など）、遠出は `far`（plane・shinkansen・rocket）。
+- `sea`：行ける月（'7,8'）。季節の語（桜・花火・紅葉・雪・イルミネーション など）を書いた文は、その月だけに出る（date.js の SEA_RE）。季節のない行き先の文には季節の語を書かない。
+- `flags`：kanran（観覧車がある＝山場の観覧車・やらしい雰囲気）／dark（暗がり）／view（景色）／night（夜の区切りに行く所）。
+- 文の量：スポット 3 か所以上 × 2 本以上、出来事 4 種以上、トラブル 2 種以上、食事 2 種以上。1 本 2〜4 文。
+- `{a}`＝その場面を引っ張る人、`{b}`＝相手（どちらが計画した人でもよい）。文ごとに役が入れ替わるので、「{a}の部屋」のような持ち主を決める書き方はしない（おうちデートは「部屋」とだけ書く）。
+- 二人の関係を決めつけない（恋人・付き合っている・初対面・久しぶり などを書かない）。恋愛の語（手をつなぐ・キス・ときめく など＝date.js の DROM）は、恋愛にならない二人では外れる。「デート」の語は場面の文では使わず、使うなら `{date}`（恋愛にならない二人は「お出かけ」）。
+- 料理・家事の文（台所に立つ・弁当を作る など）は、料理をしない設定の人が主語だと使われない。トラブルの文は困りごとだけを書く（受け止め方と決着は共通の部品が付ける）。
+- 性的に読める語に注意（全年齢版の検査が止まる。例：カフェラテ→ラテ、竿→釣り竿）。
+
+## 場面の文
+
+- 表の役は各表の頭のコメントに書いた。関係ごとの表は `{ 関係の鍵, まとめ（love・pine・close・work・fam・awk・first）, all }`、態度ごとの表は態度 9 種。
+- 台詞は 3 本「くだけた常体｜硬い常体｜敬語」（一人称「私」・二人称「あなた」、敬語のベースに尊敬語・謙譲語を書かない）。他の住人・三人目の台詞は `「＠{g}＠…」`・`「＠{c}＠…」` と話し手を書く。お店の人などモブの言葉は台詞にせず地の文で書く。
+- 台詞の中に `{n}` などの数の印を入れない（口調の書き下ろしの鍵が合わなくなる）。
+- 一回の遊びで同じ文は二度出さない（使い切ったらその段は出ない）。回数の多い段（待ち合わせ・計画・道中・夜の分かれ道）は多めに書く。
+- 一緒に暮らしている二人には「家まで送る・{a}の家」の文、暮らしていない二人には「二人の家」の文が出ない（date.js の okText）。
+- R18：きっかけ（LEAD）は地の文 3 文以上・体の組を問わない書き方。短い場面（PLAY）・反応（BOTTOM・TOP）・専用の長い場面（LONG）は mf／ff／fm を書き分け、体の語は印、攻めを選んだ人を受けにしない。
+- 足したら：`node hakoniwa-tools/tone-check/base-lint.js hakoniwa-packs/set-b`、tone-feel（`--scen=set-b-date`。崩れは `date-tone.js`）、出来事を足したら date.js／date-r18.js の `@event` と出来事の一覧（`event-catalog.js --pack=hakoniwa-packs/set-b`・catalog-check）。
