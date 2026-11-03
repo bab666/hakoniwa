@@ -1,6 +1,6 @@
 /* 箱庭シミュレーター（R18版のみ）: 出られない部屋「水を飲む部屋」の作り込み（2026-11-03 担当MU）
    利用者の要望（2026-11-03）：飲んでいるときの描写を細分化・トイレを探す・漏らす出来事・本人と周りの反応・漏らした受けをきっかけに攻めが始めるエッチ・
-     最中の「また漏れちゃう」と潮吹き・温泉浣腸（わざと／照れながら）と受けの反応・高度設定のスイッチ
+     最中の「また漏れちゃう」と潮吹き・温泉浣腸（わざと／照れながら）と受けの反応・おもらしの展開のスイッチ
    ■ 飲むときの段（ITEM.water の effect／state を置き換える。尿意 c.flags.pee は 100ml を 1 として溜まる）
      0〜300ml：何もなし（飲み口の文だけ）／300〜600ml：少し気になる（部屋で最初の一回だけ「トイレ、ないんですか」と探す。見つかる＝仕切りの向こう／見つからない）／
      600〜900ml：そわそわ／900〜1200ml：下腹が張る・前かがみ／1200ml〜：限界。台詞は態度 9 種（3 本の台詞）
@@ -14,8 +14,8 @@
        場面は HK.RoomLewd.scene（長い場面は HK.ThickSex と HK.SexFlow の流れ）で書き、山場の段（HK.SexFlow.RE の判定）の位置に合わせて
        受けの「また漏れちゃう」（最中）・潮吹き（山場の直後。体で書き分け）・温泉浣腸（攻めが男性の体のときだけ。わざと／照れながら）・受けの反応・三人目の役・事後 を差し込む。
        きっかけの段は HK.SexLead（場面の部品の包みで拾われ、文はここの LEAD で書く。EVR にも登録）
-   ■ 高度設定「出られない部屋の水の部屋：おもらしの展開」（room-water-adv-r18.js。HK.Adv の 'waterleak'。空＝する・'off'＝しない）：しないなら water_leak・water_leak_sex を出さず、
-     限界の前に必ずトイレへ行く（段の細分化とトイレ探しはそのまま）
+   ■ 内容のスイッチ「おもらし・放尿」（content.js の 'pee'。既定は切。2026-11-03 担当MV：全体の口調・喘ぎの設定の節から移した）：切なら water_leak・water_leak_sex を出さず、
+     限界の前に必ずトイレへ行く（段の細分化とトイレ探しはそのまま）。欄の判定は content-events-r18.js の HK.Content.judge('pee')
    ■ 文：台詞は 3 本「くだけた常体｜硬い常体｜敬語」（一人称「私」・二人称「あなた」）。体の語は印。登場人物はすべて成人として扱う。全年齢モードでは何もしない */
 (function () {
   'use strict';
@@ -30,8 +30,8 @@
   function rec(o) { if (W.log) W.log.push(o); }
   function pick(ctx, arr) { return G.pickNew(ctx, arr); }
   function by(tab, c) { return tab[ps(c)] || tab.gentle; }
-  /* おもらしの展開（高度設定。空＝する） */
-  function leakOn() { var v = HK.Adv && HK.Adv.get ? HK.Adv.get('waterleak') : ''; return v !== 'off'; }
+  /* おもらしの展開：内容のスイッチ「おもらし・放尿」（content.js の 'pee'。既定は切） */
+  function leakOn(ctx) { return !!(HK.Content && HK.Content.ok(ctx, 'pee')); }
   W.leakOn = leakOn;
   function stageOf(x) { return x >= 12 ? 4 : x >= 9 ? 3 : x >= 6 ? 2 : x >= 3 ? 1 : 0; }
   W.stageOf = stageOf;
@@ -143,7 +143,7 @@
   }
   HK.addTo(EV, {
     id: 'water_need', label: '水を飲みすぎてトイレを我慢する', cat: 'solo', scope: 'solo', pri: true, tie: '-',
-    when: function (ctx, a) { var x = a.flags.pee || 0; return x >= 6 && free(a) && (!leakOn() || x < limOf(ctx, a)); },
+    when: function (ctx, a) { var x = a.flags.pee || 0; return x >= 6 && free(a) && (!leakOn(ctx) || x < limOf(ctx, a)); },
     /* 張るほど、ほかの出来事より先に体が気になる */
     w: function (ctx, a) { var x = a.flags.pee || 0; return 1.5 + (x - 6) * 1.2 + (x >= 9 ? 4 : 0); },
     run: function (ctx, a) {
@@ -152,11 +152,11 @@
       /* トイレが見つかっていない部屋：探すたびに見つかりやすくなる（限界が近いほど必死に探す） */
       if (toilet(ctx) !== 'found') {
         var k = ctx.flags.wTry = (ctx.flags.wTry || 0) + 1;
-        if (!toilet(ctx) || ctx.rng() < 0.12 + k * 0.08 + (x >= 9 ? 0.1 : 0) || (!leakOn() && x >= 9)) { ctx.flags.wToilet = 'found'; found = true; text += ctx.t(pick(ctx, PEE.find), a); rec({ k: 'find', who: a.name }); }
+        if (!toilet(ctx) || ctx.rng() < 0.12 + k * 0.08 + (x >= 9 ? 0.1 : 0) || (!leakOn(ctx) && x >= 9)) { ctx.flags.wToilet = 'found'; found = true; text += ctx.t(pick(ctx, PEE.find), a); rec({ k: 'find', who: a.name }); }
       }
       var can = toilet(ctx) === 'found';
-      /* おもらしの展開：しない なら、限界の手前（900ml）で必ず行く */
-      var go = can && ((!leakOn() && x >= 9) || found || ctx.rng() < goP(ctx, a, x));
+      /* 内容のスイッチ「おもらし・放尿」が切なら、限界の手前（900ml）で必ず行く */
+      var go = can && ((!leakOn(ctx) && x >= 9) || found || ctx.rng() < goP(ctx, a, x));
       text += ctx.t(pick(ctx, go ? PEE.go : can ? PEE.hold : PEE.holdH), a);
       if (b && ctx.rng() < 0.6) { text += ctx.t(pick(ctx, go ? PEE.goSeen : PEE.holdSeen), a, b); ctx.mod(a, b, go ? { trust: 2 } : { ten: 2, att: 1 }); }
       if (go) { a.flags.pee = 0.5; a.flags.wSt = 0; ctx.stress(a, -6); } else ctx.stress(a, 8);
@@ -248,8 +248,8 @@
     return Math.max(0.05, Math.min(0.9, p));
   }
   HK.addTo(EV, {
-    id: 'water_leak', label: '我慢の限界を超えて漏らしてしまう', cat: 'solo', scope: 'solo', pri: true, tie: '-',
-    when: function (ctx, a) { return leakOn() && free(a) && (a.flags.pee || 0) >= limOf(ctx, a); },
+    id: 'water_leak', label: '我慢の限界を超えて漏らしてしまう', cat: 'solo', scope: 'solo', pri: true, tie: '-', tags: ['pee'],
+    when: function (ctx, a) { return leakOn(ctx) && free(a) && (a.flags.pee || 0) >= limOf(ctx, a); },
     w: function (ctx, a) { return 12 + ((a.flags.pee || 0) - limOf(ctx, a)) * 3; },
     run: function (ctx, a) {
       var x = a.flags.pee || 0, lim = limOf(ctx, a), over = x - lim, found = toilet(ctx) === 'found';
@@ -521,11 +521,11 @@
   }
 
   HK.addTo(EV, {
-    id: 'water_leak_sex', label: '漏らした受けに攻めが興奮して始める', tie: '-', tags: ['night'],
+    id: 'water_leak_sex', label: '漏らした受けに攻めが興奮して始める', tie: '-', tags: ['pee', 'night'],
     cat: 'romance', sex: true, scope: 'pair', pri: true, r18: true,
     when: function (ctx, a, b) {
       var lk = b && b.flags.wLeak;
-      if (!lk || lk.done || !leakOn() || (ctx.stepIndex || 0) - lk.at > 3 || lk.tops.indexOf(a.i) < 0) return false;
+      if (!lk || lk.done || !leakOn(ctx) || (ctx.stepIndex || 0) - lk.at > 3 || lk.tops.indexOf(a.i) < 0) return false;
       if (!topOk(ctx, a, b) || !castOk(ctx, a, b)) return false;
       return ctx.romanceOk([a, b], { sex: true });
     },

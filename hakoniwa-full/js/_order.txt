@@ -437,7 +437,7 @@ js/solo-rel-bad.js
 js/safe.js
 js/safe-room.js @scen:whiteroom
 js/room-games-r18.js @scen:whiteroom
-# 水を飲む部屋の作り込み（2026-11-03 担当MU）：飲むときの段・トイレ探し・我慢・漏らす・それをきっかけのエッチ。高度設定の節は room-water-adv-r18.js（pack-lewd）
+# 水を飲む部屋の作り込み（2026-11-03 担当MU）：飲むときの段・トイレ探し・我慢・漏らす・それをきっかけのエッチ。おもらしの展開は内容のスイッチ「おもらし・放尿」（content.js の pee）
 js/room-water-r18.js @scen:whiteroom
 js/trap-open-room.js @scen:whiteroom
 js/share-card.js
@@ -491,7 +491,6 @@ js/lewd-mark.js
 js/ero-scene.js
 js/ero-flavor-lines-r18.js @pack:lewd
 js/ero-flavor-r18.js @pack:lewd
-js/room-water-adv-r18.js @pack:lewd
 # 長いエッチの場面の流れを段階で管理する（2026-11-03。場面の状態：段階・体位・性感・使った台詞と動き・応答待ち。いちばん外側の包み。設計は docs/reports/2026-11-03/sex-flow-design.md）
 js/sex-flow-text-r18.js @pack:lewd
 js/sex-flow-r18.js @pack:lewd

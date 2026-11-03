@@ -18,7 +18,7 @@
      ・条件：when の文字列の HK.Content.ok／on(…,'force')・展開の重さ（'dark'）・ctx.env.xxx（環境値。しきい値も）・okSex（受け攻め）・性欲・関係・モブ
      ・内容の軸：合意のない展開・妊娠・暴力・歪んだ関係（Content の印・tags）、死ネタ（HK.Dark の死ネタの種類・ctx.kill・tags の death）、残酷（HK.Dark の harm・cage・assault・暴力・tags の cruel）
    印（新しい出来事を足すときの決まり。docs/reports/2026-10-28/event-catalog.md の冒頭にも書く）
-     ・出来事のオブジェクト：tie: 'master'（関係が条件なら）、tags: ['night','mob','force','preg','violence','abuse','death','cruel']（拾えないとき）、label: '表示名'
+     ・出来事のオブジェクト：tie: 'master'（関係が条件なら）、tags: ['night','mob','force','preg','violence','abuse','pee','death','cruel']（拾えないとき）、label: '表示名'
        表示名は label → ファイルの /* @labels（1 行に id=表示名。* は何にでも当たる）*\/ → run の最初の地の文（25 字まで。言い回しの候補 | から 1 行に収まるものを選び、文の切れ目で切る）
        → run が表をそのまま引くとき（ctx.pick(BUDDY)）はその表の最初の地の文。画面には id を出さない（md には残す）
      ・コードで書いた場面（物語型など）：その場面の近くに 1 行のコメント
@@ -340,11 +340,11 @@ function resolvePath(HK, p) {
 /* ---------- 分類 ---------- */
 const DEATH_K = { kill: 1, shinju: 1, madness: 1, raid: 1, wipe: 1, night: 1, grudge: 1 };
 const CRUEL_K = { harm: 1, cage: 1, assault: 1 };
-const AX_LABEL = { force: '合意のない展開', preg: '妊娠', violence: '暴力をともなう性描写', abuse: '歪んだ関係（DV など）', death: '死ネタ', cruel: '残酷な展開' };
-const R18_AX = { force: 1, preg: 1, violence: 1, abuse: 1 };
+const AX_LABEL = { force: '合意のない展開', preg: '妊娠', violence: '暴力をともなう性描写', abuse: '歪んだ関係（DV など）', pee: 'おもらし・放尿', death: '死ネタ', cruel: '残酷な展開' };
+const R18_AX = { force: 1, preg: 1, violence: 1, abuse: 1, pee: 1 };
 const DK_LABEL = { kill: '死', shinju: '心中', madness: '発狂', raid: '襲撃', wipe: '全滅', night: '夜の襲撃', grudge: '恨みの殺し', harm: '危害', cage: '監禁', assault: '襲われる', fall: '堕ち', breakup: '別れ', cheat: '浮気', heartbreak: '失恋', spite: '恨み' };
 const GLOBAL_ENV_SKIP = { heavy: 1, death: 1, ct: 1, tieEv: 1, romance: 1, strife: 1, chaos: 1, incident: 1, mobYou: 1, poly: 1 };
-const TAGS_OK = { night: 1, mob: 1, force: 1, preg: 1, violence: 1, abuse: 1, death: 1, cruel: 1 };
+const TAGS_OK = { night: 1, mob: 1, force: 1, preg: 1, violence: 1, abuse: 1, pee: 1, death: 1, cruel: 1 };
 function listOf(v) { return v == null || v === '' ? [] : Array.isArray(v) ? v.map(String) : String(v).split(/[,、\s]+/).filter(Boolean); }
 function envLabel(scen, HK, id) {
   const f = x => Array.isArray(x) ? x.find(e => e && e.id === id) : null;
@@ -386,14 +386,14 @@ function classify(o, ctx) {
   /* 内容の軸 */
   const ax = out.ax;
   const cAll = new Set();
-  all.replace(/\bContent\.(?:ok|on)\s*\([^()]*?,\s*'(force|preg|violence|abuse)'/g, (m0, t) => { cAll.add(t); return m0; });
-  all.replace(/\bon\s*\(\s*(?:ctx|S|env|x)\s*,\s*'(force|preg|violence|abuse)'\s*\)/g, (m0, t) => { cAll.add(t); return m0; });
+  all.replace(/\bContent\.(?:ok|on)\s*\([^()]*?,\s*'(force|preg|violence|abuse|pee)'/g, (m0, t) => { cAll.add(t); return m0; });
+  all.replace(/\bon\s*\(\s*(?:ctx|S|env|x)\s*,\s*'(force|preg|violence|abuse|pee)'\s*\)/g, (m0, t) => { cAll.add(t); return m0; });
   if (o.force) cAll.add('force');
   /* R18 だけ：印・R18専用のファイル・r18 の印の中・全年齢モードで外す条件・内容のスイッチ（全年齢では常に切）を見る出来事 */
-  out.r18 = !safeBuild && !!(o.r18 || o.sex || o.lewd || o.r18file || o.inR18 || /HK\.SAFE_ON/.test(when) || tags.has('night') || ['force', 'preg', 'violence', 'abuse'].some(t => tags.has(t)) || cAll.size);
+  out.r18 = !safeBuild && !!(o.r18 || o.sex || o.lewd || o.r18file || o.inR18 || /HK\.SAFE_ON/.test(when) || tags.has('night') || ['force', 'preg', 'violence', 'abuse', 'pee'].some(t => tags.has(t)) || cAll.size);
   out.night = !safeBuild && out.r18 && (sexy || (out.mob && (cAll.has('force') || tags.has('force'))));
   cAll.forEach(t => { ax[t] = 1; });
-  ['force', 'preg', 'violence', 'abuse', 'death', 'cruel'].forEach(t => { if (tags.has(t)) ax[t] = 1; });
+  ['force', 'preg', 'violence', 'abuse', 'pee', 'death', 'cruel'].forEach(t => { if (tags.has(t)) ax[t] = 1; });
   const dks = new Set();
   all.replace(/\bDark\.(?:f|live|skip|on|pick|endings|tag)\s*\([^()]*?'([a-z]+)'\s*\)/g, (m0, k) => { if (DK_LABEL[k]) dks.add(k); return m0; });
   if (typeof o.dk === 'string' && DK_LABEL[o.dk]) dks.add(o.dk);
@@ -652,13 +652,14 @@ function judgeTables(src, csrc) {
     if (tag === 'preg') { const st = PS[id]; if (st === 'any') return { s: 'yes', t: 'いつも（疑似妊娠）' }; if (NO[id] || (!st && solo)) return { s: 'no', t: '妊娠の場面なし' }; return { s: 'cond', t: '重いのとき' }; }
     if (tag === 'force') { if (CORE[id]) return { s: 'yes', t: '題材（いつも入）' }; if (id === 'saimin') return { s: 'yes', t: '同意のない催眠' }; if (MOBF[id]) return { s: 'yes', t: MOBF[id] + 'に襲われる' }; if (id === 'jinro') return { s: 'cond', t: '人狼が勝ったとき' }; if (!ENG[id]) return { s: 'no', t: '場面なし' }; return { s: HATE[id] || OBS[id] ? 'cond' : 'cond', t: '関係（敵対・執着・主従・歪んだ関係）しだい' }; }
     if (tag === 'violence') { if (id === 'yakata') return { s: 'cond', t: '快楽殺人の動機' }; if (id === 'ship') return { s: 'cond', t: '生命体の取引の実験' }; if (!ENG[id] || id === 'classroom') return { s: 'no', t: '場面なし' }; return { s: 'cond', t: '重いのとき' }; }
+    if (tag === 'pee') return id === 'whiteroom' ? { s: 'cond', t: '条件「水を飲み切る」の部屋' } : { s: 'no', t: '場面なし' };
     if (tag === 'abuse') { if (id === 'saimin') return { s: 'cond', t: '重いのとき' }; if (!ENG[id]) return { s: 'no', t: 'スイッチで足す場面なし（関係としては出る）' }; return { s: 'cond', t: '関係「歪んだ関係」か、重いとき' }; }
     return { s: 'yes', t: '' };
   };
 }
 
 /* ---------- 書き出し ---------- */
-const AX_ORDER = ['force', 'preg', 'violence', 'abuse', 'death', 'cruel'];
+const AX_ORDER = ['force', 'preg', 'violence', 'abuse', 'pee', 'death', 'cruel'];
 function toJs(data) {
   /* 鍵の順を固定した JSON（出来事は1行に1つ） */
   const j = v => JSON.stringify(v).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
@@ -794,7 +795,7 @@ const MD_HEAD = '# 出来事の一覧（箱庭ごと・関係ごと・R18 の夜
   '5. **一覧のファイルを同じコミットに含める**：`hakoniwa-full/js/event-catalog.js`・`hakoniwa-zenrei/js/event-catalog.js`・両ビルドの `js/c/`（pack-catalog と目録の index.html）・このファイルを、出来事を足したのと同じコミットに入れます。\n\n' +
   '### 印の付け方\n\n' +
   '- 関係が条件の出来事は、`when` に `HK.Ties.has(ctx, a, b, \'master\')` のように関係の鍵をそのまま書けば拾われます。補助の関数（`is(k)`・`o.roles(…)` など）で隠れるときは、出来事に `tie: \'master\'`（複数なら `\'lover,fwb\'` か配列。関係を問わないと明示するなら `\'-\'`）を付けます。\n' +
-  '- 夜・モブ・内容のスイッチ・死ネタ・残酷は、`sex: true`／`r18: true`・`HK.Content.ok(ctx, \'force\')`・`HK.Dark.f(ctx, \'kill\')`・`ctx.kill(…)` から拾います。拾えない書き方なら `tags: [\'night\', \'mob\', \'force\', \'preg\', \'violence\', \'abuse\', \'death\', \'cruel\']` から当てはまるものを付けます（文や動きは変えない）。\n' +
+  '- 夜・モブ・内容のスイッチ・死ネタ・残酷は、`sex: true`／`r18: true`・`HK.Content.ok(ctx, \'force\')`・`HK.Dark.f(ctx, \'kill\')`・`ctx.kill(…)` から拾います。拾えない書き方なら `tags: [\'night\', \'mob\', \'force\', \'preg\', \'violence\', \'abuse\', \'pee\', \'death\', \'cruel\']` から当てはまるものを付けます（文や動きは変えない）。\n' +
   '- 表示名（画面の「主な出来事」と内訳）は、出来事の `label`、なければファイルの `/* @labels … */` の印（1 行に「id=表示名」。id の `*` は何にでも当たる）、なければ run の最初の地の文（文の切れ目で 25 字以内に切る）です。利用者向けなので、id・英字・台詞「…」を入れず、内容の分かる 8〜25 字の日本語にします。新しい出来事には必ず `label:` か `@labels` で付けます（本文から自動で拾った表示名のままの新しい出来事は、catalog-check が知らせます）。\n' +
   '- 物語型の箱庭（場面を関数で書くもの）は、場面の近くに 1 行のコメントを書くと数えられます：`/* @event scen=jashin id=jn_god_night cat=夜 tie=- tags=night,mob,force label=神に捧げられる夜 */`。表（配列・オブジェクト）は `/* @event-table scen=jashin path=JASHIN.DUO_EV label=二人の場面 */`（`pair=1` は職業×職業の表として数だけ、`rows=1` は行ごとに一覧へ）。\n' +
   '- R18 の場面の印は、R18専用のファイルか `/* r18:begin */`〜`/* r18:end */` の中に書きます（全年齢版のビルドでは読まれません）。\n\n' +
