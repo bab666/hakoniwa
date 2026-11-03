@@ -2,7 +2,7 @@
    使い方:
      node hakoniwa-tools/tone-check/audit-all.js                       # 既定の一式（R18版・全年齢モード・全年齢版。2 本並べて約 4 分）
      node hakoniwa-tools/tone-check/audit-all.js --modes=r18           # モードを絞る（r18,safe,zen）
-     node hakoniwa-tools/tone-check/audit-all.js --extra=sexgate,feud,group,state-hot,name,relcons  # 追加の配役パスも回す（--extra=all で全部）
+     node hakoniwa-tools/tone-check/audit-all.js --extra=sexgate,feud,group,state-hot,name,relcons,sexflow  # 追加の配役パスも回す（--extra=all で全部。sexflow＝長い場面の流れ）
      node hakoniwa-tools/tone-check/audit-all.js --only-extra --extra=group             # 追加の配役パスだけ
      （既定の一式と --extra=relcons には、見本の話題を入れた回 topics-state・topics-seg・topics-relcons も入る。audit/topics-sample.js）
      （既定の一式には、名前の呼びかけの点検 call（call-audit.js。台詞に占める呼びかけの割合は参考、違和感の型は件数で 0 が合格）も入る。2026-11-01）
@@ -25,12 +25,12 @@ const misc = require('./audit/misc.js');
 const TOOLS = {
   orient: require('./orient-audit.js'), pos: require('./pos-audit.js'), state: require('./state-audit.js'), loveflag: require('./love-flag-audit.js'),
   seg: require('./seg-audit.js'), qa: require('./qa-audit.js'), sexgate: require('./sex-gate-audit.js'), feud: require('./feud-audit.js'), group: require('./group-audit.js'),
-  name: require('./name-audit.js'), relcons: require('./relcons-audit.js'), call: require('./call-audit.js'),
+  name: require('./name-audit.js'), relcons: require('./relcons-audit.js'), call: require('./call-audit.js'), sexflow: require('./sex-flow-audit.js'),
   misc
 };
 const MODS = Object.keys(TOOLS).map(k => TOOLS[k]);
 /* 判定の名前（まとめの見出し） */
-const JNAME = { orient: '恋愛対象', pos: '受け攻め・体の語', state: '状態', loveflag: '恋愛：なし', seg: '台詞の区分', qa: '問いと返事', sexgate: '性的な出来事の門', feud: '不仲の組', group: '複数人の恋愛', name: '名前の言い換え', relcons: '展開の不整合', call: '名前の呼びかけ', misc: '文の崩れ' };
+const JNAME = { orient: '恋愛対象', pos: '受け攻め・体の語', state: '状態', loveflag: '恋愛：なし', seg: '台詞の区分', qa: '問いと返事', sexgate: '性的な出来事の門', feud: '不仲の組', group: '複数人の恋愛', name: '名前の言い換え', relcons: '展開の不整合', call: '名前の呼びかけ', sexflow: '長い場面の流れ', misc: '文の崩れ' };
 
 /* ---------- パス（配役の決め方）：今までの道具の既定の回数と同じ。est は 1 回分の目安の秒数（ページの割り振りに使う） ---------- */
 const PASSES = {
@@ -58,7 +58,9 @@ const PASSES = {
      話題があると回の中身が変わるので、元のパスとは別に回す（元のパスの件数は変わらない）。topics-relcons は --extra=relcons のときにいっしょに回す */
   'topics-state': { tool: 'state', id: 'state', opt: { N: 6, topics: true }, lewd: 'direct', est: 17, out: m => 'topics-state-' + m },
   'topics-seg': { tool: 'seg', id: 'seg', opt: { N: 4, topics: true }, lewd: '', est: 5, out: m => 'topics-seg-' + m },
-  'topics-relcons': { tool: 'relcons', id: 'relcons', opt: { N: 6, topics: true }, lewd: '', est: 14, extra: true, out: m => 'topics-relcons-' + m }
+  'topics-relcons': { tool: 'relcons', id: 'relcons', opt: { N: 6, topics: true }, lewd: '', est: 14, extra: true, out: m => 'topics-relcons-' + m },
+  /* 長いエッチの場面の流れ（2026-11-03。sex-flow-audit.js）：段階の逆戻り・体位の矛盾・二度出し・応答待ち・閾値前の山場・導入の台詞・似た役割の重ね */
+  sexflow: { tool: 'sexflow', id: 'sexflow', opt: { N: 24 }, lewd: 'direct', est: 8, modes: ['r18'], extra: true, out: () => 'sexflow-r18' }
 };
 const DEFAULT = ['orient', 'pos', 'pos-hot', 'pos-ffhot', 'state', 'loveflag', 'seg', 'qa', 'noname', 'call', 'topics-state', 'topics-seg'];
 /* 判定：cross＝ほかのパスの回にも当てる。modes＝当てるモード */
@@ -75,7 +77,8 @@ const JUDGES = {
   group: { cross: false, opt: () => ({}) },
   name: { cross: false, opt: () => ({}) },
   relcons: { cross: false, opt: () => ({}) },
-  call: { cross: false, opt: () => ({}) }
+  call: { cross: false, opt: () => ({}) },
+  sexflow: { cross: false, modes: ['r18'], opt: () => ({ raw: !!process.env.SEXFLOW_RAW }) }
 };
 const MODE = { r18: { name: 'R18版', build: 'full', mode: 'r18' }, safe: { name: '全年齢モード', build: 'full', mode: 'safe' }, zen: { name: '全年齢版', build: 'zen', mode: '' } };
 

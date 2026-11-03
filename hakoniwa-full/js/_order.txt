@@ -489,6 +489,9 @@ js/lewd-mark.js
 js/ero-scene.js
 js/ero-flavor-lines-r18.js @pack:lewd
 js/ero-flavor-r18.js @pack:lewd
+# 長いエッチの場面の流れを段階で管理する（2026-11-03。場面の状態：段階・体位・性感・使った台詞と動き・応答待ち。いちばん外側の包み。設計は docs/reports/2026-11-03/sex-flow-design.md）
+js/sex-flow-text-r18.js @pack:lewd
+js/sex-flow-r18.js @pack:lewd
 js/futari-r18.js @scen:futari
 js/reset.js
 js/voice-seg.js

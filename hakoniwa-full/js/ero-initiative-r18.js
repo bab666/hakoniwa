@@ -82,6 +82,14 @@
   }
   I.rngFor = function (T, U, text) { var t = String(text || ''); return rngOf(hashOf((T && T.name) + '\u0001' + (U && U.name) + '\u0001' + t.length + '\u0001' + t.slice(0, 80) + t.slice(-80))); };
   function pickR(r, arr) { return arr && arr.length ? arr[r.int(arr.length)] : ''; }
+  /* 導入の台詞・応じ方は、一回の遊び（シミュレーション）の中で同じものを続けて出さない（使ったものを HK.SexFlow.memo に覚え、全部使ったら戻す。2026-11-03） */
+  function pickU(r, arr) {
+    var M = HK.SexFlow && HK.SexFlow.memo;
+    if (!M || !arr || arr.length < 2) return pickR(r, arr);
+    var u = M._ini || (M._ini = {}), f = arr.filter(function (x) { return !u[x]; });
+    if (!f.length) { arr.forEach(function (x) { delete u[x]; }); f = arr.filter(function (x) { return x !== u._last; }); if (!f.length) f = arr; }
+    var v = pickR(r, f); u[v] = 1; u._last = v; return v;
+  }
   function tagOf(s) { var m = /^(ride|lap|back|face|side|H)>/.exec(s); return m ? m[1] : ''; }
   function untag(s) { return String(s).replace(/^(?:ride|lap|back|face|side|H)>/, ''); }
 
@@ -179,7 +187,7 @@
   var NOM = /\{b\}の\{男性器\}|出したら|出しちゃ|イっちゃだめ|イかないで/;
   function okBody(arr, pl) { if (pl.mode !== 'fm' || P.hasM(pl.b)) return arr; return arr.filter(function (s) { return !NOM.test(s) && !/\{b\}の\{男性器\}/.test(s); }); }
   /* 受けが主導を取る台詞（主導だけが移る場面では、受けが下にいることもあるので「私が上」「乗る」の台詞を使わない） */
-  function sayUe(T, U, ch) { var l = T.SAY.ue[persona(U)] || T.SAY.ue.gentle; if (ch === 'shift') { var f = l.filter(function (x) { return !/上|乗る/.test(x); }); if (f.length) l = f; } return l; }
+  function sayUe(T, U, ch) { var l = T.SAY.ue[persona(U)] || T.SAY.ue.gentle; if (ch === 'shift') { var f = l.filter(function (x) { return !/私が上|上から|上に|乗る|乗り|見下ろ/.test(x); }); if (f.length) l = f; } return l; }
   function parts(pl) {
     var T = X(), r = pl.r, out = { lead: '', mid: '', end: '', after: '' }, e = pl.ero, m = pl.mode, U = pl.b;
     /* 受けの誘い方・襲い方＋攻めの応じ方 */
@@ -187,12 +195,12 @@
       var lt;
       if (pl.bind) lt = pickR(r, T.BIND);
       else if (T.LSTY[pl.lsty]) lt = pickR(r, T.LSTY[pl.lsty]);
-      else if (T.ATT_LEAD[pl.lsty]) lt = pickR(r, T.ATT_LEAD[pl.lsty]);
-      else lt = pickR(r, T.LSTY0[pl.lead] || T.LSTY0.sasoi);
+      else if (T.ATT_LEAD[pl.lsty]) lt = pickU(r, T.ATT_LEAD[pl.lsty]);
+      else lt = pickU(r, T.LSTY0[pl.lead] || T.LSTY0.sasoi);
       /* 受けが「相手に合わせる」で、攻めがマゾ：付き合って襲う側に回る */
       if (pl.accU && pl.kind === 'maso') lt = pickR(r, T.ACCOM.leadPre) + lt;
       var rs = '';
-      if (pl.tresp) rs = pl.tresp !== 'att' && T.TRESP[pl.tresp] ? pickR(r, T.TRESP[pl.tresp]) : pickR(r, T.ATT_RESP[pl.att] || T.ATT_RESP.gentle);
+      if (pl.tresp) rs = pl.tresp !== 'att' && T.TRESP[pl.tresp] ? pickU(r, T.TRESP[pl.tresp]) : pickU(r, T.ATT_RESP[pl.att] || T.ATT_RESP.gentle);
       out.lead = lt + (rs ? '\n\n' + rs : '');
     }
     var mid = [];
@@ -218,7 +226,7 @@
       if (!cl.length) cl = poolH(okBody((pl.change === 'ride_b' ? T.RIDE_B : T.SHIFT)[m], pl), pl.H);
       if (cl.length) {
         var ct = untag(pickR(r, cl));
-        ct = ct.replace('{why}', pickR(r, T.WHY[pl.why] || T.WHY.lead)).replace('{say}', e ? '' : '{b}' + pickR(r, sayUe(T, U, pl.change)));
+        ct = ct.replace('{why}', pickR(r, T.WHY[pl.why] || T.WHY.lead)).replace('{say}', e ? '' : '{b}' + pickU(r, sayUe(T, U, pl.change)));
         if (pl.change === 'ride_b') ct = ct.replace(/\{b\}「\{mb\}」$/, '{b}「{mb}」' + pickR(r, T.RIDE_END[m]));
         pl.pose = pl.change === 'ride_b' ? (m === 'fm' ? 'face' : 'ride') : pl.pose;
         mid.push(ct);
@@ -233,7 +241,7 @@
     /* 役割の入れ替え（果てたあとの二度目） */
     if (pl.change === 'swap') {
       var sl = (e ? T.SWAP_E : T.SWAP)[m] || T.SWAP[m];
-      out.end = untag(pickR(r, sl)).replace('{why}', pickR(r, T.WHY[pl.why] || T.WHY.lead)).replace('{say}', e ? '' : '{b}' + pickR(r, T.SAY.swap[persona(U)] || T.SAY.swap.gentle));
+      out.end = untag(pickR(r, sl)).replace('{why}', pickR(r, T.WHY[pl.why] || T.WHY.lead)).replace('{say}', e ? '' : '{b}' + pickU(r, T.SAY.swap[persona(U)] || T.SAY.swap.gentle));
     }
     /* 喘ぎ */
     var fill = function (s) {
