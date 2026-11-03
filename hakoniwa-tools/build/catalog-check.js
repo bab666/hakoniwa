@@ -11,6 +11,9 @@
             場面の書き方：夜の場面の記録 kind: 'climax'・出来事や場面の記録の sex: true・ログの見出し tag: '…' の新しい語（生成器が夜・場面として拾う形）
             印：@event・@event-table・@labels の行・日本語の label:・@event-ok。そのファイルから新しい出来事が一覧に入っていれば ① で見るので数えない
             既にある出来事の言い回し・分岐を足しただけなら、そのファイルに 1 行 /* @event-ok <何を足したか> *\/ を書く（数えなくなる）
+     (e) 追加パック（hakoniwa-packs/<パック>。見本 sample は見ない。2026-11-03）：本体と同じ印・同じ数え方で一覧を作り直して（event-catalog.js の makePack）、
+         一覧の md（docs/reports/2026-11-03/pack-event-catalog.md の節）が古くないか・表示名の無い出来事・パックで書いた出来事の表示名が本文から自動で拾われたもの（印が無い）を見る。
+         (c)② の「場面の書き方が増えたのに印が増えていないファイル」はパックの js（hakoniwa-packs の各パックの js フォルダ）も見る
      (d) 参考（数えない）：比べる相手の一覧と今の一覧の差（足された出来事・消えた出来事・表示名が変わった出来事。出る箱庭つき）。足した出来事が全件入ったかを確かめる */
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm');
@@ -116,6 +119,20 @@ function main() {
   });
   if (problems.length === b0) out.push('  なし');
 
+  /* (e) 追加パック（(c)② でパックのファイルの新しい出来事を見るため、先に作る） */
+  const packs = {};   /* パックの id → { sp, made: { ビルド: makePack の結果 } } */
+  const PD = path.join(ROOT, 'hakoniwa-packs');
+  (fs.existsSync(PD) ? fs.readdirSync(PD).sort() : []).forEach(n => {
+    if (!fs.existsSync(path.join(PD, n, 'pack.json'))) return;
+    let sp;
+    try { sp = EC.packSpec(path.join(PD, n)); } catch (e) { bad('e', 'パック ' + n + '：pack.json を読めませんでした（' + (e && e.message || e) + '）'); return; }
+    if (sp.sample) return;
+    const x = packs[sp.id] = { sp, made: {} };
+    sp.builds.forEach(b => {
+      try { x.made[b] = EC.makePack(path.join(ROOT, 'hakoniwa-' + b), sp, { safeBuild: b === 'zenrei' }); } catch (e) { bad('e', 'パック ' + sp.id + '（' + b + '）：一覧を作れませんでした（' + (e && e.message || e) + '）'); }
+    });
+  });
+
   /* (c) 印の無い新しい場面 */
   out.push('(c) 印の無い新しい場面（比べる相手：' + BASE + '）');
   const c0 = problems.length;
@@ -145,15 +162,18 @@ function main() {
   const changed = new Set();
   [git(['diff', BASE, '--name-only']), git(['ls-files', '--others', '--exclude-standard'])].forEach(s => (s || '').split('\n').forEach(f => {
     f = f.trim();
-    if (/^hakoniwa-(?:full|zenrei)\/js\/[^/]+\.js$/.test(f) && !/\/event-catalog\.js$/.test(f) && fs.existsSync(path.join(ROOT, f))) changed.add(f);
+    if ((/^hakoniwa-(?:full|zenrei)\/js\/[^/]+\.js$/.test(f) || /^hakoniwa-packs\/[^/_][^/]*\/js\/[^/]+\.js$/.test(f)) && !/\/event-catalog\.js$/.test(f) && fs.existsSync(path.join(ROOT, f))) changed.add(f);
   }));
   const seen2 = {};
   Array.from(changed).sort().forEach(f => {
     const b = f.split('/')[0], base = 'js/' + path.basename(f);
     const j = judge(git(['show', BASE + ':' + f]) || '', rd(path.join(ROOT, f)));
     if (j.scene <= 0 || j.marks > 0) return;
-    /* そのファイルから新しい出来事が一覧に入った（① と (d) で見る） */
-    if ((newEv[b] || []).some(x => made[b].data.files[x.e.f] === base)) return;
+    /* そのファイルから新しい出来事が一覧に入った（① と (d) で見る）。パックのファイルは、そのファイルの出来事が一覧にあれば (e) で見る */
+    if (b === 'hakoniwa-packs') {
+      const pid = Object.keys(packs).find(k => path.basename(packs[k].sp.dir) === f.split('/')[1]), pf = pid && 'pack:' + pid + '/js/' + path.basename(f);
+      if (pid && Object.keys(packs[pid].made).some(bb => { const d = packs[pid].made[bb].data; return d.ev.some(e => d.files[e.f] === pf); })) return;
+    } else if ((newEv[b] || []).some(x => made[b].data.files[x.e.f] === base)) return;
     const what = [];
     if (j.d.climax > 0) what.push("夜の場面の記録 kind: 'climax' +" + j.d.climax);
     if (j.d.sex > 0) what.push('sex: true +' + j.d.sex);
@@ -167,6 +187,27 @@ function main() {
     bad('c', '印の無い新しい場面の可能性：' + (x.both ? x.f.replace(/^hakoniwa-(?:full|zenrei)\//, '') + '（両ビルド）' : x.f) + '（増えたもの：' + x.what.join('、') + '）：新しい出来事なら @event／label の印を付け、既にある出来事の言い回し・分岐を足しただけなら、そのファイルに /* @event-ok <何を足したか> */ を 1 行書いてください');
   });
   if (problems.length === c0) out.push('  なし（変わった js ' + changed.size + ' 本を見ました）');
+
+  out.push('(e) 追加パック（hakoniwa-packs。見本は見ない）');
+  const e0 = problems.length;
+  const pmd0 = rd(EC.PACK_MD);
+  let pmd = pmd0 || '';
+  Object.keys(packs).forEach(id => {
+    const x = packs[id];
+    Object.keys(x.made).forEach(b => {
+      const r = x.made[b], d = r.data, by = r.labelBy || [], BN = (b === 'full' ? 'R18版' : '全年齢版');
+      pmd = EC.packMdText(pmd, d);
+      d.ev.forEach((e, ix) => {
+        const where = (d.files[e.f] || '出どころ不明').replace(/^pack:/, 'hakoniwa-packs/') + '・' + scenNames(d, ix).join('・');
+        if (!EC.hasName(e)) bad('e', 'パック ' + id + '（' + BN + '）：表示名の無い出来事 ' + show(e) + '（' + where + '）：label: か @labels で、内容の分かる 8〜25 字の日本語を付けてください');
+        else if (EC.packOwn(d, e) && by[ix] === 'auto') bad('e', 'パック ' + id + '（' + BN + '）：印の無い出来事 ' + show(e) + '（' + where + '）：表示名が本文から自動で拾われています。label: か @labels で付けてください');
+      });
+      const own = d.ev.filter(e => EC.packOwn(d, e));
+      out.push('  ' + id + '（' + BN + '）：' + d.order.map(sid => d.scen[sid].name + ' ' + d.scen[sid].ev.length + '件').join('・') + '（パックで書いた出来事 ' + own.length + '件' + (b === 'full' ? '・うち夜 ' + own.filter(e => e.x).length + '件' : '') + '）');
+    });
+  });
+  if (Object.keys(packs).length && pmd !== pmd0) bad('e', 'パックの出来事の一覧 ' + path.relative(ROOT, EC.PACK_MD) + ' が古い（build-pack.js か node hakoniwa-tools/build/event-catalog.js --pack=hakoniwa-packs/<パック> で作り直してください）');
+  if (problems.length === e0) out.push('  問題なし（パック ' + Object.keys(packs).length + ' 個）');
 
   /* (d) 参考：比べる相手の一覧との差 */
   out.push('(d) 参考：' + BASE + ' の一覧との差（足した出来事が全件入ったかを確かめる。数えない）');
@@ -187,7 +228,7 @@ function main() {
   console.log(out.join('\n'));
   console.log('（' + Math.round((Date.now() - t0) / 100) / 10 + '秒）');
   const per = k => problems.filter(x => x === k).length;
-  console.log('catalog-check：' + problems.length + ' 件' + (problems.length ? '（一覧が古い ' + per('a') + '・表示名なし ' + per('b') + '・印の無い新しい場面 ' + per('c') + '）' : ''));
+  console.log('catalog-check：' + problems.length + ' 件' + (problems.length ? '（一覧が古い ' + per('a') + '・表示名なし ' + per('b') + '・印の無い新しい場面 ' + per('c') + '・追加パック ' + per('e') + '）' : ''));
   return problems.length ? 1 : 0;
 }
 module.exports = { shapes, judge, evalCatalog };

@@ -18,11 +18,14 @@
    ・書き出し：<ビルド>/packs/<枠>/pack.js と、<ビルド>/packs/index.js（サイト公開版用：packs にあるパックの枠の一覧）。
      --dist：配布用の zip（dist/<ビルド>-<枠>.zip。中身は packs/<枠>/pack.js だけ。本体のフォルダにそのまま解凍する）も作る。
      本体の配布用の zip は build-dist.js
+   ・出来事の一覧：本体と同じ印（@event・label・@labels・@event-table）を拾い（event-catalog.js の makePack）、中身のかたまり pk-<枠>-catalog に入れる
+     （箱庭カードの「出来事の一覧」を押したときだけ読む。かたまりの名前 catalog は使えない）。作り手向けの docs/reports/2026-11-03/pack-event-catalog.md も書き直す
+     （見本のパックは --out のフォルダに）。コード無しで md だけ作り直すなら node hakoniwa-tools/build/event-catalog.js --pack=<パックのフォルダ>
    設計：docs/reports/2026-11-02/pack-foundation.md */
 'use strict';
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 process.on('uncaughtException', e => { console.error('※ パックの組み立てを止めました：' + (e && e.message || e)); if (process.env.DEBUG) console.error(e && e.stack); process.exit(1); });
-const M = require('./build-min.js'), MF = require('./build-manifest.js'), Z = require('./zip.js');
+const M = require('./build-min.js'), MF = require('./build-manifest.js'), Z = require('./zip.js'), EC = require('./event-catalog.js');
 const ROOT = path.resolve(__dirname, '../..');
 const args = process.argv.slice(2).filter(a => !/^--/.test(a)), flags = process.argv.slice(2).filter(a => /^--/.test(a));
 const opt = k => { const f = flags.find(x => x.indexOf('--' + k + '=') === 0); return f ? f.slice(k.length + 3) : null; };
@@ -60,6 +63,7 @@ const localNames = P.chunks.map(c => c.name);
 P.chunks.forEach(c => {
   if (!NAME.test(c.name || '')) throw new Error('chunks の name は英小文字・数字・- だけにしてください: ' + c.name);
   if (!Array.isArray(c.files) || !c.files.length) throw new Error('chunks の ' + c.name + ' に files がありません');
+  if (c.name === 'catalog') throw new Error('かたまりの名前 catalog は出来事の一覧に使うので、ほかの名前にしてください');
 });
 
 function buildOne(BUILD) {
@@ -155,10 +159,22 @@ function buildOne(BUILD) {
   order.forEach(id => { scen[id] = MF.scenEntry(HK().SCENARIOS[id], id, R, needOf); });
   if (STRIP) { const bad = MF.guardManifest({ scen }, M.EXPLICIT); if (bad.length) { bad.slice(0, 20).forEach(b => console.error('  ' + b)); throw new Error('全年齢版のパックの目録に性的な語が残っています'); } }
 
+  /* ---------- 出来事の一覧（2026-11-03）：本体と同じ印・同じ数え方で、パックの箱庭の一覧を作る（event-catalog.js の makePack）。
+     パックの中身のかたまり pk-<枠>-catalog に入れ（暗号化される）、箱庭カードの「出来事の一覧」を押したときだけ読む。作り手向けの md も書き直す ---------- */
+  const spec = EC.packSpec(pdir);
+  const cat = EC.makePack(mainDir, spec, { safeBuild: STRIP });
+  if (cat.errs.length) { cat.errs.slice(0, 10).forEach(e => console.warn('  ' + e)); console.warn('※ 出来事の一覧の vm で例外が ' + cat.errs.length + ' 件ありました'); }
+  if (STRIP) { const bad = MF.guardManifest(cat.data, M.EXPLICIT); if (bad.length) { bad.slice(0, 20).forEach(b => console.error('  ' + b)); throw new Error('全年齢版のパックの出来事の一覧に性的な語が残っています'); } }
+  const catN = cname('catalog'), catCode = EC.packCatalogJs(cat.data, catN);
+  const noName = cat.data.ev.filter(e => !EC.hasName(e)).length, ownEv = cat.data.ev.filter(e => EC.packOwn(cat.data, e));
+  const mdPath = P.sample ? path.join(path.resolve(opt('out')), 'pack-event-catalog.md') : EC.PACK_MD;
+  EC.writePackMd(cat.data, mdPath);
+
   /* ---------- 中身・暗号化・書き出し ---------- */
   const mainNeeds = need.filter(n => n !== 'late');
   const body = { f: 1, id: P.id, slot: P.slot, api: API, build: BUILD, name: P.name, needs: mainNeeds, chunks: {}, scen, order };
   pOrder.forEach(n => { body.chunks[n] = { code: chunks[n].code, deps: chunks[n].deps }; });
+  body.chunks[catN] = { code: catCode, deps: [] };
   const text = JSON.stringify(body);
   const v = new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + hv(text);
   const sealed = PC.seal(text, codes, n => new Uint8Array(crypto.randomBytes(n)));
@@ -188,6 +204,8 @@ function buildOne(BUILD) {
   const kb = n => Math.round(n / 1024) + 'KB';
   console.log('追加パック ' + P.id + '（' + BUILD + '）：箱庭 ' + order.length + '（' + order.join(',') + '）・かたまり ' + pOrder.length + '・' + kb(js.length) + '・コード ' + codes.length + '個・本体のかたまり ' + (mainNeeds.join(',') || 'なし') +
     ' → ' + rel(path.join(outDir, 'pack.js')) + zinfo);
+  console.log('  出来事の一覧：' + order.map(id => id + ' ' + cat.data.scen[id].ev.length + '件').join('・') + '（パックで書いた出来事 ' + ownEv.length + '件' + (BUILD === 'full' ? '・うち夜 ' + ownEv.filter(e => e.x).length + '件' : '') +
+    '・表示名の無い出来事 ' + noName + '件）→ ' + rel(mdPath) + (noName ? '　※ label か @labels で表示名を付けてください（catalog-check.js）' : ''));
 }
 /* packs/index.js：packs にある枠の一覧（サイト公開版の本体はこれを読み、ある枠だけを読みに行く。データ配布版の本体の zip には入れない） */
 function writeIndex(pk) {

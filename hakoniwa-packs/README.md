@@ -46,6 +46,18 @@ hakoniwa-packs/
 - 本体の作業の決まり（CLAUDE.md）はパックにもそのまま当てる：台詞の3本、R18の文の基準、体の語の印、`HK.SexLead` への登録、出来事の印と表示名、恋愛対象・受け攻めの点検。
 - 両方のビルドに出すファイルでは、性的な場面の文を `/* r18:begin */`〜`/* r18:end */` で挟む。全年齢版のパックを作るときに落とし、性的な語が残っていれば止まる。
 
+## 出来事の一覧（2026-11-03）
+
+パックの箱庭も、本体と同じく箱庭カードの「出来事の一覧」に出る（コードで開けたときだけ。一覧はパックの中身に暗号化して入り、ボタンを押したときだけ読む）。印は本体と同じ：
+
+- 出来事のオブジェクト：`label: '内容の分かる 8〜25 字の日本語'`（必ず）、関係が条件なら `tie: 'lover'`（問わないなら `'-'`）、拾えない内容は `tags: ['night', 'mob', 'force', …]`。
+- 関数で書いた場面：場面の近くに 1 行 `/* @event scen=set-b-shinkon id=sk_night_kiss cat=romance tie=- tags=night label=寝る前のキスから始まる夜 */`。scen はパックの箱庭の id、id は英字の重ならない名前、label は表示名（台詞「…」・英字を入れない）。
+- 表：`/* @event-table scen=<箱庭の id> path=<HK. から先の表の場所> label=… */`（`rows=1` で行ごとに一覧へ）。工場で作る出来事の表示名は `/* @labels` の下に 1 行ずつ `id=表示名` `*/`。
+- R18 の場面（`tags=night` など）の印は `/* r18:begin */`〜`/* r18:end */` の中に書く（全年齢版では落ちる）。エッチの入口の数は、この夜の印の数で数える。
+- かたまりの名前 `catalog` は使えない（一覧のかたまり `pk-<枠>-catalog` に使う）。
+
+足したら：`node hakoniwa-tools/build/event-catalog.js --pack=hakoniwa-packs/<パック>`（コード無しで一覧だけ。build-pack.js でも書き直る）で `docs/reports/2026-11-03/pack-event-catalog.md` を作り直し、`node hakoniwa-tools/build/catalog-check.js` を 0 件にして（表示名の無い出来事・印の無い出来事・一覧が古い）、md の差分に足した出来事が入っているのを確かめ、同じコミットに入れる。`HK.Packs.API` は上げていない（一覧のかたまりは古い本体では読まれないだけ）。
+
 ## 作る
 
 本体を build したあとで：

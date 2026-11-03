@@ -1,7 +1,7 @@
 {
  "cur": {
-  "core": "core.75f568a68b.js",
-  "late": "late.e7b4af6ffa.js",
+  "core": "core.74ea8aae1f.js",
+  "late": "late.b411258bad.js",
   "pack-rel": "pack-rel.ba9ca78bdf.js",
   "scen-goukon": "scen-goukon.cca9829cdd.js",
   "scen-classroom": "scen-classroom.dec95edc7b.js",
@@ -65,8 +65,8 @@
   "tone-yankee": "tone-yankee.e045762f0d.js"
  },
  "prev": {
-  "core": "core.75f568a68b.js",
-  "late": "late.e7b4af6ffa.js",
+  "core": "core.74ea8aae1f.js",
+  "late": "late.b411258bad.js",
   "pack-rel": "pack-rel.ba9ca78bdf.js",
   "scen-goukon": "scen-goukon.cca9829cdd.js",
   "scen-classroom": "scen-classroom.dec95edc7b.js",
@@ -451,8 +451,8 @@
    1748
   ],
   "js/attr-race.js": [
-   21262,
-   6638
+   24809,
+   7551
   ],
   "js/attr-meet.js": [
    32813,

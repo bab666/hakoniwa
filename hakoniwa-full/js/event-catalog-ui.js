@@ -7,13 +7,28 @@
    ・窓は TIPS と同じ部品（gearov・gearbox）。表は狭い幅では列を詰め、横にはみ出さない
    ・画面に出すのは利用者向けの言葉だけ（表示名・種類・条件）。出来事の id・出どころのファイル・関係の判定の方法などの作り手向けの情報は出さない
      （それらは docs/reports/2026-10-28/event-catalog.md に残す。2026-10-28 の利用者の指示）。行を押すと、その行の出来事の一覧（表示名と条件）が開く
+   ・追加パックの箱庭（2026-11-03）：一覧はパックの中身（暗号化）のかたまり pk-<枠>-catalog にあり（build-pack.js が作る。HK.EVENT_CATALOG_PACKS[パックの id]）、
+     コードで開けたパックの箱庭のボタンを押したときに読む。一覧を持たない古いパックは「この箱庭の出来事の一覧はありません」
    両方のビルドに同じファイルを置く */
 (function () {
   'use strict';
   var HK = window.HK;
   if (!HK || !HK.Tips || typeof document === 'undefined' || !document.createElement) return;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function C() { return HK.EVENT_CATALOG || null; }
+  /* 今の窓の箱庭（cur）が追加パックの箱庭なら、そのパックの一覧。ほかは本体の一覧 */
+  var cur = '';
+  function packCat(id) {
+    var P = HK.EVENT_CATALOG_PACKS, k;
+    if (!P || !id) return null;
+    for (k in P) if (Object.prototype.hasOwnProperty.call(P, k) && P[k] && P[k].scen && P[k].scen[id]) return P[k];
+    return null;
+  }
+  function C() { return packCat(cur) || HK.EVENT_CATALOG || null; }
+  /* 一覧のかたまり：パックの箱庭なら pk-<枠>-catalog（目録に無い古いパックは本体の pack-catalog） */
+  function chunkOf(id) {
+    var r = HK.Packs && HK.Packs.roomOf ? HK.Packs.roomOf(id) : null, n = r ? 'pk-' + r.slot + '-catalog' : '';
+    return n && !(HK.Load && HK.Load.missing && HK.Load.missing([n]).length) ? n : 'pack-catalog';
+  }
   function scenOf(id) { var c = C(); return c && c.scen ? c.scen[id] : null; }
   function safe() { return !!HK.SAFE_ON; }
   /* 表示する出来事（全年齢モードでは R18 だけのものを外す） */
@@ -38,7 +53,6 @@
   NIGHT_NOTE = '相手の下に書いたのは、その夜が起きる条件（内容のスイッチ・展開の重さ・環境値・関係・受け攻め・性欲）です。条件の書いていない夜も、恋愛対象・受け攻め・描写の設定・「R18に参加しない」などの決まりには従います。';
   /* r18:end */
   var ST = { yes: 'ある', cond: '条件つき', no: 'ない' };
-  var CHUNK = 'pack-catalog';
   function info(id) { return HK.Load && HK.Load.info ? HK.Load.info(id) : (HK.SCENARIOS || {})[id]; }
 
   /* ---------- ボタン ---------- */
@@ -193,9 +207,9 @@
   }
   function load(id) {
     var mine = ov;
-    if (C()) { fill(id, mine); return; }
+    if (C() && (scenOf(id) || chunkOf(id) === 'pack-catalog')) { fill(id, mine); return; }
     var p;
-    try { p = HK.Load && HK.Load.ensure ? HK.Load.ensure(CHUNK) : null; } catch (e) { p = null; }
+    try { p = HK.Load && HK.Load.ensure ? HK.Load.ensure(chunkOf(id)) : null; } catch (e) { p = null; }
     if (!p || typeof p.then !== 'function') { if (C()) fill(id, mine); else failed(null, mine, id); return; }
     p.then(function () { if (C()) fill(id, mine); else failed(null, mine, id); }, function (e) { failed(e, mine, id); });
   }
@@ -203,11 +217,12 @@
     var sc = info(id);
     if (!sc && !scenOf(id)) return;
     close();
+    cur = id;
     opener = from || document.activeElement;
     ov = document.createElement('div');
     ov.className = 'gearov tipov evcov';
     ov.innerHTML = '<div class="gearbox" role="dialog" aria-modal="true" aria-labelledby="evctitle" tabindex="-1"><div class="gearhd"><h2 id="evctitle">' + esc((sc && sc.name) || (scenOf(id) || {}).name || id) + ' の出来事の一覧</h2><button type="button" class="btn small" data-evclose="1">閉じる</button></div>' +
-      '<div class="evcbody gearbody" aria-live="polite"' + (C() ? '>' : ' aria-busy="true"><p class="tiplead evcwait">出来事の一覧を読み込んでいます…</p>') + '</div></div>';
+      '<div class="evcbody gearbody" aria-live="polite"' + (C() && scenOf(id) ? '>' : ' aria-busy="true"><p class="tiplead evcwait">出来事の一覧を読み込んでいます…</p>') + '</div></div>';
     ov.addEventListener('click', function (e) {
       var t = e.target;
       if (t === ov || (t.closest && t.closest('[data-evclose]'))) { close(); return; }
