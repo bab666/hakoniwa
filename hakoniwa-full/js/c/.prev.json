@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.e53448deac.js",
+  "core": "core.265356117c.js",
   "late": "late.5b6b7cf099.js",
   "pack-rel": "pack-rel.181e1fc716.js",
   "pack-lewd": "pack-lewd.3d74802863.js",
@@ -73,7 +73,7 @@
   "tone-yankee": "tone-yankee.2ce7f46616.js"
  },
  "prev": {
-  "core": "core.e53448deac.js",
+  "core": "core.44a2283f63.js",
   "late": "late.5b6b7cf099.js",
   "pack-rel": "pack-rel.181e1fc716.js",
   "pack-lewd": "pack-lewd.3d74802863.js",
@@ -499,8 +499,8 @@
    1231
   ],
   "js/view.js": [
-   76247,
-   24436
+   79623,
+   25960
   ],
   "js/view-map.js": [
    33820,
@@ -683,8 +683,8 @@
    1872
   ],
   "js/ui-result-style.js": [
-   32283,
-   6384
+   33983,
+   6669
   ],
   "js/ui-scroll-style.js": [
    1236,

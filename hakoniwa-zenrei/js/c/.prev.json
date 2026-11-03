@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.74ea8aae1f.js",
+  "core": "core.42bafffcde.js",
   "late": "late.b411258bad.js",
   "pack-rel": "pack-rel.ba9ca78bdf.js",
   "scen-goukon": "scen-goukon.cca9829cdd.js",
@@ -65,7 +65,7 @@
   "tone-yankee": "tone-yankee.e045762f0d.js"
  },
  "prev": {
-  "core": "core.74ea8aae1f.js",
+  "core": "core.69f53ac524.js",
   "late": "late.b411258bad.js",
   "pack-rel": "pack-rel.ba9ca78bdf.js",
   "scen-goukon": "scen-goukon.cca9829cdd.js",
@@ -427,8 +427,8 @@
    1231
   ],
   "js/view.js": [
-   76182,
-   24406
+   79558,
+   25080
   ],
   "js/view-map.js": [
    33820,
@@ -607,8 +607,8 @@
    1872
   ],
   "js/ui-result-style.js": [
-   32283,
-   6384
+   33983,
+   6669
   ],
   "js/ui-scroll-style.js": [
    1236,

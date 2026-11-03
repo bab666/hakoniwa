@@ -644,15 +644,51 @@
       g.hot = g.items.some(function (e) { return !e.fold && isHot(e, H); });
       g.n = g.items.reduce(function (m, e) { return m + (e.fold ? e.fold.length : 1); }, 0);
     });
-    return { ks: ks, H: H, groups: gs };
+    return { ks: ks, H: H, groups: gs, days: dayGroups(res, gs) };
+  }
+  /* ---------- 日ごとのまとめ（2026-11-03。箱庭が任意で持つ scen.stepGroup(区切りの名前, 区切りの番号) → { group: 'DAY1（月）', sub: '朝' } か null） ----------
+     持つ箱庭だけ、経過の目次と区切りの開け閉めを group（日）ごとにまとめ、sub を日の中の中見出しにする。null を返した区切り（結末など）は今までどおり 1 区切り。
+     持たない箱庭は days が null で、目次・本文・開け閉めは今までと同じ。日の鍵（d＋番号）は絞り込む前の記録で決めるので、絞り込んでも開け閉めが残る */
+  function stepGroupFn(res) { var f = scenOf(res).stepGroup; return typeof f === 'function' ? f : null; }
+  function stepGroupOf(f, x) {
+    if (!x || x.label == null || x.label === '') return null;
+    var r = null;
+    try { r = f(String(x.label), x.step); } catch (er) { r = null; }
+    return r && r.group != null && String(r.group) ? { group: String(r.group), sub: r.sub != null ? String(r.sub) : '' } : null;
+  }
+  function dayGroups(res, gs) {
+    var f = stepGroupFn(res);
+    if (!f) return null;
+    var ord = {}, no = 0;
+    res.log.forEach(function (e) { if (e.kind !== 'step') return; var r = stepGroupOf(f, e); if (r && ord[r.group] == null) ord[r.group] = no++; });
+    if (!no) return null;
+    var days = [], cur = null, seen = {};
+    gs.forEach(function (g) {
+      var r = stepGroupOf(f, g);
+      if (!r) { cur = null; days.push({ key: g.key, label: g.label, step: g.step, subs: [g], one: true, hot: g.hot, n: g.n }); return; }
+      if (!cur || cur.label !== r.group) { cur = { key: 'd' + ord[r.group], label: r.group, subs: [], day: true }; days.push(cur); }
+      g.sub = r.sub;
+      cur.subs.push(g);
+    });
+    days.forEach(function (d) {
+      if (!d.day) return;
+      /* 同じ日が離れて二度出る（並びの崩れた箱庭）ときは、2つめからは印を足す */
+      seen[d.key] = (seen[d.key] || 0) + 1;
+      if (seen[d.key] > 1) d.key += '-' + seen[d.key];
+      d.hot = d.subs.some(function (g) { return g.hot; });
+      d.n = d.subs.reduce(function (m, g) { return m + g.n; }, 0);
+    });
+    return days;
   }
   /* 区切りの開け閉め：押して変えたものはそのまま。ほかは「区切りを全部開く」か、最初の区切り、絞り込み中なら開く */
   function secOpen(g, k) { return rv.sec[g.key] != null ? rv.sec[g.key] : (rv.open || k === 0 || tlActive()); }
-  function secName(g) { return (tno(g.step) ? tno(g.step) + ' ' : '') + (g.label || ''); }
+  function secName(g) { return g.day ? g.label || '' : (tno(g.step) ? tno(g.step) + ' ' : '') + (g.label || ''); }
   function timeline(res, G) {
     G = G || tlGroups(res);
-    var ks = G.ks, H = G.H, gs = G.groups, inEnd = false;
+    var ks = G.ks, H = G.H, gs = G.days || G.groups, inEnd = false;
     var html = gs.map(function (g, k) {
+      if (g.one) g = g.subs[0];
+      if (g.day) return dayBlk(g, k);
       /* 区切りのカードの頭：ターン番号（Mono）と局面名、重要の札と件数、畳む／開く */
       var tn = tno(g.step), open = secOpen(g, k), nx = gs[k + 1];
       var when = '<div class="when' + (g.hot ? ' hot' : '') + '">' + (tn ? '<span class="tn">' + tn + '</span>' + (g.label ? '<span class="ph">' + esc(g.label) + '</span>' : '') : '<span class="ph">' + esc(g.label) + '</span>') +
@@ -662,9 +698,29 @@
       return '<div class="stepblk' + (g.hot ? ' hasHot' : '') + (open ? '' : ' rvfold') + '" id="rvs-' + g.key + '" data-s="' + g.key + '">' + when + '<ol>' + g.items.map(function (e) {
         if (e.fold) return '<li class="ev phase facfold"><details><summary style="cursor:pointer;color:var(--muted);font-size:12px">似た派閥の動き ' + e.fold.length + '件（続くので畳んでいます）</summary><ol style="padding-bottom:0">' + e.fold.map(evLi).join('') + '</ol></details></li>';
         return evLi(e);
-      }).join('') + '</ol>' + (nx ? '<div class="rvnext"><button type="button" class="rvlink" data-act="rvjump" data-s="' + nx.key + '">次の区切り：' + esc(secName(nx)) + ' ›</button></div>' : '') + '</div>';
+      }).join('') + '</ol>' + (nx ? '<div class="rvnext"><button type="button" class="rvlink" data-act="rvjump" data-s="' + nx.key + '">次の区切り：' + esc(secName(nx.one ? nx.subs[0] : nx)) + ' ›</button></div>' : '') + '</div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
+    function items(g) {
+      return '<ol>' + g.items.map(function (e) {
+        if (e.fold) return '<li class="ev phase facfold"><details><summary style="cursor:pointer;color:var(--muted);font-size:12px">似た派閥の動き ' + e.fold.length + '件（続くので畳んでいます）</summary><ol style="padding-bottom:0">' + e.fold.map(evLi).join('') + '</ol></details></li>';
+        return evLi(e);
+      }).join('') + '</ol>';
+    }
+    /* 日のカード：頭は日の名前・重要の札・日の合計の件数・畳む／開く。中に区切りごとの中見出し（朝・日中・夜。ターン番号と件数）と出来事 */
+    function dayBlk(d, k) {
+      var open = secOpen(d, k), nx = gs[k + 1];
+      var when = '<div class="when' + (d.hot ? ' hot' : '') + '"><span class="ph">' + esc(d.label) + '</span>' +
+        '<span class="rvsecm">' + (d.hot ? '<span class="rvimp">重要</span>' : '') + '<span class="rvsecn">' + d.n + '件</span></span>' +
+        '<button type="button" class="rvfoldbtn" data-act="rvfold" data-s="' + d.key + '" aria-expanded="' + open + '">' + (open ? '畳む' : '開く') + '</button></div>';
+      var body = d.subs.map(function (g) {
+        inEnd = !!g.end;
+        var tn = tno(g.step);
+        return '<div class="rvsubh' + (g.hot ? ' hot' : '') + '" id="rvs-' + g.key + '" data-s="' + g.key + '">' + (tn ? '<span class="tn">' + tn + '</span>' : '') + '<span class="ph">' + esc(g.sub || g.label || '') + '</span><span class="rvsecn">' + g.n + '件</span></div>' + items(g);
+      }).join('');
+      return '<div class="stepblk rvday' + (d.hot ? ' hasHot' : '') + (open ? '' : ' rvfold') + '" id="rvs-' + d.key + '" data-s="' + d.key + '">' + when + '<div class="rvdb">' + body + '</div>' +
+        (nx ? '<div class="rvnext"><button type="button" class="rvlink" data-act="rvjump" data-s="' + nx.key + '">次の区切り：' + esc(secName(nx.one ? nx.subs[0] : nx)) + ' ›</button></div>' : '') + '</div>';
+    }
     function evLi(e) {
       var hot = isHot(e, H), hk = hotKind(e, H), rm = rmInfo(e, res, inEnd);
       var cls = 'ev' + (e.kind === 'event' && e.cat ? ' cat-' + e.cat : '') + (e.trouble ? ' trouble' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (hot ? ' hot' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '') + (hk ? ' hot-' + hk : '');
@@ -699,7 +755,13 @@
   function toc(res, G) {
     G = G || tlGroups(res);
     if (!G.groups.length) return '';
-    return '<div class="rvtoct">目次</div><ol>' + G.groups.map(function (g) {
+    return '<div class="rvtoct">目次</div><ol>' + (G.days || G.groups).map(function (g) {
+      if (g.one) g = g.subs[0];
+      /* 日ごと（scen.stepGroup）：日を 1 項目（件数は日の合計・重要の印も日に）にし、その下に朝・日中・夜などの中見出し */
+      if (g.day) return '<li><button type="button" class="rvtocb rvtocd' + (g.hot ? ' hot' : '') + '" data-act="rvjump" data-s="' + g.key + '"><span class="lb">' + esc(g.label) + '</span><span class="n">' + g.n + '</span></button>' +
+        '<ol class="rvtocs">' + g.subs.map(function (x) {
+          return '<li><button type="button" class="rvtocb rvtocsb' + (x.hot ? ' hot' : '') + '" data-act="rvjump" data-s="' + g.key + '" data-sub="' + x.key + '" title="' + esc(secName(x)) + '"><span class="lb">' + esc(x.sub || x.label || '―') + '</span><span class="n">' + x.n + '</span></button></li>';
+        }).join('') + '</ol></li>';
       return '<li><button type="button" class="rvtocb' + (g.hot ? ' hot' : '') + '" data-act="rvjump" data-s="' + g.key + '">' + (tno(g.step) ? '<span class="tn">' + tno(g.step) + '</span>' : '') + '<span class="lb">' + esc(g.label || '―') + '</span><span class="n">' + g.n + '</span></button></li>';
     }).join('') + '</ol>';
   }
@@ -1084,11 +1146,13 @@
     if (b) { b.setAttribute('aria-expanded', String(open)); b.textContent = open ? '畳む' : '開く'; }
     rv.sec[el.getAttribute('data-s')] = open;
   }
-  function jump(key) {
+  function jump(key, sub) {
     var h = rvHost(), el = h && h.querySelector('#rvs-' + key);
     if (!el) return;
     setSec(el, true);
-    el.scrollIntoView({ block: 'start' });
+    /* 日の中の中見出し（朝・日中・夜）へ：日を開いてから、その見出しへ */
+    var s = sub ? el.querySelector('#rvs-' + sub) : null;
+    (s || el).scrollIntoView({ block: 'start' });
   }
   /* 出来事 n へ（「転機：… を経過で読む」）。絞り込みで隠れていれば絞り込みを外す */
   function gotoEv(n) {
@@ -1148,7 +1212,7 @@
       case 'rvtab': ev.preventDefault(); V.showTab(t.getAttribute('data-k')); break;
       case 'rvmenu': menu(); break;
       case 'rvfold': var sb = t.closest('.stepblk'); if (sb) setSec(sb, sb.classList.contains('rvfold')); break;
-      case 'rvjump': jump(t.getAttribute('data-s')); break;
+      case 'rvjump': jump(t.getAttribute('data-s'), t.getAttribute('data-sub')); break;
       case 'rvgoto': gotoEv(+t.getAttribute('data-n')); break;
       case 'rvcat': var c = t.getAttribute('data-c'); tl.off[c] = !tl.off[c]; V.refreshTimeline(); break;
       case 'rvwhy': rv.why = !rv.why; rvSave(); wrapAttr('data-why', rv.why ? 1 : 0); t.setAttribute('aria-checked', String(rv.why)); break;

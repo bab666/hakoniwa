@@ -92,6 +92,10 @@
     '.rvw .rvtoct{font-size:12px;color:var(--rm);margin:4px 0 8px 8px}.rvw .rvtoc ol{list-style:none;margin:0;padding:0;display:grid;gap:1px}' +
     '.rvw .rvtocb{appearance:none;-webkit-appearance:none;background:none;border:0;border-radius:6px;width:100%;text-align:left;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;align-items:baseline;padding:5px 8px;font:inherit;color:var(--ri);cursor:pointer}' +
     '.rvw .rvtocb:hover{background:var(--rs)}.rvw .rvtocb .tn{font-family:var(--f-num);font-size:11px;color:var(--rm)}.rvw .rvtocb .lb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rvw .rvtocb .n{font-size:11px;color:var(--rm)}.rvw .rvtocb.hot .tn{color:var(--hot)}' +
+    /* 日ごとの目次（箱庭の scen.stepGroup。2026-11-03）：日を 1 項目（太字・件数は日の合計・重要なら赤）、その下の 1 行に朝・日中・夜などの中見出しを小さな札で並べる（目次が長くならないように） */
+    '.rvw .rvtocb.rvtocd{grid-template-columns:minmax(0,1fr) auto;font-weight:600}.rvw .rvtocb.rvtocd.hot .lb,.rvw .rvtocb.rvtocsb.hot .lb{color:var(--hot)}' +
+    '.rvw .rvtoc ol.rvtocs{display:flex;flex-wrap:wrap;gap:2px;margin:-2px 0 4px 4px;padding:0}.rvw .rvtoc ol.rvtocs>li{min-width:0}' +
+    '.rvw .rvtocb.rvtocsb{display:inline-flex;width:auto;gap:3px;align-items:baseline;padding:2px 6px;font-size:11.5px;color:var(--rm)}.rvw .rvtocb.rvtocsb:hover{color:var(--ri)}.rvw .rvtocb.rvtocsb .n{font-size:10px}' +
     '.rvw .rvloghd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 -4px}' +
     '.rvw .rvloghd h2.sec,.rvw .rvsolo h2.sec#tlhead{margin:0;padding:0;border:0;font-size:14px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}.rvw .rvloghd h2.sec .hotleg{margin-left:4px}' +
     '.rvw .rvsidebtn{display:none}' +
@@ -103,7 +107,11 @@
     '.rvw .rvsecm{margin-left:auto;display:inline-flex;gap:8px;align-items:center;font-family:var(--f-body);font-size:12px;font-weight:400;color:var(--rm);letter-spacing:0}' +
     '.rvw .rvfoldbtn{appearance:none;-webkit-appearance:none;background:none;border:0;font:inherit;font-family:var(--f-body);font-size:12px;font-weight:400;letter-spacing:0;color:var(--rm);cursor:pointer;padding:4px 2px;min-height:30px;display:inline-flex;align-items:center;gap:6px}' +
     '.rvw .rvfoldbtn:hover{color:var(--ri)}.rvw .rvfoldbtn::after{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(2px) rotate(-135deg)}.rvw .rvfold .rvfoldbtn::after{transform:translateY(-2px) rotate(45deg)}' +
-    '.rvw .tl .stepblk.rvfold>:is(ol,.rvnext){display:none}' +
+    '.rvw .tl .stepblk.rvfold>:is(ol,.rvnext,.rvdb){display:none}' +
+    /* 日のカード（scen.stepGroup）の中見出し：ターン番号・朝などの名前・件数。線の見え方と画像の写し（.rvw の外）では左の縦の線を続ける */
+    '.tl .stepblk>.rvdb{min-width:0}.tl .rvdb>.rvsubh{display:flex;align-items:baseline;gap:8px;padding:12px 0 0 var(--rail);border-left:1px solid var(--line);font-size:12px;line-height:1.4;color:var(--muted);scroll-margin-top:var(--rvst,80px)}' +
+    '.tl .rvdb>.rvsubh .tn{font-family:var(--f-num);font-size:11px;font-weight:600}.tl .rvdb>.rvsubh.hot .tn{color:var(--hot)}.tl .rvdb>.rvsubh .ph{font-family:var(--f-body);font-size:13px;font-weight:700;color:var(--ink)}.tl .rvdb>.rvsubh .rvsecn{margin-left:auto;font-size:11px}' +
+    '.tl .rvdb>ol{padding-top:6px}.tl .rvday>.when.hot .ph{color:var(--hot)}.rvw[data-tlv="line"] .tl .rvday>.when .ph{font-size:13px;font-weight:600;color:var(--ink)}.rvw[data-tlv="line"] .tl .rvday>.when.hot .ph{color:var(--hot)}' +
     '.rvw[data-why="0"] .tl .ev .why{display:none}' +
     /* 文字の大きさは見え方の規則（カード・吹き出しの .tl .ev の 14px）より強く（[data-tlv] を足す。2026-11-02 担当UH：カードで「小・大」が効いていなかった） */
     '.rvw[data-tlv][data-fs="s"] .tl .ev{font-size:13px;line-height:1.65}.rvw[data-tlv][data-fs="l"] .tl .ev{font-size:16px;line-height:1.8}' +
@@ -142,6 +150,8 @@
     '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm]){margin:3px -10px;padding:5px 10px;border-radius:8px}' +
     '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) :is(#tl,#dgtl,#sttl) .stepblk ol>.ev:is([data-hot],[data-rm])+.ev{border-top:0}' +
     '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev.facfold{padding:5px 0}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .rvdb>.rvsubh{padding:7px 0 3px;border-left:0;border-bottom:1px dotted var(--rl);color:var(--rm)}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .rvdb>ol+.rvsubh{border-top:1px solid var(--rl);margin-top:2px}' +
+    '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .rvdb>.rvsubh .ph{color:var(--ri)}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .rvdb>ol{padding-top:0}' +
     '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .rvnext{border-top:1px solid var(--rl);padding:0;text-align:right}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .rvnext .rvlink{padding:4px 0;font-size:12px}' +
     /* 線（前の見え方）：中身は index.html の見た目のまま。区切りの頭（左の列）に件数と畳む／開く、畳んだ区切りは 1 行 */
     '.rvw[data-tlv="line"] .tl{background:var(--rc);border:1px solid var(--rl);border-radius:var(--rr);box-shadow:var(--rsh);padding:0 20px}' +
@@ -267,7 +277,7 @@
     '@media print{' +
       '.rvw .rvpane[hidden]{display:block!important}.rvw .rvpane+.rvpane{margin-top:18px}' +
       '.rvw :is(.rvtabs,.rvtoc,.rvrail,.rvsidebtn,.rvbtns,.rvside,.rvlist,.rvnext,.rvfoldbtn,.rvmore,.rvnav,.rvmenu){display:none!important}' +
-      '.rvw .rvgrid{display:block!important}.rvw .rvgrid>*+*{margin-top:12px}.rvw .tl .stepblk.rvfold>ol{display:block!important}' +
+      '.rvw .rvgrid{display:block!important}.rvw .rvgrid>*+*{margin-top:12px}.rvw .tl .stepblk.rvfold>:is(ol,.rvdb){display:block!important}' +
       '.rvw .rvcard,.rvw .tl .stepblk,.rvw .ending{box-shadow:none!important;break-inside:auto}' +
     '}';
   var st = document.createElement('style');
