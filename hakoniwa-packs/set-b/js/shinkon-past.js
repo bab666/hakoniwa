@@ -1,6 +1,6 @@
 /* 新婚部屋：元の関係が分かる出来事と「元○○」の扱い（両方のビルド。2026-11-03 利用者の追加の指示「関係性の出来事をもっと増やす」「結婚しないはずの関係は元○○の扱い」）
    ■ HK.ShinkonPast（PS）
-     ・PS.exOf(ties, ai, bi)：二人の関係（入力の ties）に「結婚しないはずの関係」（EXK：恐怖（「恋愛：あり」を選んだときだけ）・敵対・主従・ライバル・不仲・愛憎）があり、恋人・夫婦などの関係が無く、
+     ・PS.exOf(ties, ai, bi, trio)：二人の関係（入力の ties）に「結婚しないはずの関係」（EXK：恐怖（三人婚の組で「恋愛：あり」を選んだときだけ）・敵対・主従・ライバル・不仲・愛憎）があり、恋人・夫婦などの関係が無く、
        ほかに「恋愛：なし」の関係（家族・無関心・信仰など）も「恋愛：なし」を選んだ関係も無ければ { k, x }（x＝恐怖なら怖がっていた人・主従なら主の番号）。
        shinkon.js が HK.simulate の包みで、元の関係のまま（keep）遊ぶ二人のこの関係を外して夫婦にする（恋愛にしてよい二人だけ。入力は書き換えず写しで動かす）
      ・PS.info(ctx, S, a, b)：二人の元の関係のまとめ { past: { k: 関係の鍵, x }, exr: { k, x, y, fm（恐怖：calm もう怖くない／still まだ少し） } }。
@@ -13,7 +13,11 @@
        PS.fearRoll・PS.fearRun：日中・夜に、たまに恐怖がぶり返す（6 種。怖がっていた人の反応は態度 9 種・らしくない反応、相手は距離を取る／そっと触れる（態度 9 種））。
          ぶり返した日の夜は体の関係の場面を出さない（day.noSex）。恐怖の関係のまま・まだ少し怖い元恐怖の二人は、遊びの 4 日目までに一度は起きる
        PS.fearEnd：最後の夜の、恐怖のゆくえ（怖くなくなった／少し慣れた／まだ怖い日もある）
-     体の関係は本体の決まりどおり、もとが恐怖の二人はすべて止めたまま（shinkon.js の setup が住人の noSex に入れる）
+     恐怖の決まり（2026-11-03 利用者の指示。本体 docs/reports/2026-10-31/rel-consistency.md の「恐怖の二人」）：
+       ・恐怖の関係のまま（nf。元の関係のままで、二人のあいだに恐怖の関係がある）：体の関係は関係の欄「体の関係」が「あり」なら夜の場面を出す（ぶり返した日の夜は出さない）。
+         「恋愛：あり」なら、ぶり返しが減って恐怖が和らいだ（PS.fearSoft。HK.fearRelease で本体の止めを外す）あとにだけ恋愛の出来事が出て、最後の夜に「怖くなくなった」なら恋人になる（結婚の線）。
+         自動なら今までどおり、恋愛も体の関係も無し
+       ・元恐怖（なれそめで上書きした二人・三人婚で夫婦にした「恋愛：あり」の恐怖）：恐怖の決まりは当てず、普通の二人と同じ（ぶり返しは、もう怖くない元恐怖の軽い版だけ。夜も止めない）
    文は shinkon-past-text.js（HK.ShinkonPastText）。登場人物はすべて成人として扱う */
 /* @event scen=set-b-shinkon id=sk_ex_intro cat=romance tie=- cond=元ライバル・元不仲などで結婚した二人 label=まさか私たちが結婚するなんて */
 /* @event scen=set-b-shinkon id=sk_ex_rival cat=romance tie=rival label=元ライバルの夫婦の張り合い（4種） */
@@ -23,6 +27,8 @@
 /* @event scen=set-b-shinkon id=sk_nf_intro cat=bond tie=fear cond=恐怖の関係のまま（恋愛の設定が自動）の二人 label=怖かった相手に今は少し慣れてきた */
 /* @event scen=set-b-shinkon id=sk_fear_relapse cat=bond tie=fear cond=もとが恐怖の二人・日中か夜 label=ふとした拍子に恐怖がぶり返す（6種） */
 /* @event scen=set-b-shinkon id=sk_fear_end cat=bond tie=fear cond=もとが恐怖の二人・最後の夜 label=最後の夜の恐怖のゆくえ（3種） */
+/* @event scen=set-b-shinkon id=sk_fear_soft cat=bond tie=fear cond=恐怖の関係のままで「恋愛：あり」の二人 label=ぶり返しが減って恐怖が和らぐ */
+/* @event scen=set-b-shinkon id=sk_fear_love cat=romance tie=fear cond=恐怖が和らいだ「恋愛：あり」の二人・最後の夜 label=怖くなくなった相手と恋人になる */
 /* @event scen=set-b-shinkon id=sk_ex_lovehate cat=romance tie=lovehate label=憎まれ口を叩き合う夫婦（4種） */
 /* @event scen=set-b-shinkon id=sk_ex_master cat=romance tie=master label=元主従の夫婦の対等の練習（4種） */
 /* @event scen=set-b-shinkon id=sk_past_friend cat=bond tie=friend label=友人どうしの昔の話（4種） */
@@ -51,7 +57,8 @@
   var LOVE_T = /^(lover|spouse|fiance|mate|fated|ex|crush|almost|fwb|honmei|yan|abuse)$/;
   PS.EXK = EXK; PS.EXNAME = EXNAME;
   function between(ties, ai, bi) { return (ties || []).filter(function (t) { return t && ((t.a === ai && t.b === bi) || (t.a === bi && t.b === ai)); }); }
-  PS.exOf = function (ties, ai, bi) {
+  /* trio：三人婚の組か（恐怖は三人婚の組だけ元○○にする。二人の新婚は恐怖の関係のまま遊ぶ：PS.fearP の nf。2026-11-03 利用者の指示） */
+  PS.exOf = function (ties, ai, bi, trio) {
     var mine = between(ties, ai, bi), ex = null;
     if (!mine.length) return null;
     for (var k = 0; k < EXK.length && !ex; k++) ex = mine.filter(function (t) { return t.type === EXK[k]; })[0] || null;
@@ -60,7 +67,7 @@
       var t = mine[i];
       if (LOVE_T.test(t.type)) return null;
       /* 恐怖・無関心は自動の「恋愛：なし」（恐れる側は恋愛にも夜にもならない。本体の state S20・sexgate の決まり）。恐怖は「恋愛：あり」を選んだときだけ元○○にする */
-      if (t.type === 'fear' && t.love !== 'ok') return null;
+      if (t.type === 'fear' && (t.love !== 'ok' || !trio)) return null;
       if (t.love === 'no') return null;
       if (EXK.indexOf(t.type) < 0 && HK.tieLoveDefault && HK.tieLoveDefault(t) === 'no' && !((HK.TIES[t.type] || {}).loveSoft)) return null;
     }
@@ -137,10 +144,36 @@
         var ft = between(orig, a.i, b.i).filter(function (t) { return t.type === 'fear'; })[0];
         /* 恐怖の関係が今も残っていれば nf（恐怖の関係のまま）。なれそめで上書きした二人（「恋愛：あり」の恐怖）は元恐怖（still） */
         var now = HK.Ties && HK.Ties.all ? (HK.Ties.all(ctx, a, b) || []).some(function (t) { return t && t.type === 'fear'; }) : true;
-        if (ft) { var x = ctx.chars[ft.a] === b ? b : a; r = { x: x, y: x === a ? b : a, ex: false, ov: !now, lv: now ? 'nf' : 'still' }; }
+        /* なれそめで上書きした二人（恐怖の関係が外れた）は元恐怖：普通の二人と同じ（もう怖くない元恐怖の軽いぶり返しだけ） */
+        if (ft) { var x = ctx.chars[ft.a] === b ? b : a; r = { x: x, y: x === a ? b : a, ex: !now, ov: !now, lv: now ? 'nf' : 'calm' }; }
+        /* 恐怖の関係のままの欄：「恋愛：あり」（和らげば恋愛になりうる）・「体の関係：あり」 */
+        if (r && !r.ex) { r.lvOK = ft.love === 'ok'; r.body = !!(HK.tieBodyOK && HK.tieBodyOK(ft)); }
       }
     }
+    if (r && r.ex) r.lv = 'calm';
     return (S.fearP = r);
+  };
+  /* ---------- 恐怖が和らぐ（恐怖の関係のままで「恋愛：あり」の二人） ----------
+     ぶり返しの無かった日（2 日目から）と、ぶり返したときに相手がそっと触れた日に、和らぎを一つ数える。3 つで和らいだ（本体の HK.fearRelease で恋愛の止めを外し、S.love を見直す）。
+     和らいだ段は、本体の HK.FearSoften の文（相手の小さな優しさ・同じ家にいることに慣れる。怖がっていた人の反応は態度 9 種）に、和らいだ結びを付ける */
+  PS.SOFT_N = 3;
+  PS.fearSoft = function (ctx, S, day) {
+    var F = PS.fearP(ctx, S);
+    if (!F || F.ex || !F.lvOK || F.freed || day.sick || day.apart) return null;
+    if (day.d < 1 || (day.fearEv && !day.fearTouch)) return null;
+    F.soft = (F.soft || 0) + 1;
+    if (F.soft < PS.SOFT_N) return null;
+    var x = F.x, y = F.y, FS = HK.FearSoften;
+    if (HK.fearRelease) HK.fearRelease(x, y);
+    var CFp = HK.ColdFear && HK.ColdFear.pairOf ? HK.ColdFear.pairOf(ctx, x, y) : null;
+    if (CFp) CFp.freed = true;
+    F.freed = true;
+    S.love = SK().canLove2 ? SK().canLove2(ctx, x, y) : true;
+    var k = ctx.rng() < 0.5 ? 'kind' : 'used', per = SK().per(x);
+    var tx = FS ? F2(ctx, P(ctx, FS.sit ? FS.sit(ctx, k) : FS.SIT[k], x, y) || '', x, y) + F2(ctx, P(ctx, FS.RX[per] || FS.RX.gentle, x, y) || '', x, y) + F2(ctx, P(ctx, FS.FREE, x, y) || '', x, y) : '';
+    if (!tx) return null;
+    return ctx.act2({ actors: [x, y], cat: 'bond', text: tx, why: '新婚部屋：恐怖が和らいだ（' + x.name + 'は' + y.name + 'を怖がっていたが、ぶり返しが減った。「恋愛：あり」の二人なので、ここから恋愛になりうる）／恐怖の和らぎ：' + x.name + 'の' + y.name + 'への恐怖が和らいだ',
+      fx: function () { ctx.mod2(x, y, { trust: 4, aff: 3 }, { aff: 2 }); } });
   };
   /* 恐怖の関係のままの二人の始まりの段（無ければ ''。shinkon.js の setup が NW_SETUP の代わりに使う） */
   PS.nfSetup = function (ctx, S) {
@@ -166,10 +199,12 @@
   PS.fearRoll = function (ctx, S, day) {
     var F = PS.fearP(ctx, S);
     if (!F || day.sick || day.apart) return;
-    var p = F.lv === 'calm' ? 0.07 : F.lv === 'still' ? 0.17 : 0.22;
+    /* 和らいでいくほど、ぶり返しは減る（恐怖の関係のままで「恋愛：あり」の二人） */
+    var p = (F.lv === 'calm' ? 0.07 : F.lv === 'still' ? 0.17 : 0.22) * (F.freed ? 0.4 : Math.max(0.35, 1 - (F.soft || 0) * 0.2));
     var must = F.lv !== 'calm' && !S.fearR && day.d >= Math.min(3, S.days - 2);
     if (!must && ctx.rng() > p) return;
-    var ks = Object.keys(FK).filter(function (k) { return k !== S.fearLast; });
+    /* 元恐怖（もう怖くない）は軽いぶり返しだけ（急な動き・物音。夜を止めない） */
+    var ks = Object.keys(FK).filter(function (k) { return k !== S.fearLast && (!F.ex || k === 'sukumu' || k === 'oto'); });
     var k = ks[Math.floor(ctx.rng() * ks.length)];
     S.fearLast = k; S.fearR = (S.fearR || 0) + 1;
     day.fearEv = { k: k, part: FK[k] };
@@ -191,7 +226,9 @@
     var ry = P(ctx, ((T.RY || {})[yk] || {})[py], y, x);
     var tx = F2(ctx, t1, x, y) + (rx ? F2(ctx, rx, x, y) : '') + (ry ? '\n\n' + F2(ctx, ry, y, x) + (oddY ? F2(ctx, 'いつもの{a}らしくない応じ方だった。', y, x) : '') : '');
     var odd = oddX || oddY;
-    day.noSex = true;
+    /* 恐怖の関係のままの二人は、ぶり返した日の夜は体の関係の場面を出さない（元恐怖は普通の二人と同じなので止めない） */
+    if (!F.ex) day.noSex = true;
+    if (yk === 'fureru') day.fearTouch = true;
     var e = ctx.act2({ actors: [x, y], cat: 'bond', text: tx, odd: odd, why: '新婚部屋：恐怖がぶり返した（' + x.name + '・' + FKN[E.k] + '。' + y.name + 'は' + (yk === 'fureru' ? 'そっと触れた' : '距離を取った') + '）',
       fx: function () { if (yk === 'fureru') ctx.mod2(x, y, { trust: 2 }, { aff: 1 }); else ctx.mod2(x, y, { trust: 1 }, { trust: 1 }); } });
     if (e) { S.fearN = (S.fearN || 0) + 1; if (yk === 'fureru') S.fearTouch = (S.fearTouch || 0) + 1; if (odd) S.odd++; }
@@ -202,12 +239,17 @@
     if (!F) return null;
     var x = F.x, y = F.y, r = ctx.rel && ctx.rel[x.i] ? ctx.rel[x.i][y.i] : null, tr = x.tr || {};
     var sc = (F.lv === 'calm' ? 0.55 : F.lv === 'still' ? 0.32 : 0.25) + (r ? Math.max(0, Math.min(100, r.trust || 0)) / 100 * 0.45 : 0.2) + (S.fearTouch || 0) * 0.08 - (S.fearN || 0) * 0.07 + (tr.fc || 0.5) * 0.1 + ctx.rng() * 0.3;
+    if (F.freed) sc += 0.45;
     var k = sc >= 0.85 ? 'calm' : sc >= 0.42 ? 'some' : 'still';
-    var t = P(ctx, (TX().FEAREND || {})[k], x, y);
+    /* 和らいだ「恋愛：あり」の二人が「怖くなくなった」なら、恋人になる（結婚の線。FEARLOVE） */
+    var lov = k === 'calm' && F.freed && S.love && !F.ex;
+    var t = P(ctx, lov ? TX().FEARLOVE : (TX().FEAREND || {})[k], x, y);
     if (!t) return null;
     S.fearEnd = k;
+    /* 恋人になった二人は、恐怖の名残の緊張を下ろし、好意・惹かれを恋人どうしの値にそろえる（結末の分類が「恋人」になるように） */
+    if (lov) { S.fearLove = true; var pf0 = ctx.pair(x, y); pf0.couple = true; [ctx.R(x, y), ctx.R(y, x)].forEach(function (r) { r.ten = Math.min(r.ten, 30); r.aff = Math.max(r.aff, 45); r.att = Math.max(r.att, 50); r.trust = Math.max(r.trust, 35); }); }
     var NM = { calm: '怖くなくなった', some: '少し慣れた', still: 'まだ怖い日もある' };
-    return ctx.act2({ actors: [x, y], cat: 'bond', text: F2(ctx, t, x, y), why: '新婚部屋：最後の夜（恐怖のゆくえ：' + x.name + 'は' + NM[k] + '）',
+    return ctx.act2({ actors: [x, y], cat: lov ? 'romance' : 'bond', text: F2(ctx, t, x, y), why: '新婚部屋：最後の夜（恐怖のゆくえ：' + x.name + 'は' + NM[k] + (lov ? '。恐怖が和らいだ二人は、恋人になった' : '') + '）',
       fx: function () { ctx.mod2(x, y, { trust: k === 'calm' ? 4 : 2 }, { aff: 1 }); } });
   };
   PS.FEAR_END = { calm: '怖くなくなった', some: '少し慣れた', still: 'まだ怖い日もある' };
@@ -227,6 +269,7 @@
   };
   PS.run = function (ctx, S, day, part) {
     PS.fearRun(ctx, S, day, part);
+    if (part === 'n') PS.fearSoft(ctx, S, day);
     var E = day.pastEv, T = TX();
     if (!E || E.part !== part || E.done || day.sick || day.apart) return;
     E.done = true;

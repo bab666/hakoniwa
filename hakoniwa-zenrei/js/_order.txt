@@ -220,6 +220,7 @@ js/attr-meet.js
 js/fam-kin.js
 js/cold-fear-text.js @pack:rel
 js/cold-fear.js @pack:rel
+js/fear-soften.js @pack:rel
 js/esteem-text.js @pack:rel
 js/esteem.js @pack:rel
 js/solo-saimin-data.js @scen:saimin
@@ -392,6 +393,7 @@ tone js/tone-brush10f.js
 tone js/tone-brush-sa.js
 tone js/tone-brush10h.js
 tone js/tone-brush-sx.js
+tone js/tone-brush-fear.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/incidents-social.js @pack:rel

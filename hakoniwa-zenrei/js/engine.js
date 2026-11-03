@@ -199,8 +199,9 @@
   }
   HK.sexNG = function (a, b) { if (!a || !b || a === b) return false; return sexOne(a, b) || sexOne(b, a); };
   /* 体の関係にならない組：恋愛・R18にしない相手・同じ人の恋人どうし・性行為の相手の固定 */
-  /* 「恋愛：あり」にした無関心・恐怖の二人（ties.js の HK.Ties.after・fam-kin.js の HK.fearNG）：恋愛はできるが、体の関係・夜は今までどおりにしない */
-  HK.noSexPair = function (a, b) { return !!(a && b && a !== b && ((a.noSex && a.noSex.indexOf(b.i) >= 0) || (b.noSex && b.noSex.indexOf(a.i) >= 0))); };
+  /* 「恋愛：あり」にした無関心・恐怖の二人（ties.js の HK.Ties.after・fam-kin.js の HK.fearNG）：恋愛はできるが、体の関係・夜は今までどおりにしない
+     （恐怖の「体の関係：あり」は noSex に入れない。恐怖の「恋愛：あり」の恋愛は、和らぐまで HK.fearHold で止める） */
+  HK.noSexPair = function (a, b) { return !!(a && b && a !== b && ((Array.isArray(a.noSex) && a.noSex.indexOf(b.i) >= 0) || (Array.isArray(b.noSex) && b.noSex.indexOf(a.i) >= 0))); };
   HK.sexBlocked = function (a, b) { if (!a || !b || a === b) return false; return !!(a.noR18 || b.noR18) || HK.ngExplicit(a, b) || coNG(a, b) || HK.sexNG(a, b) || HK.noSexPair(a, b); };
   /* 恋愛はしない（恋愛相手の固定が食い違う）が、体の関係は許されている組。体の関係があっても、恋愛には進まないように補正する（Ctx.say） */
   HK.lockSexOnly = function (a, b) { return !!(a && b && a !== b && HK.lockConflict(a, b) && !HK.ngExplicit(a, b) && !coNG(a, b) && !HK.sexNG(a, b) && !HK.noSexPair(a, b)); };
@@ -255,8 +256,29 @@
   /* 二人のあいだの関係の「恋愛：自動／あり／なし」で見た恋愛の可否（ties.js の HK.tiesLove。2026-10-28 担当MB）。
      ctx：エンジン型の ctx（省略時は回している ctx。住人が ctx の住人そのものなら、その関係の並び）か、物語型の S（関係の並び S.ties）。
      どちらでもなければ、住人の写しに付けた印 loveOff（ties.js の HK.Ties.after・HK.loveOffMark）で見る */
+  /* 恐怖の「恋愛：あり」（2026-11-03 利用者の指示「恋愛ありは、恐怖が和らぐ可能性があるという意味」）：恐怖が和らぐまで恋愛しない印 fearHold（相手の番号）。
+     loveOff にも入れる（体の関係は止めない。体の関係の欄が「あり」なら、体だけの場面の組として扱う）。和らいだら cold-fear.js が HK.fearRelease で外す */
+  HK.fearHold = function (a, b) {
+    if (!a || !b || a === b) return;
+    [[a, b], [b, a]].forEach(function (q) {
+      var h = q[0].fearHold = Array.isArray(q[0].fearHold) ? q[0].fearHold : [], l = q[0].loveOff = Array.isArray(q[0].loveOff) ? q[0].loveOff : [];
+      if (h.indexOf(q[1].i) < 0) h.push(q[1].i);
+      if (l.indexOf(q[1].i) < 0) { l.push(q[1].i); (q[0]._fhOff = q[0]._fhOff || []).push(q[1].i); }
+    });
+  };
+  HK.fearHeld = function (a, b) { return !!(a && b && a !== b && ((Array.isArray(a.fearHold) && a.fearHold.indexOf(b.i) >= 0) || (Array.isArray(b.fearHold) && b.fearHold.indexOf(a.i) >= 0))); };
+  HK.fearRelease = function (a, b) {
+    if (!a || !b || a === b || !HK.fearHeld(a, b)) return false;
+    [[a, b], [b, a]].forEach(function (q) {
+      var c = q[0], o = q[1].i;
+      if (Array.isArray(c.fearHold)) c.fearHold = c.fearHold.filter(function (i) { return i !== o; });
+      if (Array.isArray(c._fhOff) && c._fhOff.indexOf(o) >= 0) { c._fhOff = c._fhOff.filter(function (i) { return i !== o; }); if (Array.isArray(c.loveOff)) c.loveOff = c.loveOff.filter(function (i) { return i !== o; }); }
+    });
+    return true;
+  };
   HK.tieLovePair = function (a, b, ctx) {
     if (!a || !b || a === b || !HK.tiesLove) return true;
+    if (HK.fearHeld(a, b)) return false;
     var c0 = ctx && typeof ctx === 'object' ? ctx : HK._curCtx;
     if (c0 && c0.tiesAll && c0.chars && c0.chars[a.i] === a) return HK.tiesLove(c0.tiesAll[key(a, b)]);
     if (ctx && typeof ctx === 'object' && Array.isArray(ctx.ties)) return HK.tiesLove(HK.tiesBetween(ctx.ties, a, b));
@@ -268,6 +290,7 @@
   HK.tieLoveNoPair = function (ctx, a, b) {
     var l = ctx && ctx.tiesAll && a && b && a !== b ? ctx.tiesAll[key(a, b)] : null;
     if (!l || !l.length) return false;
+    if (HK.fearHeld(a, b)) return true;
     if (l.some(function (t) { return t.love === 'no'; })) return true;
     if (!HK.tiesLove) return false;
     var s0 = HK._softLove; if (ctx._tlScope) HK._softLove = true;
@@ -612,8 +635,10 @@
      該当する関係がなければ、渡された input をそのまま使う */
   HK.fearInput = function (input) {
     /* 「恋愛：あり」にした無関心・恐怖（ties.js の HK.tieLoveOK）は、恋愛・R18にしない相手に入れない（体の関係は fam-kin.js の HK.fearNG が noSex で止める） */
-    var ts = (input && input.ties) || [], fl = ts.filter(function (t) { return t && (t.type === 'apathy' || t.type === 'fear') && t.a !== t.b && !(HK.tieLoveOK && HK.tieLoveOK(t)); });
-    if (!fl.length) return input;
+    /* 恐怖の「体の関係：あり」（ties.js の HK.tieBodyOK）も入れない（恋愛は fam-kin.js の HK.fearNG が loveOff・HK.fearHold で止める） */
+    var ts = (input && input.ties) || [], f0 = ts.filter(function (t) { return t && (t.type === 'apathy' || t.type === 'fear') && t.a !== t.b && (t.type === 'fear' || !(HK.tieLoveOK && HK.tieLoveOK(t))); });
+    if (!f0.length) return input;
+    var fl = f0.filter(function (t) { return !(HK.tieBodyOK && HK.tieBodyOK(t)) && !(HK.tieLoveOK && HK.tieLoveOK(t)); });
     var o = {}; for (var k in input) o[k] = input[k];
     o.chars = (input.chars || []).map(function (c) { var x = {}; for (var k2 in c) x[k2] = c[k2]; x.loveNG = Array.isArray(c.loveNG) ? c.loveNG.slice() : []; return x; });
     fl.forEach(function (t) { var A = o.chars[t.a], B = o.chars[t.b]; if (!A || !B) return; if (A.loveNG.indexOf(t.b) < 0) A.loveNG.push(t.b); if (B.loveNG.indexOf(t.a) < 0) B.loveNG.push(t.a); });

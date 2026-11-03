@@ -24,7 +24,8 @@
     /* 敵対・不仲の二人の印（ties.js の HK.hostMark。体の関係は止めず、起こりやすさを下げる。2026-10-28 担当MC） */
     if (HK.hostMark) HK.hostMark(P, ties);
   };
-  /* 関係「無関心」「恐怖」の二人は、互いの noLove に入れる（engine.js の HK.noLovePair：恋愛にも体の関係にもならない。エンジン型は ties.js の HK.Ties.after） */
+  /* 関係「無関心」「恐怖」の二人は、互いの noLove に入れる（engine.js の HK.noLovePair：恋愛にも体の関係にもならない。エンジン型は ties.js の HK.Ties.after）。
+     恐怖の「体の関係：あり」は入れない（夜の場面を止めない）。恐怖の「恋愛：あり」は、恐怖が和らぐまで恋愛しない（HK.fearHold） */
   HK.fearNG = function (P, ties) {
     if (!P) return;
     (ties || []).forEach(function (t) {
@@ -32,7 +33,19 @@
       var a = P[t.a], b = P[t.b];
       if (!a || !b || a === b) return;
       /* 「恋愛：あり」にした無関心・恐怖（ties.js の HK.tieLoveOK）は、恋愛は止めず、体の関係だけを止める（noSex：engine.js の HK.sexBlocked） */
-      var f = HK.tieLoveOK && HK.tieLoveOK(t) ? 'noSex' : 'noLove';
+      var lv = !!(HK.tieLoveOK && HK.tieLoveOK(t)), f = lv ? 'noSex' : 'noLove';
+      /* 恐怖（2026-11-03 利用者の指示）：「恋愛：あり」は恐怖が和らぐまで恋愛しない（engine.js の HK.fearHold。和らいだら cold-fear.js が外す）。
+         「体の関係：あり」（ties.js の HK.tieBodyOK）は noLove・noSex を入れない（夜の場面を止めない。恋愛は loveOff・fearHold で止まる） */
+      if (t.type === 'fear') {
+        if (lv && HK.fearHold) HK.fearHold(a, b);
+        if (HK.tieBodyOK && HK.tieBodyOK(t)) {
+          if (HK.loveOffMark && !lv) HK.loveOffMark(P, [t]);
+          var fo = a.fearOf = Array.isArray(a.fearOf) ? a.fearOf : [], fb = a.fearBody = Array.isArray(a.fearBody) ? a.fearBody : [];
+          if (fo.indexOf(b.i) < 0) fo.push(b.i);
+          if (fb.indexOf(b.i) < 0) fb.push(b.i);
+          return;
+        }
+      }
       [[a, b], [b, a]].forEach(function (q) { var l = q[0][f] = Array.isArray(q[0][f]) ? q[0][f] : []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); });
     });
   };

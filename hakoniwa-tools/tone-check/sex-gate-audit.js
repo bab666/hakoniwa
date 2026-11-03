@@ -25,7 +25,10 @@ const COND = [
     ['k', '友人愛憎', [{ type: 'friend' }, { type: 'lovehate', cold: 'both' }]], ['l', '友人劣等', [{ type: 'friend' }, { type: 'inferior' }]], ['m', '友人優越', [{ type: 'friend' }, { type: 'superior' }]],
     /* 恐怖（2026-10-30 担当FS）：恐怖の二人（0 が 1 を・2 が 3 を恐れる）は、合意のない展開が入のときだけ、恐れられる側が迫る形で体の関係になってよい。
        n＝恐怖だけ（スイッチ切なら 0 件であること）／o＝恐れる側が性行為の相手をほかの人に固定（0 件であること）／p＝恐れられる側の性欲「なし」（0 件であること） */
-    ['n', '恐怖', { type: 'fear' }], ['o', '恐怖固定', { type: 'fear' }, 'lock'], ['p', '恐怖性欲なし', { type: 'fear' }, 'nolib']
+    ['n', '恐怖', { type: 'fear' }], ['o', '恐怖固定', { type: 'fear' }, 'lock'], ['p', '恐怖性欲なし', { type: 'fear' }, 'nolib'],
+    /* 恐怖の「体の関係：あり」（2026-11-03 利用者の指示）：q＝夜の場面を止めない（件数は参考。避ける側は自分から迫らないので友人より少ない）／
+       r＝恐れられる側の性欲「なし」（合意の夜も起きないので 0 件であること。R18が中心の箱庭（HK.State.R18_CORE）は、仕掛けが性欲を見ないので除く） */
+    ['q', '恐怖体あり', { type: 'fear', body: 'ok' }], ['r', '恐怖体あり性欲なし', { type: 'fear', body: 'ok' }, 'nolib']
   ];
 
 /* ---------- パス sexgate（ページの中）：opt = { N, only, force, lib, cond } ---------- */
@@ -76,13 +79,15 @@ const JUDGE = function (HK, opt) {
       const o = oOf(run.sc), k = run.meta.k, n = run.input.chars.length;
           o.runs++;
           o.forceOn = /(^|,)force(,|$)/.test(String((run.input.env || {}).ct || ''));
+          /* R18が中心の箱庭（常識改変・サキュバス・バラエティなど。仕掛けそのものが性欲「なし」を見ない）は、r の判定に当てない */
+          o.core = !!(HK.State && HK.State.R18_CORE && HK.State.R18_CORE[run.sc]);
           const prs = n >= 4 ? [[0, 1], [2, 3]] : [[0, 1]];
           (res.log || []).forEach(e => {
             if (!e || !e.lewd || !Array.isArray(e.actors)) return;
             prs.forEach(p => {
               if (e.actors.indexOf(p[0]) < 0 || e.actors.indexOf(p[1]) < 0) return;
               o.cnt[k]++;
-              if (/[nop]/.test(k) && o.ex.length < 16) o.ex.push('恐怖の列 ' + k + ' ｜ ' + String(e.text).slice(0, 60) + ' ｜ why ' + String(e.why || '').slice(0, 90));
+              if (/[nopr]/.test(k) && o.ex.length < 16) o.ex.push('恐怖の列 ' + k + ' ｜ ' + String(e.text).slice(0, 60) + ' ｜ why ' + String(e.why || '').slice(0, 90));
               if (WHY && o.ex.length < 16 && /[cdef]/.test(k)) o.ex.push(k + ' ' + (e.tag || e.label || '') + ' ｜ ' + String(e.text).slice(0, 70) + ' ｜ why ' + String(e.why || '').slice(0, 90));
             });
           });
@@ -114,6 +119,7 @@ function verdict(r, show) {
     if (c.n > 0 && !o.forceOn) fz.push('n=' + c.n + '（スイッチ切）');
     if (c.o > 0) fz.push('o=' + c.o + '（固定を越えた）');
     if (c.p > 0) fz.push('p=' + c.p + '（性欲なし）');
+    if (c.r > 0 && !o.core) fz.push('r=' + c.r + '（体の関係ありで性欲なし）');
     if (fz.length) { v += '／不具合：恐怖の夜 ' + fz.join(' '); if (bad.indexOf(id) < 0) bad.push(id); }
     show && console.log(id.padEnd(10), COND.map(cd => String(c[cd[0]]).padEnd(8 + cd[1].length)).join(' '), v, o.err ? 'err ' + o.err : '');
     if (show) o.ex.forEach(x => console.log('    ' + String(x).replace(/\n/g, ' ')));

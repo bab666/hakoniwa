@@ -307,9 +307,11 @@ js/attr-look.js
 js/attr-race.js
 js/attr-meet.js
 js/fam-kin.js
+js/fear-body-r18.js @pack:lewd
 js/cold-fear-text.js @pack:rel
 js/cold-fear.js @pack:rel
 js/cold-fear-r18.js @pack:rel
+js/fear-soften.js @pack:rel
 js/cold-fear-room-r18.js @scen:whiteroom
 js/room-pressure.js @scen:whiteroom
 js/room-kill.js @scen:whiteroom
@@ -591,6 +593,8 @@ tone js/tone-brush10f-r18.js
 tone js/tone-brush-lk3-r18.js
 tone js/tone-brush10h.js
 tone js/tone-brush-sx.js
+tone js/tone-brush-fear.js
+tone js/tone-brush-fear-r18.js
 late js/tone-hero.js
 late js/tone-genki.js
 js/omega-mob-r18.js @scen:omega

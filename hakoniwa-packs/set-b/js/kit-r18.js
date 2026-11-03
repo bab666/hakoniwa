@@ -35,6 +35,8 @@
     if (HK.Pos && HK.Pos.libNone && HK.Pos.libNone([a, b])) return false;
     if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
     if (HK.ngSexPair && HK.ngSexPair(a, b)) return false;
+    /* 避けている人（恐怖の二人の怖がっている側など。avoid-kit.js）を、攻めに固定されたまま迫る側にしない（受け攻めの向きが入れ替えられる組は HK.Pos.order が入れ替える。2026-11-03） */
+    if (HK.Avoid && HK.Avoid.topOk && !HK.Avoid.topOk(ctx, a, b)) return false;
     return true;
   }
   /* 形：攻め a・受け b から（thick-sex.js と同じ決め方） */
