@@ -164,20 +164,53 @@
   function sickScore(c) { var t = c.tr || {}; return 0.2 + (WORK_SICK[c.life && c.life.work] || 0.2) + (1 - (t.a != null ? t.a : 0.5)) * 0.3 + (t.cp || 0.5) * 0.2; }
   function careScore(c) { var t = c.tr || {}; return 0.2 + (t.np || 0.5) * 0.5 + (t.warmth || 0.5) * 0.3 + (c.life && /home|remote/.test(c.life.work) ? 0.15 : 0); }
 
-  /* ---------- 目標（立場 × 態度9種 × 関係。行動の選ばれやすさと結末に効く） ----------
-     GK[種]：b＝後押しする行動、e＝結末の点（恋人に・デートになりやすさ） */
-  var GK = { ongaeshi: { b: 'over', e: 2 }, amayakasu: { b: 'over', e: 6 }, tayorare: { b: 'over', e: 3 }, tekipaki: { b: '', e: 0 }, kakusu: { b: '', e: 0 }, gimu: { b: 'clumsy', e: -8 },
-    chikazuku: { b: 'over', e: 10 }, kashi: { b: '', e: -4 }, mamoru: { b: 'over', e: 4 },
-    misenai: { b: 'hide', e: -2 }, karinashi: { b: 'hide', e: -5 }, amaetai: { b: 'amae', e: 6 }, hayaku: { b: 'hide', e: 0 }, sobani: { b: 'amae', e: 8 }, orei: { b: '', e: 3 }, meiwaku: { b: 'hide', e: 0 }, shigoto: { b: 'hide', e: -2 } };
-  function goalOf(ctx, c, side) {
-    var S = f(ctx), G = TX().GOAL || {}, GR = TX().GOAL_REL || {}, p = per(c);
+  /* ---------- 目標（短期＝この看病の間に何をしたいか／長期＝看病を通して二人の先に何を望むか。立場 × 態度9種 × 関係。kanbyo-text-e.js） ----------
+     GS[短期の種]：b＝後押しする行動、ok(S)＝叶ったか（日々の出来事の数 S.cnt から）。GL[長期の種]：b＝後押し、e＝結末の点、judge(S, 基本)＝近づいた／変わらない／遠のいた */
+  function cn(S, k) { return (S.cnt && S.cnt[k]) || 0; }
+  var GS = {
+    yowane: { b: 'over', ok: function (S) { return !!S.weakIn; } },
+    noshippai: { b: '', ok: function (S) { return !cn(S, 'clumsy') && !cn(S, 'fail'); } },
+    sobani: { b: 'over', ok: function (S) { return S.live !== 'apart' || cn(S, 'stay') > 0; } },
+    amayakasu: { b: 'over', ok: function (S) { return cn(S, 'over') + cn(S, 'amae') > 0; } },
+    tekipaki: { b: '', ok: function (S) { return !S.relapse; } },
+    kakusu: { b: '', ok: function (S) { return !cn(S, 'over'); } },
+    mamoru: { b: 'over', ok: function (S) { return !cn(S, 'choreTry') && !S.illSex && !S.relapse; } },
+    misenai: { b: 'hide', ok: function (S) { return !S.weakIn; } },
+    meiwaku: { b: 'hide', ok: function (S) { return !S.relapse && !cn(S, 'choreTry') && !S.kaeshi; } },
+    hayaku: { b: 'hide', ok: function (S) { return !S.relapse && S.heal - S.peak <= 1; } },
+    amaetai: { b: 'amae', ok: function (S) { return cn(S, 'amae') > 0 || !!S.illSex; } },
+    sobanite: { b: 'amae', ok: function (S) { return S.live !== 'apart' || cn(S, 'stay') > 0; } },
+    orei: { b: '', ok: function (S) { return !!S.thanked; } },
+    karinashi: { b: 'hide', ok: function (S) { return cn(S, 'hide') > 0 && !cn(S, 'amae') && !S.weakIn; } }
+  };
+  var GL = {
+    ongaeshi: { b: 'over', e: 2 }, tayorare: { b: 'over', e: 3 }, mamoru_l: { b: 'over', e: 4 }, taitou: { b: 'hide', e: -3 }, kashi: { b: '', e: -4 },
+    konomama: { b: '', e: -8 }, chikaku: { b: 'amae', e: 10 }, tsutaetai: { b: '', e: 12 }, orei_l: { b: '', e: 3 }, kawaritai: { b: 'amae', e: 4 }
+  };
+  function goalOf(ctx, c, side, kind) {
+    var S = f(ctx), T0 = TX(), G = kind === 's' ? T0.GOAL_S || {} : T0.GOAL_L || {}, GR = kind === 's' ? T0.GOAL_SR || {} : T0.GOAL_LR || {}, p = per(c);
     var base = ((G[side] || {})[p] || (G[side] || {}).gentle || []), rel = ((GR[side] || {})[S.feud ? 'feud' : S.grp] || []).filter(function (g) { return S.love || !ROM.test(g.t); });
+    /* 恋愛にならない二人には、気持ちを伝える・近づく類いの長期の目標を出さない */
+    if (kind === 'l' && !S.love) { base = base.filter(function (g) { return !/^(chikaku|tsutaetai)$/.test(g.k); }); rel = rel.filter(function (g) { return !/^(chikaku|tsutaetai)$/.test(g.k); }); }
     var list = rel.length && ctx.rng() < 0.45 ? rel : base;
-    if (!list.length) return null;
-    var g = list[Math.floor(ctx.rng() * list.length)];
-    /* 名簿の目標の欄（おまかせ）に、この部屋の目標を出す */
-    if (!c.goal || c.goal.id === 'kb') c.goal = { id: 'kb_' + side + '_' + g.k, label: g.t };
-    return g;
+    if (!list.length) list = base;
+    return list.length ? list[Math.floor(ctx.rng() * list.length)] : null;
+  }
+  /* 名簿の目標の欄（おまかせ）に、この部屋の短期・長期の目標を出す */
+  function goalLabel(c, gs, gl) { if (!c.goal || c.goal.id === 'kb') c.goal = { id: 'kb', label: '短期「' + (gs ? gs.t : '') + '」／長期「' + (gl ? gl.t : '') + '」' }; }
+  /* 長期の目標の判定：二人の好意・惹かれの動き（始まりから）を基本に、結末と出来事で決める */
+  function longJudge(ctx, who, g) {
+    var S = f(ctx), o = who === S.A ? S.B : S.A, r = ctx.rel[who.i][o.i], r0 = S.rel0 && S.rel0[who.i] || 0;
+    var d = (r.aff || 0) + (r.att || 0) - r0, base = d >= 40 ? 'near' : d < 8 || (r.ten || 0) > 40 ? 'far' : 'same', ek = S.endK;
+    if (!g) return base;
+    switch (g.k) {
+      case 'chikaku': case 'tsutaetai': return /koi|amai/.test(ek) || S.kaeshiBy ? 'near' : ek === 'mama' ? (base === 'far' ? 'far' : 'same') : base;
+      case 'konomama': return /koi|amai/.test(ek) ? 'far' : /mama|rei|date/.test(ek) ? 'near' : base;
+      case 'taitou': case 'kashi': case 'orei_l': return ek === 'kaeshi' ? 'near' : base;
+      case 'ongaeshi': case 'tayorare': case 'mamoru_l': return S.cares + cn(S, 'over') >= 8 ? 'near' : cn(S, 'clumsy') + cn(S, 'fail') >= 2 ? 'far' : base;
+      case 'kawaritai': return cn(S, 'amae') > 0 || S.weakIn ? 'near' : base;
+    }
+    return base;
   }
 
   /* ---------- 性格で分かれる行動 ----------
@@ -190,7 +223,7 @@
     if (side === 'carer') { var cl = (LF.clumsy(c) ? 0.6 : 0) + (1 - (t.a != null ? t.a : 0.5)) * 0.3 + (t.impulse || 0.4) * 0.3, ov = (t.np || 0.5) * 0.6 + (t.warmth || 0.5) * 0.3; base = cl > ov + 0.15 ? 'clumsy' : ov > cl + 0.15 ? 'over' : base; }
     else { var hd = (t.cp || 0.5) * 0.5 + (1 - (t.honesty || 0.5)) * 0.4, am = (t.ac || 0.5) * 0.5 + (t.np || 0.5) * 0.3; base = hd > am + 0.15 ? 'hide' : am > hd + 0.15 ? 'amae' : base; }
     /* 目標が行動を後押しする（恩返し・甘やかしたい→世話を焼きすぎる、見せたくない→強がる、甘えたい→甘える） */
-    var gl = side === 'carer' ? f(ctx).goalA : f(ctx).goalB, gb = gl && GK[gl.k] && GK[gl.k].b;
+    var gs = side === 'carer' ? f(ctx).gsA : f(ctx).gsB, gl = side === 'carer' ? f(ctx).glA : f(ctx).glB, gb = (gs && GS[gs.k] && GS[gs.k].b) || (gl && GL[gl.k] && GL[gl.k].b);
     if (gb && ctx.rng() < 0.55) base = gb;
     var odd = RC() && ctx.rng() < RC().pOdd(ctx);
     var opp = { over: 'clumsy', clumsy: 'over', hide: 'amae', amae: 'hide' };
@@ -289,7 +322,9 @@
     S.live = /^(together|visit|apart)$/.test(env.live) ? env.live : rk === 'spouse' || rk === 'fam' || rk === 'pfam' ? 'together' : rk === 'lover' ? (ctx.rng() < 0.5 ? 'together' : 'visit') : (ctx.rng() < 0.6 ? 'apart' : 'visit');
     S.G.forEach(function (g) { g.gone = true; g.life = g.life || { job: '' }; if (pickOfChar(ctx, g, 'outside')) g.outside = true; });
     plan(ctx, S);
-    S.goalA = goalOf(ctx, A, 'carer'); S.goalB = goalOf(ctx, B, 'patient');
+    S.cnt = {};
+    S.gsA = goalOf(ctx, A, 'carer', 's'); S.glA = goalOf(ctx, A, 'carer', 'l'); S.gsB = goalOf(ctx, B, 'patient', 's'); S.glB = goalOf(ctx, B, 'patient', 'l');
+    goalLabel(A, S.gsA, S.glA); goalLabel(B, S.gsB, S.glB);
     S.cb = behOf(ctx, A, 'carer'); S.pb = behOf(ctx, B, 'patient');
     /* 同居していない：看る人が来られる日（熱がいちばん高い日は 75%、治った日はいつも来る。来られない山場は電話越しの弱音） */
     S.come = {};
@@ -316,7 +351,7 @@
     var S = f(ctx), A = S.A, B = S.B, d = Math.floor(s / 3), t = s % 3;
     if (A === B) return;
     /* 関係の値の始まり（関係の設定の値に、看病の距離の近さを少し足す） */
-    if (s === 0) ctx.mod2(A, B, { aff: 8, trust: 6 }, { aff: 8, trust: 6 });
+    if (s === 0) { ctx.mod2(A, B, { aff: 8, trust: 6 }, { aff: 8, trust: 6 }); S.rel0 = {}; S.rel0[A.i] = ctx.rel[A.i][B.i].aff + ctx.rel[A.i][B.i].att; S.rel0[B.i] = ctx.rel[B.i][A.i].aff + ctx.rel[B.i][A.i].att; }
     var st = stageOf(S, d), ks = kStage(S, d), sick = st === 'rise' || st === 'peak' || st === 'fall' || ks === 'ksick';
     scen.actRate = sick ? REST_RATE : 0.15;
     if (sick && ctx.stepIndex != null) ctx._emoWS = ctx.stepIndex;
@@ -396,6 +431,7 @@
       if (!t) return false;
       var stop = ctx.rng() < 0.55, R = stop ? Tx.CHORE_STOP || {} : {}, rt = stop ? pickT(ctx, R[per(A)] || R.gentle, A, B) : pickT(ctx, Tx.CHORE_MISS, A, B);
       if (!stop) day.scold = true;
+      S.cnt.choreTry = (S.cnt.choreTry || 0) + 1;
       ctx.act2({ actors: [B, A], cat: 'bond', text: fill(ctx, t, A, B) + (rt ? fill(ctx, rt, A, B) : ''), why: '看病の部屋：寝ていられずに家事をしようとした（' + B.name + (stop ? '・' + A.name + 'が止めた' : '・' + A.name + 'は気づかなかった') + '）', fx: function () { ctx.mod2(A, B, { aff: 1, ten: 2 }, { aff: 1 }); } });
       relapse(ctx, day, stop ? 0.3 : 0.7);
       return true;
@@ -403,6 +439,7 @@
     if (keeper && LF.canChore(A) && !day.choreA && ctx.rng() < 0.45) {
       day.choreA = true;
       var ta = A.tr || {}, oc = LF.clumsy(A) || (ctx.rng() < 0.35 + (1 - (ta.a != null ? ta.a : 0.5)) * 0.3) ? 'fail' : /stern|polite|devoted/.test(per(B)) && ctx.rng() < 0.6 ? 'told' : 'ok';
+      if (oc === 'fail') S.cnt.fail = (S.cnt.fail || 0) + 1;
       var ct = pickT(ctx, (Tx.CHORE_A || {})[oc], A, B);
       if (!ct) return false;
       var RE = Tx.CHORE_A_RE || {}, cr = pickT(ctx, RE[per(B)] || RE.gentle, A, B);
@@ -530,7 +567,7 @@
     else { var RR = Rx[bh.k] || {}, rr = pickT(ctx, RR[per(other)] || RR.gentle, A, B); if (rr) rt = fill(ctx, rr, A, B); }
     var e = ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, t, A, B, { temp: TEMP[S.sev][day.st] || '' }) + rt, odd: bh.odd || odd2, why: '看病の部屋：' + who.name + 'が' + BEH_NAME[bh.k] + (bh.odd ? '（らしくない）' : ''),
       fx: function () { if (bh.k === 'hide') ctx.mod2(A, B, { trust: -1, aff: 1 }, { aff: 1 }); else if (bh.k === 'amae') ctx.mod2(A, B, { aff: 2, att: S.love ? 2 : 0 }, { aff: 2, trust: 2 }); else ctx.mod2(A, B, { aff: 1 }, { aff: 2, trust: 1 }); } });
-    if (e) { S.behs++; if (e.odd) S.odd++; }
+    if (e) { S.behs++; if (e.odd) S.odd++; S.cnt[bh.k] = (S.cnt[bh.k] || 0) + 1; }
   }
   /* 山場：熱がいちばん高い夜の弱音（必ず出す）。通いなら泊まり込む段から。弱音は看られる側の態度・関係で、受け答えは看る側の態度で */
   function weakNight(ctx, day) {
@@ -544,7 +581,8 @@
     var lv = S.love && (S.couple || S.pine) ? pickT(ctx, Tx.WEAK_LOVE, A, B) : '';
     var tx = fill(ctx, w, A, B, { temp: TEMP[S.sev].peak }) + (ans ? fill(ctx, ans, A, B) : '') + (tail ? fill(ctx, tail, A, B) : '') + (lv ? fill(ctx, lv, A, B) : '');
     var e = ctx.act2({ actors: [B, A], cat: S.love && (S.couple || S.pine) ? rcat(ctx, A, B) : 'bond', text: tx, why: '看病の部屋：熱がいちばん高い夜の弱音（' + B.name + '・' + TEMP[S.sev].peak + '）', fx: function () { ctx.mod2(A, B, { aff: 4, trust: 3, att: S.love ? 4 : 0 }, { aff: 5, trust: 5, att: S.love ? 4 : 0 }); } });
-    if (e) { e.tag = '山場'; S.weak = true; }
+    if (e) { e.tag = '山場'; S.weak = true; S.weakIn = true; }
+    if (S.live !== 'together') S.cnt.stay = (S.cnt.stay || 0) + 1;
     /* 看病の最中に近づきすぎた（恋人・両片想いの夜の一文）：うつりやすさで、看る人にうつることがある */
     if (lv && !S.kaeshi && S.heal <= S.days - 3 && ctx.rng() < { low: 0.08, mid: 0.15, high: 0.28 }[S.cont]) { var ln = ctx.rng() < 0.5 ? 1 : 2; S.kaeshi = { from: S.heal + 1, heal: S.heal + 1 + ln }; S.kaeshiBy = 'near'; }
   }
@@ -558,7 +596,7 @@
     var r = ctx.rel[A.i][B.i], q = ctx.rel[B.i][A.i];
     var sc = ((r.att || 0) + (q.att || 0)) / 2 + ((r.aff || 0) + (q.aff || 0)) / 6 + (S.pine ? 18 : 0) + ((A.tr.honesty || 0.5) + (B.tr.honesty || 0.5)) * 8 + (S.rk === 'bad' ? -12 : 0) + (ctx.rng() - 0.5) * 20;
     /* 関係ごとの線（恋人に／お礼のデート）。両片想い・片想いはもともと高いので線も高く、半分ほどが恋人に、残りはデートか両片想いのまま */
-    sc += ((S.goalA && GK[S.goalA.k]) ? GK[S.goalA.k].e : 0) + ((S.goalB && GK[S.goalB.k]) ? GK[S.goalB.k].e : 0);
+    sc += ((S.glA && GL[S.glA.k]) ? GL[S.glA.k].e : 0) + ((S.glB && GL[S.glB.k]) ? GL[S.glB.k].e : 0);
     S.endScore = Math.round(sc);
     var th = END_TH[S.rk] || END_TH.def;
     return (S.endK = sc >= th[0] ? 'koi' : sc >= th[1] ? 'date' : 'mama');
@@ -577,6 +615,7 @@
       }
       if (t === 1) {
         var TH = Tx.THANKS || {}, th = pickT(ctx, TH[per(B)] || TH.gentle, A, B), tr = relPick(ctx, Tx.THANKS_REL || {}, A, B);
+        if (th) S.thanked = true;
         if (th) ctx.act2({ actors: [B, A], cat: 'bond', text: fill(ctx, th, A, B) + (tr ? fill(ctx, tr, A, B) : ''), why: '看病の部屋：看病のお礼（' + B.name + 'から）', fx: function () { ctx.mod2(B, A, { aff: 4, trust: 3, att: S.love ? 3 : 0 }, { aff: 3, att: S.love ? 2 : 0 }); } });
         if (S.kaeshi) say1(ctx, Tx.KAESHI_SIGN || {}, A, B, 'kb_kaeshi', '看病の部屋：' + A.name + 'に風邪がうつりかけている', 'bond');
         return;
@@ -702,20 +741,32 @@
     var key = (ek === 'date' || ek === 'rei') && !S.dated ? ek + '_promise' : ek === 'kaeshi' && S.kaeshiBy ? 'kaeshi_near' : ek;
     var E = (TX().END || {})[key] || (TX().END || {})[ek] || {}, t = relPick(ctx, E, A, B, true);
     if (!t) t = '{a}と{b}の看病の日々は、こうして終わった。';
-    /* 二人の目標の結末の一文（目標の種で） */
-    var GE = TX().GOAL_END || {}, ga = S.goalA && pickT(ctx, GE[S.goalA.k], A, B), gb = S.goalB && pickT(ctx, GE[S.goalB.k], B, A);
-    if (ga) t += K.mark(ga).split('{a}').join('{A}').split('{b}').join('{B}');
-    if (gb) t += K.mark(gb).split('{a}').join('{B}').split('{b}').join('{A}');
-    t = t.split('{A}').join('{a}').split('{B}').join('{b}');
-    ctx.act2({ actors: [A, B], cat: /koi|date|amai/.test(ek) ? rcat(ctx, A, B) : 'bond', text: fill(ctx, t, A, B), why: '看病の部屋：結末（' + endName(S) + '）', fx: function () { ctx.mod2(A, B, { aff: 4, trust: 3 }, { aff: 4, trust: 3 }); } });
+    /* 二人の目標の判定の一文（短期：叶った／叶わなかった＝態度9種、長期：近づいた／変わらない／遠のいた） */
+    var tail = goalLines(ctx, A, B, S.gsA, S.glA, 'A') + goalLines(ctx, B, A, S.gsB, S.glB, 'B');
+    ctx.act2({ actors: [A, B], cat: /koi|date|amai/.test(ek) ? rcat(ctx, A, B) : 'bond', text: fill(ctx, t, A, B) + tail, why: '看病の部屋：結末（' + endName(S) + '）', fx: function () { ctx.mod2(A, B, { aff: 4, trust: 3 }, { aff: 4, trust: 3 }); } });
+  }
+  var RES_NAME = { ok: '叶った', ng: '叶わなかった', near: '近づいた', same: '変わらない', far: '遠のいた' };
+  function goalJudge(ctx) {
+    var S = f(ctx);
+    if (S.judged) return;
+    S.judged = true;
+    S.resA = { s: S.gsA && GS[S.gsA.k] && GS[S.gsA.k].ok(S) ? 'ok' : 'ng', l: longJudge(ctx, S.A, S.glA) };
+    S.resB = { s: S.gsB && GS[S.gsB.k] && GS[S.gsB.k].ok(S) ? 'ok' : 'ng', l: longJudge(ctx, S.B, S.glB) };
+  }
+  function goalLines(ctx, who, other, gs, gl, side) {
+    var S = f(ctx); goalJudge(ctx);
+    var res = side === 'A' ? S.resA : S.resB, out = '', T0 = TX();
+    if (gs) { var R = (T0.GOAL_RES || {})[res.s] || {}, t = pickT(ctx, R[per(who)] || R.gentle, who, other, true); if (t) out += fill(ctx, t, who, other, { goal: gs.t }); }
+    if (gl) { var t2 = pickT(ctx, (T0.GOAL_LRES || {})[res.l], who, other, true); if (t2) out += fill(ctx, t2, who, other, { goal: gl.t }); }
+    return out;
   }
   function finish(ctx) {
     var S = f(ctx), A = S.A, B = S.B;
     if (A === B) return;
-    decideEnd(ctx);
+    decideEnd(ctx); goalJudge(ctx);
     S.G.forEach(function (g) { g.gone = false; g.fate = g.outside ? '見舞いに来た住人（名簿から）' : '見舞いに来る住人'; g.fateNote = (S.gUsed && S.gUsed[g.i]) ? B.name + 'の具合を気にかけていた' : ''; });
     ctx.flags.kanbyo = { days: S.days, a: A.i, b: B.i, rel: RK_NAME[S.rk], rk: S.rk, sev: S.sev, live: S.live, peak: S.peak + 1, heal: S.heal + 1, kaeshi: S.kaeshi ? { from: S.kaeshi.from + 1, heal: S.kaeshi.heal + 1 } : null,
-      cb: BEH_NAME[S.cb.k], pb: BEH_NAME[S.pb.k], ga: S.goalA ? S.goalA.t : '', gb: S.goalB ? S.goalB.t : '', illSex: !!S.illSex, relapse: S.relapse || 0, cbOdd: S.cb.odd, pbOdd: S.pb.odd, endK: S.endK, end: endName(S), score: S.endScore, cares: S.cares, visits: S.visits, sex: S.sex, love: S.love, confessed: S.confessed, weak: !!S.weak };
+      cb: BEH_NAME[S.cb.k], pb: BEH_NAME[S.pb.k], gsA: S.gsA ? S.gsA.t : '', glA: S.glA ? S.glA.t : '', gsB: S.gsB ? S.gsB.t : '', glB: S.glB ? S.glB.t : '', resA: S.resA ? [RES_NAME[S.resA.s], RES_NAME[S.resA.l]] : null, resB: S.resB ? [RES_NAME[S.resB.s], RES_NAME[S.resB.l]] : null, illSex: !!S.illSex, relapse: S.relapse || 0, cbOdd: S.cb.odd, pbOdd: S.pb.odd, endK: S.endK, end: endName(S), score: S.endScore, cares: S.cares, visits: S.visits, sex: S.sex, love: S.love, confessed: S.confessed, weak: !!S.weak };
     A.fate = '看病した人'; A.fateNote = B.name + 'を看病した';
     B.fate = S.kaeshi ? '看病された人（そして看病し返した人）' : '看病された人'; B.fateNote = A.name + 'に看病された';
     if (S.kaeshi) A.fateNote += '。最後は風邪がうつって、看病し返してもらった';
@@ -730,7 +781,9 @@
     lines.push('看病の' + R.days + '日（' + a + 'が' + b + 'を看病した・' + R.rel + '）');
     lines.push('病の重さ：' + SEV_NAME[R.sev] + '／' + ({ together: '同居で看病', visit: '通いで看病', apart: '同居していない（来られる日に看病）' }[R.live] || '')  + '／熱がいちばん高かったのは DAY' + R.peak + '、治ったのは DAY' + R.heal + (R.kaeshi ? '／DAY' + R.kaeshi.from + 'に' + a + 'へうつった' : ''));
     lines.push(a + '：' + R.cb + (R.cbOdd ? '（らしくない）' : '') + '／' + b + '：' + R.pb + (R.pbOdd ? '（らしくない）' : ''));
-    if (R.ga || R.gb) lines.push('目標：' + a + '「' + R.ga + '」／' + b + '「' + R.gb + '」');
+    if (R.gsA || R.glA) lines.push(a + 'の目標：短期「' + R.gsA + '」' + (R.resA ? '（' + R.resA[0] + '）' : '') + '／長期「' + R.glA + '」' + (R.resA ? '（' + R.resA[1] + '）' : ''));
+    if (R.gsB || R.glB) lines.push(b + 'の目標：短期「' + R.gsB + '」' + (R.resB ? '（' + R.resB[0] + '）' : '') + '／長期「' + R.glB + '」' + (R.resB ? '（' + R.resB[1] + '）' : ''));
+    if (R.resA && R.resB) lines.push(a + '：短期：' + R.resA[0] + '／長期：' + R.resA[1] + '　' + b + '：短期：' + R.resB[0] + '／長期：' + R.resB[1]);
     lines.push('看病 ' + R.cares + '回' + (R.visits ? '／見舞い・差し入れ・連絡 ' + R.visits + '回' : '') + (HK.SAFE_ON ? '' : '／エッチ ' + R.sex + '回'));
     lines.push('結末：' + R.end);
     X.C.forEach(function (c) { c.afterDone = true; });

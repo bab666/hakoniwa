@@ -13,6 +13,10 @@
 /* @event scen=set-b-kanbyo id=kb_ill_jii cat=solo tie=- tags=night label=相手が寝込む夜に別室でひとりで慰める */
 /* @event scen=set-b-kanbyo id=kb_ill_jii_found cat=romance tie=- tags=night label=別室でひとりでしているのを見つかる夜 */
 /* @event scen=set-b-kanbyo id=kb_ill_jii_next cat=romance tie=- tags=night label=今日もするのかと腕を掴まれる翌晩 */
+/* @event scen=set-b-kanbyo id=kb_long_mizu cat=romance tie=- tags=night label=水をこぼして濡れた服を脱がせるうちに */
+/* @event scen=set-b-kanbyo id=kb_long_ase cat=romance tie=- tags=night label=汗を拭くうちに手が止まらなくなる夜 */
+/* @event scen=set-b-kanbyo id=kb_long_koori cat=romance tie=- tags=night label=氷枕を替える夜に熱い額へ口づけて */
+/* @event scen=set-b-kanbyo id=kb_long_shouko cat=romance tie=- tags=night label=元気になった証拠を見せる看病のお礼の夜 */
 /* @event scen=set-b-kanbyo id=kb_form_fade cat=romance tie=- tags=night label=夜の場面・ほのめかす（暗転と翌朝） */
 /* @event scen=set-b-kanbyo id=kb_form_short cat=romance tie=- tags=night label=夜の場面・短い場面（治ったあとの内容） */
 /* @event scen=set-b-kanbyo id=kb_form_mid cat=romance tie=- tags=night label=夜の場面・中くらいの場面（反応と山場） */
@@ -64,6 +68,32 @@
      入口：osoi 熱に浮かされた受けが迫る（受けが看病される人のときだけ。攻めが受け止めて主導する＝受け攻めは入れ替えない）／soine 心細くて一緒に寝る→したくなる／
        yukkuri 熱のある体を気づかうゆっくりした場面（短い場面だけ。山場も静か）／rise 弱った相手に看る側（攻め）の理性が揺らぐ（合意の上。受けの「でも……」とためらう段を必ず入れる）
      翌朝は kanbyo.js の afterIll（反省・甘やかし。熱がぶり返す・看る人にうつりやすくなる） */
+  /* ---------- 看病の部屋でしか出ない長い場面（mizu・ase・koori は熱の下がってきた夜で、受けが看病される人のとき。shouko は治った日の夜） ---------- */
+  var LONG = { mizu: '水をこぼして濡れた服を脱がせるうちに', ase: '汗を拭くうちに手が止まらなくなって', koori: '氷枕を替える夜に熱い額へ口づけて', shouko: '元気になった証拠を見せる看病のお礼' };
+  KR.LONG = LONG;
+  function longScene(ctx, key, a, b, sh, x, y, last) {
+    var S = ctx.kb, env = ctx.env, T = TX(), LV = HK.Lewd;
+    var lv = LV ? LV.lv(env) : 'mid', ero = !!(LV && LV.ero(env) && HK.ThickEro);
+    var L0 = KB.pickT(ctx, (T.LONG_LEAD || {})[key], x, y, true);
+    var FE = T.FEEL || {}, fe = key === 'shouko' ? KB.pickT(ctx, FE[PR.att(x, y)] || FE.gentle, x, y) : '';
+    var le = lead(ctx, x, y, K.fill(ctx, L0 + (fe || ''), x, y), LONG[key] + '・' + x.name + 'から', key === 'shouko' ? '治った日の夜' : '');
+    var pk = function (arr) { return pickOf(ctx, arr); }, text, form;
+    if (lv === 'low') { text = K.fill(ctx, KB.pickT(ctx, T.ILL_FADE, a, b, true), a, b); form = 'fade'; }
+    else {
+      CUR = ctx;
+      var open = K.mark(KB.pickT(ctx, ((T.LONG_OPEN || {})[key] || {})[sh], a, b, true)), aft = K.mark(KB.pickT(ctx, (T.LONG_AFTER || {})[key], a, b, true));
+      var st = HK.ThickSex.style(a);
+      var rr = ero ? HK.ThickEro.scene({ S: ctx, pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: aft, jealous: false, leadB: x === b })
+        : HK.ThickSex.scene({ pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: aft, ctx: ctx, jealous: false, leadB: x === b });
+      text = dedupe(ctx.t(rr.text, a, b)); form = 'long';
+    }
+    var e = ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: text, why: '看病の部屋：' + (key === 'shouko' ? '夜' : '熱のある夜') + '（' + FORM[form] + '・' + LONG[key] + '）', sex: true, lewd: form !== 'fade',
+      fx: function () { ctx.mod2(a, b, { aff: 4, att: 6 }, { aff: 4, att: 6 }); } });
+    if (!e) { drop(ctx, le); return false; }
+    if (form === 'long') S.longN = (S.longN || 0) + 1;
+    S.entries = S.entries || {}; S.entries['long_' + key] = (S.entries['long_' + key] || 0) + 1;
+    return true;
+  }
   var ILL = { osoi: '熱に浮かされて受けから', soine: '心細くて一緒に寝るうちに', yukkuri: '体を気づかってゆっくり', rise: '看る側の理性が揺らいで', kuchi: '今日はここまでと口や手だけで', jii: '別室でひとりで', jiinext: '今日もするのかと腕を掴まれて' };
   KR.ILL = ILL;
   KR.ill = function (ctx, day, last) {
@@ -80,8 +110,11 @@
     var W = [['yukkuri', 1.2], ['soine', /devoted|gentle|shy|free/.test(PR.att(B, A)) ? 1.1 : 0.6]];
     if (b === B && ld !== 'top' && !(P && P.hardTop && P.hardTop(b, a))) W.push(['osoi', /sasoi|osoi/.test(ld) ? 1.4 : /free|proud|devoted/.test(bt) ? 0.8 : 0.4]);
     W.push(['kuchi', 1], ['jii', 0.8]);
+    /* 専用の長い場面（受けが看病される人で、熱の下がってきた日か軽い風邪） */
+    if (b === B && (day.st === 'fall' || S.sev === 'light') && !(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b))) W.push(['mizu', 1.2], ['ase', 1.2], ['koori', 1.2]);
     if (a === A) W.push(['rise', /sadist|mean/.test(kd) ? 1.4 : /proud|free|cool/.test(tp) ? 1 : 0.7]);
     var entry = HK.weighted(ctx.rng, W, function (x) { return x[1]; })[0];
+    if (entry === 'mizu' || entry === 'ase' || entry === 'koori') return longScene(ctx, entry, a, b, sh, A, B, last);
     if (entry === 'kuchi') return kuchi(ctx, day, a, b, sh);
     if (entry === 'jii') return jii(ctx, day, a, b, sh);
     /* 1. きっかけ：x＝言い出す人（osoi・soine は看病される人、rise は攻め、yukkuri は看る人） */
@@ -122,9 +155,9 @@
     var e = ctx.act2({ actors: [a, b], cat: cat || (S.love ? 'romance' : 'bond'), text: text, why: why, sex: true, lewd: true, fx: function () { ctx.mod2(a, b, { aff: 3, att: 4 }, { aff: 3, att: 4 }); } });
     return e;
   }
-  function lead(ctx, x, y, text, why) {
+  function lead(ctx, x, y, text, why, pre) {
     var S = ctx.kb, lcat = S.love && (!ctx.romanceOk || ctx.romanceOk([x, y], false)) ? 'romance' : 'bond';
-    var le = ctx.say({ kind: 'event', cat: lcat, actors: [x, y], text: text, why: 'きっかけ：熱のある夜（' + why + '）', mag: 0 });
+    var le = ctx.say({ kind: 'event', cat: lcat, actors: [x, y], text: text, why: 'きっかけ：' + (pre || '熱のある夜') + '（' + why + '）', mag: 0 });
     if (le) le.tag = 'きっかけ';
     return le;
   }
@@ -224,6 +257,8 @@
     p *= P && P.libMul ? Math.min(1.5, P.libMul([A, B])) : 1;
     if (last && S.sex < S.lewdMax) p = Math.max(p, S.couple ? 0.85 : 0.5);
     if (ctx.rng() > p) return false;
+    /* 治った日の夜は 35% で専用の長い場面「元気になった証拠を見せる」（言い出すのは治った人） */
+    if (entry === 'heal' && !(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b)) && ctx.rng() < 0.35) { var AVx = HK.Avoid, xb = B, yb = A; if (AVx && AVx.of && AVx.of(ctx, B, A)) { xb = A; yb = B; } return longScene(ctx, 'shouko', a, b, sh, xb, yb, last); }
     /* 1. きっかけ：言い出す人（{x}）。治った日・デート・甘い夜は看病された人（B）が多く、うつって治った夜は看病し返された人（A） */
     var x = entry === 'back' ? (ctx.rng() < 0.7 ? A : B) : entry === 'amai' ? (ctx.rng() < 0.5 ? A : B) : (ctx.rng() < 0.7 ? B : A), y = x === A ? B : A;
     /* 言い出す人が相手を避けていれば、相手を言い出す人にする（両方なら起こさない） */
