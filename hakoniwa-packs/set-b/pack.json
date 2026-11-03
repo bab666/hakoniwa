@@ -94,6 +94,34 @@
         "js/kanbyo-r18-text.js",
         "js/kanbyo-r18.js"
       ]
+    },
+    {
+      "name": "date",
+      "deps": {
+        "full": [
+          "pack-roomkit",
+          "pack-lewd",
+          "kit"
+        ],
+        "zenrei": [
+          "pack-roomkit",
+          "kit"
+        ]
+      },
+      "files": [
+        "js/date-places-a.js",
+        "js/date-places-b.js",
+        "js/date-places-c.js",
+        "js/date-places-d.js",
+        "js/date-places-e.js",
+        "js/date-text-a.js",
+        "js/date-text-b.js",
+        "js/date-text-c.js",
+        "js/date-tone.js",
+        "js/date.js",
+        "js/date-r18-text.js",
+        "js/date-r18.js"
+      ]
     }
   ]
 }
