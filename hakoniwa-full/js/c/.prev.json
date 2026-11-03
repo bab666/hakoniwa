@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.a276181167.js",
+  "core": "core.9da38d15de.js",
   "late": "late.8d550a8690.js",
   "pack-rel": "pack-rel.e206c21c67.js",
   "pack-lewd": "pack-lewd.4f299fdf43.js",
@@ -76,7 +76,7 @@
   "core": "core.a276181167.js",
   "late": "late.8d550a8690.js",
   "pack-rel": "pack-rel.e206c21c67.js",
-  "pack-lewd": "pack-lewd.4ecae425ce.js",
+  "pack-lewd": "pack-lewd.4f299fdf43.js",
   "scen-goukon": "scen-goukon.34583de0f9.js",
   "scen-classroom": "scen-classroom.d7036de77a.js",
   "scen-island": "scen-island.353b537d54.js",
@@ -359,8 +359,8 @@
    5933
   ],
   "js/lewd-words.js": [
-   13830,
-   5174
+   13982,
+   5433
   ],
   "js/part-words.js": [
    4129,

@@ -159,6 +159,11 @@
       var mOnly = c ? (hasM(c) && !hasF(c)) : !!(ctx.here && ctx.here.length && !ctx.here.some(hasF) && ctx.here.some(hasM));
       if (mOnly) key = '先走り';
     }
+    /* {胸} の持ち主が男性器だけの人（女性の体でない人）なら、作風・濃さを問わず「胸」（「おっぱい」は違和感があるという 2026-11-03 の利用者の指摘。持ち主が分からなくても、その場に女性の体の人がいなければ同じ） */
+    if (key === '胸') {
+      var mChest = c ? (hasM(c) && !hasF(c)) : !!(ctx.here && ctx.here.length && !ctx.here.some(hasF) && ctx.here.some(hasM));
+      if (mChest) return '胸';
+    }
     if (X.MODE !== 'direct' && c) {
       if (key === '男性器' && c.partM) return c.partM;
       if (key === '女性器' && c.partF) return c.partF;
