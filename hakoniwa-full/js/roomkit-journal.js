@@ -31,9 +31,12 @@
     prompt: function (ctx, actors, rows, head) {
       rows = (rows || []).filter(function (r) { return r && r[1]; });
       if (!rows.length) return null;
+      /* 記録の行には気分の一句（emotion.js）を付けない。一句は1区切りに1回までなので、記録を出した区切りは一句なしにする（記録の多い部屋で同じ一句が続かないように） */
+      if (ctx.stepIndex != null) ctx._emoWS = ctx.stepIndex;
       return ctx.say({ kind: 'event', cat: 'solo', actors: actors || [], text: (head || '〇プロンプト') + '：' + rows.map(function (r) { return r[0] + '＞' + r[1]; }).join('／'), why: 'プレイログ', mag: 0 });
     },
     pts: function (ctx, chars, before) {
+      if (ctx.stepIndex != null) ctx._emoWS = ctx.stepIndex;
       var parts = chars.map(function (c) { var w = J.of(ctx, c); return w ? c.name + ' ' + (before[c.i] != null ? before[c.i] : w.pt) + '→' + w.pt : ''; }).filter(Boolean);
       if (!parts.length) return null;
       return ctx.say({ kind: 'event', cat: 'solo', actors: chars, text: '〇願望pt：' + parts.join('／'), why: 'プレイログ', mag: 0 });
