@@ -369,6 +369,16 @@
   function pk(x, arr) { return F.pick(x, arr); }
   function by(tab, p, k) { var t = tab[p] || tab.gentle; return t[k] || t.m; }
 
+  /* 合意のない場面の回数（force-repeat-r18.js の HK.ForceRep。2026-11-04）：攻めの一言は回数の台詞を足し（一回目は元の表＋一回目の表）、二回目からの事後は回数の地の文と台詞 */
+  /* 受けの最中・山場の一言（MIDSAY・PEAKSAY）にも、受けの拒む言葉の回数の台詞を足す */
+  function frSay(x, T, B, arr) { return HK.ForceRep ? HK.ForceRep.pool(x, 'protest', B, T, arr, '「…」') : arr; }
+  function frLast(x, T, B, arr) { return HK.ForceRep ? HK.ForceRep.pool(x, 'last', T, B, arr, '「…」') : arr; }
+  function frAfter(x, T, B, p, nar, say) {
+    var F = HK.ForceRep, n = F ? F.n(x, T, B) : 1;
+    if (!F || !F.X.AFTER || n < 2) return [nar, say];
+    var q = F.pool(x, 'after', B, T, [], '「…」');
+    return [pk(x, F.X.AFTER[n === 2 ? 'n2' : F.holds(B) ? 'n3h' : 'n3g'][p]), q.length ? pk(x, q) : say];
+  }
   var R = HS.Refuse = {
     FADE: FADE, INSERT: INSERT, ERO_INSERT: ERO_INSERT, BODY: BODY, ERO_BODY: ERO_BODY, MIDSAY: MIDSAY, HOLD: HOLD, PEAK: PEAK, ERO_PEAK: ERO_PEAK,
     PEAKSAY: PEAKSAY, LAST: LAST, LAST_L: LAST_L, AGAIN: AGAIN, AFTER: AFTER, AFTSAY: AFTSAY, END: END,
@@ -376,7 +386,8 @@
     /* ほのめかす：暗転 → 攻めの一言 → 受けの事後（地の文と一言） */
     low: function (x, T, B, o) {
       var k = o.k, p = o.p, tp = o.tp;
-      return [pk(x, FADE), '{a}' + pk(x, (o.lt ? LAST_L : LAST)[tp] || LAST.gentle), pk(x, AFTER[p] || AFTER.gentle), '{b}' + pk(x, by(AFTSAY, p, k))];
+      var af = frAfter(x, T, B, p, AFTER[p] || AFTER.gentle, by(AFTSAY, p, k));
+      return [pk(x, FADE), '{a}' + pk(x, frLast(x, T, B, (o.lt ? LAST_L : LAST)[tp] || LAST.gentle)), typeof af[0] === 'string' ? af[0] : pk(x, af[0]), '{b}' + (typeof af[1] === 'string' ? af[1] : pk(x, af[1]))];
     },
     /* 導入のあと（o：k 性別の組・p 受けの態度・tp 攻めの態度・lt 攻めが受けを想っている・sub 体の組（'' なら繋がる段なし）・ero・short・high・STRIP（hate-sex-r18.js の脱がせる段）） */
     parts: function (x, T, B, o) {
@@ -385,12 +396,12 @@
       if (o.short) {
         /* 短く：繋がる（か最中）・山場・事後の三段だけ */
         push(sub ? pk(x, (ero ? ERO_INSERT : INSERT)[sub]) : pk(x, (ero ? ERO_BODY : BODY)[k]));
-        push('{b}' + pk(x, by(MIDSAY, p, k)));
+        push('{b}' + pk(x, frSay(x, T, B, by(MIDSAY, p, k))));
       } else {
         if (o.STRIP && o.STRIP[k]) push(pk(x, o.STRIP[k]));
         if (sub) push(pk(x, (ero ? ERO_INSERT : INSERT)[sub]));
         push(pk(x, (ero ? ERO_BODY : BODY)[k]));
-        push('{b}' + pk(x, by(MIDSAY, p, k)));
+        push('{b}' + pk(x, frSay(x, T, B, by(MIDSAY, p, k))));
         push('{b}「{m0}」');
         push(pk(x, HOLD[p] || HOLD.gentle));
         if (o.watch) out.push(o.watch);
@@ -398,11 +409,12 @@
       }
       push('{b}「{m2}」');
       push(pk(x, (ero && sub ? ERO_PEAK : PEAK)[k]));
-      push('{b}' + pk(x, by(PEAKSAY, p, k)));
-      out.push('{a}' + pk(x, (o.lt ? LAST_L : LAST)[tp] || LAST.gentle));
+      push('{b}' + pk(x, frSay(x, T, B, by(PEAKSAY, p, k))));
+      out.push('{a}' + pk(x, frLast(x, T, B, (o.lt ? LAST_L : LAST)[tp] || LAST.gentle)));
       if (o.high) push(pk(x, AGAIN[k]));
-      push(pk(x, AFTER[p] || AFTER.gentle));
-      push('{b}' + pk(x, by(AFTSAY, p, k)));
+      var af = frAfter(x, T, B, p, AFTER[p] || AFTER.gentle, by(AFTSAY, p, k));
+      push(typeof af[0] === 'string' ? af[0] : pk(x, af[0]));
+      push('{b}' + (typeof af[1] === 'string' ? af[1] : pk(x, af[1])));
       return out;
     },
     /* 合意のない場面の「濃い」もう一度を、受けが求めない形で（cold-fear-r18.js の力ずくの場面などが使う）。{a}{b}{m1} のまま */

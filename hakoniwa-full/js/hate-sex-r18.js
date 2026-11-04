@@ -509,12 +509,21 @@
       if (lt) out.push(pick(x, LOVE_LEAD[k]));
       out.push(pick(x, OPEN[k]));
       /* 受けの強い拒否 → 攻めの言い返し（嫌々・開き直り） */
-      out.push('{b}「' + pick(x, PROTEST[p]) + '」');
-      say('a', (lt ? (opt.room ? RETORT_ROOM_L : RETORT_L) : (opt.room ? RETORT_ROOM : RETORT))[tp]);
+      /* 合意のない場面の回数（force-repeat-r18.js の HK.ForceRep.pool。2026-11-04）：一回目は元の表に一回目の台詞を足し、二回目からは回数の台詞に */
+      var FRp = function (role, who, arr, fmt) { return HK.ForceRep ? HK.ForceRep.pool(x, role, who, who === T ? B : T, arr, fmt) : arr; };
+      out.push('{b}「' + pick(x, FRp('protest', B, PROTEST[p])) + '」');
+      say('a', FRp('push', T, (lt ? (opt.room ? RETORT_ROOM_L : RETORT_L) : (opt.room ? RETORT_ROOM : RETORT))[tp], '「…」'));
       /* 内容のスイッチ「暴力をともなう性描写」が入（展開：重い）のときだけ、攻めの暴力と受けの反応の段（content-events-r18.js の HS.extra） */
       if (HS.extra) { var vx = HS.extra(x, T, B, k, opt); if (vx) out.push(vx); }
       /* 愛憎の文は持つ側に（攻めの一言 LAST は攻めが持つとき、受けの事後 AFTER は受けが持つとき。2026-10-28 担当JD） */
-      var lastL = function () { return lhT && x.rng() < 0.6 ? LHR.LAST[tp] : (lt ? LAST_L : LAST)[tp]; }, afterL = function () { return lhB && x.rng() < 0.6 ? LHR.AFTER[p] : AFTER[p]; };
+      var lastL = function () { return lhT && x.rng() < 0.6 ? LHR.LAST[tp] : FRp('last', T, (lt ? LAST_L : LAST)[tp], '「…」'); }, afterL = function () { return lhB && x.rng() < 0.6 ? LHR.AFTER[p] : FRa(AFTER[p]); };
+      /* 受けの事後：二回目からは回数の事後（地の文＋台詞） */
+      var FRa = function (arr) {
+        var F = HK.ForceRep, X = F && F.X, n = F ? F.n(x, T, B) : 1;
+        if (!F || !X.AFTER || n < 2) return arr;
+        var nr = pick(x, X.AFTER[n === 2 ? 'n2' : F.holds(B) ? 'n3h' : 'n3g'][p]);
+        return FRp('after', B, [], '{b}「…」').map(function (q) { return nr + q; });
+      };
       HS.lastShield = null;
       if (low && RF) { HS.lastOut.out = 'refuse'; return fill(x, out.concat(RF.low(x, T, B, { k: k, p: p, tp: tp, lt: lt })).join(''), T, B, ero); }
       if (low) { out.push(pick(x, FADE)); say('a', lastL()); out.push(pick(x, afterL())); if (lh) out.push(pick(x, LHR.TAIL)); return fill(x, out.join(''), T, B, ero); }

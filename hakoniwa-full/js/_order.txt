@@ -506,6 +506,10 @@ js/play-text2-r18.js @pack:lewd
 js/play-act-r18.js @pack:lewd
 js/play-more-r18.js @pack:lewd
 js/play-r18.js @pack:lewd
+# 合意のない展開の二回目・三回目（2026-11-04。同じ二人の回数で受けの反応・攻めの構え・台詞を書き分ける HK.ForceRep。設計は docs/reports/2026-11-04/force-repeat.md）
+js/force-repeat-r18.js @pack:lewd
+js/force-repeat-text-r18.js @pack:lewd
+js/force-repeat-say-r18.js @pack:lewd
 # キスの描写の型（2026-11-03。きっかけ・長さ・深さ・場所・終わり方で一回のキスを組む HK.Kiss。キスだけの場面とエッチの入り方「キス」が同じ文を使う。全年齢版は pack-rel）
 js/kiss-text.js @pack:lewd
 js/kiss-text2.js @pack:lewd
