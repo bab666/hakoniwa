@@ -1029,7 +1029,7 @@
   function logPane(res, scen) {
     var G = tlGroups(res);
     return '<div class="rvgrid rvg-log"><nav class="rvtoc" id="rvtoc" aria-label="目次">' + toc(res, G) + '</nav>' +
-      '<div class="rvmain"><div class="rvloghd"><h2 class="sec rvh2" id="tlhead">経過' + hotLegend(res) + '</h2><button type="button" class="btn small rvsidebtn" data-act="rvside" aria-expanded="' + rv.side + '" aria-controls="tlbar">絞り込み・文字</button></div>' +
+      '<div class="rvmain"><div class="rvloghd"><h2 class="sec rvh2" id="tlhead">経過' + hotLegend(res) + '</h2><button type="button" class="btn small rvsidebtn" data-act="rvside" aria-expanded="' + rv.side + '" aria-controls="tlbar rvtoc">目次・絞り込み</button></div>' +
       (scen.longRun && scen.longRun(res.env) ? '<p class="hint">長期間のため、最初は重要な出来事だけの短縮版で表示しています。「重要な場面だけ」を外すと全部見られます。</p>' : '') +
       '<div class="tl" id="tl">' + timeline(res, G) + '</div></div>' +
       '<aside class="rvside rvrail" id="tlbar" aria-label="経過の絞り込み">' + tlBar(res) + '</aside></div>';

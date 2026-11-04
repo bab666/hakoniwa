@@ -42,6 +42,16 @@
     /* 設定の窓 */
     'html body .gearrow label{max-width:100%;min-width:0}html body .gearrow label select{flex:1 1 auto;min-width:0;max-width:100%}html body .gearrow label>select:only-of-type{width:100%}' +
     '}' +
+    /* 2026-11-04：箱庭タブの選んだ箱庭のカードの「説明・TIPS」（スマホだけ。押すと説明の全文・札・効く気質・TIPS・出来事の一覧を出す） */
+    '@media (max-width:600px){html body #view-box .bxsel-a .bxmore{display:flex;height:40px;padding:0 12px;font-size:13px}' +
+      'html body #view-box .bxsel.bxopen{flex-wrap:wrap}html body #view-box .bxsel.bxopen .bxsel-m{flex:1 1 100%}html body #view-box .bxsel.bxopen .bxsel-d{white-space:normal;overflow:visible}' +
+      'html body #view-box .bxsel.bxopen .tags,html body #view-box .bxsel.bxopen .bxuses{display:flex}html body #view-box .bxsel.bxopen .note{display:block}' +
+      'html body #view-box .bxsel.bxopen .bxsel-a{flex:1 1 100%;flex-direction:row;flex-wrap:wrap}html body #view-box .bxsel.bxopen .bxsel-a>*{flex:1 1 40%;width:auto}html body #view-box .bxsel.bxopen .bxsel-a .tipscen{display:flex}}' +
+    '#view-box .bxsel-a .bxmore{display:none}' +
+    /* 右上の「表示」のメニューを開いているあいだは、ヘッダーを結果タブの上に止まる切替（z-index 20）より前に出す（スマホで切替がメニューの上に重なっていた。2026-11-04） */
+    '.wrap>header.top:has(.uidispmenu:not([hidden])){z-index:30}' +
+    /* 住人の行の一行の要約に出すグループの札（幅の狭い画面で要約が出るとき） */
+    '#view-cast .res .rsub .rsgrp{display:inline-block;margin-right:6px;padding:0 6px;border:1px solid var(--ui-line2,var(--line));border-radius:8px;font-size:11px;line-height:1.6;color:var(--ui-ink,var(--ink))}' +
     /* 「横にスクロールできます」はスマホ幅だけ */
     '.tblhint{display:none;margin:0 0 4px;font-size:12px;color:var(--muted)}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
@@ -86,4 +96,13 @@
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  /* 箱庭タブの「説明・TIPS」の開け閉め（スマホ。開いたかどうかは HK.MobileUI.selOpen に覚え、ui.js の selCard が描き直しても保つ） */
+  var MU = (window.HK = window.HK || {}).MobileUI = window.HK.MobileUI || { selOpen: false };
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest && ev.target.closest('[data-act="bxselmore"]');
+    if (!b) return;
+    MU.selOpen = !MU.selOpen;
+    var sec = b.closest('.bxsel'); if (sec) sec.classList.toggle('bxopen', MU.selOpen);
+    b.setAttribute('aria-expanded', String(MU.selOpen)); b.textContent = MU.selOpen ? '説明を閉じる' : '説明・TIPS';
+  });
 })();

@@ -207,7 +207,10 @@
       '.bbx .bbg{gap:6px}.bbx .bbg>.av{width:22px!important;height:22px!important;font-size:10px!important}.bbx .bb{padding:3px 9px}' +
       '.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev.hasav{gap:6px}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .avs{min-width:31px}.rvw:is([data-tlv="card"],[data-tlv="bubble"]) .tl .ev .avs .av{width:20px!important;height:20px!important;font-size:9px!important}' +
     '}' +
-    /* 関係図（見本 12） */
+    /* 経過の目次（2026-11-04）：幅 1100px 以下では左の目次が出ていなかった（スマホ・タブレットで節へ飛べなかった）。「目次・絞り込み」を押すと、経過の上に目次を出す */
+    '@media (max-width:1100px){.rvw .rvsidebtn{display:inline-flex}' +
+      '.rvw[data-side="1"] .rvg-log .rvtoc{display:block;position:static;grid-column:1/-1;order:-2;max-height:50vh;max-height:50dvh;overflow:auto;padding:8px;border:1px solid var(--rl);border-radius:var(--rr2);background:var(--rc)}}' +
+        /* 関係図（見本 12） */
     '.rvw .rvmapcard{padding:14px 16px}.rvw .rvmaphd .mapat{margin:0}.rvw .rvmaphd{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px}' +
     '.rvw .rvmapinfo{display:inline-flex;gap:8px;align-items:center;font-size:12px;color:var(--rm);margin-left:auto}' +
     '.rvw .rvmapcard .trayfig{margin:0}.rvw .rvmapcard .maplegs .mapleg{display:none}' +
