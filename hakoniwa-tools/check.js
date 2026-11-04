@@ -291,6 +291,9 @@ function decide(R) {
   Object.keys(R.packs).forEach(id => { packWant[id] = R.packs[id]; });
   (O.all ? packIds() : O.packs).forEach(id => { const pk = pack(id); if (!pk) return; const X = packWant[id] = packWant[id] || { rooms: new Set(), tags: new Set(), why: [] }; pk.rooms.forEach(r => X.rooms.add(r)); X.tags.add('all'); X.why.push(O.all ? '--all' : '--pack'); });
   Object.keys(packWant).forEach(id => { const X = packWant[id]; if (X.tags.has('serifu') || X.tags.has('tone') || X.tags.has('all')) add({ id: 'base-lint', stage: 'pre', label: CHECK['base-lint'].name + '：' + id, why: X.why.slice(0, 3).join('・'), dir: path.join('hakoniwa-packs', id), weight: 0 }); });
+  /* デートの日々（set-b）の舞台と段（2026-11-04） */
+  if ((packWant['set-b'] && packWant['set-b'].rooms.has('set-b-date')) || toolOn('date-setting')) add({ id: 'date-setting', stage: 'pre', label: CHECK['date-setting'].name, why: O.all ? '--all' : packWant['set-b'] ? 'set-b のデートの日々' : '道具を変えた', weight: 0 });
+  else skip('date-setting', 'デートの日々を変えていない');
   /* build */
   const builds = O.all ? ['full', 'zen'] : [...R.builds];
   const B = [...new Set(builds)];
@@ -340,6 +343,8 @@ function decide(R) {
   else skip('force-repeat', '無理やりの部品を変えていない');
   if (on('butt') || toolOn('butt-word')) add({ id: 'butt-word', stage: 'heavy', label: CHECK['butt-word'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['butt']) || '道具を変えた', scope: sScope, weight: 1 });
   else skip('butt-word', '体の語の印・喘ぎ・R18 の文を変えていない');
+  if (anyOn(['moan', 'serifu', 'tone']) || toolOn('meta-tone')) add({ id: 'meta-tone', stage: 'heavy', label: CHECK['meta-tone'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['moan', 'serifu', 'tone']) || '道具を変えた', scope: sScope, weight: 1 });
+  else skip('meta-tone', '台詞・喘ぎ・口調を変えていない');
   if (anyOn(['ui', 'order', 'buildtool']) || toolOn('regress')) ['r18', 'safe', 'zen'].forEach(m => add({ id: 'regress', stage: 'heavy', key: 'regress:' + m, label: CHECK.regress.name + '：' + ({ r18: 'R18版', safe: '全年齢モード', zen: '全年齢版' })[m], mode: m, why: O.all ? '--all' : why(['ui', 'order', 'buildtool']) || '道具を変えた', weight: 1 }));
   else skip('regress', '画面・読み込み順・build の道具を変えていない（結果が変わる変更は audit-all で見る）');
   ['chunk-regress', 'chunk-audit'].forEach(id => {
@@ -428,10 +433,12 @@ function keyOf(t) {
     case 'tone-feel': inp = hashFiles(chunkFiles('full', t.scen.filter(id => manifest('full') && manifest('full').scen[id]))) + manifestPart('full', t.scen); break;
     case 'moan-tone': case 'sex-flow': case 'trio-shape': inp = hashFiles(chunkFiles('full', t.scope)) + manifestPart('full', t.scope); break;
     case 'force-repeat': inp = hashFiles(chunkFiles('full', 'all')); break;
+    case 'meta-tone': inp = sha(['full', 'zen'].map(b => hashFiles(chunkFiles(b, t.scope)) + manifestPart(b, t.scope)).join()); break;
     case 'butt-word': inp = hashFiles(chunkFiles('full', t.scope)) + manifestPart('full', t.scope); break;
     case 'regress': { const b = t.mode === 'zen' ? 'zen' : 'full'; inp = hashFiles(chunkFiles(b, 'all')) + manifestPart(b, 'all') + (gitOk(['rev-parse', BASE_SHA + ':' + BUILDS[b]]) || ''); break; }
     case 'chunk-regress': case 'chunk-audit': inp = hashFiles(chunkFiles(t.b, 'all')) + String(readOr(path.join(ROOT, BUILDS[t.b], 'index.html'), '')); break;
     case 'dict-regress': inp = hashFiles(fs.readdirSync(path.join(ROOT, 'hakoniwa-full/js')).filter(f => /^(?:tone-|core|ego-desc|persona)/.test(f)).map(f => 'hakoniwa-full/js/' + f)); break;
+    case 'date-setting': inp = packInputs('set-b', 'set-b-date'); break;
     case 'pack-catalog': inp = packInputs(t.pack) + String(readOr(path.join(ROOT, 'docs/reports/2026-11-03/pack-event-catalog.md'), '')); break;
     case 'pack-site': return null;   /* 試しのフォルダは毎回作る（中で build-pack を回す。数十秒） */
     case 'pack-audit': case 'pack-feel': case 'pack-moan': case 'pack-flow': inp = packMainInputs(t.pack) + packInputs(t.pack, t.room) + (packCodes() ? sha(JSON.stringify(packCodes().J[t.pack] || packCodes().J['*'])) : ''); break;
@@ -542,7 +549,13 @@ const RUN = {
   },
   'sex-flow': async (t) => { const r = await spawnLog(t, N, [TCD + 'sex-flow-audit.js', BUILDS.full, '24'].concat(t.scope === 'all' ? [] : [t.scope.join(',')])); return flowRes(r); },
   'trio-shape': async (t) => { const r = await spawnLog(t, N, [TCD + 'trio-shape-audit.js', BUILDS.full, '4'].concat(t.scope === 'all' ? [] : [t.scope.join(',')])); return trioRes(r); },
+  'date-setting': async (t) => { const r = await spawnLog(t, N, [TCD + 'date-setting-audit.js']); const m = r.text.match(/date-setting：(\d+) 件/); return { rc: r.rc, n: m ? +m[1] : null, sum: lastLine(r.text, /date-setting/) || lastLine(r.text), log: r.log }; },
   'force-repeat': async (t) => { const r = await spawnLog(t, N, [TCD + 'force-repeat-audit.js', BUILDS.full]); return { rc: r.rc, n: r.rc ? null : 0, sum: lastLine(r.text), log: r.log }; },
+  'meta-tone': async (t) => {
+    const r = await spawnLog(t, N, [TCD + 'meta-tone-audit.js', '8'].concat(t.scope === 'all' ? [] : [t.scope.join(',')]).concat(['--full=' + BUILDS.full, '--zen=' + BUILDS.zen]));
+    const m = r.text.match(/自分の口調に言及する台詞（合計）：(\d+) 件/);
+    return { rc: r.rc, n: m ? +m[1] : null, sum: m ? '自分の口調に言及する台詞 ' + m[1] + ' 件' : lastLine(r.text), log: r.log };
+  },
   'butt-word': async (t) => {
     const r = await spawnLog(t, N, [TCD + 'butt-word-audit.js', BUILDS.full, '6'].concat(t.scope === 'all' ? [] : [t.scope.join(',')]));
     const m = r.text.match(/\(a\) 受けが女性の体の組[^:]*: (\d+) 件/), mb = r.text.match(/\(b\) [^:]*: (\d+) 件/);

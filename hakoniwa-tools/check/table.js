@@ -120,11 +120,13 @@ const CHECKS = [
   { id: 'trio-shape', name: '三人の場面の形（trio-shape-audit）', stage: 'heavy', tags: ['trio'], after: ['build'], est: 10, weight: 1, tools: [TC + 'trio-shape-audit.js'], why: 'audit-all を全箱庭で回すときは --extra=trio に入れる' },
   { id: 'force-repeat', name: '無理やりの二回目・三回目（force-repeat-audit）', stage: 'heavy', tags: ['force'], after: ['build'], est: 10, weight: 1, tools: [TC + 'force-repeat-audit.js'], why: '' },
   { id: 'butt-word', name: '女性の受けのお尻の語（butt-word-audit）', stage: 'heavy', tags: ['butt'], after: ['build'], est: 60, weight: 1, tools: [TC + 'butt-word-audit.js'], why: '受けが女性の体の組（男×女・女×女）の記録に「ケツ」が 0 件（男性の受けの件数は参考）。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN）' },
+  { id: 'meta-tone', name: '自分の口調に言及する台詞（meta-tone-audit）', stage: 'heavy', tags: ['moan', 'serifu', 'tone'], after: ['build'], est: 25, weight: 1, tools: [TC + 'meta-tone-audit.js'], why: '台詞・喘ぎで本人が自分の話し方（敬語・言葉遣い・口調・タメ口…）に触れるもの 0 件。R18版・全年齢版の記録と、喘ぎの表・書き下ろし・「」の中のソース（静的。本体の両ビルドと全パック）。箱庭のかたまりだけ変えたときは記録はその箱庭だけ' },
   { id: 'regress', name: '結果の指紋（regress。比べる相手のコミットと）', stage: 'heavy', tags: ['ui', 'order', 'buildtool'], after: ['build'], est: 15, weight: 1, tools: [BD + 'regress.js'], why: 'R18版・全年齢モード・全年齢版。比べる相手の指紋は、そのコミットのビルドを取り出して取る（キャッシュに残る）' },
   { id: 'chunk-regress', name: '単独・乱順の読み込み（chunk-regress）', stage: 'heavy', tags: ['order', 'buildtool'], after: ['build'], est: 450, weight: 1, tools: [BD + 'chunk-regress.js'], why: '両ビルド' },
   { id: 'chunk-audit', name: 'かたまりの境目（chunk-audit）', stage: 'heavy', tags: ['order', 'buildtool'], after: ['build'], est: 60, weight: 1, tools: [BD + 'chunk-audit.js'], why: '両ビルド' },
   { id: 'dict-regress', name: '口調の辞書の成績（dict-regress。参考）', stage: 'heavy', tags: ['dict'], after: [], est: 10, weight: 1, tools: [TC + 'dict-regress.js'], info: true, why: '終了コードに入れない（成績を出すだけ）' },
   /* 追加パック（変えたパック、本体の「パックが頼るかたまり」を変えたときはそのパック） */
+  { id: 'date-setting', name: 'デートの舞台と段（date-setting-audit）', stage: 'pre', tags: ['pack'], est: 1, tools: [TC + 'date-setting-audit.js'], why: 'set-b のデートの日々を変えたとき。行き先 52 か所 × 汎用の出来事の舞台の矛盾・段の付いていない行（ページを開かない）' },
   { id: 'pack-catalog', name: 'パックの出来事の一覧（event-catalog --pack）', stage: 'build', tags: ['pack'], after: [], est: 3, weight: 1, tools: [BD + 'event-catalog.js'], why: '作り直してから catalog-check' },
   { id: 'pack-site', name: 'パックの試しのフォルダ（pack-site）', stage: 'build', tags: ['pack'], after: ['build'], est: 40, weight: 1, tools: [BD + 'pack-site.js', BD + 'build-pack.js'], why: '本体を写してパックを組み立てる（キャッシュの中に作る）' },
   { id: 'pack-audit', name: 'パックの点検の一式（audit-all・HK_ONLY_SCEN）', stage: 'heavy', tags: ['pack'], after: ['pack-site'], est: 150, weight: 2, tools: [TC + 'audit-all.js'], why: '変えた部屋だけ（共有の部品 kit などを変えたらそのパックの全部屋）。長い場面を変えたら --extra=sexflow も' },
