@@ -541,7 +541,7 @@
       if (p.react === 'rebuff') { out.open = F(cmd + pk(X.REBEL) + pk(X.REBUFF)); return out; }
       if (p.react === 'rebel') { out.open = F(cmd + pk(X.REBEL)); out.rel = 'serve'; return out; }
       var rx = pk(X.REACT[p.kind === 'give' ? 'give' : 'take'][p.react] || X.REACT.take.obey);
-      if (p.force) { out.open = F(cmd + rx + pk(X.PUSH[mp] || X.PUSH.proud)); out.after = F(pk(X.AFTER.force)); out.rel = 'master'; out.fade = F(pk(X.FADE_F)); return out; }
+      if (p.force) { out.open = F(cmd + rx + pk(HK.ForceRep && p.up && p.down ? HK.ForceRep.pool(X0, 'push', p.up, p.down, X.PUSH[mp] || X.PUSH.proud, '{u}「…」') : X.PUSH[mp] || X.PUSH.proud)); out.after = F(pk(X.AFTER.force)); out.rel = 'master'; out.fade = F(pk(X.FADE_F)); return out; }
       out.open = F(cmd + rx); out.after = F(pk(X.AFTER[p.kind === 'give' ? 'give' : 'take'])); out.rel = p.kind === 'give' ? 'serve' : 'master'; out.fade = F(pk(X.FADE));
       return out;
     }

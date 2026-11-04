@@ -386,10 +386,13 @@
       else if (heat >= 2) { P(T.AGAIN.heat); mat.push('熱が引かない'); }
       else { P(T.AGAIN.cont); mat.push('さっきの続き'); }
     }
-    function quote(k, p) {
+    function quote(k, p, to) {
       var tab = Q[k]; if (!tab || !a) return;
       if (p != null && ctx.rng() >= p) return;
-      var l = fresh(ctx, noDup(tab[ps(a)] || tab.gentle));
+      var row = tab[ps(a)] || tab.gentle;
+      /* 押し切る一言：合意のない展開の回数の台詞を足す（force-repeat-r18.js の HK.ForceRep.pool。一回目は元の表＋一回目の表） */
+      if (k === 'push' && to && HK.ForceRep) row = HK.ForceRep.pool(ctx, 'push', a, to, row, '「…」');
+      var l = fresh(ctx, noDup(row));
       if (l) { out.push(a.name + fill(l, m)); mat.push(a.name + 'の一言（' + PS_JA[ps(a)] + '）'); }
     }
     function feelS(x, y) {
@@ -435,10 +438,13 @@
       /* ---------- 合意のない場面・押し切る場面：なぜ抵抗が通らなかったか ---------- */
       if (kind === 'ntr') { m.c = who[2] || null; m.b = who[1]; }
       var tgt = kind === 'ntr' ? (who[2] || b) : b, again2 = !first || o.mode === 'done', pr = '';
+      /* 同じ二人の合意のない場面の二回目から：受けの「拒みきれなかった理由」と攻めの一言を回数で（HK.ForceRep.lead。2026-11-04） */
+      var frL = HK.ForceRep && tgt && kind !== 'speed' ? HK.ForceRep.lead(ctx, a, tgt) : null;
+      if (frL) quote = function () {};
       if (kind === 'hate') {
         if (again2) { P(T.FORCE.hateAgain); mat.push('腐れ縁の二度目'); }
         else { sitFirst(); if (!lhLine(ctx, a, b, P, m, mat, true)) P(T.FORCE.hate); mat.push('敵対（嫌悪 ' + Math.round(hateLv(ctx, a, b)) + '）'); }
-        quote('push', 0.55);
+        quote('push', 0.55, tgt);
         pr = heatOf(tgt) >= 2 ? 'heat' : ctx.rng() < 0.55 ? 'hate' : !again2 && hLeft && (tk.k === 'late' || tk.k === 'last') ? 'time' : !again2 && hLeft && ctx.rng() < 0.5 ? 'cond' : 'power';
       } else if (kind === 'oforce') {
         P(T.FORCE.oforce); mat.push('主従の命令'); timeS();
@@ -449,10 +455,11 @@
       } else if (kind === 'aforce') { P(T.FORCE.aforce); P(T.FORCE.aforce2); P(T.FORCE.aforce3); mat.push('媚薬（' + Math.round(heat) + '）'); }
       else if (kind === 'speed') { sitFirst(); P(T.FORCE.speed); P(T.FORCE.speed2); mat.push(a.name + 'のスピード型'); }
       else if (kind === 'dark') {
-        P(T.FORCE.dark); mat.push('闇に堕ちた自分'); timeS(); quote('push', 0.5);
+        P(T.FORCE.dark); mat.push('闇に堕ちた自分'); timeS(); quote('push', 0.5, tgt);
         pr = heatOf(tgt) >= 2 ? 'heat' : 'power';
       } else { P(T.FORCE.ntr); mat.push('闇に堕ちた自分の寝取り'); timeS(); }
-      if (pr) { m.b = tgt; P(T.PUSH[pr]); mat.push('抵抗が通らなかった：' + { power: '力の差', cond: '条件', heat: '媚薬', hate: '嫌悪と欲', time: '時間' }[pr]); }
+      if (frL) { out.push(frL.text); mat.push(frL.why); }
+      else if (pr) { m.b = tgt; P(T.PUSH[pr]); mat.push('抵抗が通らなかった：' + { power: '力の差', cond: '条件', heat: '媚薬', hate: '嫌悪と欲', time: '時間' }[pr]); }
     } else if (kind === 'lhurge') {
       /* ---------- 愛憎の「衝動で手を出す」（hate-love-more-r18.js の tie_lh_urge。きっかけの文はそちらの R.urgeLead） ---------- */
       var LR = HK.LoveHate && HK.LoveHate.R18, ul = LR && LR.urgeLead && b ? LR.urgeLead(ctx, a, b) : null;
