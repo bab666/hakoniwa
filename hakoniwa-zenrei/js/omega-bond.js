@@ -87,12 +87,16 @@
     rivals: ['犬猿の仲のまま', '{a}と{b}は最後まで反りが合わなかった。顔を合わせれば言い合いになる関係が、なぜか続いている。'],
     buddy: ['最高のバディ', '{a}と{b}は恋人にはならなかった。代わりに、誰にも代われない相棒になった。'],
     strangers: ['他人のまま', '{a}と{b}は、最後まで深く関わらなかった。すれ違うだけの他人のまま、季節が過ぎた。'],
+    /* 血縁の二人（{k}＝親子・姉弟など。2026-11-04 の利用者の指示：血縁を「友人」「他人」にしない） */
+    kin_bond: ['仲の良い{k}のまま', '{a}と{b}は、仲の良い{k}のままだった。互いの第二性がどうであれ、帰れば同じ食卓を囲む。それで十分だった。'],
+    kin_feud: ['ぎくしゃくした{k}のまま', '{a}と{b}は、{k}なのに最後まで反りが合わなかった。それでも、縁を切ることだけは、どちらもしなかった。'],
+    kin_cold: ['よそよそしい{k}のまま', '{a}と{b}は、{k}でありながら、最後まで深くは関わらなかった。季節ごとの短い連絡だけが、二人をつないでいた。'],
     rival_lost: ['恋敵に敗れて', '{a}は恋敵に敗れた。{b}の隣には、もう別のαが立っている。'],
     quit_alone: ['ひとり街を出た', 'スイッチで仕事を失った{a}は、誰とも結ばれないまま、ひとりで街を出た。']
   };
   OM.END_IDS = Object.keys(E);
 
-  function mk(ctx, id, a, b) { var d = E[id]; return { id: id, title: d[0], text: ctx.t(d[1], a, b), a: a.i, b: b ? b.i : null }; }
+  function mk(ctx, id, a, b, k) { var d = E[id], f = function (x) { return k ? x.replace(/\{k\}/g, k) : x; }; return { id: id, title: f(d[0]), text: ctx.t(f(d[1]), a, b), a: a.i, b: b ? b.i : null }; }
   /* 二人の関係から結末を一つ選ぶ（a を主語にする向きも決める） */
   B.endingFor = function (ctx, a, b) {
     var om = ctx.om, pf = ctx.pair(a, b), k = key(a, b), ab = ctx.R(a, b), ba = ctx.R(b, a);
@@ -134,6 +138,8 @@
     if (love(ab) && love(ba)) return mk(ctx, 'pining', a, b);
     if (love(ab) !== love(ba)) { var lv = love(ab) ? a : b; return mk(ctx, 'reject', lv, lv === a ? b : a); }
     if (a.om.quit || b.om.quit) return mk(ctx, 'quit_alone', a.om.quit ? a : b, a.om.quit ? b : a);
+    var kw = HK.Kin && HK.Kin.of(ctx, a, b);
+    if (kw) return mk(ctx, (ab.ten + ba.ten) / 2 > 35 ? 'kin_feud' : (ab.aff > 22 && ba.aff > 22) || pf.buddy ? 'kin_bond' : 'kin_cold', a, b, kw);
     if (pf.buddy) return mk(ctx, 'buddy', a, b);
     if ((ab.ten + ba.ten) / 2 > 35) return mk(ctx, 'rivals', a, b);
     if (ab.aff > 22 && ba.aff > 22) return mk(ctx, 'friends', a, b);

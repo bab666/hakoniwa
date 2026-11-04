@@ -39,6 +39,8 @@
     return '';
   }
   var LOVE_T = 'lover,mate,fated,almost,crush,fwb', FRIEND_T = 'friend,best,buddy,childhood,colleague,sibclose,twin,sibling,senpai,mentor,classmate,boss,benefactor,relative,worship,fond,blind';
+  /* 家族（親子・きょうだい・親族）：理由の欄で「友人だと思っている」にしない（2026-11-04 の利用者の指示） */
+  var KIN_T = 'parent,pparent,sibling,sibprot,sibclose,sibbad,twin,stepsib,relative';
   function hasT(x, a, b, list) { return tieList(x, a, b).some(function (t) { return list.split(',').indexOf(t.type) >= 0 && (t.type !== 'crush' || t.a === a.i); }); }
 
   /* 物語型：嫌悪レベルの表（設定した関係から始める） */
@@ -134,7 +136,7 @@
     /* 関係の説明（理由の欄） */
     why: function (x, a, b) {
       var lv = Math.round(H.level(x, a, b)), st = H.stance(x, b, a), bd = H.band(lv);
-      var SL = { avoid: b.name + 'は' + a.name + 'を苦手に思い、避けている', hate: 'お互いに敵視', none: b.name + 'はなんとも思っていない', normal: b.name + 'はふつうに接している', friend: b.name + 'は友人だと思っている', love: b.name + 'は' + a.name + 'を愛している' };
+      var SL = { avoid: b.name + 'は' + a.name + 'を苦手に思い、避けている', hate: 'お互いに敵視', none: b.name + 'はなんとも思っていない', normal: b.name + 'はふつうに接している', friend: b.name + (hasT(x, b, a, KIN_T) ? 'は家族として慕っている' : 'は友人だと思っている'), love: b.name + 'は' + a.name + 'を愛している' };
       return a.name + '→' + b.name + '：' + (bd === 'enemy' ? '敵対' : '不仲') + '（嫌悪 ' + lv + '）／' + SL[st];
     }
   };

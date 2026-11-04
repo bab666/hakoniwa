@@ -343,6 +343,8 @@ function decide(R) {
   else skip('force-repeat', '無理やりの部品を変えていない');
   if (on('butt') || toolOn('butt-word')) add({ id: 'butt-word', stage: 'heavy', label: CHECK['butt-word'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['butt']) || '道具を変えた', scope: sScope, weight: 1 });
   else skip('butt-word', '体の語の印・喘ぎ・R18 の文を変えていない');
+  if (on('kin') || toolOn('kin-label')) add({ id: 'kin-label', stage: 'heavy', label: CHECK['kin-label'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['kin']) || '道具を変えた', scope: sScope, weight: 1, est: sScope === 'all' ? 45 : 15 });
+  else skip('kin-label', '血縁の二人の札・文に触れる js を変えていない');
   if (anyOn(['moan', 'serifu', 'tone']) || toolOn('meta-tone')) add({ id: 'meta-tone', stage: 'heavy', label: CHECK['meta-tone'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['moan', 'serifu', 'tone']) || '道具を変えた', scope: sScope, weight: 1 });
   else skip('meta-tone', '台詞・喘ぎ・口調を変えていない');
   if (anyOn(['ui', 'order', 'buildtool']) || toolOn('regress')) ['r18', 'safe', 'zen'].forEach(m => add({ id: 'regress', stage: 'heavy', key: 'regress:' + m, label: CHECK.regress.name + '：' + ({ r18: 'R18版', safe: '全年齢モード', zen: '全年齢版' })[m], mode: m, why: O.all ? '--all' : why(['ui', 'order', 'buildtool']) || '道具を変えた', weight: 1 }));
@@ -436,6 +438,7 @@ function keyOf(t) {
     case 'force-repeat': inp = hashFiles(chunkFiles('full', 'all')); break;
     case 'meta-tone': inp = sha(['full', 'zen'].map(b => hashFiles(chunkFiles(b, t.scope)) + manifestPart(b, t.scope)).join()); break;
     case 'butt-word': inp = hashFiles(chunkFiles('full', t.scope)) + manifestPart('full', t.scope); break;
+    case 'kin-label': inp = sha(['full', 'zen'].map(b => hashFiles(chunkFiles(b, t.scope)) + manifestPart(b, t.scope)).join()); break;
     case 'regress': { const b = t.mode === 'zen' ? 'zen' : 'full'; inp = hashFiles(chunkFiles(b, 'all')) + manifestPart(b, 'all') + (gitOk(['rev-parse', BASE_SHA + ':' + BUILDS[b]]) || ''); break; }
     case 'chunk-regress': case 'chunk-audit': inp = hashFiles(chunkFiles(t.b, 'all')) + String(readOr(path.join(ROOT, BUILDS[t.b], 'index.html'), '')); break;
     case 'dict-regress': inp = hashFiles(fs.readdirSync(path.join(ROOT, 'hakoniwa-full/js')).filter(f => /^(?:tone-|core|ego-desc|persona)/.test(f)).map(f => 'hakoniwa-full/js/' + f)); break;
@@ -556,6 +559,11 @@ const RUN = {
     const r = await spawnLog(t, N, [TCD + 'meta-tone-audit.js', '8'].concat(t.scope === 'all' ? [] : [t.scope.join(',')]).concat(['--full=' + BUILDS.full, '--zen=' + BUILDS.zen]));
     const m = r.text.match(/自分の口調に言及する台詞（合計）：(\d+) 件/);
     return { rc: r.rc, n: m ? +m[1] : null, sum: m ? '自分の口調に言及する台詞 ' + m[1] + ' 件' : lastLine(r.text), log: r.log };
+  },
+  'kin-label': async (t) => {
+    const r = await spawnLog(t, N, [TCD + 'kin-label-audit.js', BUILDS.full, '6', '--zen=' + BUILDS.zen].concat(t.scope === 'all' ? [] : ['--scen=' + t.scope.join(',')]));
+    const m = r.text.match(/kin-label：(\d+) 件/);
+    return { rc: r.rc, n: m ? +m[1] : null, sum: m ? '血縁の二人の「友人」' + m[1] + ' 件' : lastLine(r.text), log: r.log };
   },
   'butt-word': async (t) => {
     const r = await spawnLog(t, N, [TCD + 'butt-word-audit.js', BUILDS.full, '6'].concat(t.scope === 'all' ? [] : [t.scope.join(',')]));

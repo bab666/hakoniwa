@@ -121,6 +121,8 @@
   var REL = { lover: 'lover', mate: 'lover', fated: 'lover', fwb: 'fwb', master: 'master', crush: 'crush', friend: 'friend', best: 'friend', childhood: 'friend', buddy: 'friend', senpai: 'friend', colleague: 'colleague', classmate: 'classmate', boss: 'boss', worship: 'worship', fond: 'friend', blind: 'worship', benefactor: 'benefactor', relative: 'relative', acq: 'friend', almost: 'almost', rival: 'tension', bad: 'tension', enemy: 'tension', ex: 'ex', sibling: 'friend' };
   var REL_LABEL = { lover: '恋人', fwb: 'セフレ', master: '主従', crush: '片想い', mutual: '両片想い', friend: '知り合い', almost: '友達以上恋人未満', tension: '険悪', ex: '元恋人', stranger: '初対面', colleague: '同僚', classmate: '同級生', boss: '上司と部下', worship: '執着（信仰）', benefactor: '恩人', relative: '親族' };
 
+  /* 家族の二人の、脱出のあとの一文（{a}{b}） */
+  var KIN_AFTER = ['外に出ると、二人はいつもの家族の顔に戻ろうとした。ただ、目が合うと、どちらも一瞬だけ黙った。', '帰り道、二人は並んで歩いた。家族として何度も歩いた道なのに、今日は少しだけ、隣の体温が近く感じられた。'];
   var LK_HATE_LEAD = ['狭いロッカーの中で、{b}は{a}の胸に、そっと額を預けた。', '{b}は、触れ合った{a}の手を、そのまま握ろうとした。', '{b}は、熱に浮かされた目で、{a}の顔を見上げた。'];
   function run(input) {
     /* 一人・三人以上は locker-crowd.js へ */
@@ -139,6 +141,8 @@
     var tieL = (input.ties || []).filter(function (t) { return (t.a === A.i && t.b === B.i) || (t.a === B.i && t.b === A.i); }).sort(function (x, y) { return pr(x) - pr(y); });
     var tie = tieL[0];
     var rel = tie ? REL[tie.type] || REL[(HK.TIES[tie.type] || {}).like] || 'friend' : 'stranger';
+    /* 家族（親子・きょうだい・擬似親子）は、場面の重みは「知り合い」のまま、ベッドの結び・脱出のあとの一文だけ家族の文に（「友達、だよね」にしない。2026-11-04 の利用者の指示） */
+    var relK = rel === 'friend' && tie && HK.TIES[tie.type] && HK.TIES[tie.type].family ? 'kin' : rel;
     /* 表示の名前：「知り合い」に寄せた関係（親友・幼馴染・執着など）は、その関係の名前で出す */
     var RL = Object.assign({}, REL_LABEL);
     if (tie && rel === 'friend' && !/^(friend|acq)$/.test(tie.type) && HK.TIES[tie.type]) RL.friend = HK.TIES[tie.type].label;
@@ -659,7 +663,7 @@
       /* ベッドの展開は solo-locker-bed.js（誘い方・最中の展開・結び） */
       /* 扉が開いたあとの夜：描写の長さ（短く＝一段落版）と、男性向け（企みのある夜は除く） */
       eroNow = eroOn && !plotter;
-      bedLabels = LK.bed(S, { short: !!(lcf && LX.short(env, rng)), ero: eroNow, A: A, B: B, x: x, y: y, rel: rel, tone: tone, how: how, plotter: plotter, servant: svW ? null : servant, master: svW ? null : master, nt: nt, lew: lew, dose: env.dose, pair: pair, moan: function (p, top) { return moan(p, top, true); }, REL_LABEL: RL, ff: ff });
+      bedLabels = LK.bed(S, { short: !!(lcf && LX.short(env, rng)), ero: eroNow, A: A, B: B, x: x, y: y, rel: relK, tone: tone, how: how, plotter: plotter, servant: svW ? null : servant, master: svW ? null : master, nt: nt, lew: lew, dose: env.dose, pair: pair, moan: function (p, top) { return moan(p, top, true); }, REL_LABEL: RL, ff: ff });
       A.cnt.climax += 2 + rng.int(3); B.cnt.climax += 2 + rng.int(3);
     } else if (endure) {
       outcome = 'endure';
@@ -674,7 +678,7 @@
       var aft = AF[ak].filter(function (l) { return (A.cnt.refuse + B.cnt.refuse > 0 || !/嗜め/.test(l)) && (ak !== 'rescueSex' || (ff ? !/繋が/.test(l) : !/脚を絡め合った/.test(l)) && (pair.conn || !/まだ(繋が|脚を絡め)/.test(l))); });
       var tA = ST.fmt(pk(aft.length ? aft : AF[outcome]), { a: who0.name, b: who0.o.name });
       /* 何かあった二人は、関係ごとの一文を添える。思惑どおりに行った人は、こっそり満足する */
-      var RA = LK.REL && LK.REL.after[rel];
+      var RA = relK === 'kin' ? KIN_AFTER : LK.REL && LK.REL.after[rel];
       if (RA && pair.acts >= 1 && outcome !== 'angry' && outcome !== 'plotfail' && rng() < 0.7) tA += ST.fmt(pk(RA), { a: who0.name, b: who0.o.name, c: (crusher || A).name, o: (crusher || A).o.name, u: nt ? nt.u.name : '', d: nt ? nt.d.name : '' });
       if (nt) tA += NT.afterNote(S, nt, outcome, plotter);
       if (plotter && plotOk && pair.acts >= 1 && !pair.toNo) tA += ST.fmt(pk(AF.plotwin.filter(function (l) { return !/ベッド|眠|寝顔/.test(l); })), { a: plotter.name, b: plotter.o.name });

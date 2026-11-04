@@ -1014,6 +1014,51 @@
     allybreak: { name: '同盟決裂', cls: 'enemy', pol: -1 }
   };
 
+  /* ---------- 血縁の二人の呼び方（2026-11-04 の利用者の指示：親子・血縁を「友人」にしない） ----------
+     家族の関係（HK.TIES の family：親子・擬似親子・兄弟姉妹・兄弟（庇護・親友のよう・不仲）・双子・義理の兄弟・親族）がある二人は、
+     結末の関係の名前・関係図の札を「仲の良い親子」「ぎくしゃくした姉弟」のように、血縁の種類＋様子で表す（恋愛へ進んだ二人も「恋人になった擬似親子」のように血縁を残す）。
+     HK.Kin.tie(ctx, a, b)：二人のあいだの家族の関係（なければ null）／HK.Kin.word(t, A, B)：血縁の種類の語／HK.Kin.of(ctx, a, b)：その語（なければ ''）
+     HK.Kin.name(id, 語, 元の名前)：結末の関係の名前。HK.Kin.FRIEND：友人を表す語（この語を含む名前は「仲の良い〜」に置き換える） */
+  var KIN_WORD = { parent: '親子', pparent: '擬似親子', relative: '親戚' };
+  var KIN_MOOD = { kinbond: '仲の良い', friends: '仲の良い', partners: '支え合う', kinfeud: '確執のある', awkward: 'ぎくしゃくした', strangers: 'よそよそしい', dislike: '反目し合う', rivals: 'いがみ合う',
+    guard: '守り守られる', accomplice: '秘密を分け合う', relbond: '支え合う', lovers: '恋人になった', pining: '両片想いの', oneway: '片想いを抱えた', lovehate: '憎みながら惹かれ合う' };
+  HK.Kin = {
+    FRIEND: /友人|友達|友だち|親友/,
+    tie: function (ctx, a, b) {
+      if (!HK.Ties || !HK.Ties.all || !ctx || !a || !b) return null;
+      var l = HK.Ties.all(ctx, a, b), T = HK.TIES || {};
+      for (var i = 0; i < l.length; i++) if (l[i] && T[l[i].type] && T[l[i].type].family) return l[i];
+      return null;
+    },
+    word: function (t, A, B) {
+      if (!t) return '';
+      if (KIN_WORD[t.type] && !(t.type === 'relative' && t.step)) return KIN_WORD[t.type];
+      var w = HK.Sib && HK.Sib.pairWord && A && B ? HK.Sib.pairWord(A, B, { tie: t }) : 'きょうだい';
+      if (t.type === 'twin' && w.indexOf('双子') < 0) w = '双子';
+      return (t.type === 'stepsib' || t.step ? '義理の' : '') + w;
+    },
+    of: function (ctx, a, b) { var t = HK.Kin.tie(ctx, a, b); return t ? HK.Kin.word(t, ctx.chars[t.a] || a, ctx.chars[t.b] || b) : ''; },
+    /* 様子の決まった結末は「様子＋語」。ほかは、名前がもう血縁を言っていればそのまま、友人の名前は「仲の良い〜」、それ以外は「名前（語）」 */
+    name: function (id, k, nm) {
+      if (!k) return nm;
+      if (KIN_MOOD[id]) return KIN_MOOD[id] + k;
+      if (nm && (nm.indexOf(k) >= 0 || /家族|親族|親戚|親子|きょうだい|兄弟|姉妹|姉弟|兄妹|双子/.test(nm))) return nm;
+      if (!nm || HK.Kin.FRIEND.test(nm)) return '仲の良い' + k;
+      return nm + '（' + k + '）';
+    }
+  };
+  /* 結末の分類に血縁を当てる：友人の名前の結末は「家族の絆」に寄せ、名前を血縁の種類＋様子にする（cl.kin に語、cl.name に名前） */
+  function kinCl(ctx, A, B, cl) {
+    var k = cl && HK.Kin.of(ctx, A, B);
+    if (!k) return cl;
+    var L = HK.LABELS[cl.id], o = {};
+    for (var x in cl) o[x] = cl[x];
+    if (cl.id === 'friends' || (L && HK.Kin.FRIEND.test(L.name))) o.id = 'kinbond';
+    o.kin = k;
+    o.name = HK.Kin.name(o.id, k, (L || {}).name);
+    return o;
+  }
+
   /* 新しい関係（信仰・恩人・上司と部下・同級生・親族）の結末は tie-rel.js が上書きする（恋人・殺害などは上書きしない） */
   function classify(ctx, A, B, pf) {
     var c = classify0(ctx, A, B, pf);
@@ -1095,18 +1140,18 @@
       case 'lovehate': return '惹かれる気持ちと苛立ちが同じだけ育った。';
       case 'rivals': return '最後まで譲らず、互いを敵と認めた。';
       case 'accomplice': return '二人だけの秘密を抱え、共犯関係になった。';
-      case 'partners': return '背中を預け合える相棒になった。';
+      case 'partners': return cl.kin ? cl.kin + 'として、背中を預け合える仲になった。' : '背中を預け合える相棒になった。';
       case 'guard': return n(cl.dir) + 'が' + other(cl.dir) + 'に寄りかかり、' + other(cl.dir) + 'がそれを受け止める形に収まった。';
       case 'obsess': return n(cl.dir) + 'の想いが、信頼を置き去りにして膨らんだ。';
       case 'friends': return '気負わず話せる友人になった。';
-      case 'awkward': return '小さな衝突が残り、ぎこちない距離のまま終わった。';
+      case 'awkward': return cl.kin ? cl.kin + 'なのに、小さな衝突が残り、ぎこちない距離のまま終わった。' : '小さな衝突が残り、ぎこちない距離のまま終わった。';
       case 'dislike': return 'はっきりと相手を嫌うようになった。';
-      case 'kinbond': return '家族として、互いを支え合う形に落ち着いた。';
-      case 'kinfeud': return '血のつながりがあるからこそ、こじれた溝が埋まらなかった。';
+      case 'kinbond': return (cl.kin || '家族') + 'として、互いを支え合う形に落ち着いた。';
+      case 'kinfeud': return (cl.kin ? cl.kin + 'だから' : '血のつながりがあるから') + 'こそ、こじれた溝が埋まらなかった。';
       case 'fwbsettle': return '恋人にはならないまま、体だけの関係に落ち着いた。';
       case 'fwbend': return '体だけの関係は、どちらからともなく終わった。';
       case 'allybreak': return '組んだはずの同盟は、最後に決裂した。';
-      default: return '特に深く関わらないまま終わった。';
+      default: return cl.kin && cl.id === 'strangers' ? cl.kin + 'なのに、最後まで深く関わらないまま終わった。' : '特に深く関わらないまま終わった。';
     }
   }
 
@@ -1115,7 +1160,7 @@
     var POS = { clash: -1, friction: -1, spark: 1, warm: 1, flat: 0 };
     for (var i = 0; i < C.length; i++) for (var j = i + 1; j < C.length; j++) {
       var A = C[i], B = C[j], pf = ctx.pair(A, B);
-      var cl = classify(ctx, A, B, pf);
+      var cl = kinCl(ctx, A, B, classify(ctx, A, B, pf));
       var L = HK.LABELS[cl.id];
       var ab = ctx.R(A, B), ba = ctx.R(B, A);
       var finalScore = (ab.aff + ba.aff) / 2 + (ab.att + ba.att) / 4 - (ab.ten + ba.ten) / 2 * 0.8;
@@ -1140,7 +1185,7 @@
       top.sort(function (x, y) { return x - y; });
       var series = ctx.history.map(function (h) { return h.rel[i + '-' + j]; });
       pairs.push({
-        a: i, b: j, label: cl.id, dir: cl.dir, name: L.name, cls: L.cls, text: pairText(ctx, A, B, cl),
+        a: i, b: j, label: cl.id, dir: cl.dir, name: cl.name || L.name, cls: L.cls, kin: cl.kin || undefined, text: pairText(ctx, A, B, cl),
         base: pf.base, surprise: surprise, key: top, series: series, finalScore: finalScore,
         intensity: Math.abs(ab.aff) + Math.abs(ba.aff) + ab.ten + ba.ten + ab.att + ba.att,
         rel: { ab: round(ab), ba: round(ba) }, count: pf.moments.length, tie: tie

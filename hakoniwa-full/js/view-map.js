@@ -282,6 +282,20 @@
     if (aff < -22) return lab('dislike');
     return lab(ten > 34 ? 'awkward' : 'strangers');
   }
+  /* 血縁の二人（2026-11-04 の利用者の指示）：札を「仲の良い親子」のように血縁の種類＋様子にする（engine.js の HK.Kin。結果の p.kin、古い結果は関係の設定から） */
+  function kinOf(res, p) {
+    if (p.kin) return p.kin;
+    var t = p.tie, D = t && HK.TIES ? HK.TIES[t.type] : null, C = res.input && res.input.chars;
+    if (!D || !D.family || !HK.Kin || !C) return '';
+    var who = function (i) { var o = {}, c = C[i] || {}; for (var k in c) o[k] = c[k]; o.i = i; return o; };
+    return HK.Kin.word(t, who(t.a), who(t.b));
+  }
+  function kinLab(res, p, L) {
+    var k = L && HK.Kin && kinOf(res, p);
+    if (!k) return L;
+    var id = L.id === 'friends' || HK.Kin.FRIEND.test(L.name) ? 'kinbond' : L.id, K = HK.LABELS[id] || L;
+    return { id: id, name: HK.Kin.name(id, k, L.name), cls: K.cls, dir: L.dir };
+  }
   /* 関係性の設定（開始時の関係）。線の種類は設定の性質から */
   var TIE_ROLE = { teacher: 1, boss: 1, mentor: 1, benefactor: 1, parent: 1, pparent: 1, senpai: 1, sibprot: 1 };
   function tieLab(res, p) {
@@ -324,14 +338,14 @@
   function labelAt(res, p, s, idx, at) {
     var tl = tieLab(res, p);
     /* 開始時：関係性の設定があればその関係、なければ最初の区切りの記録から */
-    if (at === 'start') return tl || basic(p, s);
+    if (at === 'start') return tl || kinLab(res, p, basic(p, s));
     var step = res.history[idx].step, fin = { id: p.label, name: p.name, cls: p.cls, dir: p.dir };
     var est = estStep(res, p), cp = coupleAt(res, p, step);
     if (cp == null) cp = coupleFinal(p) && (est == null || est <= step);
     /* 恋人：最終も恋人の状態ならその名前（破局は、まだ好意が残っていれば恋人） */
     if (cp) return coupleFinal(p) && !(p.label === 'breakup' && (s[0] + s[1]) / 2 >= 0) ? fin : lab('lovers') || fin;
     /* 記録の数値で決まる関係（と、まだ恋人になっていない組）は、その時点の数値から。何もなければ設定の関係 */
-    var b = basic(p, s);
+    var b = kinLab(res, p, basic(p, s));
     if (SNAP[p.label] || coupleFinal(p) || !(est == null || est <= step)) return b.id === 'strangers' && tl ? tl : b;
     /* 出来事で決まる関係（殺害・一夜・相棒など）は、決め手の出来事より後なら最終と同じ */
     return fin;
@@ -374,6 +388,8 @@
     if (at === 'start' || (at === 'tp' && points(res).tp)) return memo(res, 'at:' + at, function () { return buildAt(res, at); });
     return res;
   };
+  /* 点検（kin-label-audit.js）用：その時点（start／tp）の結果。時点が無ければ null */
+  M.atOf = function (res, at) { return res && hasHist(res) && (at === 'start' || (at === 'tp' && points(res).tp)) ? buildAt(res, at) : null; };
   /* 開始時が最終と同じ（線の名前・種類・向き、死亡・離脱が一つも変わっていない）か */
   function sameAsFinal(res) {
     return memo(res, 'atsame', function () {
