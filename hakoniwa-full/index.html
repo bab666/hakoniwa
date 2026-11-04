@@ -243,6 +243,8 @@
 }
 :root[data-palette="mono"] .av, :root[data-palette="mono"] .nodebg, :root[data-palette="mono"] .fhull { --c: var(--ai) !important; }
 * { box-sizing: border-box; }
+/* iPhone の Safari の文字の自動拡大（横向きで字が大きくなり、描き直しのたびに組み直される）を止める（2026-11-04） */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 a { color: var(--ink); }
 a:hover { color: var(--muted2); }
@@ -1655,10 +1657,12 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
 </div>
 <div class="toast" id="toast" hidden></div>
 
+<!-- 古いブラウザの知らせ（2026-11-04）：本体は正規表現の後読み（iOS 16.4・Safari 16.4 から）を使うので、それより前の版では読み込みの段階で止まり、何も表示されない。そのときだけ、何が要るかを画面の上に出す -->
+<script>(function(){try{new RegExp('(?<=a)b');}catch(e){document.addEventListener('DOMContentLoaded',function(){var d=document.createElement('p');d.setAttribute('role','alert');d.style.cssText='margin:12px 16px;padding:12px 14px;border:1px solid #c33;border-radius:8px;background:#fff;color:#16233b;font-size:14px;line-height:1.7';d.textContent='このブラウザの版では箱庭シミュレーターが動きません。iPhone・iPad は iOS 16.4 以降、Mac の Safari は 16.4 以降に更新してください（Chrome・Edge・Firefox の新しい版でも動きます）。';document.body.insertBefore(d,document.body.firstChild);});}})();</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"4043c5eb25","api":1,"build":"full","core":"js/c/core.9e7693b1b0.js",
+<script>window.HK_MANIFEST={"v":"fc9b49ae22","api":1,"build":"full","core":"js/c/core.5dfcb79af5.js",
 "chunks":{
-  "late":{"src":"js/c/late.c721475e0f.js","br":201690,"deps":["pack-lewd"]},
+  "late":{"src":"js/c/late.7ac1d34471.js","br":202812,"deps":["pack-lewd"]},
   "pack-rel":{"src":"js/c/pack-rel.3bcc4e3c38.js","br":383481,"deps":["pack-lewd"]},
   "pack-lewd":{"src":"js/c/pack-lewd.25b052d754.js","br":437177,"deps":[]},
   "scen-goukon":{"src":"js/c/scen-goukon.956ea35a1d.js","br":90954,"deps":["pack-rel"]},
@@ -1688,46 +1692,46 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "pack-catalog":{"src":"js/c/pack-catalog.2f5acae996.js","br":44006,"deps":[]},
   "pack-roomkit":{"src":"js/c/pack-roomkit.2c2b4f3170.js","br":3840,"deps":["pack-rel"]},
   "pack-solo":{"src":"js/c/pack-solo.2834fc1d5c.js","br":20073,"deps":["pack-lewd"]},
-  "tone-base":{"src":"js/c/tone-base.666e927ab7.js","br":64617,"deps":[]},
-  "tone-ane":{"src":"js/c/tone-ane.4147116b8c.js","br":11718,"deps":[]},
-  "tone-boku-n":{"src":"js/c/tone-boku-n.ff31202d8b.js","br":992,"deps":[]},
-  "tone-calm":{"src":"js/c/tone-calm.b047e77c08.js","br":8709,"deps":[]},
-  "tone-chara":{"src":"js/c/tone-chara.a3aaa4103c.js","br":22154,"deps":[]},
-  "tone-chara-down":{"src":"js/c/tone-chara-down.c54210b6ab.js","br":8202,"deps":[]},
-  "tone-cool-soft":{"src":"js/c/tone-cool-soft.7b1278bfd4.js","br":3224,"deps":[]},
-  "tone-darui":{"src":"js/c/tone-darui.fb33f28092.js","br":12545,"deps":[]},
-  "tone-darui-lite":{"src":"js/c/tone-darui-lite.d610b6afa2.js","br":6895,"deps":[]},
-  "tone-darui-talk":{"src":"js/c/tone-darui-talk.cd03a202d8.js","br":855,"deps":[]},
-  "tone-devoted-p":{"src":"js/c/tone-devoted-p.98edd50eec.js","br":6097,"deps":[]},
-  "tone-flat-plain":{"src":"js/c/tone-flat-plain.41136b5881.js","br":445,"deps":[]},
-  "tone-genki":{"src":"js/c/tone-genki.d1900d8d00.js","br":8096,"deps":[]},
-  "tone-gentle-m":{"src":"js/c/tone-gentle-m.5cc6871d86.js","br":1009,"deps":[]},
-  "tone-gentle-n":{"src":"js/c/tone-gentle-n.1c44070318.js","br":5796,"deps":[]},
-  "tone-gentleman":{"src":"js/c/tone-gentleman.11a47d7f98.js","br":18633,"deps":[]},
-  "tone-god":{"src":"js/c/tone-god.5f38dd365a.js","br":4100,"deps":[]},
-  "tone-gyaru":{"src":"js/c/tone-gyaru.3f49c2ad1e.js","br":26384,"deps":[]},
-  "tone-hero":{"src":"js/c/tone-hero.6b6f6a10a1.js","br":12956,"deps":[]},
-  "tone-honwaka":{"src":"js/c/tone-honwaka.5de7c2d397.js","br":1150,"deps":[]},
-  "tone-kansai":{"src":"js/c/tone-kansai.b675bee6f4.js","br":35326,"deps":[]},
-  "tone-keigo-bossy":{"src":"js/c/tone-keigo-bossy.e810cc7ca3.js","br":1672,"deps":[]},
-  "tone-keigo-flat":{"src":"js/c/tone-keigo-flat.35e9b91876.js","br":2740,"deps":[]},
-  "tone-keigo-sarc":{"src":"js/c/tone-keigo-sarc.a81aa27fb3.js","br":2041,"deps":[]},
-  "tone-keigo-twist":{"src":"js/c/tone-keigo-twist.7902bd7138.js","br":793,"deps":[]},
-  "tone-kohai":{"src":"js/c/tone-kohai.2071f8a42b.js","br":16487,"deps":[]},
-  "tone-mixed":{"src":"js/c/tone-mixed.6733ed094d.js","br":38194,"deps":[]},
-  "tone-mukuchi":{"src":"js/c/tone-mukuchi.52afb78d23.js","br":22771,"deps":[]},
-  "tone-mukuchi-ne":{"src":"js/c/tone-mukuchi-ne.03db72b494.js","br":3475,"deps":[]},
-  "tone-mystic":{"src":"js/c/tone-mystic.576702d066.js","br":11236,"deps":[]},
-  "tone-noja":{"src":"js/c/tone-noja.64f34fbae3.js","br":31583,"deps":[]},
-  "tone-ojou":{"src":"js/c/tone-ojou.9754d885d4.js","br":8291,"deps":[]},
-  "tone-otaku":{"src":"js/c/tone-otaku.897c0f72d9.js","br":4609,"deps":[]},
-  "tone-ronkyaku":{"src":"js/c/tone-ronkyaku.9749db39c7.js","br":3536,"deps":[]},
-  "tone-sondai":{"src":"js/c/tone-sondai.b7f1ae0709.js","br":8777,"deps":[]},
-  "tone-tame":{"src":"js/c/tone-tame.611420943e.js","br":730,"deps":[]},
-  "tone-tsun-n":{"src":"js/c/tone-tsun-n.8055f4080d.js","br":7058,"deps":[]},
-  "tone-tsun-soft":{"src":"js/c/tone-tsun-soft.3ce31079c3.js","br":609,"deps":[]},
-  "tone-usan":{"src":"js/c/tone-usan.c3c97bcb8f.js","br":18696,"deps":[]},
-  "tone-yankee":{"src":"js/c/tone-yankee.5faf493b46.js","br":22705,"deps":[]}},
+  "tone-base":{"src":"js/c/tone-base.8f5dbf9e6f.js","br":64618,"deps":[]},
+  "tone-ane":{"src":"js/c/tone-ane.68f62afe22.js","br":11719,"deps":[]},
+  "tone-boku-n":{"src":"js/c/tone-boku-n.2d0b5fd3c4.js","br":992,"deps":[]},
+  "tone-calm":{"src":"js/c/tone-calm.e6acc83c47.js","br":8709,"deps":[]},
+  "tone-chara":{"src":"js/c/tone-chara.51098f0779.js","br":22150,"deps":[]},
+  "tone-chara-down":{"src":"js/c/tone-chara-down.ec86200d06.js","br":8202,"deps":[]},
+  "tone-cool-soft":{"src":"js/c/tone-cool-soft.c61dc704cf.js","br":3224,"deps":[]},
+  "tone-darui":{"src":"js/c/tone-darui.cc79b41c2c.js","br":12546,"deps":[]},
+  "tone-darui-lite":{"src":"js/c/tone-darui-lite.5a8dc55b21.js","br":6895,"deps":[]},
+  "tone-darui-talk":{"src":"js/c/tone-darui-talk.0406f867bc.js","br":855,"deps":[]},
+  "tone-devoted-p":{"src":"js/c/tone-devoted-p.d1fc8e0ff9.js","br":6097,"deps":[]},
+  "tone-flat-plain":{"src":"js/c/tone-flat-plain.2f76ed184c.js","br":445,"deps":[]},
+  "tone-genki":{"src":"js/c/tone-genki.3e5ff41de0.js","br":8098,"deps":[]},
+  "tone-gentle-m":{"src":"js/c/tone-gentle-m.bf5d75267c.js","br":1009,"deps":[]},
+  "tone-gentle-n":{"src":"js/c/tone-gentle-n.1017769ccd.js","br":5796,"deps":[]},
+  "tone-gentleman":{"src":"js/c/tone-gentleman.3f7516ba3f.js","br":18633,"deps":[]},
+  "tone-god":{"src":"js/c/tone-god.38c8812190.js","br":4098,"deps":[]},
+  "tone-gyaru":{"src":"js/c/tone-gyaru.0f1a96d33b.js","br":26384,"deps":[]},
+  "tone-hero":{"src":"js/c/tone-hero.59cf715f79.js","br":12956,"deps":[]},
+  "tone-honwaka":{"src":"js/c/tone-honwaka.1ec70fa5ee.js","br":1150,"deps":[]},
+  "tone-kansai":{"src":"js/c/tone-kansai.4b5216db51.js","br":35326,"deps":[]},
+  "tone-keigo-bossy":{"src":"js/c/tone-keigo-bossy.e421f08561.js","br":1671,"deps":[]},
+  "tone-keigo-flat":{"src":"js/c/tone-keigo-flat.429a382945.js","br":2740,"deps":[]},
+  "tone-keigo-sarc":{"src":"js/c/tone-keigo-sarc.5a14e44e02.js","br":2042,"deps":[]},
+  "tone-keigo-twist":{"src":"js/c/tone-keigo-twist.df1e76685a.js","br":793,"deps":[]},
+  "tone-kohai":{"src":"js/c/tone-kohai.862b094cba.js","br":16487,"deps":[]},
+  "tone-mixed":{"src":"js/c/tone-mixed.e35524898e.js","br":38196,"deps":[]},
+  "tone-mukuchi":{"src":"js/c/tone-mukuchi.557e2f9a55.js","br":22771,"deps":[]},
+  "tone-mukuchi-ne":{"src":"js/c/tone-mukuchi-ne.8115b6084a.js","br":3475,"deps":[]},
+  "tone-mystic":{"src":"js/c/tone-mystic.b37e6b9026.js","br":11236,"deps":[]},
+  "tone-noja":{"src":"js/c/tone-noja.c08315d675.js","br":31582,"deps":[]},
+  "tone-ojou":{"src":"js/c/tone-ojou.84186dc38a.js","br":8291,"deps":[]},
+  "tone-otaku":{"src":"js/c/tone-otaku.4b98af65e5.js","br":4609,"deps":[]},
+  "tone-ronkyaku":{"src":"js/c/tone-ronkyaku.ef646187ac.js","br":3536,"deps":[]},
+  "tone-sondai":{"src":"js/c/tone-sondai.b301fcfb35.js","br":8777,"deps":[]},
+  "tone-tame":{"src":"js/c/tone-tame.37436a7ec4.js","br":734,"deps":[]},
+  "tone-tsun-n":{"src":"js/c/tone-tsun-n.650b8f0e2b.js","br":7058,"deps":[]},
+  "tone-tsun-soft":{"src":"js/c/tone-tsun-soft.080530f3ac.js","br":609,"deps":[]},
+  "tone-usan":{"src":"js/c/tone-usan.67a0f13262.js","br":18696,"deps":[]},
+  "tone-yankee":{"src":"js/c/tone-yankee.feefb2a01b.js","br":22705,"deps":[]}},
 "order":["goukon","whiteroom","classroom","island","ship","zombie","jashin","yakata","omega","dungeon","massage","hole","kaihen","succubus","saimin","variety","locker","rpg","jinro"],
 "scen":{
   "goukon":{"id":"goukon","name":"合コン","kicker":"恋愛・社交","desc":"居酒屋の個室で一晩。酒が回るほど本音と衝動が出る。最後に誰と帰ったかで決着。","unit":"時刻","preRel":0,"lethal":false,"env":[{"id":"alcohol","label":"酒の進み"},{"id":"mood","label":"場の空気"},{"id":"second","label":"二次会"},{"id":"kingsgame","label":"王様ゲーム"},{"id":"mobs","label":"モブの参加者"},{"id":"rel","label":"住人どうしの関係"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"}],"stats":[{"id":"drink","label":"酒の強さ"},{"id":"looks","label":"見た目の自信"}],"card":{"desc":"居酒屋の個室で一晩、最後に誰と一緒に帰るか。","descLong":"居酒屋の個室で一晩の合コン。酒が回るほど本音と衝動があふれ出す。最後に誰と誰が一緒に帰ったかで決着がつく。","r18plot":"お持ち帰りの夜"},"tags":["relCore","night","race","food","drink","mob","romance"],"chunks":["scen-goukon"]},
@@ -1750,7 +1754,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "rpg":{"id":"rpg","name":"ダンジョンRPG","kicker":"パーティ・冒険","desc":"パーティを組んでダンジョンへ。階ごとにランダムな戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、誰が宝箱に手を伸ばし、どこで引き返すのか。地下30階の主を倒せば踏破、引き返せば帰還、全員倒れれば全滅。","solo":true,"minCast":1,"maxCast":6,"unit":"階","castHint":"1〜6人のパーティで潜ります。職業は「おまかせ」ならエゴグラムから決まります。前に出るか、宝箱を開けるか、引き返すかは気質の数値で決まります。踏破できるのは一割ほど。多くは途中で引き返します。","env":[{"id":"floors","label":"目標の階層"},{"id":"danger","label":"魔物の強さ"},{"id":"loot","label":"お宝の多さ"},{"id":"retreat","label":"撤退"}],"stats":[{"id":"str","label":"腕っぷし"},{"id":"luck","label":"運"},{"id":"int","label":"知能"}],"perFields":[{"id":"job","label":"職業","auto":"おまかせ（エゴグラムから）","options":[{"id":"warrior","label":"戦士"},{"id":"mage","label":"魔法使い"},{"id":"priest","label":"僧侶"},{"id":"thief","label":"盗賊"},{"id":"hunter","label":"狩人"},{"id":"bard","label":"吟遊詩人"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"パーティでダンジョンに潜り、いくら持ち帰れるか。","descLong":"パーティを組んでダンジョンへ。階ごとに戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、どこで引き返し、いくら持ち帰れるか。"},"tags":["relSome","race","job","undead","death"],"chunks":["scen-rpg"]},
   "jinro":{"id":"jinro","name":"人狼","kicker":"ゲーム・推理","desc":"住人どうしで人狼ゲーム。配役は人狼・狩人・占い師・霊媒師・村人からランダム。人狼は性格で戦法（騙り・潜伏・仲間切り・庇い合い）を選び、村は仕切り役しだいで方針（ローラー・真贋の見極め・グレー吊り）が変わる。信頼と協力、そして裏切り。知能は性格とは別に決まる。","solo":true,"minCast":4,"maxCast":15,"unit":"日","castHint":"4〜15人。配役の数は環境値で決めます（人狼は全体の半分未満に自動で調整）。ゲームなので、襲う相手や投票先は既存の関係と関係なく、推理と立ち回りで決まります。","env":[{"id":"wolves","label":"人狼の数"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"lovemode","label":"好意モード"},{"id":"prize","label":"賞品"},{"id":"prizeText","label":"賞品（自由に書く）"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"},{"id":"wolfnight","label":"人狼の勝利の夜"}],"stats":[{"id":"int","label":"知能"},{"id":"poker","label":"ポーカーフェイス"}],"perFields":[{"id":"role","label":"配役","auto":"ランダム","options":[{"id":"wolf","label":"人狼"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"vill","label":"村人"}]}],"card":{"desc":"住人どうしの人狼ゲーム、騙りと推理と裏切り。","descLong":"住人どうしで人狼ゲーム。人狼は性格で騙りや潜伏を選び、村は仕切り役しだいで方針が変わる。信頼と協力、そして裏切り。"},"tags":["relSome","night","race","death"],"chunks":["scen-jinro"]}},
 "tones":{"auto":["aniki","proud","stern","tsun","gentle","devoted","cool","free","shy","polite"],"pack":{"mixed":"tone-mixed","cool_soft":"tone-cool-soft","boku_n":"tone-boku-n","god":"tone-god","darui_lite":"tone-darui-lite","tsun_n":"tone-tsun-n","ane":"tone-ane","kansai":"tone-kansai","noja":"tone-noja","gyaru":"tone-gyaru","chara":"tone-chara","mukuchi":"tone-mukuchi","gentleman":"tone-gentleman","yankee":"tone-yankee","gentle_n":"tone-gentle-n","devoted_p":"tone-devoted-p","kohai":"tone-kohai","calm":"tone-calm","usan":"tone-usan","ojou":"tone-ojou","hero":"tone-hero","mystic":"tone-mystic","genki":"tone-genki","darui":"tone-darui","sondai":"tone-sondai","mukuchi_ne":"tone-mukuchi-ne","keigo_sarc":"tone-keigo-sarc","keigo_bossy":"tone-keigo-bossy","keigo_flat":"tone-keigo-flat","keigo_twist":"tone-keigo-twist","otaku":"tone-otaku","ronkyaku":"tone-ronkyaku","chara_down":"tone-chara-down","flat_plain":"tone-flat-plain","tame":"tone-tame","tsun_soft":"tone-tsun-soft","gentle_m":"tone-gentle-m","honwaka":"tone-honwaka","darui_talk":"tone-darui-talk"}}};</script>
-<script src="js/c/core.9e7693b1b0.js"></script>
+<script src="js/c/core.5dfcb79af5.js"></script>
 <!-- scripts:end -->
 
 </body></html>

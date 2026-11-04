@@ -8,18 +8,39 @@
      例外が起きたときは、画面の下に「もう一度表示する」の小さな知らせを出す（拡張機能など、このページ以外のファイルの例外は記録だけ）
    ・iPhone・iPad・Mac の Safari（WebKit）では content-visibility（隠したタブ・住人の行・関係の行の描画の省略）を使わない：
      WebKit で、省略していた箇所がスクロールしても描かれず白いまま残ることがあるため（html に hk-webkit を付けて上書き）
-   ・小窓（HK.Modal）で止めた背景が、窓が無いのに止まったままになっていたら戻す（戻る・別のタブから戻ったとき） */
+   ・小窓（HK.Modal）で止めた背景が、窓が無いのに止まったままになっていたら戻す（戻る・別のタブから戻ったとき）
+   2026-11-04 追記（報告「iPhone の Safari でスクロールすると文字が見えなくなる（どこかに飛ぶ？）」。docs/reports/2026-11-04/safari-scroll.md）：
+   ・WebKit の判定は UA だけでなく navigator.vendor（Apple）でも見る（「デスクトップ用 Web サイトを表示」で UA が Mac になっても外れないように）
+   ・空の判定を厳しくする（子が無い、または高さが無くて文字も無いときだけ）。指で触っているあいだ・スクロールの直後は見ない。描き直しは位置を保つ（HK.UI.refresh）
+   ・HK.Guard.userAt()：利用者が最後に自分でスクロール・操作した時刻（ui.js が、念押しのスクロールや描き直しの位置の戻しを、利用者のスクロールを邪魔しないように使う）
+   ・HK.Guard.note(種類, 文)：直前の出来事の控え（描き直し・プログラムによるスクロール・読み込み。このページを開いているあいだの 30 件）。記録を残すときに直前の 6 件を添える。
+     スクロールの見張り（プログラムによるスクロール・大きな飛び・ページの高さの急な変化）は late の ui-guard-scroll.js
+   ・記録と知らせる文に iOS の版・画面の向きを添える */
 (function () {
   'use strict';
   var HK = window.HK = window.HK || {};
   if (typeof document === 'undefined' || HK.Guard) return;
-  var KEY = 'hakoniwa-errlog', MAX = 40, log = [];
+  var KEY = 'hakoniwa-errlog', MAX = 40, log = [], trace = [];
+  /* 直前の出来事の控え（保存しない）。記録を残すときに添える */
+  function note(k, m) { trace.push({ ts: Date.now(), k: String(k), m: String(m || '').slice(0, 160) }); if (trace.length > 30) trace.splice(0, trace.length - 30); }
+  /* 利用者が自分でスクロール・操作した時刻（指・ホイール・キー）。指で触っているあいだ（touching）は空の判定もしない */
+  var userT = 0, touching = 0;
+  function mark() { userT = Date.now(); }
+  ['wheel', 'keydown', 'pointerdown'].forEach(function (k) { window.addEventListener(k, mark, { passive: true, capture: true }); });
+  window.addEventListener('touchstart', function () { touching++; mark(); }, { passive: true, capture: true });
+  window.addEventListener('touchmove', mark, { passive: true, capture: true });
+  ['touchend', 'touchcancel'].forEach(function (k) { window.addEventListener(k, function (ev) { mark(); touching = ev.touches ? ev.touches.length : 0; }, { passive: true, capture: true }); });
   try { var raw = window.localStorage && localStorage.getItem(KEY); log = raw ? JSON.parse(raw) : []; if (!Array.isArray(log)) log = []; } catch (e) { log = []; }
 
   /* ---------- WebKit ---------- */
   var ua = String(navigator.userAgent || ''), de = document.documentElement;
   var ios = /iP(hone|od|ad)/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1);
-  var webkit = ios || (/AppleWebKit\//.test(ua) && !/(Chrome|Chromium|Edg|OPR|Android)\//.test(ua));
+  var vend = String(navigator.vendor || '');
+  var webkit = ios || /Apple/.test(vend) || (/AppleWebKit\//.test(ua) && !/(Chrome|Chromium|Edg|OPR|Android)\//.test(ua));
+  /* iOS の版（「デスクトップ用」のときは UA に出ないので Version/ の版） */
+  var iosV = (ua.match(/OS (\d+)[_.](\d+)(?:[_.](\d+))?/) || [])[0] || '';
+  iosV = iosV ? 'iOS ' + iosV.replace(/^OS /, '').replace(/_/g, '.') : (webkit && (navigator.maxTouchPoints || 0) > 1 ? 'iOS/iPadOS（デスクトップ表示）Safari ' + ((ua.match(/Version\/([\d.]+)/) || [])[1] || '?') : '');
+  function orient() { var w = window.innerWidth || 0, h = window.innerHeight || 0; return w > h ? '横' : '縦'; }
   if (webkit) {
     de.classList.add('hk-webkit');
     var st = document.createElement('style');
@@ -32,7 +53,8 @@
   function where() {
     var v = document.querySelector('main>section[role=tabpanel]:not([hidden])'), S = null;
     try { S = HK.UI && HK.UI.state ? HK.UI.state() : null; } catch (e) { S = null; }
-    return { tab: v ? v.id.replace(/^view-/, '') : '', scen: S && S.scenId || '', vw: (window.innerWidth || 0) + 'x' + (window.innerHeight || 0), y: Math.round(window.pageYOffset || 0) };
+    var vv = window.visualViewport, z = vv && vv.scale && Math.abs(vv.scale - 1) > 0.01 ? '・拡大' + Math.round(vv.scale * 100) + '%' : '';
+    return { tab: v ? v.id.replace(/^view-/, '') : '', scen: S && S.scenId || '', vw: (window.innerWidth || 0) + 'x' + (window.innerHeight || 0) + orient() + z, y: Math.round(window.pageYOffset || 0) + '/' + Math.round(de.scrollHeight || 0) };
   }
   function save() { try { if (window.localStorage) localStorage.setItem(KEY, JSON.stringify(log)); } catch (e) { /* 保存できなくても記録は続ける */ } }
   function add(kind, msg, stack) {
@@ -40,6 +62,7 @@
     var now = Date.now(), last = log[log.length - 1];
     if (last && last.msg === msg && last.kind === kind && now - last.ts < 3000) { last.n = (last.n || 1) + 1; save(); return last; }
     var w = where(), e = { ts: now, t: new Date(now).toISOString(), kind: kind, msg: msg, stack: stack, tab: w.tab, scen: w.scen, vw: w.vw, y: w.y, v: (window.HK_MANIFEST && window.HK_MANIFEST.v) || '' };
+    if (trace.length) e.tr = trace.slice(-6).map(function (x) { return Math.round((now - x.ts) / 100) / 10 + '秒前 ' + x.k + '：' + x.m; });
     log.push(e);
     if (log.length > MAX) log.splice(0, log.length - MAX);
     save();
@@ -81,18 +104,21 @@
     if (!v) return true;
     if (!/^view-(cast|box|result)$/.test(v.id)) return false;   /* セーブのタブは late の画面なので見ない */
     if (!v.firstElementChild) return true;
+    /* 描き途中・遅れて描く節（iOS）で高さが一瞬 0 になることがあるので、文字も無いときだけ空とみなす */
     var r = v.getBoundingClientRect();
-    return r.height < 8;
+    return r.height < 8 && !String(v.textContent || '').trim();
   }
   var retried = 0, chkT = 0;
   function check() {
     chkT = 0;
+    /* 指で触っている・慣性で動いている（直前に操作があった）あいだは見ない（描き直しでスクロールを邪魔しない） */
+    if (touching || Date.now() - userT < 350) { chkT = setTimeout(check, 500); return; }
     if (HK.Modal && HK.Modal.sync) try { HK.Modal.sync(); } catch (e) { /* 何もしない */ }
     if (!blank()) { retried = 0; hideBox(); return; }
     add('blank', '画面の中身が空になっていました');
     if (retried < 1) {
       retried++;
-      try { HK.UI.refresh(); } catch (e) { add('error', '描き直しに失敗：' + (e && e.message || e), e && e.stack); }
+      try { HK.UI.refresh('空の画面'); } catch (e) { add('error', '描き直しに失敗：' + (e && e.message || e), e && e.stack); }
       setTimeout(function () { if (blank()) showBox(); else retried = 0; }, 600);
     } else showBox();
   }
@@ -111,7 +137,7 @@
   }
   function redraw() {
     hideBox(); hideBar(); retried = 0;
-    try { if (HK.Modal && HK.Modal.sync) HK.Modal.sync(); HK.UI.refresh(); } catch (e) { add('error', '描き直しに失敗：' + (e && e.message || e), e && e.stack); }
+    try { if (HK.Modal && HK.Modal.sync) HK.Modal.sync(); HK.UI.refresh('もう一度表示'); } catch (e) { add('error', '描き直しに失敗：' + (e && e.message || e), e && e.stack); }
     setTimeout(function () { if (blank()) showBox(); }, 600);
   }
   function copyLog(b) {
@@ -172,13 +198,17 @@
     check: function () { soon(0); },
     blank: blank,
     webkit: webkit,
+    ios: iosV,
+    note: note,
+    trace: function () { return trace.slice(); },
+    userAt: function () { return userT; },
     /* 知らせるための文（新しい順）。ブラウザ・画面・版も添える */
     text: function () {
       var head = '箱庭シミュレーター 不具合の記録（' + new Date().toLocaleString() + '）\n' +
-        'ブラウザ：' + ua + '\n画面：' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0) + '・倍率 ' + (window.devicePixelRatio || 1) + (webkit ? '・WebKit' : '') + '\n版：' + ((window.HK_MANIFEST && window.HK_MANIFEST.v) || '') + '\n';
+        'ブラウザ：' + ua + (iosV ? '\n端末：' + iosV : '') + '\n画面：' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0) + '・' + orient() + '・倍率 ' + (window.devicePixelRatio || 1) + (webkit ? '・WebKit' : '') + (window.navigator.standalone ? '・ホーム画面から' : '') + '\n版：' + ((window.HK_MANIFEST && window.HK_MANIFEST.v) || '') + '\n';
       if (!log.length) return head + '（記録はありません）';
       return head + log.slice().reverse().map(function (e) {
-        return '---\n' + e.t + '［' + e.kind + (e.n > 1 ? ' ×' + e.n : '') + '］' + e.msg + '\nタブ：' + (e.tab || '-') + '・箱庭：' + (e.scen || '-') + '・画面：' + e.vw + '・位置：' + e.y + (e.stack ? '\n' + e.stack : '');
+        return '---\n' + e.t + '［' + e.kind + (e.n > 1 ? ' ×' + e.n : '') + '］' + e.msg + '\nタブ：' + (e.tab || '-') + '・箱庭：' + (e.scen || '-') + '・画面：' + e.vw + '・位置：' + e.y + (e.stack ? '\n' + e.stack : '') + (e.tr ? '\n直前：' + e.tr.join(' ／ ') : '');
       }).join('\n');
     }
   };

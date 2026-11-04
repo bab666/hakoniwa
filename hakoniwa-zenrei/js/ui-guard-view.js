@@ -22,7 +22,7 @@
     if (!r) {
       r = document.createElement('div');
       r.className = 'uidm-row uidm-err';
-      r.innerHTML = '<span class="uidm-h">不具合</span><button type="button" class="btn small" data-hkerr="open"></button><span class="uidm-note">画面が真っ白になった・動かないときの記録です。知らせるときにコピーして貼ってください</span>';
+      r.innerHTML = '<span class="uidm-h">不具合</span><button type="button" class="btn small" data-hkerr="open"></button><span class="uidm-note">画面が真っ白になった・動かない・スクロールで飛んだときの記録です。知らせるときにコピーして貼ってください</span>';
       m.appendChild(r);
     }
     r.querySelector('[data-hkerr]').textContent = label();
@@ -32,7 +32,7 @@
   /* ---------- 窓 ---------- */
   var ov = null, opener = null;
   function body() {
-    return '<p>このブラウザで起きた画面のエラーと、画面が空になったことの記録です（' + G.list().length + '件。新しい 40 件まで。住人の名前や設定は入りません）。</p>' +
+    return '<p>このブラウザで起きた画面のエラー・画面が空になったこと・読み込めなかったデータ・操作なしのスクロールや位置の飛びの記録です（' + G.list().length + '件。新しい 40 件まで。住人の名前や設定は入りません）。</p>' +
       '<pre id="hkerr-text" tabindex="0">' + esc(G.text()) + '</pre>' +
       '<div class="hkerr-b"><button type="button" class="btn primary" data-hkerr="copy">コピー</button><button type="button" class="btn" data-hkerr="redraw">画面をもう一度表示する</button><button type="button" class="btn ghost" data-hkerr="clear">記録を消す</button></div>';
   }
