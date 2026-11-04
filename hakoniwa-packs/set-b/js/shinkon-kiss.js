@@ -97,7 +97,7 @@
     var st = stat(ctx), pr = pairAt(ctx, S, day.d, 'n');
     if (!pr) return;
     /* 三人婚：三人とも家にいる夜は、ときどき三人のキス */
-    if (S.trio && S.C && spouses(S).every(function (c) { var p = lifeDay(c, day.d); return !p || !p.trip; }) && ctx.rng() < 0.18) {
+    if (S.trio && S.C && S.full !== false && spouses(S).every(function (c) { var p = lifeDay(c, day.d); return !p || !p.trip; }) && ctx.rng() < 0.18) {
       var T3 = spouses(S), t3 = KS.trio(ctx, T3[0], T3[1], T3[2]);
       if (t3 && ctx.act2({ actors: T3, cat: 'romance', text: t3, why: '新婚部屋：三人のキス（おやすみ）', fx: function () { ctx.mod2(T3[0], T3[1], { aff: 2, att: 2 }, { aff: 2, att: 2 }); ctx.mod2(T3[1], T3[2], { aff: 2, att: 2 }, { aff: 2, att: 2 }); } })) st.trio++;
       return;
@@ -146,7 +146,7 @@
   var HAPPY = '二人は幸せなキスをした。';
   function swapLast(ctx, S) {
     var TX = HK.ShinkonText, st = stat(ctx);
-    if (S.trio && HK.ShinkonTrio && HK.ShinkonTrio.T && HK.ShinkonTrio.T.KISS) {
+    if (S.trio && S.full !== false && HK.ShinkonTrio && HK.ShinkonTrio.T && HK.ShinkonTrio.T.KISS) {
       var TT = HK.ShinkonTrio.T, k0 = TT.KISS, L3 = (HK.KissText.LONG || {}).nagori || [];
       TT.KISS = [0, 1, 2].map(function () { return '最後の夜。' + KS.trioT(ctx) + '\n\n' + KS.fresh(ctx, L3).replace(/\{a\}と\{b\}/g, '三人') + '三人は幸せなキスをした。'; });
       st.last++;

@@ -176,12 +176,17 @@
     }
     /* 新婚らしい入口・贈り物の夜は、入口ごとの場面の文（PLAY・OPEN。枕は新婚部屋の文のまま） */
     var xsrc = cute === 'x' ? XX.src(X0.k, X0.x, X0.y, SRC, a) : null;
-    var full = sceneText(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: xsrc ? 0 : pi, afi: afi, jealTop: cute === 'jeal' && day.jealBy === a,
+    /* 新婚の型（2026-11-04 不具合リスト NO 11。shinkon-r18-pair.js）：短い・中くらいの場面の 55%。邪魔が入った続き・新婚らしい入口・性器の指定のある組・
+       受けから始まる夜（受けから誘う・ゴムのおねだり・受けが妬いた夜）・攻めが妬いた夜は今までの組み立て */
+    var leadB0 = cute === 'ini' || cute === 'gomu' || (cute === 'jeal' && day.jealBy === b);
+    var pairS = !kn && cute !== 'x' && cute !== 'jeal' && !leadB0 && !nogen && (form === 'short' || form === 'mid') && HK.ShinkonPair && ctx.rng() < 0.55
+      ? HK.ShinkonPair.scene(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, high: lv === 'high', entry: entry, cute: cute || '' }) : null;
+    var full = pairS || sceneText(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: xsrc ? 0 : pi, afi: afi, jealTop: cute === 'jeal' && day.jealBy === a,
       /* 受けの側のきっかけ（受けから誘う・ゴムのおねだり・受けが妬いた夜・受けが言い出した贈り物の夜）は受けから始める */
       leadB: !kn && (cute === 'ini' || cute === 'gomu' || (cute === 'jeal' && day.jealBy === b) || (cute === 'x' && X0.x === b)), entry: entry, resume: !!kn }, xsrc);
     day.r18x = null;
     form = full.form;
-    var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚部屋：' + (cute === 'x' && X0.k === 'futari' ? '昼' : '夜') + '（' + FORM[form] + '）' + (cute === 'x' ? '・' + ENTRY[entry] : (form === 'short' || form === 'mid') && !kn ? '・' + play.t.slice(0, 18) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
+    var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚部屋：' + (cute === 'x' && X0.k === 'futari' ? '昼' : '夜') + '（' + FORM[form] + '）' + (pairS ? '・' + pairS.why : cute === 'x' ? '・' + ENTRY[entry] : (form === 'short' || form === 'mid') && !kn ? '・' + play.t.slice(0, 18) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
     if (!e) return !!kn;
     if (form === 'long') S.longN = (S.longN || 0) + 1;

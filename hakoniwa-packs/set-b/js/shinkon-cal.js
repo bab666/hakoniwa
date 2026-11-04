@@ -8,7 +8,7 @@
      ・バレンタイン（2/14）：贈る人は性別で決めず、それぞれの気質で決める（二人とも贈ってもよい。少なくとも一人）。手作り（料理をする人だけ）・市販・手作りの失敗・サプライズ。
        受け取った人の反応は態度 9 種（GIFT）。手作りの人は前の晩（2/13）に準備の段も。恋愛にならない二人は感謝のしるし
      ・ホワイトデー（3/14）：「先月のバレンタインに貰ったか」はその場で決める（貰った人がお返し・二人とも贈り合っていた・どちらも貰っていないが贈る・どちらも何もしない）
-     ・誕生日：住人の設定の「誕生月」（本体の住人の欄 bmonth）と、この部屋の住人ごとの設定「誕生日の日」（perField bday：おまかせ＝遊ぶ日数に入る誕生月の日のどれか／祝わない／1〜31日）。
+     ・誕生日：住人の設定の「誕生月」（本体の住人の欄 bmonth）が遊ぶ日数に入れば、その月の行事の日を避けたどこかの日（2026-11-04 NO 5b。以前の「誕生日の日」の欄は外した。1〜31日）。
        遊ぶ日数に入れば、前の日に準備、当日の朝・夜に祝い（料理をする人は手料理、しない人はケーキを買う・店を予約）と贈り物（受け取った人の態度 9 種）。
        誕生日・バレンタイン・ホワイトデー・クリスマス・イブの日は、出張・体調を崩す日を入れない（shinkon.js の rollDay）
      ・R18版：贈り物がえっちなことになる夜の入口（day.r18x。shinkon-r18-cal.js の HK.ShinkonR18Cal が、きっかけの段と場面の文を持つ）
@@ -127,13 +127,19 @@
     else if (sd === 'rand') d0 = 1 + Math.floor(ctx.rng() * dim);
     else { var k = KEY[m]; d0 = Math.max(1, k - Math.floor(ctx.rng() * Math.min(S.days, k))); }
     S.cal = { m: m, d: Math.min(dim, d0) };
-    /* 誕生日（住人の誕生月 bmonth と、この部屋の「誕生日の日」） */
+    /* 誕生日（2026-11-04 不具合リスト NO 5b）：住人の設定の誕生月（bmonth）が日数の中に入れば、その月のどこかの日に祝う（以前の住人ごとの「誕生日の日」の欄は外した。
+       保存された値（pick.bday）は読まない）。月の決まった日の行事（バレンタイン・ホワイトデー・クリスマス・イブ・正月・七夕など）の日と、ほかの人の誕生日の日は避ける。
+       避けると日が残らないときは、その遊びでは祝わない（行事の日に重ねて、前後が食い違わないように） */
     S.bdays = [];
     (S.spouses || [S.A, S.B]).forEach(function (c) {
-      var bm = +c.bmonth, pk = SK() && SK().pickOfChar ? SK().pickOfChar(ctx, c, 'bday') : null;
-      if (!(bm >= 1 && bm <= 12) || pk === 'none') return;
-      var want = /^d\d+$/.test(String(pk || '')) ? +String(pk).slice(1) : 0, hits = [];
-      for (var i = 0; i < S.days; i++) { var x = CL.date(S, i); if (x.m === bm && (!want || x.dd === want)) hits.push(i); }
+      var bm = +c.bmonth;
+      if (!(bm >= 1 && bm <= 12)) return;
+      var hits = [];
+      for (var i = 0; i < S.days; i++) {
+        var x = CL.date(S, i);
+        if (x.m !== bm || evDay(x) || S.bdays.some(function (b) { return b.d === i; })) continue;
+        hits.push(i);
+      }
       if (!hits.length) return;
       var di = hits[Math.floor(ctx.rng() * hits.length)];
       S.bdays.push({ c: c, d: di, label: CL.label(S, di) });
@@ -143,6 +149,11 @@
     /* 三人婚は、その日の二人で決める（前の晩の準備は出さない） */
     if (!S.trio) for (var j = 0; j < S.days; j++) { var y = CL.date(S, j); if (y.m === 2 && y.dd === 14) { S.vplan = vPlan(ctx, S, j); break; } }
   };
+  /* 月の決まった日の行事の日（誕生日をそこに重ねない）：バレンタイン・ホワイトデー・クリスマス・イブと、CL.EV の決まった日（fix） */
+  function evDay(x) {
+    if ((x.m === 2 && x.dd === 14) || (x.m === 3 && x.dd === 14) || (x.m === 12 && (x.dd === 24 || x.dd === 25))) return true;
+    return (CL.EV[x.m] || []).some(function (e) { return e.fix && e.fix.indexOf(x.dd) >= 0; });
+  }
   /* 大事な日（出張・体調を崩す日を入れない）：誕生日・バレンタイン・ホワイトデー・クリスマス・イブ */
   CL.keyDay = function (S, d) {
     if (!S.cal) return false;
@@ -223,9 +234,16 @@
     var lab = CL.label(S, day.d);
     /* 誕生日 */
     (day.bday || []).forEach(function (bd) {
-      var c = bd.c, o = c === A ? B : c === B ? A : null;
+      var c = bd.c, o = c === A ? B : c === B ? A : null, MU = HK.ShinkonMulti;
       if (!o) o = (S.C && c === S.C) || (S.D && c === S.D) ? A : null;
+      /* 三人婚・四人婚：祝うのは誕生日の人の恋の相手（恋の相手どうしでない伴侶が恋人のように祝わないように。2026-11-04 NO 1） */
+      if (MU && S.lp && o && !MU.love(ctx, S, o, c)) o = MU.partner(ctx, S, c, [A, B].filter(function (x) { return x !== c; })) || MU.partner(ctx, S, c) || o;
       if (!o) return;
+      var lv = MU && S.lp ? MU.love(ctx, S, o, c) : S.love, lv0 = S.love, wd0 = S.wed;
+      if (MU && S.lp) { S.love = lv; S.wed = lv; }
+      try { bdayRun(bd, c, o, lv); } finally { S.love = lv0; S.wed = wd0; }
+    });
+    function bdayRun(bd, c, o, lv) {
       if (part === 'm' && !bd.morn) {
         bd.morn = 1;
         var mt = T(ctx, (CT.BDAY || {}).morn, o, c);
@@ -242,9 +260,9 @@
         if (th) tx += th;
         var e = act(ctx, { actors: th ? [o, c].concat(S.spouses.filter(function (x) { return x !== o && x !== c; })) : [o, c], cat: lv ? 'romance' : 'bond', text: tx, why: '新婚部屋：誕生日（' + lab + '・' + c.name + 'の誕生日・' + { cook: o.name + 'の手料理', buy: 'ケーキを買って', out: '店を予約して' }[how] + '）',
           fx: function () { ctx.mod2(o, c, { aff: 3, att: lv ? 2 : 0 }, { aff: 5 + SK().persK(c, 'warm'), att: lv ? 3 : 0, trust: 2 }); } });
-        if (e) { S.bdayN = (S.bdayN || 0) + 1; if (R18 && R18.offer) R18.offer(ctx, S, day, 'bday', o, c); }
+        if (e) { S.bdayN = (S.bdayN || 0) + 1; if (R18 && R18.offer && lv) R18.offer(ctx, S, day, 'bday', o, c); }
       }
-    });
+    }
     if (day.bprep && part === 'n' && !day.bprep.prep) {
       var bc = day.bprep.c, bo = bc === A ? B : bc === B ? A : (S.C && bc === S.C) || (S.D && bc === S.D) ? A : null;
       if (bo) { day.bprep.prep = 1; var pp = T(ctx, (CT.BDAY || {}).prep, bo, bc); if (pp) act(ctx, { actors: [bo], cat: 'solo', text: F(ctx, pp, bo, bc), why: '新婚部屋：誕生日の前の日（' + bc.name + 'の誕生日は明日）' }); }
