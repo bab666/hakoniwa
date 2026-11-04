@@ -635,6 +635,8 @@
     else if (t === 1) afternoon(ctx, day);
     else evening(ctx, day);
   }
+  /* 追加の出来事（関係性ごと・性格・アクシデント・季節。date-more.js の HK.DateMore）に渡す部品 */
+  function more(ctx, day, part) { if (HK.DateMore && HK.DateMore.run && day && !day.over) HK.DateMore.run(ctx, day, part, { f: f, setO: setO, lead2: lead2, pickT: pickT, relPick: relPick, attPick: attPick, fill: fill, per: per, rcat: rcat, cands: cands, relList: relList }); }
   function placeName(D) { return D ? D.name : 'デートの行き先'; }
   /* その日の最初・最後の行き先（待ち合わせ・計画・行きの道中は最初、帰りは最後） */
   function firstD(P) { return P.slots.length ? P.slots[0].d : P.main; }
@@ -659,6 +661,7 @@
     if (S.dbl && S.dbl[day.d]) doubleDate(ctx, day, 'start');
     visit(ctx, day, 'am');
     if (ctx.rng() < 0.3) gen(ctx, day);
+    more(ctx, day, 'am');
     toki(ctx, day, 'am', 0.2);
     if (S.p2) dblRun(ctx, day, 'am');
     if (S.trio) trioRun(ctx, day, 'am');
@@ -672,7 +675,7 @@
     visit(ctx, day, 'pm');
     if (day.over) return;
     /* 計画した人の性格で分かれる行動・汎用の出来事・やらしい雰囲気・他の住人（順は乱数で） */
-    var acts = [behave, gen, heat, others, function (c, d) { toki(c, d, 'pm', 0.3); }];
+    var acts = [behave, gen, heat, others, function (c, d) { toki(c, d, 'pm', 0.3); }, function (c, d) { more(c, d, 'pm'); }];
     for (var i = acts.length - 1; i > 0; i--) { var j = Math.floor(ctx.rng() * (i + 1)), x = acts[i]; acts[i] = acts[j]; acts[j] = x; }
     acts.forEach(function (fn) { if (!day.over) fn(ctx, day); });
     if (S.dbl && S.dbl[day.d] && !day.over) doubleDate(ctx, day, 'mid');
@@ -687,6 +690,7 @@
     if (day.over) return;
     if (!day.beh && ctx.rng() < 0.5) behave(ctx, day);
     if (S.dbl && S.dbl[day.d]) doubleDate(ctx, day, 'end');
+    more(ctx, day, 'ev');
     rich(ctx, day);
     if (P.bday) bday(ctx, day);
     else if (P.len === 'long' || P.trip || slotOf(P, 'ev') || ctx.rng() < 0.45) dinner(ctx, day);
@@ -700,6 +704,8 @@
     if (S.p2) dblSplit(ctx, day);
     var cp = day.last ? climaxPick(ctx, day) : null;
     if (cp && cp.at === 'dest') climax(ctx, day, cp);
+    /* その日の終わりぎわ（帰り際の靴の故障など） */
+    more(ctx, day, 'end');
     if (!P.trip && !P.home) move(ctx, day, 'back');
     if (cp && cp.at !== 'dest') climax(ctx, day, cp);
     var skip = S.trio ? trioPart(ctx, day) : false;

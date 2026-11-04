@@ -4,7 +4,7 @@
    ページを開かず、パックの js（行き先・段・舞台・文の表）だけを vm で読んで、次を数える（合格は 0 件）：
    (a) 舞台の印の無い行き先（HK.DateSet.TAG）
    (b) 段を持つ行き先で、段の決まっていない行（spot・ev・tr・food。段の表にあるのに行き先に無い名前も）
-   (c) 全行き先 × 汎用の文（GEN・TOKI・HEAT・HEAT_NC・BEHX・RICH・BATTARI・C_BATTARI・LUNCH・DINNER）× 出うる区切りで、
+   (c) 全行き先 × 汎用の文（GEN・TOKI・HEAT・HEAT_NC・BEHX・RICH・BATTARI・C_BATTARI・LUNCH・DINNER・追加の出来事 MORE）× 出うる区切りで、
        実行時の絞り込み（HK.DateSet.ok）を通るのに、点検の語の表（下の LEX：行き先の説明文・スポットの文の語と舞台の印で見る、実行時とは別の表）で
        舞台に合わない文（例：宇宙旅行で交番・海水浴で傘・水族館でスクリーン）
    (d) 汎用の表の種で、舞台の決まり（HK.DateSet.KIND）も語の決まり（RULE）も当たらないのに、場所の語を含む文（決まりの漏れ） */
@@ -16,7 +16,7 @@ const PACK = path.resolve(ROOT, (args.find(a => a.startsWith('--pack=')) || '--p
 const pj = JSON.parse(fs.readFileSync(path.join(PACK, 'pack.json'), 'utf8'));
 const ch = pj.chunks.find(c => c.name === 'date');
 const w = { HK: {} }; w.window = w; const cx = vm.createContext(w);
-ch.files.filter(f => /date-(?:places|phase|setting|text-)/.test(f)).forEach(f => vm.runInContext(fs.readFileSync(path.join(PACK, f), 'utf8'), cx, { filename: f }));
+ch.files.filter(f => /date-(?:places|phase|setting|text-|more-text)/.test(f)).forEach(f => vm.runInContext(fs.readFileSync(path.join(PACK, f), 'utf8'), cx, { filename: f }));
 const HK = w.HK, P = HK.DatePlaces, DS = HK.DateSet, PH = HK.DatePhase, T = HK.DateText;
 const bad = { a: [], b: [], c: [], d: [] };
 /* (a) */
@@ -71,6 +71,9 @@ GT.push({ key: 'BEHX', parts: ['pm', 'ev'], lines: flat(T.BEHX) });
 (T.RICH || []).forEach(r => GT.push({ key: 'RICH.' + r[0], parts: ['ev'], lines: r[2] }));
 GT.push({ key: 'BATTARI', parts: ['am', 'pm', 'ev'], lines: flat(T.BATTARI) });
 GT.push({ key: 'C_BATTARI', parts: ['am', 'pm', 'ev'], lines: flat(T.C_BATTARI) });
+/* 追加の出来事（date-more.js。関係性ごと・性格・エゴグラム・アクシデント・季節） */
+GT.push({ key: 'MORE.rel', parts: ['am', 'pm', 'ev'], lines: flat(T.MORE_REL) }, { key: 'MORE.per', parts: ['am', 'pm', 'ev'], lines: flat(T.MORE_PER) }, { key: 'MORE.ego', parts: ['am', 'pm', 'ev'], lines: flat(T.MORE_EGO) });
+Object.keys(T.MORE || {}).forEach(k => GT.push({ key: 'MORE.' + k, parts: k === 'acc_kutsu' ? ['ev'] : ['am', 'pm', 'ev'], lines: T.MORE[k].L }));
 GT.push({ key: 'LUNCH', parts: ['pm'], lines: (T.LUNCH || []).map(r => r[1]).flat() });
 GT.push({ key: 'DINNER', parts: ['ev'], lines: (T.DINNER || []).map(r => r[1]).flat() });
 /* やらしい雰囲気の場所の鍵が、その行き先で選ばれうるか（date.js の heatPlace と同じ） */
