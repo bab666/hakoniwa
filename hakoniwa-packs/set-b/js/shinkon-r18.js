@@ -134,7 +134,7 @@
     /* 1. きっかけの段（なぜ今夜こうなったか。場面の直前に必ず） */
     var lt, lwho = [who, who === A ? B : A];
     if (cute === 'x') {
-      lt = XX.lead(ctx, X0.k, a, b, X0.x, X0.y);
+      lt = XX.lead(ctx, X0.k, a, b, X0.x, X0.y, X0.ex);
       lwho = [X0.x, X0.y];
     } else if (cute === 'jeal') {
       var jb = day.jealBy, jo = jb === A ? B : A, ex = { g: day.jealG ? day.jealG.name : '' };
@@ -181,7 +181,7 @@
       leadB: !kn && (cute === 'ini' || cute === 'gomu' || (cute === 'jeal' && day.jealBy === b) || (cute === 'x' && X0.x === b)), entry: entry, resume: !!kn }, xsrc);
     day.r18x = null;
     form = full.form;
-    var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚部屋：夜（' + FORM[form] + '）' + (cute === 'x' ? '・' + ENTRY[entry] : (form === 'short' || form === 'mid') && !kn ? '・' + play.t.slice(0, 18) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
+    var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚部屋：' + (cute === 'x' && X0.k === 'futari' ? '昼' : '夜') + '（' + FORM[form] + '）' + (cute === 'x' ? '・' + ENTRY[entry] : (form === 'short' || form === 'mid') && !kn ? '・' + play.t.slice(0, 18) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
     if (!e) return !!kn;
     if (form === 'long') S.longN = (S.longN || 0) + 1;

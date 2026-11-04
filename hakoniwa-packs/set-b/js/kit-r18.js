@@ -17,6 +17,8 @@
   var J = HK.Journal, K = HK.PairKit;
   function L(s) { return s.split('|'); }
   function pickOf(ctx, arr) { return arr && arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : ''; }
+  /* 一回の遊びで同じ文を続けて使わない（山場の文。2026-11-04：三人・四人で暮らす家の昼の場面で場面の数が増え、同じ山場の文が 3 回出ることがあった） */
+  function fresh(ctx, arr) { if (!arr || !arr.length) return ''; var U = ctx._prUsed = ctx._prUsed || {}, q = arr.filter(function (x) { return !U[x]; }), t = pickOf(ctx, q.length ? q : arr); U[t] = 1; return t; }
   function fill(ctx, t, a, b, ex) {
     t = String(t || '');
     if (ex) Object.keys(ex).forEach(function (k) { t = t.split('{' + k + '}').join(ex[k]); });
@@ -144,7 +146,7 @@
         /* 男性器の無い人（性器の指定）には、男性器・精液の文を使わない */
         if (pkl && PP && PP.hasM && ((sh === 'mf' && !PP.hasM(a)) || (sh === 'fm' && !PP.hasM(b)))) pkl = pkl.filter(function (x) { return !/\{(?:男性器|精液)\}/.test(x); });
         if (pkl && !pkl.length) pkl = null;
-        var peak = (pkl ? pickOf(ctx, pkl) : text(ctx, 'PEAK', 0, sh, pickOf(ctx, FB.peak[sh]))).replace('{m}', mo ? '{b}「' + String(mo).replace(/^「|」$/g, '') + '」' : '');
+        var peak = (pkl ? fresh(ctx, pkl) : text(ctx, 'PEAK', 0, sh, fresh(ctx, FB.peak[sh]))).replace('{m}', mo ? '{b}「' + String(mo).replace(/^「|」$/g, '') + '」' : '');
         var fo = T && T.fingerOut ? T.fingerOut(bx, body, sh, false) : '';
         if (!fo && sh !== 'ff' && /指/.test(bx) && /沈め|入れ|入って|入ってる|中を|ナカ|何本/.test(bx) && !/指を(?:抜|引き抜)/.test(bx + body)) fo = pickOf(ctx, FB.fingerOut);
         body = bx + (fo ? fo : '') + '\n\n' + body + '\n\n' + peak + '\n\n' + tx;

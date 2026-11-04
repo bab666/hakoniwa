@@ -224,7 +224,7 @@
     /* 誕生日 */
     (day.bday || []).forEach(function (bd) {
       var c = bd.c, o = c === A ? B : c === B ? A : null;
-      if (!o) o = S.C && c === S.C ? A : null;
+      if (!o) o = (S.C && c === S.C) || (S.D && c === S.D) ? A : null;
       if (!o) return;
       if (part === 'm' && !bd.morn) {
         bd.morn = 1;
@@ -246,7 +246,7 @@
       }
     });
     if (day.bprep && part === 'n' && !day.bprep.prep) {
-      var bc = day.bprep.c, bo = bc === A ? B : bc === B ? A : S.C && bc === S.C ? A : null;
+      var bc = day.bprep.c, bo = bc === A ? B : bc === B ? A : (S.C && bc === S.C) || (S.D && bc === S.D) ? A : null;
       if (bo) { day.bprep.prep = 1; var pp = T(ctx, (CT.BDAY || {}).prep, bo, bc); if (pp) act(ctx, { actors: [bo], cat: 'solo', text: F(ctx, pp, bo, bc), why: '新婚部屋：誕生日の前の日（' + bc.name + 'の誕生日は明日）' }); }
     }
     /* バレンタイン（前の晩の準備・当日） */

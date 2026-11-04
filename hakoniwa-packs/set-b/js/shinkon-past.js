@@ -137,7 +137,7 @@
   PS.fearP = function (ctx, S) {
     if (S.fearP !== undefined) return S.fearP;
     var r = null, a = S.A0, b = S.B0;
-    if (!S.trio && a && b && a !== b) {
+    if (!S.trio && !S.quad && a && b && a !== b) {
       var I = PS.info(ctx, S, a, b), inp = ctx.input || {}, orig = inp._skOrig || inp.ties || [];
       if (I.exr && I.exr.k === 'fear') r = { x: I.exr.x, y: I.exr.y, ex: true, lv: I.exr.fm === 'calm' ? 'calm' : 'still' };
       else {

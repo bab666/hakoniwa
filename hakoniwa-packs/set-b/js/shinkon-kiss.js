@@ -25,7 +25,7 @@
   var KS = HK.Kiss, scen = HK.SCENARIOS[ID];
   function S0(ctx) { return ctx && ctx.scen && ctx.scen.id === ID ? ctx.sk : null; }
   function lifeDay(c, d) { return c && c.life && c.life.days ? c.life.days[d] : null; }
-  function spouses(S) { return S.trio && S.C ? (S.spouses || [S.A, S.B, S.C]) : [S.A, S.B]; }
+  function spouses(S) { return (S.trio && S.C) || S.quad ? (S.spouses || [S.A, S.B, S.C]) : [S.A, S.B]; }
   function r18on() { return !HK.SAFE_ON && !HK.SAFE_BUILD; }
   function ok2(ctx, a, b) { return !!(a && b && a !== b && HK.canLove(a, b, ctx) && HK.canLove(b, a, ctx)); }
   function stat(ctx) { return ctx.flags.shinkonKiss = ctx.flags.shinkonKiss || { itteDays: 0, itte: 0, itteLong: 0, itteLate: 0, promise: 0, okaeri: 0, hobi: 0, naka: 0, gochi: 0, oyasumi: 0, trio: 0, night: 0, promiseNight: 0, last: 0, oazuke: 0, oazukeSad: 0, sadKiss: 0 }; }

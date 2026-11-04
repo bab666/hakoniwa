@@ -118,10 +118,12 @@
     bday: L('誕生日の夜が終わりかけたころ、{x}は{y}の耳元でささやいた。「最後の贈り物、まだ渡してない｜最後の贈り物を、まだ渡していない｜最後の贈り物、まだ渡していません」――{x}が自分のシャツのボタンに指をかけると、{y}にも意味が分かった。|「今日は誕生日だから、何でも言って｜今日は誕生日だから、何でも言え｜今日は誕生日ですから、何でも言ってください」――{x}にそう言われて、{y}は少し迷ってから、{x}の耳元で一つだけ願いを口にした。{x}は赤くなって、それから、うなずいた。|ケーキの皿を下げ終えると、{x}は{y}の手を引いて寝室へ向かった。「誕生日の最後は、二人きりで｜誕生日の最後は、二人きりだ｜誕生日の最後は、二人きりで」――{y}は、引かれるままについていった。')
   };
   X.NAME = { apron: '裸エプロンの出迎え', pillow: 'イエスの枕', vday: 'バレンタインの贈り物', wday: 'ホワイトデーのお返し', bday: '誕生日の贈り物' };
-  X.lead = function (ctx, k, a, b, x, y) {
+  /* ex：入口ごとの差し込み（昼の二人きりの {why} など。shinkon-r18-four.js） */
+  X.lead = function (ctx, k, a, b, x, y, ex) {
     var l = X.LEAD[k]; if (!l) return '';
-    var t = SK().pickT(ctx, l, x, y);
-    return PR.mk(ctx, t, a, b, { x: x.name, y: y.name });
+    var t = SK().pickT(ctx, l, x, y), e = { x: x.name, y: y.name };
+    if (ex) Object.keys(ex).forEach(function (q) { e[q] = ex[q]; });
+    return PR.mk(ctx, t, a, b, e);
   };
   /* ---------- 場面の文（{a}＝攻め、{b}＝受け、{x}＝エプロンの人・贈った人、{y}＝誕生日の人） ---------- */
   X.PLAY = {
@@ -164,8 +166,11 @@
     };
     var play = {}; ['mf', 'ff', 'fm'].forEach(function (s) { play[s] = X.PLAY[k][s].map(sub); });
     var open = X.OPEN[k].map(sub);
-    return { TX: function () { var b = base.TX(); return { PLAY: [play], BOTTOM: b.BOTTOM, TOP: b.TOP, AFTER: b.AFTER, PEAK: b.PEAK }; },
-      MO: function () { var m = base.MO(); return { OPEN: open, REOPEN: m.REOPEN, FADE: m.FADE, PEAK_E: m.PEAK_E }; }, R: base.R, ok: base.ok };
+    /* 入口ごとの事後・ほのめかすの文（昼の二人きりは夜・翌朝の文を使わない。X.AFTER・X.FADE は shinkon-r18-four.js） */
+    var fillN = function (n, v) { var r = []; for (var i = 0; i < n; i++) r.push(v); return r; };
+    var aft = X.AFTER && X.AFTER[k] ? X.AFTER[k].map(sub) : null, fade = X.FADE && X.FADE[k] ? X.FADE[k].map(sub) : null;
+    return { TX: function () { var b = base.TX(); return { PLAY: [play], BOTTOM: b.BOTTOM, TOP: b.TOP, AFTER: aft ? fillN(Math.max((b.AFTER || []).length, ((base.R && base.R.AFTER) || []).length) + 1, aft) : b.AFTER, PEAK: b.PEAK }; },
+      MO: function () { var m = base.MO(); return { OPEN: open, REOPEN: m.REOPEN, FADE: fade || m.FADE, PEAK_E: m.PEAK_E }; }, R: base.R, ok: base.ok };
   };
 })();
 /* r18:end */
