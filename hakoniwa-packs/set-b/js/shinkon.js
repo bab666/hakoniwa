@@ -817,6 +817,11 @@
     var sexed = false, lastN = d === S.days - 1;
     /* 四人婚の四人の夜（本体の HK.Quad。条件がそろったときだけ軽く。shinkon-r18-four.js） */
     if (S.quad && !HK.SAFE_ON && HK.ShinkonR18Four) sexed = HK.ShinkonR18Four.quad(ctx, S, day2, lastN);
+    /* 四人婚で一人が留守の夜（2026-11-04 利用者の回答「三人の夜があってもよい」）：残る三人が三人婚と同じ条件（HK.Pos.trioPlan で組が二つ以上・形が作れる）なら、半々で三人の夜（HK.Trio3 の形）。満たさなければ二人の夜 */
+    if (!sexed && S.quad && !HK.SAFE_ON && HK.ShinkonR18Trio && S.sex < S.lewdMax && !restNight(ctx, day2) && !day2.r18x && !day2.noSex && !day2.futari) {
+      var away4 = S.spouses.filter(function (c) { return !cHome(S, day2, c); });
+      if (away4.length === 1 && ctx.rng() < 0.5) sexed = HK.ShinkonR18Trio.night(ctx, S, day2, lastN, { g: S.spouses.filter(function (c) { return c !== away4[0]; }), away: away4[0] });
+    }
     /* 三人婚の三人の夜（shinkon-r18-trio.js）：三人とも家にいて、体の関係にしてよい組が二つ以上（HK.Pos.trioPlan） */
     if (!sexed && S.trio && !HK.SAFE_ON && HK.ShinkonR18Trio && S.sex < S.lewdMax && !restNight(ctx, day2) && !day2.r18x && !day2.noSex && cHome(S, day2, S.C) &&
       (ctx.rng() < 0.4 || (!S.trioSex && (lastN || S.lewdMax - S.sex >= S.days - d)))) sexed = HK.ShinkonR18Trio.night(ctx, S, day2, lastN);
