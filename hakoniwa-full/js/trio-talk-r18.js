@@ -27,6 +27,9 @@
      場面の状態（C.flow：HK.SexFlow と同じ見方）：形の体位・動きの二度出しを外す・応答を求める攻めの台詞のあとに受けのリアクションを入れる（C.flowFix）
      HK.Trio3.touchOk(g, ok)・touchScene(S, g) … 繋がる組の作れない三人（三人とも攻めなど）の、口づけと手だけの一段
      HK.Trio3.edgeKind(a, b)             … a が b を抱く組の体：m（男性の体の攻め）／fm（女性の攻めが男性の受けを指と手で責める）／ff（女性どうし）／n（性器の語を使わない）
+     ペニバン（2026-11-04 利用者の指示「まれにペニバンを使う」「フタナリなら普通に挿入」）：女性の攻め（男性器なし）× 受け（fm・ff）の組は、場面ごとに HK.Trio3.STRAP_P（25%）で
+       ペニバン（張り型）で挿れる。繋がる段（C.formIn）で sp の文を使った組だけ C.ek(a, b) が sp を返し、体の位置・形が変わる一文・擬音・最中・攻めの一言・事後もペニバンに合わせる
+       （C.info.strap＝使った・C.info.strapCap＝使える組があった。o.strap で決めて渡せる）。フタナリ（性器が両方）の攻めは edgeKind が m で、{男性器} で挿れる（固定）
    ■ 決まり
      ・受け攻めは形のとおり（攻め＝各組の左。自分で攻めを選んだ人を受けにしない・固定のある人は固定にしか挿入しない、は呼ぶ側の HK.Pos.trioPlan のまま）。
        直接は繋がらない二人（apart）は、台詞で話すだけで触れ合わせない（POSE・SHIFT・REST は形の組だけを書く）
@@ -273,6 +276,7 @@
       main: {
         m: L('{m}を組み敷いて貫き|{m}の脚を抱え上げて沈め'),
         fm: L('{m}に指を沈め|{m}を組み敷いて握りこみ'),
+        sp: L('{m}を組み敷いて張り型で貫き|腰の張り型を{m}の{ナカ}に沈め'),
         ff: L('{m}に指を沈め|{m}の脚のあいだに顔を埋め'),
         n: L('{m}を組み敷き|{m}に覆いかぶさり')
       },
@@ -289,6 +293,7 @@
       back: {
         m: L('後ろから{t}に貫かれ|{t}に後ろから突かれ'),
         fm: L('後ろから{t}の指に探られ|{t}の手に握りこまれ'),
+        sp: L('後ろから{t}の張り型に貫かれ|{t}の腰の張り型に後ろから突かれ'),
         ff: L('後ろから{t}の指に探られ|{t}に背中から抱かれ'),
         n: L('後ろから{t}に抱きすくめられ|{t}に背中から覆いかぶさられ')
       },
@@ -305,12 +310,14 @@
       front: {
         m: L('{u}を組み敷いて貫き|{u}の脚を割って沈め'),
         fm: L('{u}に指を沈め|{u}を組み敷いて握りこみ'),
+        sp: L('{u}を組み敷いて張り型を沈め|腰の張り型で{u}を貫き'),
         ff: L('{u}に指を沈め|{u}の脚のあいだに顔を埋め'),
         n: L('{u}を胸の下に抱きこみ|{u}の首筋に唇を落とし')
       },
       back: {
         m: L('後ろからは{t}に貫かれていた|後ろからは{t}に腰を掴まれていた'),
         fm: L('背中には{t}の{胸}が押しつけられていた|首筋に後ろから{t}の歯が立てられていた'),
+        sp: L('後ろからは{t}の張り型に貫かれていた|後ろからは{t}の張り型に突かれていた'),
         ff: L('後ろからは{t}の指に探られていた|背中から{t}に抱かれていた'),
         n: L('後ろからは{t}に抱きすくめられていた|背中に{t}の唇が落ちていた')
       },
@@ -323,6 +330,7 @@
     oneTwo: {
       m: L('{t}は{m}から体を離し、今度は{u}の脚のあいだへ腰を進めた。|{t}は{m}の奥から抜け出ると、待っていた{u}の腰を引き寄せた。'),
       fm: L('{t}は{m}から指を抜き、今度は{u}の後ろへ指を移した。'),
+      sp: L('{t}は{m}から張り型を引き抜き、今度は{u}の脚のあいだへ腰を進めた。|{t}は{m}の{ナカ}から張り型を抜くと、待っていた{u}の腰を引き寄せた。'),
       ff: L('{t}は{m}から指を抜き、今度は{u}の{女性器}へ指を移した。'),
       n: L('{t}は{m}の髪を撫でてから体を離し、今度は{u}を抱き寄せた。'),
       any: L('待ちかねていた{u}が、{t}の首に腕を回して引き寄せた。|{t}は{m}の髪を撫でてから、{u}の方へ移った。')
@@ -338,10 +346,12 @@
   X.SFX = {
     m: L('{s:hit}。{a}が腰を打ちつけるたび、{b}の背中が跳ねた。|{s:hit}。肌のぶつかる音に、{b}の声が重なった。|{s:wet}。{a}が抜き差しするたび、{b}の{ナカ}が湿った音を立てた。'),
     fm: L('{s:wet}。{a}の指が出入りするたび、{b}の{ナカ}が湿った音を立てた。|{s:wet}。{a}の手の中で、{b}の{男性器}がびくびくと跳ねた。'),
+    sp: L('{s:hit}。{a}が腰を打ちつけるたび、張り型が{b}の{ナカ}を深くえぐった。|{s:wet}。{a}が張り型を抜き差しするたび、{b}の{ナカ}が湿った音を立てた。'),
     ff: L('{s:wet}。{a}の指が出入りするたび、{b}の{女性器}から{愛液}が溢れた。|{s:suck}。{a}の舌が{b}の{陰核}を吸い上げる音が、やけに大きく響いた。'),
     n: L('ちゅ、ちゅっ。{a}の唇が{b}の肌に吸いつく音が、何度も続いた。|ちゅっ、ちゅぷ。{a}は{b}の首筋に、いくつも痕を残していった。'),
     cum: L('{s:cum}。{a}は{b}の{ナカ}で果て、{b}はそれを搾りとるように震えた。|{s:cum}。{a}の熱が{b}の奥に注がれ、{b}の背中がしなった。'),
-    cumFm: L('{s:cum}。{a}の手の中で{b}が果て、{b}の{精液}が{a}の指を濡らした。')
+    cumFm: L('{s:cum}。{a}の手の中で{b}が果て、{b}の{精液}が{a}の指を濡らした。'),
+    cumSp: L('{s:cum}。張り型に奥を突かれたまま、{b}の{男性器}から{精液}が噴きこぼれた。|{s:cum}。{a}の張り型を咥えこんだまま、{b}は{精液}を敷布にこぼして果てた。')
   };
   X.BREATH = L('{b}の息が、短く詰まってはほどけた。|{a}の動きが深くなるたび、{b}の声は細く途切れた。|しばらくは、荒い息づかいだけが聞こえていた。|{b}は声を殺そうとして、殺しきれずに{a}の肩へ額を押しつけた。|誰も喋らなかった。衣擦れと、誰かの喉の鳴る音だけがした。');
   /* ORDER：山場の順番（一人ずつ／同時） */
@@ -391,12 +401,16 @@
     var Q = P();
     if (!Q || !a || !b) return 'n';
     if (HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b)) return 'n';
-    if (Q.hasM(a) && !Q.isF(a, b)) return 'm';
+    /* フタナリ（性器の欄が「両方」）の人が形の組の攻めになったら、受け攻めの欄がおまかせでも {男性器} で挿れる（2026-11-04 利用者の指示「フタナリのときは普通に挿入」） */
+    if (Q.hasM(a) && (!Q.isF(a, b) || (Q.genSet && Q.genSet(a) === 'mf'))) return 'm';
     if (Q.isF(a, b) && Q.hasM(b) && !Q.isF(b, a)) return 'fm';
     if (Q.isF(a, b) && Q.isF(b, a)) return 'ff';
     return 'n';
   };
   var edgeKind = X.edgeKind;
+  /* ペニバンを使える組：女性の攻め（男性器なし）× 受け（fm・ff）。フタナリの攻めは edgeKind が m なのでここに入らない（{男性器} で挿れる） */
+  X.STRAP_P = 0.25;
+  X.strapOk = function (a, b) { var Q = P(), k = edgeKind(a, b); return (k === 'fm' || k === 'ff') && !!Q && !Q.hasM(a) && !Q.noGen(a) && !Q.noGen(b); };
   function edgesOf(sp) {
     return ({ oneTwo: [[sp.t, sp.m], [sp.t, sp.u]], twoOne: [[sp.t, sp.u], [sp.m, sp.u]], sandwich: [[sp.t, sp.m], [sp.m, sp.u]], ring: [[sp.t, sp.m], [sp.m, sp.u], [sp.u, sp.t]], show: [[sp.t, sp.m]] })[sp.p] || [[sp.t, sp.u]];
   }
@@ -486,6 +500,8 @@
   function Comp(S, sp, o, len, ero) {
     this.S = S; this.sp = sp; this.o = o; this.len = len; this.ero = ero;
     this.parts = []; this.dropped = []; this.info = null;
+    /* ペニバンを使った組（formIn が sp の文を選んだ組）・使える組があったか */
+    this._spE = []; this._spCap = false;
     this.E = edgesOf(sp);
     /* 場面の状態（2026-11-03）：形・変化・体位（POSTURE）・応答待ちに足したリアクションの数・二度出しで外した文の数 */
     this.flow = { stage: 'lead', posture: '', react: 0, cut: 0, stages: [] };
@@ -553,15 +569,21 @@
   Comp.prototype.topLine = function (top, bot, st) {
     var ET = HK.EroTop;
     if (!ET || !ET.say || !top || !bot) return '';
-    var k = edgeKind(top, bot), opt = { rel: this.o.rel || undefined };
-    if (k !== 'n') opt.kind = k;
+    var k = this.ek(top, bot), k0 = edgeKind(top, bot), opt = { rel: this.o.rel || undefined };
+    /* 体の組の台詞は元の組の体（sp は fm・ff）で引く。女性の攻め（fm・sp）は、受けの男性器を自分の中へ迎える跨る側の台詞（「あなたのが入っていく」「私の中で」など）を引き直す（2026-11-04） */
+    if (k0 !== 'n') opt.kind = k0;
+    var SPT = k === 'sp' && FM() && FM().STRAP && FM().STRAP.top[st];
+    if (SPT && this.rand() < 0.45) return this.say3(top, { gentle: SPT }, { u: bot });
     /* o.flSt（{ 段: 色 }）：呼ぶ側が段ごとに夜の色を決めたとき（出られない部屋のこじれた三人の盛り上がり方。room-trio-rival-r18.js） */
     var fl = (this.o.flSt && this.o.flSt[st]) || this.fl;
     if (fl) opt.flavor = fl;
     /* 二人きりを前提にした台詞（「ここには私しかいない」など）は、三人の場面では引き直す（3回まで） */
-    for (var i = 0; i < 3; i++) { var l = ET.say(this.S, top, bot, st, opt); if (!l || !SOLO2.test(l)) return l || ''; }
+    var rideX = k0 === 'fm' || k === 'sp' ? RIDEQ : null;
+    for (var i = 0; i < 4; i++) { var l = ET.say(this.S, top, bot, st, opt); if (!l || (!SOLO2.test(l) && !(rideX && rideX.test(l)))) return l || ''; }
     return '';
   };
+  /* 女性の攻めが跨って迎える側の台詞（三人の場面の女性の攻めは指と手かペニバンで、受けを中へ迎えない） */
+  var RIDEQ = /あなたの(?:が|を)|私の中|私のナカ|中で(?:出|イ|果)|跨|乗って|腰を(?:落と|沈め)|呑み込|飲み込|搾り/;
   /* 受けの声（喘ぎ。HK.Moan.say） */
   /* その場面の文にもう出ている声か（呼ぶ側の文・足した文。喘ぎは記録の外の乱数で引かれることがあるので、文で確かめる） */
   Comp.prototype.seen = function (v) {
@@ -651,13 +673,13 @@
     var sp = this.sp, self = this, r = { t: sp.t, m: sp.m, u: sp.u }, PO = X.POSE[sp.p], s = '', pk = function (a) { return self.pk(a); };
     if (!PO) return '';
     if (sp.p === 'oneTwo') {
-      if (this.rand() < 0.75) s = '{t}は' + pk(PO.main[edgeKind(sp.t, sp.m)]) + '、' + pk(PO.hand[edgeKind(sp.t, sp.u)]) + '。';
+      if (this.rand() < 0.75) s = '{t}は' + pk(this.ekT(PO.main, sp.t, sp.m)) + '、' + pk(this.ekT(PO.hand, sp.t, sp.u)) + '。';
       else s = pk(PO.any);
     } else if (sp.p === 'twoOne') {
-      if (this.rand() < 0.8) s = '{u}は' + pk(PO.back[edgeKind(sp.t, sp.u)]) + '、前では' + pk(PO.front[edgeKind(sp.m, sp.u)]) + '。';
+      if (this.rand() < 0.8) s = '{u}は' + pk(this.ekT(PO.back, sp.t, sp.u)) + '、前では' + pk(this.ekT(PO.front, sp.m, sp.u)) + '。';
       else s = pk(PO.any);
     } else if (sp.p === 'sandwich') {
-      if (this.rand() < 0.8) s = '{m}は' + pk(PO.front[edgeKind(sp.m, sp.u)]) + '、' + pk(PO.back[edgeKind(sp.t, sp.m)]) + '。';
+      if (this.rand() < 0.8) s = '{m}は' + pk(this.ekT(PO.front, sp.m, sp.u)) + '、' + pk(this.ekT(PO.back, sp.t, sp.m)) + '。';
       else s = pk(PO.any);
     } else s = pk(PO.any);
     return fill(s, r);
@@ -666,20 +688,22 @@
     var sp = this.sp, self = this, SH = X.SHIFT[sp.p], r = { t: sp.t, m: sp.m, u: sp.u }, pk = function (a) { return self.pk(a); };
     if (!SH) return '';
     var l;
-    if (sp.p === 'oneTwo') l = this.rand() < 0.7 ? pk(SH[edgeKind(sp.t, sp.u)] || SH.any) : pk(SH.any);
+    /* ペニバンの「{m}から張り型を引き抜き」は、二組ともペニバンのときだけ */
+    if (sp.p === 'oneTwo') { var k2 = this.ek(sp.t, sp.u); if (k2 === 'sp' && !this.isSp(sp.t, sp.m)) k2 = edgeKind(sp.t, sp.u); l = this.rand() < 0.7 ? pk(SH[k2] || SH.any) : pk(SH.any); }
     else if (sp.p === 'sandwich') l = edgeKind(sp.t, sp.m) === 'm' && edgeKind(sp.m, sp.u) === 'm' && this.rand() < 0.5 ? pk(SH.mm) : pk(SH.any);
     else l = pk(SH.any);
     return fill(l, r);
   };
   Comp.prototype.sfx = function (st, cum) {
-    var f = this.focus(st), a = f.top, b = f.bot, k = edgeKind(a, b), S = this.S, l;
+    var f = this.focus(st), a = f.top, b = f.bot, k = this.ek(a, b), S = this.S, l, self = this, Q = P();
     if (!this.ero) return fill(this.pk(X.BREATH), { a: a, b: b });
     if (cum) {
       /* 男性の体の攻めの組（m）か、女性の攻めが男性に跨る組（fm）だけ。4 人の輪は、山場の組（o.endE）から */
-      var e = (this.o.endE || this.E).filter(function (x) { var kk = edgeKind(x[0], x[1]); return kk === 'm' || kk === 'fm'; })[0];
+      /* ペニバンの組（sp）は、受けに男性器があるときだけ（受けが果てる） */
+      var e = (this.o.endE || this.E).filter(function (x) { var kk = self.ek(x[0], x[1]); return kk === 'm' || kk === 'fm' || (kk === 'sp' && Q && Q.hasM(x[1])); })[0];
       if (!e) return '';
-      a = e[0]; b = e[1]; k = edgeKind(a, b);
-      l = pick(S, k === 'm' ? X.SFX.cum : X.SFX.cumFm);
+      a = e[0]; b = e[1]; k = this.ek(a, b);
+      l = pick(S, k === 'm' ? X.SFX.cum : k === 'sp' ? X.SFX.cumSp : X.SFX.cumFm);
     } else l = pick(S, X.SFX[k] || X.SFX.n);
     return E.fill ? E.fill(S, fill(l, { a: a, b: b }), b) : fill(l, { a: a, b: b }).replace(/\{s:(\w+)\}/g, function (m, kk) { return E.sfx(S, kk); });
   };
@@ -692,7 +716,9 @@
     return fill(this.pk(l.length ? l : X.ORDER.twoOne.slice(0, 1)), { t: sp.t, m: sp.m, u: sp.u });
   };
   Comp.prototype.rest = function () {
-    var EE = this.o.endE || this.E, e = EE[Math.floor(this.rand() * EE.length)];
+    var EE = this.o.endE || this.E, e = EE[Math.floor(this.rand() * EE.length)], T = FM();
+    /* ペニバンの場面の終わり：着けた攻めがペニバンを外す一文 */
+    if (this._spE.length && T && T.STRAP && this.rand() < 0.7) { var se = this._spE[0]; return fill(this.pk(T.STRAP.rest), { a: se[0], b: se[1] }); }
     return fill(this.pk(X.REST), { a: e[0], b: e[1] });
   };
   /* ======================= 形ごとの文（trio-form-text-r18.js の HK.Trio3.FORM。2026-11-03） ======================= */
@@ -716,7 +742,7 @@
   };
   function FM() { return X.FORM || null; }
   /* 挿入・男性の体を前提にした語（pos-audit の V1・V4・V7 と同じ見方）。形の組がどれも男性器のある攻め（m）でなければ、締め・最中・山場の文からこの語の文を除く */
-  var PENX = /のもの(?:を|が)|奥まで沈|深く沈|腰を沈|腰を落と|繋が|貫|突い|突き|突か|一突き|ひと突き|中に入っ|中へ入っ|入ってき|熱を吐き出|腰を打ちつけ|中で果て|奥で果て|最奥|迎え入れ|受け入れ|挿れ|挿入|抜き差し|根元まで|押しこ|押し込|腰を押し出|の奥|奥へ/, TOOLX = /指|舌|玩具|張り型|ディルド|バイブ/;
+  var PENX = /のもの(?:を|が)|奥まで沈|深く沈|腰を沈|腰を落と|繋が|貫|突い|突き|突か|一突き|ひと突き|中に入っ|中へ入っ|入ってき|熱を吐き出|腰を打ちつけ|中で果て|奥で果て|最奥|迎え入れ|受け入れ|挿れ|挿入|抜き差し|根元まで|押しこ|押し込|腰を押し出|の奥|奥へ/, TOOLX = /指|舌|玩具|張り型|ペニバン|ディルド|バイブ/;
   Comp.prototype.penOK = function (l) {
     var self = this;
     if (this._allM == null) this._allM = this.E.every(function (e) { return edgeKind(e[0], e[1]) === 'm'; });
@@ -726,13 +752,28 @@
   Comp.prototype.penPick = function (arr) { var self = this, f = (arr || []).filter(function (l) { return self.penOK(l); }); return f.length ? f : null; };
   /* 受けどうしが二人とも女性の体（指・舌で触れ合える） */
   function bothF(a, b) { var Q = P(); return !!(Q && Q.isF(a, b) && Q.isF(b, a) && Q.hasF(a) && Q.hasF(b) && !Q.noGen(a) && !Q.noGen(b)); }
+  /* ペニバン（2026-11-04）：場面ごとに一度だけ決める（使える組があるとき X.STRAP_P）。o.strap で決めて渡せる */
+  Comp.prototype.strapOn = function () {
+    if (this._strap == null) this._strap = this.o.strap != null ? !!this.o.strap : this.E.some(function (e) { return X.strapOk(e[0], e[1]); }) && this.rand() < X.STRAP_P;
+    return this._strap;
+  };
+  Comp.prototype.isSp = function (a, b) { return this._spE.some(function (e) { return e[0] === a && e[1] === b; }); };
+  /* 組の体（繋がる段でペニバンを使った組は sp） */
+  Comp.prototype.ek = function (a, b) { return this.isSp(a, b) ? 'sp' : edgeKind(a, b); };
+  /* 表から組の体の文（sp が無ければ元の組の体） */
+  Comp.prototype.ekT = function (tab, a, b) { return (tab && (tab[this.ek(a, b)] || tab[edgeKind(a, b)])) || null; };
   /* 繋がる段の文（3 文）：組 A → 組 B → 締め（sandwich は B → A → 締め）。oneTwo の wait は組 A → 待つ受けの反応 */
   Comp.prototype.formIn = function () {
     var T = FM(), sp = this.sp;
     if (!T || !T.IN[sp.p] || this.len === 'short') return '';
     var v = this.variant(), I = T.IN[sp.p][v], self = this, pk = function (a) { return a && a.length ? self.pk(a) : ''; };
     if (!I) return '';
-    var r = { t: sp.t, m: sp.m, u: sp.u }, s = [], ek = function (a, b, tab) { var k = edgeKind(a, b); return tab[k] || tab.n || []; };
+    var r = { t: sp.t, m: sp.m, u: sp.u }, s = [], spE = [];
+    var ek = function (a, b, tab) {
+      var k = edgeKind(a, b);
+      if (tab.sp && X.strapOk(a, b)) { self._spCap = true; if (self.strapOn()) { spE.push([a, b]); return tab.sp; } }
+      return tab[k] || tab.n || [];
+    };
     if (sp.p === 'twoOne') {
       if (v === 'updown') { var xm = edgeKind(sp.t, sp.u) === 'm' ? sp.t : sp.m; r.x = xm; r.y = xm === sp.t ? sp.m : sp.t; s = [pk(I.a.m), pk(I.b.fm)]; }
       else s = [pk(ek(sp.t, sp.u, I.a)), pk(ek(sp.m, sp.u, I.b))];
@@ -745,6 +786,7 @@
     else if (sp.p === 'show') s = [pk(ek(sp.t, sp.m, I.a)), pk(I.b.x)];
     if (s.some(function (x) { return !x; })) return '';
     if (I.c) { var cs = this.penPick(I.c) || []; if (cs.length) s.push(pk(cs)); }
+    this._spE = spE;
     this._formUsed = true;
     return fill(s.join(''), r);
   };
@@ -754,6 +796,8 @@
     if (!T || !T.MID[sp.p]) return '';
     var v = this.variant(), r = { t: sp.t, m: sp.m, u: sp.u }, self = this;
     if (sp.p === 'oneTwo' && v !== 'wait' && this.rand() < 0.45) { r.w = sp.u; r.o = sp.m; return fill(this.pk(T.WAITR[psOf(sp.u)] || T.WAITR.gentle), r); }
+    /* ペニバンの組がある場面は、半分ほどペニバンの最中の段（{a}＝着けた攻め {b}＝その受け {c}＝もう一人） */
+    if (this._spE.length && T.STRAP && this.rand() < 0.5) { var se = this._spE[Math.floor(this.rand() * this._spE.length)]; return fill(this.pk(T.STRAP.mid), { a: se[0], b: se[1], c: this.other(se[0], se[1]) }); }
     var ls = T.MID[sp.p].filter(function (x) { return x.v === '*' || x.v.split(' ').indexOf(v) >= 0; }).filter(function (x) { return x.v.indexOf('touch') < 0 || x.v === '*' || self.touch(sp.m, sp.u); })
       .filter(function (x) { return self.penOK(x.ff && bothF(sp.m, sp.u) ? x.ff : x.t); });
     if (!ls.length) return '';
@@ -831,7 +875,6 @@
     var sfx = function (st, pri, pos, cum) { if (self.hasKind(st, 'sfx')) return; self.gen1(st, self.sfx(st, cum), pri, pos, null, 'sfx'); };
     var pose = function (st, pri, pos) { if (self.hasKind(st, 'pose')) return; self.gen1(st, self.pose(), pri, pos, null, 'pose'); };
     /* 形ごとの繋がる段（3 文。2026-11-03）：呼ぶ側に繋がる段の文がなければ、一文の体の位置の代わりに置く */
-    var formIn = function (pos) { if (self._formUsed || self.has('in') || self.hasKind('in', 'pose')) return false; var t = self.formIn(); if (!t) return false; self.gen1('in', t, 1, pos, null, 'pose'); return true; };
     this.flow.posture = (POSTURE[this.sp.p] || {})[this.variant()] || '';
     /* 呼ぶ側に始まり・事後の文がなければ一文ずつ（輪・媚薬の夜など） */
     if (len !== 'short' && !this.has('fore')) this.gen1('fore', fill(this.pk(X.FORE[this.sp.p] || X.FORE.ring), this.r3()), 3, 'pre');
@@ -844,8 +887,11 @@
     var hasSfx = this.parts.some(function (p) { return SFXRE.test(p.t); });
     if (len === 'short') { pose('in', 2, 'post'); if (this.ero) sfx('in', hasSfx ? 2 : 1, 'post'); }
     else {
+      /* 形の繋がる段を先に決める（ペニバンを使う組が決まってから、繋がる段の攻めの一言を引く。2026-11-04） */
+      var fIn = !o.posePost && !this._formUsed && !this.has('in') && !this.hasKind('in', 'pose') ? this.formIn() : '';
       x('in', 1, 'pre');
-      if (!o.posePost && !formIn(o.posePre ? 'pre' : 'post') && !this._formUsed) pose('in', 1, o.posePre ? 'pre' : 'post');
+      if (fIn) this.gen1('in', fIn, 1, o.posePre ? 'pre' : 'post', null, 'pose');
+      else if (!o.posePost && !this._formUsed) pose('in', 1, o.posePre ? 'pre' : 'post');
       if (this.ero) sfx('in', 2, 'post');
     }
     /* 最中：（体の位置が最中の場面は体の位置、ほかは形が変わる一文）→（呼ぶ側の見所）→ 擬音（小説調は息）→ 応酬 */
@@ -997,7 +1043,7 @@
     });
     var all = STG.map(function (k) { return out[k]; }).join('');
     this.info = { len: this.len, ero: this.ero, p: this.sp.p, v: this._v || '', form: !!this._formUsed, narr: X.narrN(all), quotes: X.quoteN(all), dropped: this.dropped.slice(), flow: this.flow,
-      who: { t: this.sp.t, m: this.sp.m, u: this.sp.u } };
+      who: { t: this.sp.t, m: this.sp.m, u: this.sp.u }, strap: this._spE.length > 0, strapCap: !!this._spCap, spE: this._spE.slice() };
     if (this.o.four) this.info.four = this.o.four;
     this._out = out;
     if (X.onScene) try { X.onScene(this.info, all, this); } catch (e) { /* 点検用 */ }
