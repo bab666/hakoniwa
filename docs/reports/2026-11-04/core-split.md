@@ -19,7 +19,7 @@
 | 全年齢版の中核 | 131本・2817KB（br **704KB**／目安 **860KB**） | 109本・1988KB（br **513KB**／目安 **628KB**） |
 | R18版：画面が出たあと late までに読む分（pack-sim・pack-lewd・late・tone-base） | pack-lewd 427＋late 198＋tone-base 63＝br 688KB | pack-sim 約150＋pack-lewd 507＋late 217＋tone-base 58＝br 約930KB |
 | R18版：起動から late まで（中核＋上の分） | br 1547KB | br 約1500KB |
-| ui.js | 2458 行 | 1961 行（ui-norm.js 212・ui-cast-ops.js 157・late の ui-json.js 214 に分けた） |
+| ui.js | 2458 行 | 1963 行（ui-norm.js 212・ui-cast-ops.js 157・late の ui-json.js 214 に分けた） |
 | tone-fix.js／tone-fix-g2.js | 2625／2258 行 | 1634／1036 行（箱庭だけの台詞を tone-fix-<箱庭>.js 21 本へ） |
 
 - 中核の br は R18版で −34%（かたまり）・−34%（目安）、全年齢版で −27%。どちらも 0.9MB の目安を大きく下回る（増えても余裕がある）。
@@ -79,7 +79,7 @@ br はファイル単独の目安（build の「中核の内訳」と同じ数�
 
 ## 2. 分割（C）
 
-### 2-1. ui.js（2458 → 1961 行）
+### 2-1. ui.js（2458 → 1963 行）
 
 | 新しいファイル | かたまり | 中身（ui.js の元の場所） |
 |---|---|---|
