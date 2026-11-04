@@ -1118,7 +1118,7 @@
       fx: function () { ctx.mod2(sp, o, { aff: 4, trust: 3, att: S.love ? 4 : 0 }, { aff: 4, trust: 3, att: S.love ? 4 : 0 }); } });
     if (e) { e.tag = '山場'; day.k.honne = 1; S.climaxDone = true; }
     var ek = decideEnd(ctx);
-    if (ek === 'koi') confess(ctx);
+    if (ek === 'koi') { confess(ctx); if (S.koiTomari && S.couple && S.endK === 'koi') { S.endK = 'tomari'; tomariAsk(ctx); } }
     else if (ek === 'propose' || ek === 'repro') propose(ctx);
     else if (ek === 'yujin') yujin(ctx);
     else if (ek === 'tomari') tomariAsk(ctx);
@@ -1133,20 +1133,29 @@
     S.endScore = Math.round(sc);
     S.attAvg = ((r.att || 0) + (q.att || 0)) / 2;
     if (!S.love) return (S.endK = S.grp === 'first' && sc >= 85 ? 'yujin_new' : 'mama');
-    if (S.rk === 'spouse') return (S.endK = sc >= (hasPG(S, 'propose') ? 140 : 160) && ctx.rng() < (hasPG(S, 'propose') ? 0.85 : 0.6) ? 'repro' : 'mama');
     /* 目標：プロポーズしたい人がいれば線を下げ、付き合いたい・想いを伝えたい人がいれば告白の線を下げ、距離を縮めすぎたくない人がいれば上げる */
     var gp = hasPG(S, 'propose'), gl = hasPG(S, 'tsukiau') || hasPG(S, 'kokuhaku') || hasPG(S, 'yarinaoshi'), gky = hasPG(S, 'kyori') || hasPG(S, 'tomodachi');
+    /* 目標の無い二人のプロポーズの線：好意（sc）に、デートの回数が多いほど下がる分（3 回で 0・10 回で −14）。距離を縮めすぎたくない人がいれば出さない（2026-11-04 に頻度を上げた） */
+    var nB = Math.min(14, Math.max(0, S.n - 3) * 2), pth = gp ? 146 : 150 - nB, pp = gp ? 0.9 : 0.8;
+    if (S.rk === 'spouse') return (S.endK = !gky && sc >= (gp ? 140 : 146 - nB) && ctx.rng() < (gp ? 0.85 : 0.7) ? 'repro' : 'mama');
     if (S.couple) {
-      if (sc >= (gp ? 146 : 166) && ctx.rng() < (gp ? 0.9 : 0.7)) return (S.endK = 'propose');
-      if (!S.cohab && !S.stayed && sc >= 128) return (S.endK = 'tomari');
+      /* 初めてのお泊まり：一緒に暮らしておらず、まだ泊まっていない、体の関係にしてよい二人（全年齢版は泊まるまで）。目標の無い二人は 7 割ほどプロポーズより先に */
+      var tOk = !S.cohab && !S.stayed && bodyOk(ctx, A, B) && sc >= (gky ? 128 : 108);
+      if (tOk && !gp && !gky && ctx.rng() < 0.7) return (S.endK = 'tomari');
+      if (!gky && sc >= pth && ctx.rng() < pp) return (S.endK = 'propose');
+      if (tOk && ctx.rng() < (gky ? 0.5 : 0.85)) return (S.endK = 'tomari');
       return (S.endK = 'mama');
     }
     var th = END_TH[S.rk] || END_TH.def, t0 = th[0] + (gl ? -12 : 0) + (gky ? 15 : 0);
+    /* 両片想いの二人が想いを告げた夜に、そのまま初めてのお泊まりになることがある（付き合いたい・想いを伝えたい・距離を保ちたい人がいる二人は告白で止める） */
+    if (sc >= t0 && S.rk === 'almost' && !gl && !gky && !S.cohab && !S.slept && bodyOk(ctx, A, B) && ctx.rng() < 0.6) { S.koiTomari = true; return (S.endK = 'koi'); }
     if (sc >= t0) return (S.endK = 'koi');
     if (S.grp === 'first') return (S.endK = sc >= th[1] ? 'yujin_new' : 'mama');
     if (sc < th[1] && /^(pine|awk)$/.test(S.grp)) return (S.endK = 'yujin');
     return (S.endK = 'mama');
   }
+  /* 体の関係にしてよい二人か（R18版は HK.PairR18.sexOk。全年齢版は部品が無く、全年齢モードは場面を出さないので、どちらも泊まるまで） */
+  function bodyOk(ctx, A, B) { return !!HK.SAFE_ON || !(HK.PairR18 && HK.PairR18.sexOk) || !!HK.PairR18.sexOk(ctx, A, B); }
   function confess(ctx) {
     var S = f(ctx), A = S.A, B = S.B, Tx = TX(), by = S.speaker || A, to = by === A ? B : A;
     S.confessed = true; S.couple = true;
@@ -1198,7 +1207,8 @@
       /* 恋愛にならない二人は、惹かれの代わりに好意の高まりで（恋愛感情の有無で止めない。本体の決まり） */
       var aff = ((ctx.rel[A.i][B.i].aff || 0) + (ctx.rel[B.i][A.i].aff || 0)) / 2;
       W.push(['ouchi', S.couple ? 0.6 : 0.12 * heatK + (S.love ? Math.max(0, att - 40) / 200 : Math.max(0, aff - 40) / 200)]);
-      W.push(['tomari', S.couple ? 0.25 * heatK : 0.04 * heatK + (S.grp === 'fam' || S.grp === 'close' ? 0.05 : 0)]);
+      /* まだ泊まったことのない恋人どうしは、初めてのお泊まりを最後のデートの結末に取っておきやすい（途中の日の泊まりを 0.35 倍） */
+      W.push(['tomari', S.couple ? 0.25 * heatK * (!S.stayed && !day.last ? 0.35 : 1) : 0.04 * heatK + (S.grp === 'fam' || S.grp === 'close' ? 0.05 : 0)]);
       if (r18) W.push(['hotel', (S.couple ? 0.3 : 0.07) * heatK]);
       if (P.home) W = W.filter(function (x) { return x[0] !== 'ouchi'; });
       /* 目標：距離を縮めすぎたくない人がいれば別れやすく、お家・泊まりを避ける。本音を聞きたい・好きになってもらいたい人は送っていく。付き合いたい人はお家に寄りやすい */
@@ -1210,7 +1220,7 @@
     if (br === 'hotel' && !r18) br = S.couple ? 'ouchi' : 'okuru';
     S.branches[br] = (S.branches[br] || 0) + 1;
     day.br = br;
-    if (br === 'tomari' || br === 'yado') S.stayed = S.stayed || (S.couple && day.d < S.n - 1);
+    if (br === 'tomari' || br === 'yado') { S.stayed = S.stayed || (S.couple && day.d < S.n - 1); S.slept = S.slept || day.d < S.n - 1; }
     /* ラブホ：文は R18 版だけ（場面の前のきっかけの段が行き先を含む） */
     if (br === 'hotel') { if (!HK.DateR18.night(ctx, 'hotel', day, day.last)) { S.branches.hotel--; S.branches.okuru = (S.branches.okuru || 0) + 1; day.br = 'okuru'; brText(ctx, day, 'okuru'); } return; }
     /* 帰り道の車の中（R18）：車で来た日に、別れる前に車を停めて（性欲が強いほど起こりやすい） */
