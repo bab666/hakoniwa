@@ -291,6 +291,9 @@ function decide(R) {
   Object.keys(R.packs).forEach(id => { packWant[id] = R.packs[id]; });
   (O.all ? packIds() : O.packs).forEach(id => { const pk = pack(id); if (!pk) return; const X = packWant[id] = packWant[id] || { rooms: new Set(), tags: new Set(), why: [] }; pk.rooms.forEach(r => X.rooms.add(r)); X.tags.add('all'); X.why.push(O.all ? '--all' : '--pack'); });
   Object.keys(packWant).forEach(id => { const X = packWant[id]; if (X.tags.has('serifu') || X.tags.has('tone') || X.tags.has('all')) add({ id: 'base-lint', stage: 'pre', label: CHECK['base-lint'].name + '：' + id, why: X.why.slice(0, 3).join('・'), dir: path.join('hakoniwa-packs', id), weight: 0 }); });
+  /* デートの日々（set-b）の舞台と段（2026-11-04） */
+  if ((packWant['set-b'] && packWant['set-b'].rooms.has('set-b-date')) || toolOn('date-setting')) add({ id: 'date-setting', stage: 'pre', label: CHECK['date-setting'].name, why: O.all ? '--all' : packWant['set-b'] ? 'set-b のデートの日々' : '道具を変えた', weight: 0 });
+  else skip('date-setting', 'デートの日々を変えていない');
   /* build */
   const builds = O.all ? ['full', 'zen'] : [...R.builds];
   const B = [...new Set(builds)];
@@ -435,6 +438,7 @@ function keyOf(t) {
     case 'regress': { const b = t.mode === 'zen' ? 'zen' : 'full'; inp = hashFiles(chunkFiles(b, 'all')) + manifestPart(b, 'all') + (gitOk(['rev-parse', BASE_SHA + ':' + BUILDS[b]]) || ''); break; }
     case 'chunk-regress': case 'chunk-audit': inp = hashFiles(chunkFiles(t.b, 'all')) + String(readOr(path.join(ROOT, BUILDS[t.b], 'index.html'), '')); break;
     case 'dict-regress': inp = hashFiles(fs.readdirSync(path.join(ROOT, 'hakoniwa-full/js')).filter(f => /^(?:tone-|core|ego-desc|persona)/.test(f)).map(f => 'hakoniwa-full/js/' + f)); break;
+    case 'date-setting': inp = packInputs('set-b', 'set-b-date'); break;
     case 'pack-catalog': inp = packInputs(t.pack) + String(readOr(path.join(ROOT, 'docs/reports/2026-11-03/pack-event-catalog.md'), '')); break;
     case 'pack-site': return null;   /* 試しのフォルダは毎回作る（中で build-pack を回す。数十秒） */
     case 'pack-audit': case 'pack-feel': case 'pack-moan': case 'pack-flow': inp = packMainInputs(t.pack) + packInputs(t.pack, t.room) + (packCodes() ? sha(JSON.stringify(packCodes().J[t.pack] || packCodes().J['*'])) : ''); break;
@@ -545,6 +549,7 @@ const RUN = {
   },
   'sex-flow': async (t) => { const r = await spawnLog(t, N, [TCD + 'sex-flow-audit.js', BUILDS.full, '24'].concat(t.scope === 'all' ? [] : [t.scope.join(',')])); return flowRes(r); },
   'trio-shape': async (t) => { const r = await spawnLog(t, N, [TCD + 'trio-shape-audit.js', BUILDS.full, '4'].concat(t.scope === 'all' ? [] : [t.scope.join(',')])); return trioRes(r); },
+  'date-setting': async (t) => { const r = await spawnLog(t, N, [TCD + 'date-setting-audit.js']); const m = r.text.match(/date-setting：(\d+) 件/); return { rc: r.rc, n: m ? +m[1] : null, sum: lastLine(r.text, /date-setting/) || lastLine(r.text), log: r.log }; },
   'force-repeat': async (t) => { const r = await spawnLog(t, N, [TCD + 'force-repeat-audit.js', BUILDS.full]); return { rc: r.rc, n: r.rc ? null : 0, sum: lastLine(r.text), log: r.log }; },
   'meta-tone': async (t) => {
     const r = await spawnLog(t, N, [TCD + 'meta-tone-audit.js', '8'].concat(t.scope === 'all' ? [] : [t.scope.join(',')]).concat(['--full=' + BUILDS.full, '--zen=' + BUILDS.zen]));
