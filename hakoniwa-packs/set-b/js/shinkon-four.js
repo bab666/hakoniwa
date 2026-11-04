@@ -332,7 +332,7 @@
   F.qRun = function (ctx, S, day, part) {
     var Q = FT().Q;
     if (!Q || day.sick) return;
-    var o = shuffle(ctx, S.spouses), all4 = function (fx) { return function () { for (var i = 0; i < 4; i++) for (var j = i + 1; j < 4; j++) ctx.mod2(o[i], o[j], fx, fx); }; };
+    var o = HK.ShinkonMulti && S.lp ? HK.ShinkonMulti.order(ctx, S) : shuffle(ctx, S.spouses), all4 = function (fx) { return function () { for (var i = 0; i < 4; i++) for (var j = i + 1; j < 4; j++) ctx.mod2(o[i], o[j], fx, fx); }; };
     if (part === 'm' && day.quadM && F.allHome(S, day, 'm')) {
       day.quadM = false;
       var mt = F.say(ctx, Q.MORN, o[0], o[1], o[2], o[3]);
@@ -353,12 +353,22 @@
   };
   F.qNight = function (ctx, S, day) {
     if (!F.allHome(S, day, 'n')) return false;
-    var o = shuffle(ctx, S.spouses), t = F.say(ctx, FT().Q.NIGHT, o[0], o[1], o[2], o[3]);
+    /* 恋の相手どうしでない組が混ざる四人（2026-11-04 NO 1）：{a} が三人に手を伸ばす文は、全員が恋の相手か、{a} が三人の恋の相手（star）のときだけ */
+    var o = HK.ShinkonMulti && S.lp ? HK.ShinkonMulti.order(ctx, S) : shuffle(ctx, S.spouses), NQ = FT().Q.NIGHT;
+    if (S.full === false && !(S.shape && S.shape.k === 'star')) NQ = NQ.slice(1);
+    var t = F.say(ctx, NQ, o[0], o[1], o[2], o[3]);
     if (!t) return false;
     return !!ctx.act2({ actors: o, cat: 'romance', text: t, why: '新婚部屋：四人で眠る夜', fx: function () { ctx.mod2(o[0], o[1], { aff: 1 }, { aff: 1 }); ctx.mod2(o[0], o[2], { aff: 1 }, { aff: 1 }); ctx.mod2(o[0], o[3], { aff: 1 }, { aff: 1 }); } });
   };
   F.qKiss = function (ctx, S) {
-    var T = S.spouses, kt = F.say(ctx, FT().Q.KISS, T[0], T[1], T[2], T[3]);
+    /* 恋の相手どうしでない組が混ざる四人（2026-11-04 NO 1・2）：二組の恋が輪になった四人（cycle）は、輪の順に口づける文（{a}→{b}→{c}→{d}→{a} がどれも恋の相手）。
+       ほかの形は、恋の相手の組だけが口づける最後の夜（shinkon-multi.js の HK.ShinkonMulti.kiss） */
+    var T = S.spouses, KQ = FT().Q.KISS;
+    if (S.full === false) {
+      if (S.shape && S.shape.k === 'cycle') { T = HK.ShinkonMulti.order(ctx, S); KQ = KQ.slice(0, 1); }
+      else if (HK.ShinkonMulti) return HK.ShinkonMulti.kiss(ctx, S);
+    }
+    var kt = F.say(ctx, KQ, T[0], T[1], T[2], T[3]);
     if (!kt) return false;
     return !!ctx.act2({ actors: T.slice(), cat: 'romance', text: kt, why: '新婚部屋：最後の夜（四人の幸せなキス）', fx: function () { for (var i = 0; i < 4; i++) for (var j = i + 1; j < 4; j++) ctx.mod2(T[i], T[j], { aff: 5, att: 5 }, { aff: 5, att: 5 }); } });
   };

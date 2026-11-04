@@ -1607,4 +1607,17 @@
     ['まだ明るいのに', 'まだ明るいのにのう'],
     ['まだ明るいですよ', 'まだ明るいのにのう']
   ] });
+  /* 2026-11-04 不具合リスト NO 1・2・11：三人婚・四人婚の恋の相手どうしでない伴侶の台詞、新婚の型の夜の受けの台詞（tone-feel で崩れた口調だけ） */
+  function T3(tone, keys, out) { HK.Load.toneData(tone, { F: keys.map(function (k) { return [k, out]; }) }); }
+  var YOROSHIKU = ['あの人のこと、よろしく', 'あの人のこと、よろしく頼む', 'あの人のこと、よろしくお願いします'];
+  var YOROKOBU = ['これなら、絶対に喜ぶ', 'これなら、きっと喜ぶ', 'これなら、きっと喜びます'];
+  var NEGOTO = ['あの人って、寝言がすごいよね', 'あの人は、寝言がすごいな', 'あの人は、寝言がすごいですよね'];
+  var SONOMAMA = ['大丈夫、そのまま', '大丈夫だ、そのまま', '大丈夫です、そのまま'];
+  var KOUSHITE = ['ずっと、こうしてたい', 'ずっと、こうしていたい', 'ずっと、こうしていたいです'];
+  T3('kansai', YOROSHIKU, 'あの人のこと、よろしゅう頼むわ'); T3('noja', YOROSHIKU, 'あの人のこと、よろしく頼むのじゃ'); T3('aniki', YOROSHIKU, 'あの人のこと、よろしく頼むぜ');
+  T3('hero', YOROSHIKU, 'あの人のこと、頼んだぜ！'); T3('yankee', YOROSHIKU, 'あの人のこと、よろしく頼むわ');
+  T3('kansai', YOROKOBU, 'これなら、絶対喜ぶで'); T3('noja', YOROKOBU, 'これなら、きっと喜ぶのじゃ'); T3('aniki', YOROKOBU, 'これなら、絶対喜ぶぜ');
+  T3('kansai', NEGOTO, 'あの人、寝言すごいよな'); T3('noja', NEGOTO, 'あの人は、寝言がすごいのう'); T3('aniki', NEGOTO, 'あいつ、寝言がすごいよな');
+  T3('kansai', SONOMAMA, '大丈夫や、そのままで'); T3('noja', SONOMAMA, '大丈夫じゃ、そのままでよい'); T3('aniki', SONOMAMA, '大丈夫だ、そのままでいいぜ');
+  T3('kansai', KOUSHITE, 'ずっと、こうしてたいわ'); T3('noja', KOUSHITE, 'ずっと、こうしていたいのじゃ'); T3('aniki', KOUSHITE, 'ずっと、こうしてたいもんだ');
 })();
