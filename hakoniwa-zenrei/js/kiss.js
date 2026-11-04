@@ -9,7 +9,8 @@
    opt：trig（きっかけ）・len（'s'|'m'|'l'）・place・end（終わり方を固定）・rel（'love'|'first'|'friend'|'feud'）・x・y（いってらっしゃい・おかえりの出かける人／帰った人と見送る人）・lead（始まりの段をこの文に替える。{a}{b}のまま）・tail（最後の段の後ろに足す文）・
         night（true：R18 で「そのまま夜へ」を候補にする）・promise（true：いってらっしゃいの「続きは帰ってから」を候補にする）・oazuke（お預けの起こりやすさに足す値）・long（長い版の起こりやすさの倍率）
    選び方：受けと攻めの態度 9 種・攻めの夜の性格（サド・意地悪はお預けが出やすい、甘々は長く、恥じらいは短くて照れる。全年齢は性格なし）・気分（HK.Emo の喜び・恥ずかしさ）・関係・きっかけ。
-   一回の遊びの中で同じ文は二度出さない（ctx._kissU に使った回数を覚え、いちばん使っていない文から選ぶ）。乱数は ctx.rng。
+   一回の遊びの中で同じ文は二度出さない（ctx._kissU に使った回数を覚え、いちばん使っていない文から選ぶ）。台詞（「…」）は一回の遊びで同じものを 2 回まで（ctx._kissQ。
+   まだ出ていない台詞を先に。攻めの一言・受けの反応は使い切ったら段を省き、終わり方は使い切ったら別の終わり方へ）。乱数は ctx.rng。
    R18 の濃い文（舌・濡れた音）と「そのまま夜へ」は R18版の R18 のとき（!HK.SAFE_ON）だけ。HK.KISS_OFF が真なら、キスだけの場面の出来事を出さない（regress の比べ用）。
    エッチの入り方「キス」（HK.Play・play-text-r18.js の ENTRY.kiss）にも、同じ型の文を組んだ段を足す（R18版だけ）。設計は docs/reports/2026-11-03/kiss-design.md */
 (function () {
@@ -42,13 +43,27 @@
     for (var i = 0; i < ks.length; i++) { r -= w[ks[i]]; if (r < 0) return ks[i]; }
     return ks[ks.length - 1];
   }
-  /* 使っていない文から選ぶ（一回の遊びのあいだ。全部使ったら、使った回数の少ないものから） */
-  function fresh(ctx, list) {
+  /* 使っていない文から選ぶ（一回の遊びのあいだ。全部使ったら、使った回数の少ないものから）。
+     台詞（「…」）は一回の遊びで同じものを 2 回まで（Q_CAP）：まだ出ていない台詞の文を先に選び、2 回出た台詞を含む文は候補から外す（2026-11-04。
+     同じ二人のキスが続く新婚部屋などで、受けの反応・攻めの一言の台詞が一回に 3〜4 回出ていた）。
+     どの候補も使い切ったとき：opt が真（攻めの一言・受けの反応のような、無くてもよい段）なら '' を返し、そうでなければ今までどおり回数の少ないものから。
+     終わり方の文を使い切ったときは、型を決めるとき（K.plan）に別の終わり方へ移す */
+  var Q_CAP = 2;
+  K.Q_CAP = Q_CAP;
+  function qs(t) { return String(t || '').match(/「[^」]*」/g) || []; }
+  function qMax(ctx, t) { var Q = ctx._kissQ || {}, m = 0; qs(t).forEach(function (q) { if ((Q[q] || 0) > m) m = Q[q] || 0; }); return m; }
+  function spent(ctx, list) { return !list || !list.length || list.every(function (t) { return qMax(ctx, t) >= Q_CAP; }); }
+  K.spent = spent;
+  function fresh(ctx, list, opt) {
     if (!list || !list.length) return '';
+    var ok = list.filter(function (t) { return qMax(ctx, t) < Q_CAP; });
+    if (!ok.length) { if (opt) return ''; ok = list; }
     var U = ctx._kissU || (ctx._kissU = {}), m = Infinity, sub = [];
-    list.forEach(function (t) { var n = U[t] || 0; if (n < m) { m = n; sub = [t]; } else if (n === m) sub.push(t); });
+    ok.forEach(function (t) { var n = qMax(ctx, t) * 1000 + (U[t] || 0); if (n < m) { m = n; sub = [t]; } else if (n === m) sub.push(t); });
     var t = sub[Math.floor(ctx.rng() * sub.length)];
     U[t] = (U[t] || 0) + 1;
+    var Q = ctx._kissQ || (ctx._kissQ = {});
+    qs(t).forEach(function (q) { Q[q] = (Q[q] || 0) + 1; });
     return t;
   }
   K.fresh = fresh;
@@ -106,18 +121,32 @@
       if (opt.promise !== false) we.promise = rest * (oz + (p.len === 'l' ? 0.15 : 0.08)) / Math.max(0.05, 1 - oz);
     } else we.oazuke = rest * oz / Math.max(0.05, 1 - oz);
     if (opt.night && hot && p.len !== 's' && p.trig !== 'itte') we.night = rest * (nt === 'sweet' || nt === 'sadist' ? 0.35 : 0.22);
+    /* 台詞を使い切った終わり方は外す（ほかの終わり方が残っているときだけ） */
+    if (!opt.end) {
+      var live = Object.keys(we).filter(function (k) { return we[k] > 0 && !spent(ctx, endPool(p, k)); });
+      if (live.length) Object.keys(we).forEach(function (k) { if (live.indexOf(k) < 0) we[k] = 0; });
+    }
     p.end = opt.end || wpick(ctx, we);
     return p;
   };
 
+  /* 終わり方ごとの文（お預けは攻めの台詞と受けの反応のどちらかを使い切ったら使い切り） */
+  function endPool(p, k) {
+    var X0 = T();
+    if (k === 'oazuke') { var a = (X0.OAZUKE_A || {})[p.pt] || (X0.OAZUKE_A || {}).gentle || [], b = (X0.OAZUKE_B || {})[p.pb] || (X0.OAZUKE_B || {}).gentle || []; return { every: function (f) { return a.every(f) || b.every(f); }, length: a.length && b.length }; }
+    if (k === 'promise') return X0.ITTE_PROMISE || [];
+    return (X0.END || {})[k] || [];
+  }
   /* ---------- 段を組む ---------- */
+  /* 攻めの一言（無くてもよい段）：夜の性格の台詞を使い切ったら性格なしの台詞、それも使い切ったら一言なし */
   function lineA(ctx, p) {
     var A = (T().A_LINE || {})[p.pt] || T().A_LINE.gentle, nt = p.night;
     var l = (A[nt] || A.none || []).slice();
     if (nt !== 'none' && ctx.rng() < 0.3) l = A.none || l;
-    return fresh(ctx, l);
+    if (spent(ctx, l) && nt !== 'none') l = (A.none || []).concat(A[nt] || []);
+    return fresh(ctx, l, true);
   }
-  function reactB(ctx, p) { var R = T().B_REACT || {}; return fresh(ctx, R[p.pb] || R.gentle); }
+  function reactB(ctx, p) { var R = T().B_REACT || {}; return fresh(ctx, R[p.pb] || R.gentle, true); }
   function step(ctx, d, a, b, hot) {
     var X0 = T(), l = (X0.STEP || {})[d] || [];
     if (d === 'deep' && hot && r18() && X0.STEP_R18 && X0.STEP_R18.deep && ctx.rng() < 0.7) l = X0.STEP_R18.deep;

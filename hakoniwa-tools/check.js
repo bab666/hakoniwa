@@ -8,7 +8,8 @@
      node hakoniwa-tools/check.js --dry                # 何を回すか（と飛ばす理由・キャッシュ）だけ出す
    ほかの指定：--files=a,b（git の差の代わりに、このファイルを変えたものとして決める。表の確かめ用）、--force（キャッシュを使わず回し直す）、
               --jobs=N（同時に使うページの数。既定は CPU の数。audit-all は 1 本で 2 ページ使う）、--keep-going（前置きの点検が落ちても続ける）、
-              --cache=フォルダ（既定は主の作業フォルダの hakoniwa-tools/.check-cache。環境変数 HK_CHECK_CACHE でも）、--table（依存の表を md で出す）
+              --cache=フォルダ（既定は主の作業フォルダの hakoniwa-tools/.check-cache。環境変数 HK_CHECK_CACHE でも）、--table（依存の表を md で出す）、
+              --site=フォルダ（試しのフォルダとログを置く所。既定は <キャッシュ>/runs/<作業フォルダ>-<プロセス id>。環境変数 HK_CHECK_SITE でも）
    ・変わったファイル → 依存の表（check/table.js）の印 → 回す点検、の順に決める。js のコメントだけの変更は何も回さない（@event・r18 の印を変えたときは別）。
    ・箱庭のかたまり（_order.txt の @scen:・@pack:）のファイルだけを変えたときは、目録（HK_MANIFEST）の依存から、そのかたまりを読む箱庭だけで回す。
    ・点検ごとに「入力のハッシュ（読むかたまり・ファイル ＋ 道具 ＋ 引数）」と結果をキャッシュに残し、同じ入力なら回さずに前回の結果を出す。
@@ -452,8 +453,25 @@ function keyOf(t) {
 }
 
 /* ---------- 回す ---------- */
-const LOGS = () => mkdir(path.join(CACHE, 'logs'));
-const SITE = () => path.join(CACHE, 'site');
+/* 試しのフォルダ（pack-site）とログは呼び出しごとに分ける（2026-11-04。並行して回しても互いに上書きしない）。
+   既定は <キャッシュ>/runs/<作業フォルダの実体パスのハッシュ>-<プロセス id>/{site,logs}。--site=フォルダ か HK_CHECK_SITE で指定もできる（その下に site・logs）。
+   キャッシュ本体（results・build・regress-*）は共有のまま。終わったら、動いていない呼び出しの古いフォルダを消す（作業フォルダごとに最新の 1 つを残す）。 */
+const WT_ID = sha(fs.realpathSync(ROOT)).slice(0, 8);
+const RUN_DIR = (() => { const c = opt('site', process.env.HK_CHECK_SITE || ''); return c ? path.resolve(c) : path.join(CACHE, 'runs', WT_ID + '-' + process.pid); })();
+const RUN_OWN = !opt('site', process.env.HK_CHECK_SITE || '');
+const LOGS = () => mkdir(path.join(RUN_DIR, 'logs'));
+const SITE = () => path.join(RUN_DIR, 'site');
+function runMark() { if (!RUN_OWN) return; try { mkdir(RUN_DIR); fs.writeFileSync(path.join(RUN_DIR, 'owner.json'), JSON.stringify({ pid: process.pid, root: fs.realpathSync(ROOT), start: new Date().toISOString() })); } catch (e) { /* 書けなくても点検は回す */ } }
+const alive = pid => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+function runSweep() {
+  const dir = path.join(CACHE, 'runs');
+  let ents; try { ents = fs.readdirSync(dir); } catch (e) { return; }
+  const info = ents.map(n => { const m = n.match(/^([0-9a-f]{8})-(\d+)$/); if (!m) return null; const f = path.join(dir, n); let mt = 0; try { mt = fs.statSync(f).mtimeMs; } catch (e) { return null; } return { n, f, wt: m[1], pid: +m[2], mt }; }).filter(Boolean);
+  const keep = {};
+  /* 作業フォルダごとに、動いていないもののうち最新の 1 つを残す（自分の呼び出しがあればそれ） */
+  info.filter(x => !alive(x.pid) || (x.wt === WT_ID && x.pid === process.pid)).sort((a, b) => (b.pid === process.pid && b.wt === WT_ID) - (a.pid === process.pid && a.wt === WT_ID) || b.mt - a.mt).forEach(x => { if (!keep[x.wt]) keep[x.wt] = x.n; });
+  info.forEach(x => { if (keep[x.wt] === x.n) return; if (x.wt === WT_ID && x.pid === process.pid) return; if (alive(x.pid)) return; try { fs.rmSync(x.f, { recursive: true, force: true }); } catch (e) { /* 消せなくてもよい */ } });
+}
 function spawnLog(t, cmd, args, env) {
   return new Promise(res => {
     const logf = path.join(LOGS(), t.key.replace(/[^\w.-]+/g, '_') + '.log');
@@ -672,7 +690,7 @@ async function schedule(tasks, C) {
     const t0 = Date.now();
     let r;
     /* 試しのフォルダ：あとの点検がすべてキャッシュにあるなら作らない */
-    const packNeed = t.id === 'pack-site' && !O.force ? tasks.filter(x => /^pack-(?:audit|feel|moan|flow)$/.test(x.id)).some(x => !cacheGet(x, keyOf(x))) : true;
+    const packNeed = t.id === 'pack-site' && !O.force ? tasks.filter(x => /^(?:pack-(?:audit|feel|moan|flow)|kanbyo-role)$/.test(x.id)).some(x => !cacheGet(x, keyOf(x))) : true;
     if (t.id === 'pack-site' && !packNeed) r = { rc: 0, n: 0, sum: 'あとのパックの点検がすべてキャッシュにあるので作らない', cached: true, sec: 0 };
     else if (t.id === 'build' && buildCached(t.b)) { const J = buildCached(t.b); r = { rc: 0, n: 0, sum: '入力・出力とも前回の build と同じ（' + J.date.slice(0, 16).replace('T', ' ') + '）', cached: true, sec: 0 }; }
     else {
@@ -761,7 +779,9 @@ function tableMd() {
     return;
   }
   if (!tasks.length) { console.log('\n回す点検はありません（' + (R.files.length ? '文書・コメントだけの変更' : '変更なし') + '）'); skipped.forEach(s => console.log('  飛ばした：' + s.name + '　← ' + s.why)); return; }
-  const res = await schedule(tasks, C);
+  runMark();
+  console.log('試しのフォルダ・ログ ' + path.relative(ROOT, RUN_DIR) + '（呼び出しごと）');
+  let res; try { res = await schedule(tasks, C); } finally { if (RUN_OWN) runSweep(); }
   /* 一覧 */
   const sec = (Date.now() - T0) / 1000;
   console.log('\n== 結果（' + sec.toFixed(0) + ' 秒）');

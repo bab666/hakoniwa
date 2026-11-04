@@ -94,7 +94,9 @@ node hakoniwa-tools/check.js --dry           # 何を回すか・飛ばす理由
 node hakoniwa-tools/check.js --table         # 依存の表を md で出す（下の 3-3 はこの出力）
 ```
 
-ほかに `--files=a,b`（git の差の代わりにこのファイルを変えたものとして決める。表の確かめ用）、`--force`（キャッシュを使わない）、`--jobs=N`（同時に使うページの数。既定は CPU の数。audit-all は 1 本で 2 ページ）、`--keep-going`（前置きが落ちても続ける）、`--cache=…`／`HK_CHECK_CACHE`、`-v`。終了コードは 0（すべて合格）／1。ログは `hakoniwa-tools/.check-cache/logs/<点検>.log`。
+ほかに `--files=a,b`（git の差の代わりにこのファイルを変えたものとして決める。表の確かめ用）、`--force`（キャッシュを使わない）、`--jobs=N`（同時に使うページの数。既定は CPU の数。audit-all は 1 本で 2 ページ）、`--keep-going`（前置きが落ちても続ける）、`--cache=…`／`HK_CHECK_CACHE`、`--site=…`／`HK_CHECK_SITE`、`-v`。終了コードは 0（すべて合格）／1。
+
+**試しのフォルダとログは呼び出しごとに分かれる（2026-11-04）**：パックの試しのフォルダ（pack-site）と点検のログは、`hakoniwa-tools/.check-cache/runs/<作業フォルダの実体パスのハッシュ 8 桁>-<プロセス id>/site/`・`…/logs/<点検>.log` に作る（始めに置き場所を 1 行出す）。どの worktree から何本並べて回しても互いに上書きしないので、並行して回してよい。置き場所を決めたいときは `--site=<フォルダ>`（または環境変数 `HK_CHECK_SITE`。その下に `site/`・`logs/` を作り、終わっても消さない）。キャッシュ本体（`results/`・`build/`・`regress-*/`・`base-*/`）は今までどおり主の作業フォルダの 1 か所を共有する。終わるたびに `runs/` を掃除し、動いていない（プロセスの無い）呼び出しのフォルダは作業フォルダごとに最新の 1 つだけ残す（動いている呼び出しのものは消さない）。単独の道具でパックを点検するときは `node hakoniwa-tools/build/pack-site.js hakoniwa-packs/<パック> --out=<自分のフォルダ> --codes=…` で作ったフォルダを渡す。
 
 ### 3-2. 流れ
 
@@ -210,7 +212,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | デートの舞台と段（date-setting-audit）（`date-setting`） | pre | `pack` | — | 0 | 1 秒 | set-b のデートの日々を変えたとき。行き先 52 か所 × 汎用の出来事の舞台の矛盾・段の付いていない行（ページを開かない） |
 | 看病の部屋の役と状態（kanbyo-role-audit）（`kanbyo-role`） | heavy | `pack` | pack-site | 1 | 30 秒 | set-b の看病の部屋を変えたとき。報告の 16 通りで、看る人・看られる人の取り違え・通いの行き来・熱の数字と言葉・関係の取り違え・三人目・結末のあとが 0 件 |
 | パックの出来事の一覧（event-catalog --pack）（`pack-catalog`） | build | `pack` | — | 1 | 3 秒 | 作り直してから catalog-check |
-| パックの試しのフォルダ（pack-site）（`pack-site`） | build | `pack` | build | 1 | 40 秒 | 本体を写してパックを組み立てる（キャッシュの中に作る） |
+| パックの試しのフォルダ（pack-site）（`pack-site`） | build | `pack` | build | 1 | 40 秒 | 本体を写してパックを組み立てる（呼び出しごとのフォルダ .check-cache/runs/…/site に作る） |
 | パックの点検の一式（audit-all・HK_ONLY_SCEN）（`pack-audit`） | heavy | `pack` | pack-site | 2 | 150 秒 | 変えた部屋だけ（共有の部品 kit などを変えたらそのパックの全部屋）。長い場面を変えたら --extra=sexflow も |
 | パックの口調の違和感（tone-feel --scen=部屋）（`pack-feel`） | heavy | `pack` | pack-site | 1 | 60 秒 | 台詞を変えた部屋だけ |
 | パックの喘ぎの口調（moan-tone-audit --scen=部屋）（`pack-moan`） | heavy | `pack` | pack-site | 1 | 120 秒 | 喘ぎを変えた部屋だけ |
