@@ -1,4 +1,8 @@
-/* 箱庭シミュレーター: ふたりの日常の夜（R18版のみ。scenario-futari.js・lewd-unify.js より後に読む）
+/* 箱庭シミュレーター: 今日から同居生活の夜（R18版のみ。scenario-futari.js・lewd-unify.js より後に読む。2026-11-04 担当FT が作り直した：きっかけの段・エッチの型・三人の夜）
+   ■ エッチの入口（@event）
+     ・二人の夜（恋人どうし）：きっかけは夜の種類（初めて・旅先・結婚の約束）・暮らしの出来事（仲直り・やきもち）・同居の夜の種（風呂上がり・ソファ・遅い帰り・雨・おやすみ・受けから）
+     ・体だけの夜（HK.State.freeSex）・三人の夜（三人とも互いに恋人。HK.Trio3）・私もしたかった（四人のとき、三人の夜に加わらなかった人と、その恋人）
+     ・一晩に体の場面は一つまで。直前に必ずきっかけの段（記録の一件。理由「きっかけ：…」、e.tag＝'きっかけ'）。エッチの人数はふだん 1〜3 人。四人全員が互いに恋人かセフレで、全組が恋愛対象・受け攻め・恋愛の制限を満たすときだけ、軽い四人の夜（本体の HK.Quad）
    ■ HK.FutariR18.night(ctx, a, b, info)：恋人どうしの夜の文。返すのは { text, why, a, b }（a＝攻め・b＝受け）か null（全年齢の「同じ布団で眠った」に戻す）
      ・体の関係にしてよい組だけ：HK.State.pairSex（恋愛対象と受け攻め＝HK.Pos.okSex、R18に参加しない）・HK.sexBlocked（恋愛・R18にしない相手、
        同じ人の恋人どうし、性行為の相手の固定）・HK.ngPair・HK.canLove（両方向）。どれかで止まれば null
@@ -12,6 +16,24 @@
        受けの果てたあと → 攻めの事後の一言 → 余韻。攻めの台詞はこの箱庭の表（TOP：態度9種。初めての夜・体だけの夜は専用の表）と共通の表（HK.EroTop）を混ぜる（zombie-thick.js の HK.EroT3.topSay）。
        始まりの文・山場の台詞と合わせて、攻めの台詞が厚い版は3本・短い版は2本になるまで、始まり→事後→途中の順に足す（HK.EroT3.fill）
    登場人物はすべて成人として扱う */
+/* @event scen=futari id=ft_night_first cat=romance tie=lover tags=night label=恋人になって初めての夜 */
+/* @event scen=futari id=ft_night_lover cat=romance tie=lover tags=night label=恋人どうしの同じ家の夜 */
+/* @event scen=futari id=ft_night_home cat=romance tie=lover tags=night label=部屋を一つにした二人の夜 */
+/* @event scen=futari id=ft_night_engaged cat=romance tie=lover tags=night label=結婚の約束をした二人の夜 */
+/* @event scen=futari id=ft_night_trip cat=romance tie=lover tags=night label=旅先の宿で過ごす二人の夜 */
+/* @event scen=futari id=ft_night_naka cat=romance tie=lover tags=night label=ケンカの仲直りのあとの夜 */
+/* @event scen=futari id=ft_night_jeal cat=romance tie=lover tags=night label=やきもちを焼いた夜に求め合う */
+/* @event scen=futari id=ft_night_bath cat=romance tie=lover tags=night label=風呂上がりに鉢合わせた夜 */
+/* @event scen=futari id=ft_night_sofa cat=romance tie=lover tags=night label=居間のソファで映画のあとに */
+/* @event scen=futari id=ft_night_late cat=romance tie=lover tags=night label=遅く帰った恋人を待っていた夜 */
+/* @event scen=futari id=ft_night_rain cat=romance tie=lover tags=night label=雨と雷の夜に部屋を訪ねる */
+/* @event scen=futari id=ft_night_oyasumi cat=romance tie=lover tags=night label=おやすみのキスからそのまま夜へ */
+/* @event scen=futari id=ft_night_ini cat=romance tie=lover tags=night label=受けのほうから誘う同居の夜 */
+/* @event scen=futari id=ft_night_free cat=romance tie=- tags=night cond=性行為の相手を誰とでも可 label=恋人ではない同居人と体だけの夜 */
+/* @event scen=futari id=ft_night_trio cat=romance tie=lover tags=night cond=三人とも互いに恋人 label=三人の恋人どうしの夜 */
+/* @event scen=futari id=ft_night_quad cat=romance tie=lover tags=night cond=四人全員が互いに恋人かセフレ label=四人の夜（軽く） */
+/* @event scen=futari id=ft_night_impulse cat=romance tie=- tags=night cond=恋人ではない同居人 label=勢いで一夜を過ごす同居人 */
+/* @event scen=futari id=ft_night_wanted cat=romance tie=lover tags=night cond=四人の同居 label=三人の夜に加われなかった人の夜 */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -158,50 +180,168 @@
       '{a}は{b}をベッドの縁に座らせ、その膝のあいだに立って、上から深く口づけた。{b}の手を取って自分の腰に添えさせ、服の裾を少しずつ持ち上げさせる。{b}の指先が肌に触れるたびに、{a}は小さく息をこぼした。')
   };
 
-  function ok(ctx, a, b, info) {
+  /* ======================= きっかけの段（2026-11-04。エッチの場面の直前に必ず出す。scenario-futari.js の sayLead が記録に出す） =======================
+     性別の語・体の語は使わない（男×女・女×女・女攻め×男のどれでも読める書き方）。{a}＝言い出した人、{b}＝相手、{c}＝同じ家のほかの住人。
+     攻めを選んだ人を受けにする言い回し（委ねる・組み敷かれる など）は書かない（誰が攻めかは場面の側が決める） */
+  var LEAD = {
+    first: L('恋人になってから、初めて二人きりで過ごす夜だった。同じ家に住んでいても、今夜の部屋の扉は、いつもと違って見えた。|{a}は寝る前に{b}の部屋の前で立ち止まり、少し迷ってから扉を叩いた。恋人になって、まだ数日しかたっていなかった。'),
+    lover: L('夕飯の片づけを終えたあと、{a}と{b}は自然と同じ部屋に戻った。言葉にしなくても、今夜がどういう夜になるのか、二人とも分かっていた。|一日の終わり、{a}は{b}の部屋の扉を叩いた。返事の声は、待っていたように少しだけ早かった。'),
+    home: L('部屋を一つにしてから、二人の夜は前よりずっと近くなった。{a}は明かりを落とす前に、{b}の顔をじっと見た。|二人で選んだ寝具に並んで横になると、{a}は{b}のほうへ寝返りを打った。同じ部屋で眠るのが当たり前になっても、こういう夜は特別だった。'),
+    engaged: L('薬指の指輪が、灯りの下で小さく光った。約束を交わしてから、{a}は{b}に触れるたびに、前より少しだけ丁寧になった。|指輪を交換した日の夜だった。{a}は何度も{b}の左手を見ては、照れくさそうに笑った。'),
+    trip: L('旅先の宿の部屋は、いつもの家よりずっと静かだった。同居人の物音も、壁の向こうの話し声もない。|宿の窓の外では、知らない町の明かりが一つずつ消えていった。二人きりの夜は、家にいるときよりずっと長く感じられた。'),
+    free: L('{a}と{b}は恋人ではない。ただ、今夜はお互いに、一人で眠る気になれなかった。|同じ家に住んでいる二人は、恋人ではなかった。それでも今夜、{a}は{b}の部屋の前で足を止めた。'),
+    naka: L('昼間の言い合いが嘘のように、仲直りしたあとの{a}と{b}は離れがたかった。気まずさの名残を埋めるように、{a}は{b}の部屋へ向かった。|ケンカのあとの夜は、いつもより静かだった。仲直りをしたばかりの二人は、言葉より先に、互いの体温を確かめたくなった。'),
+    jeal: L('{a}は、昼間{b}がほかの人と楽しそうに話していたのが、まだ胸の奥に引っかかっていた。部屋に二人きりになると、{a}は黙って扉を閉めた。|やきもちを焼いた自分が、{a}は少し恥ずかしかった。それでも今夜は、{b}が自分の恋人だと確かめずにはいられなかった。'),
+    bath: L('風呂の順番がちょうど重なって、脱衣所で{a}と{b}は鉢合わせた。湯上がりの火照った顔を見て、どちらも目を逸らせなくなった。|{b}が風呂から上がるのを、{a}は居間で待っていた。石けんの匂いが廊下を通り過ぎたところで、{a}は立ち上がった。'),
+    sofa: L('居間のソファで二人並んで映画を観ていたが、話の筋はもう頭に入っていなかった。エンドロールが流れ始めたころ、{a}がテレビを消した。|夜遅く、居間のソファで{a}と{b}は肩を並べていた。テレビの音が途切れた瞬間、{a}は{b}のほうを向いた。'),
+    late: L('{b}の帰りは、今夜も遅かった。玄関の鍵の音を聞いて、起きて待っていた{a}は廊下に出た。|残業続きの{b}が帰ってきたのは、日付が変わる少し前だった。{a}は疲れた顔を見て、寝るのをやめた。'),
+    rain: L('夜半から強い雨になり、遠くで雷が鳴り始めた。眠れずにいた{a}は、枕を抱えて{b}の部屋の扉を叩いた。|窓を叩く雨の音が、今夜はやけに大きかった。{a}は、隣の部屋の{b}がまだ起きている気配に気づいた。'),
+    oyasumi: L('「おやすみ｜おやすみ｜おやすみなさい」を言いに{b}の部屋へ寄った{a}は、そのまま扉の内側に留まった。|寝る前の挨拶が、今夜はなかなか終わらなかった。'),
+    ini: L('{a}は、今夜は自分から言うと決めていた。{b}の部屋の前で、深呼吸を一つしてから扉を叩いた。|いつもは待っているばかりの{a}が、今夜は自分から{b}の部屋に来た。扉を閉める手が、少しだけ震えていた。'),
+    impulse: L('{a}と{b}は恋人ではない。夜遅くまで居間で二人きりで飲んでいるうちに、帰る部屋が同じ廊下の先だということが、急に意識に上った。|同じ家の二人は、まだ何も約束していなかった。それでも今夜は、どちらも自分の部屋の扉の前で足を止めた。'),
+    wanted: L('{a}は昨夜、三人の輪に加わらなかった。それが、思っていたよりずっと心に引っかかっていた。|昨夜の自分の部屋は、やけに静かだった。{a}は朝からずっと、言いたいことを胸の中で転がしていた。')
+  };
+  /* 同じ家にほかの住人がいる夜（{c}） */
+  var LEAD_HOUSE = L('壁の向こうでは、{c}がまだ起きている気配がした。二人は自然と声をひそめた。|同じ家には{c}もいる。{a}は、部屋の扉の鍵をそっと確かめた。|廊下の向こうから、{c}の部屋のテレビの音がかすかに聞こえていた。');
+  /* 言い出した人（{a}）の一言（態度9種） */
+  var LEAD_Q = P9({
+    proud: '{a}「今夜は、離さないから｜今夜は、離さない｜今夜は、離しませんから」|{a}「こっち来て。……待たせないで｜こっちへ来い。……待たせるな｜こっちへ来てください。……待たせないでください」',
+    stern: '{a}「……今夜は、一緒にいたい｜……今夜は、一緒にいたい｜……今夜は、一緒にいたいです」|{a}「無理はさせない。嫌なら言ってほしい｜無理はさせない。嫌なら言ってくれ｜無理はさせません。嫌なら言ってください」',
+    tsun: '{a}「べ、別に、そういうつもりで来たんじゃないから｜べ、別に、そういうつもりで来たわけではない｜べ、別に、そういうつもりで来たわけではありません」|{a}「……今夜だけ、特別だから｜……今夜だけ、特別だ｜……今夜だけ、特別ですから」',
+    gentle: '{a}「今夜は、そばにいてもいい？｜今夜は、そばにいてもいいか｜今夜は、そばにいてもいいですか」|{a}「ゆっくりでいいからね｜ゆっくりでいい｜ゆっくりでいいですからね」',
+    devoted: '{a}「迷惑じゃなかったら……今夜は、一緒にいたい｜迷惑でなければ……今夜は、一緒にいたい｜迷惑でなかったら……今夜は、一緒にいたいです」|{a}「今夜は、ずっとそばにいたい｜今夜は、ずっとそばにいたい｜今夜は、ずっとそばにいたいです」',
+    cool: '{a}「……眠れそうにない。付き合って｜……眠れそうにない。付き合え｜……眠れそうにありません。付き合ってください」|{a}「理由は、言わなくても分かるでしょう｜理由は、言わなくても分かるだろう｜理由は、言わなくても分かりますよね」',
+    free: '{a}「ねえ、今夜はこっちで寝てもいい？｜なあ、今夜はこっちで寝てもいいか｜あの、今夜はこっちで寝てもいいですか」|{a}「ねえ、まだ寝ないでしょ？｜おい、まだ寝ないだろう｜あの、まだ寝ませんよね？」',
+    shy: '{a}「あ、あの……今夜、そっちに行っても……｜あ、あの……今夜、そっちに行っても……｜あ、あの……今夜、そちらに行っても……」|{a}「……一人だと、眠れなくて｜……一人だと、眠れなくてな｜……一人だと、眠れないんです」',
+    polite: '{a}「もしよければ、今夜は一緒にいたい｜もしよければ、今夜は一緒にいさせてほしい｜もしよければ、今夜は一緒にいてもいいですか」|{a}「疲れてるところ、ごめん。少しだけ、いい？｜疲れているところ、すまない。少しだけ、いいか｜お疲れのところ、すみません。少しだけ、よろしいですか」'
+  });
+  var LEAD_QFREE = L('{a}「今夜だけ。……いいよね｜今夜だけだ。……いいな｜今夜だけです。……いいですね」|{a}「何も変わらないから。……今夜だけ｜何も変わらない。……今夜だけだ｜何も変わりません。……今夜だけです」');
+  var LEAD_QWANT = L('{a}「……私もしたかった｜……私もしたかった｜……私もしたかったです」|{a}「昨日のこと、ちょっとだけ妬けた。……私もしたかった｜昨日のことは、少しだけ妬けた。……私もしたかった｜昨日のこと、少しだけ妬けました。……私もしたかったです」');
+  /* 相手（{b}）の応え（性別・受け攻めを問わない） */
+  var LEAD_R = L('{b}は少し驚いた顔をしてから、小さく頷いた。|{b}は何も言わずに、{a}の袖を引いた。|{b}は照れくさそうに笑って、部屋の明かりを落とした。|{b}は一瞬だけ迷って、それから扉の鍵を閉めた。|{b}は返事のかわりに、{a}を部屋の中へ招き入れた。');
+  var LEAD_N = { first: '恋人になって初めての夜', lover: '恋人どうしの夜', home: '部屋を一つにした二人の夜', engaged: '結婚の約束をした夜', trip: '旅先の宿', free: '体だけの夜', impulse: '勢いで過ごす一夜', naka: '仲直りのあと', jeal: 'やきもちを焼いた夜', bath: '風呂上がりに鉢合わせて', sofa: '居間のソファで映画のあと', late: '遅く帰った夜', rain: '雨と雷の夜', oyasumi: 'おやすみの挨拶から', ini: '受けのほうから誘う', wanted: '三人の夜に加わらなかった人の「私もしたかった」' };
+
+  /* ======================= 三人の夜（{a}{b}{c}。形が決まったわけは {t}{m}{u}） ======================= */
+  var TRIO_LEAD = L('{a}と{b}と{c}は、同じ家で暮らす三人の恋人だった。寝室の明かりを落とすと、{a}が二人の顔を順番に見た。今夜がどういう夜になるのか、三人とも分かっていた。|{a}「今夜は、三人一緒がいい｜今夜は、三人一緒がいい｜今夜は、三人一緒がいいです」――{a}がそう言うと、{b}は照れくさそうに笑い、{c}は黙って頷いた。同じ家で三人の恋人になってから、口に出すのは初めてだった。|夕飯の片づけを三人で終えると、誰からともなく同じ部屋に集まった。いちばん広い布団に三つの枕を並べたのは{b}だった。{c}が明かりを消すと、三人の夜が静かに始まった。');
+  var TRIO_FORM = {
+    twoOne: L('{t}と{m}は、どちらも抱く側に回る性分だった。今夜、二人から求められるのは{u}だった。|抱かれる側に回るのは、三人の中で{u}だけだった。{t}と{m}は目を見交わして、{u}の両側に腰を下ろした。'),
+    oneTwo: L('{m}も{u}も、抱かれる側に回るほうが性に合っていた。二人の恋人を抱けるのは、{t}だけだった。|三人の中で、抱く側に回るのは{t}だけだった。{m}と{u}は、どちらが先に呼ばれるのかをそわそわと待っていた。'),
+    sandwich: L('{m}だけは、抱くことも抱かれることもできた。三人がひとつに繋がるなら、真ん中は{m}だった。|抱く側の{t}と、抱かれる側の{u}。そのあいだをつなげるのは、どちらにも回れる{m}だけだった。'),
+    ring: L('三人とも、抱くことも抱かれることもできた。誰が誰を求めるのかは、その夜の気分しだいだった。'),
+    touch: L('三人とも、誰かに抱かれるつもりはなかった。それでも今夜は、三人一緒にいたかった。')
+  };
+  /* 四人いて、三人の夜に加わらなかった人（{d}）。場面の外の一文（三人の場面の文には出さない） */
+  var TRIO_LEFT = {
+    skip: L('{d}は「今夜は自分の部屋で寝るね｜今夜は自分の部屋で寝る｜今夜は自分の部屋で寝ますね」と言って、先に居間の明かりを消した。|{d}は今夜は加わらないと決めて、自分の部屋の扉を静かに閉めた。'),
+    watch: L('{d}は今夜は加わらずに、居間のソファで本を開いた。閉じた寝室の扉を、ときどき眺めながら。|{d}は「今夜は眺めているだけにする｜今夜は眺めているだけにする｜今夜は眺めているだけにします」と笑って、居間に残った。')
+  };
+  var TRIO_FADE = L('布団の中で、三人の影がゆっくりと重なった。それから先のことは、三人しか知らない。翌朝、{a}と{b}と{c}は、誰からともなく照れくさそうに笑い合った。|寝室の扉が静かに閉まった。三人の小さな笑い声と息づかいが、しばらく廊下に漏れていた。翌朝の食卓は、いつもより少しだけ静かだった。');
+  var TRIO_AFTER = L('事のあと、三人は汗ばんだ体を寄せ合ったまま、くすくすと笑い合った。同じ家で暮らす三人の夜は、まだ始まったばかりだった。|三人は布団に川の字になって、天井を見上げた。{b}が「＠{b}＠三人だと、布団が狭い｜三人だと、布団が狭いな｜三人だと、布団が狭いですね」と言うと、{c}が吹き出し、{a}もつられて笑った。');
+
+  /* ======================= 体の関係にしてよい二人か ======================= */
+  function sexOk(ctx, a, b) {
     if (HK.SAFE_ON || !a || !b || a === b) return false;
-    var S = HK.State;
+    if (ctx.pair && ctx.pair(a, b).kin) return false;
+    if (HK.Ties && HK.Ties.apathy && (HK.Ties.apathy(ctx, a, b) || HK.Ties.apathy(ctx, b, a))) return false;
+    if (HK.State && HK.State.pairSex && !HK.State.pairSex(a, b)) return false;
+    if (HK.Pos && HK.Pos.okSex && !HK.Pos.okSex(a, b)) return false;
+    if (HK.Pos && HK.Pos.libNone && HK.Pos.libNone([a, b])) return false;
+    if ((HK.sexBlocked && HK.sexBlocked(a, b)) || (HK.ngSexPair && HK.ngSexPair(a, b)) || HK.ngPair(a, b)) return false;
+    if (HK.Avoid && HK.Avoid.topOk && !HK.Avoid.topOk(ctx, a, b)) return false;
+    return true;
+  }
+  function ok(ctx, a, b, info) {
     /* 体だけの夜（info.free）：HK.State.freeSex を通る組だけ（恋人でなくてよい。恋愛相手の固定 HK.canLove は見ない） */
-    if (info && info.free) return !!(S && S.freeSex && S.freeSex(ctx, a, b));
-    if (S && !S.pairSex(a, b)) return false;
-    if (HK.sexBlocked(a, b) || HK.ngPair(a, b)) return false;
+    if (info && info.free) return !HK.SAFE_ON && !!(HK.State && HK.State.freeSex && HK.State.freeSex(ctx, a, b)) && (!HK.Pos || !HK.Pos.okSex || HK.Pos.okSex(a, b));
+    if (!sexOk(ctx, a, b)) return false;
     if (!HK.canLove(a, b) || !HK.canLove(b, a)) return false;
-    /* 同一人物の二人も、ほかの二人と同じに扱う（避けたいときは住人の「恋愛・R18にしない相手」） */
+    /* 勢いの一夜（info.impulse）：恋人ではないが、恋愛にしてよい二人（性欲と衝動性で起きる。scenario-futari.js の nights） */
+    if (info && info.impulse) return !(HK.fearHeld && (HK.fearHeld(ctx, a, b) || HK.fearHeld(ctx, b, a)));
+    /* 恐怖の二人は、体の関係の欄が「あり」のときだけ（HK.tieBodyOK）。同一人物の二人も、ほかの二人と同じに扱う */
+    if (HK.fearHeld && (HK.fearHeld(ctx, a, b) || HK.fearHeld(ctx, b, a)) && !(HK.tieBodyOK && HK.tieBodyOK(ctx, a, b))) return false;
     return !!ctx.pair(a, b).couple;
   }
   var NIGHT_N = {}; (HK.Attr && HK.Attr.NIGHT || []).forEach(function (x) { NIGHT_N[x[0]] = x[1]; });
+  function upkOf(ctx) { var U = ctx.ft.used; return function (arr) { var l = (arr || []).filter(function (t) { return !U[t]; }); if (!l.length) return (arr || [])[0] ? arr[Math.floor(ctx.rng() * arr.length)] : ''; var t = l[Math.floor(ctx.rng() * l.length)]; U[t] = 1; return t; }; }
+  function fillN(t, m) { return String(t).replace(/\{([a-z])\}/g, function (s, k) { return m[k] ? m[k].name || m[k] : s; }); }
+  /* その夜、同じ家にいて、場面に加わらないほかの住人（声をひそめる一文の {c}） */
+  function houseOther(ctx, g) {
+    var FC = HK.FutariCore;
+    if (!FC || !ctx.ft || ctx.ft.liv === 'apart') return null;
+    return ctx.present().filter(function (c) { return g.indexOf(c) < 0 && g.every(function (x) { return FC.sameHome(ctx, c, x); }) && !FC.onTrip(ctx, c); })[0] || null;
+  }
+  /* きっかけの種類：夜の種類（初めて・旅先・結婚の約束・体だけ・私もしたかった）か、暮らしの出来事（仲直り・やきもち）、ほかは同居の夜の種（風呂上がり・ソファ・遅い帰り・雨・おやすみ・受けから） */
+  function kindOf(ctx, A, B, info) {
+    if (info.free) return 'free';
+    if (info.impulse) return 'impulse';
+    if (info.kind === 'wanted') return 'wanted';
+    if (info.where === 'trip') return 'trip';
+    if (info.first) return 'first';
+    if (info.made) return 'naka';
+    if (info.jeal) return 'jeal';
+    if (info.engaged && ctx.rng() < 0.5) return 'engaged';
+    var lead = HK.Pos && HK.Pos.leadOf ? HK.Pos.leadOf(B) : '';
+    var W0 = { lover: 1, home: info.stage >= 4 ? 1.4 : 0, bath: 1, sofa: 1, late: ctx.ft.hol ? 0 : 0.8, rain: 0.6, oyasumi: HK.Kiss ? 1 : 0, ini: /sasoi|osoi/.test(lead || '') ? 1.6 : 0.4 };
+    var ks = Object.keys(W0).filter(function (k) { return W0[k] > 0; }), tot = 0; ks.forEach(function (k) { tot += W0[k]; });
+    var r = ctx.rng() * tot;
+    for (var i = 0; i < ks.length; i++) { r -= W0[ks[i]]; if (r <= 0) return ks[i]; }
+    return 'lover';
+  }
+  function leadOf(ctx, A, B, kind, info) {
+    var upk = upkOf(ctx), a = A, b = B;
+    /* 言い出した人：受けから誘う夜は受け、やきもちの夜は妬いた人（info.jealBy）、私もしたかったは加わらなかった人、ほかは攻めか受けのどちらか */
+    if (kind === 'ini') { a = B; b = A; }
+    else if (kind === 'wanted') { a = info.who || A; b = a === A ? B : A; }
+    else if (kind === 'late') { a = ctx.rng() < 0.5 ? A : B; b = a === A ? B : A; }
+    else if (ctx.rng() < 0.35) { a = B; b = A; }
+    var c = houseOther(ctx, [A, B]);
+    var t = upk(LEAD[kind] || LEAD.lover);
+    if (kind === 'oyasumi' && HK.Kiss) { var kr = HK.Kiss.text(ctx, a, b, { trig: 'oyasumi', len: 's', end: 'night', night: true }); if (kr && kr.text) t += '\n\n' + kr.text.replace(/\n\n/g, '') + '\n\n'; }
+    if (c && kind !== 'trip' && ctx.rng() < 0.7) t += upk(LEAD_HOUSE);
+    t += upk(kind === 'free' || kind === 'impulse' ? LEAD_QFREE : kind === 'wanted' ? LEAD_QWANT : (LEAD_Q[att(a)] || LEAD_Q.gentle));
+    t += upk(LEAD_R);
+    return { text: ctx.t(fillN(t, { c: c }), a, b), why: LEAD_N[kind] + '（' + a.name + 'から' + (c && kind !== 'trip' ? '・同じ家に' + c.name + 'がいる' : '') + '）' };
+  }
 
+  /* 軽い四人の夜（本体の HK.Quad。quad-r18.js）のきっかけの段：同居の家の文（{a}＝言い出した人、{b}{c}{d}） */
+  var QUAD_LEAD = L('四人で暮らすこの家では、誰と誰がどういう仲なのか、もう隠す必要はなかった。夕飯のあと、居間に四人が集まったまま、誰も自分の部屋に戻ろうとしなかった。{a}が居間の明かりを一つ落とした。|週末の夜、四人は居間に布団を持ち込んで、遅くまで映画を観ていた。映画が終わっても、誰も片づけようと言い出さなかった。{a}が最後の明かりに手を伸ばしたとき、{b}も{c}も{d}も、何も言わなかった。');
   HK.FutariR18 = {
-    POOLS: { OPEN: OPEN, OPEN_PS: OPEN_PS, PEAK_PS: PEAK_PS, AFTER_PS: AFTER_PS, TAIL_TOP: TAIL_TOP, TAIL_BOT: TAIL_BOT, SHORT: SHORT, FADE: FADE },
+    quadLead: function (ctx, g) {
+      var upk = upkOf(ctx), a = g[Math.floor(ctx.rng() * g.length)], r = g.filter(function (c) { return c !== a; });
+      return ctx.t(fillN(upk(QUAD_LEAD) + upk(LEAD_Q[att(a)] || LEAD_Q.gentle), { a: a, b: r[0], c: r[1], d: r[2] }), a, r[0], r[1]);
+    },
+    POOLS: { OPEN: OPEN, OPEN_PS: OPEN_PS, PEAK_PS: PEAK_PS, AFTER_PS: AFTER_PS, TAIL_TOP: TAIL_TOP, TAIL_BOT: TAIL_BOT, SHORT: SHORT, FADE: FADE, LEAD: LEAD },
+    sexOk: sexOk,
+    /* 二人の夜：{ lead: { text, why }（きっかけの段）, text, why, a（攻め）, b（受け） } か null（全年齢の「同じ布団で眠った」に戻す） */
     night: function (ctx, a, b, info) {
       if (!ok(ctx, a, b, info)) return null;
       info = info || {};
       var rng = ctx.rng, LW = HK.Lewd, env = ctx.env, lv = LW ? LW.lv(env) : 'mid';
       var od = HK.Pos ? HK.Pos.order(a, b, [a, b]) : [a, b], A = od[0], B = od[1];
       var P = HK.Pos, ff = P && P.ff(A, B), fm = !ff && P && P.isF(A) && !P.isF(B), mode = ff ? 'ff' : fm ? 'fm' : 'mf';
-      var kind = info.free ? 'free' : info.where === 'trip' ? 'trip' : info.first ? 'first' : info.engaged ? 'engaged' : info.stage >= 4 ? 'home' : 'lover';
+      var kind = kindOf(ctx, A, B, info);
+      var okind = info.free || info.impulse ? 'free' : info.where === 'trip' ? 'trip' : info.first ? 'first' : info.engaged ? 'engaged' : info.stage >= 4 ? 'home' : 'lover';
       var pk0 = function (arr) { return rng.pick(arr); }, pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(ctx, pk0) : pk0;
       /* この箱庭の文は、同じ回の中で一度だけ（使い切ったら、その段は書かない） */
       var U = ctx.ft.used;
       function upk(arr) { var l = (arr || []).filter(function (t) { return !U[t]; }); if (!l.length) return ''; var t = rng.pick(l); U[t] = 1; return t; }
-      /* 夜の場面の数：日数に比例し、描写の濃さで増減（ほどほど×0.75・濃い×1）。同じ二人の夜は3日以上あける（初めての夜は別） */
+      /* 夜の場面の数：日数に比例し（10 日で長い・短い各 2〜3 回）、描写の濃さで増減。同じ二人の夜は3日以上あける（初めての夜・私もしたかったは別） */
       var days = ctx.ft.days || 30, R = ctx.ft.r18x = ctx.ft.r18x || { thick: 0, short: 0, last: {} }, sc = lv === 'high' ? 1 : lv === 'low' ? 0.5 : 0.75;
-      var capT = Math.max(1, Math.floor((1 + days / 30) * sc)), capS = Math.max(1, Math.floor((1 + days / 30) * sc));
+      var capT = Math.max(2, Math.round((1 + days / 5) * sc)), capS = Math.max(2, Math.round((1 + days / 5) * sc));
       var pk2 = a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i, day = ctx.ft.day || 0;
-      if (!info.first && R.last[pk2] != null && day - R.last[pk2] < 3) return null;
+      if (!info.first && kind !== 'wanted' && R.last[pk2] != null && day - R.last[pk2] < 3) return null;
       var nt = HK.Attr ? HK.Attr.nightOf(A, B) : '', nb = HK.Attr ? HK.Attr.nightOf(B, A) : '';
-      var why = (info.free ? '体だけの夜（' : '恋人どうしの夜（') + KIND_N[kind] + (nt ? '・' + A.name + 'の夜の性格：' + (NIGHT_N[nt] || nt) : '') + (nb ? '・' + B.name + 'の夜の性格：' + (NIGHT_N[nb] || nb) : '') + '）';
-      /* n：攻めの台詞の本数（差し込み印 S 始まり・M 途中・A 事後を、始まり→事後→途中の順に、ほかの台詞と合わせて n 本になるまで埋める） */
-      function done(t, n) {
-        var tx = ctx.t(t, A, B);
-        if (HK.EroT3) tx = HK.EroT3.fill(tx, A, { S: function () { return tsay('start'); }, M: function () { return tsay(rng() < 0.5 ? 'in' : 'fore', { own: 0 }); }, A: function () { return tsay('after', { own: 0.6 }); } }, ['S', 'A', 'M'], n || 3, 0);
-        if (ff && HK.FF && HK.FF.fix) tx = HK.FF.fix(ctx, tx, A, B);
-        return { text: tx, why: why, a: A, b: B };
-      }
-      var MK = function (k) { return HK.EroT3 ? HK.EroT3.mark(k) : ''; };
-      function fade() { var ft = upk(FADE); return ft ? { text: ctx.t(ft, A, B), why: why.replace(/）$/, '・ほのめかす）'), a: A, b: B } : null; }
+      var why = (info.free ? '体だけの夜（' : info.impulse ? '勢いの一夜（' : '恋人どうしの夜（') + A.name + 'と' + B.name + '・' + LEAD_N[kind] + (nt ? '・' + A.name + 'の夜の性格：' + (NIGHT_N[nt] || nt) : '') + (nb ? '・' + B.name + 'の夜の性格：' + (NIGHT_N[nb] || nb) : '') + '）';
+      var lead = leadOf(ctx, A, B, kind, info);
+      function out(t) { return { lead: lead, text: t, why: why, a: A, b: B }; }
+      /* 攻めの台詞（場面の表＋共通の表 HK.EroTop）：始まりと事後に一言ずつ。空なら何も足さない（名前だけ残さない） */
+      var rel = kind === 'first' ? 'first' : kind === 'free' || kind === 'impulse' ? 'casual' : 'lover';
+      var tb = { start: kind === 'first' ? TOP_FIRST : kind === 'free' || kind === 'impulse' ? TOP_FREE : TOP.start, after: TOP.after };
+      var tsay = function (stg, o) { var l = HK.EroT3 ? HK.EroT3.topSay(ctx, A, B, stg, tb, Object.assign({ rel: rel }, o || {})) : ''; return /「[^」]+」/.test(l || '') ? l : ''; };
+      function fin(t) { var tx = ctx.t(t, A, B); if (ff && HK.FF && HK.FF.fix) tx = HK.FF.fix(ctx, tx, A, B); return out(tx); }
+      function fade() { var ft = upk(FADE); return ft ? fin(ft) : null; }
       /* ほのめかす（と、厚い版・短い版を使い切った夜）：まだ使っていないぼかした一文。使い切ったら全年齢と同じ「同じ布団で眠った」に戻す */
-      if (lv === 'low' || (R.thick >= capT && R.short >= capS)) return fade();
+      if (lv === 'low' || (R.thick >= capT && R.short >= capS)) { var fd = fade(); if (fd) { fd.why = why.replace(/）$/, '・ほのめかす）'); R.last[pk2] = day; } return fd; }
       var ps = att(B), hardTopB = P && P.hardTop && P.hardTop(B, A);
       var tail = '';
       if (TAIL_TOP[nt]) tail += upk(TAIL_TOP[nt]);
@@ -209,41 +349,64 @@
       var glow = upk(AFTER_PS[ps] || AFTER_PS.gentle) + tail;
       var short = (LW ? LW.short(env, rng) : false) || R.thick >= capT, ero = LW && LW.ero(env) && HK.ThickEro, high = LW && LW.high(env), TS = HK.ThickSex;
       if (short && R.short >= capS) return fade();
-      var op0 = upk(OPEN[kind][mode]) || (info.free ? '' : upk(OPEN.lover[mode]) || upk(OPEN.home[mode]));
-      /* 攻めの台詞：始まり（始まりの文に攻めの台詞がもうあれば足さない）・途中（短い版）・事後 */
-      var rel = kind === 'first' ? 'first' : kind === 'free' ? 'casual' : 'lover';
-      var tb = { start: kind === 'first' ? TOP_FIRST : kind === 'free' ? TOP_FREE : TOP.start, after: TOP.after };
-      var tsay = function (stg, o) { return HK.EroT3 ? HK.EroT3.topSay(ctx, A, B, stg, tb, Object.assign({ rel: rel }, o || {})) : ''; };
-      var tAfter = MK('A');
-      var open = op0 ? op0 + MK('S') + (rng() < 0.75 ? upk(OPEN_PS[ps] || OPEN_PS.gentle) : '') : '';
+      var op0 = upk(OPEN[okind][mode]) || (info.free ? '' : upk(OPEN.lover[mode]) || upk(OPEN.home[mode]));
+      var s1 = tsay('start', { own: 0.85 }), s2 = tsay('after', { own: 0.85 });
+      var open = op0 ? op0 + (op0.indexOf('{a}「') < 0 ? s1 : '') + (rng() < 0.75 ? upk(OPEN_PS[ps] || OPEN_PS.gentle) : '') : '';
       if (!short && TS) {
         R.thick++; R.last[pk2] = day;
-        var after = upk(PEAK_PS[ps] || PEAK_PS.gentle) + tAfter + '\n\n' + (high && HK.ThickEro ? HK.ThickEro.again(ctx, pk, A, B, !!ero, false) + '\n\n' : '') + glow;
-        var o = { S: ctx, pick: pk, rng: rng, a: A, b: B, style: TS.style(A), after: after, again: false };
+        var after = upk(PEAK_PS[ps] || PEAK_PS.gentle) + s2 + '\n\n' + (high && HK.ThickEro ? HK.ThickEro.again(ctx, pk, A, B, !!ero, false) + '\n\n' : '') + glow;
+        var o = { S: ctx, ctx: ctx, pick: pk, rng: rng, a: A, b: B, style: TS.style(A), after: after, again: false, place: kind === 'bath' ? 'bath' : kind === 'sofa' ? 'sofa' : null, jealous: kind === 'jeal' };
         if (open) o.open = open;
         var r = ero ? HK.ThickEro.scene(o) : TS.scene(o);
-        return done('\n\n' + r.text, 3);
+        return fin(r.text);
       }
       if (!open) return fade();
-      if (ero) { R.short++; R.last[pk2] = day; var sh = HK.ThickEro.short({ S: ctx, pick: pk, a: A, b: B, open: open, again: high, after: tAfter + glow }); return done(sh.text, 2); }
-      /* 短い版：始まり → 前戯 → 攻めの途中の一言 → 繋がる・果てる → 攻めの事後の一言 → 余韻 */
-      var body, fore = pk(FORE[mode]) + MK('M');
+      if (ero) { R.short++; R.last[pk2] = day; var sh = HK.ThickEro.short({ S: ctx, ctx: ctx, pick: pk, a: A, b: B, open: open, again: high, after: s2 + glow }); return fin(sh.text); }
+      /* 短い版：始まり → 前戯 → 繋がる・果てる → 攻めの事後の一言 → 余韻 */
+      var body, fore = pk(FORE[mode]);
       if (fm && HK.FM && HK.FM.pick) { var st = HK.FF && HK.FF.styleOf ? HK.FF.styleOf(A) : 'gentle', fp = { pick: pk }; body = HK.FM.pick(fp, 'body', st) + '{b}「' + (TS ? TS.moan(pk, B, true, ctx) : '……っ') + '」' + HK.FM.pick(fp, 'climax', st); }
       else { var sb = upk(SHORT[mode === 'ff' ? 'ff' : 'mf']); if (!sb) return fade(); body = (TS ? '{b}「' + TS.moan(pk, B, false, ctx) + '」' : '') + sb; }
       R.short++; R.last[pk2] = day;
       if (high) body += ff ? upk(AGAIN_FF) : HK.ThickEro ? HK.ThickEro.again(ctx, pk, A, B, false, true) : '';
-      return done(open + fore + body + tAfter + glow, 2);
+      var line = HK.Play && HK.Play.shortLine ? HK.Play.shortLine(A, B, mode, { ctx: ctx, S: ctx }) : '';
+      return fin(open + fore + body + (line || '') + s2 + glow);
+    },
+    /* 三人の夜：{ lead, text, why, pairs, touch } か null。g は三人（互いに恋人）、opt.left は加わらなかった四人目 */
+    trio: function (ctx, g, opt) {
+      var P = HK.Pos, X3 = HK.Trio3, LW = HK.Lewd, env = ctx.env, lv = LW ? LW.lv(env) : 'mid', upk = upkOf(ctx);
+      if (HK.SAFE_ON || !P || !P.trioPlan || !X3 || !g || g.length !== 3) return null;
+      var okp = function (x, y) { return sexOk(ctx, x, y) && HK.canLove(x, y) && HK.canLove(y, x) && ctx.pair(x, y).couple; };
+      var pl = P.trioPlan(g[0], g[1], g[2], { ok: okp });
+      var touch = !(pl && pl.pairs && pl.pairs.length >= 2) && X3.touchOk && X3.touchOk(g, okp);
+      if (!(pl && pl.pairs && pl.pairs.length >= 2) && !touch) return null;
+      var sp = touch ? null : X3.shapeOf(ctx, g, pl);
+      if (!touch && !sp) return null;
+      var a = g[Math.floor(ctx.rng() * 3)], bc = g.filter(function (c) { return c !== a; });
+      var m = { a: a, b: bc[0], c: bc[1] };
+      if (sp) { m.t = sp.t; m.m = sp.m; m.u = sp.u; }
+      var lt = upk(TRIO_LEAD) + upk(TRIO_FORM[touch ? 'touch' : sp.p] || TRIO_FORM.ring), left = opt && opt.left;
+      if (left) { m.d = left; lt += upk(TRIO_LEFT[ctx.rng() < 0.5 ? 'skip' : 'watch']); }
+      var lead = { text: ctx.t(fillN(lt, m), a, bc[0], bc[1]), why: '三人の夜（' + g.map(function (c) { return c.name; }).join('・') + (left ? '。' + left.name + 'は加わらない' : '') + '）' };
+      var text, why;
+      if (touch) { text = X3.touchScene(ctx, [a, bc[0], bc[1]]); why = '三人とも攻めなので、口づけと手だけ'; }
+      else if (lv === 'low') { text = ctx.t(fillN(upk(TRIO_FADE), m), a, bc[0], bc[1]); why = 'ほのめかす'; }
+      else {
+        var short = !!(LW && LW.short && LW.short(env, ctx.rng));
+        var body = X3.quick(ctx, g, { sp: sp, plan: pl, env: env, ero: !!(LW && LW.ero && LW.ero(env)), short: short });
+        if (!body) return null;
+        text = body + '\n\n' + ctx.t(fillN(upk(TRIO_AFTER), m), a, bc[0], bc[1]);
+        why = (X3.FORM_JA && X3.FORM_JA[sp.p] || '') + '：' + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: '真ん中の' + sp.m.name + 'を挟んで', ring: '輪になって', show: sp.t.name + 'と' + sp.m.name + '、' + sp.u.name + 'は見守る' }[sp.p];
+      }
+      if (!text) return null;
+      return { lead: lead, text: text, why: '三人の夜（' + why + '）', pairs: pl ? pl.pairs : [], touch: !!touch, lewd: lv !== 'low' };
     }
   };
 
+  /* エッチの型（play-r18.js の HK.Play）：同居の部屋の小道具の選ばれやすさ（風呂上がり・甘えて・着衣のまま）と、短い場面の主な責めと体位の一文の受け口 */
+  if (HK.Play) {
+    if (HK.Play.addRoom) HK.Play.addRoom('futari', { entry: { bath: 2, amae: 1, kiss: 1 }, prop: { chakui: 1 } });
+    HK.Play.SHORT.futari = true;
+  }
   /* 描写の設定（lewd-unify.js）：描写の有無・長さ・作風 */
   if (HK.Lewd && HK.Lewd.install) HK.Lewd.install('futari', { def: 'mid', desc: '恋人どうしの夜の描き方。ほのめかす＝灯りを消したあとの一文だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
-
-  /* TIPS（R18版の追記） */
-  var T = HK.TIPS_SCEN && HK.TIPS_SCEN.futari;
-  if (T) T.r18 = [
-    '恋人どうしが一緒に眠る夜に、ときどき夜の場面が描かれます。初めての夜・恋人の夜・一緒に暮らす部屋の夜・結婚の約束のあとの夜・旅先の宿の夜で始まりが変わり、受ける側の態度で反応と余韻が変わります。',
-    '住人の「夜の性格」（サド・マゾ・意地悪・甘々・恥じらい）で、抱き方と、夜のあとの一文が変わります。受け攻めは指定どおりで、自分で攻めを選んだ人は受けになりません。',
-    '「描写の有無」「描写の長さ」「描写の作風」（小説調・男性向け）を選べます。R18に参加しない人・恋愛対象の合わない二人・恋愛やR18にしない相手は、同じ布団で眠るところまでです。'
-  ];
 })();

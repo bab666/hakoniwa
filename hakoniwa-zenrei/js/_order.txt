@@ -176,7 +176,9 @@ js/classroom-teacher-love.js @scen:classroom
 js/classroom-cheer.js @scen:classroom
 js/endings.js @pack:sim
 js/epilogue.js @pack:sim
+js/futari-text.js @scen:futari
 js/scenario-futari.js @scen:futari
+js/futari-house.js @scen:futari
 js/island-after.js @scen:island
 js/zombie-data.js
 js/zombie-core.js @scen:zombie
@@ -392,6 +394,7 @@ tone js/tone-fix-variety.js
 tone js/tone-fix-whiteroom.js
 tone js/tone-fix-yakata.js
 tone js/tone-fix-zombie.js
+tone js/tone-fix-futari.js
 tone js/tone-fix-g3.js
 tone js/tone-fix-g4.js
 tone js/tone-fix-g5.js
@@ -462,6 +465,7 @@ late js/tips-scen-a.js
 late js/tips-scen-b.js
 late js/tips-scen-c.js
 late js/tips-scen-d.js
+late js/tips-scen-futari.js
 late js/export-out.js
 late js/ui-perzoom.js
 # 出来事の一覧の画面（ボタンと窓。データは pack-catalog）

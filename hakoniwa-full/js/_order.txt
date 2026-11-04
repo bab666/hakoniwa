@@ -120,6 +120,8 @@ js/moan-engine.js @pack:lewd
 js/moan-cut.js @pack:lewd
 js/trio-talk-r18.js @pack:lewd
 js/trio-form-text-r18.js @pack:lewd
+# 軽い四人の夜（2026-11-04。条件がそろったときだけ。二人ずつの組の段を順に。今日から同居生活・追加パックから呼ぶ。HK.Quad）
+js/quad-r18.js @pack:lewd
 js/moan-mob.js @pack:lewd
 js/thick-sex.js @pack:lewd
 js/thick-sex-ero.js @pack:lewd
@@ -245,7 +247,9 @@ js/classroom-teacher-love.js @scen:classroom
 js/classroom-cheer.js @scen:classroom
 js/endings.js @pack:sim
 js/epilogue.js @pack:sim
+js/futari-text.js @scen:futari
 js/scenario-futari.js @scen:futari
+js/futari-house.js @scen:futari
 js/island-after.js @scen:island
 js/zombie-data.js
 js/zombie-core.js @scen:zombie
@@ -567,6 +571,7 @@ tone js/tone-fix-variety.js
 tone js/tone-fix-whiteroom.js
 tone js/tone-fix-yakata.js
 tone js/tone-fix-zombie.js
+tone js/tone-fix-futari.js
 tone js/tone-fix-g2-r18.js
 tone js/tone-fix-g3.js
 tone js/tone-fix-g3-r18.js
@@ -719,6 +724,7 @@ late js/tips-scen-a.js
 late js/tips-scen-b.js
 late js/tips-scen-c.js
 late js/tips-scen-d.js
+late js/tips-scen-futari.js
 late js/attr-r18.js
 late js/attr-race-r18.js
 # 前立腺・結腸・乳首・喉奥の段（共通の山場の差し込み口 raceWeave／ロッカーの racePlay を包む。attr-race-r18.js の後）
