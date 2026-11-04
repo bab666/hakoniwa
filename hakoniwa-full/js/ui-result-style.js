@@ -43,7 +43,9 @@
     '}' +
     /* 切替「結末｜経過｜関係図｜二人ずつ｜住人ごと」（スマホは横に流す） */
     /* 目次（2026-11-02 担当UI）：節は全部縦に並べ、目次は上の段の切替の下に貼り付く。押すとその節へ・いま見ている節を強調（aria-current） */
-    '.rvw .rvtabs{position:-webkit-sticky;position:sticky;top:var(--hk-stick,0px);z-index:20;display:flex;gap:2px;border-bottom:1px solid var(--rl);margin:14px 0 18px;padding-top:4px;background:var(--ui-page,var(--paper));overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.rvw .rvtabs::-webkit-scrollbar{display:none}' +
+    '.rvw .rvtabs{position:-webkit-sticky;position:sticky;top:var(--hk-stick,0px);z-index:20;display:flex;gap:2px;border-bottom:1px solid var(--rl);margin:14px 0 18px;padding-top:4px;background:var(--ui-page,var(--paper));overflow-x:auto;scrollbar-width:none}.rvw .rvtabs::-webkit-scrollbar{display:none}' +
+    /* iPhone・iPad・Mac の Safari（html.hk-webkit）：貼り付く目次を横スクロールの箱にしない（sticky の横スクロールの箱は合成の層になり、下の文が描かれないことがある。折り返して全部見せる。2026-11-04） */
+    'html.hk-webkit .rvw .rvtabs{overflow-x:visible;flex-wrap:wrap;row-gap:0}' +
     '.rvw .rvtab{appearance:none;-webkit-appearance:none;background:none;border:0;border-bottom:2px solid transparent;margin:0 0 -1px;padding:10px 16px;font:inherit;font-size:14px;color:var(--rm);white-space:nowrap;cursor:pointer;display:inline-flex;align-items:baseline;gap:6px;min-height:44px;flex:none}' +
     '.rvw .rvtab small{font-size:11.5px;color:var(--rm);font-weight:400}.rvw .rvtab:hover{color:var(--ri)}' +
     '.rvw .rvtab[aria-current="true"]{color:var(--ri);font-weight:700;border-bottom-color:var(--ri)}.rvw .rvtab:focus-visible{outline:2px solid var(--ra);outline-offset:-3px}' +

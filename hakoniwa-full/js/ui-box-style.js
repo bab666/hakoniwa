@@ -227,7 +227,7 @@
       V + ' .bxtabs{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:8px;margin:0 -16px;padding:8px 16px}' + V + ' .bxsel-a .bxgorun{display:none}' +
       V + ' .bxk .bxadn{display:none}' + V + ' .bxpick-h{flex-wrap:nowrap}' + V + ' .bxx{flex:none}' +
       V + ' .bxtabs>*{min-width:0}' +
-      V + ' .bxtl{flex-wrap:nowrap;min-width:0;gap:6px;overflow-x:auto;padding:0;background:none;border-radius:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}' +
+      V + ' .bxtl{flex-wrap:nowrap;min-width:0;gap:6px;overflow-x:auto;padding:0;background:none;border-radius:0;scrollbar-width:none}' +
       V + ' .bxtl::-webkit-scrollbar{display:none}' +
       V + ' .bxtl button{flex:0 0 auto;height:36px;padding:0 14px;border:1px solid var(--bx-line2);border-radius:18px;background:var(--bx-card);font-size:13px}' +
       V + ' .bxtl button[aria-current="true"]{border-color:var(--bx-pr);background:var(--bx-pr);color:var(--bx-pri);box-shadow:none}' +
@@ -243,7 +243,7 @@
       V + ' .bxpick-dlg{max-width:none;height:100%;max-height:none;border-radius:0;box-shadow:none}' +
       V + ' .bxpick-h{padding:max(8px,env(safe-area-inset-top,0px)) 10px 8px 16px}' +
       V + ' .bxpick-b{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr)}' +
-      V + ' .bxpick .scfilt{grid-column:1;grid-row:1;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:10px 16px 8px;border-bottom:0;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}' +
+      V + ' .bxpick .scfilt{grid-column:1;grid-row:1;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:10px 16px 8px;border-bottom:0;scrollbar-width:none;overscroll-behavior-x:contain}' +
       V + ' .bxpick .scfilt::-webkit-scrollbar{display:none}' +
       V + ' .bxpick .scfilt .chip{flex:0 0 auto;height:34px;white-space:nowrap}' +
       V + ' .bxfit{grid-column:1;grid-row:2;justify-content:flex-start;min-width:0;padding:0 16px 10px;border-bottom:1px solid var(--bx-line);white-space:nowrap}' +

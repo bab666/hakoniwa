@@ -115,3 +115,57 @@ Safari で切れる理由そのもの（回線・メモリ・アプリの切り�
 - late を読み終えたときの描き直しで位置は動かない（住人タブの位置 600 のまま）。住人タブ・箱庭タブの高さを後から変える部品は late に移していない。
 - index.html の Safari 向けの script と、中核の先頭（load.js・load-order.js・ui-guard.js）の位置と順は変えていない。中核に正規表現の後読みは足していない。
 
+
+## 7. 見えないがコピーはできる（描画の層）
+
+### 報告
+
+iPhone（iOS 16.7）の Safari。結果タブでスクロールした先の文字が見えない（白いまま）。**文字のコピーはできる**（DOM にはある）。縦横・倍率・「デスクトップ用 Web サイトを表示」でも起きる。手元の Chromium では再現しない。
+
+### 読み解き
+
+DOM にあり、選んでコピーできるのに描かれないのは、WebKit が合成（compositing）した層のタイルを描き直さない不具合の形。iOS 16 の Safari は content-visibility に対応していないので、3 の保険（WebKit で content-visibility を使わない）は元から関係がない。iOS で層を作る指定のうち、この画面にあったもの：
+
+| 指定 | 場所 | 直し方 |
+|---|---|---|
+| `-webkit-overflow-scrolling: touch`（付けた箱が独立の合成層になり、「中身が白いまま、触るまで描かれない」不具合が多数報告されている。iOS 13 以降は無くても慣性スクロールになる） | index.html 2 か所（`.tblwrap`・`.modal-box`）、`ui-result-style.js`（結果の目次 `.rvtabs`）・`ui-box-style.js` 2 か所（`.bxtl`・`.scfilt`）・`ui-modal.js`（窓・設定・箱庭を選ぶの各箱 8 つをまとめた 1 行）・`ui-gear.js`・`ui-cast-tools.js`・`ui-tagsel-pop.js`・`export-out.js` 各 1 か所。**1 ビルド 10 か所** | **全部外した**（両ビルド。grep で 0 件。`overscroll-behavior` は残す） |
+| 結果の目次 `.rvw .rvtabs` の `position:sticky` ＋ `overflow-x:auto`（sticky の横スクロールの箱は iOS で層が重なり、後ろの兄弟が描かれない例がある） | `ui-result-style.js` | `html.hk-webkit` だけ `overflow-x:visible; flex-wrap:wrap` にして横スクロールの箱にしない（幅 390 では 2 段・約 92px になり、5 つの切替が全部見えて押せる）。sticky はそのまま。目次へ移るときの位置は目次の高さを測って決める（`HK.Toc.go`）ので、2 段でも節の頭が目次の下に来る |
+| transform・will-change・backface-visibility・isolation・filter・contain・大きな fixed／opacity | index.html の `<style>` と js の css 文字列を洗い、結果タブを出した状態で `#view-result` の全要素の computed style を見た | 文の容器（`#view-result`・`.rvw`・`.rvpane`・`.rvcard`・経過の `.stepblk`・`li.ev`）には**無い**。あるのは小さな部品だけ（矢印の `rotate(45deg)`、丸札の字の `translateY(.02em)`。対象外） |
+| 大きな `overflow:auto` の箱 | 結果タブ | 文の容器には無い。あるのは関係図の箱（`#map.tray`、高さ約 350px）と、PC 幅で出る経過の目次・右の絞り込み（`.rvtoc`・`.rvrail`・`.rvlist`。sticky ＋ 自分でスクロール）。どれも本文の横・上にある小さな箱で、本文そのものは window がスクロールする。機能（目次を自分でスクロールする）を残すため変えていない |
+
+### 保険：iOS の WebKit だけの「描き直しの一押し」（`js/ui-ios-paint.js`。late）
+
+原因を WebKit 本物で確かめられないので、描き直されないタイルを描き直させる一押しを足した。
+
+- 対象：`html.hk-webkit` のとき（ui-guard.js の判定。UA・`navigator.vendor`・タッチの点数で見るので、UA が Mac になる「デスクトップ用 Web サイトを表示」も含む）。ほかのブラウザでは何もしない
+- いつ：スクロールが止まったとき（最後の scroll から 120ms）・指を離したとき（`touchend`）・ページに戻ったとき（`pageshow`・`visibilitychange`）・向き（`orientationchange`）・大きさ（`resize`。Safari のツールバーの伸び縮み）
+- 何を：いま見えているタブ（`main>section[role=tabpanel]:not([hidden])`）の中の、画面に重なっている文の容器（`.rvpane`・`.rvcard`・`.stepblk` など。48 個まで。無ければタブパネル全体）に、クラス `hk-repaint`（`outline: 1px solid transparent`）を 1 フレームだけ付けて外す。outline は大きさも位置も変えず層も作らないので、レイアウトを変えずに、その箱の範囲を描き直させる（transform・opacity・will-change は層を作るので使わない）
+- 1 秒に 1 回まで。指で触っているあいだは待ち、離したら当てる
+- 記録：効いたかは JS から読めないので、不具合の記録の控え（直前の欄）に `paint：描き直しの一押し（きっかけ・か所の数）` を**最初の 1 回だけ**残す。記録の頭の画面の行に `・WebKit・描き直しの一押し：有効`（late を読む前なら「未読込」）が出る
+
+### 確かめたこと（Chromium。WebKit 本物は無い）
+
+Playwright（Chromium。iPhone 相当＝幅 390・iOS 16.7 の UA・isMobile・hasTouch、PC＝幅 1280）。出られない部屋（既定の住人 10 人）を回して結果タブを下までスクロールした（作業用 `probe.js`）：
+
+| 見たこと | iPhone 相当（390） | PC（1280） |
+|---|---|---|
+| `html.hk-webkit`・一押しが有効 | 付く・有効 | 付かない・無効（一押し 0 回） |
+| 結果のページの高さ → 下端までのスクロール | 9193px → 8529（下端）まで | 6713px → 5813（下端）まで |
+| 位置の後戻り（50px 超）・ページの例外 | 0・0 | 0・0 |
+| スクロール中の一押しの回数（1 秒に 1 回まで） | 13 回（19 秒） | 0 |
+| 一押しのあと `.hk-repaint` が残った数 | 0（2 フレームで外れる） | 0 |
+| 一押しの前後でページの高さ・位置 | 変わらない | （対象外） |
+| タブパネル全体（高さ約 8600px）に付け外しした時間 | 30ms（2 フレーム）、付けた直後のレイアウト 13ms | 18ms |
+| computed style の `-webkit-overflow-scrolling` | 0 個 | 0 個 |
+| 文の容器の transform・will-change・filter・contain | 0（あるのは字の丸札・矢印の小さな部品だけ） | 0（同じ） |
+| 結果の目次 `.rvtabs` | 折り返し（`overflow-x:visible`・`flex-wrap:wrap`）・2 段 92px・5 つ全部見える | 横流しのまま（48px）・5 つ全部見える |
+| 目次の 5 つを押して節へ | 全部、節の頭が目次の下 10px・押した札が強調 | 同じ |
+| 不具合の記録の頭 | `画面：390x664・縦・倍率 3・WebKit・描き直しの一押し：有効` | WebKit の表示なし |
+
+（ページのエラーとして出たのは、試しのサーバで外したパスワードの画面の 404 と外のフォントの取得失敗だけ）
+
+### 利用者に確かめてもらうこと
+
+1. ページを読み込み直して、結果タブで長い結果（出られない部屋の 8 人など）を下までスクロールする
+2. 文字が白いまま残るかを見る。残ったら、その場で少し指で動かして、描かれるかも見る
+3. 右上の「表示」→「不具合の記録」→「コピー」で記録を貼ってもらう。**頭の「画面：」の行に `WebKit・描き直しの一押し：有効` が出ていること**、記録の「直前」に `paint：描き直しの一押し` の行があることで、保険が当たっているかが分かる（記録が無いときは、頭の行だけでよい）
