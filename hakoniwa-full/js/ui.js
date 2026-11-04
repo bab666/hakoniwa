@@ -1322,7 +1322,7 @@
       histKeep(h, res);
     }
     if (onRes) onRes(res);
-    setTab('result');
+    setTab('result', false, !!record);   /* 回したとき（record）は位置を動かさず、下の toTop に一本化（タブの頭と先頭へ向きの違うスクロールが 2 本出ないように） */
     /* 箱庭を動かしたら、結果の頭（画面のいちばん上）から読めるように。スマホ・Safari ではシード欄のキーボードの収納や
        描き終わる前のずれで途中に飛ぶので、フォーカスを外し、すぐ・次のフレーム・少し後にも念を押して上へ戻す */
     if (record) {
@@ -1422,6 +1422,7 @@
   }
 
   function run(newSeed) {
+    if (HK.Guard && HK.Guard.act) HK.Guard.act();   /* 利用者の操作で始まった処理（その結果のスクロールは「操作から」） */
     var J = joined(S.scenId);
     var mn = smin(S.scenId);
     if (J.length < mn) { toast(mn === 1 ? '挑戦する住人を1人選んでください' : '参加する住人を' + mn + '人以上選んでください'); return; }
@@ -1436,6 +1437,7 @@
     var why = sc && typeof sc.check === 'function' ? sc.check(input) : '';
     if (why) { toast(why); return; }
     simulate(input, true);
+    if (HK.Guard && HK.Guard.act) HK.Guard.act(true);
   }
 
   function renderResult() {
