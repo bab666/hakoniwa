@@ -3,9 +3,10 @@
    利用者の指示（2026-11-04）：4P は条件がそろっているときだけ、軽く。受けの人数で描写を切り替え、攻めは受ける側にしない。攻めどうしだけでまぐわう流れは出さない。
      短いものは、きっかけの段のあと 2〜3 文でさっぱり済ませる。長くても二人ずつの組に分けた段を順に出す形にして、複雑な体位は書かない。
      「八本の腕が絡み合い」のように四人であることを無駄に主張する文は書かない。
-   ■ HK.Quad.ok(ctx, ids)：ids は 4 人の番号。全組（6 組）が HK.Pos.okSex・HK.canLove（両方向）・恋愛と R18 の制限（R18に参加しない・恋愛やR18にしない相手・
-       性行為の相手の固定・性欲「なし」・家族・無関心・恐怖）を満たし、かつ全組が恋人・夫婦・セフレなど体の関係のある関係（ctx.pair(x,y).couple／関係の種類）なら真。
-       受けかリバが 1 人以上いること（攻めだけなら偽）
+   ■ HK.Quad.ok(ctx, ids)：ids は 4 人の番号。受けを中心にした付き合いの輪が完成していれば真（2026-11-04 の利用者の指示）：全組（6 組）が同じ場にいてよく
+       （R18に参加しない・恋愛やR18にしない相手・性欲「なし」・家族・無関心・恐怖でない）、性的に対象になる組（HK.Pos.okSex・HK.canLove（両方向）・性行為の相手の固定）は
+       すべて恋人・夫婦・セフレなど体の関係のある関係（ctx.pair(x,y).couple／関係の種類）。攻め同士・受け同士など対象にならない組は恋人でなくてよい。
+       受けかリバが 1 人以上いて、繋がる組（plan の段）がどれも体の関係のある組で組めること。HK.Quad.ringOk(ctx, g) は同じ判定を何人にでも（三人の夜の条件にも使う）
    ■ HK.Quad.split(ctx, ids)：{ bottoms, tops, revs }（四人の中で、HK.Pos.order で全員に対して攻め＝攻め、全員に対して受け＝受け、ほか＝リバ）
    ■ HK.Quad.scene(ctx, ids, opt)：きっかけの段（opt.lead の文。無ければ汎用。記録の一件、e.tag＝'きっかけ'）と場面（記録の一件、sex・trioPairs＝実際に繋がる組）を積む。
        opt.len：'short'（2〜3 文でさっぱり）／'long'（二人ずつの組の段を順に。各段は HK.SexFlow.fix で段の管理に通す）。opt.why（理由の頭）・opt.fx・opt.leadWhy。
@@ -24,24 +25,55 @@
   var Q = HK.Quad = {};
   var BODY = /^(lover|spouse|mate|fated|fiance|fwb|mistress)$/;
 
-  /* ---------- 条件 ---------- */
-  function pairOk(ctx, a, b) {
+  /* ---------- 条件 ----------
+     2026-11-04（利用者の指示・不具合リスト 1104 の NO 9）：「全員恋人」は、受けを中心にした付き合いの輪が完成していれば成立とする。
+     ・四人のどの組も「同じ場にいてよい」（hardOk：R18に参加しない・家族・無関心・恐怖・恋愛やR18にしない相手・性欲「なし」でない）
+     ・性的に対象になる組（wantOk：HK.Pos.okSex と HK.canLove（両方向）・性行為の相手の固定）は、すべて恋人・夫婦・セフレなど体の関係のある関係
+     ・攻め同士・受け同士のように性的に対象にならない組は、恋人でなくてよい（友情・ライバルなどでよい。攻め同士に恋愛の出来事は起こさない）
+     ・繋がる組（plan の各段）は、どれも体の関係のある組（pairOk）で、四人とも少なくとも一つの段に入る */
+  function hardOk(ctx, a, b) {
     if (HK.SAFE_ON || !a || !b || a === b || a.alive === false || b.alive === false) return false;
     if (a.noR18 || b.noR18) return false;
     if (ctx.pair(a, b).kin) return false;
     if (HK.Ties && HK.Ties.apathy && (HK.Ties.apathy(ctx, a, b) || HK.Ties.apathy(ctx, b, a))) return false;
-    if (HK.State && HK.State.pairSex && !HK.State.pairSex(a, b)) return false;
-    if (!HK.Pos || !HK.Pos.okSex || !HK.Pos.okSex(a, b)) return false;
-    if (HK.Pos.libNone && HK.Pos.libNone([a, b])) return false;
-    if (!HK.canLove || !HK.canLove(a, b) || !HK.canLove(b, a)) return false;
-    if ((HK.sexBlocked && HK.sexBlocked(a, b)) || (HK.ngSexPair && HK.ngSexPair(a, b)) || (HK.ngPair && HK.ngPair(a, b))) return false;
+    /* その場にいて、R18に参加してよい人（HK.State.pairSex は受け攻めの組も見るので、ここでは本人ごとに見る。組は wantOk・pairOk で見る） */
+    var St = HK.State;
+    if (St && St.here && (!St.here(a) || !St.here(b))) return false;
+    if (St && St.r18ok && (!St.r18ok(a) || !St.r18ok(b))) return false;
+    if (HK.Pos && HK.Pos.libNone && HK.Pos.libNone([a, b])) return false;
+    /* 設定の「恋愛・R18にしない相手」・無関心・恐怖（noSex）の組は同じ場に置かない。恋愛相手の固定の食い違い・同じ人の恋人どうし（coNG）は、
+       繋がらないだけで同じ場にいてよい（受けを中心にした輪の攻めどうし） */
+    if ((HK.ngExplicit && HK.ngExplicit(a, b)) || (HK.noSexPair && HK.noSexPair(a, b))) return false;
     if (HK.fearHeld && (HK.fearHeld(ctx, a, b) || HK.fearHeld(ctx, b, a)) && !(HK.tieBodyOK && HK.tieBodyOK(ctx, a, b))) return false;
+    if (ctx.R && (ctx.R(a, b).ten >= 60 || ctx.R(b, a).ten >= 60)) return false;
+    return true;
+  }
+  /* 性的に対象になる組（恋愛対象・受け攻め・恋愛相手の固定・性行為の相手の固定） */
+  function wantOk(ctx, a, b) {
+    if (!HK.Pos || !HK.Pos.okSex || !HK.Pos.okSex(a, b)) return false;
+    if (!HK.canLove || !HK.canLove(a, b) || !HK.canLove(b, a)) return false;
+    if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
     if (HK.Avoid && HK.Avoid.topOk && !HK.Avoid.topOk(ctx, a, b) && !HK.Avoid.topOk(ctx, b, a)) return false;
-    /* 体の関係のある関係：恋人の印か、恋人・夫婦・セフレなどの関係 */
+    return true;
+  }
+  function bodyTie(ctx, a, b) {
     if (ctx.pair(a, b).couple) return true;
     var ts = HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, a, b) || [] : [];
     return ts.some(function (t) { return BODY.test(t.type) && t.cold !== 'separated' && t.cold !== 'divorced'; });
   }
+  /* 繋がってよい組：同じ場にいてよく、性的に対象で、体の関係のある関係 */
+  function pairOk(ctx, a, b) { return hardOk(ctx, a, b) && wantOk(ctx, a, b) && (!HK.State || !HK.State.pairSex || HK.State.pairSex(a, b)) && bodyTie(ctx, a, b); }
+  Q.hardOk = hardOk; Q.wantOk = wantOk; Q.bodyTie = bodyTie; Q.pairOk = pairOk;
+  /* 輪が完成しているか（g は何人でも）：全組が hardOk、性的に対象になる組はすべて体の関係、体の関係の組が人数−1 以上 */
+  Q.ringOk = function (ctx, g) {
+    var n = 0;
+    for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) {
+      if (!hardOk(ctx, g[i], g[j])) return false;
+      if (wantOk(ctx, g[i], g[j])) { if (!bodyTie(ctx, g[i], g[j])) return false; n++; }
+    }
+    /* 体の関係の組が人数−2 以上（四人なら、恋人どうしが二組で並ぶ「二組に分かれて」も含む。誰も置いていかない組み分けは plan が見る） */
+    return n >= g.length - 2;
+  };
   function chars(ctx, ids) { return (ids || []).map(function (i) { return typeof i === 'number' ? ctx.chars[i] : i; }); }
   function order(a, b) { var o = HK.Pos && HK.Pos.order ? HK.Pos.order(a, b, [a, b]) : [a, b]; return o && o[0] && o[1] ? o : [a, b]; }
   Q.split = function (ctx, ids) {
@@ -55,20 +87,24 @@
   Q.ok = function (ctx, ids) {
     var g = chars(ctx, ids);
     if (HK.SAFE_ON || g.length !== 4 || g.some(function (c) { return !c; })) return false;
-    for (var i = 0; i < 4; i++) for (var j = i + 1; j < 4; j++) if (!pairOk(ctx, g[i], g[j])) return false;
+    if (!Q.ringOk(ctx, g)) return false;
     var sp = Q.split(ctx, g);
-    return sp.bottoms.length + sp.revs.length >= 1;
+    if (sp.bottoms.length + sp.revs.length < 1) return false;
+    return !!plan(ctx, g);
   };
   /* 組（攻め→受けの向き）の並び。one／three は三組を順に、two／mix は二組 */
   function plan(ctx, g) {
     var sp = Q.split(ctx, g), B = sp.bottoms, T = sp.tops;
-    if (B.length === 1 && T.length === 3) return { kind: 'one', u: B[0], segs: T.map(function (t) { return [t, B[0]]; }) };
-    if (T.length === 1 && B.length === 3) return { kind: 'three', t: T[0], segs: B.map(function (b) { return [T[0], b]; }) };
+    var segOk = function (p) { return pairOk(ctx, p[0], p[1]); };
+    if (B.length === 1 && T.length === 3) { var s1 = T.map(function (t) { return [t, B[0]]; }); return s1.every(segOk) ? { kind: 'one', u: B[0], segs: s1 } : null; }
+    if (T.length === 1 && B.length === 3) { var s3 = B.map(function (b) { return [T[0], b]; }); return s3.every(segOk) ? { kind: 'three', t: T[0], segs: s3 } : null; }
     /* 二組に分ける：三通りの分け方のうち、恋人どうしの組が多いもの（同じなら最初） */
     var M = [[[g[0], g[1]], [g[2], g[3]]], [[g[0], g[2]], [g[1], g[3]]], [[g[0], g[3]], [g[1], g[2]]]], best = null, bv = -1;
     M.forEach(function (m) {
       /* 攻めどうしの組は作らない */
       if (m.some(function (p) { return T.indexOf(p[0]) >= 0 && T.indexOf(p[1]) >= 0; })) return;
+      /* どちらの組も、繋がってよい組（体の関係のある、性的に対象の組）だけ */
+      if (!m.every(function (p) { return pairOk(ctx, p[0], p[1]); })) return;
       var v = m.filter(function (p) { return ctx.pair(p[0], p[1]).couple; }).length;
       if (v > bv) { bv = v; best = m; }
     });
@@ -117,9 +153,9 @@
     polite: '{b}は乱れた襟元を直しながら、小さく頭を下げた。|{b}は息を整えてから、{a}に「……ありがとう｜……ありがとう｜……ありがとうございました」と囁いた。'
   });
   /* 短い版（2〜3 文。きっかけの段のあと） */
-  var SHORT = L('その夜、四人は一つの布団で朝を迎えた。灯りが消えたあとのことは、四人だけが知っている。|明かりが落ちると、部屋には四人分の息づかいだけが残った。翌朝、誰も昨夜のことを口にしなかったが、朝食の席はいつもより少しだけ静かだった。|それから先のことは、四人だけの秘密になった。翌朝、四人はそろって少し寝坊した。');
+  var SHORT = L('四人は、居間の明かりを一つずつ落とした。最後の明かりが消えたあとのことは、誰も口にしなかった。翌朝の食卓は、いつもよりにぎやかだった。|その夜、四人の部屋の扉は、朝まで開かなかった。翌朝、四人は少し寝坊して、そろって同じ時間に台所に立った。|灯りを落とした部屋に、四人分の小さな笑い声と、ひそめた息づかいが満ちた。夜明け前、誰かが毛布をかけ直して、四人はそのまま眠った。|その夜、四人は一つの布団で朝を迎えた。灯りが消えたあとのことは、四人だけが知っている。|明かりが落ちると、部屋には四人分の息づかいだけが残った。翌朝、誰も昨夜のことを口にしなかったが、朝食の席はいつもより少しだけ静かだった。|それから先のことは、四人だけの秘密になった。翌朝、四人はそろって少し寝坊した。');
   /* 長い版の締め（1〜2 文） */
-  var END = L('夜が更けるころには、四人とも布団の上で眠りに落ちていた。|明け方、誰かが掛け布団をかけ直す気配がした。四人は、そのまま朝まで眠った。');
+  var END = L('朝の光が差し込むころ、四人は誰からともなく目を覚まして、照れくさそうに笑い合った。|最後に明かりを消したのが誰だったのか、翌朝、誰も覚えていなかった。四人は同じ毛布の端を握ったまま眠っていた。|夜が更けるころには、四人とも布団の上で眠りに落ちていた。|明け方、誰かが掛け布団をかけ直す気配がした。四人は、そのまま朝まで眠った。');
 
   /* ======================= 組み立て ======================= */
   function pickOf(ctx) { return function (arr) { return arr && arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : ''; }; }

@@ -251,6 +251,7 @@ js/epilogue.js @pack:sim
 js/futari-text.js @scen:futari
 js/scenario-futari.js @scen:futari
 js/futari-house.js @scen:futari
+js/futari-life.js @scen:futari
 js/island-after.js @scen:island
 js/zombie-data.js
 js/zombie-core.js @scen:zombie
@@ -525,6 +526,7 @@ js/kiss-text.js @pack:lewd
 js/kiss-text2.js @pack:lewd
 js/kiss.js @pack:lewd
 js/futari-r18.js @scen:futari
+js/futari-r18-more.js @scen:futari
 js/reset.js
 js/voice-seg.js
 js/voice-fp.js
