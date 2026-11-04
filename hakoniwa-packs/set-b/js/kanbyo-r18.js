@@ -17,6 +17,13 @@
 /* @event scen=set-b-kanbyo id=kb_long_ase cat=romance tie=- tags=night label=汗を拭くうちに手が止まらなくなる夜 */
 /* @event scen=set-b-kanbyo id=kb_long_koori cat=romance tie=- tags=night label=氷枕を替える夜に熱い額へ口づけて */
 /* @event scen=set-b-kanbyo id=kb_long_shouko cat=romance tie=- tags=night label=元気になった証拠を見せる看病のお礼の夜 */
+/* @event scen=set-b-kanbyo id=kb_ill_kusuri cat=romance tie=- tags=night label=薬を口移しで飲ませるうちに求め合う夜 */
+/* @event scen=set-b-kanbyo id=kb_ill_samuke cat=romance tie=- tags=night label=寒気に震える体を肌で温めるうちに */
+/* @event scen=set-b-kanbyo id=kb_ill_taion cat=romance tie=- tags=night label=額を合わせて熱を測るうちに唇が触れる夜 */
+/* @event scen=set-b-kanbyo id=kb_well_momo cat=romance tie=- tags=night label=桃の缶詰を食べさせ合ううちに始まる夜 */
+/* @event scen=set-b-kanbyo id=kb_well_doraiya cat=romance tie=- tags=night label=風呂上がりの髪を乾かすうちに始まる夜 */
+/* @event scen=set-b-kanbyo id=kb_well_gokko cat=romance tie=- tags=night label=今度は私が看る番と看病ごっこから始まる夜 */
+/* @event scen=set-b-kanbyo id=kb_well_yume cat=romance tie=- tags=night label=熱の夜に見た夢の話から始まる夜 */
 /* @event scen=set-b-kanbyo id=kb_form_fade cat=romance tie=- tags=night label=夜の場面・ほのめかす（暗転と翌朝） */
 /* @event scen=set-b-kanbyo id=kb_form_short cat=romance tie=- tags=night label=夜の場面・短い場面（治ったあとの内容） */
 /* @event scen=set-b-kanbyo id=kb_form_mid cat=romance tie=- tags=night label=夜の場面・中くらいの場面（反応と山場） */
@@ -94,6 +101,118 @@
     S.entries = S.entries || {}; S.entries['long_' + key] = (S.entries['long_' + key] || 0) + 1;
     return true;
   }
+
+  /* ---------- 看病ならではの入り方・最中の一幕・終わり方（2026-11-04 不具合リスト 1104 の 11「共通部品以外のエロを一定量」。文は kanbyo-r18-text-b.js）----------
+     入り方：熱のある夜 3（kusuri・samuke・taion。KR.ill の候補に足す）／治ったあとの夜 4（momo・doraiya・gokko・yume。KR.night が 45% で使う）。どれもきっかけの段つき
+     最中の一幕：短い・中くらいの場面は挿入の前の段に、長い場面は始まりの段のあとに一つ差す（一回の遊びで同じ一幕は一度）
+     終わり方：短い・中くらいの場面は事後の段を替え、長い場面は事後に渡す（一回の遊びで同じ終わり方は一度） */
+  var NEW_NAME = { kusuri: '薬を口移しで飲ませるうちに', samuke: '寒気に震える体を肌で温めるうちに', taion: '額を合わせて熱を測るうちに', momo: '桃の缶詰を食べさせ合ううちに', doraiya: '風呂上がりの髪を乾かすうちに', gokko: '今度は私が看る番と看病ごっこから', yume: '熱の夜に見た夢の話から' };
+  KR.NEW = NEW_NAME;
+  function pT(ctx, arr, a, b) { return KB.pickT(ctx, arr, a, b, true); }
+  function attT(ctx, tbl, x, y) { tbl = tbl || {}; return pT(ctx, tbl[PR.att(x, y)] || tbl.gentle, x, y); }
+  function unused(ctx, tag, keys) { var U = ctx.kb.used; return keys.filter(function (k) { return !U[tag + k]; }); }
+  /* 最中の一幕の段（名前を当てた文）：p＝熱のある人・治った人、q＝看る人 */
+  function beatText(ctx, a, b, sh, p, q, ill) {
+    var BT = TX().BEAT || {}, keys = unused(ctx, 'beat:', Object.keys(BT).filter(function (k) { var w = BT[k].when; return w === 'both' || w === (ill ? 'ill' : 'well'); }));
+    if (!keys.length) return '';
+    var k = keys[Math.floor(ctx.rng() * keys.length)], B0 = BT[k];
+    var ev = pT(ctx, B0.ev, p, q), re = attT(ctx, B0.re, p, q), co = pT(ctx, B0[sh], a, b);
+    if (!ev || !co) return '';
+    ctx.kb.used['beat:' + k] = 1;
+    return K.fill(ctx, ev + (re || ''), p, q) + K.fill(ctx, co, a, b);
+  }
+  /* 終わり方の段（名前を当てた文） */
+  function endText(ctx, a, b, sh, p, q, not) {
+    var KE = TX().KEND || {}, keys = unused(ctx, 'kend:', Object.keys(KE).filter(function (k) { return k !== not; }));
+    if (!keys.length) return '';
+    var k = keys[Math.floor(ctx.rng() * keys.length)], E0 = KE[k];
+    var co = pT(ctx, E0[sh], a, b), ev = pT(ctx, E0.ev, p, q), re = attT(ctx, E0.re, p, q);
+    if (!co || !ev) return '';
+    ctx.kb.used['kend:' + k] = 1;
+    return K.fill(ctx, co, a, b) + K.fill(ctx, ev + (re || ''), p, q);
+  }
+  /* 段落の頭の一文のあと（短い場面＝挿入より前）か、一つ目の段落のあと（中くらい＝受けの反応のあと）に段を差す */
+  function afterFirst(text, ins, form) {
+    if (!ins) return text;
+    var P = String(text).split('\n\n');
+    if (form === 'mid' && P.length > 1) { P.splice(1, 0, ins); return P.join('\n\n'); }
+    var t = P[0], d = 0;
+    for (var k = 0; k < t.length; k++) { var c = t.charAt(k); if (c === '「') d++; else if (c === '」') d = Math.max(0, d - 1); else if (!d && c === '。' && k < t.length - 1) { P[0] = t.slice(0, k + 1) + '\n\n' + ins + '\n\n' + t.slice(k + 1); return P.join('\n\n'); } }
+    P.splice(0, 0, ins);
+    return P.join('\n\n');
+  }
+  /* 入り方の本文の雛形（{a}{b} のまま）の最後の一文（つながる文）の前で段落を分け、そこに最中の一幕を差す */
+  function withBeat(t, bt) {
+    t = String(t || ''); var d = 0, pos = -1;
+    for (var k = 0; k < t.length - 1; k++) { var c = t.charAt(k); if (c === '「') d++; else if (c === '」') d = Math.max(0, d - 1); else if (!d && c === '。') pos = k + 1; }
+    if (pos < 0) return bt ? bt + '\n\n' + t : t;
+    return t.slice(0, pos) + '\n\n' + (bt ? bt + '\n\n' : '') + t.slice(pos);
+  }
+  /* 短い・中くらいの場面に、最中の一幕（pb の確率）と終わり方（pe の確率。最後の段落＝事後を替える）を入れる */
+  function spice(ctx, text, form, a, b, sh, p, q, ill, pb, pe, notEnd) {
+    if (form !== 'short' && form !== 'mid') return text;
+    if (ctx.rng() < pb) text = afterFirst(text, beatText(ctx, a, b, sh, p, q, ill), form);
+    if (ctx.rng() < pe) { var en = endText(ctx, a, b, sh, p, q, notEnd); if (en) { var P = text.split('\n\n'); if (P.length > 1) { P[P.length - 1] = en; text = P.join('\n\n'); } } }
+    return text;
+  }
+  /* 入り方の場面：key＝入り方、ill＝熱のある夜か、x＝言い出す人、p＝熱のある人・治った人、q＝看る人、entry＝治ったあとの夜の入口（ill のときは null） */
+  function newScene(ctx, key, a, b, sh, ill, x, y, p, q, entry, last) {
+    var S = ctx.kb, env = ctx.env, T = TX(), NE = (T.NEW || {})[key], LV = HK.Lewd;
+    if (!NE) return false;
+    /* 1. きっかけ（入り方の地の文＋言い出す人の態度9種の一言。治ったあとの夜は相手の応え） */
+    var lt = pT(ctx, NE.lead, x, y) + (attT(ctx, NE.feel, x, y) || '') + (ill ? '' : (attT(ctx, T.FANS, y, x) || ''));
+    var le = lead(ctx, x, y, K.fill(ctx, lt, x, y), NEW_NAME[key] + '・' + x.name + 'から', ill ? '熱のある夜' : ENTRY[entry]);
+    /* 2. 場面：熱のある夜は短い〜中くらい、治ったあとの夜は共通の長さの決め方 */
+    var lv = LV ? LV.lv(env) : 'mid', ero = !!(LV && LV.ero(env) && HK.ThickEro), nogen = !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b));
+    var form = ill ? (lv === 'low' ? 'fade' : env.lewdLen === 'short' || ctx.rng() < 0.5 ? 'short' : 'mid') : PR.formOf(ctx, S, env, lv, nogen, last);
+    if (form === 'mid' && nogen) form = 'short';
+    if (form === 'long' && (!NE.open || !HK.ThickSex)) form = 'mid';
+    var text, pk = function (arr) { return pickOf(ctx, arr); };
+    CUR = ctx;
+    if (form === 'long') {
+      var open = K.mark(pT(ctx, NE.open[sh], a, b)), bt = beatText(ctx, a, b, sh, p, q, ill), en = endText(ctx, a, b, sh, p, q, key === 'momo' ? 'yashoku' : '');
+      if (bt) open += '\n\n' + bt;
+      var again = lv === 'high' && HK.ThickEro ? HK.ThickEro.again(ctx, pk, a, b, ero, false) + '\n\n' : '';
+      var aft = again + (en || K.mark(pickOf(ctx, T.AFTER[0].all)));
+      var st = HK.ThickSex.style(a);
+      var rr = ero ? HK.ThickEro.scene({ S: ctx, pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: aft, jealous: false, leadB: x === b })
+        : HK.ThickSex.scene({ pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: aft, ctx: ctx, jealous: false, leadB: x === b });
+      text = dedupe(ctx.t(rr.text, a, b));
+    } else {
+      var base = ill ? SRC_ILL : SRC, bt0 = ctx.rng() < 0.75 ? beatText(ctx, a, b, sh, p, q, ill) : '', row = {};
+      /* 雛形には目印（〔一幕〕）だけを差し、名前を当てたあとで一幕の段に置き換える（一幕の台詞に雛形の話し手の印が付かないように） */
+      ['mf', 'ff', 'fm'].forEach(function (k) { row[k] = (NE.play[k] || []).map(function (t) { return withBeat(t, bt0 ? '〔一幕〕' : ''); }); });
+      var SRC_N = { TX: function () { var t0 = base.TX(); return { PLAY: [row], AFTER: t0.AFTER || T.AFTER, BOTTOM: t0.BOTTOM, TOP: t0.TOP }; }, MO: base.MO, R: ill ? { BOTTOM: T.ILL_BOTTOM_ROWS, TOP: T.ILL_TOP_ROWS } : { BOTTOM: T.BOTTOM_ROWS, TOP: T.TOP_ROWS }, ok: base.ok };
+      var full = PR.scene(ctx, S, env, a, b, sh, form, { lv: ill ? (lv === 'low' ? 'low' : 'mid') : lv, ero: ero, nogen: nogen, pi: 0, afi: ill ? 1 : 0, jealTop: false, leadB: x === b, entry: x === b ? 'ini' : key, resume: false }, SRC_N);
+      form = full.form;
+      /* 最中の一幕が本文に入らなかった（男性向けの短い場面・性器なしの組は本文の部品が替わる）ときは、段落の頭のあとに差す */
+      if (bt0 && full.text.indexOf('〔一幕〕') >= 0) full.text = full.text.replace('〔一幕〕', full.form === 'fade' ? '' : bt0).replace(/\n\n\n\n/g, '\n\n');
+      else if (bt0 && full.form !== 'fade') full.text = afterFirst(full.text, bt0, form);
+      text = full.form === 'fade' ? full.text : spice(ctx, full.text, form, a, b, sh, p, q, ill, 0, 1, key === 'momo' ? 'yashoku' : '');
+      text = dedupe(text);
+      remember(ctx, text, [T.OPEN, T.FADE, T.ILL_FADE]);
+    }
+    var e = ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: text, why: '看病の部屋：' + (ill ? '熱のある夜' : '夜') + '（' + FORM[form] + '・' + NEW_NAME[key] + '）', sex: true, lewd: form !== 'fade',
+      fx: function () { ctx.mod2(a, b, { aff: 4, att: 6 }, { aff: 4, att: 6 }); } });
+    if (!e) { drop(ctx, le); return false; }
+    S.used['new:' + key] = 1;
+    if (form === 'long') S.longN = (S.longN || 0) + 1;
+    S.forms = S.forms || {}; S.forms[form] = (S.forms[form] || 0) + 1;
+    S.entries = S.entries || {}; S.entries[(ill ? 'ill_' : 'well_') + key] = (S.entries[(ill ? 'ill_' : 'well_') + key] || 0) + 1;
+    if (ill) S.illEntry = key;
+    return true;
+  }
+  /* 治ったあとの夜の入り方を選ぶ（使っていないもの。言い出す人が相手を避けていれば入れ替え、両方なら使わない）。使えなければ null */
+  function newWell(ctx, entry, a, b, sh, last) {
+    var S = ctx.kb, A = S.A, B = S.B, AV = HK.Avoid, NE = TX().NEW || {};
+    var h = entry === 'back' ? A : B, q = h === A ? B : A;
+    var keys = unused(ctx, 'new:', Object.keys(NE).filter(function (k) { return NE[k].well; }));
+    if (!keys.length) return null;
+    var key = keys[Math.floor(ctx.rng() * keys.length)], xk = NE[key].x;
+    var x = xk === 'healed' ? h : xk === 'carer' ? q : (ctx.rng() < 0.5 ? h : q), y = x === h ? q : h;
+    if (AV && AV.of && AV.of(ctx, x, y)) { if (AV.of(ctx, y, x) || xk !== 'any') return null; var sw = x; x = y; y = sw; }
+    return newScene(ctx, key, a, b, sh, false, x, y, h, q, entry, last);
+  }
   var ILL = { osoi: '熱に浮かされて受けから', soine: '心細くて一緒に寝るうちに', yukkuri: '体を気づかってゆっくり', rise: '看る側の理性が揺らいで', kuchi: '今日はここまでと口や手だけで', jii: '別室でひとりで', jiinext: '今日もするのかと腕を掴まれて' };
   KR.ILL = ILL;
   KR.ill = function (ctx, day, last) {
@@ -110,11 +229,14 @@
     var W = [['yukkuri', 1.2], ['soine', /devoted|gentle|shy|free/.test(PR.att(B, A)) ? 1.1 : 0.6]];
     if (b === B && ld !== 'top' && !(P && P.hardTop && P.hardTop(b, a))) W.push(['osoi', /sasoi|osoi/.test(ld) ? 1.4 : /free|proud|devoted/.test(bt) ? 0.8 : 0.4]);
     W.push(['kuchi', 1], ['jii', 0.8]);
+    /* 看病ならではの入り方（2026-11-04）：薬を口移し・額で熱を測る（看る人から）、寒気を肌で温める（熱のある人が頼む） */
+    unused(ctx, 'new:', ['kusuri', 'samuke', 'taion']).forEach(function (k) { W.push([k, 1]); });
     /* 専用の長い場面（受けが看病される人で、熱の下がってきた日か軽い風邪） */
     if (b === B && (day.st === 'fall' || S.sev === 'light') && !(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b))) W.push(['mizu', 1.2], ['ase', 1.2], ['koori', 1.2]);
     if (a === A) W.push(['rise', /sadist|mean/.test(kd) ? 1.4 : /proud|free|cool/.test(tp) ? 1 : 0.7]);
     var entry = HK.weighted(ctx.rng, W, function (x) { return x[1]; })[0];
     if (entry === 'mizu' || entry === 'ase' || entry === 'koori') return longScene(ctx, entry, a, b, sh, A, B, last);
+    if (entry === 'kusuri' || entry === 'taion' || entry === 'samuke') { var xn = entry === 'samuke' ? B : A, yn = xn === A ? B : A; if (AV && AV.of && AV.of(ctx, xn, yn)) return false; return newScene(ctx, entry, a, b, sh, true, xn, yn, B, A, null, last); }
     if (entry === 'kuchi') return kuchi(ctx, day, a, b, sh);
     if (entry === 'jii') return jii(ctx, day, a, b, sh);
     /* 1. きっかけ：x＝言い出す人（osoi・soine は看病される人、rise は攻め、yukkuri は看る人） */
@@ -136,7 +258,7 @@
     var pi = T.PLAY_ROWS.length - (entry === 'yukkuri' ? 2 : 1);
     CUR = ctx;
     var full = PR.scene(ctx, S, env, a, b, sh, form, { lv: lv === 'low' ? 'low' : 'mid', ero: entry === 'yukkuri' ? false : ero, nogen: nogen, pi: pi, afi: 1, jealTop: entry === 'rise', leadB: entry === 'osoi', entry: entry === 'osoi' ? 'ini' : entry, resume: false }, SRC_ILL);
-    full.text = dedupe(full.text);
+    full.text = dedupe(spice(ctx, full.text, full.form, a, b, sh, B, A, true, 0.5, 0.4, ''));
     remember(ctx, full.text, [T.OPEN, T.FADE, T.ILL_FADE]);
     var e = ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: full.text, why: '看病の部屋：熱のある夜（' + FORM[full.form] + '・' + ILL[entry] + '）', sex: true, lewd: full.form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 3, att: 5 }, { aff: 3, att: 5 }); } });
@@ -259,6 +381,8 @@
     if (ctx.rng() > p) return false;
     /* 治った日の夜は 35% で専用の長い場面「元気になった証拠を見せる」（言い出すのは治った人） */
     if (entry === 'heal' && !(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b)) && ctx.rng() < 0.35) { var AVx = HK.Avoid, xb = B, yb = A; if (AVx && AVx.of && AVx.of(ctx, B, A)) { xb = A; yb = B; } return longScene(ctx, 'shouko', a, b, sh, xb, yb, last); }
+    /* 看病ならではの入り方（2026-11-04）：45% で、桃の缶詰・風呂上がりの髪・看病ごっこ・熱の夜の夢 */
+    if (ctx.rng() < 0.45) { var nw = newWell(ctx, entry, a, b, sh, last); if (nw != null) return nw; }
     /* 1. きっかけ：言い出す人（{x}）。治った日・デート・甘い夜は看病された人（B）が多く、うつって治った夜は看病し返された人（A） */
     var x = entry === 'back' ? (ctx.rng() < 0.7 ? A : B) : entry === 'amai' ? (ctx.rng() < 0.5 ? A : B) : (ctx.rng() < 0.7 ? B : A), y = x === A ? B : A;
     /* 言い出す人が相手を避けていれば、相手を言い出す人にする（両方なら起こさない） */
@@ -282,7 +406,7 @@
     var full = PR.scene(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: pi, afi: 0, jealTop: false, leadB: x === b, entry: entry, resume: false }, SRC);
     form = full.form;
     /* 一つの場面の中で同じ文（12 字以上）を二度出さない（本体の部品を重ねたときの重なりを、あとの方から外す） */
-    full.text = dedupe(full.text);
+    full.text = dedupe(spice(ctx, full.text, form, a, b, sh, entry === 'back' ? A : B, entry === 'back' ? B : A, false, 0.45, 0.4, ''));
     remember(ctx, full.text, [T.OPEN, T.FADE, T.ILL_FADE]);
     var e = ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: full.text, why: '看病の部屋：夜（' + FORM[form] + '・' + ENTRY[entry] + '）', sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });

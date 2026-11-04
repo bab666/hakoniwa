@@ -48,7 +48,15 @@
   function RC() { return HK.PairReact; }
   function f(ctx) { return ctx.kb; }
   function pickOf(ctx, arr) { return arr && arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : ''; }
-  function fill(ctx, t, a, b, ex) { return K.fill(ctx, t, a, b, ex); }
+  function fill(ctx, t, a, b, ex) { return famWord(ctx, K.fill(ctx, t, a, b, ex)); }
+  /* 血縁の二人（親子・きょうだい・親戚）は、文の「家族」を血縁の言い方にする（2026-11-04 利用者の指示「親子は親子のまま、血縁＋様子で表す」）。
+     「AとBは（遠慮のいらない）家族だ」「家族の看病の数日」「家族として」「家族に」だけを置き換え、「家族の〇〇は」のような人を指す言い方はそのまま */
+  function famWord(ctx, t) {
+    var S = ctx && ctx.kb, w = S && S.famW;
+    if (!w || typeof t !== 'string') return t;
+    return t.replace(/(は|、)(遠慮のいらない|仲のいい|気心の知れた)?家族だ/g, function (m, p1, p2) { return p1 + (p2 || '') + w + 'だ'; })
+      .replace(/家族の看病/g, w + 'の看病').replace(/家族として/g, w + 'として').replace(/家族どうし/g, w + 'どうし');
+  }
   var ROM = K.ROM, WED = K.WED;
   /* 恋人どうしを前提にした語（恋愛にならない二人・恋人でない二人には出さない） */
   var COUPLE_RE = /(?<!元)恋人|付き合って(?:いる|る)|彼氏|彼女/;
@@ -150,10 +158,13 @@
   function sickNight(S, d) { var st = stageOf(S, d); return st === 'rise' || st === 'peak' || st === 'fall' || kStage(S, d) === 'ksick'; }
 
   /* ---------- 立場・おまかせ ---------- */
-  function partOf(input, i) { var p = input && input.perChar && input.perChar[i]; return p && p.pick ? p.pick.part : null; }
+  function partOf(input, i) { var p = input && input.perChar && input.perChar[i], v = p && p.pick ? p.pick.part : null; return /^(carer|patient|guest)$/.test(v) ? v : null; }
+  /* 目標の欄を選んでいる人（看病する側・される側の二人に先に入れる） */
+  function goalSet(input, i) { var p = input && input.perChar && input.perChar[i], k = p && p.pick; return !!(k && ((k.sgoal && k.sgoal !== 'auto') || (k.lgoal && k.lgoal !== 'auto'))); }
   /* 二人（看病する側・される側）：立場で選んだ人を先に、ほかは上から（三人目は見舞いに来る側） */
   function couple(C, input) {
     var ok = C.filter(function (c) { var p = partOf(input, c.i); return p === 'carer' || p === 'patient'; }).slice(0, 2);
+    C.forEach(function (c) { if (ok.length < 2 && ok.indexOf(c) < 0 && partOf(input, c.i) !== 'guest' && goalSet(input, c.i)) ok.push(c); });
     C.forEach(function (c) { if (ok.length < 2 && ok.indexOf(c) < 0 && partOf(input, c.i) !== 'guest') ok.push(c); });
     C.forEach(function (c) { if (ok.length < 2 && ok.indexOf(c) < 0) ok.push(c); });
     return ok.slice(0, 2);
@@ -187,17 +198,66 @@
     ongaeshi: { b: 'over', e: 2 }, tayorare: { b: 'over', e: 3 }, mamoru_l: { b: 'over', e: 4 }, taitou: { b: 'hide', e: -3 }, kashi: { b: '', e: -4 },
     konomama: { b: '', e: -8 }, chikaku: { b: 'amae', e: 10 }, tsutaetai: { b: '', e: 12 }, orei_l: { b: '', e: 3 }, kawaritai: { b: 'amae', e: 4 }
   };
+  /* ---------- 利用者が選ぶ目標（住人ごとの欄「短期目標」「長期目標」。2026-11-04 不具合リスト 1104 の 4）----------
+     選べるのは種（GS・GL）ごと。文は、その人の態度の目標の文に同じ種があればそれ、なければ関係のまとめ・ほかの態度の文から。
+     立場の決まった種（看る側だけ・看られる側だけ）を選び、立場が「おまかせ」なら、その立場にする。立場をはっきり選んでいて合わないときは、近い種に置き換える（MAP） */
+  var GOAL_OPT = {
+    s: [
+      ['c', 'noshippai', '一度も失敗せずに看病しきる'], ['c', 'tekipaki', '段取りどおりに治させる'], ['c', 'mamoru', '無理だけはさせない'], ['c', 'sobani', 'そばを離れずに看る'],
+      ['c', 'amayakasu', 'とことん甘やかす'], ['c', 'yowane', '弱音や本当の具合を聞き出す'], ['c', 'kakusu', '心配していると顔に出さない'],
+      ['p', 'misenai', '弱っているところを見せない'], ['p', 'karinashi', '借りを作らずに治る'], ['p', 'hayaku', '一日でも早く治す'], ['p', 'meiwaku', '心配や迷惑をかけない'],
+      ['p', 'orei', 'ちゃんとお礼を言う'], ['p', 'sobanite', 'そばにいてもらう'], ['p', 'amaetai', 'ここぞとばかりに甘える']
+    ],
+    l: [
+      ['b', 'chikaku', 'もっと近くにいたい'], ['b', 'tsutaetai', '治ったら気持ちを伝える'], ['b', 'taitou', '借りを返して対等になる'], ['b', 'konomama', 'この距離のままでいる'],
+      ['c', 'ongaeshi', 'いつもの恩を返す'], ['c', 'tayorare', 'もっと頼られる人になる'], ['c', 'mamoru_l', 'これからもそばで支える'], ['c', 'kashi', '貸しを一つ作っておく'],
+      ['p', 'orei_l', '世話になった分を返していく'], ['p', 'kawaritai', 'もっと素直に頼れるようになる']
+    ]
+  };
+  var GOAL_GRP = { c: '看病する側の目標', p: '看病される側の目標', b: 'どちらの立場でも' };
+  /* 立場に合わない種を選んでいたときの置き換え（看る側⇔看られる側） */
+  var GOAL_MAP = {
+    noshippai: 'meiwaku', tekipaki: 'hayaku', mamoru: 'meiwaku', sobani: 'sobanite', amayakasu: 'amaetai', yowane: 'sobanite', kakusu: 'misenai',
+    misenai: 'kakusu', karinashi: 'noshippai', hayaku: 'tekipaki', meiwaku: 'mamoru', orei: 'amayakasu', sobanite: 'sobani', amaetai: 'amayakasu',
+    ongaeshi: 'orei_l', tayorare: 'kawaritai', mamoru_l: 'orei_l', kashi: 'taitou', orei_l: 'ongaeshi', kawaritai: 'tayorare'
+  };
+  function goalOpts(kind) { return GOAL_OPT[kind].map(function (o) { return { id: o[1], label: o[2], group: GOAL_GRP[o[0]] }; }); }
+  function goalSideOf(kind, k) { var o = GOAL_OPT[kind].filter(function (x) { return x[1] === k; })[0]; return o ? o[0] : ''; }
+  /* その人が欄で選んだ目標の種（知らない値・古い記録の値はおまかせ扱い） */
+  function goalPick(ctx, c, kind) { var v = pickOfChar(ctx, c, kind === 's' ? 'sgoal' : 'lgoal'); return v && goalSideOf(kind, v) ? v : ''; }
+  /* 選んだ目標から決まる立場（看る側 'carer'／看られる側 'patient'。短期を先に見る） */
+  function goalPart(ctx, c) {
+    var s = goalPick(ctx, c, 's'), l = goalPick(ctx, c, 'l'), x = (s && goalSideOf('s', s)) || (l && goalSideOf('l', l)) || '';
+    return x === 'c' ? 'carer' : x === 'p' ? 'patient' : null;
+  }
   function goalOf(ctx, c, side, kind) {
     var S = f(ctx), T0 = TX(), G = kind === 's' ? T0.GOAL_S || {} : T0.GOAL_L || {}, GR = kind === 's' ? T0.GOAL_SR || {} : T0.GOAL_LR || {}, p = per(c);
     var base = ((G[side] || {})[p] || (G[side] || {}).gentle || []), rel = ((GR[side] || {})[S.feud ? 'feud' : S.grp] || []).filter(function (g) { return S.love || !ROM.test(g.t); });
+    /* 利用者が選んだ目標：必ずその種にする（立場に合わない種は近い種に置き換える） */
+    var want = goalPick(ctx, c, kind);
+    if (want) {
+      var ws = goalSideOf(kind, want), sd = side === 'carer' ? 'c' : 'p';
+      if (ws !== 'b' && ws !== sd && GOAL_MAP[want]) want = GOAL_MAP[want];
+      var of = function (list) { return (list || []).filter(function (g) { return g.k === want; }); };
+      /* その人の態度に同じ種が無ければ、同じ立場のほかの態度の文から（関係のまとめは、その二人の関係のものだけ） */
+      var all = [];
+      Object.keys(G[side] || {}).forEach(function (k) { all = all.concat(of(G[side][k])); });
+      var own = of(base).concat(of(rel));
+      /* 恋愛にならない二人には、恋愛の語の入った文を避ける（種はそのまま） */
+      var pool = own.length ? own : all, nr = pool.filter(function (g) { return S.love || !ROM.test(g.t); });
+      if (nr.length) pool = nr;
+      var lab = (GOAL_OPT[kind].filter(function (x) { return x[1] === want; })[0] || [])[2];
+      var g0 = pool.length ? pool[Math.floor(ctx.rng() * pool.length)] : { t: lab || '', k: want };
+      return { t: g0.t, k: want, user: true };
+    }
     /* 恋愛にならない二人には、気持ちを伝える・近づく類いの長期の目標を出さない */
     if (kind === 'l' && !S.love) { base = base.filter(function (g) { return !/^(chikaku|tsutaetai)$/.test(g.k); }); rel = rel.filter(function (g) { return !/^(chikaku|tsutaetai)$/.test(g.k); }); }
     var list = rel.length && ctx.rng() < 0.45 ? rel : base;
     if (!list.length) list = base;
     return list.length ? list[Math.floor(ctx.rng() * list.length)] : null;
   }
-  /* 名簿の目標の欄（おまかせ）に、この部屋の短期・長期の目標を出す */
-  function goalLabel(c, gs, gl) { if (!c.goal || c.goal.id === 'kb') c.goal = { id: 'kb', label: '短期「' + (gs ? gs.t : '') + '」／長期「' + (gl ? gl.t : '') + '」' }; }
+  /* 結果の「目標」の欄に、この部屋の短期・長期の目標を出す（本体の最初の行動・目標の欄は使わない。初動の行は出さない） */
+  function goalLabel(c, gs, gl) { c.goal = { id: 'kb', label: '短期「' + (gs ? gs.t : '') + '」' + (gs && gs.user ? '（選んだ目標）' : '') + '／長期「' + (gl ? gl.t : '') + '」' + (gl && gl.user ? '（選んだ目標）' : '') }; }
   /* 長期の目標の判定：二人の好意・惹かれの動き（始まりから）を基本に、結末と出来事で決める */
   function longJudge(ctx, who, g) {
     var S = f(ctx), o = who === S.A ? S.B : S.A, r = ctx.rel[who.i][o.i], r0 = S.rel0 && S.rel0[who.i] || 0;
@@ -224,8 +284,11 @@
     else { var hd = (t.cp || 0.5) * 0.5 + (1 - (t.honesty || 0.5)) * 0.4, am = (t.ac || 0.5) * 0.5 + (t.np || 0.5) * 0.3; base = hd > am + 0.15 ? 'hide' : am > hd + 0.15 ? 'amae' : base; }
     /* 目標が行動を後押しする（恩返し・甘やかしたい→世話を焼きすぎる、見せたくない→強がる、甘えたい→甘える） */
     var gs = side === 'carer' ? f(ctx).gsA : f(ctx).gsB, gl = side === 'carer' ? f(ctx).glA : f(ctx).glB, gb = (gs && GS[gs.k] && GS[gs.k].b) || (gl && GL[gl.k] && GL[gl.k].b);
-    if (gb && ctx.rng() < 0.55) base = gb;
-    var odd = RC() && ctx.rng() < RC().pOdd(ctx);
+    var gu = (gs && gs.user && GS[gs.k] && GS[gs.k].b) || (gl && gl.user && GL[gl.k] && GL[gl.k].b);
+    if (gu) gb = gu;
+    if (gb && (gu || ctx.rng() < 0.55)) base = gb;
+    /* 利用者が選んだ目標の後押しは、らしくない揺らぎで入れ替えない（選んだ目標どおりに動く） */
+    var odd = !gu && RC() && ctx.rng() < RC().pOdd(ctx);
     var opp = { over: 'clumsy', clumsy: 'over', hide: 'amae', amae: 'hide' };
     return { k: odd ? opp[base] : base, odd: !!odd };
   }
@@ -250,7 +313,7 @@
   var scen = {
     id: ID, name: '看病の部屋', kicker: 'ふたり・看病',
     desc: 'どちらかが体調を崩し、もう一人が看病する数日を、朝・日中・夜ごとに眺める。熱は上がって、いちばん高い夜を越え、やがて下がる。世話を焼きすぎたり、強がったり、甘えたり――同じ看病でも、二人の関係と性格で中身が変わる。治ったあとは、恋人になったり、お礼のデートに出かけたり、今度はうつった相手を看病し返したり。',
-    note: '※参加は3人まで。二人の関係は、住人の関係の設定のまま使います（家族など恋愛にならない関係でも遊べます。そのときは恋愛の結末が出ません）。看病する側・される側は住人ごとの「立場」で選べます。三人目は見舞いに来る側です。登場人物はすべて成人として扱います。',
+    note: '※参加は3人まで。二人の関係は、住人の関係の設定のまま使います（家族など恋愛にならない関係でも遊べます。そのときは恋愛の結末が出ません）。看病する側・される側は住人ごとの「立場」で選べます。三人目は見舞いに来る側です。「短期目標」（この看病の間に何をしたいか）と「長期目標」（看病を通して二人の先に何を望むか）も住人ごとに選べ、選んだ目標のとおりに動きます（おまかせは立場と性格から。看病する側・される側の目標を選び、立場がおまかせなら、その立場になります。立場と合わない目標は、近い目標に置き換えます）。登場人物はすべて成人として扱います。',
     unit: '日', perUnit: 3, preRel: 0, lethal: false, minCast: 2, maxCast: 3,
     catBias: { romance: 1, bond: 1.2, help: 1.2, conflict: 0.2, combat: 0, betray: 0, kill: 0 },
     decay: 0.998, actRate: 0.15,
@@ -269,11 +332,14 @@
       { id: 'part', label: '立場', auto: 'おまかせ（性格・仕事の型から。上の二人が看病する側とされる側）', options: [{ id: 'carer', label: '看病する側' }, { id: 'patient', label: '看病される側（体調を崩す）' }, { id: 'guest', label: '見舞いに来る側' }] },
       { id: 'work', label: '仕事の型', auto: 'おまかせ（気質から）', options: LF.WORK.map(function (w) { return { id: w.v, label: w.label }; }) },
       { id: 'job', label: '職業', type: 'text', placeholder: function () { return '例：営業、看護師（空欄でもよい）'; } },
-      { id: 'role', label: '家事の得意さ', auto: 'おまかせ（気質から）', options: LF.ROLE.map(function (r) { return { id: r.v, label: r.label }; }) }
+      { id: 'role', label: '家事の得意さ', auto: 'おまかせ（気質から）', options: LF.ROLE.map(function (r) { return { id: r.v, label: r.label }; }) },
+      { id: 'sgoal', label: '短期目標', auto: 'おまかせ（立場と性格から）', groups: true, options: goalOpts('s') },
+      { id: 'lgoal', label: '長期目標', auto: 'おまかせ（立場と性格から）', groups: true, options: goalOpts('l') }
     ],
-    actions: [{ id: 'live', label: 'いつもどおりに過ごす', fit: function () { return 0.5; } }],
-    /* 目標は立場（看る側・看られる側）と態度9種・関係から、始まりのときに決める（kanbyo-text-d.js の GOAL。この欄は「おまかせ」用） */
-    goals: [{ id: 'kb', label: '立場と性格から決める', fit: function () { return 0.5; } }],
+    /* 最初の行動・本体の目標の欄は使わない（選べるものが一つしかなく意味がないため、欄ごと出さない。2026-11-04 不具合リスト 1104 の 4）。
+       目標は住人ごとの欄「短期目標」「長期目標」（perFields の sgoal・lgoal）で選ぶ。結果の目標の行は goalLabel が書く */
+    actions: [],
+    goals: [],
     stepGroup: function (label) { var m = /^(DAY\d+（.）)(.+)$/.exec(label); return m ? { group: m[1], sub: m[2] } : null; },
     steps: function (env) {
       var n = Math.max(3, Math.min(7, +env.days || 5)), s = [];
@@ -306,11 +372,17 @@
     });
     /* 看病する側（A）・される側（B） */
     var px = partOf(ctx.input, X.i), py = partOf(ctx.input, Y.i), A, B;
+    /* 立場が「おまかせ」で、立場の決まった目標を選んでいれば、その立場にする（二人とも同じ側を選んでいたら、上の人を先に） */
+    var fixed = function (v) { return v === 'carer' || v === 'patient'; };
+    if (!fixed(px) && !fixed(py)) { px = goalPart(ctx, X); if (!px) { var gy = goalPart(ctx, Y); if (gy) px = gy === 'carer' ? 'patient' : 'carer'; } }
     if (px === 'patient' || py === 'carer') { A = Y; B = X; }
     else if (px === 'carer' || py === 'patient') { A = X; B = Y; }
     else { var sx = sickScore(X) + careScore(Y), sy = sickScore(Y) + careScore(X); if (ctx.rng() < sx / (sx + sy)) { B = X; A = Y; } else { B = Y; A = X; } }
     var rk = relKind(ctx, A, B);
-    var S = ctx.kb = { days: days, A: A, B: B, G: C.filter(function (c) { return c !== A && c !== B; }), rk: rk, grp: RK_GRP[rk], used: {},
+    /* 血縁の言い方（親子・きょうだい・親戚）：名簿の関係から（家族の文の置き換えに使う） */
+    var famW = '';
+    if (rk === 'fam') (HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, A, B) || [] : []).forEach(function (t) { if (!t || famW) return; famW = t.type === 'parent' ? '親子' : /^(sibling|sibprot|sibclose|sibbad|twin|stepsib)$/.test(t.type) ? 'きょうだい' : t.type === 'relative' ? '親戚' : ''; });
+    var S = ctx.kb = { famW: famW, days: days, A: A, B: B, G: C.filter(function (c) { return c !== A && c !== B; }), rk: rk, grp: RK_GRP[rk], used: {},
       sev: /^(light|mid|heavy)$/.test(env.sev) ? env.sev : 'mid', cont: /^(low|mid|high)$/.test(env.cont) ? env.cont : 'mid',
       love: canLove2(ctx, A, B) && !/^(fam|pfam)$/.test(rk), couple: /^(spouse|lover)$/.test(rk), sex: 0, lewdMax: 0, visits: 0, cares: 0, behs: 0, odd: 0, endK: null, confessed: false, dated: false };
     /* 本体の恋愛の可否（恋愛相手の固定など）も見る */
@@ -325,6 +397,8 @@
     S.cnt = {};
     S.gsA = goalOf(ctx, A, 'carer', 's'); S.glA = goalOf(ctx, A, 'carer', 'l'); S.gsB = goalOf(ctx, B, 'patient', 's'); S.glB = goalOf(ctx, B, 'patient', 'l');
     goalLabel(A, S.gsA, S.glA); goalLabel(B, S.gsB, S.glB);
+    /* 本体の最初の行動・目標の欄（この部屋は空）：結果に初動の行を出さず、見舞いに来る側の目標の行も出さない。おまかせの一文（初動は…）も出さない */
+    C.forEach(function (c) { if (!c.action) c.action = { id: 'live', label: '' }; if (!c.goal) c.goal = { id: 'kb', label: '' }; c.autoAction = false; c.autoGoal = false; });
     S.cb = behOf(ctx, A, 'carer'); S.pb = behOf(ctx, B, 'patient');
     /* 同居していない：看る人が来られる日（熱がいちばん高い日は 75%、治った日はいつも来る。来られない山場は電話越しの弱音） */
     S.come = {};
