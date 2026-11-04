@@ -183,8 +183,10 @@
     var D = S.days, sev = S.sev, r = ctx.rng();
     var p = sev === 'light' ? (r < 0.5 ? 0 : 1) : sev === 'heavy' ? (D >= 5 ? (r < 0.5 ? 1 : 2) : 1) : (D >= 6 && r < 0.3 ? 2 : 1);
     p = Math.max(0, Math.min(p, D - 2));
-    var fl = sev === 'light' ? 0 : sev === 'heavy' ? 1 + (ctx.rng() < 0.5 ? 1 : 0) : (ctx.rng() < 0.5 ? 1 : 0);
+    var fl = sev === 'light' ? 0 : sev === 'heavy' ? 1 + (ctx.rng() < 0.5 ? 1 : 0) : (ctx.rng() < 0.75 ? 1 : 0);
     var h = p + 1 + fl, cap = D >= 4 ? D - 2 : D - 1;
+    /* 日数が短い（3・4 日）ときも、熱が出るなら「熱が下がってきた日」を一日置けるように、いちばん高い日を初日にする（2026-11-04 熱のある夜の割合） */
+    if (fl > 0 && p + 2 > cap && cap >= 2) { p = cap - 2; h = cap; }
     if (h > cap) h = Math.max(p + 1, cap);
     S.peak = p; S.heal = h;
   }
@@ -389,7 +391,7 @@
     finish: function (ctx) { finish(ctx); },
     events: []
   };
-  if (!HK.SAFE_BUILD) scen.env.push({ id: 'lewdN', label: 'エッチの回数（R18）', type: 'select', def: 'high', options: [{ v: 'none', label: 'なし' }, { v: 'low', label: '1回まで' }, { v: 'high', label: '2回まで（一度は長い場面）' }], desc: 'エッチの場面の回数の上限（体の関係にしてよい二人だけ）。多くは治ったあとに起きるが、治る前の熱のある夜にも、看る人が来ている夜にまれに起こりうる（寝込むほど重いときの熱がいちばん高い夜は無し。翌日は熱がぶり返したり、看る人にうつりやすくなったりする）。2回までなら、最後のエッチは段落を分けた長い場面になる（描写の長さが「数行で短く」のときを除く）' });
+  if (!HK.SAFE_BUILD) scen.env.push({ id: 'lewdN', label: 'エッチの回数（R18）', type: 'select', def: 'mid', options: [{ v: 'none', label: 'なし' }, { v: 'low', label: '少なめ（1回まで）' }, { v: 'mid', label: 'ふつう（2回まで）' }, { v: 'high', label: '多め（3回まで・一度は長い場面）' }], desc: 'エッチの場面の回数の上限（体の関係にしてよい二人だけ）。多くは治ったあとに起きるが、恋人どうし・体の関係・両片想いの二人は、熱が下がってきた夜（看る人が来ている夜）にも起こりうる（一回の遊びで起きるのは、少なめで 1 割ほど・ふつうで 3 割ほど・多めで半分ほど。熱が上がっていく日・いちばん高い日には無し。翌日は熱がぶり返したり、看る人にうつりやすくなったりする）。多めなら、最後のエッチは段落を分けた長い場面になる（描写の長さが「数行で短く」のときを除く）' });
   /* 本体の共通の出来事から外すもの：体の関係の出来事（夜は kanbyo-r18.js がきっかけの段を付けて出す）・合意のない展開・三人以上の恋愛・告白（この部屋の結末で扱う）など */
   var EX_ID = /^(?:confess|take_charge|brood|lighten|mob_after|tie_spouse|grp_|poly_|ct_|cf_)/;
   function exList() { return (HK.COMMON || []).filter(function (e) { return e.sex || e.force || EX_ID.test(e.id); }).map(function (e) { return e.id; }); }
@@ -660,8 +662,14 @@
        恋人どうし（夫婦・恋人）・体の関係（セフレ）・両片想いの二人だけ（恋愛の流れの無い二人に、熱のある夜の場面を先に出さない）。2026-11-04 報告 */
     if (day.st !== 'fall') return false;
     if (!(S.couple0 || S.fwb || S.rk === 'almost')) return false;
-    /* 治る分の夜を残す（2回までのとき、治ったあとにも起きる余地を残す） */
-    if (S.lewdMax < 2 && ctx.rng() < 0.5) return false;
+    /* 起こりやすさ（2026-11-04 利用者「2% は少なすぎる。30% かな」）：一回の遊びで起きる割合を回数の設定ごとに決め、
+       その遊びの「看る人が来ている熱の下がってきた夜」の数で割り振る（日数が短くても長くても、条件を満たす夜があれば同じくらい起きる）。
+       少なめ 21%・ふつう 42%・多め 88%（恋人どうし。ほかの二人は 0.8 倍。性欲で上下）。熱の下がる日の無い遊び（軽い風邪など）があるので、遊び全体ではおよそ 12%・30%・50% */
+    if (S.illN == null) { S.illN = 0; for (var fd = 0; fd < S.days; fd++) if (stageOf(S, fd) === 'fall' && S.come[fd]) S.illN++; }
+    var P = HK.Pos, pg = ({ low: 0.21, mid: 0.42, high: 0.88 }[ctx.env.lewdN] || 0) * (S.couple0 ? 1 : 0.8) * (P && P.libMul ? Math.min(1.3, P.libMul([S.A, S.B])) : 1);
+    var pn = 1 - Math.pow(1 - Math.min(0.95, pg), 1 / Math.max(1, S.illN - (S.illTry || 0)));
+    S.illTry = (S.illTry || 0) + 1;
+    if (ctx.rng() > pn) return false;
     var r = HK.KanbyoR18.ill(ctx, day, last);
     if (r) { S.sex++; S.illSex = true; if (S.illEntry !== 'jii') S.sickSexDay = day.d; }
     return r;
@@ -670,7 +678,9 @@
   function afterIll(ctx, day) {
     var S = f(ctx), A = S.A, B = S.B, Tx = TX();
     /* 治った日の朝はぶり返さない（「ぶり返した」の直後に「すっかり下がっていた」にならないように） */
-    var rel = day.d < S.heal && day.st !== 'heal' ? relapse(ctx, day, 0.5) : false;
+    /* 次の日が治る日のまま動かせないとき（日数の上限・うつる日が決まっている）もぶり返さない（「ぶり返した」の翌朝に「すっかり下がった」にならないように） */
+    var capR = S.days >= 4 ? S.days - 2 : S.days - 1, canR = day.d + 1 < S.heal || (!S.kaeshi && S.heal + 1 <= capR);
+    var rel = day.d < S.heal && day.st !== 'heal' && canR ? relapse(ctx, day, 0.5) : false;
     if (!S.kaeshi && S.heal <= S.days - 3 && ctx.rng() < { low: 0.2, mid: 0.35, high: 0.55 }[S.cont]) { var len = ctx.rng() < 0.5 ? 1 : 2; S.kaeshi = { from: S.heal + 1, heal: S.heal + 1 + len }; S.kaeshiBy = 'near'; S.endK = null; }
     var t = pickT(ctx, rel ? Tx.ILL_AFTER_RE : Tx.ILL_AFTER, A, B);
     if (t) ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, t, A, B), why: '看病の部屋：夜のあとの朝' + (rel ? '（熱がぶり返した）' : '') });
@@ -901,6 +911,8 @@
     if (!S.couple0 && !S.fwb) {
       if (S.confessDay === day.d) return false;
       if (!S.confessed) {
+        /* 恋愛にしない二人（お礼のデートの夜が無い）は、治った日の夜に近づく段を出してよい（その夜はしない。日数 5 日では治ったあとの夜が最後の夜だけになり、近づく段のあとの夜が無かったため。2026-11-04） */
+        if (day.d === S.heal && !S.love && S.nearDay == null) nearBeat(ctx, day);
         if (day.d <= S.heal) return false;
         if (S.nearDay == null) { nearBeat(ctx, day); return false; }
         if (S.nearDay >= day.d) return false;
@@ -914,7 +926,8 @@
   function nearBeat(ctx, day) {
     var S = f(ctx), A = S.A, B = S.B, KR = HK.KanbyoR18, PR = HK.PairR18, P = HK.Pos;
     if (!PR || !PR.sexOk(ctx, A, B) || (P && P.okSex && !P.okSex(A, B))) return;
-    if (ctx.rng() > 0.6) return;
+    /* 恋愛にしない二人（恋愛：なし など）はお礼のデートの夜が無いので、近づく段を出やすく（性的な出来事の門：恋愛の有無で起きにくくしすぎない。2026-11-04） */
+    if (ctx.rng() > (S.love ? 0.6 : 0.9)) return;
     var t = relPick(ctx, TX().NEAR || {}, A, B);
     if (!t) return;
     var e = ctx.act2({ actors: [A, B], cat: rcat(ctx, A, B), text: fill(ctx, t, A, B), why: '看病の部屋：治ったあとの夜、二人の距離が近づいた', fx: function () { ctx.mod2(A, B, { aff: 2, att: 4 }, { aff: 2, att: 4 }); } });
