@@ -590,7 +590,7 @@
       '<button type="button" role="menuitem" data-act="iconpick">' + MI.icon + 'アイコンを' + (c.icon ? '変える' : '設定する') + '</button>' +
       (c.icon ? '<button type="button" role="menuitem" data-act="icondel">' + MI.icon + 'アイコンを外す</button>' : '') +
       '<button type="button" role="menuitem" data-act="mvup">' + MI.up + '並び順を一つ上へ</button>' +
-      '<button type="button" role="menuitem" data-act="mvdown">' + MI.down + '並び順を一つ下へ</button>' +
+      '<button type="button" role="menuitem" data-act="mvdown">' + MI.down + '並び順を一つ下へ</button><button type="button" role="menuitem" data-act="gearbasic" title="グループ・タグ・メモ・エゴグラムの数値を設定の窓で決めます">' + MI.dup + 'グループ・メモ・エゴグラム</button>' +
       '<hr><button type="button" role="menuitem" class="danger" data-act="del" data-ask="1">' + MI.del + '削除する…</button></div>';
     var tw = HK.egoToneWord ? HK.egoToneWord(c) : '';
     return '<div class="res" data-id="' + c.id + '">' +
@@ -601,7 +601,7 @@
       '<div class="codeline"><input type="text" class="code" id="cd-' + c.id + '" data-f="code" value="' + HK.toCode(c.eg) + '" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="5文字コード（CP NP A FC AC）" title="5文字コード（CP NP A FC AC の順に A〜D）">' +
       (HK.egoTypeName ? '<span class="egatt egname" title="エゴグラムから見た性格の型。「設定」の「この住人の傾向」に説明があります">' + esc(HK.egoTypeName(c)) + '</span>' : '') +
       '<span class="ty" title="' + esc(HK.egoType(c.eg).label) + '">' + esc(HK.egoType(c.eg).label) + '</span></div>' +
-      '<div class="rsub">' + esc(tw.replace(/^口調：/, '')) + (tw ? '・' : '') + esc(rowSex(c)) + '</div></div></div>' +
+      '<div class="rsub">' + (c.group ? '<span class="rsgrp">' + esc(grpList(c).join('・')) + '</span>' : '') + esc(tw.replace(/^口調：/, '')) + (tw ? '・' : '') + esc(rowSex(c)) + '</div></div></div>' +
       '<div class="ego" role="group" aria-label="' + nm + 'のエゴグラム（0〜20）">' + HK.FACTORS.map(function (k) {
         return '<label title="' + esc(HK.FACTOR_FULL[k]) + '（押すと書き換えられます）"><span class="egk">' + k + '</span><input type="number" id="eg-' + c.id + '-' + k + '" inputmode="decimal" min="0" max="20" step="1" data-f="eg" data-k="' + k + '" value="' + c.eg[k] + '"></label>';
       }).join('') + '</div>' +
@@ -1294,12 +1294,12 @@
         (scen.stats || []).map(function (x) { return '<span class="bxu" title="' + esc(x.desc) + '">' + esc(x.label) + '</span>'; }).join('') + (scen.weapons ? '<span class="bxu">支給武器</span>' : '');
     }
     var adultNote = !HK.SAFE_ON && !/成人として扱/.test(ci.snote) ? '<span class="bxadn">' + ADULT_NOTE + '</span>' : '';
-    return '<section class="bxsel" aria-label="選んだ箱庭"><div class="bxsel-m">' +
+    var mo = !!(HK.MobileUI && HK.MobileUI.selOpen); return '<section class="bxsel' + (mo ? ' bxopen' : '') + '" aria-label="選んだ箱庭"><div class="bxsel-m">' +
       '<div class="bxk"><span>' + esc(ci.kt) + '</span><span>' + ci.cnt + '</span>' + adultNote + '</div>' +
       '<h2 class="bxsel-n">' + esc(s.name) + (ci.adult ? '<span class="r18tag">R18</span>' : '') + (busy ? scLoadBadge(id) : '') + '</h2>' +
       '<p class="bxsel-d">' + esc(ci.cl) + '</p>' + (ci.snote ? '<div class="note">' + esc(ci.snote) + '</div>' : '') + ci.minor + (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') +
       (uses ? '<div class="bxuses"><span class="bxuses-h">効く気質' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</span>' + uses + '</div>' : '') +
-      '</div><div class="bxsel-a"><button type="button" class="bxbtn bxgorun" data-act="run">' + ICON_PLAY + '<span>箱庭を動かす</span></button><button type="button" class="bxbtn bxchg" data-act="pickopen" aria-haspopup="dialog">' + ICON_GRID + '<span><span class="bxlong">箱庭を</span>変える</span></button>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</div></section>';
+      '</div><div class="bxsel-a"><button type="button" class="bxbtn bxgorun" data-act="run">' + ICON_PLAY + '<span>箱庭を動かす</span></button><button type="button" class="bxbtn bxchg" data-act="pickopen" aria-haspopup="dialog">' + ICON_GRID + '<span><span class="bxlong">箱庭を</span>変える</span></button><button type="button" class="bxbtn bxmore" data-act="bxselmore" aria-expanded="' + mo + '">' + (mo ? '説明を閉じる' : '説明・TIPS') + '</button>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</div></section>';
   }
   /* 2. 箱庭を選ぶの窓（見本 06）の右：選んでいる（まだ決めていない）箱庭の説明 */
   function pickSide(id) {

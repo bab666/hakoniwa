@@ -21,6 +21,7 @@
 @chunk pack-roomkit deps=pack-rel
 js/load.js
 js/load-order.js
+js/ui-guard.js
 js/scenarios-init.js
 js/core.js
 js/ego-desc.js
@@ -439,3 +440,7 @@ late js/event-catalog-ui.js
 late js/pack-crypto.js
 late js/packs.js
 late js/packs-ui.js
+# スマホでも PC と同じことができるように：住人の設定の窓の「グループ・メモ」の節（2026-11-04）
+late js/ui-gear-basic.js
+# 右上の「表示」のメニューの「不具合の記録」の窓（記録は中核の ui-guard.js）
+late js/ui-guard-view.js

@@ -286,6 +286,8 @@
         '<label title="酒の強さ。合コン・出られない部屋の酒・オメガバースの飲みの場面・邪神村の歓迎の宴や御神酒などで、酔いやすさや振る舞いが変わります。おまかせは気質から決まります">お酒 ' + selOf('alcohol', [['', 'おまかせ'], ['1', '弱い'], ['2', 'やや弱い'], ['3', 'ふつう'], ['4', '強い'], ['5', 'ザル']], c.alcohol || '') + '</label></div>' +
         '<div class="gcolor"><span class="gcsw" style="background:' + esc(c.color || 'var(--p' + (s.chars.indexOf(c) % 30) + ')') + '" aria-hidden="true"></span><span class="gct"><b>イメージカラー</b><span>' + (c.color ? esc(c.color) : '自動（並び順の色）') + '</span></span>' +
         '<label class="gcauto"><input type="checkbox" data-gf="colorauto"' + (c.color ? '' : ' checked') + '> 自動</label><label class="gcpick">色 <input type="color" data-gf="color" value="' + esc(c.color || '#3d6f93') + '"' + (c.color ? '' : ' disabled') + ' aria-label="イメージカラー"></label></div>' + gego });
+    /* ②'グループ・メモ（2026-11-04）：名前・グループ・タグ・メモ・エゴグラムの数値。スマホでは住人の行にこの欄が出ないので、ここで決める（ui-gear-basic.js。late） */
+    if (HK.GearBasic) secs.push(HK.GearBasic.sec(c));
     /* ③体と設定：体格・種族・心の強さ・好物（R18版：胸・性器・性器の呼び方）。同一人物は⑤相手ごとの設定の行に */
     var bodySum = HK.Attr && HK.Attr.summary ? HK.Attr.summary(c, byId) : [];
     secs.push({ k: 'body', name: '体と設定', tip: 'gear-body', desc: '体格・種族・心の強さ・好物など。決めなければ、箱庭がおまかせで決めます。',
@@ -379,9 +381,10 @@
     if (HK.VoiceSet && HK.VoiceSet.sampleTick) HK.VoiceSet.sampleTick();
     ov.scrollTop = y;
   }
-  function open(id, from) {
+  function open(id, from, sec) {
     if (cur !== id) { egoOpen = true; extra = {}; openMap = {}; }
     cur = id; opener = from || null;
+    if (sec) gsec = sec;   /* 開く節（無い節なら最初の節） */
     if (!ov) {
       ov = document.createElement('div');
       ov.className = 'gearov';
@@ -415,6 +418,9 @@
   document.addEventListener('click', function (ev) {
     var g = ev.target.closest && ev.target.closest('[data-act="gear"]');
     if (g) { var row = g.closest('.res'); if (row) open(row.dataset.id, row.dataset.id); return; }
+    /* 住人の行の「⋯」の「グループ・メモ・エゴグラム」（スマホでは行に欄が出ないため。2026-11-04） */
+    var gb = ev.target.closest && ev.target.closest('[data-act="gearbasic"]');
+    if (gb) { var rb = gb.closest('.res'); if (rb) open(rb.dataset.id, rb.dataset.id, 'basic'); return; }
     if (!ov || ov.hidden) return;
     if (ev.target === ov) { close(); return; }
     /* 関係の枠の説明：押すと全文（もう一度押すと1行に戻す） */
@@ -425,6 +431,7 @@
     var c = byId(cur), s = S(), act = b.dataset.gact;
     if (!c) return;
     s.ties = s.ties || [];
+    if (HK.GearBasic && HK.GearBasic.act(c, act, b, changed)) return;
     if (act === 'close') close();
     /* 節の切替（目次・「次の節」）：描き直さずに hidden を付け替える（2026-11-01 担当UA） */
     else if (act === 'sec') showSec(b.dataset.sec, !!b.dataset.scroll);
@@ -493,6 +500,7 @@
     if (f === 'at_sameC' && t.dataset.o) (extra[c.id] = extra[c.id] || {})[t.dataset.o] = 1;
     /* ①口調の欄（口調・一人称・二人称・語尾の記号・語尾の設定（かんたん））は「口調・喘ぎの設定」と同じ処理（ui-voice.js）。怒ったとき／恋人になってからの一人称・名前の読みは下の HK.Attr */
     if (HK.VoiceSet && HK.VoiceSet.basicField && HK.VoiceSet.basicField(c, f, t, isInput, changed)) return;
+    if (HK.GearBasic && HK.GearBasic.field(c, f, t, ev, changed)) return;
     if (HK.Attr && HK.Attr.gearField(c, f, t, isInput, changed, byId)) return;
     if (HK.Shared && HK.Shared.gearField(c, f, t, isInput, changed)) return;
     switch (f) {

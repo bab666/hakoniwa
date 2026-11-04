@@ -59,7 +59,7 @@
   function setZ(w, z) {
     var t = w.querySelector(':scope>table.per');
     if (!t) return;
-    w.style.setProperty('--pz', String(z));
+    if (w.style.getPropertyValue('--pz') !== String(z)) w.style.setProperty('--pz', String(z));
     if (ZOOM) return;
     w.classList.add('pz-tf');
     t.style.width = z < 1 ? (100 / z) + '%' : '';
@@ -83,20 +83,18 @@
   function apply(w) {
     var b = ensure(w), f = form();
     if (w.classList.contains('pz-stack') !== (f === 'stack')) w.classList.toggle('pz-stack', f === 'stack');
-    w.classList.add('pz');
+    if (!w.classList.contains('pz')) w.classList.add('pz');
     var z = st.fit ? fitZ(w) : st.z;
     if (z == null) z = +w.dataset.pzFit || 1;
     if (st.fit) { w.dataset.pzFit = String(z); w.dataset.pzW = String(w.clientWidth); } else { delete w.dataset.pzFit; delete w.dataset.pzW; }
     setZ(w, z);
-    b.setAttribute('data-form', f);
+    if (b.getAttribute('data-form') !== f) b.setAttribute('data-form', f);
     if (st.fit) b.setAttribute('data-fit', ''); else b.removeAttribute('data-fit');
     var v = b.querySelector('.pz-v'); if (v && v.textContent !== pct(z)) v.textContent = pct(z);
     var q = function (k) { return b.querySelector('[data-pz="' + k + '"]'); };
-    q('out').disabled = !st.fit && st.z <= STEPS[0];
-    q('in').disabled = !st.fit && st.z >= 1;
-    q('fit').setAttribute('aria-pressed', String(st.fit));
-    q('stack').setAttribute('aria-pressed', String(f === 'stack'));
-    q('row').setAttribute('aria-pressed', String(f === 'row'));
+    var dis = function (k, v) { var x = q(k); if (x.disabled !== v) x.disabled = v; }, prs = function (k, v) { var x = q(k); if (x.getAttribute('aria-pressed') !== String(v)) x.setAttribute('aria-pressed', String(v)); };
+    dis('out', !st.fit && st.z <= STEPS[0]); dis('in', !st.fit && st.z >= 1);
+    prs('fit', st.fit); prs('stack', f === 'stack'); prs('row', f === 'row');
   }
   var vb = null, raf = 0;
   function all() { raf = 0; if (vb) wraps(vb).forEach(apply); }
@@ -197,7 +195,9 @@
       new MutationObserver(function () { wraps(vb).forEach(function (w) { if (!w.dataset.pzRo) { w.dataset.pzRo = '1'; ro.observe(w); } }); }).observe(vb, { childList: true, subtree: true });
       wraps(vb).forEach(function (w) { w.dataset.pzRo = '1'; ro.observe(w); });
     }
-    window.addEventListener('resize', tick);
+    /* iPhone・Android はスクロールでアドレスバーが出入りするたびに resize が来る（高さだけ変わる）。幅が変わったときだけ表を合わせ直す（スクロール中に表を描き直さない。2026-11-04） */
+    var lastW = window.innerWidth || 0;
+    window.addEventListener('resize', function () { var w = window.innerWidth || 0; if (w !== lastW) { lastW = w; tick(); } else fabSync(); });
     /* 箱庭の選び替え・参加の切り替えで押せるかが変わる */
     document.addEventListener('change', function () { setTimeout(fabSync, 0); });
     document.addEventListener('click', function () { setTimeout(fabSync, 0); });
