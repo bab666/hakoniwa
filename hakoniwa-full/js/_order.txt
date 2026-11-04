@@ -35,6 +35,7 @@
 @chunk scen-massage deps=pack-solo
 @chunk scen-hole deps=pack-solo
 @chunk scen-kaihen deps=pack-rel,pack-solo
+@chunk scen-train deps=pack-rel,pack-solo
 @chunk scen-succubus deps=pack-rel,pack-solo
 @chunk scen-saimin deps=pack-rel,pack-solo
 @chunk scen-variety deps=pack-rel,pack-solo
@@ -566,6 +567,7 @@ tone js/tone-fix-rpg.js
 tone js/tone-fix-saimin.js
 tone js/tone-fix-ship.js
 tone js/tone-fix-succubus.js
+tone js/tone-fix-train.js
 tone js/tone-fix-trial.js
 tone js/tone-fix-variety.js
 tone js/tone-fix-whiteroom.js
@@ -688,6 +690,10 @@ js/rel-twin.js @pack:rel
 js/solo-kaihen-ero.js @scen:kaihen
 js/solo-kaihen-talk.js @scen:kaihen
 js/solo-kaihen-after.js @scen:kaihen
+# 常識改変：電車（R18版だけ。2026-11-04 担当TR。満員電車で触れ合うのがマナーの世界。設計は docs/reports/2026-11-04/train-design.md）
+js/solo-train-data.js @scen:train
+js/solo-train-ero.js @scen:train
+js/solo-train.js @scen:train
 js/solo-succubus-types.js @scen:succubus
 js/solo-succubus-ero.js @scen:succubus
 js/solo-saimin-ero.js @scen:saimin
@@ -725,6 +731,7 @@ late js/tips-scen-b.js
 late js/tips-scen-c.js
 late js/tips-scen-d.js
 late js/tips-scen-futari.js
+late js/tips-scen-train.js
 late js/attr-r18.js
 late js/attr-race-r18.js
 # 前立腺・結腸・乳首・喉奥の段（共通の山場の差し込み口 raceWeave／ロッカーの racePlay を包む。attr-race-r18.js の後）

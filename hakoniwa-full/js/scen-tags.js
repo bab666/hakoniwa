@@ -57,6 +57,7 @@
     dungeon: ['relSome', 'raceNight', 'will', 'mob'],
     hole: ['relLow', 'raceNight', 'will', 'mob'],
     kaihen: ['relLow', 'raceNight', 'will', 'mob'],
+    train: ['relLow', 'raceNight', 'will', 'mob'],
     succubus: ['relLow', 'raceNight', 'mob'],
     variety: ['relLow', 'raceNight']
   };
