@@ -280,6 +280,7 @@ const PASS = function* (HK, opt) {
   const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];
   for (const sc of Object.keys(HK.SCENARIOS)) {
     if (only && only.indexOf(sc) < 0) continue;
+    if (HK.SCEN_ONLY && HK.SCEN_ONLY.indexOf(sc) < 0) continue;   /* lib.js が HK_ONLY_SCEN のときだけ入れる */
     const scen = HK.SCENARIOS[sc];
     for (let s = 0; s < N; s++) {
       const n = Math.max(scen.minCast || 1, Math.min(scen.maxCast || 6, sc === 'jinro' ? 6 : 5 - (s % 2)));

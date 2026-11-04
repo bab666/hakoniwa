@@ -2,7 +2,7 @@
    使い方:
      node hakoniwa-tools/tone-check/audit-all.js                       # 既定の一式（R18版・全年齢モード・全年齢版。2 本並べて約 4 分）
      node hakoniwa-tools/tone-check/audit-all.js --modes=r18           # モードを絞る（r18,safe,zen）
-     node hakoniwa-tools/tone-check/audit-all.js --extra=sexgate,feud,group,state-hot,name,relcons,sexflow  # 追加の配役パスも回す（--extra=all で全部。sexflow＝長い場面の流れ）
+     node hakoniwa-tools/tone-check/audit-all.js --extra=sexgate,feud,group,state-hot,name,relcons,sexflow,trio  # 追加の配役パスも回す（--extra=all で全部。sexflow＝長い場面の流れ、trio＝三人の場面の形）
      node hakoniwa-tools/tone-check/audit-all.js --only-extra --extra=group             # 追加の配役パスだけ
      （既定の一式と --extra=relcons には、見本の話題を入れた回 topics-state・topics-seg・topics-relcons も入る。audit/topics-sample.js）
      （既定の一式には、名前の呼びかけの点検 call（call-audit.js。台詞に占める呼びかけの割合は参考、違和感の型は件数で 0 が合格）も入る。2026-11-01）
@@ -25,12 +25,12 @@ const misc = require('./audit/misc.js');
 const TOOLS = {
   orient: require('./orient-audit.js'), pos: require('./pos-audit.js'), state: require('./state-audit.js'), loveflag: require('./love-flag-audit.js'),
   seg: require('./seg-audit.js'), qa: require('./qa-audit.js'), sexgate: require('./sex-gate-audit.js'), feud: require('./feud-audit.js'), group: require('./group-audit.js'),
-  name: require('./name-audit.js'), relcons: require('./relcons-audit.js'), call: require('./call-audit.js'), sexflow: require('./sex-flow-audit.js'),
+  name: require('./name-audit.js'), relcons: require('./relcons-audit.js'), call: require('./call-audit.js'), sexflow: require('./sex-flow-audit.js'), trio: require('./trio-shape-audit.js'),
   misc
 };
 const MODS = Object.keys(TOOLS).map(k => TOOLS[k]);
 /* 判定の名前（まとめの見出し） */
-const JNAME = { orient: '恋愛対象', pos: '受け攻め・体の語', state: '状態', loveflag: '恋愛：なし', seg: '台詞の区分', qa: '問いと返事', sexgate: '性的な出来事の門', feud: '不仲の組', group: '複数人の恋愛', name: '名前の言い換え', relcons: '展開の不整合', call: '名前の呼びかけ', sexflow: '長い場面の流れ', misc: '文の崩れ' };
+const JNAME = { orient: '恋愛対象', pos: '受け攻め・体の語', state: '状態', loveflag: '恋愛：なし', seg: '台詞の区分', qa: '問いと返事', sexgate: '性的な出来事の門', feud: '不仲の組', group: '複数人の恋愛', name: '名前の言い換え', relcons: '展開の不整合', call: '名前の呼びかけ', sexflow: '長い場面の流れ', trio: '三人の場面の形', misc: '文の崩れ' };
 
 /* ---------- パス（配役の決め方）：今までの道具の既定の回数と同じ。est は 1 回分の目安の秒数（ページの割り振りに使う） ---------- */
 const PASSES = {
@@ -60,7 +60,10 @@ const PASSES = {
   'topics-seg': { tool: 'seg', id: 'seg', opt: { N: 4, topics: true }, lewd: '', est: 5, out: m => 'topics-seg-' + m },
   'topics-relcons': { tool: 'relcons', id: 'relcons', opt: { N: 6, topics: true }, lewd: '', est: 14, extra: true, out: m => 'topics-relcons-' + m },
   /* 長いエッチの場面の流れ（2026-11-03。sex-flow-audit.js）：段階の逆戻り・体位の矛盾・二度出し・応答待ち・閾値前の山場・導入の台詞・似た役割の重ね */
-  sexflow: { tool: 'sexflow', id: 'sexflow', opt: { N: 24 }, lewd: 'direct', est: 8, modes: ['r18'], extra: true, out: () => 'sexflow-r18' }
+  sexflow: { tool: 'sexflow', id: 'sexflow', opt: { N: 24 }, lewd: 'direct', est: 8, modes: ['r18'], extra: true, out: () => 'sexflow-r18' },
+  /* 三人の場面の形（2026-11-04。trio-shape-audit.js の単独実行と同じ関数・同じ回数。check.js が全箱庭の audit-all に相乗りさせる） */
+  /* noMisc：文の崩れ（misc）は当てない（単独の trio-shape-audit と同じ判定だけ。misc を当てると T2「空の記録」が媚薬ロッカーの三人の夜で 4 件出る。docs/reports/2026-11-04/check-pipeline.md の残った課題） */
+  trio: { tool: 'trio', id: 'trio', opt: { N: 4 }, lewd: 'direct', est: 10, modes: ['r18'], extra: true, noMisc: true, out: () => 'trio-r18' }
 };
 const DEFAULT = ['orient', 'pos', 'pos-hot', 'pos-ffhot', 'state', 'loveflag', 'seg', 'qa', 'noname', 'call', 'topics-state', 'topics-seg'];
 /* 判定：cross＝ほかのパスの回にも当てる。modes＝当てるモード */
@@ -78,7 +81,8 @@ const JUDGES = {
   name: { cross: false, opt: () => ({}) },
   relcons: { cross: false, opt: () => ({}) },
   call: { cross: false, opt: () => ({}) },
-  sexflow: { cross: false, modes: ['r18'], opt: () => ({ raw: !!process.env.SEXFLOW_RAW }) }
+  sexflow: { cross: false, modes: ['r18'], opt: () => ({ raw: !!process.env.SEXFLOW_RAW }) },
+  trio: { cross: false, modes: ['r18'], opt: () => ({ N: 4, show: 2 }) }
 };
 const MODE = { r18: { name: 'R18版', build: 'full', mode: 'r18' }, safe: { name: '全年齢モード', build: 'full', mode: 'safe' }, zen: { name: '全年齢版', build: 'zen', mode: '' } };
 
@@ -122,7 +126,7 @@ async function runUnit(u, o, log) {
       lewdMode: core.lewdOf(P.lewd),
       /* pos は 3 つのパス（素・--hot・--ff --hot）を、--cross でなければパスごとに数える（今までの単独実行と同じ） */
       judges: u.judges.map(j => ({ id: j, key: !o.cross && j === 'pos' ? 'pos@' + p : j, opt: JUDGES[j].opt(j === 'state' ? u.mode : o, o), own: PASSES[p].tool === j }))
-        .filter(j => j.own || j.id === 'misc' || o.cross)
+        .filter(j => j.own || (j.id === 'misc' && !P.noMisc) || o.cross)
     };
   });
   let fin;

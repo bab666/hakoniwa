@@ -129,7 +129,8 @@ const PASS = function* (HK, opt) {
     const loPart = (cast, i, n) => { const t = (cast.ties || []).filter(t => t.type === 'lover' && (t.a === i || t.b === i) && t.a < n && t.b < n)[0]; return t ? (t.a === i ? t.b : t.a) : (i + 1) % n; };
     /* 箱庭の仕掛けそのものがモブ・魔物の箱庭（「固定した相手だけ」でも縛らない。engine.js の HK.State.mobSexOk の説明） */
     const MOB_FREE = { dungeon: 1, succubus: 1, variety: 1 };
-    const ids = only || Object.keys(HK.SCENARIOS);
+    /* HK.SCEN_ONLY：lib.js が HK_ONLY_SCEN のときだけ入れる（ふだんの回は変わらない） */
+    const ids = (only || Object.keys(HK.SCENARIOS)).filter(id => !HK.SCEN_ONLY || HK.SCEN_ONLY.indexOf(id) >= 0);
     for (const sc of ids) {
       const scen = HK.SCENARIOS[sc]; if (!scen) continue;
       for (let s = 0; s < N + NF + NA; s++) {

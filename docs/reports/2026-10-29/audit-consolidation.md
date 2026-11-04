@@ -224,3 +224,4 @@ audit-all の一式とは別に、場面・台詞を足したら `node hakoniwa-
 - 所要時間：既定の一式 約 2 分（7,056 回・`--jobs=2`）。全年齢版・全年齢モードも同じくらい。1 箱庭だけなら約 40 秒。
 - audit-all に入れなかった理由：判定が比率（割合の目安）で、0 件の点検と合否の形が違う。台詞の集め方も話し手の口調を固定する専用の配役で、audit-all のどのパスとも違う。
 - 基準は `hakoniwa-tools/tone-check/feel-base.json`（`--base=` で悪化した口調を出す）。
+- 箱庭の絞り込み（`HK_ONLY_SCEN`）：今までは HK.SCEN_ORDER だけを絞っていたので、HK.SCENARIOS の全部を回すパス（pos・state・noname・group）は絞れず、パックの部屋の点検でも本体の全箱庭を回していた。lib.js が絞る箱庭を `HK.SCEN_ONLY` に残し、これらのパスが HK_ONLY_SCEN のときだけ絞るようにした（環境値の無いふだんの回は変わらない）。1 箱庭（宇宙船 ship）で R18版 3,044 回・131 秒 → 596 回・37 秒。

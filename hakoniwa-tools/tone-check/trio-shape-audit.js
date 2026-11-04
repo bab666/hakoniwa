@@ -150,7 +150,15 @@ function tableStats(dir) {
   st.touch = T.TOUCH3.length;
   return st;
 }
-module.exports = { passes: { trio: PASS }, judges: { trio: JUDGE }, print, DEF_SCEN, tableStats };
+/* audit-all.js の追加の配役パス（--extra=trio）用のまとめ（2026-11-04。単独で回したときの終了コードの条件と同じ 5 項目。判定は変えていない） */
+const LABEL = { bad: '設定に合わない形', motion: '動きの二度出し', undress: '繋がったあとの脱がせる', pending: '応答待ちのあと受けの台詞なし', dupS: '同じ地の文の二度出し' };
+function summarize(r) {
+  const items = {}, ex = {};
+  if (!r || r.noX) return { items: {}, ex: {}, info: { 三人の場面: r && r.noX ? 'HK.Trio3 なし' : 0 }, err: 0 };
+  Object.keys(LABEL).forEach(k => { items[k] = k === 'bad' ? r.bad : (r.flow[k] || 0); ex[k] = k === 'bad' ? r.badEx.slice(0, 3) : r.flowEx.filter(x => x.indexOf(k === 'motion' ? '動き' : k === 'undress' ? '脱が' : k === 'pending' ? '応答待ち' : '同じ文') >= 0).slice(0, 3); });
+  return { items, ex, info: { 三人の場面: r.scenes, 触れ合いだけ: r.touch }, err: 0 };
+}
+module.exports = { passes: { trio: PASS }, judges: { trio: JUDGE }, print, summarize, LABEL, DEF_SCEN, tableStats };
 
 if (require.main === module) (async () => {
   const args = process.argv.slice(2).filter(a => !/^--/.test(a));
