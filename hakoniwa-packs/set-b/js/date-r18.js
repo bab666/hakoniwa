@@ -6,6 +6,7 @@
 /* @event scen=set-b-date id=dt_night_kaeru cat=romance tie=lover tags=night label=デート帰りの二人の家で続きをする */
 /* @event scen=set-b-date id=dt_night_first cat=romance tie=- tags=night label=初めてのお泊まりで結ばれる夜 */
 /* @event scen=set-b-date id=dt_night_car cat=romance tie=- tags=night label=帰り道に車を停めて車内で求め合う */
+/* @event scen=set-b-date id=dt_night_trio cat=romance tie=- tags=night cond=三人の恋人の三人デート label=三人の恋人で過ごすデートの夜 */
 /* @event scen=set-b-date id=dt_heat_r18 cat=romance tie=- tags=night label=デート中に人目を盗んで触れ合う */
 /* @event scen=set-b-date id=dt_long_hotel cat=romance tie=- tags=night label=ラブホテルの部屋に入るなり始まる夜 */
 /* @event scen=set-b-date id=dt_long_ouchi cat=romance tie=- tags=night label=デートの余韻のまま玄関で始まる夜 */
@@ -40,14 +41,14 @@
   var SRC = { TX: TX, MO: function () { var T = TX(); return { OPEN: fresh(T.OPEN), REOPEN: fresh(T.OPEN), FADE: fresh(T.FADE), PEAK_E: PR.FB.peakE }; }, R: null, ok: function () { return DT.okText; } };
   var ENTRY = { ouchi: 'お家に寄った夜', tomari: '泊まった夜', hotel: 'ラブホの夜', yado: '旅先の宿の夜', kaeru: 'デート帰りの家の夜', first: '初めてのお泊まりの夜', car: '帰り道の車の中' };
   var FORM = { fade: 'ほのめかす', short: '短い場面', mid: '中くらいの場面', long: '長い場面' };
-  function dedupe(t) {
-    var seen = {};
+  function dedupe(t, a, b) {
+    var seen = {}, nm = function (x) { return a && b ? x.split('{a}').join(a.name).split('{b}').join(b.name) : x; };
     return String(t).split('\n\n').map(function (para) {
       var out = '', cur = '', d = 0;
       for (var i = 0; i < para.length; i++) {
         var c = para.charAt(i); cur += c;
         if (c === '「') d++; else if (c === '」') d = Math.max(0, d - 1);
-        if ((/[。！？]/.test(c) && !d) || i === para.length - 1) { var k = cur.replace(/[「」『』\s]/g, ''); if (k.length >= 12 && seen[k]) { cur = ''; continue; } seen[k] = 1; out += cur; cur = ''; }
+        if ((/[。！？\n]/.test(c) && !d) || (c === '」' && !d) || i === para.length - 1) { var k = nm(cur).replace(/\ue3a0[\s\S]*?\ue3a1/g, '').replace(/[「」『』\s]/g, ''); if (k.length >= 12 && seen[k]) { cur = ''; continue; } seen[k] = 1; out += cur; cur = ''; }
       }
       return out;
     }).filter(function (x) { return x; }).join('\n\n');
@@ -114,7 +115,7 @@
     try { full = PR.scene(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: pi, afi: 0, jealTop: !!day.jeal && x === a, leadB: x === b, entry: entry, resume: false }, SRC); }
     finally { S.curBr = ''; }
     form = full.form;
-    full.text = dedupe(full.text);
+    full.text = dedupe(full.text, a, b);
     remember(ctx, full.text, [T.OPEN, T.FADE], a, b);
     var e = ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: full.text, why: 'デートの日々：夜（' + FORM[form] + '・' + (first ? ENTRY.first : ENTRY[entry]) + '）', sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
@@ -123,6 +124,55 @@
     if (form === 'long') S.longN = (S.longN || 0) + 1;
     S.forms[form] = (S.forms[form] || 0) + 1;
     S.entries[first ? 'first' : entry] = (S.entries[first ? 'first' : entry] || 0) + 1;
+    return true;
+  };
+
+  /* ---------- 三人の恋人の三人デートの夜（本体の HK.Pos.trioPlan・HK.Trio3。直接の行為は plan の組だけ。形は受け攻めの設定から） ---------- */
+  function okPair(ctx) { return function (x, y) { return PR.sexOk(ctx, x, y); }; }
+  function trioPlan(ctx) {
+    var S = ctx.dt, T = S && S.trio, P = HK.Pos;
+    if (!T || T.k !== 'poly' || HK.SAFE_ON || !P || !P.trioPlan || !HK.Trio3) return null;
+    var pl = P.trioPlan(S.A, S.B, T.C, { ok: okPair(ctx) });
+    return pl && pl.pairs && pl.pairs.length >= 2 ? pl : null;
+  }
+  DR.trioCan = function (ctx) { var S = ctx.dt; return !!(S && S.sex < S.lewdMax && (trioPlan(ctx) || (HK.Trio3 && HK.Trio3.touchOk && S.trio && S.trio.k === 'poly' && HK.Trio3.touchOk([S.A, S.B, S.trio.C], okPair(ctx))))); };
+  DR.trio = function (ctx, day, last) {
+    var S = ctx.dt, Tr = S.trio, g = [S.A, S.B, Tr.C], X3 = HK.Trio3, P = HK.Pos, TT = TX().TRIO;
+    if (!X3 || !TT || S.sex >= S.lewdMax) return false;
+    var pl = trioPlan(ctx), touch = !pl && X3.touchOk && X3.touchOk(g, okPair(ctx));
+    if (!pl && !touch) return false;
+    var p = (Tr.nights ? 0.3 : 0.55) * (P && P.libMul ? Math.min(1.5, P.libMul(g)) : 1);
+    if (last && !Tr.nights) p = 0.9;
+    if (ctx.rng() > p) return false;
+    var LV = HK.Lewd, env = ctx.env, lv = LV ? LV.lv(env) : 'mid';
+    var a = g[Math.floor(ctx.rng() * 3)], bc = g.filter(function (c) { return c !== a; });
+    var sp = touch ? null : X3.shapeOf(ctx, g, pl, { soft: true });
+    if (!touch && !sp) return false;
+    var nm = sp ? { t: sp.t.name, m: sp.m.name, u: sp.u.name } : {}, sub = function (t) { return String(t).replace(/\{([tmu])\}/g, function (m0, k) { return nm[k] || m0; }); };
+    var pk = function (arr) { return arr[Math.floor(ctx.rng() * arr.length)]; };
+    var dest = day.P && day.P.main ? day.P.main.name : '';
+    var say3 = function (arr) { var t = DT.pickT(ctx, arr, a, bc[0]) || DT.pickT(ctx, arr, a, bc[0], true); return t ? DT.fill(ctx, t, a, bc[0], { c: bc[1].name, dest: dest }) : ''; };
+    var lt = say3(TT.LEAD), fl = TT.FORM_LEAD[touch ? 'touch' : sp.p];
+    if (!lt) return false;
+    if (fl) lt += sub(pk(fl));
+    var le = ctx.say({ kind: 'event', cat: 'romance', actors: g, text: lt, why: 'きっかけ：三人の夜（' + a.name + 'から・' + (dest ? dest + 'の' : '') + 'デートの余韻）', mag: 0 });
+    if (le) le.tag = 'きっかけ';
+    var text, why;
+    if (touch) { text = X3.touchScene(ctx, [a, bc[0], bc[1]]); why = '三人とも攻めなので、口づけと手だけ'; }
+    else if (lv === 'low') { text = say3(TT.FADE); why = 'ほのめかす'; }
+    else {
+      var short = !!(LV && LV.short && LV.short(env, ctx.rng));
+      var body = X3.quick(ctx, g, { sp: sp, plan: pl, env: env, ero: !!(LV && LV.ero && LV.ero(env)), short: short, mid: short ? '' : sub(pk(TT.MID[sp.p] || TT.MID.ring)) });
+      if (!body) { if (le) { var L0 = ctx.log, i0 = L0.indexOf(le); if (i0 >= 0) L0.splice(i0, 1); } return false; }
+      text = body + '\n\n' + say3(TT.AFTER);
+      why = (X3.FORM_JA && X3.FORM_JA[sp.p] || '') + '：' + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: '真ん中の' + sp.m.name + 'を挟んで', ring: '輪になって', show: sp.t.name + 'と' + sp.m.name + '、' + sp.u.name + 'は見守る' }[sp.p];
+    }
+    if (!text) return false;
+    var e = ctx.act2({ actors: g, cat: 'romance', text: text, why: 'デートの日々：三人の夜（' + why + '）', sex: !touch, lewd: lv !== 'low', trioPairs: pl ? pl.pairs : [],
+      fx: function () { ctx.mod2(g[0], g[1], { att: 4, aff: 2 }, { att: 4, aff: 2 }); ctx.mod2(g[0], g[2], { att: 4, aff: 2 }, { att: 4, aff: 2 }); ctx.mod2(g[1], g[2], { att: 4, aff: 2 }, { att: 4, aff: 2 }); } });
+    if (!e) { if (le) { var L = ctx.log, i = L.indexOf(le); if (i >= 0) L.splice(i, 1); } return false; }
+    Tr.nights = (Tr.nights || 0) + 1;
+    if (!touch) { S.sex++; S.entries.trio = (S.entries.trio || 0) + 1; }
     return true;
   };
 
