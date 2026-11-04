@@ -127,6 +127,7 @@ const CHECKS = [
   { id: 'dict-regress', name: '口調の辞書の成績（dict-regress。参考）', stage: 'heavy', tags: ['dict'], after: [], est: 10, weight: 1, tools: [TC + 'dict-regress.js'], info: true, why: '終了コードに入れない（成績を出すだけ）' },
   /* 追加パック（変えたパック、本体の「パックが頼るかたまり」を変えたときはそのパック） */
   { id: 'date-setting', name: 'デートの舞台と段（date-setting-audit）', stage: 'pre', tags: ['pack'], est: 1, tools: [TC + 'date-setting-audit.js'], why: 'set-b のデートの日々を変えたとき。行き先 52 か所 × 汎用の出来事の舞台の矛盾・段の付いていない行（ページを開かない）' },
+  { id: 'kanbyo-role', name: '看病の部屋の役と状態（kanbyo-role-audit）', stage: 'heavy', tags: ['pack'], after: ['pack-site'], est: 30, weight: 1, tools: [TC + 'kanbyo-role-audit.js'], why: 'set-b の看病の部屋を変えたとき。報告の 16 通りで、看る人・看られる人の取り違え・通いの行き来・熱の数字と言葉・関係の取り違え・三人目・結末のあとが 0 件' },
   { id: 'pack-catalog', name: 'パックの出来事の一覧（event-catalog --pack）', stage: 'build', tags: ['pack'], after: [], est: 3, weight: 1, tools: [BD + 'event-catalog.js'], why: '作り直してから catalog-check' },
   { id: 'pack-site', name: 'パックの試しのフォルダ（pack-site）', stage: 'build', tags: ['pack'], after: ['build'], est: 40, weight: 1, tools: [BD + 'pack-site.js', BD + 'build-pack.js'], why: '本体を写してパックを組み立てる（キャッシュの中に作る）' },
   { id: 'pack-audit', name: 'パックの点検の一式（audit-all・HK_ONLY_SCEN）', stage: 'heavy', tags: ['pack'], after: ['pack-site'], est: 150, weight: 2, tools: [TC + 'audit-all.js'], why: '変えた部屋だけ（共有の部品 kit などを変えたらそのパックの全部屋）。長い場面を変えたら --extra=sexflow も' },

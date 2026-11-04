@@ -70,6 +70,15 @@
     }).filter(function (x) { return x; }).join('\n\n');
   }
   var KR = HK.KanbyoR18 = { ENTRY: ENTRY, FORM: FORM };
+  /* 長い場面の型（本体の HK.Play）：看病の部屋の始まりの文は寝床で服を脱がせるので、着衣のまま・台所に立つ相手を後ろから・我慢できずに（着衣）の型を出さない（2026-11-04 報告：ボタンを外したあとに「服を一枚も乱さないまま」、寝間着を脱がせている途中に台所） */
+  if (HK.Play && HK.Play.addRoom) HK.Play.addRoom('set-b-kanbyo', { entry: { backhug: -50, hurry: -50 }, prop: { chakui: -50 } });
+  /* 文の向き：{a}（言い出す人）が看病された人なら、看病した人の言い回し（汗を拭き・着替えを手伝った）を外す。看病した人なら、看病された人の言い回し（看病の礼・元気になった証拠）を外す。
+     「元気になった{a}／{b}」も、元気になったのが看病された人のときだけ */
+  var CARED_RE = /看病してくれ|看病してくださ|看病してもら|看病の(?:お)?礼|看病のお返し|元気になった証拠|元気になったところ|元気になった\{a\}/, CARER_RE = /汗を拭き、着替えを手伝った|看病した相手|元気になった\{b\}/;
+  /* 相手（{b}）が看病の礼を言う文は、相手が看病された人のときだけ */
+  var YC_RE = /\{b\}は「[^」]*(?:看病の(?:お)?礼|看病してくれ|看病してくださ)/;
+  function roleOk(arr, xc) { return (arr || []).filter(function (t) { return xc ? !CARER_RE.test(t) && !YC_RE.test(t) : !CARED_RE.test(t.replace(YC_RE, '')); }); }
+  KR.roleOk = roleOk;
   /* ---------- 病気の道中の夜（2026-11-03 利用者の追加の指示）----------
      KR.ill(ctx, day, last)：看る人が来ている夜で、熱のある人がいる夜。kanbyo.js の illNight が呼ぶ（寝込むほど重いときのいちばん高い夜・回数の上限・一回の遊びで一度まで）
      入口：osoi 熱に浮かされた受けが迫る（受けが看病される人のときだけ。攻めが受け止めて主導する＝受け攻めは入れ替えない）／soine 心細くて一緒に寝る→したくなる／
@@ -222,7 +231,8 @@
     var o = P && P.order ? P.order(A, B) : [A, B], a = o[0], b = o[1], sh = PR.shape(a, b);
     if (AV && ((AV.topOk && !AV.topOk(ctx, a, b)) || (AV.okSex && !AV.okSex(ctx, a, b)))) return false;
     /* 起こりやすさ：低め（恋人どうしでない二人はさらに低い）。性欲で上下 */
-    var p = (S.couple ? 0.22 : 0.12) * (P && P.libMul ? Math.min(1.5, P.libMul([A, B])) : 1);
+    /* 起こりやすさ：まれに（2026-11-04 報告：16 本中 3 本は多い。遊び全体で 1 割以下に） */
+    var p = (S.couple ? 0.25 : 0.15) * (P && P.libMul ? Math.min(1.5, P.libMul([A, B])) : 1);
     if (ctx.rng() > p) return false;
     /* 入口の選び方：受けが看病される人なら「受けから迫る」も。看る側が攻めなら「理性が揺らぐ」も */
     var bt = PR.att(b, a), tp = PR.att(a, b), ld = P && P.leadOf ? P.leadOf(b) : '', kd = HK.Attr && HK.Attr.nightKind ? HK.Attr.nightKind(a, b) : '';
@@ -388,7 +398,13 @@
     /* 言い出す人が相手を避けていれば、相手を言い出す人にする（両方なら起こさない） */
     if (AV && AV.of && AV.of(ctx, x, y)) { if (AV.of(ctx, y, x)) return false; var sw = x; x = y; y = sw; }
     var fx = PR.att(x, y), fy = PR.att(y, x);
-    var lead = KB.pickT(ctx, (T.LEAD || {})[entry], x, y) || KB.pickT(ctx, (T.LEAD || {})[entry], x, y, true) || LEAD_FB, feel = KB.pickT(ctx, (T.FEEL || {})[fx] || (T.FEEL || {}).gentle, x, y), ans = KB.pickT(ctx, (T.FANS || {})[fy] || (T.FANS || {}).gentle, x, y);
+    /* 看病された人・した人の取り違えを避ける（2026-11-04 報告：看病した側が「看病してくださったお礼を」、看られた側が「何日も汗を拭き、着替えを手伝った袖」）。
+       言い出す人（{a}）が看病された人か（うつった人が治った夜は A、ほかは B）で、文の向きを選ぶ */
+    var xc = entry === 'back' ? x === A : x === B, ro = function (arr) { return roleOk(arr, xc); };
+    var lead = KB.pickT(ctx, ro((T.LEAD || {})[entry]), x, y) || KB.pickT(ctx, ro((T.LEAD || {})[entry]), x, y, true) || LEAD_FB;
+    var allOf = function (o) { return [].concat.apply([], Object.keys(o || {}).map(function (k) { return o[k]; })); };
+    var feel = xc ? KB.pickT(ctx, ro((T.FEEL || {})[fx] || (T.FEEL || {}).gentle), x, y) : KB.pickT(ctx, (T.FEEL_C || {})[fx] || (T.FEEL_C || {}).gentle, x, y) || KB.pickT(ctx, allOf(T.FEEL_C), x, y);
+    var ans = xc ? KB.pickT(ctx, (T.FANS || {})[fy] || (T.FANS || {}).gentle, x, y) : KB.pickT(ctx, (T.FANS_P || {})[fy] || (T.FANS_P || {}).gentle, x, y) || KB.pickT(ctx, allOf(T.FANS_P), x, y);
     var lt = K.fill(ctx, lead + feel + ans, x, y);
     var why = 'きっかけ：' + ENTRY[entry] + '（' + x.name + 'から・' + (x === B && entry !== 'back' ? '看病してもらった気持ち' : entry === 'back' ? '看病し返してもらった気持ち' : '看病した相手への' + (S.couple ? '愛しさ' : '情')) + '）';
     /* 恋愛の出来事にできない組（本体の romanceOk）では、きっかけの段を記録から落とさないよう bond にする */

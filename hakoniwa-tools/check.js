@@ -371,6 +371,7 @@ function decide(R) {
         if (tg('serifu') || tg('tone')) add({ id: 'pack-feel', stage: 'heavy', key: 'pack-feel:' + room, label: 'パックの tone-feel：' + room, pack: id, room, why: X.why.slice(0, 3).join('・'), weight: 1 });
         else skip('pack-feel', room + '：台詞を変えていない');
         if (tg('moan')) add({ id: 'pack-moan', stage: 'heavy', key: 'pack-moan:' + room, label: 'パックの moan-tone：' + room, pack: id, room, why: X.why.slice(0, 3).join('・'), weight: 1 });
+        if (id === 'set-b' && room === 'set-b-kanbyo' && (all || tg('sim') || tg('serifu'))) add({ id: 'kanbyo-role', stage: 'heavy', key: 'kanbyo-role', label: CHECK['kanbyo-role'].name, pack: id, room, why: X.why.slice(0, 3).join('・'), weight: 1 });
         if (tg('trio')) add({ id: 'pack-flow', stage: 'heavy', key: 'pack-flow:' + room, label: 'パックの trio-shape：' + room, pack: id, room, flow: false, trio: true, why: X.why.slice(0, 3).join('・'), weight: 1 });
       });
     });
@@ -441,7 +442,7 @@ function keyOf(t) {
     case 'date-setting': inp = packInputs('set-b', 'set-b-date'); break;
     case 'pack-catalog': inp = packInputs(t.pack) + String(readOr(path.join(ROOT, 'docs/reports/2026-11-03/pack-event-catalog.md'), '')); break;
     case 'pack-site': return null;   /* 試しのフォルダは毎回作る（中で build-pack を回す。数十秒） */
-    case 'pack-audit': case 'pack-feel': case 'pack-moan': case 'pack-flow': inp = packMainInputs(t.pack) + packInputs(t.pack, t.room) + (packCodes() ? sha(JSON.stringify(packCodes().J[t.pack] || packCodes().J['*'])) : ''); break;
+    case 'pack-audit': case 'pack-feel': case 'pack-moan': case 'pack-flow': case 'kanbyo-role': inp = packMainInputs(t.pack) + packInputs(t.pack, t.room) + (packCodes() ? sha(JSON.stringify(packCodes().J[t.pack] || packCodes().J['*'])) : ''); break;
     default: inp = HEAD_SHA;
   }
   return sha(JSON.stringify(base) + inp);
@@ -609,6 +610,7 @@ const RUN = {
   },
   'pack-feel': async (t) => { const r = await spawnLog(t, N, [TCD + 'tone-feel.js', path.join(SITE(), BUILDS.full), '--scen=' + t.room], packEnv(t, false)); return { rc: r.rc, n: feelCount(r.text), sum: feelSum(r.text), log: r.log }; },
   'pack-moan': async (t) => { const r = await spawnLog(t, N, [TCD + 'moan-tone-audit.js', path.join(SITE(), BUILDS.full), '4', '--scen=' + t.room], packEnv(t, true)); const m = r.text.match(/口調に合わない喘ぎ：(\d+) 件/); return { rc: r.rc, n: m ? +m[1] : null, sum: lastLine(r.text, /口調に合わない喘ぎ/) || lastLine(r.text), log: r.log }; },
+  'kanbyo-role': async (t) => { const r = await spawnLog(t, N, [TCD + 'kanbyo-role-audit.js', path.join(SITE(), BUILDS.full)], packEnv(t, false)); const m = r.text.match(/kanbyo-role：(\d+) 件/); return { rc: r.rc, n: m ? +m[1] : null, sum: lastLine(r.text, /kanbyo-role/) || lastLine(r.text), log: r.log }; },
   'pack-flow': async (t) => {
     const res = [];
     if (t.flow) res.push(flowRes(await spawnLog(Object.assign({}, t, { key: t.key + '-flow' }), N, [TCD + 'sex-flow-audit.js', path.join(SITE(), BUILDS.full), '24', t.room], packEnv(t, true))));
