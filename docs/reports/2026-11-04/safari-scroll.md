@@ -169,3 +169,80 @@ Playwright（Chromium。iPhone 相当＝幅 390・iOS 16.7 の UA・isMobile・h
 1. ページを読み込み直して、結果タブで長い結果（出られない部屋の 8 人など）を下までスクロールする
 2. 文字が白いまま残るかを見る。残ったら、その場で少し指で動かして、描かれるかも見る
 3. 右上の「表示」→「不具合の記録」→「コピー」で記録を貼ってもらう。**頭の「画面：」の行に `WebKit・描き直しの一押し：有効` が出ていること**、記録の「直前」に `paint：描き直しの一押し` の行があることで、保険が当たっているかが分かる（記録が無いときは、頭の行だけでよい）
+
+## 8. iOS 18.2 の全タブの真っ白（セーフモード）
+
+### 報告と記録の読み解き
+
+2026-11-04 19:36。iPhone 15（iOS 18.2.1）の Safari で、住人／箱庭／結末の**どのタブでも**、下にスクロールすると真っ白。iPhone SE（iOS 27.0.1）では起きない。記録の頭は `画面：393x659・縦・倍率 3・WebKit・描き直しの一押し：有効`（7 の一押しが当たっていたのに白くなる＝outline の一押しは効かない）。
+
+- `［jump］9533→8162（17ms・ページの高さ 13579→13579）・プログラムによるスクロールなし`、`11891→10602`、`6955→8238`：指でスクロールしている最中に、**ページの高さが変わらないまま約 1300px（上下どちらにも）飛ぶ**。プログラムのスクロールも描き直しも無い。WebKit が合成した層のタイルを作り直すときに、描く位置とスクロールの位置がずれる（タイルが白いまま、位置が飛ぶ）形に合う。ツールバーの伸び縮み（659↔776）の最中にも出る
+- `［shrink］13545→2394（位置 375）タブ cast`：結果タブ（13545px）→ 住人タブ（2394px）の**タブの切り替え**で、本物の縮みではない（見張りの誤検出。下の D で直した）
+- 直前の欄の go・up・thaw・toTop はどれも「操作から」で、飛びの原因ではない
+- iOS 16.7 の報告（7）と合わせると、**Safari 16〜18 の WebKit に共通し、最新（Safari 26 以降の WebKit）では直っている描画の不具合**とみるのが自然。結果タブだけの部品ではなく、全タブに共通する部品を疑う
+
+### 候補（全タブ共通・Safari 16〜18 の WebKit に当たりそうなもの）
+
+| 候補 | 場所 | 根拠 | 見立て |
+|---|---|---|---|
+| **上の切替 `.tabs` の `position:sticky` ＋ `top: env(safe-area-inset-top)` ＋ `overflow-x:auto`（PC 幅）＋ `.wrap>.tabs` の `box-shadow: 0 0 0 100vmax` と `clip-path: inset(0 -100vmax -1px)`** | index.html 328・1203・1571 | 全タブにある唯一の貼り付く要素。sticky は iOS で独立の合成層になり、その層に 100vmax の影（横に画面 2 つ分）と clip-path が付く。WebKit の既知の不具合「sticky 要素のある長いページで、スクロール中にタイルが白いまま残る／位置が跳ぶ」（iOS 17〜18 の報告が多い。clip-path・大きな影の付いた sticky、safe-area の env() を top に使うものが典型）、ツールバーの伸び縮みで sticky の位置を計算し直すときに跳ぶ例に合う | **最有力** |
+| 画面上端の帯 `body::before`（`position:fixed; inset:0 0 auto; height: env(safe-area-inset-top)`。z-index 10） | index.html 327 | 全タブ。高さが env() の fixed の層。ツールバーの伸び縮みのたびに大きさが変わる。fixed の層と sticky の層が重なる | 有力（sticky と組で） |
+| `html{overflow-anchor:none}` | ui-mobile.js（600px 以下） | Safari は scroll anchoring に対応していない（何もしない指定）ので、直接の原因ではない見込み。保守的に外す | 低い |
+| `content-visibility:auto`／`contain-intrinsic-size`（住人の行・関係の行）、`#view-box[hidden]{content-visibility:hidden}` | ui.js 30・ui-ties.js 25・ui-box-draw.js 23 | iOS 18 は対応しているので当たりうる（後回しの行が見積もりの高さで置かれ、描くときに高さが変わってスクロールが跳ぶ）。ただし hk-webkit の上書き（ui-guard.js）が中核の最初で入り、`!important` と詳細度（1,2,1）で勝つので、iOS 18.2 では効いていない（確認：Chromium で iOS の UA（hk-webkit・セーフモードなし）にして、content-visibility が visible でない要素は 0 個、隠した箱庭タブは display:none）。ページの高さが変わらない飛びにも合わない | 低い（念のためセーフモードで全要素を visible に） |
+| 参加表の `zoom`／`transform: scale(var(--pz))` | index.html 583・584 | 箱庭タブだけ。全タブの症状とは合わない。scale は層を作る | 低い（セーフモードで 100% 固定） |
+| 下に固定する帯（`.runbar`・住人タブの `.uimobar`）・`#pagejump`（上へ／下へ） | ui-mobile.js 35・index.html 1440・ui-cast-ops.js 135 | fixed の層。住人・箱庭タブで出るが結果タブでは #pagejump だけ。機能に要るので残し、`translateZ(0)` で自分の層に分ける | 中（層を分けて残す） |
+| 結果の目次 `.rvtabs`・箱庭の目次 `.bxtabs`・住人の一括の帯 `.tsbulk.on`・PC 幅の `.rvtoc`/`.rvrail`/`.rvlist` の sticky | ui-result-style.js・ui-box-style.js・ui-tagsel.js | `.tabs` の下に重ねて貼り付く（`--hk-stick`）。sticky の層が 2 段になる | 中（セーフモードで static） |
+| 描き直しの一押し（outline） | ui-ios-paint.js | 有効だったのに白くなった＝outline では合成層のタイルは作り直されない | 効かない → translateZ の一押しへ |
+
+（Playwright の Chromium では再現しない。WebKit は手元に無いので、WebKit Bugzilla の既知の報告（"position: sticky blank / not repainting while scrolling on iOS"、"fixed element with safe-area-inset causes jump"、"content-visibility: auto scroll jump"）と症状を照らした推定）
+
+### セーフモード（`html.hk-ios-legacy`）
+
+- **判定**（中核の `ui-guard.js`）：`hk-webkit` で、iPhone・iPad（「デスクトップ用 Web サイトを表示」で UA が Mac のときも、タッチの点数で見分ける）の **Safari の版（`Version/`＝WebKit の版）が 16〜18**。iOS の版（UA の `OS 18_7` など）は見ない：別の利用者の iOS 18.7（`CPU iPhone OS 18_7 … Version/26.6.1`）は Safari 26 の WebKit で、真っ白は起きていない。起きているのは `Version/18.2`（iOS 18.2.1）と `Version/16.6.2`（iOS 16.7）。iOS 26 以降も UA の OS は 18 台に固定されるが `Version/26`・`27` で外れる（iOS 27 の利用者は自動で切）。`Version/` の無いアプリ内の表示（WebView）は版が分からないので対象にする
+- **切ったもの**（CSS は中核の ui-guard.js に最小限。どれも `html.hk-ios-legacy` の下だけ）：
+  - 上の切替 `.tabs` の sticky → static（タブはスクロールで流れる。上へ／下へのボタン `#pagejump` とタブを押したときのタブの頭へで戻れる）。`.wrap>.tabs` の 100vmax の影と clip-path も外す
+  - 結果の目次 `.rvtabs`・箱庭の目次 `.bxtabs`・住人の一括の帯 `.tsbulk.on`・PC 幅の `.rvtoc`/`.rvrail`/`.rvlist` の sticky → static（自分でスクロールする箱もやめる）
+  - 画面上端の帯 `body::before` を消す
+  - `html{overflow-anchor:none}` を外す（auto）
+  - 全要素の `content-visibility` を visible、`contain-intrinsic-size` を none。隠した箱庭タブは display:none
+  - 参加表の `zoom`／`transform: scale()` → 100% 固定（late の ui-perzoom.js が −・＋・全体を表示を押せなくし、「縮尺は 100% に固定しています（Safari の表示を軽くしているため）」と出す。選んでいた縮尺は残り、切れば戻る。表の形の積む／並べるは使える）
+  - 下に固定する帯 `.runbar`（箱庭タブで要る）・`.uimobar`・`#pagejump` は残し、`translateZ(0)` で自分の層に分ける
+- **描き直しの一押し**（late の ui-ios-paint.js）：セーフモードのときは、outline ではなく、いま見えているタブパネルの子に `transform: translateZ(0)` を 1 フレームだけ付けて外す（クラス `hk-repaint-z`。層を一瞬作って壊し、白いタイルを作り直させる）。パネルそのものに付けると中の fixed の帯がパネルに付いて動くので、帯と帯を含む子は避けて 2 段まで中へ降りる。いつ：スクロールが止まったとき・指を離したとき・**タブを切り替えたとき**・ページに戻ったとき・向き・大きさ（ツールバーの伸縮）。1 秒に 1 回まで
+- 記録の頭：`・WebKit・描き直しの一押し：有効（層を作り直す）・Safari 16〜18 のセーフモード：有効（自動）`（入にしたときは「（入）」、切は `・セーフモード：切`）
+
+### スイッチ「Safari の表示を軽くする（真っ白・飛びの対策）：自動／入／切」
+
+- 置き場所：右上の「表示」のメニュー（「不具合」の行の上。どのタブからも開ける）と、「不具合の記録」の窓の中。PC・スマホ同じ（mobile-parity.md の全体の表）
+- 既定は自動（上の判定）。入はどのブラウザでも当たる（試すため）。localStorage の `hakoniwa-iossafe`（自動のときは消す）。押すとすぐ切り替わり、知らせ（toast）と記録の控え（`safe：…`）が出る
+- 住人の設定の窓（歯車）は住人ごとの設定なので、画面全体のスイッチは置かなかった（同じ窓を開ける「表示」のメニューと記録の窓の 2 か所）
+
+### 見張りの誤検出（ui-guard-scroll.js・ui.js）
+
+- タブの切り替え（`setTab`）を `HK.Guard.note('tab', 'タブ：result → cast')` で控える。タブの切り替え・描き直し（`redraw`。ページに戻ったときの描き直しも）・ページに戻った（`pageshow`・`visibilitychange`）の直後 1 秒と、前のスクロールの知らせのあとにそれらがあったときは、高さの急な変化（shrink）を数えない（iOS 18.7 の利用者の記録の shrink 6 件も、すべてタブの切り替え・ページに戻った直後の描き直しの誤検出だった）
+- 飛び（jump）の記録に「指で触っている最中／指は離れている」（`HK.Guard.touching()`）と、セーフモードのときは「セーフモード」を添える
+
+### 確かめたこと（Playwright・Chromium。WebKit 本物は無い）
+
+| 見たこと | 結果 |
+|---|---|
+| iOS 18.2.1 の UA（Version/18.2。390×664・isMobile・hasTouch）・iOS 16.7 の UA（Version/16.6.2）・自動 | `hk-ios-legacy` が付く。`.tabs` static・`body::before` none・overflow-anchor auto |
+| iOS 27 の UA（OS 18_6・Version/27）・iOS 18.7 の UA（Version/26.6.1）・自動／iOS 18.2 で切／PC 1280 で自動 | 付かない（`.tabs` sticky のまま。PC の切は今までと同じ表示） |
+| デスクトップ用表示（Mac の UA・Version/18.2・タッチ 5 点・980 幅）・自動 | 付く |
+| PC 1280 で入 | 付く（試せる） |
+| スイッチ（表示のメニュー）入→切→自動・記録の窓で入 | その場で CSS が切り替わる。押した札の aria-pressed・メニューは開いたまま |
+| 4 タブ（結果→住人→箱庭→セーブ→結果）を下までスクロール（390：108 回、1280：23 回） | 位置の後戻り 0・ページの例外 0・記録（jump・shrink）0 件 |
+| タブの切り替えの控え | `tab：タブ：cast → box` など 6 件。切り替えの直後の shrink は 0 件（結果 9070px → 住人 2604px） |
+| Version/ の無い WebView の UA（iPhone）・自動 | 付く |
+| 描き直し（`HK.UI.refresh`）・ページに戻った（pageshow）の直後に結果 9097px → 住人 2604px | shrink 0 件。対照（1 秒過ぎてから描き直しなしで同じ縮み）は 1 件記録される |
+| タブの頭へ（タブを押し直す・`.tabs` が static） | 落ちない（例外 0） |
+| 参加表（390・セーフモード） | `--pz` 1・zoom 1・transform none・−／＋／全体を表示が押せない・固定の一文。表は横スクロールで崩れない |
+| 一押し（390・セーフモード） | translateZ の方式で 11 回、`hk-repaint(-z)` の残り 0 |
+| 記録の頭（390） | `画面：390x664・縦・倍率 3・WebKit・描き直しの一押し：有効（層を作り直す）・Safari 16〜18 のセーフモード：有効（自動）` |
+
+### 利用者に確かめてもらう手順
+
+1. ページを読み込み直す。iOS 18.2 など Safari 18 以前の人は**まず自動のまま**（右上の「表示」→「Safari の表示を軽くする」が「自動」で、説明に「この端末では入」と出ていること）。上の切替がスクロールで流れるようになっていれば当たっている
+2. 住人・箱庭・結末の各タブで下までスクロールし、真っ白・飛びが出るかを見る
+3. 自動で「切」と出る端末で白くなるなら「入」にして試す
+4. それでも出るなら「表示」→「不具合の記録」→「コピー」で送ってもらう（頭の行に `セーフモード：有効`、飛びの記録に「指で触っている最中か」が出る）
+5. iOS 27 など起きない端末は「自動」（＝切）のままでよい

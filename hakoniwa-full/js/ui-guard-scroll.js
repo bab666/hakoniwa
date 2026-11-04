@@ -6,6 +6,8 @@
    ・ページの高さの急な変化：スクロール中にページの高さが 3 割以上・1000px 以上縮んだら記録する（描き直しで中身が消えた・畳まれた。窓が背景を止めているあいだは除く）
    ・「操作から」：押した・触れ終えた・キーを打った直後 1.2 秒、または利用者の操作で始まった処理の途中（HK.Guard.acting。箱庭を回すのに時間がかかっても外れない）
    ・画面の向きの変化・ページに戻ったことは控えにだけ書く
+   ・2026-11-04 追記：タブの切り替え・描き直し（HK.UI.refresh）・ページに戻ったときの直後 1 秒（HK.Guard.tabAt）と、前のスクロールの知らせのあとにそれらがあったときの高さの変化は数えない（タブごとの高さの違いを縮みと誤って記録していた）。
+     飛びの記録に、指で触っている最中か（touchstart〜touchend の間。HK.Guard.touching）と、セーフモードが当たっているかを添える
    記録には住人の名前や設定を入れない（関数の名前・位置・高さだけ）。docs/reports/2026-11-04/safari-scroll.md */
 (function () {
   'use strict';
@@ -63,12 +65,16 @@
     if (lt && t - lt < 250 && !fromUser(t) && Math.abs(y - ly) > Math.max(vh * 1.5, 900) && jumps < 20 && !mod) {
       jumps++;
       var p = lastProg && t - lastProg.ts < 600 ? lastProg.fn + ' ← ' + lastProg.who : 'プログラムによるスクロールなし' + (y === 0 ? '（上端へ。画面の上端を押したときもこうなります）' : '');
-      G.add('jump', 'スクロール位置が飛びました：' + Math.round(ly) + '→' + Math.round(y) + '（' + (t - lt) + 'ms・ページの高さ ' + lh + '→' + h + '）・' + p);
+      var fing = G.touching ? (G.touching() ? '・指で触っている最中' : '・指は離れている') : '';
+      var sm = G.safe && G.safe.on() ? '・セーフモード' : '';
+      G.add('jump', 'スクロール位置が飛びました：' + Math.round(ly) + '→' + Math.round(y) + '（' + (t - lt) + 'ms・ページの高さ ' + lh + '→' + h + fing + sm + '）・' + p);
     }
-    if (!mod && lh > 0 && h < lh * 0.7 && lh - h > 1000) G.add('shrink', 'ページの高さが急に縮みました：' + lh + '→' + h + '（位置 ' + Math.round(y) + '）');
+    var tabSw = G.tabAt && (t - G.tabAt() < 1000 || G.tabAt() >= lt);   /* 切り替え・描き直し・戻ったの直後 1 秒か、前の知らせのあとにあった */
+    if (!mod && !tabSw && lh > 0 && h < lh * 0.7 && lh - h > 1000) G.add('shrink', 'ページの高さが急に縮みました：' + lh + '→' + h + '（位置 ' + Math.round(y) + '）');
     ly = y; lt = t; lh = h;
   }, { passive: true });
   window.addEventListener('orientationchange', function () { G.note('orient', '画面の向きが変わりました'); });
   window.addEventListener('pageshow', function (e) { G.note('page', 'ページに戻りました' + (e.persisted ? '（前の状態のまま）' : '')); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') G.note('page', 'ページが前に出ました'); });
   G.scrollWatch = true;
 })();
