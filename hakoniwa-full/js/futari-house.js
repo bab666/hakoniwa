@@ -125,11 +125,14 @@
     var sp = FC.W(ctx, f.liv === 'share' ? 'シェアハウスの居間' : '自宅の居間');
     if (P.length === 2) {
       var s0 = FC.st(ctx, A, B);
-      emitT(ctx, [A, B], 'bond', FC.fresh(ctx, s0 === 0 ? R.s : R.f), sp + '同居の理由：' + R.label + (s0 === 0 ? '（知らない人どうし）' : ''), null, 'meet');
+      var kn = FC.kinOf ? FC.kinOf(ctx, A, B) : null;
+      if (kn && T.REASON_KIN) emitT(ctx, [A, B], 'bond', FC.fresh(ctx, T.REASON_KIN), sp + '同居の理由：' + kn.label + 'の二人の同居', { rel: kn.label }, 'meet');
+      else emitT(ctx, [A, B], 'bond', FC.fresh(ctx, s0 === 0 ? R.s : R.f), sp + '同居の理由：' + R.label + (s0 === 0 ? '（知らない人どうし）' : ''), null, 'meet');
       if (s0 === 0) greet(ctx, A, B, sp);
       else FC.introTie(ctx, A, B);
     } else {
       emitT(ctx, P.slice(), 'bond', FC.fresh(ctx, R.g), sp + '同居の理由：' + R.label + '（' + P.length + '人の同居）', { G: names(P), d: P[3] ? P[3].name : '' }, 'meet');
+      groupArrive(ctx, P, sp);
       var gn = 0;
       FC.pairs(ctx).forEach(function (p) {
         var s = FC.st(ctx, p[0], p[1]);
@@ -139,6 +142,23 @@
     }
     return true;
   };
+  /* 三人・四人の入居の日：家の顔ぶれ（全員知り合い／知らない人どうし／混じる＝目的ばらばら／恋人が二組）で始まりの文を変え、全員分の入居の一文を並べる（不具合リスト 1104 の NO 9） */
+  function groupArrive(ctx, P, sp) {
+    var T = TX(); if (!T.GROUP_OPEN) return;
+    var PS = FC.pairs(ctx), cps = PS.filter(function (p) { return FC.st(ctx, p[0], p[1]) >= 3; }), kn = PS.filter(function (p) { return FC.st(ctx, p[0], p[1]) >= 1; });
+    var cpPeople = []; cps.forEach(function (p) { if (cpPeople.indexOf(p[0]) < 0 && cpPeople.indexOf(p[1]) < 0) cpPeople.push(p[0], p[1]); });
+    var kind = cps.length >= 2 && cpPeople.length >= 4 ? 'couples2' : kn.length === PS.length ? 'known' : !kn.length ? 'strangers' : 'mixed';
+    var t = FC.fresh(ctx, T.GROUP_OPEN[kind]); if (!t) return;
+    var done = [];
+    if (kind === 'couples2') for (var i = 0; i + 1 < cpPeople.length; i += 2) { var tc = FC.fresh(ctx, T.ARRIVE_CP); if (tc) t += FC.fill(ctx, tc, cpPeople[i], cpPeople[i + 1]); done.push(cpPeople[i], cpPeople[i + 1]); }
+    P.forEach(function (c) {
+      if (done.indexOf(c) >= 0) return;
+      var x = (kind === 'strangers' || kind === 'mixed') && FC.has(ctx, T.PURPOSE) && ctx.rng() < 0.7 ? FC.fresh(ctx, T.PURPOSE) : FC.freshP(ctx, T.ARRIVE, c);
+      if (x) t += FC.fill(ctx, x, c, null);
+    });
+    var KN = { known: '全員もともと知り合い', strangers: '全員が初対面', mixed: '知り合いと初対面が混じる・目的はばらばら', couples2: '恋人が二組' };
+    emitT(ctx, P.slice(), 'bond', t, sp + '入居の日（' + P.length + '人。' + KN[kind] + '）', { G: names(P) }, null, function () { for (var i = 0; i < P.length; i++) for (var j = i + 1; j < P.length; j++) ctx.mod2(P[i], P[j], { aff: 2 }, { aff: 2 }); });
+  }
   function greet(ctx, a, b, sp) {
     var T = TX(), t1 = FC.freshP(ctx, T.GREET, a), t2 = FC.freshP(ctx, T.GREET_R, b);
     if (t1 || t2) emitT(ctx, [a, b], 'bond', (t1 || '') + (t2 || ''), sp + '初対面の挨拶（' + a.name + 'から）', null, null, FC.relFx(ctx, a, b, { aff: 3 }, { aff: 3 }));
@@ -219,7 +239,8 @@
     if (h.on && f.day === 0 && f.t === 3 && !h.firstDone) {
       h.firstDone = true;
       var P = ctx.present(), fp = FC.pairs(ctx).filter(function (q) { return FC.st(ctx, q[0], q[1]) < 3; })[0];
-      if (fp) emitT(ctx, fp, 'bond', FC.fresh(ctx, (T.FIRSTNIGHT || {})[FC.st(ctx, fp[0], fp[1]) === 0 ? 's' : 'f']), FC.W(ctx, '自宅') + '同居の最初の夜', null, null);
+      var fk = fp && FC.kinOf ? FC.kinOf(ctx, fp[0], fp[1]) : null;
+      if (fp) emitT(ctx, fp, 'bond', FC.fresh(ctx, (T.FIRSTNIGHT || {})[fk && T.FIRSTNIGHT.k ? 'k' : FC.st(ctx, fp[0], fp[1]) === 0 ? 's' : 'f']), FC.W(ctx, '自宅') + '同居の最初の夜', fk ? { rel: fk.label } : null, null);
     }
     if (h.on && f.t === 3) leave(ctx);
     if (f.t >= 2) switchCheck(ctx);
@@ -227,13 +248,16 @@
   function leave(ctx) {
     var f = ctx.ft, h = hs(ctx), T = TX(), rng = ctx.rng;
     if (f.day < 2 || f.day > f.days - 3 || h.n.leaves >= (f.days >= 14 ? 2 : 1) || Object.keys(h.away).length) return;
+    /* 争いの起こりやすさ（環境の strife。50 が既定）：高いほど、低い緊張でも飛び出しやすい（不具合リスト 1104 の NO 6：50 で出て行くケンカが出なかった） */
+    var sk = (ctx.env && ctx.env.strife != null ? +ctx.env.strife : 50) / 50, tmin = 46 - 12 * sk, pr = Math.min(0.95, 0.4 + 0.35 * sk);
+    if (sk <= 0) return;
     var cand = FC.pairs(ctx).filter(function (p) {
       var a = p[0], b = p[1], x = FC.stOf(ctx, a, b);
       if (!house(ctx, a, b) || !FC.together(ctx, a, b) || FC.onTrip(ctx, a)) return false;
       var ten = Math.max(ctx.R(a, b).ten, ctx.R(b, a).ten);
-      return ten >= 40 && f.day - Math.max(x.lastSpat == null ? -9 : x.lastSpat, x.lastRubSpat == null ? -9 : x.lastRubSpat) <= 1;
+      return ten >= tmin && f.day - Math.max(x.lastSpat == null ? -9 : x.lastSpat, x.lastRubSpat == null ? -9 : x.lastRubSpat) <= 1;
     });
-    if (!cand.length || rng() > 0.5) return;
+    if (!cand.length || rng() > pr) return;
     var p = cand[0], a = p[0], b = p[1];
     var hot = function (c, o) { return ctx.R(c, o).ten + (/^(proud|tsun|free)$/.test(per(c)) ? 6 : 0); };
     var lv = hot(a, b) >= hot(b, a) ? a : b, st = lv === a ? b : a, w = rp(ctx, T.WHERE || ['実家']);
@@ -424,7 +448,10 @@
   function xName(o) { return o.n ? o.l + 'の' + o.n : o.l; }
   function visitRun(ctx, a, b, kind) {
     var f = ctx.ft, h = hs(ctx), T = TX(), L0 = outs(ctx, a), o = L0.length ? L0[Math.floor(ctx.rng() * L0.length)] : { k: ctx.rng() < 0.6 ? 'friend' : 'family', l: ctx.rng() < 0.6 ? '友人' : '家族' };
-    var tb = (T[kind === 'visit' ? 'VISIT' : 'CALL'] || {})[o.k], t = FC.fresh(ctx, tb);
+    var tb = (T[kind === 'visit' ? 'VISIT' : 'CALL'] || {})[o.k];
+    /* 「変な人じゃない？」のような、初対面の同居人を前提にした文は、もともと知り合い・家族の二人には出さない */
+    if (FC.st(ctx, a, b) >= 1 || (FC.kinOf && FC.kinOf(ctx, a, b))) tb = (tb || []).filter(function (z) { return !/変な人|どんな人/.test(z); });
+    var t = FC.fresh(ctx, tb);
     if (!t) return null;
     h.visitDay = f.day; stat(ctx, 'visits');
     var xn = xName(o), ex = { x: xn };
