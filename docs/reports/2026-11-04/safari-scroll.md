@@ -91,3 +91,13 @@ Safari で切れる理由そのもの（回線・メモリ・アプリの切り�
 
 - 起きたら、右上の「表示」→ いちばん下の「不具合の記録」→「コピー」で、記録を貼って知らせてもらう（`scroll`・`jump` の行に、動かした処理の名前が出る）
 - 記録に何も残っていないのに文字が消える場合は、Safari の描画（タイルの描き遅れ）の可能性が高い。そのときは iOS の版・端末名と、どのタブのどのあたりか（経過の吹き出し・関係図など）を教えてもらう
+
+## 6. 届いた記録の読み解きと直したこと（iOS 16.7 の利用者の記録）
+
+記録の抜粋：`shrink`（24392→635・4650→635・26401→1123。画面 375x635／716）が多数、`scroll`（`scrollTo ← toTop`。直前に `scrollTo 398 ← up ← setTab ← simulate` と `scrollTo 394 ← toTop ← simulate ← run`）。
+
+- **shrink は誤検出**：窓（`HK.Modal.lock`）が body を `position:fixed` にするので、開いた瞬間にページの高さが表示領域の高さになる。jump は `.hk-modal-open` を除いていたが shrink は除いていなかった。→ `ui-guard-scroll.js`：窓が止めているあいだと外した直後（100ms）は jump・shrink とも数えない。`ui-modal.js` の freeze／thaw で `HK.Guard.note('modal', '窓を開きました（止めた位置 y）'／'窓を閉じました（y へ戻す）')` を控える
+- **「操作なし toTop」は run の念押し**（すぐ・rAF・150ms・500ms）。操作からの時間を click／keydown からだけ測っていたので、箱庭を回すのに 1.2 秒以上かかると外れていた。→ 操作の時刻に `touchend`・`pointerup` も足し、`HK.Guard.act()`（run の頭）／`act(true)`（run の終わり）と `HK.Guard.acting()`（始まりから 3 秒以内か終わりから 1 秒以内）を中核の `ui-guard.js` に足して、その間のスクロールは「操作から」とする。`userAt`（利用者が自分でスクロールした時刻。念押しを止める判定）は act では動かさない
+- **二重のスクロール**：`simulate` の `setTab('result')` がタブの頭（398px）へ、直後の toTop が 0 へ動かしていた。→ 回したとき（record）は `setTab('result', false, true)`（位置を動かさない）にして toTop に一本化。念押しの回数・利用者がスクロールし始めたら止める判定はそのまま
+- 確かめ（Playwright。HK.simulate を 1.5 秒遅くして回す）：幅 390（iPhone の UA・hasTouch）で 1940px まで下げて注意事項の窓を開閉 → shrink 0 件・位置 1940 へ戻る・控えに modal の 2 行。回す → 控えの scroll 4 本（3929→0 の toTop ×4）がすべて「操作から」・記録の scroll 0 件・回したあと位置 0。幅 1280 でも同じ（scroll 4 本すべて「操作から」・位置 0）
+- 残り：タブを押して切り替えた直後（箱庭タブは描画を後回しにする）にも shrink が出ることがある（窓とは別。本物の縮みとして残している）

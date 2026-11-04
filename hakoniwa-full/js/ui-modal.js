@@ -69,6 +69,7 @@
     b.style.top = -y + 'px';
     if (x) b.style.left = -x + 'px';
     de.classList.add('hk-modal-open'); b.classList.add('hk-modal-open');
+    if (HK.Guard && HK.Guard.note) HK.Guard.note('modal', '窓を開きました（止めた位置 ' + Math.round(y) + '）');
     document.addEventListener('touchstart', onStart, { passive: true, capture: true });
     document.addEventListener('touchmove', onMove, { passive: false, capture: true });
     if (typeof MutationObserver !== 'undefined') {
@@ -80,6 +81,7 @@
     var de = document.documentElement, b = document.body;
     if (!saved || !b) { saved = null; return; }
     var s = saved; saved = null;
+    if (HK.Guard && HK.Guard.note) HK.Guard.note('modal', '窓を閉じました（' + Math.round(s.y) + ' へ戻す）');
     if (mo) mo.disconnect();
     document.removeEventListener('touchstart', onStart, { capture: true });
     document.removeEventListener('touchmove', onMove, { capture: true });
