@@ -15,6 +15,8 @@
    ・HK.Guard.userAt()：利用者が最後に自分でスクロール・操作した時刻（ui.js が、念押しのスクロールや描き直しの位置の戻しを、利用者のスクロールを邪魔しないように使う）
    ・HK.Guard.note(種類, 文)：直前の出来事の控え（描き直し・プログラムによるスクロール・読み込み。このページを開いているあいだの 30 件）。記録を残すときに直前の 6 件を添える。
      スクロールの見張り（プログラムによるスクロール・大きな飛び・ページの高さの急な変化）は late の ui-guard-scroll.js
+   ・HK.Guard.act()／act(true)：利用者の操作で始まった処理（箱庭を回す）の始まり／終わり。HK.Guard.acting() は始まりから 3 秒以内か終わりから 1 秒以内で真
+     （その結果のスクロールを「操作から」とみなす。userAt は利用者が自分でスクロールした時刻なので、これでは動かさない）
    ・記録と知らせる文に iOS の版・画面の向きを添える */
 (function () {
   'use strict';
@@ -24,7 +26,7 @@
   /* 直前の出来事の控え（保存しない）。記録を残すときに添える */
   function note(k, m) { trace.push({ ts: Date.now(), k: String(k), m: String(m || '').slice(0, 160) }); if (trace.length > 30) trace.splice(0, trace.length - 30); }
   /* 利用者が自分でスクロール・操作した時刻（指・ホイール・キー）。指で触っているあいだ（touching）は空の判定もしない */
-  var userT = 0, touching = 0;
+  var userT = 0, touching = 0, actS = 0, actE = 0;
   function mark() { userT = Date.now(); }
   ['wheel', 'keydown', 'pointerdown'].forEach(function (k) { window.addEventListener(k, mark, { passive: true, capture: true }); });
   window.addEventListener('touchstart', function () { touching++; mark(); }, { passive: true, capture: true });
@@ -202,6 +204,8 @@
     note: note,
     trace: function () { return trace.slice(); },
     userAt: function () { return userT; },
+    act: function (end) { if (end) actE = Date.now(); else actS = Date.now(); },
+    acting: function () { var n = Date.now(); return n - actS < 3000 || n - actE < 1000; },
     /* 知らせるための文（新しい順）。ブラウザ・画面・版も添える */
     text: function () {
       var head = '箱庭シミュレーター 不具合の記録（' + new Date().toLocaleString() + '）\n' +
