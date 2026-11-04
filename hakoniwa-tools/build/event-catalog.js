@@ -37,11 +37,13 @@ const SKIP_RUN = { 'js/load.js': 1, 'js/event-catalog.js': 1 };
 /* ---------- 読み込み順（build.js と同じ解釈。通し番号は late・tone を後ろに回した順） ---------- */
 function readOrder(dir) {
   const entries = [], deps = {};
+  let base = '';
   fs.readFileSync(path.join(dir, 'js/_order.txt'), 'utf8').split('\n').forEach(line => {
     const l = line.replace(/#.*$/, '').trim();
     if (!l) return;
     let m;
     if ((m = l.match(/^@chunk\s+(\S+)(?:\s+deps=(\S*))?$/))) { deps[m[1]] = (m[2] || '').split(',').filter(Boolean); return; }
+    if ((m = l.match(/^@base\s+(\S+)$/))) { base = m[1]; return; }
     if (/^@/.test(l)) return;
     m = l.match(/^((?:late|tone)\s+)?(js\/[^\s@'"\\]+\.js)(?:\s+@(pack|scen):(\S+))?$/);
     if (!m) return;
@@ -52,6 +54,8 @@ function readOrder(dir) {
   const names = ['core'];
   if (entries.some(e => e.chunk === 'late')) names.push('late');
   entries.forEach(e => { if (e.chunk !== 'tone' && names.indexOf(e.chunk) < 0) names.push(e.chunk); });
+  /* @base のかたまり（build.js と同じ）：ほかの全部の deps の先頭に */
+  if (base) names.forEach(c => { if (c === 'core' || c === base) return; const d = deps[c] = deps[c] || []; if (d.indexOf(base) < 0) d.unshift(base); });
   const exec = [], st = {};
   const visit = c => { if (st[c]) return; st[c] = 1; (deps[c] || []).forEach(visit); exec.push(c); };
   names.forEach(visit);

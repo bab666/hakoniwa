@@ -216,13 +216,16 @@
     if (sexy && !e.skipped && typeof e.why === 'string' && e.why.indexOf(n.text) < 0) e.why = e.why ? e.why + '／' + n.text : n.text;
   }
   if (HK.Ctx && !HK.Ctx.prototype.say._avoid) {
-    var cs0 = HK.Ctx.prototype.say;
-    HK.Ctx.prototype.say = function (o) {
-      var e = cs0.apply(this, arguments);
-      if (this._avNote && o && e) addNote(this, e, (o.actors || []).map(function (c) { return c && c.i; }), !!(e.lewd || (o.sex != null ? o.sex : o.cat === 'romance' && this._ev && this._ev.sex)));
-      return e;
-    };
-    HK.Ctx.prototype.say._avoid = true;
+    /* 包み直しは HK.wrap（2026-11-04：後から読むかたまりの content-events-r18.js の包みが、元のファイルの順でこれより内側に入れるように） */
+    HK.wrap(HK.Ctx.prototype, 'say', function (cs0) {
+      var f = function (o) {
+        var e = cs0.apply(this, arguments);
+        if (this._avNote && o && e) addNote(this, e, (o.actors || []).map(function (c) { return c && c.i; }), !!(e.lewd || (o.sex != null ? o.sex : o.cat === 'romance' && this._ev && this._ev.sex)));
+        return e;
+      };
+      f._avoid = true;
+      return f;
+    });
   }
   if (HK.Story && HK.Story.say && !HK.Story.say._avoid) {
     var ss0 = HK.Story.say;

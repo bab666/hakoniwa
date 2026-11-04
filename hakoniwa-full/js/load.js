@@ -67,6 +67,17 @@
   if (M) {
     HK.SCENARIOS = HK.SCENARIOS || {};
     HK.SCEN_ORDER = Array.isArray(M.order) ? M.order.slice() : [];
+    /* 隠した箱庭（目録の hidden。今は「ふたりの日常」）：URL の #futari か localStorage の hakoniwa-<id>=1 のときだけ目録と一覧に足す。
+       本体は箱庭のかたまり（scen-<id>）にあり、選んだときに読む（2026-11-04。前は中核に本体を置いていた） */
+    var HID = M.hidden && typeof M.hidden === 'object' ? M.hidden : {};
+    Object.keys(HID).forEach(function (id) {
+      var on = !!flags[id];
+      try { on = on || window.localStorage.getItem('hakoniwa-' + id) === '1'; } catch (e) { /* 保存を読めない */ }
+      if (!on || SC[id]) return;
+      SC[id] = HID[id];
+      var wi = HK.SCEN_ORDER.indexOf('whiteroom');
+      if (wi >= 0) HK.SCEN_ORDER.splice(wi + 1, 0, id); else HK.SCEN_ORDER.push(id);
+    });
     /* late を読み終えるまでは「まだ」（今の index.html と同じ。点検道具は LATE_READY !== false を待つ） */
     HK.LATE_READY = false;
   }
@@ -100,6 +111,7 @@
       L.cur = pc;
     });
     sortOrder();
+    if (L.pendN) L.flushTone();
     if (name === 'core') L.start();
   };
   /* 箱庭のファイルが SCEN_ORDER の後ろに足した箱庭（全年齢モードで一度外れたものなど）を、目録の並び（全部読んだときの並び）の位置に戻す。
@@ -204,8 +216,21 @@
     if (V && d.O) put(V.OVR = V.OVR || {}, tone, d.O);
     if (V && d.I && Array.isArray(V.INTENT)) V.INTENT.forEach(function (x) { if (x && x.id != null && Object.prototype.hasOwnProperty.call(d.I, x.id)) x[tone] = d.I[x.id]; });
     if (d.M && HK.Ero) put(HK.Ero.TONE_MOAN = HK.Ero.TONE_MOAN || {}, tone, d.M);
-    if (d.N && HK.NovelMoan && HK.NovelMoan.T) put(HK.NovelMoan.T, tone, d.N);
+    /* N（小説調の喘ぎの表）は、受け口の novel-moan-tone.js が後から読むかたまり（pack-lewd）にあるので、まだ無ければ取っておき、
+       novel-moan-tone.js の終わり（と、かたまりを読み終えたとき）に L.flushTone で入れる（2026-11-04。前は受け口が中核にあった） */
+    if (d.N) {
+      if (HK.NovelMoan && HK.NovelMoan.T) put(HK.NovelMoan.T, tone, d.N);
+      else { var PN = L.pendN = L.pendN || {}; put(PN, tone, d.N); }
+    }
     /* 表から作る索引（tone-fix-loose.js のゆるい引き方など）を作り直させる */
+    L.gen++;
+  };
+
+  L.flushTone = function () {
+    var PN = L.pendN;
+    if (!PN || !HK.NovelMoan || !HK.NovelMoan.T) return;
+    L.pendN = null;
+    Object.keys(PN).forEach(function (tone) { put(HK.NovelMoan.T, tone, PN[tone]); });
     L.gen++;
   };
 

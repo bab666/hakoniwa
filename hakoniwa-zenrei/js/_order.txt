@@ -1,6 +1,11 @@
 # 読み込み順（全部読んだときの実行の順。上から順に 1 から通し番号が付き、HK.wrap／HK.addTo の並べ替えの鍵になる）。変えたら node hakoniwa-tools/build/build.js <このビルド> を実行
 # 注記：なし＝中核（core。起動時に読む）／「late 」＝画面が出たあと裏で読む（late の行は下の区切りより後ろに置く）／「tone 」＝口調の書き下ろし（表だけを書くファイル。build が vm で読んで口調ごとのデータのかたまり tone-base・tone-<口調> と箱庭のかたまりの後ろに書き出す。late と同じく区切りより後ろ）／「 @pack:<族>」＝族のかたまり pack-<族>（その族の箱庭を選んだときに読む）
 # @chunk <かたまり> deps=<先に要るかたまり>／@need <箱庭> <かたまり>（登録するかたまりのほかに、動かすのに要るかたまり）
+# pack-sim（2026-11-04 担当CS）：動かすのに要るが、画面を出すのには要らない部品（シミュレーションの部品・結末・共通の場面など）。起動時には読まず、画面が出たあと late より先に読む。
+#   @base pack-sim で、core・口調のほかの全部のかたまり（late・族・箱庭・追加パックが頼るかたまり）の deps の先頭に自動で入る（書き忘れで抜けない）。
+#   ここに入れるファイルは、中核の関数を素の代入で包まない（HK.wrap で書く）・中核のファイルが読み込み時に読まない物だけ（docs/reports/2026-11-04/core-split.md）
+@base pack-sim
+@chunk pack-sim
 @chunk pack-story deps=pack-rel
 @chunk scen-ship deps=pack-story
 @chunk scen-jashin deps=pack-story
@@ -17,7 +22,7 @@
 @chunk scen-island deps=pack-rel
 @chunk scen-zombie deps=pack-rel
 @chunk scen-omega deps=pack-rel
-@need futari pack-rel
+@chunk scen-futari deps=pack-rel
 @chunk pack-roomkit deps=pack-rel
 js/load.js
 js/load-order.js
@@ -33,7 +38,7 @@ js/persona.js
 js/tie-rel.js
 js/rel-at.js @pack:rel
 js/tie-new.js @pack:rel
-js/daily-kit.js
+js/daily-kit.js @pack:sim
 js/rel-group.js @pack:rel
 # キスだけの触れ合いの場面（2026-11-03。恋人どうし・両片想い・友人・不仲・見られる版。文は HK.Kiss の型。設計は docs/reports/2026-11-03/kiss-design.md）
 js/kiss-events.js @pack:rel
@@ -57,12 +62,11 @@ js/tone-gentleman.js
 js/tone-extra2.js
 js/voice-more.js
 js/voice-override.js
-js/voice-override-solo.js
 js/tone-lines.js
-js/hate-kit.js
-js/feud-kit.js
-js/hate-love.js
-js/hate-love-more.js
+js/hate-kit.js @pack:sim
+js/feud-kit.js @pack:sim
+js/hate-love.js @pack:sim
+js/hate-love-more.js @pack:sim
 js/tone-firm.js
 js/tone-polite-kin.js
 js/tone-new.js
@@ -76,18 +80,17 @@ js/tone-sondai.js
 js/tone-stern.js
 js/tone-long.js
 js/tone-new2.js
-js/tone-new2-rows.js
 js/engine.js
 js/sib-word.js
 js/emotion.js
 js/content.js
-js/mood-dial.js
+js/mood-dial.js @pack:sim
 js/mob.js
 js/fwb.js @pack:rel
-js/free-sex.js
+js/free-sex.js @pack:sim
 js/scenarios-a.js @scen:goukon
 js/scenario-classroom.js @scen:classroom
-js/mini.js
+js/mini.js @pack:sim
 js/mini-tails.js @pack:rel
 js/scenarios-b.js @scen:island
 js/deathgame-kit.js
@@ -117,11 +120,11 @@ js/room-pressure.js @scen:whiteroom
 js/room-kill.js @scen:whiteroom
 js/trap-open-room.js @scen:whiteroom
 js/scenario-trial.js @scen:trial
-js/ego-image.js
+js/ego-image.js @pack:sim
 js/omega-data.js
 js/omega-jobs.js @scen:omega
 js/omega-heat.js @scen:omega
-js/omega-detective.js
+js/omega-detective.js @pack:sim
 js/omega-bond.js @scen:omega
 js/omega-status.js @scen:omega
 js/omega-jobs-extra.js @scen:omega
@@ -163,7 +166,7 @@ js/mini-extra-b-br.js @scen:br
 js/mini-extra-c.js @scen:trial
 js/mini-serifu.js @pack:rel
 js/dungeon-lite.js
-js/solo-kit.js
+js/solo-kit.js @pack:sim
 js/solo-massage-cast.js @scen:massage
 js/solo-massage.js @scen:massage
 js/factions.js @pack:rel
@@ -171,9 +174,9 @@ js/classroom-teacher.js @scen:classroom
 js/classroom-staff.js @scen:classroom
 js/classroom-teacher-love.js @scen:classroom
 js/classroom-cheer.js @scen:classroom
-js/endings.js
-js/epilogue.js
-js/scenario-futari.js
+js/endings.js @pack:sim
+js/epilogue.js @pack:sim
+js/scenario-futari.js @scen:futari
 js/island-after.js @scen:island
 js/zombie-data.js
 js/zombie-core.js @scen:zombie
@@ -185,7 +188,7 @@ js/zombie-together.js @scen:zombie
 js/zombie-solo.js @scen:zombie
 js/zombie-letter.js @scen:zombie
 js/zombie-seek.js @scen:zombie
-js/rel-kit.js
+js/rel-kit.js @pack:sim
 js/zombie-bonds.js @scen:zombie
 js/island-rel.js @scen:island
 js/island-escape.js @scen:island
@@ -211,7 +214,7 @@ js/pos.js
 js/attr.js
 js/attr-height.js
 js/attr-yomi.js
-js/food.js
+js/food.js @pack:sim
 js/special.js
 js/zombie-special.js @scen:zombie
 js/pair-react.js @pack:rel
@@ -226,7 +229,7 @@ js/avoid-kit.js
 js/attr-look.js
 js/attr-race.js
 js/attr-meet.js
-js/fam-kin.js
+js/fam-kin.js @pack:sim
 js/cold-fear-text.js @pack:rel
 js/cold-fear.js @pack:rel
 js/fear-soften.js @pack:rel
@@ -302,11 +305,8 @@ js/jinro-love.js @scen:jinro
 js/same-story.js @pack:story
 js/safe.js
 js/safe-room.js
-js/share-card.js
-js/egoquiz.js
 js/saves.js
 js/history.js
-js/portable.js
 js/state-store.js
 js/save-folder.js
 js/scen-meta.js
@@ -326,7 +326,9 @@ js/ui-box-list.js
 js/ui-import.js
 js/ui-modal.js
 js/ui-shell.js
+js/ui-norm.js
 js/ui.js
+js/ui-cast-ops.js
 js/ui-cast-teacher.js
 js/ui-gear.js
 js/ui-adv.js
@@ -340,7 +342,7 @@ js/ui-filter.js
 js/ui-result-style.js
 js/ui-scroll-style.js
 js/hate-install.js @pack:rel
-js/obsess-kit.js
+js/obsess-kit.js @pack:sim
 js/obsess-story.js @pack:story
 js/obsess-install.js @pack:rel
 js/obsess-omega.js @scen:omega
@@ -357,6 +359,8 @@ js/event-catalog.js @pack:catalog
 js/roomkit-life.js @pack:roomkit
 js/roomkit-journal.js @pack:roomkit
 # ==== ここから下は late の区切り：上の行（中核・族）をすべて読んだあとに実行される行。late・tone の行と、もとは late だった族の行を、元の実行の順のまま置く ====
+tone js/voice-override-solo.js
+tone js/tone-new2-rows.js
 tone js/voice-override-rows.js
 tone js/voice-override-rows2.js
 tone js/voice-override-scenes.js
@@ -367,6 +371,27 @@ late js/tone-darui.js
 tone js/tone-fix.js
 tone js/tone-fix-g1.js
 tone js/tone-fix-g2.js
+tone js/tone-fix-br.js
+tone js/tone-fix-classroom.js
+tone js/tone-fix-dungeon.js
+tone js/tone-fix-goukon.js
+tone js/tone-fix-hole.js
+tone js/tone-fix-island.js
+tone js/tone-fix-jashin.js
+tone js/tone-fix-jinro.js
+tone js/tone-fix-kaihen.js
+tone js/tone-fix-locker.js
+tone js/tone-fix-massage.js
+tone js/tone-fix-omega.js
+tone js/tone-fix-rpg.js
+tone js/tone-fix-saimin.js
+tone js/tone-fix-ship.js
+tone js/tone-fix-succubus.js
+tone js/tone-fix-trial.js
+tone js/tone-fix-variety.js
+tone js/tone-fix-whiteroom.js
+tone js/tone-fix-yakata.js
+tone js/tone-fix-zombie.js
 tone js/tone-fix-g3.js
 tone js/tone-fix-g4.js
 tone js/tone-fix-g5.js
@@ -430,7 +455,7 @@ js/jashin-fx-b.js @scen:jashin
 js/jashin-place.js @scen:jashin
 js/jinro-data.js @scen:jinro
 js/jinro-after.js @scen:jinro
-js/rel-bad-story.js
+js/rel-bad-story.js @pack:sim
 late js/tie-new-story.js
 late js/tips.js
 late js/tips-scen-a.js
@@ -445,6 +470,10 @@ late js/pack-crypto.js
 late js/packs.js
 late js/packs-ui.js
 # スマホでも PC と同じことができるように：住人の設定の窓の「グループ・メモ」の節（2026-11-04）
+late js/ui-json.js
+late js/share-card.js
+late js/egoquiz.js
+late js/portable.js
 late js/ui-gear-basic.js
 # グループ・タグの小さな一覧（今あるものから選ぶ・新しく作る・名前の変更・削除）と、まとめて付ける操作（2026-11-04）
 late js/ui-tagsel-pop.js

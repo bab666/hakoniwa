@@ -236,15 +236,18 @@
     A.meetScene(p.list, owner, null, { not: p.not });
   }
   if (HK.Ctx && HK.Ctx.prototype.say && !HK.Ctx.prototype.say._meet) {
-    var cs0 = HK.Ctx.prototype.say;
-    HK.Ctx.prototype.say = function (o) {
-      try { talkHook(this, o, null); } catch (x) { /* 飾りが失敗しても出来事は出す */ }
-      var e = cs0.apply(this, arguments);
-      if (this._meetPend) { try { flush(this, o); } catch (x) { delete this._meetPend; } }
-      return e;
-    };
-    HK.Ctx.prototype.say._meet = true;
-    HK.Ctx.prototype.say._attrLook = cs0._attrLook;
+    /* 包み直しは HK.wrap（2026-11-04。avoid-kit.js と同じ） */
+    HK.wrap(HK.Ctx.prototype, 'say', function (cs0) {
+      var f = function (o) {
+        try { talkHook(this, o, null); } catch (x) { /* 飾りが失敗しても出来事は出す */ }
+        var e = cs0.apply(this, arguments);
+        if (this._meetPend) { try { flush(this, o); } catch (x) { delete this._meetPend; } }
+        return e;
+      };
+      f._meet = true;
+      f._attrLook = cs0._attrLook;
+      return f;
+    });
   }
   if (HK.Story && HK.Story.say && !HK.Story.say._meet) {
     var ss0 = HK.Story.say;

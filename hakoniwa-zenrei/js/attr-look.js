@@ -48,20 +48,23 @@
   }
   /* エンジン型 */
   if (HK.Ctx && HK.Ctx.prototype.say && !HK.Ctx.prototype.say._attrLook) {
-    var cs0 = HK.Ctx.prototype.say;
-    HK.Ctx.prototype.say = function (o) {
-      try {
-        var ctx = this, pk = function (l) { return ctx.pick(l); }, ob = o && !o.look && o.actors ? obsessOf(o, o.actors) : null;
-        if (ob) { if (ctx.rng() < 0.2) add(o, A.raceObsess(ob.c, ob.o, A.raceFresh(ctx, pk))); }
-        else if (o && !o.look && !o.sex && !o.story && typeof o.text === 'string' && o.text.length >= 20 && /^(?:bond|help|romance)$/.test(o.cat || '') && (o.kind || 'event') === 'event' && o.actors && o.actors.length === 2) {
-          var a = o.actors[0], b = o.actors[1];
-          if (has(a, b) && ctx.rng() < 0.2) add(o, moodLine(a, b, pk, ctx) || A.pairLine(a, b, 'look', pk, ctx));
-        }
-      } catch (e) { /* 飾りが失敗しても出来事は出す */ }
-      A.curOwner = this;
-      return cs0.apply(this, arguments);
-    };
-    HK.Ctx.prototype.say._attrLook = true;
+    /* 包み直しは HK.wrap（2026-11-04。avoid-kit.js と同じ） */
+    HK.wrap(HK.Ctx.prototype, 'say', function (cs0) {
+      var f = function (o) {
+        try {
+          var ctx = this, pk = function (l) { return ctx.pick(l); }, ob = o && !o.look && o.actors ? obsessOf(o, o.actors) : null;
+          if (ob) { if (ctx.rng() < 0.2) add(o, A.raceObsess(ob.c, ob.o, A.raceFresh(ctx, pk))); }
+          else if (o && !o.look && !o.sex && !o.story && typeof o.text === 'string' && o.text.length >= 20 && /^(?:bond|help|romance)$/.test(o.cat || '') && (o.kind || 'event') === 'event' && o.actors && o.actors.length === 2) {
+            var a = o.actors[0], b = o.actors[1];
+            if (has(a, b) && ctx.rng() < 0.2) add(o, moodLine(a, b, pk, ctx) || A.pairLine(a, b, 'look', pk, ctx));
+          }
+        } catch (e) { /* 飾りが失敗しても出来事は出す */ }
+        A.curOwner = this;
+        return cs0.apply(this, arguments);
+      };
+      f._attrLook = true;
+      return f;
+    });
   }
   /* 物語型 */
   if (HK.Story && HK.Story.say && !HK.Story.say._attrLook) {

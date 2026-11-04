@@ -293,8 +293,16 @@
   function panelHtml(k) {
     if (k === 'io') return HK.CastImport && HK.CastImport.ioHtml ? HK.CastImport.ioHtml(P && P.io ? P.io() : {}) : '';
     if (k === 'sf') return HK.SaveFolder ? HK.SaveFolder.html() : '<p class="hint">この版では使えません。</p>';
-    return HK.Portable ? HK.Portable.html() : '';
+    if (HK.Portable) return HK.Portable.html();
+    /* まるごと書き出し・読み込み（portable.js）は late（2026-11-04）。届く前に開いたら読み込んで描き直す。読めなければ案内と「もう一度」 */
+    if (ptFail) return '<p class="hint">この部分のデータを読み込めませんでした。通信を確かめて <button type="button" class="btn small" data-ct="ptretry">もう一度</button></p>';
+    if (HK.Load && HK.Load.manifest && HK.Load.ensure && !ptWait) {
+      ptWait = true;
+      HK.Load.ensure('late').then(function () { ptWait = false; if (dlg && !dlg.hidden) paint(); }, function () { ptWait = false; ptFail = true; if (dlg && !dlg.hidden) paint(); });
+    }
+    return '<p class="hint">データを読み込んでいます…</p>';
   }
+  var ptWait = false, ptFail = false;
   function paint() {
     var d = dlgEl(), p = d.querySelector('#castdata-p'), box = d.querySelector('.ctdbox'), sc = d.querySelector('.ctdbody') || d, y = sc.scrollTop;
     TABS.forEach(function (t) { var b = d.querySelector('#cdt-' + t[0]); b.setAttribute('aria-selected', t[0] === dTab ? 'true' : 'false'); b.tabIndex = t[0] === dTab ? 0 : -1; });
@@ -350,6 +358,7 @@
     if (ct === 'paste') { closeMenu(); toPaste(); return; }
     if (ct === 'data') { openData(t); return; }
     if (ct === 'dclose') { closeData(); return; }
+    if (ct === 'ptretry') { ptFail = false; paint(); return; }
     if (ct === 'dtab') { setTab(t.getAttribute('data-k'), true); return; }
     if (!P) return;
     if (act === 'cgchip') { chipClick(t.getAttribute('data-k'), t.getAttribute('data-g')); return; }

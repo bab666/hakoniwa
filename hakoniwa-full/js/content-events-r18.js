@@ -89,16 +89,18 @@
       why: '〔妊娠〕' + B.name + 'は' + Tp.name + 'の子を孕んだかもしれない' + (heat ? '（発情期のα×Ω）' : bond ? '（番）' : '') + (mb ? '（男性の体のΩ）' : '') + '／内容のスイッチ「妊娠・孕む描写」・展開：重い' });
   }
   /* 体の関係の出来事を記録したあとに見る（エンジン型の箱庭）。暴力の段を差し込んだ場面が、厚い版の差し替え（omega-thick.js など）で落ちていたら、最初の段落のあとに戻す */
-  var say0 = HK.Ctx.prototype.say;
-  HK.Ctx.prototype.say = function (o) {
-    var e = say0.apply(this, arguments), vp = this._ctViolPend;
-    if (vp && e && typeof e.text === 'string' && typeof e.why === 'string' && e.why.indexOf('〔暴力をともなう性描写〕') >= 0) {
-      this._ctViolPend = null;
-      if (e.text.indexOf(vp) < 0) { var cut = e.text.indexOf('\n\n'); e.text = cut > 0 ? e.text.slice(0, cut) + '\n\n' + vp + e.text.slice(cut) : e.text + vp; }
-    }
-    if (e && !e.skipped && o && o.kind === 'event' && typeof e.text === 'string' && on(this, 'preg')) pregHook(this, o, e);
-    return e;
-  };
+  /* 包み直しは HK.wrap（2026-11-04：このファイルは後から読むかたまり pack-lewd にあるので、元のファイルの順で中核の avoid-kit・attr-look・attr-meet・voice-fp の包みより内側に入る） */
+  HK.wrap(HK.Ctx.prototype, 'say', function (say0) {
+    return function (o) {
+      var e = say0.apply(this, arguments), vp = this._ctViolPend;
+      if (vp && e && typeof e.text === 'string' && typeof e.why === 'string' && e.why.indexOf('〔暴力をともなう性描写〕') >= 0) {
+        this._ctViolPend = null;
+        if (e.text.indexOf(vp) < 0) { var cut = e.text.indexOf('\n\n'); e.text = cut > 0 ? e.text.slice(0, cut) + '\n\n' + vp + e.text.slice(cut) : e.text + vp; }
+      }
+      if (e && !e.skipped && o && o.kind === 'event' && typeof e.text === 'string' && on(this, 'preg')) pregHook(this, o, e);
+      return e;
+    };
+  });
   /* 妊娠が分かる（身ごもった人が動いたとき。相手と二人の出来事） */
   HK.addTo(HK.COMMON, {
     id: 'ct_preg_news', label: '妊娠が分かる', cat: 'solo', scope: 'solo', pri: true, noOdd: true, r18: true,
@@ -584,14 +586,17 @@
     ST.say._ct = true;
   }
 
-  var sim0 = HK.simulate;
-  HK.simulate = function (input) {
-    hookStory();
-    CUR = null;
-    var r = sim0.apply(this, arguments);
-    if (CUR && CUR._ct && r && r.end && typeof r.end === 'object') endNotes(CUR, r);
-    CUR = null;
-    return r;
-  };
-  Object.keys(sim0).forEach(function (k) { HK.simulate[k] = sim0[k]; });
+  /* 包み直しは HK.wrap（2026-11-04：pack-lewd に移したので、元のファイルの順で中核の voice-seg.js などの包みより内側に入るように） */
+  HK.wrap(HK, 'simulate', function (sim0) {
+    var f = function (input) {
+      hookStory();
+      CUR = null;
+      var r = sim0.apply(this, arguments);
+      if (CUR && CUR._ct && r && r.end && typeof r.end === 'object') endNotes(CUR, r);
+      CUR = null;
+      return r;
+    };
+    Object.keys(sim0).forEach(function (k) { f[k] = sim0[k]; });
+    return f;
+  });
 })();

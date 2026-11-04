@@ -35,12 +35,14 @@
   }
   /* エンジン型（emotion.js が気分を立てたあとの記録に付ける。emotion.js より後に読む） */
   if (HK.Ctx && HK.Ctx.prototype.say) {
-    var say0 = HK.Ctx.prototype.say;
-    HK.Ctx.prototype.say = function (o) {
-      var e = say0.apply(this, arguments), ctx = this;
-      try { mark(e, ctx.chars, function (c) { return HK.Poly && HK.Poly.lovers ? HK.Poly.lovers(ctx, c).filter(function (o2) { return o2.alive !== false; }) : []; }); } catch (err) { /* 印が付けられなくても記録は残す */ }
-      return e;
-    };
+    /* 包み直しは HK.wrap（2026-11-04。avoid-kit.js と同じ） */
+    HK.wrap(HK.Ctx.prototype, 'say', function (say0) {
+      return function (o) {
+        var e = say0.apply(this, arguments), ctx = this;
+        try { mark(e, ctx.chars, function (c) { return HK.Poly && HK.Poly.lovers ? HK.Poly.lovers(ctx, c).filter(function (o2) { return o2.alive !== false; }) : []; }); } catch (err) { /* 印が付けられなくても記録は残す */ }
+        return e;
+      };
+    });
   }
   /* 物語型（邪神村・吹雪の館・宇宙船など） */
   /* 包み直しは HK.wrap（物語型の箱庭のかたまりが後から届いても、包む順は元のファイルの順） */

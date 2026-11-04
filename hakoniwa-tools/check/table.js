@@ -102,7 +102,7 @@ const CHECKS = [
   { id: 'twin', name: '両ビルドの同名ファイル', stage: 'pre', tags: ['js'], est: 1, why: '前は同じだった hakoniwa-full と hakoniwa-zenrei の同名ファイルが、片方だけ変わった' },
   { id: 'base-lint', name: '3 本の台詞の約束（base-lint）', stage: 'pre', tags: ['serifu', 'tone'], est: 6, tools: [TC + 'base-lint.js'], why: '比べる相手のコミットに無かった問題だけを数える（今ある誤検出 9 件は数えない）' },
   /* build */
-  { id: 'build', name: 'build（両ビルド）', stage: 'build', tags: ['js'], est: 40, weight: 1, tools: [BD + 'build.js', BD + 'event-catalog.js'], why: 'ビルドのフォルダの js・_order.txt・index.html を変えたビルドだけ。入力が前回の build と同じで出力も同じなら飛ばす' },
+  { id: 'build', name: 'build（両ビルド）', stage: 'build', tags: ['js'], est: 40, weight: 1, tools: [BD + 'build.js', BD + 'event-catalog.js'], why: 'ビルドのフォルダの js・_order.txt・index.html を変えたビルドだけ。入力が前回の build と同じで出力も同じなら飛ばす。中核（core）の br（かたまり・ファイルごとの目安の合計）が 900KB を超えたら不合格（2026-11-04）' },
   { id: 'catalog', name: '出来事の一覧（catalog-check）', stage: 'post', tags: ['js', 'event'], after: ['build', 'pack-catalog'], est: 6, tools: [BD + 'catalog-check.js', BD + 'event-catalog.js'], why: 'build のあと。一覧が古い・表示名の無い出来事・印の無い新しい場面' },
   /* 重い点検（ページを開く。並べて回す） */
   { id: 'audit-all', name: '点検の一式（audit-all）', stage: 'heavy', tags: ['sim', 'ui', 'zen', 'moan', 'thick', 'trio', 'force', 'sexgate', 'feud', 'group', 'death', 'name', 'rel'], after: ['build'], est: 240, weight: 2, tools: [TC + 'audit-all.js'],

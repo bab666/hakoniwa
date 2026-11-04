@@ -256,4 +256,6 @@
     var F = FIX[k] = FIX[k] || {};
     ['s0', 's1', 's2'].forEach(function (c) { D[k][c].forEach(function (m) { if (F[m] == null) F[m] = m; }); });
   });
+  /* 口調のデータ（tone-*）の N の行が、このファイルより先に届いていたら入れる（load.js。このファイルは pack-lewd にある） */
+  if (HK.Load && HK.Load.flushTone) HK.Load.flushTone();
 })();

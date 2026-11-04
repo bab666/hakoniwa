@@ -63,6 +63,11 @@
     return (NOUN_N[r.k] || T.noun) + (n > 1 ? n + T.unit + (T.type === 'word' ? 'ずつ' : '') : '');
   }
   HK.roomLabel = function (env) { return HK.roomLabelOf(env, rulesOf(env)); };
+  /* 箱庭タブの「場の設定」の頭に、いまの設定での部屋の名前（ui.js の HK.ScenUI。2026-11-04 に ui.js から移した） */
+  if (HK.ScenUI && HK.ScenUI.add) HK.ScenUI.add('whiteroom', {
+    envHead: function (S, env) { return '<p class="roomlabel" id="roomlabel">「' + HK.escape(HK.roomLabel(env)) + '」</p>'; },
+    envChange: function (S, env) { var rl = document.getElementById('roomlabel'); if (rl) rl.textContent = '「' + HK.roomLabel(env) + '」'; }
+  });
   /* 三人以上で一緒に満たす（env.multi。room-trio.js）の「三人の場面でだけ数える」（only）が効く条件の並びか：行為・言葉の条件があり、傷つける条件がない
      （傷つける条件は三人の場面で数えないので、only を選んでも今までどおり二人ずつ） */
   function onlyRules(r) { return r.some(function (x) { var T = K[x.k]; return !!T && (T.type === 'act' || T.type === 'word'); }) && !r.some(function (x) { return K[x.k] && K[x.k].type === 'hurt'; }); }

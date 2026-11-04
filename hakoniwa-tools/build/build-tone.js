@@ -207,6 +207,8 @@ function make(opt, chunks, tones) {
   const scenOnly = k => { const p = pieceOf(k); if (!p) return null; const w = where[pieces.get(p)]; if (w.size !== 1) return null; const c = w.values().next().value; return /^scen-/.test(c) ? c : null; };
   /* 行き先ごとのデータ：dest → tone → { F: [], S: [], O: {}, M: {}, N: {} } */
   const out = {}, stat = { rows: 0, scen: 0, writer: 0, tone: 0, looseFix: 0, byDest: {} };
+  /* 行ごとの行き先（表・口調・鍵 → かたまりの名前の並び。HK_TONE_DUMP の書き出しと、書き下ろしのファイルを箱庭ごとに分けるときの目安） */
+  const destOf = new Map();
   const bucket = (dest, tone) => { const d = out[dest] || (out[dest] = {}); return d[tone] || (d[tone] = { F: [], S: [], O: {}, I: {}, M: {}, N: {} }); };
   const toneChunk = t => auto.indexOf(t) >= 0 ? 'tone-base' : 'tone-' + t.replace(/_/g, '-').toLowerCase();
   Object.keys(want).forEach(tone => {
@@ -218,7 +220,7 @@ function make(opt, chunks, tones) {
       if (sc) return { why: 'scen', to: [sc] };
       return { why: 'tone', to: [toneChunk(tone)] };
     };
-    const count = d => { stat[d.why]++; return d.to; };
+    const count = (d, c, k) => { stat[d.why]++; if (c) destOf.set(c + SEP + tone + SEP + k, d.to.slice()); return d.to; };
     /* F（と G）：最後の表の鍵の順（Object.keys）のまま。元＝書き下ろしで G の印が無い行は S、G の印つきは F に [元, 元, 1] */
     const F = T.F && T.F[tone] || {}, G = T.G && T.G[tone] || {};
     const fd = {};
@@ -237,13 +239,13 @@ function make(opt, chunks, tones) {
       if (!fd[k]) return;
       stat.rows++;
       const v = F[k], g = G[k];
-      count(fd[k]).forEach(d => { const b = bucket(d, tone); if (v === k && !g) b.S.push(k); else b.F.push(g ? [k, v, g] : [k, v]); });
+      count(fd[k], 'F', k).forEach(d => { const b = bucket(d, tone); if (v === k && !g) b.S.push(k); else b.F.push(g ? [k, v, g] : [k, v]); });
     });
     /* G だけあって F に無い鍵（書き出せない形）は知らせる */
     w.F.forEach(k => { if (!(k in F)) R.bad['(表)'] = (R.bad['(表)'] || []).concat(['TONE_FIX_G だけにある鍵: ' + tone + ' / ' + k.slice(0, 40)]); });
     ['O', 'I', 'M', 'N'].forEach(c => {
       const t = T[c] && T[c][tone] || {};
-      Object.keys(t).forEach(k => { if (!w[c].has(k)) return; stat.rows++; count(dests(c, k)).forEach(d => { bucket(d, tone)[c][k] = t[k]; }); });
+      Object.keys(t).forEach(k => { if (!w[c].has(k)) return; stat.rows++; count(dests(c, k), c, k).forEach(d => { bucket(d, tone)[c][k] = t[k]; }); });
     });
   });
   /* G の印の値は 1 の約束（ほかの値があれば知らせる） */
@@ -279,7 +281,7 @@ function make(opt, chunks, tones) {
   /* 大きさの統計：行き先ごとの本文の文字数 */
   Object.keys(toneChunks).forEach(d => { stat.byDest[d] = toneChunks[d].reduce((a, x) => a + x.code.length, 0); });
   Object.keys(append).forEach(d => { stat.byDest[d] = append[d].code.length; });
-  return { R, auto, keys, toneChunks, append, pack, stat, extra: Object.keys(want).filter(t => keys.indexOf(t) < 0) };
+  return { R, auto, keys, toneChunks, append, pack, stat, destOf, extra: Object.keys(want).filter(t => keys.indexOf(t) < 0) };
 }
 
 /* ---------- 確かめ：データで読んだときの表が、元の順で全部読んだときと同じか ----------
@@ -314,4 +316,4 @@ function verify(opt, chunks, made, orders) {
   return res;
 }
 
-module.exports = { TABLES, newVm, snap, tablesOf, analyze, make, verify, literals };
+module.exports = { TABLES, SEP, newVm, snap, tablesOf, analyze, make, verify, literals, looseWin };

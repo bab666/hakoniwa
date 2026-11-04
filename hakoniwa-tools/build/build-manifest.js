@@ -58,11 +58,14 @@ function runVm(opt) {
   process.on('unhandledRejection', onRej);
   const run = (code, filename, lineOffset) => vm.runInContext(code, ctx, { filename, lineOffset: lineOffset || 0 });
   try { run(opt.loadSrc != null ? opt.loadSrc : LOAD_FALLBACK, 'js/load.js'); } catch (e) { errs.push('js/load.js: ' + String(e && e.message || e).slice(0, 160)); }
-  const cap = {}, home = {}, ord = [];
+  const cap = {}, capH = {}, home = {}, ord = [];
   /* SCEN_ORDER の並びを ord にまとめる（新しい id は、今の並びで直前にある id の後ろに入れる） */
   const scan = chunk => {
     const HK = win.HK || {}, S = HK.SCENARIOS || {};
     Object.keys(S).forEach(id => { const s = S[id]; if (s && typeof s === 'object' && !s.stub) { cap[id] = s; if (!home[id]) home[id] = chunk; } });
+    /* 隠した箱庭（HK.SCENARIOS_HIDDEN。#futari などで開いたときだけ一覧に出す）も目録の hidden に載せる（2026-11-04。本体を箱庭のかたまりに置けるように） */
+    const SH = HK.SCENARIOS_HIDDEN || {};
+    Object.keys(SH).forEach(id => { const s = SH[id]; if (s && typeof s === 'object' && !S[id]) { capH[id] = s; if (!home[id]) home[id] = chunk; } });
     const so = Array.isArray(HK.SCEN_ORDER) ? HK.SCEN_ORDER : [];
     so.forEach((id, i) => {
       if (ord.indexOf(id) >= 0) return;
@@ -86,7 +89,7 @@ function runVm(opt) {
   const HK = win.HK || {};
   /* load.js の def は例外を受け止めて HK.Load.errors に積む（残りのファイルを続けるため）。それも拾う */
   ((HK.Load && Array.isArray(HK.Load.errors)) ? HK.Load.errors : []).forEach(e => errs.push((e.file || '?') + ': ' + String(e.err || e.message || e).slice(0, 160)));
-  return { HK, cap, home, ord, finalOrder: (HK.SCEN_ORDER || []).slice(), errs, ms: Date.now() - t0 };
+  return { HK, cap, capH, home, ord, finalOrder: (HK.SCEN_ORDER || []).slice(), errs, ms: Date.now() - t0 };
 }
 
 /* ---------- 目録の中身 ---------- */
@@ -120,7 +123,11 @@ function makeManifest(R, opt) {
   const scen = {};
   order.forEach(id => { scen[id] = scenEntry(R.cap[id], id, R, opt.need); });
   const HK = R.HK, keys = HK.TONE_KEYS || [], auto = ['aniki'].concat(HK.PERSONA_KEYS || []).filter(k => keys.indexOf(k) >= 0);
-  return { v: opt.v, api: 1, build: opt.build, core: opt.core, chunks: opt.chunks, order, scen, tones: { auto } };
+  const hidden = {};
+  Object.keys(R.capH || {}).filter(id => !scen[id]).forEach(id => { hidden[id] = scenEntry(R.capH[id], id, R, opt.need); });
+  const m = { v: opt.v, api: 1, build: opt.build, core: opt.core, chunks: opt.chunks, order, scen, tones: { auto } };
+  if (Object.keys(hidden).length) m.hidden = hidden;
+  return m;
 }
 /* 目録の文字列（鍵も）に性的な語が残っていないか。場所は目録の鍵で示す */
 function guardManifest(m, EXPLICIT) {
@@ -139,7 +146,7 @@ function manifestJs(m) {
   const head = ['v', 'api', 'build', 'core'].map(k => j(k) + ':' + j(m[k])).join(',');
   const ch = Object.keys(m.chunks).map(k => '  ' + j(k) + ':' + j(m.chunks[k])).join(',\n');
   const sc = Object.keys(m.scen).map(k => '  ' + j(k) + ':' + j(m.scen[k])).join(',\n');
-  return 'window.HK_MANIFEST={' + head + ',\n"chunks":{\n' + ch + '},\n"order":' + j(m.order) + ',\n"scen":{\n' + sc + '},\n"tones":' + j(m.tones) + '};';
+  return 'window.HK_MANIFEST={' + head + ',\n"chunks":{\n' + ch + '},\n"order":' + j(m.order) + ',\n"scen":{\n' + sc + '},\n"tones":' + j(m.tones) + (m.hidden ? ',\n"hidden":' + j(m.hidden) : '') + '};';
 }
 /* 前回の index.html から目録を読む（--no-manifest 用） */
 function readManifest(html) {

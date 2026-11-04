@@ -22,4 +22,6 @@
       '</select><span class="hint" style="margin:0">ここで選んだ人が担任になります。ほかの先生（学年ごとの担任・副担任）は、参加表の「先生（受け持ち）」で選べます。先生は生徒の輪に入らず、生徒との恋愛は起きません（環境値「先生との恋愛」を「あり」にしたときを除く）。</span></div>';
   }
   HK.CastTeacher = { isTeacher: isTeacher, order: order, selectHtml: selectHtml };
+  /* 箱庭タブの参加者の節の下に「担任」の選び（ui.js の HK.ScenUI。2026-11-04 に ui.js から移した） */
+  if (HK.ScenUI && HK.ScenUI.add) HK.ScenUI.add('classroom', { joinNote: function (S) { return selectHtml(S); } });
 })();

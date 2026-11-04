@@ -53,6 +53,9 @@ const hv = s => crypto.createHash('sha1').update(s).digest('hex').slice(0, 10);
 /* ---------- _order.txt を読む ---------- */
 const orderPath = path.join(dir, 'js/_order.txt');
 const entries = [], chunkDeps = {}, needs = {}, seen = new Set();
+/* @base <かたまり>：中核のすぐ次に読む土台のかたまり（2026-11-04。動かすのに要るが画面を出すのには要らない部品＝pack-sim）。
+   core・口調のかたまり・自分のほかの全部のかたまり（late・族・箱庭・追加パックの頼る先）の deps の先頭に足す（書き忘れで抜けないように） */
+let baseChunk = '';
 fs.readFileSync(orderPath, 'utf8').split('\n').forEach((line, i) => {
   const l = line.replace(/#.*$/, '').trim(), at = '_order.txt の ' + (i + 1) + '行目「' + line.trim() + '」：';
   if (!l) return;
@@ -63,11 +66,16 @@ fs.readFileSync(orderPath, 'utf8').split('\n').forEach((line, i) => {
     chunkDeps[m[1]] = (m[2] || '').split(',').filter(Boolean);
     return;
   }
+  if ((m = l.match(/^@base\s+(\S+)$/))) {
+    if (baseChunk) throw new Error(at + '@base は1つだけです');
+    baseChunk = m[1];
+    return;
+  }
   if ((m = l.match(/^@need\s+(\S+)\s+(\S+)$/))) {
     (needs[m[1]] = needs[m[1]] || []).push(...m[2].split(',').filter(Boolean));
     return;
   }
-  if (/^@/.test(l)) throw new Error(at + '読めない指示です（@chunk <名前> deps=a,b か @need <箱庭> <かたまり,…>）');
+  if (/^@/.test(l)) throw new Error(at + '読めない指示です（@chunk <名前> deps=a,b か @need <箱庭> <かたまり,…> か @base <かたまり>）');
   m = l.match(/^((?:late|tone)\s+)?(js\/[^\s@'"\\]+\.js)(?:\s+@(pack|scen):(\S+))?$/);
   if (!m) {
     if (/^(late|tone)\s+\S+\s+@/.test(l)) throw new Error(at + 'late・tone と @pack:／@scen: は一緒に付けられません');
@@ -107,6 +115,11 @@ Object.keys(chunkDeps).forEach(c => {
   });
 });
 if (chunkDeps.core && chunkDeps.core.length) throw new Error('_order.txt：core に deps は付けられません');
+if (baseChunk) {
+  if (names.indexOf(baseChunk) < 0) throw new Error('_order.txt：@base ' + baseChunk + ' のファイルがありません');
+  if ((chunkDeps[baseChunk] || []).length) throw new Error('_order.txt：@base のかたまり ' + baseChunk + ' に deps は付けられません');
+  names.forEach(c => { if (c === 'core' || c === baseChunk) return; const d = chunkDeps[c] = chunkDeps[c] || []; if (d.indexOf(baseChunk) < 0) d.unshift(baseChunk); });
+}
 Object.keys(chunkDeps).forEach(c => { if (/^tone-/.test(c)) throw new Error('_order.txt：@chunk ' + c + '：口調のかたまりは build が作ります（deps は無し）'); });
 Object.keys(needs).forEach(id => needs[id].forEach(c => { if (names.indexOf(c) < 0) throw new Error('_order.txt：@need ' + id + ' の ' + c + ' というかたまりがありません'); }));
 /* 依存の順（循環はエラー）。同じ段は初めて出てきた順 */
@@ -196,6 +209,15 @@ if (toneSrcs.length && !topBad.length) {
       ng.forEach(v => { console.error('  順：' + v.order + '：違い ' + v.diff.length + ' 件・例外 ' + v.errs.length + ' 件'); v.diff.concat(v.errs).slice(0, 8).forEach(x => console.error('    ' + x)); });
       process.exit(1);
     }
+  }
+  /* 調べもの用：HK_TONE_DUMP=<ファイル> で、元の順で全部読んだときの表の全行（表・口調・鍵 → 値）・ゆるい引き方の結果・行き先を JSON で書き出す
+     （書き下ろしのファイルを分けたり、読み込み順を変えたりした前後で、最終の表が同じかを比べる。docs/reports/2026-11-04/core-split.md） */
+  if (process.env.HK_TONE_DUMP) {
+    const fin = {}, lw = {}, dst = {};
+    toneMade.R.final.forEach((v, id) => { fin[id] = v; });
+    BT.looseWin(BT.tablesOf(toneMade.R.win).F).forEach((v, id) => { lw[id] = v; });
+    toneMade.destOf.forEach((v, id) => { dst[id] = v; });
+    fs.writeFileSync(process.env.HK_TONE_DUMP, JSON.stringify({ final: fin, loose: lw, dest: dst }));
   }
   /* かたまりの後ろに足す def（late・pack-*・scen-*） */
   Object.keys(toneMade.append).forEach(n => { if (!chunks[n]) throw new Error('口調のデータの行き先 ' + n + ' というかたまりがありません'); addDef(chunks[n], toneMade.append[n]); });
@@ -383,7 +405,9 @@ if (toneInfo) console.log('  ' + toneInfo);
 if (catalogInfo) console.log('  ' + catalogInfo);
 console.log('  合計 ' + k(tot.raw) + '（gz ' + k(tot.gz) + '・br ' + k(tot.br) + '）。index.html の目録 ' + k(Buffer.byteLength(MF.manifestJs(manifest))) + (removed ? '。古いファイルを ' + removed + ' 本消した' : ''));
 /* 中核の内訳：大きい順の上位15本と、前回の build からの増減（br の目安） */
-const CORE_BR_MAX = 1024 * 1024, kk = n => (n / 1024).toFixed(n < 10240 ? 1 : 0) + 'KB', sg = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + kk(Math.abs(n));
+/* 中核の上限（2026-11-04）：かたまりの br と、ファイルごとの br の目安の合計の両方が 900KB 以下（目安 0.9MB。超えたら build を不合格＝終了コード 1 にする。
+   check.js の build もそれで落ちる。調べものの途中で止めたくないときだけ --no-core-limit） */
+const CORE_BR_MAX = 900 * 1024, kk = n => (n / 1024).toFixed(n < 10240 ? 1 : 0) + 'KB', sg = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + kk(Math.abs(n));
 {
   const fl = Object.keys(coreStat).sort((a, b) => coreStat[b][1] - coreStat[a][1]);
   const dOf = f => prevCore && prevCore[f] ? coreStat[f][1] - prevCore[f][1] : null;
@@ -409,8 +433,11 @@ const CORE_BR_MAX = 1024 * 1024, kk = n => (n / 1024).toFixed(n < 10240 ? 1 : 0)
       if (gone.length) console.log('    中核から外した ' + list(gone, f => nm(f) + ' ' + kk(prevCore[f][1])));
     }
   }
-  if (chunks.core.z.br > CORE_BR_MAX) {
-    console.warn('※ 中核（core）の br が 1MB を超えています（' + k(chunks.core.z.br) + '）。起動時に読む量の目安は 1MB 以下です');
+  const sumNow = fl.reduce((a, f) => a + coreStat[f][1], 0);
+  console.log('  中核の上限：かたまりの br ' + k(chunks.core.z.br) + '・ファイルごとの br の目安の合計 ' + kk(sumNow) + '（どちらも ' + kk(CORE_BR_MAX) + ' 以下）');
+  if (chunks.core.z.br > CORE_BR_MAX || sumNow > CORE_BR_MAX) {
+    console.warn('※ 中核（core）が上限 ' + kk(CORE_BR_MAX) + ' を超えています（かたまりの br ' + k(chunks.core.z.br) + '・目安の合計 ' + kk(sumNow) + '）。起動時に読む量は 0.9MB 以下にします' + (flag('--no-core-limit') ? '（--no-core-limit：不合格にしない）' : '（build は不合格）'));
+    if (!flag('--no-core-limit')) process.exitCode = 1;
     if (!prevCore) console.warn('  （前回の内訳が js/c/.prev.json に無いので、増えたファイルは次の build から出します）');
     else {
       const inc = f => coreStat[f][1] - (prevCore[f] ? prevCore[f][1] : 0);

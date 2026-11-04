@@ -193,3 +193,17 @@ Playwright（chromium）・http（127.0.0.1。.br を Content-Encoding: br で�
   - 中核の br が 1MB を超えたら、警告に「前回より増えた・中核に足したファイル」を大きい順に出し、振り分けの決まり（CLAUDE.md）を示す。
   - ファイルごとの数字は `js/c/.prev.json` の `core`（{ファイル: [軽量化後のバイト数, 単独の br]}）に残す（次の build が比べる）。今回のコミットでは、変える前の中核の内訳を `.prev.json` に入れてから build したので、差分（中核から外した 35 本など）が出る。
 - **CLAUDE.md**（「スクリプトはかたまりに分けて配る」の項の下に 2 行）：文の表・箱庭固有・R18 の夜の文の表と喘ぎの設定の画面（@pack:lewd）・画面の後回しは中核に入れない。中核の br の目安は 0.9MB 以下（上限 1MB）、20KB 以上増えたら振り分けを見直す。
+
+---
+
+## 7. 追記（2026-11-04）：二度目の見直し
+
+その後に中核へ足されたもので、R18版の中核が br の目安の合計 1050KB（かたまりの br 859KB）、全年齢版が 860KB（704KB）まで戻っていた。
+新しいかたまり pack-sim（動かすのに要るが画面を出すのには要らない部品。`@base pack-sim` で全部のかたまりの依存に入る）を足し、4 章で見送ったもののうち hate-sex-r18・content-events-r18・content-text-r18（Ctx.prototype.say の包みを HK.wrap にそろえた）・scenario-futari（目録に隠し箱庭の欄 hidden を足した）・novel-moan-tone（口調のデータの N を後から渡す HK.Load.flushTone）・voice-override-solo・tone-new2-rows（tone の印）を移した。portable.js・share-card・egoquiz は late へ。
+
+| | 2026-11-01 のあと | 2026-11-04 の前 | 2026-11-04 のあと |
+|---|---|---|---|
+| R18版の中核（かたまりの br／目安の合計） | 815KB／— | 859KB／1050KB | **566KB／698KB** |
+| 全年齢版の中核 | 661KB／— | 704KB／860KB | **513KB／628KB** |
+
+あわせて、中核の上限を build で判定するようにした（かたまりの br・目安の合計のどちらかが 900KB を超えたら build が不合格）。分け方・対応表・決まりの変更は `docs/reports/2026-11-04/core-split.md`。

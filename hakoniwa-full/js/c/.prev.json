@@ -1,154 +1,156 @@
 {
  "cur": {
-  "core": "core.5dfcb79af5.js",
-  "late": "late.7ac1d34471.js",
-  "pack-rel": "pack-rel.3bcc4e3c38.js",
-  "pack-lewd": "pack-lewd.25b052d754.js",
-  "scen-goukon": "scen-goukon.956ea35a1d.js",
-  "scen-classroom": "scen-classroom.1556252d48.js",
-  "scen-island": "scen-island.72b3c0e18a.js",
-  "pack-trap": "pack-trap.63be6388a4.js",
-  "scen-whiteroom": "scen-whiteroom.1e1b324bf2.js",
-  "scen-omega": "scen-omega.6f436679ad.js",
-  "scen-br": "scen-br.d139b4fe7b.js",
-  "scen-trial": "scen-trial.6ba73fa45d.js",
-  "scen-dungeon": "scen-dungeon.b971a42fef.js",
-  "scen-massage": "scen-massage.cf1f5ee8d5.js",
-  "scen-hole": "scen-hole.05696b269b.js",
-  "scen-zombie": "scen-zombie.fc25247ab5.js",
-  "scen-rpg": "scen-rpg.c8ee815551.js",
-  "scen-kaihen": "scen-kaihen.02758a08f6.js",
-  "scen-succubus": "scen-succubus.77fb02a28d.js",
-  "scen-saimin": "scen-saimin.878d8b0d0f.js",
-  "scen-variety": "scen-variety.ad01c4b805.js",
-  "scen-locker": "scen-locker.9fa5f488ca.js",
-  "scen-jashin": "scen-jashin.b3c392dd74.js",
-  "scen-yakata": "scen-yakata.4241840318.js",
-  "scen-ship": "scen-ship.c7123db68a.js",
-  "pack-story": "pack-story.96b557bee6.js",
-  "scen-jinro": "scen-jinro.85db526cf1.js",
-  "scen-futari": "scen-futari.08af1ad709.js",
-  "pack-catalog": "pack-catalog.2f5acae996.js",
-  "pack-roomkit": "pack-roomkit.2c2b4f3170.js",
-  "pack-solo": "pack-solo.2834fc1d5c.js",
-  "tone-base": "tone-base.8f5dbf9e6f.js",
-  "tone-ane": "tone-ane.6890a0c2bd.js",
-  "tone-boku-n": "tone-boku-n.2d0b5fd3c4.js",
-  "tone-calm": "tone-calm.e6acc83c47.js",
-  "tone-chara": "tone-chara.8f088cc48f.js",
-  "tone-chara-down": "tone-chara-down.ec86200d06.js",
-  "tone-cool-soft": "tone-cool-soft.c61dc704cf.js",
-  "tone-darui": "tone-darui.7b0e5fee6c.js",
-  "tone-darui-lite": "tone-darui-lite.5a8dc55b21.js",
-  "tone-darui-talk": "tone-darui-talk.0406f867bc.js",
-  "tone-devoted-p": "tone-devoted-p.d1fc8e0ff9.js",
-  "tone-flat-plain": "tone-flat-plain.2f76ed184c.js",
-  "tone-genki": "tone-genki.3e5ff41de0.js",
-  "tone-gentle-m": "tone-gentle-m.bf5d75267c.js",
-  "tone-gentle-n": "tone-gentle-n.1017769ccd.js",
-  "tone-gentleman": "tone-gentleman.3f7516ba3f.js",
-  "tone-god": "tone-god.38c8812190.js",
-  "tone-gyaru": "tone-gyaru.2a713a231d.js",
-  "tone-hero": "tone-hero.59cf715f79.js",
-  "tone-honwaka": "tone-honwaka.1ec70fa5ee.js",
-  "tone-kansai": "tone-kansai.38271315ec.js",
-  "tone-keigo-bossy": "tone-keigo-bossy.e421f08561.js",
-  "tone-keigo-flat": "tone-keigo-flat.429a382945.js",
-  "tone-keigo-sarc": "tone-keigo-sarc.5a14e44e02.js",
-  "tone-keigo-twist": "tone-keigo-twist.df1e76685a.js",
-  "tone-kohai": "tone-kohai.6947053423.js",
-  "tone-mixed": "tone-mixed.e35524898e.js",
-  "tone-mukuchi": "tone-mukuchi.1a3e88d879.js",
-  "tone-mukuchi-ne": "tone-mukuchi-ne.db2b8dd164.js",
-  "tone-mystic": "tone-mystic.b37e6b9026.js",
-  "tone-noja": "tone-noja.6bb0b8fd9e.js",
-  "tone-ojou": "tone-ojou.84186dc38a.js",
-  "tone-otaku": "tone-otaku.7b38ae3ea1.js",
-  "tone-ronkyaku": "tone-ronkyaku.ef646187ac.js",
-  "tone-sondai": "tone-sondai.b301fcfb35.js",
-  "tone-tame": "tone-tame.37436a7ec4.js",
-  "tone-tsun-n": "tone-tsun-n.650b8f0e2b.js",
-  "tone-tsun-soft": "tone-tsun-soft.080530f3ac.js",
-  "tone-usan": "tone-usan.67a0f13262.js",
-  "tone-yankee": "tone-yankee.feefb2a01b.js"
+  "core": "core.bf4ca0e337.js",
+  "late": "late.ea29bcfdaa.js",
+  "pack-rel": "pack-rel.b97fcf9d08.js",
+  "pack-sim": "pack-sim.8767994e6e.js",
+  "pack-lewd": "pack-lewd.2dbfca4a4a.js",
+  "scen-goukon": "scen-goukon.a4555f4361.js",
+  "scen-classroom": "scen-classroom.cb0129276c.js",
+  "scen-island": "scen-island.aeeda08327.js",
+  "pack-trap": "pack-trap.b3929bc81e.js",
+  "scen-whiteroom": "scen-whiteroom.83846ca3ec.js",
+  "scen-omega": "scen-omega.123251484f.js",
+  "scen-br": "scen-br.44d2eefcc9.js",
+  "scen-trial": "scen-trial.56e8c9b6d2.js",
+  "scen-dungeon": "scen-dungeon.f784f5ffbe.js",
+  "scen-massage": "scen-massage.ce635472f4.js",
+  "scen-hole": "scen-hole.b611919a0d.js",
+  "scen-futari": "scen-futari.258d2b21dd.js",
+  "scen-zombie": "scen-zombie.1c4d47e665.js",
+  "scen-rpg": "scen-rpg.1be91741a9.js",
+  "scen-kaihen": "scen-kaihen.3be1cdd9c6.js",
+  "scen-succubus": "scen-succubus.dc75663f1f.js",
+  "scen-saimin": "scen-saimin.cb6381dc20.js",
+  "scen-variety": "scen-variety.040739e18a.js",
+  "scen-locker": "scen-locker.2598d81a6c.js",
+  "scen-jashin": "scen-jashin.f629642344.js",
+  "scen-yakata": "scen-yakata.4b0da0d35c.js",
+  "scen-ship": "scen-ship.cbf091d1dc.js",
+  "pack-story": "pack-story.3d689f1e07.js",
+  "scen-jinro": "scen-jinro.d84aa25ec6.js",
+  "pack-catalog": "pack-catalog.3f7b2f1930.js",
+  "pack-roomkit": "pack-roomkit.028627cc2f.js",
+  "pack-solo": "pack-solo.c0e8364044.js",
+  "tone-base": "tone-base.ce6dea4309.js",
+  "tone-ane": "tone-ane.194c7aa823.js",
+  "tone-boku-n": "tone-boku-n.fe29e4d7a4.js",
+  "tone-calm": "tone-calm.b6169c1143.js",
+  "tone-chara": "tone-chara.5666473a32.js",
+  "tone-chara-down": "tone-chara-down.9d5b5e3a13.js",
+  "tone-cool-soft": "tone-cool-soft.9cf2ac12a1.js",
+  "tone-darui": "tone-darui.aca4238f22.js",
+  "tone-darui-lite": "tone-darui-lite.70a5b365cd.js",
+  "tone-darui-talk": "tone-darui-talk.04bb5acee4.js",
+  "tone-devoted-p": "tone-devoted-p.92053d6b61.js",
+  "tone-flat-plain": "tone-flat-plain.29bf30225f.js",
+  "tone-genki": "tone-genki.239d891bdd.js",
+  "tone-gentle-m": "tone-gentle-m.e1553bfc1b.js",
+  "tone-gentle-n": "tone-gentle-n.e8b9836217.js",
+  "tone-gentleman": "tone-gentleman.959194381e.js",
+  "tone-god": "tone-god.fee41a6e96.js",
+  "tone-gyaru": "tone-gyaru.bcdcc51d11.js",
+  "tone-hero": "tone-hero.358e4e7b19.js",
+  "tone-honwaka": "tone-honwaka.ba039e8ba2.js",
+  "tone-kansai": "tone-kansai.f4e2dcae84.js",
+  "tone-keigo-bossy": "tone-keigo-bossy.5d07e93ca1.js",
+  "tone-keigo-flat": "tone-keigo-flat.c3c48aecc4.js",
+  "tone-keigo-sarc": "tone-keigo-sarc.e07089075f.js",
+  "tone-keigo-twist": "tone-keigo-twist.1d15b79694.js",
+  "tone-kohai": "tone-kohai.d811faf1ed.js",
+  "tone-mixed": "tone-mixed.c28cd55316.js",
+  "tone-mukuchi": "tone-mukuchi.b153a11a15.js",
+  "tone-mukuchi-ne": "tone-mukuchi-ne.ef9dc591ba.js",
+  "tone-mystic": "tone-mystic.12431ae38f.js",
+  "tone-noja": "tone-noja.ce79bde58b.js",
+  "tone-ojou": "tone-ojou.7b260db44d.js",
+  "tone-otaku": "tone-otaku.bdcfcad906.js",
+  "tone-ronkyaku": "tone-ronkyaku.2c20b76e6e.js",
+  "tone-sondai": "tone-sondai.fcfc7839cb.js",
+  "tone-tame": "tone-tame.7343d24473.js",
+  "tone-tsun-n": "tone-tsun-n.16125813ad.js",
+  "tone-tsun-soft": "tone-tsun-soft.661c4d08e2.js",
+  "tone-usan": "tone-usan.89cb5e0282.js",
+  "tone-yankee": "tone-yankee.2f66732c29.js"
  },
  "prev": {
-  "core": "core.5dfcb79af5.js",
-  "late": "late.7ac1d34471.js",
-  "pack-rel": "pack-rel.3bcc4e3c38.js",
-  "pack-lewd": "pack-lewd.25b052d754.js",
-  "scen-goukon": "scen-goukon.956ea35a1d.js",
-  "scen-classroom": "scen-classroom.1556252d48.js",
-  "scen-island": "scen-island.72b3c0e18a.js",
-  "pack-trap": "pack-trap.63be6388a4.js",
-  "scen-whiteroom": "scen-whiteroom.1e1b324bf2.js",
-  "scen-omega": "scen-omega.6f436679ad.js",
-  "scen-br": "scen-br.d139b4fe7b.js",
-  "scen-trial": "scen-trial.6ba73fa45d.js",
-  "scen-dungeon": "scen-dungeon.b971a42fef.js",
-  "scen-massage": "scen-massage.cf1f5ee8d5.js",
-  "scen-hole": "scen-hole.05696b269b.js",
-  "scen-zombie": "scen-zombie.fc25247ab5.js",
-  "scen-rpg": "scen-rpg.c8ee815551.js",
-  "scen-kaihen": "scen-kaihen.02758a08f6.js",
-  "scen-succubus": "scen-succubus.77fb02a28d.js",
-  "scen-saimin": "scen-saimin.878d8b0d0f.js",
-  "scen-variety": "scen-variety.ad01c4b805.js",
-  "scen-locker": "scen-locker.817ea5c9fd.js",
-  "scen-jashin": "scen-jashin.b3c392dd74.js",
-  "scen-yakata": "scen-yakata.4241840318.js",
-  "scen-ship": "scen-ship.c7123db68a.js",
-  "pack-story": "pack-story.96b557bee6.js",
-  "scen-jinro": "scen-jinro.85db526cf1.js",
-  "scen-futari": "scen-futari.08af1ad709.js",
-  "pack-catalog": "pack-catalog.2f5acae996.js",
-  "pack-roomkit": "pack-roomkit.2c2b4f3170.js",
-  "pack-solo": "pack-solo.2834fc1d5c.js",
-  "tone-base": "tone-base.8f5dbf9e6f.js",
-  "tone-ane": "tone-ane.68f62afe22.js",
-  "tone-boku-n": "tone-boku-n.2d0b5fd3c4.js",
-  "tone-calm": "tone-calm.e6acc83c47.js",
-  "tone-chara": "tone-chara.51098f0779.js",
-  "tone-chara-down": "tone-chara-down.ec86200d06.js",
-  "tone-cool-soft": "tone-cool-soft.c61dc704cf.js",
-  "tone-darui": "tone-darui.cc79b41c2c.js",
-  "tone-darui-lite": "tone-darui-lite.5a8dc55b21.js",
-  "tone-darui-talk": "tone-darui-talk.0406f867bc.js",
-  "tone-devoted-p": "tone-devoted-p.d1fc8e0ff9.js",
-  "tone-flat-plain": "tone-flat-plain.2f76ed184c.js",
-  "tone-genki": "tone-genki.3e5ff41de0.js",
-  "tone-gentle-m": "tone-gentle-m.bf5d75267c.js",
-  "tone-gentle-n": "tone-gentle-n.1017769ccd.js",
-  "tone-gentleman": "tone-gentleman.3f7516ba3f.js",
-  "tone-god": "tone-god.38c8812190.js",
-  "tone-gyaru": "tone-gyaru.0f1a96d33b.js",
-  "tone-hero": "tone-hero.59cf715f79.js",
-  "tone-honwaka": "tone-honwaka.1ec70fa5ee.js",
-  "tone-kansai": "tone-kansai.4b5216db51.js",
-  "tone-keigo-bossy": "tone-keigo-bossy.e421f08561.js",
-  "tone-keigo-flat": "tone-keigo-flat.429a382945.js",
-  "tone-keigo-sarc": "tone-keigo-sarc.5a14e44e02.js",
-  "tone-keigo-twist": "tone-keigo-twist.df1e76685a.js",
-  "tone-kohai": "tone-kohai.862b094cba.js",
-  "tone-mixed": "tone-mixed.e35524898e.js",
-  "tone-mukuchi": "tone-mukuchi.557e2f9a55.js",
-  "tone-mukuchi-ne": "tone-mukuchi-ne.8115b6084a.js",
-  "tone-mystic": "tone-mystic.b37e6b9026.js",
-  "tone-noja": "tone-noja.c08315d675.js",
-  "tone-ojou": "tone-ojou.84186dc38a.js",
-  "tone-otaku": "tone-otaku.4b98af65e5.js",
-  "tone-ronkyaku": "tone-ronkyaku.ef646187ac.js",
-  "tone-sondai": "tone-sondai.b301fcfb35.js",
-  "tone-tame": "tone-tame.37436a7ec4.js",
-  "tone-tsun-n": "tone-tsun-n.650b8f0e2b.js",
-  "tone-tsun-soft": "tone-tsun-soft.080530f3ac.js",
-  "tone-usan": "tone-usan.67a0f13262.js",
-  "tone-yankee": "tone-yankee.feefb2a01b.js"
+  "core": "core.352545325e.js",
+  "late": "late.ea29bcfdaa.js",
+  "pack-rel": "pack-rel.b97fcf9d08.js",
+  "pack-sim": "pack-sim.8a8fceb87d.js",
+  "pack-lewd": "pack-lewd.2dbfca4a4a.js",
+  "scen-goukon": "scen-goukon.a4555f4361.js",
+  "scen-classroom": "scen-classroom.cb0129276c.js",
+  "scen-island": "scen-island.aeeda08327.js",
+  "pack-trap": "pack-trap.b3929bc81e.js",
+  "scen-whiteroom": "scen-whiteroom.83846ca3ec.js",
+  "scen-omega": "scen-omega.123251484f.js",
+  "scen-br": "scen-br.44d2eefcc9.js",
+  "scen-trial": "scen-trial.56e8c9b6d2.js",
+  "scen-dungeon": "scen-dungeon.f784f5ffbe.js",
+  "scen-massage": "scen-massage.ce635472f4.js",
+  "scen-hole": "scen-hole.b611919a0d.js",
+  "scen-futari": "scen-futari.258d2b21dd.js",
+  "scen-zombie": "scen-zombie.1c4d47e665.js",
+  "scen-rpg": "scen-rpg.1be91741a9.js",
+  "scen-kaihen": "scen-kaihen.3be1cdd9c6.js",
+  "scen-succubus": "scen-succubus.dc75663f1f.js",
+  "scen-saimin": "scen-saimin.cb6381dc20.js",
+  "scen-variety": "scen-variety.040739e18a.js",
+  "scen-locker": "scen-locker.2598d81a6c.js",
+  "scen-jashin": "scen-jashin.f629642344.js",
+  "scen-yakata": "scen-yakata.4b0da0d35c.js",
+  "scen-ship": "scen-ship.cbf091d1dc.js",
+  "pack-story": "pack-story.3d689f1e07.js",
+  "scen-jinro": "scen-jinro.d84aa25ec6.js",
+  "pack-catalog": "pack-catalog.3f7b2f1930.js",
+  "pack-roomkit": "pack-roomkit.028627cc2f.js",
+  "pack-solo": "pack-solo.c0e8364044.js",
+  "tone-base": "tone-base.ce6dea4309.js",
+  "tone-ane": "tone-ane.194c7aa823.js",
+  "tone-boku-n": "tone-boku-n.fe29e4d7a4.js",
+  "tone-calm": "tone-calm.b6169c1143.js",
+  "tone-chara": "tone-chara.5666473a32.js",
+  "tone-chara-down": "tone-chara-down.9d5b5e3a13.js",
+  "tone-cool-soft": "tone-cool-soft.9cf2ac12a1.js",
+  "tone-darui": "tone-darui.aca4238f22.js",
+  "tone-darui-lite": "tone-darui-lite.70a5b365cd.js",
+  "tone-darui-talk": "tone-darui-talk.04bb5acee4.js",
+  "tone-devoted-p": "tone-devoted-p.92053d6b61.js",
+  "tone-flat-plain": "tone-flat-plain.29bf30225f.js",
+  "tone-genki": "tone-genki.239d891bdd.js",
+  "tone-gentle-m": "tone-gentle-m.e1553bfc1b.js",
+  "tone-gentle-n": "tone-gentle-n.e8b9836217.js",
+  "tone-gentleman": "tone-gentleman.959194381e.js",
+  "tone-god": "tone-god.fee41a6e96.js",
+  "tone-gyaru": "tone-gyaru.bcdcc51d11.js",
+  "tone-hero": "tone-hero.358e4e7b19.js",
+  "tone-honwaka": "tone-honwaka.ba039e8ba2.js",
+  "tone-kansai": "tone-kansai.f4e2dcae84.js",
+  "tone-keigo-bossy": "tone-keigo-bossy.5d07e93ca1.js",
+  "tone-keigo-flat": "tone-keigo-flat.c3c48aecc4.js",
+  "tone-keigo-sarc": "tone-keigo-sarc.e07089075f.js",
+  "tone-keigo-twist": "tone-keigo-twist.1d15b79694.js",
+  "tone-kohai": "tone-kohai.d811faf1ed.js",
+  "tone-mixed": "tone-mixed.c28cd55316.js",
+  "tone-mukuchi": "tone-mukuchi.b153a11a15.js",
+  "tone-mukuchi-ne": "tone-mukuchi-ne.ef9dc591ba.js",
+  "tone-mystic": "tone-mystic.12431ae38f.js",
+  "tone-noja": "tone-noja.ce79bde58b.js",
+  "tone-ojou": "tone-ojou.7b260db44d.js",
+  "tone-otaku": "tone-otaku.bdcfcad906.js",
+  "tone-ronkyaku": "tone-ronkyaku.2c20b76e6e.js",
+  "tone-sondai": "tone-sondai.fcfc7839cb.js",
+  "tone-tame": "tone-tame.7343d24473.js",
+  "tone-tsun-n": "tone-tsun-n.16125813ad.js",
+  "tone-tsun-soft": "tone-tsun-soft.661c4d08e2.js",
+  "tone-usan": "tone-usan.89cb5e0282.js",
+  "tone-yankee": "tone-yankee.2f66732c29.js"
  },
  "core": {
   "js/load.js": [
-   16891,
-   5857
+   17513,
+   5965
   ],
   "js/load-order.js": [
    1812,
@@ -193,10 +195,6 @@
   "js/tie-rel.js": [
    45400,
    11956
-  ],
-  "js/daily-kit.js": [
-   84539,
-   25422
   ],
   "js/voice.js": [
    68840,
@@ -246,29 +244,9 @@
    31328,
    9023
   ],
-  "js/voice-override-solo.js": [
-   88641,
-   16106
-  ],
   "js/tone-lines.js": [
    23067,
    6079
-  ],
-  "js/hate-kit.js": [
-   23779,
-   7577
-  ],
-  "js/feud-kit.js": [
-   17277,
-   6135
-  ],
-  "js/hate-love.js": [
-   59157,
-   14812
-  ],
-  "js/hate-love-more.js": [
-   87982,
-   19666
   ],
   "js/tone-firm.js": [
    10506,
@@ -322,14 +300,6 @@
    12669,
    4092
   ],
-  "js/tone-new2-rows.js": [
-   64491,
-   14017
-  ],
-  "js/tone-new2-r18.js": [
-   9036,
-   2096
-  ],
   "js/engine.js": [
    50054,
    17049
@@ -350,10 +320,6 @@
    4591,
    1954
   ],
-  "js/mood-dial.js": [
-   4404,
-   1808
-  ],
   "js/mob.js": [
    5583,
    2621
@@ -370,45 +336,9 @@
    4129,
    1785
   ],
-  "js/novel-moan-tone.js": [
-   161186,
-   31598
-  ],
-  "js/free-sex.js": [
-   32742,
-   8417
-  ],
-  "js/mini.js": [
-   22456,
-   7853
-  ],
-  "js/hate-sex-r18.js": [
-   192727,
-   41243
-  ],
-  "js/content-text-r18.js": [
-   44959,
-   12163
-  ],
-  "js/content-events-r18.js": [
-   33083,
-   10980
-  ],
-  "js/ego-image.js": [
-   13439,
-   5691
-  ],
   "js/omega-data.js": [
    20140,
    7933
-  ],
-  "js/omega-heat.js": [
-   25830,
-   8172
-  ],
-  "js/omega-detective.js": [
-   9156,
-   4195
   ],
   "js/goukon-fresh.js": [
    1069,
@@ -422,33 +352,9 @@
    25194,
    6990
   ],
-  "js/dungeon-kit.js": [
-   3288,
-   1869
-  ],
-  "js/solo-kit.js": [
-   17229,
-   5870
-  ],
-  "js/endings.js": [
-   20925,
-   6859
-  ],
-  "js/epilogue.js": [
-   45105,
-   14236
-  ],
-  "js/scenario-futari.js": [
-   123092,
-   35509
-  ],
   "js/zombie-data.js": [
    8228,
    3517
-  ],
-  "js/rel-kit.js": [
-   2407,
-   1083
   ],
   "js/pining-core.js": [
    491,
@@ -469,10 +375,6 @@
   "js/attr-yomi.js": [
    2173,
    986
-  ],
-  "js/food.js": [
-   34745,
-   10892
   ],
   "js/special.js": [
    57384,
@@ -519,48 +421,28 @@
    9237
   ],
   "js/avoid-kit.js": [
-   6430,
-   2497
+   6426,
+   2491
   ],
   "js/attr-look.js": [
-   3689,
-   1748
+   3685,
+   1765
   ],
   "js/attr-race.js": [
    24809,
    7551
   ],
   "js/attr-meet.js": [
-   32813,
-   9773
-  ],
-  "js/fam-kin.js": [
-   1417,
-   563
-  ],
-  "js/solo-flow-omega.js": [
-   702,
-   462
+   32790,
+   9791
   ],
   "js/solo-locker-data.js": [
    43930,
    13098
   ],
-  "js/solo-rel-bad.js": [
-   12245,
-   4442
-  ],
   "js/safe.js": [
    23141,
    9068
-  ],
-  "js/share-card.js": [
-   13770,
-   5309
-  ],
-  "js/egoquiz.js": [
-   7268,
-   3018
   ],
   "js/saves.js": [
    26070,
@@ -569,10 +451,6 @@
   "js/history.js": [
    5280,
    1826
-  ],
-  "js/portable.js": [
-   38391,
-   11612
   ],
   "js/state-store.js": [
    14298,
@@ -615,8 +493,8 @@
    5039
   ],
   "js/ui-cast-tools.js": [
-   27374,
-   9467
+   27948,
+   9635
   ],
   "js/ui-tagsel.js": [
    8801,
@@ -646,13 +524,21 @@
    5166,
    1864
   ],
+  "js/ui-norm.js": [
+   9653,
+   3517
+  ],
   "js/ui.js": [
-   146070,
-   42336
+   120764,
+   35839
+  ],
+  "js/ui-cast-ops.js": [
+   6623,
+   2693
   ],
   "js/ui-cast-teacher.js": [
-   1438,
-   758
+   1540,
+   796
   ],
   "js/ui-gear.js": [
    46225,
@@ -698,10 +584,6 @@
    1236,
    424
   ],
-  "js/obsess-kit.js": [
-   34867,
-   10946
-  ],
   "js/lewd-unify.js": [
    9506,
    3420
@@ -723,12 +605,8 @@
    3783
   ],
   "js/voice-fp.js": [
-   1959,
-   1027
-  ],
-  "js/rel-bad-story.js": [
-   32640,
-   9716
+   1965,
+   1026
   ]
  }
 }

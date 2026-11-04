@@ -1025,3 +1025,8 @@
   /* 並びに無ければ足す（分割読み込みでは目録の並びが中核で先に作られている） */
   if (HK.SCEN_ORDER.indexOf('omega') < 0) HK.SCEN_ORDER.push('omega');
 })();
+/* 箱庭タブの参加者の節の下の案内（ui.js の HK.ScenUI。2026-11-04 に ui.js から移した） */
+(function () {
+  var HK = window.HK;
+  if (HK && HK.ScenUI && HK.ScenUI.add) HK.ScenUI.add('omega', { joinNote: function () { return '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、上のカードの「この箱庭のTIPS」にあります。</p>'; } });
+})();

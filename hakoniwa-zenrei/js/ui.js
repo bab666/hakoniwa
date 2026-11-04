@@ -13,7 +13,7 @@
   /* 登録できる住人の上限（箱庭に参加できるのは最大35人。2026-10-28 に 30 → 35）。2026-10-26 に 100 → 200、2026-10-27 に 200 → 1000。
      アイコン（画像）は localStorage に入りきらないので、IndexedDB に分けて置く（saves.js の HK.IconStore。使えない環境では従来どおり住人の保存に入れる）。
      住人・関係そのものも IndexedDB に置く（state-store.js の HK.StateStore。localStorage には約1MBまで写し、超えたら「IndexedDB にある」印だけ） */
-  var MAX = 1000;
+  var MAX = HK.UINorm.MAX;
   var JOIN_MAX = 35;
   /* 13人目以降の色トークン（明暗それぞれ。上限 MAX 人分） */
   (function () {
@@ -40,6 +40,16 @@
   })();
   /* fac：派閥の設定（factions.js）は派閥のある箱庭だけに、その箱庭の環境値のすぐあとに出す */
   /* r18：R18版だけの環境値（夜の起こりやすさ）は全年齢モードでは出さない。show：出す箱庭を絞る（events-common.js） */
+  /* 箱庭ごとの画面の差し込み（2026-11-04）：箱庭タブのうち、その箱庭だけの部品は、その箱庭のかたまり（か部品のファイル）が
+     HK.ScenUI.add(箱庭の id, { joinNote(S)：参加者の節の下に足す HTML, envHead(S, env)：「場の設定」の節の頭に足す HTML, envChange(S, env)：場の設定を変えたとき })
+     で登録する（ui.js に箱庭の名前を書かない。箱庭を足しても ui.js が太らないように）。箱庭のかたまりが届く前は何も足さない（届いたら箱庭タブを描き直す） */
+  var SUI = HK.ScenUI = HK.ScenUI || { list: {} };
+  if (!SUI.add) SUI.add = function (id, o) { if (id && o) SUI.list[id] = o; };
+  function scenUI(k, S0, x) {
+    var o = S0 && SUI.list[S0.scenId], f = o && o[k];
+    if (typeof f !== 'function') return '';
+    try { var r = f(S0, x); return typeof r === 'string' ? r : ''; } catch (e) { if (window.console) console.error('箱庭の画面の差し込み：' + S0.scenId + ' ' + k, e); return ''; }
+  }
   function gshow(scen) { return function (e) { return !(e.r18 && HK.SAFE_ON) && (!e.show || e.show(scen)); }; }
   function genv(scen) {
     if (scen.solo) return scen.env.concat(HK.GLOBAL_ENV.filter(function (e) { return e.all; }).filter(gshow(scen)));
@@ -115,206 +125,9 @@
       return idx[a.id] - idx[b.id];
     });
   }
-  function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
-  /* 登録順（reg）：住人を足した時刻（同じミリ秒に続けて足しても順が崩れないよう、前の値より必ず大きくする）。並び替えたあとも「登録順に戻す」で戻せる */
-  var lastReg = 0;
-  function newReg() { var t = Date.now(); if (t <= lastReg) t = lastReg + 1; lastReg = t; return t; }
-  function mk(c) { var o = { id: uid(), reg: newReg(), name: c.name, eg: { CP: c.eg.CP, NP: c.eg.NP, A: c.eg.A, FC: c.eg.FC, AC: c.eg.AC }, memo: c.memo || '', group: c.group || '', tags: c.tags ? str(c.tags, 80).trim() : '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '', color: c.color || '', loveLock: idList(c.loveLock), sexLock: c.sexLock || '', sexLocks: idList(c.sexLocks), loveNG: (c.loveNG || []).slice(), call: c.call || '', calls: c.calls ? JSON.parse(JSON.stringify(c.calls)) : {}, keigo: c.keigo ? JSON.parse(JSON.stringify(c.keigo)) : {}, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, futa: !!c.futa, daku: !!c.daku, heart: c.heart !== false, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '', ab: c.ab && typeof c.ab === 'object' ? JSON.parse(JSON.stringify(c.ab)) : {}, abM: !!c.abM, partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', you: c.you || '', callG: c.callG ? JSON.parse(JSON.stringify(c.callG)) : null }; return HK.Attr ? HK.Attr.mk(o, c) : o; }
-
-  /* ---------- 保存データ・古いJSONの整え（足りない項目は既定値で補い、壊れた値は捨てる） ---------- */
-  function obj(v) { return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
-  function str(v, n) { return v == null ? '' : String(v).slice(0, n || 80); }
-  function okTone(v) { return !v || (HK.toneValid ? HK.toneValid(v) : !!HK.PERSONA[v]); }
-  function okCall(v) { return !v || (HK.CALL_STYLES || []).some(function (o) { return o.v === v; }); }
-  function fixEg(eg) {
-    var o = {}; eg = obj(eg);
-    HK.FACTORS.forEach(function (k) { var v = parseFloat(eg[k]); o[k] = isNaN(v) ? 10 : HK.clamp(v, 0, 20); });
-    return o;
-  }
-  /* 住人の id の並び（文字列一つ・配列のどちらでも）。重複は除く */
-  function idList(v) {
-    var l = Array.isArray(v) ? v : typeof v === 'string' && v ? [v] : [];
-    return l.filter(function (x, i) { return typeof x === 'string' && x && l.indexOf(x) === i; });
-  }
-  /* 性行為の相手の固定の古い値の読み替え（2026-10-26。「恋人だけ」「恋人とモブだけ」をなくし、固定に一本化）。
-     保存・控え（normChar）と JSON の読み込みで、ここだけを通す：'loverOnly'（恋人だけ）→ 'pick'（固定した相手だけ）、'lover'（恋人とモブだけ）→ 'pickMob'（固定した相手＋モブ）。
-     相手（sexLocks）が空なら恋愛相手の固定（loveLock）を写し、それも空なら ''（恋愛相手の固定に合わせる） */
-  function migSexLock(c) {
-    var v = c.sexLock;
-    if (v !== 'lover' && v !== 'loverOnly') return c;
-    var L = idList(c.sexLocks);
-    if (!L.length) L = idList(c.loveLock);
-    c.sexLocks = L.slice();
-    c.sexLock = L.length ? (v === 'lover' ? 'pickMob' : 'pick') : '';
-    return c;
-  }
-  HK.sexLockMig = migSexLock;
-  /* 箱庭全体の口調の辞書（高度設定の adv.tone。tone-engine.js が読み込みのときに T.setUser で当てる）は 2026-10-26 にやめた。
-     住人ごとの「語尾の設定」「辞書を直接書く」（tone-ending.js）だけが効く。ここで当たっていた分を外す（保存の値は消さず、画面にも出さない。ui-adv.js の RETIRED）。
-     その辞書で作った口調（u:…）を選んでいた住人は、その口調の [口調] の節を住人の「辞書を直接書く」（c.toneDict。空のときだけ）に写し、口調はおまかせに戻す */
-  var oldTone = (function () {
-    var T = HK.Tone, m = {}, blocks = [], cur = null;
-    if (!T || !T.setUser || !T.userText) return m;
-    try {
-      T.userText.split(/\r?\n/).forEach(function (l) { if (/^\s*[\[［]\s*口調(?:[\s　][^\]］]*)?[\]］]\s*$/.test(l)) { cur = [l]; blocks.push(cur); } else if (cur) cur.push(l); });
-      blocks.forEach(function (b) { var tx = b.join('\n').replace(/\s+$/, ''), p = T.parse(tx, true); Object.keys(p.dicts).forEach(function (k) { if (/^u:/.test(k) && !m[k]) m[k] = tx; }); });
-    } catch (e) { /* 読めなければ写さない */ }
-    T.setUser('');
-    return m;
-  })();
-  function migUserTone(c) {
-    if (typeof c.tone !== 'string' || !/^u:/.test(c.tone)) return;
-    var tx = oldTone[c.tone];
-    if (tx && tx.length <= 4000 && !(typeof c.toneDict === 'string' && c.toneDict.trim())) c.toneDict = tx;
-    c.tone = '';
-  }
-  function normChar(c) {
-    c = obj(c);
-    c.id = typeof c.id === 'string' && c.id ? c.id : uid();
-    /* 登録順（足した時刻）。古い保存には無い → normState で今の並びの順に振る */
-    c.reg = +c.reg > 0 && isFinite(+c.reg) ? Math.floor(+c.reg) : 0;
-    c.name = str(c.name, 24).trim() || '名無し';
-    c.eg = fixEg(c.eg);
-    c.memo = str(c.memo, 80);
-    c.group = str(c.group, 40).trim();
-    /* タグ（グループとは別。読点・カンマで複数。住人の一覧で探す・絞り込むだけに使い、結果には影響しない） */
-    c.tags = str(c.tags, 80).trim();
-    if (['', 'm', 'f', 'x'].indexOf(c.gender || '') < 0) c.gender = '';
-    if (['', 'm', 'f', 'both', 'none'].indexOf(c.likes || '') < 0) c.likes = '';
-    if (['', 'top', 'bottom', 'riba'].indexOf(c.pos || '') < 0) c.pos = '';
-    migUserTone(c);
-    c.tone = okTone(c.tone) ? c.tone || '' : '';
-    /* 喘ぎの口調（R18版。moan-engine.js）：決めたときだけ持つ。空ならいつもの口調 */
-    if (c.moanTone && typeof c.moanTone === 'string' && okTone(c.moanTone)) c.moanTone = String(c.moanTone); else delete c.moanTone;
-    /* 住人の喘ぎの辞書（受け・攻め）・声の区分・言葉責めと言い返しの多さ（R18版の ui-gear-moan.js。全年齢版では持たない） */
-    ['moanDict', 'moanDictT'].forEach(function (k) { if (typeof c[k] === 'string' && c[k].trim() && !HK.SAFE_BUILD) c[k] = c[k].slice(0, 4000); else delete c[k]; }); (function (f, o) { var g = {}, p = {}; if (f && typeof f === 'object' && !HK.SAFE_BUILD) { if (['firm', 'soft', 'grand', 'none', 'off'].indexOf(f.kind) >= 0) g.kind = f.kind; if (typeof f.masc === 'boolean') g.masc = f.masc; } if (o && typeof o === 'object' && !HK.SAFE_BUILD) { ['tease', 'retort'].forEach(function (k) { if (['off', 'less', 'more'].indexOf(o[k]) >= 0) p[k] = o[k]; }); if (o.night === 'off' || (typeof o.night === 'string' && HK.PERSONA && HK.PERSONA[o.night])) p.night = o.night; } if (Object.keys(g).length) c.moanFit = g; else delete c.moanFit; if (Object.keys(p).length) c.moanOpt = p; else delete c.moanOpt; })(c.moanFit, c.moanOpt);
-    c.fp = str(c.fp, 8).trim();
-    c.color = typeof c.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(c.color) ? c.color : '';
-    c.call = okCall(c.call) ? c.call || '' : '';
-    c.calls = obj(c.calls);
-    /* 相手の性別で分けた敬称 { m, f, x } */
-    if (c.callG && typeof c.callG === 'object') { var cg = {}; ['m', 'f', 'x'].forEach(function (k) { if (okCall(c.callG[k]) && c.callG[k] && c.callG[k] !== 'gender') cg[k] = c.callG[k]; }); c.callG = cg; } else c.callG = null;
-    c.keigo = obj(c.keigo);
-    /* 誕生月（1〜12）と年齢（1〜150）。分からなければ空 */
-    c.bmonth = +c.bmonth >= 1 && +c.bmonth <= 12 ? String(Math.floor(+c.bmonth)) : '';
-    c.age = +c.age >= 1 && +c.age <= 150 ? String(Math.floor(+c.age)) : '';
-    c.keigoOlder = !!c.keigoOlder;
-    c.futa = !!c.futa;
-    c.daku = !!c.daku;
-    /* ♡喘ぎ（既定はオン。外したときだけ false） */
-    c.heart = c.heart !== false;
-    if (HK.Attr) HK.Attr.norm(c);
-    /* 箱庭をまたいで共通の能力値・欄（shared-stats.js） */
-    if (HK.Shared) HK.Shared.norm(c);
-    c.faithful = !!c.faithful;
-    c.noR18 = !!c.noR18;
-    /* 三人の場面（3P）は attr.js の c.trio（する／しない）。古い保存の「固定した相手が中心なら参加する」（trioHub）は読まずに捨てる（2026-10-27 担当HN） */
-    delete c.trioHub;
-    c.posNpc = HK.Pos ? HK.Pos.npcValid(c.posNpc) : '';
-    /* お酒の強さ（1 弱い〜5 ザル。空ならおまかせ） */
-    c.alcohol = HK.ALC_OK(c.alcohol) ? String(c.alcohol) : '';
-    /* 性器の呼び方（R18版。作風と自由記入） */
-    c.partWords = ['soft', 'direct', 'medical'].indexOf(c.partWords) >= 0 ? c.partWords : '';
-    c.partM = str(c.partM, 10).replace(/[「」『』{}]/g, '').trim();
-    c.partF = str(c.partF, 10).replace(/[「」『』{}]/g, '').trim();
-    c.you = str(c.you, 8).trim();
-    c.marks = str(c.marks, 30).trim();
-    /* 語尾の付け替え（「です→っす、だ→だぜ」を5つまで。tone-new2.js） */
-    c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(str(c.toneCustom, 120)) : '');
-    /* 恋愛相手の固定：相手の id の並び（複数可。以前の保存は一人の id の文字列） */
-    c.loveLock = idList(c.loveLock);
-    /* 性行為の相手の固定（R18）：''（恋愛相手の固定に合わせる）／any（誰とでも可）／pick（固定した相手だけ：sexLocks の人とだけ、モブとも関係を持たない）／
-       pickMob（固定した相手＋モブ：住人では sexLocks の人とだけ、モブとは可）。古い lover・loverOnly は migSexLock で読み替える。以前の保存は一人の id の文字列 */
-    migSexLock(c);
-    if (c.sexLock === 'any') c.sexLocks = [];
-    else if (c.sexLock === 'pick' || c.sexLock === 'pickMob' || Array.isArray(c.sexLock) || (typeof c.sexLock === 'string' && c.sexLock)) { var slMob = c.sexLock === 'pickMob'; c.sexLocks = idList(c.sexLock === 'pick' || slMob ? c.sexLocks : c.sexLock); c.sexLock = c.sexLocks.length ? (slMob ? 'pickMob' : 'pick') : ''; }
-    else { c.sexLock = ''; c.sexLocks = []; }
-    c.loveNG = Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return typeof x === 'string'; }) : [];
-    if (c.icon && !(typeof c.icon === 'string' && /^data:image\//.test(c.icon))) delete c.icon;
-    return c;
-  }
-  /* 住人どうしの参照（恋愛相手・呼び方）と関係を、今いる住人だけに絞る */
-  function normRefs(S0) {
-    var ids = {};
-    S0.chars.forEach(function (c) { ids[c.id] = 1; });
-    S0.chars.forEach(function (c) {
-      c.loveLock = idList(c.loveLock).filter(function (k) { return ids[k] && k !== c.id; });
-      c.sexLocks = idList(c.sexLocks).filter(function (k) { return ids[k] && k !== c.id; });
-      if ((c.sexLock === 'pick' || c.sexLock === 'pickMob') && !c.sexLocks.length) c.sexLock = '';
-      /* 恋愛・R18にしない相手：今いる住人だけ。片方に書かれていれば、もう片方にも書く */
-      c.loveNG = (c.loveNG || []).filter(function (k, i, l) { return ids[k] && k !== c.id && l.indexOf(k) === i; });
-      Object.keys(c.calls).forEach(function (k) { if (!ids[k] || k === c.id || typeof c.calls[k] !== 'string' || !c.calls[k].trim()) delete c.calls[k]; else c.calls[k] = c.calls[k].slice(0, 16); });
-      Object.keys(c.keigo).forEach(function (k) { if (!ids[k] || k === c.id || !c.keigo[k]) delete c.keigo[k]; else c.keigo[k] = 1; });
-      if (HK.Attr) HK.Attr.normRefs(c, ids, S0.chars);
-    });
-    var byId = {};
-    S0.chars.forEach(function (c) { byId[c.id] = c; });
-    S0.chars.forEach(function (c) { (c.loveNG || []).forEach(function (k) { var o = byId[k]; if (o) { o.loveNG = o.loveNG || []; if (o.loveNG.indexOf(c.id) < 0) o.loveNG.push(c.id); } }); });
-    /* 古い保存の形（敵対・不仲の欄 lh）は、気持ちの関係「愛憎」に写してから読む（ties.js の HK.tieLhMigrate。2026-10-29） */
-    S0.ties = (Array.isArray(S0.ties) ? (HK.tieLhMigrate ? HK.tieLhMigrate(S0.ties) : S0.ties) : []).filter(function (t) {
-      /* 関係の種類は自分の持つ鍵だけ（壊れた保存の type が「constructor」などでも読み込みが止まらないように） */
-      if (!t || typeof t.type !== 'string' || !Object.prototype.hasOwnProperty.call(HK.TIES, t.type) || !ids[t.a] || !ids[t.b] || t.a === t.b) return false;
-      /* 仲間（comrade）はグループの「仲間」から自動で付けるので、関係としては持たない */
-      if (HK.tieHidden && HK.tieHidden(t.type)) return false;
-      var CO = HK.coldOpts ? HK.coldOpts(t.type) : null;
-      if (t.cold && !(CO && CO.map[t.cold])) delete t.cold;
-      /* 恋愛の欄（どの関係にもある）：'ok'＝あり・'no'＝なし。ほかの値は自動（欄なし）として読む */
-      if ('love' in t && t.love !== 'ok' && t.love !== 'no') delete t.love;
-      if (HK.tieExtraNorm) HK.tieExtraNorm(t);
-      return true;
-    });
-  }
-  function normState(S0) {
-    S0 = obj(S0);
-    S0.chars = (Array.isArray(S0.chars) ? S0.chars : []).filter(function (c) { return c && typeof c === 'object'; }).slice(0, MAX).map(normChar);
-    var seen = {};
-    S0.chars.forEach(function (c) { if (seen[c.id]) c.id = uid(); seen[c.id] = 1; });
-    /* 登録順の無い住人（古い保存）：今の並びの順に、時刻より小さい番号を振る（登録順に戻すと、古い住人が先・今の並びのまま） */
-    S0.chars.forEach(function (c, i) { if (!c.reg) c.reg = i + 1; if (c.reg > lastReg && c.reg < 1e14) lastReg = c.reg; });
-    /* 住人の一覧で隠しているグループ（表示だけ。グループ名 → 1）と、グループのない住人を隠すか */
-    S0.grpHide = obj(S0.grpHide);
-    Object.keys(S0.grpHide).forEach(function (g) { if (!S0.grpHide[g] || !String(g).trim()) delete S0.grpHide[g]; else S0.grpHide[g] = 1; });
-    S0.grpHideNone = !!S0.grpHideNone;
-    S0.env = obj(S0.env); S0.glob = obj(S0.glob); S0.per = obj(S0.per); S0.join = obj(S0.join);
-    S0.seed = str(S0.seed, 12).replace(/[^\d]/g, '');
-    if (typeof S0.teacher !== 'string') S0.teacher = '';
-    if (typeof S0.randFrom !== 'string') S0.randFrom = '';
-    S0.randN = Math.max(0, Math.min(100, parseInt(S0.randN, 10) || 0)) || '';
-    /* 版の印と保存日時（控えとの照らし合わせに使う。下の bkHold） */
-    S0.v = +S0.v || 0; S0.savedAt = +S0.savedAt || 0;
-    /* グループごとの「このグループを仲間とみなす」（グループ名 → 1） */
-    S0.grpComrade = obj(S0.grpComrade);
-    Object.keys(S0.grpComrade).forEach(function (g) { if (!S0.grpComrade[g] || !String(g).trim()) delete S0.grpComrade[g]; else S0.grpComrade[g] = 1; });
-    S0.chars.forEach(function (c) { migVamp(c, S0.per[c.id]); });
-    /* 箱庭ごとに入っていた共通の能力値・欄を住人へ移す（shared-stats.js） */
-    if (HK.Shared) S0.chars.forEach(function (c) { HK.Shared.migrate(c, S0.per[c.id]); });
-    normRefs(S0);
-    /* 話題（住人タブ「話題」の節。topics.js の HK.Topics.norm で 1 件ずつ整え、壊れたものは捨てる。上限まで・同じ id は先勝ち。消えた住人の話題は外す） */
-    S0.topics = (function () {
-      var out = [], seen = {}, ids = {};
-      S0.chars.forEach(function (c) { ids[c.id] = 1; });
-      (Array.isArray(S0.topics) ? S0.topics : []).forEach(function (t) {
-        if (out.length >= (HK.Topics ? HK.Topics.MAX : 0)) return;
-        var o = HK.Topics.norm(t);
-        if (!o || seen[o.id] || (o.scope === 'char' && !ids[o.a]) || (o.scope === 'pair' && !(ids[o.a] && ids[o.b]))) return;
-        seen[o.id] = 1; out.push(o);
-      });
-      return out;
-    })();
-    return S0;
-  }
-  /* 旧データの特殊役職「吸血鬼」を種族の吸血鬼に移す（special.js。箱庭ごとの欄からは外した） */
-  function migVamp(c, per) {
-    if (!c || !per || typeof per !== 'object') return;
-    /* サキュバスの一夜：旧データの「標的」の欄（pick.target）を、役割の「標的（人間）になる」に移す */
-    var sb = per.succubus && per.succubus.pick;
-    if (sb && sb.target) { if (sb.target === 'yes') sb.role = 'target'; else if (sb.target === 'no' && !sb.role) sb.role = 'hunt'; delete sb.target; }
-    Object.keys(per).forEach(function (sid) {
-      var p = per[sid]; if (!p || !p.pick || p.pick.special !== 'vampire') return;
-      /* 種族がほかに決まっている人（獣人の吸血鬼 など）は、旧データの値を残して吸血鬼のまま動かす（special.js が読む） */
-      if (!c.race || c.race === 'human') { c.race = 'vampire'; delete p.pick.special; }
-    });
-  }
+  /* 住人・保存データの整え（ui-norm.js。このファイルより前に読む。2026-11-04 に分けた） */
+  var UN = HK.UINorm, uid = UN.uid, newReg = UN.newReg, mk = UN.mk, obj = UN.obj, str = UN.str, okTone = UN.okTone, okCall = UN.okCall, fixEg = UN.fixEg, idList = UN.idList;
+  var migSexLock = UN.migSexLock, migUserTone = UN.migUserTone, normChar = UN.normChar, normRefs = UN.normRefs, normState = UN.normState, migVamp = UN.migVamp;
   /* ---------- 住人・関係の控え（hakoniwa:state:backup） ----------
      旧版（同じドメインに置いた hako_R18_old など）は保存の場所を共有していて、開いて何か変えると、旧版の知らない関係などを落として state を書き戻す。
      今の版は保存のたびに、版の印（STATE_V）と保存日時（savedAt）を付けた控えも書く。起動時に state が控えと食い違い、控えにあるものが欠けていれば、
@@ -657,65 +470,8 @@
   }
 
   /* ---------- 既存の関係 ---------- */
-  /* ---------- 住人の複製（住人の行の「複製」） ----------
-     その住人の設定（エゴグラム・口調・語尾の設定・辞書・一人称/二人称・性別・恋愛対象・受け攻め・体の設定・好物・箱庭の能力・アイコン・箱庭ごとの設定 など）を
-     すべて写した住人を、すぐ下に足す。関係（S.ties）と、ほかの住人を指す設定（恋愛相手の固定・性行為の相手の固定・相手ごとの設定・恋愛にしない相手・
-     殺さない相手・同一人物）は写さない。名前は「〇〇２」のように、今いる住人と重ならないものにする */
-  var DUP_CLEAR = { loveLock: [], sexLocks: [], loveNG: [], noKillFor: [], calls: {}, keigo: {}, nightFor: {}, posFor: {}, youFor: {}, fpFor: {}, same: '', sameDark: false };
-  function zen(n) { return String(n).replace(/\d/g, function (d) { return String.fromCharCode(d.charCodeAt(0) + 0xFEE0); }); }
-  function dupName(name) {
-    var used = {}; S.chars.forEach(function (c) { used[c.name] = 1; });
-    var base = String(name || '').replace(/[０-９]+$/, '') || String(name || '名無し');
-    for (var n = 2; n < 1000; n++) { var suf = zen(n), nm = base.slice(0, 24 - suf.length) + suf; if (!used[nm]) return nm; }
-    return base.slice(0, 16) + Date.now().toString(36).slice(-8);
-  }
-  function dupChar(src) {
-    var ids = {}; S.chars.forEach(function (c) { ids[c.id] = 1; });
-    var c = JSON.parse(JSON.stringify(src));
-    do { c.id = uid(); } while (ids[c.id]);
-    c.reg = newReg();
-    c.name = dupName(src.name);
-    Object.keys(DUP_CLEAR).forEach(function (k) { c[k] = JSON.parse(JSON.stringify(DUP_CLEAR[k])); });
-    if (c.sexLock === 'pick' || c.sexLock === 'pickMob') c.sexLock = '';
-    /* 念のため：ほかの欄に残った住人の id（あとから足した相手ごとの欄）も外す */
-    Object.keys(c).forEach(function (k) {
-      var v = c[k];
-      if (k === 'id' || k === 'name') return;
-      if (typeof v === 'string') { if (ids[v]) c[k] = ''; }
-      else if (Array.isArray(v)) c[k] = v.filter(function (x) { return !(typeof x === 'string' && ids[x]); });
-      else if (v && typeof v === 'object') Object.keys(v).forEach(function (kk) { if (ids[kk]) delete v[kk]; });
-    });
-    c = normChar(c);
-    /* 箱庭ごとの設定（最初の行動・短期目標・能力値・武器・箱庭の欄）も写す。住人を指す値は外す */
-    if (S.per && S.per[src.id]) {
-      var pp = JSON.parse(JSON.stringify(S.per[src.id]));
-      Object.keys(pp).forEach(function (sid) { var o = pp[sid]; if (o && typeof o === 'object') Object.keys(o).forEach(function (k) { if (typeof o[k] === 'string' && ids[o[k]]) delete o[k]; }); });
-      S.per[c.id] = pp;
-    }
-    return c;
-  }
-  function dupRes(id) {
-    var src = S.chars.filter(function (c) { return c.id === id; })[0];
-    if (!src) return;
-    if (S.chars.length >= MAX) { toast('住人が上限の' + MAX + '人まで登録されているので、複製できません'); return; }
-    var c = dupChar(src);
-    S.sample = false;
-    S.chars.splice(S.chars.indexOf(src) + 1, 0, c);
-    if (CP) CP.reveal(c.id);
-    save(); renderCast();
-    var q = '「' + src.name + '」を複製して「' + c.name + '」を足しました（関係と、ほかの住人を指す設定は写していません）。\n\n' +
-      '「' + c.name + '」を「' + src.name + '」と同一人物にしますか？' +
-      (src.same && src.same !== c.id ? '\n（' + src.name + 'はいま別の人と同一人物です。はいを選ぶと、' + c.name + 'の側だけに付けます）' : '') +
-      '\n\n［OK］はい（同一人物にする）\n［キャンセル］いいえ';
-    if (window.confirm(q)) {
-      c.same = src.id;
-      if (!src.same) src.same = c.id;
-      save(); renderCast();
-      toast('「' + c.name + '」を「' + src.name + '」と同一人物にしました');
-    } else toast('「' + c.name + '」を足しました');
-    var nm = document.getElementById('nm-' + c.id);
-    if (nm) { nm.focus(); nm.select(); }
-  }
+  /* 住人の複製（住人の行の「複製」）は ui-cast-ops.js（2026-11-04 に分けた。並び替えのドラッグ・上へ／下へのボタンも） */
+  function dupRes(id) { if (HK.UI.dupRes) HK.UI.dupRes(id); }
   function cleanTies() {
     /* 住人の id は表で引く（住人の行の要約 UI.summary が住人ごとに呼ぶので、住人1000人・関係300本で indexOf だと数秒かかった） */
     var ids = Object.create(null);
@@ -798,204 +554,10 @@
     toast(msg);
   }
 
-  /* ---------- JSONでの書き出し・読み込み ---------- */
-  /* only（住人の id の配列）を渡すと、その住人だけを書き出す。
-     選ばなかった住人との関係・恋愛相手の固定・呼び方・敬語の相手は、番号ではなく名前で書く（読み込む側で同じ名前の住人につながる） */
-  /* St を渡すと、今の名簿ではなくその状態から作る（まるごと読み込みの「足す」。portable.js が normState で整えて渡す）。そのときは高度設定を付けない */
-  function rosterJSON(only, St) {
-    var R = St || S;
-    var idx = {}, name = {}, list = only ? R.chars.filter(function (c) { return only.indexOf(c.id) >= 0; }) : R.chars;
-    list.forEach(function (c, i) { idx[c.id] = i; });
-    R.chars.forEach(function (c) { name[c.id] = c.name; });
-    var ref = function (id) { return idx[id] != null ? idx[id] : only && name[id] ? name[id] : null; };
-    var out = {
-      format: 'hakoniwa-residents', version: 1, exported: new Date().toISOString(),
-      partial: only ? true : undefined,
-      chars: list.map(function (c) {
-        var o = { name: c.name, code: HK.toCode(c.eg), eg: c.eg, memo: c.memo || '', group: c.group || '', gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', pos: c.pos || '' };
-        if (c.tags) o.tags = c.tags;
-        if (c.reg) o.reg = c.reg;
-        if (c.icon) o.icon = c.icon;
-        if (c.color) o.color = c.color;
-        if (c.call) o.call = c.call;
-        if (c.callG) o.callG = c.callG;
-        if (c.bmonth) o.bmonth = +c.bmonth;
-        if (c.age) o.age = +c.age;
-        if (c.keigoOlder) o.keigoOlder = true;
-        if (c.futa) o.futa = true;
-        if (c.daku) o.daku = true;
-        if (c.heart === false) o.heart = false;
-        if (c.faithful) o.faithful = true;
-        if (c.noR18) o.noR18 = true;
-        if (HK.Pos && HK.Pos.npcValid(c.posNpc)) o.posNpc = c.posNpc;
-        if (c.alcohol) o.alcohol = +c.alcohol;
-        if (c.partWords) o.partWords = c.partWords;
-        if (c.partM) o.partM = c.partM;
-        if (c.partF) o.partF = c.partF;
-        if (c.you) o.you = c.you;
-        if (c.marks) o.marks = c.marks;
-        if (HK.Attr) HK.Attr.exportTo(o, c, ref);
-        if (HK.Shared) HK.Shared.exportTo(o, c);
-        if (c.toneCustom) o.toneCustom = c.toneCustom;
-        if (c.moanTone) o.moanTone = c.moanTone; ['moanDict', 'moanDictT', 'moanFit', 'moanOpt'].forEach(function (k) { if (c[k]) o[k] = JSON.parse(JSON.stringify(c[k])); });
-        /* 固定した相手：一人なら番号（以前の形）、二人以上なら番号の並び */
-        var lks = idList(c.loveLock).map(ref).filter(function (x) { return x != null; });
-        if (lks.length) o.loveLock = lks.length === 1 ? lks[0] : lks;
-        /* 性行為の相手の固定：誰とでも可は 'any'、固定した相手は番号（一人なら番号、二人以上なら並び）。「固定した相手＋モブ」は sexLockMob も付ける */
-        if (c.sexLock === 'any') o.sexLock = c.sexLock;
-        else if (c.sexLock === 'pick' || c.sexLock === 'pickMob') { var sls = idList(c.sexLocks).map(ref).filter(function (x) { return x != null; }); if (sls.length) { o.sexLock = sls.length === 1 ? sls[0] : sls; if (c.sexLock === 'pickMob') o.sexLockMob = true; } }
-        if (c.loveNG && c.loveNG.length) { var ng = c.loveNG.map(ref).filter(function (x) { return x != null; }); if (ng.length) o.loveNG = ng; }
-        if (c.calls) { var cl = {}; Object.keys(c.calls).forEach(function (id) { if (ref(id) != null && c.calls[id]) cl[ref(id)] = c.calls[id]; }); if (Object.keys(cl).length) o.calls = cl; }
-        if (c.keigo) { var kg = Object.keys(c.keigo).filter(function (id) { return ref(id) != null && c.keigo[id]; }).map(ref); if (kg.length) o.keigo = kg; }
-        if (R.per && R.per[c.id]) o.per = R.per[c.id];
-        return o;
-      }),
-      ties: (R.ties || []).filter(function (t) { return ref(t.a) != null && ref(t.b) != null && (idx[t.a] != null || idx[t.b] != null); }).map(function (t) { var o = { a: ref(t.a), b: ref(t.b), type: t.type }; if (t.cold) o.cold = t.cold; if (t.love === 'ok' || t.love === 'no') o.love = t.love; HK.TIE_XF.forEach(function (f) { if (t[f]) o[f] = t[f]; }); return o; }),
-      teacher: R.teacher && idx[R.teacher] != null ? idx[R.teacher] : null,
-      /* グループごとの「仲間」（書き出す住人のグループだけ） */
-      grpComrade: (function () { var m = {}, any = false; Object.keys(R.grpComrade || {}).forEach(function (g) { if (R.grpComrade[g] && R.chars.some(function (c) { return (only ? idx[c.id] != null : true) && inGrp(c, g); })) { m[g] = 1; any = true; } }); return any ? m : undefined; })(),
-      /* 話題（ui-topics.js。住人は番号。一部だけのときは、その人たちとそのグループの話題だけ） */
-      topics: HK.TopicsUI ? HK.TopicsUI.exportTo(R, ref, idx, only) : undefined,
-      /* 内容のスイッチ（R18版）も一緒に書き出す（全員を書き出すときだけ） */
-      ct: !only && !HK.SAFE_ON && R.glob && R.glob.ct && Object.keys(R.glob.ct).length ? R.glob.ct : undefined
-    };
-    if (!only && !St && HK.Adv) HK.Adv.exportTo(out);
-    return out;
-  }
-  function exportJSON(only) {
-    var data = rosterJSON(only), text = JSON.stringify(data, null, 1);
-    var d = new Date(), tag = only ? '-part' + data.chars.length : '';
-    var name = 'hakoniwa-residents' + tag + '-' + d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '.json';
-    try {
-      var blob = new Blob([text], { type: 'application/json' }), url = URL.createObjectURL(blob), a = document.createElement('a');
-      if (!('download' in a)) throw new Error('nodl');
-      a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-      toast(data.chars.length + '人分をJSONで書き出しました' + (only ? '（読み込む側で「JSONを足す」を使うと、同じ名前の住人だけが更新されます）' : ''));
-    } catch (e) { copy(text, 'ファイルを保存できない環境なので、JSONをクリップボードにコピーしました'); }
-  }
-  function num(v) { v = parseFloat(v); return isNaN(v) ? null : HK.clamp(v, 0, 20); }
-  function importJSON(text, replace) {
-    var data;
-    try { data = JSON.parse(text); } catch (e) { toast('JSONとして読めませんでした'); return; }
-    var arr = Array.isArray(data) ? data : data && Array.isArray(data.chars) ? data.chars : null;
-    if (!arr || !arr.length) { toast('住人のデータが見つかりませんでした'); return; }
-    var list = replace || S.sample ? [] : S.chars.slice();
-    var map = [], added = 0, updated = 0, skipped = 0, per0 = S.per;
-    if (replace || S.sample) S.per = {};
-    arr.forEach(function (o, i) {
-      if (typeof o === 'string') { var pr = HK.parseRoster ? HK.parseRoster(o) : null; o = pr && pr.chars[0] ? { name: pr.chars[0].name, eg: pr.chars[0].eg, memo: pr.chars[0].memo } : null; }
-      if (!o || typeof o !== 'object') { map[i] = null; skipped++; return; }
-      try {
-      var name = String(o.name || '').trim().slice(0, 24) || ('キャラ' + (i + 1));
-      var eg = null;
-      if (o.eg && typeof o.eg === 'object') { eg = {}; HK.FACTORS.forEach(function (k) { var v = num(o.eg[k]); eg[k] = v == null ? 10 : v; }); }
-      else if (HK.isCode && HK.isCode(o.code || '')) eg = HK.fromCode(String(o.code).trim());
-      if (!eg) { map[i] = null; skipped++; return; }
-      var c = list.filter(function (x) { return x.name === name; })[0];
-      if (c) { c.eg = eg; updated++; }
-      else { if (list.length >= MAX) { map[i] = null; skipped++; return; } c = mk({ name: name, eg: eg }); c._new = 1; list.push(c); added++; }
-      c.memo = String(o.memo || c.memo || '').slice(0, 80);
-      if (o.group != null) c.group = String(o.group).trim().slice(0, 40);
-      if (o.tags != null) c.tags = String(o.tags).trim().slice(0, 80);
-      if (['', 'm', 'f', 'x'].indexOf(o.gender || '') >= 0) c.gender = o.gender || '';
-      if (['', 'm', 'f', 'both', 'none'].indexOf(o.likes || '') >= 0) c.likes = o.likes || '';
-      if (['', 'top', 'bottom', 'riba'].indexOf(o.pos || '') >= 0) c.pos = o.pos || '';
-      if (o.tone == null || o.tone === '' || (HK.toneValid ? HK.toneValid(o.tone) : HK.PERSONA[o.tone])) c.tone = o.tone || '';
-      if (typeof o.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(o.color)) c.color = o.color;
-      if (typeof o.call === 'string') c.call = o.call;
-      if (o.callG && typeof o.callG === 'object') c.callG = o.callG;
-      if (o.bmonth != null) c.bmonth = o.bmonth;
-      if (o.age != null) c.age = o.age;
-      if (o.keigoOlder) c.keigoOlder = true;
-      if (o.futa) c.futa = true;
-      if (o.daku) c.daku = true;
-      if (o.heart === false) c.heart = false;
-      if (o.faithful) c.faithful = true;
-      if (o.noR18) c.noR18 = true;
-      if (HK.Pos && HK.Pos.npcValid(o.posNpc)) c.posNpc = o.posNpc;
-      /* 登録順（書き出したときの値。無い古い JSON は、足した順の新しい値のまま） */
-      if (c._new && +o.reg > 0 && isFinite(+o.reg)) c.reg = Math.floor(+o.reg);
-      delete c._new;
-      if (HK.ALC_OK(o.alcohol)) c.alcohol = String(o.alcohol);
-      if (o.partWords) c.partWords = o.partWords;
-      if (o.partM != null) c.partM = String(o.partM);
-      if (o.partF != null) c.partF = String(o.partF);
-      if (o.you != null) c.you = String(o.you).trim().slice(0, 8);
-      if (o.marks != null) c.marks = String(o.marks).trim().slice(0, 30);
-      if (HK.Attr) HK.Attr.importFrom(c, o);
-      if (HK.Shared) HK.Shared.importFrom(c, o);
-      if (o.toneCustom != null) c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(String(o.toneCustom).slice(0, 120)) : '');
-      if (o.moanTone != null) c.moanTone = okTone(o.moanTone) ? String(o.moanTone || '') : ''; ['moanDict', 'moanDictT', 'moanFit', 'moanOpt'].forEach(function (k) { if (o[k] != null) c[k] = typeof o[k] === 'string' ? o[k].slice(0, 4000) : JSON.parse(JSON.stringify(o[k])); });
-      c._lk = o.loveLock; c._sl = o.sexLock; c._slm = !!o.sexLockMob; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
-      if (o.fp != null) c.fp = String(o.fp).trim().slice(0, 8);
-      if (typeof o.icon === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(o.icon) && o.icon.length < 400000) c.icon = o.icon;
-      if (o.per && typeof o.per === 'object') { S.per = S.per || {}; S.per[c.id] = JSON.parse(JSON.stringify(o.per)); migVamp(c, S.per[c.id]); }
-      normChar(c);
-      /* 古いJSON：箱庭ごとに入っていた共通の能力値・欄を住人へ */
-      if (HK.Shared && S.per && S.per[c.id]) HK.Shared.migrate(c, S.per[c.id]);
-      map[i] = c.id;
-      } catch (err) { map[i] = null; skipped++; if (window.console) console.warn("JSON import skip", i, err); }
-    });
-    /* 一人も読めなかったら何も変えない（置き換えで、今の住人を空にして保存してしまわないように） */
-    if (!added && !updated) { S.per = per0; toast('読み込める住人が見つかりませんでした（名前とエゴグラムの値かコードが必要です）。今の住人はそのままです'); return; }
-    S.chars = list; S.sample = false;
-    if (replace) { S.ties = []; S.join = {}; S.teacher = ''; }
-    var tn = 0;
-    function ref(v) {
-      if (typeof v === 'number' || /^\d+$/.test(String(v))) return map[+v];
-      var hit = list.filter(function (x) { return x.name === v; })[0];
-      return hit ? hit.id : null;
-    }
-    (Array.isArray(data.ties) ? data.ties : []).forEach(function (t) {
-      if (!t || typeof t !== 'object') return;
-      var a = ref(t.a), b = ref(t.b);
-      if (!a || !b || a === b || typeof t.type !== 'string' || !Object.prototype.hasOwnProperty.call(HK.TIES, t.type)) return;
-      S.ties = (S.ties || []).filter(function (x) { return !(x.type === t.type && ((x.a === a && x.b === b) || (x.a === b && x.b === a))); });
-      var CO2 = HK.coldOpts ? HK.coldOpts(t.type) : null;
-      var nt0 = t.cold && CO2 && CO2.map[t.cold] ? { a: a, b: b, type: t.type, cold: t.cold } : { a: a, b: b, type: t.type };
-      if (t.love === 'ok' || t.love === 'no') nt0.love = t.love;
-      /* 追加の欄（型・度合い・気持ち・様子・愛憎）。古い JSON にはないので、ないときは今までどおり */
-      HK.TIE_XF.forEach(function (f) { if (typeof t[f] === 'string' && t[f]) nt0[f] = t[f]; });
-      if (HK.tieLhMigrate) HK.tieLhMigrate([nt0]).slice(1).forEach(function (x) { S.ties.push(x); });
-      if (HK.tieExtraNorm) HK.tieExtraNorm(nt0);
-      if (HK.tieHidden && HK.tieHidden(nt0.type)) return;
-      S.ties.push(nt0); tn++;
-    });
-    /* グループごとの「仲間」（古い JSON にはない） */
-    if (replace) S.grpComrade = {};
-    if (data.grpComrade && typeof data.grpComrade === 'object' && !Array.isArray(data.grpComrade)) { S.grpComrade = S.grpComrade || {}; Object.keys(data.grpComrade).forEach(function (g) { if (data.grpComrade[g] && String(g).trim()) S.grpComrade[String(g).trim().slice(0, 40)] = 1; }); }
-    if (data.teacher != null && map[data.teacher]) S.teacher = map[data.teacher];
-    /* 話題（古い JSON にはない。置き換えで JSON に話題があれば、今の話題と入れ替える） */
-    if (HK.TopicsUI) HK.TopicsUI.importFrom(data, ref, replace && Array.isArray(data.topics));
-    if (HK.Adv) HK.Adv.importFrom(data);
-    if (data.ct && typeof data.ct === 'object' && !HK.SAFE_ON && HK.Content) { S.glob = S.glob || {}; S.glob.ct = {}; HK.Content.TAGS.forEach(function (t) { if (data.ct[t.id]) S.glob.ct[t.id] = 1; }); }
-    /* 恋愛相手の固定と呼び方は、全員を読み込んでから番号を住人に戻す */
-    list.forEach(function (c) {
-      if (Array.isArray(c._ng)) c.loveNG = c._ng.map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; }).filter(Boolean);
-      delete c._ng;
-      if (HK.Attr) HK.Attr.importRefs(c, ref);
-      /* 固定した相手：番号・名前・その並び、のどれでも */
-      var toIds = function (v) { return idList((Array.isArray(v) ? v : [v]).map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; })); };
-      if (c._lk != null) { c.loveLock = toIds(c._lk); delete c._lk; }
-      /* 性行為の相手の固定：古い 'lover'・'loverOnly' は、恋愛相手の固定を戻したあとで migSexLock で読み替える（保存の読み込みと同じ） */
-      if (c._sl === 'any') { c.sexLock = c._sl; c.sexLocks = []; }
-      else if (c._sl === 'lover' || c._sl === 'loverOnly') { c.sexLock = c._sl; c.sexLocks = []; migSexLock(c); }
-      else if (c._sl != null && c._sl !== '') { c.sexLocks = toIds(c._sl); c.sexLock = c.sexLocks.length ? (c._slm ? 'pickMob' : 'pick') : ''; }
-      delete c._sl; delete c._slm;
-      if (c._cl && typeof c._cl === 'object') { c.calls = c.calls || {}; Object.keys(c._cl).forEach(function (k) { var id = /^\d+$/.test(k) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; if (id) c.calls[id] = String(c._cl[k]).slice(0, 16); }); }
-      delete c._cl;
-      /* 敬語で話す相手：番号（または名前）の並び */
-      if (Array.isArray(c._kg)) { c.keigo = c.keigo || {}; c._kg.forEach(function (k) { var id = typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; if (id) c.keigo[id] = 1; }); }
-      delete c._kg;
-    });
-    normRefs(S);
-    cleanTies();
-    var ok = save() !== false;
-    renderCast();
-    var parts = []; if (added) parts.push(added + '人を追加'); if (updated) parts.push(updated + '人を更新'); if (tn) parts.push('関係' + tn + '件を復元');
-    toast('JSONから' + (parts.join('・') || '0人を読み込み') + 'しました' + (skipped ? '（' + skipped + '件は読めないか上限超えのため省略）' : '') + (ok ? '' : '。ブラウザに保存しきれませんでした'));
-  }
+  /* ---------- JSONでの書き出し・読み込み（ui-json.js。late：押したときだけ要る。2026-11-04 に分けた） ---------- */
+  function rosterJSON(only, St) { return lateCall('rosterJSON', [only, St]); }
+  function exportJSON(only) { return lateCall('exportJSON', [only]); }
+  function importJSON(text, replace) { return lateCall('importJSON', [text, replace]); }
   var jsonMode = 'add';
   /* 一部の住人だけ書き出す：チェックした住人（id → true）。画面を描き直しても選択は残す */
   var jpOpen = false, jpSel = {};
@@ -1511,15 +1073,14 @@
         (lazyBox && CP ? CP.boxTools() : '') +
         '<div class="tblwrap"><table class="per"><thead><tr><th>参加</th><th>住人</th>' + (hasAct ? '<th>最初の行動</th>' : '') + (hasGoal ? '<th>短期目標</th>' : '') + statHead + '</tr>' + bulk + '</thead><tbody><!--rows--></tbody></table></div>' +
         '<p class="bxnote">変えた欄だけ濃く表示します。性別・恋愛対象は住人の「設定」で変えます（名前の下に今の値を表示。押すとその人の設定が開きます）。</p>' : '<p class="hint">住人がいません。「住人」タブで登録してください。</p>') +
-      (S.scenId === 'omega' && S.chars.length ? '<p class="hint" style="margin-top:8px">第二性・スイッチ・職業・フェロモンの匂い・探偵バディ・運命の番のしくみは、上のカードの「この箱庭のTIPS」にあります。</p>' : '') +
-      (S.scenId === 'classroom' && S.chars.length && HK.CastTeacher ? HK.CastTeacher.selectHtml(S) : '') + '</section>';
+      (S.chars.length ? scenUI('joinNote', S) : '') + '</section>';
     /* 環境値の節：場の設定（この箱庭だけ）・起こりやすさ・展開と内容（全箱庭で共通。内容のスイッチは R18版だけ） */
     var pan = { scen: [], odds: [], plot: [] }, ctb = contentBox();
     genv(scen).forEach(function (e) { pan[envGroup(e)].push(e); });
     bxTabsOn = ['join'].concat(pan.scen.length ? ['scen'] : [], pan.odds.length ? ['odds'] : [], pan.plot.length || ctb ? ['plot'] : []);
     var envPanel = function (k, lead, items, extra) {
       return '<section class="bxpanel bxenv" data-bxp="' + k + '" id="bxp-' + k + '" aria-labelledby="bxh-' + k + '"><div class="bxph"><h3 id="bxh-' + k + '">' + BX_TABNAME[k] + '</h3><span class="bxsp"></span><button type="button" class="bxbtn" data-act="envreset" data-k="' + k + '" title="「' + BX_TABNAME[k] + '」の設定を初期値に戻す">初期値に戻す</button><button type="button" class="bxbtn" data-act="envrand" data-k="' + k + '" title="「' + BX_TABNAME[k] + '」の設定をランダムに決める（文字の項目はそのまま）">ランダム</button></div><p class="bxlead">' + lead + (HK.Tips ? HK.Tips.btn('env') : '') + '</p>' +
-        (k === 'scen' && S.scenId === 'whiteroom' ? '<p class="roomlabel" id="roomlabel">「' + esc(HK.roomLabel(envNow())) + '」</p>' : '') +
+        (k === 'scen' ? scenUI('envHead', S, envNow()) : '') +
         '<div class="envgrid">' + items.map(function (e) { return envItem(e, S.scenId); }).join('') + (extra || '') + '</div></section>';
     };
     var segs = [{ k: 'cards', html: head }, listSeg, selSeg, { k: 'tabs', now: true, html: bxTabsHtml(J, jmax) }, { k: 'per', html: joinHtml }].filter(Boolean), pi = segs.length - 1;
@@ -1701,13 +1262,13 @@
     goReady(p.fn, p.id);
   }
   /* 読み込めなかったときの知らせ（画面の下に残す。「もう一度」で読み直す）。新しい版が出ていたときは load.js の知らせ（画面の上）を出す */
-  function loadFail(e, retry) {
+  function loadFail(e, retry, what) {
     if (e && e.reason === 'stale') { if (HK.Load && HK.Load.staleNotice) HK.Load.staleNotice(); return; }
     var old = document.getElementById('loadfail'); if (old) old.remove();
     var why = e && e.reason === 'offline' ? '（通信できないため読み込めません）' : e && e.reason === 'broken' ? (e.chunk ? '（配信中のファイルが壊れているようです。少し時間をおいて「もう一度」を押してください。お問い合わせ用：' + e.chunk + '）' : '（ページを読み込み直してください）') : '';
     var d = document.createElement('div');
     d.id = 'loadfail'; d.setAttribute('role', 'alert');
-    d.innerHTML = '<span>' + (e && /^tone-/.test(e.chunk || '') ? '口調のデータ' : 'この箱庭のデータ') + 'を読み込めませんでした' + why + '</span>' + (retry ? '<button type="button" class="btn small primary" data-lf="retry">もう一度</button>' : '') +
+    d.innerHTML = '<span>' + (what || (e && /^tone-/.test(e.chunk || '') ? '口調のデータ' : 'この箱庭のデータ')) + 'を読み込めませんでした' + why + '</span>' + (retry ? '<button type="button" class="btn small primary" data-lf="retry">もう一度</button>' : '') +
       '<button type="button" class="btn small ghost" data-lf="close" aria-label="閉じる">×</button>';
     d.addEventListener('click', function (ev) {
       var b = ev.target.closest('[data-lf]');
@@ -1717,7 +1278,26 @@
     });
     document.body.appendChild(d);
   }
+  /* late の画面の部品（ui-json.js など。2026-11-04 に分けた）を呼ぶ。まだ届いていなければ late を読み（失敗していれば読み直し）、届いたら呼ぶ。
+     読めなかったら下に「読み込めませんでした（もう一度）」を出す（箱庭のかたまりと同じ知らせ） */
+  var LATE_API = { rosterJSON: 'UIJson', exportJSON: 'UIJson', importJSON: 'UIJson' };
+  function lateFn(name) {
+    if (name === 'quizOpen') return HK.EgoQuiz ? function () { bindQuiz(); HK.EgoQuiz.open(); } : null;
+    var o = HK[LATE_API[name]]; return o && typeof o[name] === 'function' ? o[name] : null;
+  }
+  function lateCall(name, args) {
+    var f = lateFn(name);
+    if (f) return f.apply(null, args);
+    if (!HK.Load || !HK.Load.manifest || !HK.Load.ensure) { toast('この機能はまだ使えません。ページを読み込み直してください'); return null; }
+    toast('データを読み込んでいます。終わりしだい続けます…');
+    HK.Load.ensure('late').then(function () {
+      var g = lateFn(name);
+      if (g) g.apply(null, args); else loadFail({ reason: 'broken', chunk: 'late' }, function () { lateCall(name, args); }, 'この機能のデータ');
+    }, function (e) { loadFail(e, function () { lateCall(name, args); }, 'この機能のデータ'); });
+    return null;
+  }
   HK.onLate = function () {
+    bindQuiz();
     if (HK.LATE_FAILED) toast('データの一部を読み込めませんでした。ページを読み込み直してください');
     /* 読み終えた描き直しで見ている位置を動かさない（iPhone の Safari はスクロールの位置の補正 scroll anchoring が無く、上の行の高さが変わると文が飛ぶ） */
     keepY(function () { if (tab === 'cast') renderCast(); else if (tab === 'box') boxRedraw(); });
@@ -1894,8 +1474,10 @@
     },
     copyCond: copyCond
   };
-  /* 25問のエゴグラム診断から住人を追加・書き換え */
-  if (HK.EgoQuiz) {
+  /* 25問のエゴグラム診断から住人を追加・書き換え（egoquiz.js は late。2026-11-04：届いたとき HK.onLate からも渡す） */
+  function bindQuiz() {
+    if (!HK.EgoQuiz || HK.EgoQuiz._uiBound) return;
+    HK.EgoQuiz._uiBound = true;
     HK.EgoQuiz.chars = function () { return S.chars; };
     HK.EgoQuiz.onSave = function (r) {
       var c = r.target ? S.chars.filter(function (x) { return x.id === r.target; })[0] : null;
@@ -1906,6 +1488,7 @@
       toast(r.name + '（' + HK.toCode(r.eg) + '）を' + (c ? '書き換えました' : '住人に追加しました'));
     };
   }
+  bindQuiz();
   HK.toast = toast;
 
   /* ---------- イベント ---------- */
@@ -2122,7 +1705,7 @@
         jsonMode = act === 'jsonrep' ? 'rep' : 'add';
         var jf = $('#jsonfile'); if (jf) { jf.value = ''; jf.click(); }
         break;
-      case 'quiz': if (HK.EgoQuiz) HK.EgoQuiz.open(); break;
+      case 'quiz': if (HK.EgoQuiz) { bindQuiz(); HK.EgoQuiz.open(); } else lateCall('quizOpen', []); break;
       case 'sharepng': if (result && HK.Share) HK.Share.saveResult(result, $('#sharemsg')); break;
       case 'sharex': if (result && HK.Share) HK.Share.postResult(result, $('#sharemsg')); break;
       case 'copytext': if (result) copy(V.toText(result), '結果をコピーしました'); break;
@@ -2254,8 +1837,7 @@
       src[t.dataset.k] = t.type === 'range' ? +t.value : t.value;
       var lab = document.getElementById('ev-' + t.dataset.k);
       if (lab) lab.textContent = t.value + (t.dataset.unit || '');
-      var rl = document.getElementById('roomlabel');
-      if (rl) rl.textContent = '「' + HK.roomLabel(envNow()) + '」';
+      scenUI('envChange', S, envNow());
       bxEnvSync(t);
     }
     else if (f === 'pf') {
@@ -2333,68 +1915,6 @@
     rd.onerror = function () { toast('ファイルを読み込めませんでした'); };
     rd.readAsText(f, 'utf-8');
   });
-  /* ---------- 住人の並び替え（ドラッグ／上下キー）。Windows・Mac・タッチ共通の Pointer Events ---------- */
-  function moveChar(id, to) {
-    var from = -1;
-    S.chars.forEach(function (c, i) { if (c.id === id) from = i; });
-    if (from < 0) return;
-    to = Math.max(0, Math.min(S.chars.length - 1, to));
-    if (to === from) return;
-    var c = S.chars.splice(from, 1)[0];
-    S.chars.splice(to, 0, c);
-    S.sample = false;
-    if (CP) CP.reveal(id);
-    save(); renderCast();
-    var h = document.querySelector('.res[data-id="' + id + '"] .draghandle');
-    if (h) h.focus();
-  }
-  var drag = null;
-  function clearMarks() { Array.prototype.forEach.call(document.querySelectorAll('.drop-before,.drop-after'), function (r) { r.classList.remove('drop-before', 'drop-after'); }); }
-  document.addEventListener('pointerdown', function (ev) {
-    var h = ev.target.closest && ev.target.closest('.draghandle');
-    if (!h || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
-    var row = h.closest('.res');
-    if (!row) return;
-    ev.preventDefault();
-    drag = { row: row, id: row.dataset.id, over: null, before: true, h: h };
-    row.classList.add('dragging'); document.body.classList.add('noselect');
-    try { h.setPointerCapture(ev.pointerId); } catch (e) {}
-  });
-  document.addEventListener('pointermove', function (ev) {
-    if (!drag) return;
-    ev.preventDefault();
-    clearMarks();
-    var el = document.elementFromPoint(ev.clientX, ev.clientY), r = el && el.closest ? el.closest('#castlist .res') : null;
-    if (r && r !== drag.row) {
-      var b = r.getBoundingClientRect();
-      drag.over = r; drag.before = ev.clientY < b.top + b.height / 2;
-      r.classList.add(drag.before ? 'drop-before' : 'drop-after');
-    } else drag.over = null;
-    if (ev.clientY < 70) window.scrollBy(0, -14); else if (ev.clientY > window.innerHeight - 70) window.scrollBy(0, 14);
-  });
-  function endDrag() {
-    if (!drag) return;
-    var d = drag; drag = null;
-    clearMarks(); d.row.classList.remove('dragging'); document.body.classList.remove('noselect');
-    if (!d.over) return;
-    var ids = S.chars.map(function (c) { return c.id; }), from = ids.indexOf(d.id), at = ids.indexOf(d.over.dataset.id);
-    var to = at + (d.before ? 0 : 1);
-    if (from < to) to--;
-    moveChar(d.id, to);
-    toast('並び順を変えました');
-  }
-  document.addEventListener('pointerup', endDrag);
-  document.addEventListener('pointercancel', endDrag);
-  document.addEventListener('keydown', function (ev) {
-    var h = ev.target.closest && ev.target.closest('.draghandle');
-    if (!h || (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown')) return;
-    ev.preventDefault();
-    var id = h.closest('.res').dataset.id, i = S.chars.map(function (c) { return c.id; }).indexOf(id);
-    /* グループごとの節に分けているときは、同じ節で一つ上（下）に見えている人と入れ替える（ui-cast-pages.js） */
-    var to = CP ? CP.step(id, ev.key === 'ArrowUp' ? -1 : 1) : i + (ev.key === 'ArrowUp' ? -1 : 1);
-    if (to >= 0) moveChar(id, to);
-  });
-
   var iconTarget = null;
   document.addEventListener('change', function (ev) {
     if (ev.target.id !== 'iconfile') return;
@@ -2416,26 +1936,9 @@
 
   HK.UI = HK.UI || {};
   HK.UI.state = function () { return S; }; HK.UI.parseRoster = parseGrouped;   /* 「n 行を検出」（ui-import.js）も同じ読み取りで数える */
-  /* 画面の上へ／下へ移動するボタン（右下に固定） */
-  (function () {
-    if (document.getElementById('pagejump')) return;
-    var st = document.createElement('style');
-    st.textContent = '#pagejump{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px;z-index:50}' +
-      '#pagejump button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line2,var(--line));background:var(--paper,var(--surface));color:var(--ink);font-size:18px;line-height:1;cursor:pointer;opacity:.92}' +
-      '#pagejump button:hover{opacity:1;border-color:var(--ink)}@media print{#pagejump{display:none}}';
-    document.head.appendChild(st);
-    var d = document.createElement('div');
-    d.id = 'pagejump';
-    d.innerHTML = '<button type="button" data-jump="top" aria-label="画面のいちばん上へ" title="いちばん上へ">↑</button><button type="button" data-jump="bottom" aria-label="画面のいちばん下へ" title="いちばん下へ">↓</button>';
-    d.addEventListener('click', function (ev) {
-      var b = ev.target.closest('[data-jump]');
-      if (!b) return;
-      var y = b.dataset.jump === 'top' ? 0 : Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
-      try { window.scrollTo({ top: y, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, y); }
-    });
-    document.body.appendChild(d);
-  })();
   HK.UI.save = save; HK.UI.renderCast = renderCast; HK.UI.cleanTies = cleanTies; HK.UI.toast = toast;
+  /* 分けた部品（ui-cast-ops.js・late の ui-json.js）が使う、このファイルの中の状態と関数（2026-11-04） */
+  HK.UI._k = { S: function () { return S; }, save: save, renderCast: renderCast, cleanTies: cleanTies, copy: copy, inGrp: inGrp, toast: toast };
   if (CP) CP.bind({ max: MAX, S: function () { return S; }, grpList: grpList, grpHidden: grpHidden, groupsOf: groupsOf, resRow: resRow, renderCast: renderCast, boxRedraw: boxRedraw });
   /* サンプルの住人のうち、まだいない人（名前で見る）。「＋住人を追加 ▾」の「サンプルの住人から足す」 */
   function sampleLeft() { var have = {}; S.chars.forEach(function (c) { have[c.name] = 1; }); return SAMPLE.filter(function (c) { return !have[c.name]; }); }
