@@ -44,15 +44,23 @@
   };
   R3.AFTER = L('事のあと、三人は汗ばんだ体を寄せ合ったまま、くすくすと笑い合った。{a}の両手は、{b}と{c}の手をそれぞれ握ったままだった。|三人は布団に川の字になって、天井を見上げた。{b}が「＠{b}＠三人だと、布団が足りない｜三人だと、布団が足りないな｜三人だと、布団が足りませんね」と言うと、{c}が吹き出し、{a}もつられて笑った。');
   function okPair(ctx) { return function (x, y) { return PR.sexOk(ctx, x, y); }; }
-  R3.can = function (ctx, S) {
-    var P = HK.Pos, g = [S.A0, S.B0, S.C0];
+  /* 四人婚で一人が留守の夜（2026-11-04 利用者の回答「三人の夜があってもよい」）：残る三人の文。きっかけで「一人が留守だから三人で」が分かるように（{a}{b}{c}＝三人、{x}＝留守の人） */
+  R3.LEAD4 = L('{x}が出張で家を空けた夜、寝室の布団は一つ分だけ広かった。{a}が明かりを落とすと、{b}と{c}は顔を見合わせた。いつもは四人の寝室に、今夜は三人。その分だけ、互いの体温が近かった。|' +
+    '「＠{a}＠{x}がいない夜は、なんだか落ち着かない｜{x}がいない夜は、どうも落ち着かない｜{x}さんがいない夜は、なんだか落ち着きませんね」――{a}がそう言うと、{b}が{a}の手を取り、{c}も黙って身を寄せた。留守の{x}の枕を横に置いたまま、三人は布団の中で寄り添った。|' +
+    '{x}から「今夜は帰れない」と連絡が来たのは、夕方だった。寝る前の居間で、{a}と{b}と{c}は、空いた一つの席をちらりと見た。三人だけの夜は久しぶりで、誰からともなく寝室へ向かった。');
+  /* 四人婚で使わない文（「三人で選んだ暮らし」など、三人で結婚した前提の文） */
+  var NOT4 = /三人で選んだ|三人で暮らし始めて/;
+  R3.can = function (ctx, S, g0) {
+    var P = HK.Pos, g = g0 || [S.A0, S.B0, S.C0];
     if (HK.SAFE_ON || !P || !P.trioPlan || !HK.Trio3) return null;
     if (g.some(function (c) { var d = c.life && c.life.days && c.life.days[S.day.d]; return d && d.trip; })) return null;
     var pl = P.trioPlan(g[0], g[1], g[2], { ok: okPair(ctx) });
     return pl && pl.pairs && pl.pairs.length >= 2 ? pl : null;
   };
-  R3.night = function (ctx, S, day, last) {
-    var pl = R3.can(ctx, S), g = [S.A0, S.B0, S.C0], X3 = HK.Trio3;
+  /* opt：四人婚で一人が留守の夜は { g: 残る三人, away: 留守の人 } */
+  R3.night = function (ctx, S, day, last, opt) {
+    opt = opt || {};
+    var g = opt.g || [S.A0, S.B0, S.C0], pl = R3.can(ctx, S, g), X3 = HK.Trio3, q4 = !!opt.away;
     if (day.noSex || HK.SAFE_ON || !X3) return false;
     /* 繋がる組が作れない三人（三人とも攻めなど。受け攻めだけが合わない）は、口づけと手だけの夜（本体の HK.Trio3.touchScene） */
     var touch = !pl && X3.touchOk && X3.touchOk(g, okPair(ctx)) && !g.some(function (c) { var d = c.life && c.life.days && c.life.days[S.day.d]; return d && d.trip; });
@@ -64,9 +72,9 @@
     if (!touch && !sp) return false;
     var nm = sp ? { t: sp.t.name, m: sp.m.name, u: sp.u.name } : {}, sub = function (t) { return String(t).replace(/\{([tmu])\}/g, function (m0, k) { return nm[k] || m0; }); };
     var pk = function (arr) { return arr[Math.floor(ctx.rng() * arr.length)]; };
-    var lt = K.say(ctx, R3.LEAD, a, bc[0], bc[1]), fl = R3.FORM_LEAD[touch ? 'touch' : sp.p];
+    var lt = q4 ? K.say(ctx, R3.LEAD4, a, bc[0], bc[1], { x: opt.away.name }) : K.say(ctx, R3.LEAD, a, bc[0], bc[1]), fl = R3.FORM_LEAD[touch ? 'touch' : sp.p];
     if (fl) lt += sub(pk(fl));
-    var le = ctx.say({ kind: 'event', cat: 'romance', actors: g, text: lt, why: 'きっかけ：三人の夜（' + a.name + 'から）', mag: 0 });
+    var le = ctx.say({ kind: 'event', cat: 'romance', actors: g, text: lt, why: 'きっかけ：三人の夜（' + (q4 ? opt.away.name + 'が留守の夜・' : '') + a.name + 'から）', mag: 0 });
     if (le) le.tag = 'きっかけ';
     var text, why;
     if (touch) { text = X3.touchScene(ctx, [a, bc[0], bc[1]]); why = '三人とも攻めなので、口づけと手だけ'; }
@@ -74,13 +82,13 @@
     else {
       var short = !!(LV && LV.short && LV.short(env, ctx.rng));
       /* 山場は本体の形ごとの文（受けの態度 9 種）に任せる。最中の段は新婚部屋の一段（形の組と同じ向き） */
-      var body = X3.quick(ctx, g, { sp: sp, plan: pl, env: env, ero: !!(LV && LV.ero && LV.ero(env)), short: short, mid: short ? '' : sub(pk(R3.MID[sp.p] || R3.MID.ring)) });
+      var body = X3.quick(ctx, g, { sp: sp, plan: pl, env: env, ero: !!(LV && LV.ero && LV.ero(env)), short: short, mid: short ? '' : sub(pk((R3.MID[sp.p] || R3.MID.ring).filter(function (x) { return !q4 || !NOT4.test(x); }))) });
       if (!body) return false;
-      text = body + '\n\n' + K.say(ctx, R3.AFTER, a, bc[0], bc[1]);
+      text = body + '\n\n' + K.say(ctx, q4 ? R3.AFTER.filter(function (x) { return !/布団が足りない/.test(x); }) : R3.AFTER, a, bc[0], bc[1]);
       why = (X3.FORM_JA && X3.FORM_JA[sp.p] || '') + '：' + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: '真ん中の' + sp.m.name + 'を挟んで', ring: '輪になって', show: sp.t.name + 'と' + sp.m.name + '、' + sp.u.name + 'は見守る' }[sp.p];
     }
     if (!text) return false;
-    var e = ctx.act2({ actors: g, cat: 'romance', text: text, why: '新婚部屋：三人の夜（' + why + '）',
+    var e = ctx.act2({ actors: g, cat: 'romance', text: text, why: '新婚部屋：三人の夜（' + (q4 ? opt.away.name + 'が留守・' : '') + why + '）',
       sex: !touch, lewd: lv !== 'low', trioPairs: pl ? pl.pairs : [], fx: function () { ctx.mod2(g[0], g[1], { att: 4, aff: 2 }, { att: 4, aff: 2 }); ctx.mod2(g[0], g[2], { att: 4, aff: 2 }, { att: 4, aff: 2 }); ctx.mod2(g[1], g[2], { att: 4, aff: 2 }, { att: 4, aff: 2 }); } });
     if (!e) return false;
     if (!touch) S.trioSex = (S.trioSex || 0) + 1;
