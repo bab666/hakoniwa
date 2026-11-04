@@ -29,7 +29,7 @@
   function SK() { return HK.Shinkon; }
   /* part：d 日中／n 夜。wed：結婚している二人だけ。love：恋愛にしてよい二人だけ */
   W.EV = [
-    { id: 'aikagi', nm: '合鍵', part: 'n' }, { id: 'hyosatsu', nm: '表札', part: 'd' }, { id: 'shokki', nm: '来客用の食器', part: 'd' }, { id: 'photo', nm: '写真立て', part: 'n' },
+    { id: 'aikagi', nm: '合鍵', part: 'n', love: 1 }, { id: 'hyosatsu', nm: '表札', part: 'd' }, { id: 'shokki', nm: '来客用の食器', part: 'd' }, { id: 'photo', nm: '写真立て', part: 'n' },
     { id: 'ichi', nm: '寝る位置の取り合い', part: 'n', love: 1 }, { id: 'myoji', nm: '名字の呼ばれ方', part: 'd', wed: 1 }, { id: 'kakei', nm: '家計の相談', part: 'n' },
     { id: 'aisatsu', nm: 'ご近所への挨拶', part: 'd' }, { id: 'mug', nm: 'おそろいのマグカップ', part: 'd' }, { id: 'ring', nm: '結婚指輪', part: 'n', wed: 1 },
     { id: 'senmen', nm: '洗面所の二人分', part: 'd' }, { id: 'kaimono', nm: '初めての大きな買い物', part: 'd', out: 1 }, { id: 'apron', nm: 'エプロン姿の出迎え', part: 'n', love: 1 },
@@ -81,7 +81,7 @@
     var t = SK().pickT(ctx, W.T[e.id], a, b);
     if (!t) return;
     var re = SK().withReact(ctx, 'warm', b, a, 0.35), rom = SK().ROM.test(t);
-    var ev = ctx.act2({ actors: [a, b], cat: S.love && (rom || e.love || e.wed) ? 'romance' : 'bond', text: SK().fill(ctx, t, a, b) + re.text, odd: re.odd, why: '新婚部屋：新婚らしい出来事（' + e.nm + '）',
+    var ev = ctx.act2({ actors: [a, b], cat: S.love && (rom || e.love || e.wed) ? 'romance' : 'bond', text: SK().fill(ctx, t, a, b) + re.text, odd: re.odd, why: '新婚部屋：' + (S.wed ? '新婚らしい出来事' : '暮らしの出来事') + '（' + e.nm + '）',
       fx: function () { ctx.mod2(a, b, { aff: 2, att: S.love ? 2 : 0 }, { aff: 2, att: S.love ? 2 : 0 }); } });
     if (ev) { S.wedN = (S.wedN || 0) + 1; if (re.odd) S.odd++; }
   };

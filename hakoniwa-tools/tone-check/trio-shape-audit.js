@@ -71,6 +71,15 @@ const JUDGE = function (HK, opt) {
     const pk = cur.meta.pos + ' ' + cur.meta.body; out.byPos[pk] = out.byPos[pk] || {}; add(out.byPos[pk], sp.p);
     out.bySc[cur.sc] = out.bySc[cur.sc] || {}; add(out.bySc[cur.sc], sp.p);
     const why = judgeShape(sp, g);
+    /* 体の向き（2026-11-04 利用者の報告「三人婚で受けが入れる側になる」）：
+       rev＝挿入の向きが受け攻めと逆（形の組の受けの男性器を、攻めの中へ呑みこむ・迎え入れる文）／fem＝男性器の無い人の男性器（女性器だけの人が入れる側） */
+    { const MW = '(?:男性器|肉棒|男根|昂り|熱いもの|ちんぽ|竿|モノ|陰茎|ペニス)', ss = sents(all);
+      edges(sp).forEach(e => { const x = e[0].name, y = e[1].name;
+        const r1 = new RegExp(y + 'の[^。、]{0,4}' + MW + 'を[^。]{0,12}' + x + 'の[^。]{0,10}(?:中|ナカ|奥|膣|内)'), r2 = new RegExp(x + '[はが][^。]{0,24}' + y + 'の[^。、]{0,4}' + MW + 'を[^。]{0,16}(?:呑みこ|呑み込|迎え入れ|受け入れ)');
+        const hit = ss.filter(t => r1.test(t) || r2.test(t));
+        if (hit.length) { out.rev = (out.rev || 0) + 1; if (out.revEx = out.revEx || [], out.revEx.length < 10) out.revEx.push(cur.sc + '#' + cur.s + ' ' + sp.p + ' ' + x + '→' + y + ' | ' + hit[0]); } });
+      g.filter(c => P.hasM && !P.hasM(c)).forEach(c => { const hit = ss.filter(t => new RegExp(c.name + 'の' + MW).test(t));
+        if (hit.length) { out.fem = (out.fem || 0) + 1; if (out.femEx = out.femEx || [], out.femEx.length < 10) out.femEx.push(cur.sc + '#' + cur.s + ' ' + sp.p + ' ' + c.name + ' | ' + hit[0]); } }); }
     if (why.length) { out.bad++; if (out.badEx.length < 30) out.badEx.push(cur.sc + '#' + cur.s + ' ' + sp.p + ' [' + g.map(c => c.name + ':' + (P.of(c) || '-') + c.gender).join(' ') + '] ' + why.join('・')); }
     /* 場面の状態 */
     if (F && F.MOTION) {
@@ -128,6 +137,8 @@ function print(r, errors, o) {
   console.log('受け攻めの設定（三人）×体 ごと：');
   Object.keys(r.byPos).sort().forEach(k => console.log('  ' + k.padEnd(22) + Object.keys(r.byPos[k]).map(p => p + ' ' + r.byPos[k][p]).join('・')));
   console.log('設定に合わない形：' + r.bad + ' 件');
+  console.log('挿入の向きが受け攻めと逆：' + (r.rev || 0) + ' 件／男性器の無い人の男性器（女性器だけの人が入れる側）：' + (r.fem || 0) + ' 件');
+  (r.revEx || []).concat(r.femEx || []).forEach(x => console.log('    ' + x));
   r.badEx.forEach(x => console.log('    ' + x));
   console.log('場面の状態：動きの二度出し ' + r.flow.motion + '・繋がったあとの脱がせる ' + r.flow.undress + '・応答待ちのあと受けの台詞なし ' + r.flow.pending + '・同じ地の文の二度出し ' + (r.flow.dupS || 0));
   if (o.why) r.flowEx.forEach(x => console.log('    ' + x));
@@ -151,11 +162,11 @@ function tableStats(dir) {
   return st;
 }
 /* audit-all.js の追加の配役パス（--extra=trio）用のまとめ（2026-11-04。単独で回したときの終了コードの条件と同じ 5 項目。判定は変えていない） */
-const LABEL = { bad: '設定に合わない形', motion: '動きの二度出し', undress: '繋がったあとの脱がせる', pending: '応答待ちのあと受けの台詞なし', dupS: '同じ地の文の二度出し' };
+const LABEL = { bad: '設定に合わない形', rev: '挿入の向きが逆', fem: '男性器の無い人の男性器', motion: '動きの二度出し', undress: '繋がったあとの脱がせる', pending: '応答待ちのあと受けの台詞なし', dupS: '同じ地の文の二度出し' };
 function summarize(r) {
   const items = {}, ex = {};
   if (!r || r.noX) return { items: {}, ex: {}, info: { 三人の場面: r && r.noX ? 'HK.Trio3 なし' : 0 }, err: 0 };
-  Object.keys(LABEL).forEach(k => { items[k] = k === 'bad' ? r.bad : (r.flow[k] || 0); ex[k] = k === 'bad' ? r.badEx.slice(0, 3) : r.flowEx.filter(x => x.indexOf(k === 'motion' ? '動き' : k === 'undress' ? '脱が' : k === 'pending' ? '応答待ち' : '同じ文') >= 0).slice(0, 3); });
+  Object.keys(LABEL).forEach(k => { items[k] = k === 'bad' ? r.bad : k === 'rev' || k === 'fem' ? (r[k] || 0) : (r.flow[k] || 0); ex[k] = k === 'bad' ? r.badEx.slice(0, 3) : k === 'rev' || k === 'fem' ? (r[k + 'Ex'] || []).slice(0, 3) : r.flowEx.filter(x => x.indexOf(k === 'motion' ? '動き' : k === 'undress' ? '脱が' : k === 'pending' ? '応答待ち' : '同じ文') >= 0).slice(0, 3); });
   return { items, ex, info: { 三人の場面: r.scenes, 触れ合いだけ: r.touch }, err: 0 };
 }
 module.exports = { passes: { trio: PASS }, judges: { trio: JUDGE }, print, summarize, LABEL, DEF_SCEN, tableStats };
@@ -168,5 +179,5 @@ if (require.main === module) (async () => {
   print(t.r, t.errors, { why: WHY });
   const st = tableStats(dir);
   if (st) console.log('文の表：繋がる段の文 ' + st.in + ' 本（分岐は 組A・組B・締めの 3 文）・最中の段 ' + st.mid + ' 本（地の文の最小 ' + st.inMin + ' 文）・山場 ' + st.peak + ' 本（最小 ' + st.peakMin + ' 文）・待つ受けの反応 ' + st.waitr + ' 本・導入の台詞 ' + st.intro + ' 本・事後の一言 ' + st.aft + ' 本・触れ合いだけ ' + st.touch + ' 本');
-  const r = t.r; if (r && (r.bad || r.flow.motion || r.flow.undress || r.flow.pending || r.flow.dupS)) process.exitCode = 1;
+  const r = t.r; if (r && (r.bad || r.rev || r.fem || r.flow.motion || r.flow.undress || r.flow.pending || r.flow.dupS)) process.exitCode = 1;
 })();

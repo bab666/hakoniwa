@@ -28,6 +28,8 @@
   function spouses(S) { return (S.trio && S.C) || S.quad ? (S.spouses || [S.A, S.B, S.C]) : [S.A, S.B]; }
   function r18on() { return !HK.SAFE_ON && !HK.SAFE_BUILD; }
   function ok2(ctx, a, b) { return !!(a && b && a !== b && HK.canLove(a, b, ctx) && HK.canLove(b, a, ctx)); }
+  /* 願望の高まりやすさ「ゆっくり」：最初の二日はキスの段を出さない（2026-11-04 報告「ゆっくりなのに初日の朝から深いキス」） */
+  function slowEarly(ctx, day) { return !!(ctx.env && ctx.env.speed === 'slow' && day && day.d < 2); }
   function stat(ctx) { return ctx.flags.shinkonKiss = ctx.flags.shinkonKiss || { itteDays: 0, itte: 0, itteLong: 0, itteLate: 0, promise: 0, okaeri: 0, hobi: 0, naka: 0, gochi: 0, oyasumi: 0, trio: 0, night: 0, promiseNight: 0, last: 0, oazuke: 0, oazukeSad: 0, sadKiss: 0 }; }
   /* キスの段を出す（記録の一件。夜（エッチ）の印は付けない） */
   function kiss(ctx, a, b, opt, k) {
@@ -51,6 +53,7 @@
   }
   /* ---------- 朝：いってらっしゃい ---------- */
   function morning(ctx, S, day) {
+    if (slowEarly(ctx, day)) return;
     if (!S.love || day.sick || day.apart || day.recover || day.dull) return;
     var d = day.d, P = spouses(S);
     var out = P.filter(function (c) { var p = lifeDay(c, d); return p && !p.trip && !p.hol && p.home && p.home.d === false; });
@@ -61,7 +64,7 @@
     var y = ys[Math.floor(ctx.rng() * ys.length)];
     var shy = [x, y].some(function (c) { return KS.per(c) === 'shy' || KS.per(c) === 'stern'; });
     if (ctx.rng() > (shy ? 0.6 : 0.75)) return;
-    var r = kiss(ctx, x, y, { trig: 'itte', x: x, y: y, promise: true, tag: 'いってらっしゃいのキス' }, 'itte');
+    var r = kiss(ctx, x, y, { trig: 'itte', x: x, y: y, promise: nightCan(ctx, S, day) && !!(HK.PairR18 && HK.PairR18.sexOk(ctx, x, y)), tag: 'いってらっしゃいのキス' }, 'itte');
     if (!r) return;
     if (r.plan.len === 'l') st.itteLong++;
     if (r.plan.end === 'late') st.itteLate++;
@@ -69,6 +72,7 @@
   }
   /* ---------- 夜のはじめ：おかえり ---------- */
   function evening(ctx, S, day) {
+    if (slowEarly(ctx, day)) return;
     if (!S.love || day.sick || day.apart || day.dull || day.lateHome) return;
     /* その夜の困りごと（残業・電車・雨・停電など）がある夜は、帰ってきた場面がそちらにあるので出さない */
     if (day.trouble && day.trouble.tr && day.trouble.tr.part === 'n') return;
@@ -84,15 +88,17 @@
   }
   /* ---------- 日中：ご褒美 ---------- */
   function daytime(ctx, S, day) {
+    if (slowEarly(ctx, day)) return;
     if (!S.love || day.sick || day.apart || ctx.rng() > (day.hol ? 0.2 : 0.06)) return;
     var pr = pairAt(ctx, S, day.d, 'd');
     if (pr) kiss(ctx, pr[0], pr[1], { trig: 'hobi', place: ctx.rng() < 0.5 ? 'sofa' : 'kitchen', tag: 'ご褒美のキス' }, 'hobi');
   }
   /* ---------- 夜：仲直り・ごちそうさま・おやすみ（どれか一つ）。R18 の「そのまま夜へ」はその夜のきっかけへ ---------- */
   function nightCan(ctx, S, day) {
-    return r18on() && !!HK.ShinkonR18 && S.sex < S.lewdMax && !(HK.Shinkon && HK.Shinkon.restNight && HK.Shinkon.restNight(ctx, day));
+    return r18on() && !!HK.ShinkonR18 && S.sex < S.lewdMax && !(ctx.env && (ctx.env.night === 0 || ctx.env.night === '0')) && !(HK.Shinkon && HK.Shinkon.restNight && HK.Shinkon.restNight(ctx, day));
   }
   function night(ctx, S, day) {
+    if (slowEarly(ctx, day)) return;
     if (!S.love || day.sick || day.apart || day.d === S.days - 1) return;
     var st = stat(ctx), pr = pairAt(ctx, S, day.d, 'n');
     if (!pr) return;
@@ -103,7 +109,8 @@
       return;
     }
     var k = null;
-    if (day.fought && S.makeups && ctx.rng() < 0.55) k = 'naka';
+    /* 仲直りのキスは、仲直りの段（shinkon.js）と重なるので出さない（2026-11-04 報告「仲直りの二重」） */
+    if (day.fought && S.makeups) return;
     else if (day.meal && day.mealK === 'DINNER' && ctx.rng() < 0.22) k = 'gochi';
     else if (ctx.rng() < (day.kissPromise ? 0.15 : 0.3)) k = 'oyasumi';
     if (!k) return;

@@ -75,12 +75,13 @@
   };
   /* ---------- 元の関係のまとめ ---------- */
   var CLS = { friend: 'friend', best: 'friend', buddy: 'friend', comrade: 'friend', childhood: 'childhood', classmate: 'classmate', teacher: 'mentor', mentor: 'mentor', senpai: 'senpai',
-    colleague: 'work', boss: 'work', pparent: 'pfam', benefactor: 'pfam', ex: 'ex', crush: 'crush', almost: 'almost', lover: 'lover', spouse: 'lover', mate: 'lover', fiance: 'fiance' };
-  var ORD = ['fiance', 'almost', 'crush', 'ex', 'lover', 'pfam', 'mentor', 'senpai', 'work', 'classmate', 'childhood', 'friend'];
-  var DIR = { senpai: 1, mentor: 1, teacher: 1, pparent: 1, benefactor: 1, crush: 1, boss: 1 };
-  PS.NAME = { friend: '友人', childhood: '幼なじみ', classmate: '同級生', work: '同じ職場', senpai: '先輩と後輩', mentor: '師弟', pfam: '家族同然', ex: '元恋人', crush: '片想いから', almost: '両片想いから', lover: '恋人から', fiance: '許嫁' };
+    colleague: 'work', boss: 'work', pparent: 'pfam', benefactor: 'pfam', ex: 'ex', crush: 'crush', almost: 'almost', lover: 'lover', spouse: 'lover', mate: 'lover', fiance: 'fiance', yan: 'yan' };
+  var ORD = ['yan', 'fiance', 'almost', 'crush', 'ex', 'lover', 'pfam', 'mentor', 'senpai', 'work', 'classmate', 'childhood', 'friend'];
+  var DIR = { yan: 1, senpai: 1, mentor: 1, teacher: 1, pparent: 1, benefactor: 1, crush: 1, boss: 1 };
+  PS.NAME = { friend: '友人', childhood: '幼なじみ', classmate: '同級生', work: '同じ職場', senpai: '先輩と後輩', mentor: '師弟', pfam: '家族同然', ex: '元恋人', crush: '片想いから', almost: '両片想いから', lover: '恋人から', fiance: '許嫁', yan: '執着', hiroi: '拾った・拾われた', shodo: '衝動婚' };
   /* なれそめ（shinkon-data.js の REL）の番号 → 元の関係の鍵（1 元ライバルは元○○） */
-  var NARE = { 0: 'childhood', 2: 'crush', 3: 'work', 5: 'pfam', 6: 'ex', 9: 'lover' };
+  /* 2026-11-04 報告「執着・拾った関係の関係らしさが出ない」：執着（yan）・衝動婚（7）・拾った・拾われた（8）を足した */
+  var NARE = { 0: 'childhood', 2: 'crush', 3: 'work', 5: 'pfam', 6: 'ex', 7: 'shodo', 8: 'hiroi', 9: 'lover' };
   PS.clsOf = function (ties, ai, bi) {
     var mine = between(ties, ai, bi), best = null, bi0 = 99;
     mine.forEach(function (t) {

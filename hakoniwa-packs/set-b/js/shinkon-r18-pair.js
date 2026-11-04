@@ -79,6 +79,7 @@
     /* 夜の性格の一文・夜の主導の段（共通の部品と同じ差し方） */
     body = PR.insert1(body, PR.nightAdd(ctx, a, b, sh, ero, o.entry, { jealous: !!o.jealTop, leadB: !!o.leadB }));
     if (o.high && HK.ThickEro) body += '\n\n' + HK.ThickEro.again(ctx, pk, a, b, ero && form === 'mid', form === 'short' && sh !== 'ff');
+    if (PR.flowFix) body = PR.flowFix(body, a, b, sh, en + er);
     body += '\n\n' + en + er;
     S.pairN = (S.pairN || 0) + 1;
     return { text: PR.mk(ctx, body, a, b), form: form, why: '新婚の型：' + X.OPEN_NAME[ok] + '／' + X.MID_NAME[mk] + '／' + X.END_NAME[ek] };
