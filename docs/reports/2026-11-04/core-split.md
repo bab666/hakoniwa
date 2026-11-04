@@ -187,7 +187,24 @@ br はファイル単独の目安（build の「中核の内訳」と同じ数�
 
 ## 6. Safari（iPhone）の 2 件が戻らないこと
 
-（6 章の数字は確かめのあとに書く）
+まとめ役からの注意（`safari-scroll.md`・`mobile-parity.md` の 2 件を戻さない）への対応と確かめ。
+
+- **読み込みの失敗と再試行**：新しいかたまり pack-sim は late・族・箱庭の依存なので、箱庭を選ぶ・動かすときの `HK.Load.ensure`（箱庭タブの自動のやり直し 1.5・4・10 秒、「もう一度」、不具合の記録の `load`）がそのまま効く。late に移した画面の部品（JSON の書き出し・読み込み・まるごと・診断）は、押したときに届いていなければ late を読み直し、読めなければ下に「この機能のデータを読み込めませんでした（もう一度）」、データの窓は「もう一度」を出す（画面が欠けたままにしない）。
+- **描き直しで位置を動かさない**：late を読み終えたときの描き直しは今までどおり `HK.onLate` の `keepY`。住人タブ・箱庭タブの高さを後から変える部品は late に移していない（貼り付け欄の ui-import.js・関係図の view-map.js は中核に残した）。late の部品は窓の中か、押したときにだけ出るもの。
+- **Safari 固有の判定**：index.html の小さな script（iOS 16.3 以前の案内・text-size-adjust）と、中核の先頭の load.js・load-order.js・ui-guard.js（content-visibility を WebKit で止める判定・`navigator.vendor`）は位置も順も変えていない。中核に新しく正規表現の後読みは足していない（中核に足したコードは ui-norm.js・ui-cast-ops.js（ui.js から移しただけ）と load.js の隠し箱庭・flushTone の数行）。
+
+確かめ（Playwright・Chromium の iPhone エミュレーション 390×664・キャッシュ無し・毎回新しいプロファイル。http で br を配る。作業用 `stress.js`・`late.js`・`walk.js`）：
+起動 → 箱庭タブ → 出られない部屋を最初に選ぶ → 動かす → 結果を指で上下にスクロール。
+
+| 配信 | 回数 | 選べない | 結果が出ない | ページのエラー | 不具合の記録の scroll／jump／shrink |
+|---|---|---|---|---|---|
+| 遅い回線（往復 150ms・6Mbps）・切れなし | 20 | **0** | 0 | **0** | **0／0／0** |
+| 往復 80ms・中核のほかのかたまり（late・pack-sim・pack-lewd・口調・箱庭）の応答を 3 割の確率で途中で切る（105 回切った） | 22 | **0** | 0 | 87（すべて途中で切った script の構文エラー＝わざと壊したもの） | **0／0／0** |
+
+- 切る配信では、22 回のうち 11 回で late か口調のかたまりが自動のやり直しのあとも読めず（`HK.LATE_FAILED`）、不具合の記録に「かたまり ○○ を読み込めませんでした（broken）」が 41 件残ったが、箱庭はどの回も選べて動いた（動かすときに箱庭の依存＝pack-sim・pack-lewd を読み直す）。
+- late を 6 秒遅らせて住人タブの途中（位置 600）にいると、late が届いて描き直したあとも位置 600 のまま。late を読めなくしてから JSON の書き出し・データの窓を押すと「データを読み込んでいます…」→「読み込めませんでした（もう一度）」、読めるようにして「もう一度」を押すと中身が出た。ページのエラー 0。
+- 画面の通し（PC 1280・スマホ 390。R18版・全年齢版）：起動 → 住人 → 住人の設定の窓 → 箱庭 → 動かす → 結果 → JSON（late の部品）→ データの窓（まるごと）→ 不具合の記録で、ページのエラー 0・横のはみ出し 0。画像は作業用フォルダ `core/<full|zen>-<pc|sp>-<1〜8>.png`。
+- 箱庭タブの差し込み（HK.ScenUI）：出られない部屋の部屋の名前・オメガバースの案内・教室の担任の選び・#futari のふたりの日常が出ることを確かめた。
 
 ---
 
@@ -198,3 +215,12 @@ br はファイル単独の目安（build の「中核の内訳」と同じ数�
 3. **中核に残した素の代入の包み**（pos-ff・pos-fm・pos-nogen・attr-meet・avoid-kit の simulate など）：HK.simulate の包みを全部 HK.wrap にそろえれば、元のファイルの順で並ぶので pack-sim へ移せる。今は中核の素の代入の包みと HK.wrap が混ざっていて、後から読むかたまりの包みの位置が「元の順」と少しずれる（今の結果はそのずれを含めて固まっている）。そろえるときは regress と audit-all の全部で確かめる。
 4. **text-studio の書き下ろしの保存先**：画面から足した台詞は今も tone-fix.js（R18 は tone-fix-r18.js）に入る。build が箱庭だけの行を箱庭のかたまりに書き出すので配る量は太らないが、ソースは tone-fix.js に戻る。箱庭が分かるときは tone-fix-<箱庭>.js に入れるようにする。
 5. **結果の画像の帯（share-card）**：late の前に残した結果を開くと、画像で保存する帯が出ない（開き直すと出る）。描き直すと Safari で位置がずれるので、届いたあとに描き足していない。
+
+---
+
+## 8. check.js の一覧
+
+- `node hakoniwa-tools/check.js --pack=set-b`（c38b4109 の前、比べる相手 79cf52a1）：**すべて合格**（回した 31・キャッシュ 2・所要 1334 秒）。build 両方（中核の上限：R18版 566KB／698KB・全年齢版 513KB／628KB）・regress 3 通り一致・chunk-regress 両ビルド 0 件・chunk-audit 両ビルド 0 件・audit-all（既定＋sexgate・feud・group・state-hot・relcons・trio）すべて 0 件・tone-feel（3 箱庭）全口調 ◯・moan-tone 0 件・catalog-check 0 件・base-lint 増加 0・パック set-b の audit-all・tone-feel・moan-tone・trio-shape（3 部屋）すべて合格。
+  - 1 回目は audit-all の pos V10（性器なしの住人の文に体の語の印）5 件・seg join 2 件と、パックの看病の部屋の V10 2 件で不合格だった。regress の指紋は一致していたが、pos-nogen.js を pack-sim に移したことで、回したあとの見直しの包みの位置が変わっていた。pos-nogen.js を中核に戻し、content-events-r18.js の simulate の包みを HK.wrap にして 0 件（同じ箱庭・同じ配役で変える前のビルドと件数が同じことも確かめた）。
+- origin/main（3b3728eb：work/guard）を取り込んだあと（3667e6db）：`node hakoniwa-tools/check.js --since=c38b4109` **すべて合格**（build 両方・regress 3 通り・audit-all・catalog-check）。取り込んだ ui.js の 3 行（`HK.Guard.act()` 2 か所・`setTab('result', false, !!record)`）は分けたあとの ui.js に残っている。
+
