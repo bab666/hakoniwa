@@ -21,7 +21,7 @@
   var css = '.tspop{outline:none;position:fixed;z-index:80;width:300px;max-width:calc(100vw - 16px);display:flex;flex-direction:column;background:var(--ui-card,var(--paper));color:var(--ui-ink,var(--ink));border:1px solid var(--ui-line2,var(--line));border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.18);font-size:13px;overflow:hidden}' +
     '.tsph{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 14px;border-bottom:1px solid var(--ui-line,var(--line))}.tsph b{font-size:14px}.tsph .tspw{flex:1 1 auto;min-width:0;color:var(--ui-muted,var(--muted));font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
     '.tspx{appearance:none;-webkit-appearance:none;width:36px;height:36px;border:0;border-radius:8px;background:none;color:var(--ui-muted,var(--muted));font:inherit;font-size:18px;cursor:pointer}.tspx:hover{background:var(--ui-soft,var(--bg1))}' +
-    '.tspl{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 6px}' +
+    '.tspl{flex:1 1 auto;overflow-y:auto;padding:4px 6px}' +
     '.tspr{display:flex;align-items:stretch;gap:2px}.tspr+.tspr{border-top:1px solid var(--ui-soft2,var(--line))}' +
     '.tspi,.tspm,.tspb{appearance:none;-webkit-appearance:none;font:inherit;color:inherit;cursor:pointer;background:none;border:0;border-radius:8px}' +
     '.tspi{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:10px;min-height:36px;padding:0 8px;text-align:left}.tspi:hover,.tspm:hover{background:var(--ui-soft,var(--bg1))}' +

@@ -67,7 +67,7 @@
     '.ctmenu hr{border:0;border-top:1px solid var(--line);margin:6px 0;width:100%}' +
     '.ctmsel{display:flex;flex-direction:column;gap:4px;padding:2px 10px 6px;font-size:12px;color:var(--muted)}.ctmsel select{width:100%;min-height:32px;font-size:13px}' +
     /* 「データ」ダイアログ */
-    '.ctdov{position:fixed;inset:0;z-index:29;background:rgba(10,16,22,.55);display:flex;align-items:flex-start;justify-content:center;padding:max(24px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));overflow-y:auto;-webkit-overflow-scrolling:touch}' +
+    '.ctdov{position:fixed;inset:0;z-index:29;background:rgba(10,16,22,.55);display:flex;align-items:flex-start;justify-content:center;padding:max(24px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px));overflow-y:auto}' +
     '.ctdov[hidden]{display:none}' +
     /* 頭（題名・閉じる・種類の切替）は固定し、中身 .ctdbody だけをスクロールする（2026-11-02 担当UG。高さは 100dvh 基準） */
     '.ctdbox{background:var(--paper);color:var(--ink);border:1px solid var(--line2);border-radius:var(--r-card,6px);width:100%;max-width:700px;padding:20px 24px 0;margin:auto 0;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;' +

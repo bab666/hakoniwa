@@ -750,3 +750,5 @@ late js/ui-tagsel-pop.js
 late js/ui-guard-view.js
 # スクロールの見張り（プログラムによるスクロール・大きな飛び・高さの急な変化を不具合の記録へ。2026-11-04）
 late js/ui-guard-scroll.js
+# iPhone・iPad・Mac の Safari だけ：スクロールが止まったときなどに、見えている文の容器へ描き直しの一押し（outline を 1 フレーム。2026-11-04。ui-guard.js の判定を使う）
+late js/ui-ios-paint.js

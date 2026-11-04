@@ -24,7 +24,7 @@
     'html.hk-modal-open #pagejump{display:none!important}' +
     /* 窓の幕と、窓の中のスクロールする箱：端まで来ても背景へ移さない */
     '.gearov,.ctdov,.modal,.bxpick{overscroll-behavior:contain}' +
-    '.modal-box,.gearov .gearpane,.gearov .geartoc,.gearov .gearbody,.ctdov .ctdbody,.bxpick .scens,.bxpick .bxpick-s,.bxpick .scfilt{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}' +
+    '.modal-box,.gearov .gearpane,.gearov .geartoc,.gearov .gearbody,.ctdov .ctdbody,.bxpick .scens,.bxpick .bxpick-s,.bxpick .scfilt{overscroll-behavior:contain}' +
     /* 頭は固定・本文だけスクロール（TIPS・出来事の一覧・口調の窓。.gearbox は ui-gear.js・index.html で縦の flex・overflow:hidden） */
     '.gearov .gearbox>.gearhd{flex:none}' +
     '.gearov .gearbox:focus{outline:none}' +

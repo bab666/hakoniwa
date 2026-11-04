@@ -209,7 +209,7 @@
     /* 知らせるための文（新しい順）。ブラウザ・画面・版も添える */
     text: function () {
       var head = '箱庭シミュレーター 不具合の記録（' + new Date().toLocaleString() + '）\n' +
-        'ブラウザ：' + ua + (iosV ? '\n端末：' + iosV : '') + '\n画面：' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0) + '・' + orient() + '・倍率 ' + (window.devicePixelRatio || 1) + (webkit ? '・WebKit' : '') + (window.navigator.standalone ? '・ホーム画面から' : '') + '\n版：' + ((window.HK_MANIFEST && window.HK_MANIFEST.v) || '') + '\n';
+        'ブラウザ：' + ua + (iosV ? '\n端末：' + iosV : '') + '\n画面：' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0) + '・' + orient() + '・倍率 ' + (window.devicePixelRatio || 1) + (webkit ? '・WebKit・描き直しの一押し：' + (HK.IosPaint && HK.IosPaint.on ? '有効' : '未読込') : '') + (window.navigator.standalone ? '・ホーム画面から' : '') + '\n版：' + ((window.HK_MANIFEST && window.HK_MANIFEST.v) || '') + '\n';
       if (!log.length) return head + '（記録はありません）';
       return head + log.slice().reverse().map(function (e) {
         return '---\n' + e.t + '［' + e.kind + (e.n > 1 ? ' ×' + e.n : '') + '］' + e.msg + '\nタブ：' + (e.tab || '-') + '・箱庭：' + (e.scen || '-') + '・画面：' + e.vw + '・位置：' + e.y + (e.stack ? '\n' + e.stack : '') + (e.tr ? '\n直前：' + e.tr.join(' ／ ') : '');

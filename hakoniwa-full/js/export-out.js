@@ -416,7 +416,7 @@
     var share = fs.length === n && canShareFiles(fs);
     box.setAttribute('aria-label', '記録の画像');
     box.innerHTML = '<p class="hint" style="margin-top:0">' + (share ? '「共有・保存」から「画像を保存」やアプリを選べます。' : '') + '画像を長押し（PC は右クリック）でも保存できます。' + (n > 1 ? '長いので ' + n + ' 枚に分けました。' : '') + '</p>' +
-      '<div class="xo-imgs" style="display:grid;gap:10px;max-height:56vh;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:6px;padding:6px">' +
+      '<div class="xo-imgs" style="display:grid;gap:10px;max-height:56vh;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:6px">' +
       files.map(function (f, i) { return '<img alt="記録の画像 ' + (i + 1) + '/' + n + '" style="width:100%;height:auto;display:block">'; }).join('') + '</div>' +
       '<div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">' + (share ? '<button class="btn primary" type="button" data-xom="share">共有・保存</button>' : '') +
       '<button class="btn" type="button" data-xom="dl">ダウンロード</button><span class="spacer"></span><button class="btn" type="button" data-xom="close">閉じる</button></div>';
