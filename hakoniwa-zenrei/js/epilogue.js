@@ -248,7 +248,10 @@
   var REL = {
     with: L('隣には、いつも{b}がいた。|{b}と並んで歩く姿が、よく見かけられた。|{b}とは、今も変わらず一緒にいる。'),
     lost: L('{b}のいない日々に、まだ慣れることはできなかった。|ふとした瞬間に、{b}の名前を呼びそうになった。|{b}の分まで生きる――それだけを支えにしていた。'),
-    deadWith: L('{b}は、今も{a}のことを想い続けている。|{b}は{a}の残したものを、何ひとつ捨てられなかった。|{b}は毎年、{a}を想う日を一日だけ作った。')
+    deadWith: L('{b}は、今も{a}のことを想い続けている。|{b}は{a}の残したものを、何ひとつ捨てられなかった。|{b}は毎年、{a}を想う日を一日だけ作った。'),
+    /* 告白して断られた人（heart-persist.js が結果の住人に書く hpTo・hpSt）：諦めずに想い続けている／想いに区切りをつけた（2026-11-04） */
+    keep: L('{b}への想いは、今も胸の中で静かに続いていた。|いつかもう一度、{b}に想いを伝える日が来るのかもしれない。|{b}の名前を聞くと、今でも少しだけ胸が高鳴った。'),
+    gave: L('{b}への想いには、もう区切りがついていた。|{b}を想った日々は、今では少し懐かしい思い出になった。|{b}のことを思い出しても、もう前ほどは胸が痛まなかった。')
   };
   /* 気分の結び（一人のとき。気分の最終値から） */
   var MOOD = {
@@ -264,6 +267,9 @@
     love: L('{a}と{b}は、その後も並んで歩いていた。|{a}と{b}は、あの日のことを二人だけの思い出にした。|{a}と{b}は、今も変わらず互いの隣にいる。'),
     pining: L('{a}と{b}は、その後も互いの言葉を待ち続けた。|{a}と{b}は、何度目かに会ったとき、ようやく同じことを言いかけた。|{a}と{b}の距離は、近いまま、まだ縮まりきらなかった。'),
     oneway: L('{x}は、{y}への想いをそっと抱えたまま過ごした。|{x}は今も、{y}の姿を目で追ってしまう。|{x}の想いが{y}に届く日が来るのかは、まだ分からない。'),
+    /* 片想いのまま、断られても諦めなかった人（hpSt keep・keep2）／断られて想いに区切りをつけた人（give・back・final）。2026-11-04 */
+    onewayKeep: L('{x}は、断られたあとも{y}を想い続けた。いつかもう一度伝える日が来るのかは、まだ分からない。|{x}は{y}への想いを、捨てずに持ち続けた。急がず、押しつけず、ただそばで。|{x}は今も、{y}の幸せをいちばんに願っている。その想いは、少しも色あせていない。|{x}は{y}の隣で、変わらずに笑っていた。胸の奥の想いは、まだそこにあった。'),
+    onewayGive: L('{x}は、{y}への想いに区切りをつけた。思い出すと、まだ少しだけ胸が痛んだ。|{x}は{y}と、少しずつ普通に話せるようになった。あの日の想いは、もう過去のものになりつつあった。|{x}は{y}への想いを、きれいな思い出としてしまい込んだ。'),
     night: L('{a}と{b}は、名前のない関係のまま、ときどき会った。|{a}と{b}は、あの夜のことに触れないまま、それでも連絡を絶たなかった。|{a}と{b}の関係に名前がつくのは、もう少し先のことになりそうだった。'),
     apart: L('{a}と{b}は、別々の道を歩き始めた。|{a}と{b}は、すれ違っても会釈だけで済ませるようになった。|{a}と{b}が元に戻ることは、なかった。'),
     rival: L('{a}と{b}は、顔を合わせるたびに火花を散らした。|{a}と{b}は、互いを意識しながら、決して歩み寄らなかった。|{a}と{b}の因縁は、まだ終わっていなかった。'),
@@ -339,10 +345,13 @@
     var a = att(c), seed = String(res.seed != null ? res.seed : ''), p = PLACE[res.scenId] || 'あの場所';
     var base = pickU(AF[fc][a], seed + '|' + c.name + '|' + fc, used), rel = relOf(res, c), tail = '';
     var m = { a: c.name, p: p, b: rel.b ? rel.b.name : '' };
+    var hpB = c.hpTo != null && c.hpSt && (res.chars || [])[c.hpTo];
     if (fc === 'dead') { if (rel.k === 'with') tail = pickU(REL.deadWith, seed + c.name + 'dw', used); }
     else if (fc === 'live' || fc === 'escape') {
       if (rel.k === 'lost') tail = pickU(REL.lost, seed + c.name + 'l', used);
       else if (rel.k === 'with') tail = pickU(REL.with, seed + c.name + 'w', used);
+      /* 告白して断られた相手が生きていれば、諦めずに想い続けている／区切りをつけた、の結び */
+      else if (hpB && hpB.alive !== false) { m.b = hpB.name; tail = pickU(/^keep/.test(c.hpSt) ? REL.keep : REL.gave, seed + c.name + 'hp', used); }
       else {
         var md = topMood(c.emo, 20);
         if (md === 'lust') tail = HK.Emo && HK.Emo.AFTER_LUST ? pickU(HK.Emo.AFTER_LUST, seed + c.name + 'm', used) : '';
@@ -357,6 +366,8 @@
     var g = p.lh === 'couple' ? 'lhcouple' : LABEL_G[p.label] || CLS_G[p.cls];
     if (!g || !PAIR[g]) return '';
     var seed = String(res.seed != null ? res.seed : ''), x = p.dir === p.b ? B : A, y = x === A ? B : A;
+    /* 片想いのまま：想う側が告白して断られていれば、諦めない／区切りをつけた、で分ける（heart-persist.js の hpTo・hpSt） */
+    if (g === 'oneway' && x.hpSt && x.hpTo === y.i) g = /^keep/.test(x.hpSt) ? 'onewayKeep' : 'onewayGive';
     var t = pickU(PAIR[g], seed + '|' + A.name + B.name + g, used);
     var ma = topMood(A.emo, 25), mb = topMood(B.emo, 25), tint = '';
     var tk = ma === 'grief' || mb === 'grief' ? 'grief' : ma === 'anger' || mb === 'anger' ? 'anger' : ma === 'fear' || mb === 'fear' ? 'fear' : ma === 'shame' && mb === 'shame' ? 'shame' : ma === 'joy' && mb === 'joy' ? 'joy' : '';

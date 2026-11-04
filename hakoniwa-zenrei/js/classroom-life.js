@@ -143,10 +143,10 @@
       var fire = false;
       P.forEach(function (a) {
         var c = crushOf(ctx, a, 55);
-        if (!c || c.out || rng() > 0.35 + a.tr.honesty * 0.5 || (HK.Poly && !HK.Poly.canTry(ctx, a, c))) return;
+        if (!c || c.out || rng() > 0.35 + a.tr.honesty * 0.5 || (HK.Poly && !HK.Poly.canTry(ctx, a, c)) || !mayAsk(ctx, a, c)) return;
         if (!fire) { ctx.incident('後夜祭。グラウンドの真ん中でキャンプファイヤーが燃えている。'); fire = true; }
         var yes = R(ctx, c, a).att > 30;
-        ctx.act2({ actors: [a, c], cat: 'romance', mag: 12, fx: function () { ctx.mod2(a, c, { att: yes ? 8 : 0 }, { att: yes ? 10 : 3, aff: yes ? 5 : 0 }); if (!yes) { ctx.stress(a, 12); hurt(ctx, a); } if (yes && R(ctx, a, c).aff > 30 && R(ctx, c, a).aff > 30) ctx.pair(a, c).couple = true; },
+        ctx.act2({ actors: [a, c], cat: 'romance', mag: 12, fx: function () { ctx.mod2(a, c, { att: yes ? 8 : 0 }, { att: yes ? 10 : 3, aff: yes ? 5 : 0 }); if (!yes) { ctx.stress(a, 12); hurt(ctx, a); heartP(ctx, a, c, false, R(ctx, c, a).att > 20 ? 'soft' : ''); } if (yes && R(ctx, a, c).aff > 30 && R(ctx, c, a).aff > 30) { ctx.pair(a, c).couple = true; heartP(ctx, a, c, true); } },
           text: ctx.t(ctx.pick(yes ? ['{a}は{b}をフォークダンスの輪に誘った。曲が終わっても、手はしばらく離れなかった。', '{a}は{b}の前に手を差し出した。{b}は笑ってその手を取り、火の粉の舞う輪の中に入っていった。', '{a}と{b}は輪から少し離れて、キャンプファイヤーの火が小さくなるまで並んで見ていた。'] : ['{a}は{b}をダンスに誘った。{b}は「ごめん、片付けがあるから｜すまない、片付けがある｜すみません、片付けがありますから」と校舎に戻っていった。', '{a}は{b}を誘おうと近づいたが、{b}はもう別の人と輪の中にいた。', '{a}は{b}に声をかけた。{b}は「また今度ね｜また今度な｜また今度、お願いします」と笑って、友達のところへ戻っていった。']), a, c), why: a.name + 'の惹かれと本音の出やすさ／' + c.name + 'の側の惹かれ（' + Math.round(R(ctx, c, a).att) + '）' });
       });
     },
@@ -208,9 +208,9 @@
         if (rest3.length) seeOff(ctx, G3, rest3);
         G3.forEach(function (a) {
           var c = crushOf(ctx, a, 50);
-          if (!c || c.out || ctx.rng() > 0.3 + a.tr.honesty * 0.5 || (HK.Poly && !HK.Poly.canTry(ctx, a, c))) return;
+          if (!c || c.out || ctx.rng() > 0.3 + a.tr.honesty * 0.5 || (HK.Poly && !HK.Poly.canTry(ctx, a, c)) || !mayAsk(ctx, a, c)) return;
           var yes = R(ctx, c, a).att > 28;
-          ctx.act2({ actors: [a, c], cat: 'romance', mag: 15, fx: function () { ctx.mod2(a, c, { att: 6 }, { att: yes ? 10 : 2 }); if (yes) ctx.pair(a, c).couple = true; else { ctx.stress(a, 15); hurt(ctx, a); } },
+          ctx.act2({ actors: [a, c], cat: 'romance', mag: 15, fx: function () { ctx.mod2(a, c, { att: 6 }, { att: yes ? 10 : 2 }); if (yes) { ctx.pair(a, c).couple = true; heartP(ctx, a, c, true); } else { ctx.stress(a, 15); hurt(ctx, a); heartP(ctx, a, c, false); } },
             text: ctx.t(ctx.pick(yes ? ['式のあと、{a}は{b}に第二ボタンをねだった。{b}は黙って、ボタンごと学ランの前を外した。', '式のあと、{a}は{b}を桜の木の下に呼び出した。「ずっと言えなかったことがある｜＝｜ずっと言えなかったことがあります」――{b}は、最後まで聞いてから頷いた。', '{a}は{b}の卒業アルバムの寄せ書きの欄に、一行だけ書いた。{b}はそれを読んで、{a}を追いかけた。'] : ['{a}は{b}を呼び止めて、それから「元気でね｜元気でな｜お元気で」とだけ言った。', '{a}は{b}に花束を渡した。言いたかったことは、花束の中のカードにも書けなかった。', '{a}は校門のところで{b}を待っていたが、{b}は友達に囲まれていて、結局手を振っただけだった。']), a, c), why: '最後の日。' + a.name + 'の惹かれ（' + Math.round(R(ctx, a, c).att) + '）' });
         });
         if (!rest3.length) return;
@@ -254,7 +254,7 @@
         ctx.act2({ actors: [a, c], cat: 'romance', fx: function () { ctx.mod2(a, c, { aff: 5, att: 5 }, { aff: 5, att: 5 }); }, text: ctx.t(ctx.pick(['{a}は恋人の{b}に、去年の失敗作とは比べものにならない出来のチョコを渡した。', '{a}と{b}は、二人きりの教室でチョコを半分こした。', '{a}は{b}の分だけ、ラッピングを三回やり直した。']), a, c), why: '恋人同士' });
         return;
       }
-      if (c && !c.out) {
+      if (c && !c.out && mayAsk(ctx, a, c)) {
         var go = rng() < 0.2 + a.tr.honesty * 0.55 + (a.goal.id === 'lover' ? 0.2 : 0) - a.tr.ac * 0.15;
         if (!go) {
           ctx.act2({ actors: [a, c], cat: 'solo', fx: function () { ctx.stress(a, 7); ctx.mod(a, c, { att: 4 }); }, text: ctx.t(ctx.pick(V_FAIL), a, null, c), why: a.name + 'のAC（' + Math.round(a.eg.AC) + '）：渡したい気持ちより、断られる怖さが勝った' });
@@ -267,9 +267,9 @@
         var line = ctx.pick(V_GIVE) + ctx.pick(res === 'yes' ? V_YES : res === 'hold' ? V_HOLD : V_NO);
         ctx.act2({ actors: [a, c], cat: 'romance', mag: res === 'yes' ? 25 : 15, fx: function () {
           ctx.pair(a, c).confessed[a.i] = true;
-          if (res === 'yes') { ctx.pair(a, c).couple = true; ctx.mod2(a, c, { att: 10, aff: 8 }, { att: 12, aff: 10, trust: 8 }); }
+          if (res === 'yes') { ctx.pair(a, c).couple = true; ctx.mod2(a, c, { att: 10, aff: 8 }, { att: 12, aff: 10, trust: 8 }); heartP(ctx, a, c, true); }
           else if (res === 'hold') { ctx.mod(c, a, { att: 6 }); ctx.flags.valentine.push({ a: a.i, b: c.i }); }
-          else { ctx.stress(a, 25); hurt(ctx, a); ctx.mod2(a, c, { ten: 8 }, { ten: 4 }); }
+          else { ctx.stress(a, 25); hurt(ctx, a); ctx.mod2(a, c, { ten: 8 }, { ten: 4 }); heartP(ctx, a, c, false, taken ? 'taken' : ''); }
         }, text: ctx.t(line, a, c), why: a.name + 'の惹かれ（' + Math.round(R(ctx, a, c).att) + '）と本音の出やすさ／' + c.name + 'の側：惹かれ ' + Math.round(rc.att) + (taken ? '・すでに恋人がいる' : '') });
         P.forEach(function (o) {
           if (o === a || o === c) return;
@@ -487,6 +487,14 @@
     return ctx.chars.some(function (o) { if (o === c) return false; var pf = ctx.pair(c, o); return pf.hbNews != null && ctx.stepIndex - pf.hbNews <= 2 && pf.hbBy !== c.i && R(ctx, c, o).att >= 30; });
   }
   function hurt(ctx, c) { c.flags.clHeart = ctx.stepIndex; }
+  /* 告白が断られた・実った（heart-persist.js の HK.HeartP）：一度目なら諦めるかを決め、諦めない人の二度目なら結果を覚える（文は足さない） */
+  function heartP(ctx, a, c, yes, k) {
+    var HP = HK.HeartP; if (!HP || !HP.reject) return;
+    if (HP.state(ctx, a, c) === 'keep') { HP.second(ctx, a, c, yes); return; }
+    if (!yes) HP.reject(ctx, a, c, { k: k || '', silent: true });
+  }
+  /* 告白してよいか：断られて諦めた人・二度目まで告白した人は、もう告白しない */
+  function mayAsk(ctx, a, c) { return !HK.HeartP || !HK.HeartP.mayConfess || HK.HeartP.mayConfess(ctx, a, c); }
   /* 不登校の手前の段（1：遅刻・保健室、2：早退・一日だけの欠席） */
   var SIGN = {
     late: ['{a}は、一時間目が終わるころに教室へ入ってきた。寝坊したと言ったが、顔色が悪かった。', '{a}は朝のホームルームに間に合わなかった。校門の前で、しばらく立ち止まっていたらしい。', '{a}の遅刻が、今月だけで三回目になった。'],

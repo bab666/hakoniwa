@@ -770,7 +770,8 @@
       });
       /* 告白：両片想いの二人のどちらか（夕方・夜か休日） */
       if (x.s === 2 && lv && (t >= 2 || f.hol) && f.day >= x.cool && !couple(ctx, a, b)) {
-        var cand = [[a, b, ab, ba], [b, a, ba, ab]].filter(function (q) { return q[2].att >= 40 && q[2].aff >= 34 && (!HK.Poly || HK.Poly.canTry(ctx, q[0], q[1])); });
+        /* 断られた人がもう一度告白するのは、諦めないと決めた人の二度目だけ（heart-persist.js の HK.HeartP.mayConfess。三度目はしない） */
+        var cand = [[a, b, ab, ba], [b, a, ba, ab]].filter(function (q) { return q[2].att >= 40 && q[2].aff >= 34 && (!HK.Poly || HK.Poly.canTry(ctx, q[0], q[1])) && (!HK.HeartP || !HK.HeartP.mayConfess || HK.HeartP.mayConfess(ctx, q[0], q[1])); });
         if (cand.length && rng() < 0.3 * k0 + 0.08) {
           var q = cand.length > 1 && rng() < 0.5 ? cand[1] : cand[0];
           confess(ctx, q[0], q[1], q[3]);
@@ -820,16 +821,24 @@
     if (!ctx.romanceOk([a, b])) { x.cool = f.day + Math.max(1, Math.round(2 / (f.g || 1))); return; }
     x.tried++;
     var ok = rb.att >= 30 && rb.aff >= 28 && (!HK.Poly || HK.Poly.canTry(ctx, b, a));
-    var t = freshP(ctx, CONFESS, a);
+    /* 二度目の告白（一度断られて、諦めないと決めた人。heart-persist.js）：前回を踏まえた言葉と、二度目の返事 */
+    var HP = HK.HeartP, again = !!(HP && HP.state && HP.state(ctx, a, b) === 'keep'), r2 = null;
+    var t = again ? (HP.againText(ctx, a, b, { at: false }) || freshP(ctx, CONFESS, a)) : freshP(ctx, CONFESS, a);
+    if (again) r2 = HP.second(ctx, a, b, ok);
     if (ok) {
-      var y = freshP(ctx, YES, b);
-      emit(ctx, { actors: [a, b], cat: 'romance', mag: 20, text: fill(ctx, t + y, a, b), why: W(ctx, spotHere(ctx, a, b)) + a.name + 'の告白。' + b.name + 'の側にも同じ気持ちがあった（惹かれ ' + Math.round(rb.att) + '）', tag: 'couple',
+      var y = again && r2.text ? r2.text : freshP(ctx, YES, b);
+      emit(ctx, { actors: [a, b], cat: 'romance', mag: 20, text: (again ? t + y : fill(ctx, t + y, a, b)), why: W(ctx, spotHere(ctx, a, b)) + (again ? r2.why : a.name + 'の告白。' + b.name + 'の側にも同じ気持ちがあった（惹かれ ' + Math.round(rb.att) + '）'), tag: 'couple',
         fx: function () { pf.couple = true; ctx.mod2(a, b, { aff: 10, att: 8, trust: 8, ten: -8 }, { aff: 10, att: 8, trust: 8, ten: -8 }); } });
       if (pf.couple) setSt(ctx, a, b, 3); else x.cool = f.day + Math.max(1, Math.round(3 / (f.g || 1)));
     } else {
-      var no = fresh(ctx, NO);
-      emit(ctx, { actors: [a, b], cat: 'romance', mag: 12, text: fill(ctx, t + no, a, b), why: W(ctx, spotHere(ctx, a, b)) + a.name + 'の告白。' + b.name + 'はまだ答えを出せなかった（惹かれ ' + Math.round(rb.att) + '）',
-        fx: function () { ctx.mod(a, b, { att: -6, ten: 6 }); ctx.stress(a, 18); bump(ctx, a, { shame: 20, grief: 15 }, '告白の返事'); } });
+      if (again) {
+        emit(ctx, { actors: [a, b], cat: 'romance', mag: 14, text: t + r2.text, why: W(ctx, spotHere(ctx, a, b)) + r2.why,
+          fx: function () { ctx.mod(a, b, { att: r2.st === 'keep2' ? -4 : -14, ten: 4 }); ctx.stress(a, 18); bump(ctx, a, { grief: 25 }, '二度目の告白の返事'); } });
+      } else {
+        var no = fresh(ctx, NO), hp = HP && HP.reject ? HP.reject(ctx, a, b, { k: 'soft' }) : null;
+        emit(ctx, { actors: [a, b], cat: 'romance', mag: 12, text: fill(ctx, t + no, a, b) + (hp ? hp.text : ''), why: W(ctx, spotHere(ctx, a, b)) + a.name + 'の告白。' + b.name + 'はまだ答えを出せなかった（惹かれ ' + Math.round(rb.att) + '）' + (hp ? hp.why : ''),
+          fx: function () { ctx.mod(a, b, { att: -6, ten: 6 }); ctx.stress(a, 18); bump(ctx, a, { shame: 20, grief: 15 }, '告白の返事'); } });
+      }
       x.cool = f.day + Math.max(1, Math.round(4 / f.pace / (f.g || 1)));
     }
   }

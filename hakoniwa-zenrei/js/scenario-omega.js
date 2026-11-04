@@ -376,7 +376,7 @@
     when: function (ctx, a, b) {
       var s = sx(a) + sx(b);
       if (s === 'aa' || s === 'oo') return false;
-      return met(ctx, a, b) && !ctx.pair(a, b).couple && HK.canLove(a, b) && love(ctx.R(a, b)) && !partnerOf(ctx, a) && (!HK.Poly || HK.Poly.canCouple(ctx, a, b)) && !(ctx.pair(a, b).rejected != null && ctx.stepIndex - ctx.pair(a, b).rejected < 4) && !ctx.om.fatedSplit[key(a, b)] && !(ctx.pair(a, b).night && !ctx.pair(a, b).fwbAsked && HK.FWB.lean(a) > 0.5) && !(ctx.pair(a, b).fwb && HK.FWB.lean(a) > 0.55 && ctx.rng() < 0.7);
+      return met(ctx, a, b) && !ctx.pair(a, b).couple && HK.canLove(a, b) && love(ctx.R(a, b)) && !partnerOf(ctx, a) && (!HK.Poly || HK.Poly.canCouple(ctx, a, b)) && !(ctx.pair(a, b).rejected != null && ctx.stepIndex - ctx.pair(a, b).rejected < 4) && !(HK.HeartP && HK.HeartP.blocked && HK.HeartP.blocked(ctx, a, b)) && !ctx.om.fatedSplit[key(a, b)] && !(ctx.pair(a, b).night && !ctx.pair(a, b).fwbAsked && HK.FWB.lean(a) > 0.5) && !(ctx.pair(a, b).fwb && HK.FWB.lean(a) > 0.55 && ctx.rng() < 0.7);
     },
     w: function (ctx, a, b) { return 0.8 + a.tr.honesty + ctx.R(a, b).att / 60 + (a.goal.id === 'mate' ? 0.8 : 0) + (fated(ctx, a, b) ? Math.max(0, dest(ctx) - 0.5) * 3 : 0); },
     run: function (ctx, a, b) {
@@ -388,6 +388,8 @@
         return { text: ctx.t(t, a, b), why: '両想い（惹かれ ' + Math.round(ctx.R(a, b).att) + '／' + Math.round(rb.att) + '）' + (fated(ctx, a, b) ? '・運命の番' + destWhy(ctx) : ''), mag: 30 };
       }
       pf.rejected = ctx.stepIndex; pf.rejCount = (pf.rejCount || 0) + 1; pf.rejBy = a.i;
+      /* 諦めるか、諦めないか（heart-persist.js）。断られた人の二度目の告白は hp_again が受け持つ（この出来事では二度目を起こさない） */
+      if (HK.HeartP && HK.HeartP.reject) HK.HeartP.reject(ctx, a, b, { k: p2 ? 'taken' : '', silent: true });
       ctx.mod2(a, b, { aff: -6, ten: 8, att: pf.rejCount >= 2 ? -15 : 0 }, { ten: 6 });
       ctx.stress(a, 14);
       return { text: ctx.t(p2 ? '{a}は{b}に想いを伝えた。{b}は申し訳なさそうに、恋人のいる方の手を見せた。' : ctx.pick(['{a}は{b}に告白した。{b}は「ごめん｜すまない｜ごめんなさい」と言った。理由は言わなかった。', '{a}の告白に、{b}は長い沈黙のあと「友達のままがいい｜＝｜友達のままがいいです」と答えた。']), a, b), why: b.name + 'の気持ちはまだそこになかった', mag: 18 };

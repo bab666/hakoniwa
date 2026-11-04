@@ -167,7 +167,7 @@
       }),
     /* 告白して、ふられる（まれに実る） */
     mk('u_confess', 'romance', function (ctx, a) { return 0.5 + a.tr.honesty * 0.6 + a.tr.impulse * 0.4 + a.stress / 150; },
-      function (ctx, a, b) { var pf = ctx.pair(a, b); return U.unreq(ctx, a, b) && !pf.uconf && ((pf.userve || 0) + (pf.uprot || 0) >= 1 || ctx.R(a, b).att > 65) && (!HK.Poly || HK.Poly.canTry(ctx, a, b)); },
+      function (ctx, a, b) { var pf = ctx.pair(a, b); return U.unreq(ctx, a, b) && !pf.uconf && !pf.confessed[a.i] && !(HK.HeartP && HK.HeartP.state && HK.HeartP.state(ctx, a, b)) && ((pf.userve || 0) + (pf.uprot || 0) >= 1 || ctx.R(a, b).att > 65) && (!HK.Poly || HK.Poly.canTry(ctx, a, b)); },
       function (ctx, a, b) {
         var pf = ctx.pair(a, b), k = U.cold(ctx, a, b), c = heart(ctx, a, b);
         if (k === 'other' && !c) k = 'none';
@@ -178,10 +178,15 @@
           pf.couple = true; ctx.mod2(a, b, { att: 10, aff: 10, trust: 8 }, { att: 14, aff: 10, trust: 8 });
           return { text: open + fill('{b}は長いあいだ黙っていた。それから、「……いつから？｜……いつからだ？｜……いつからですか？」と小さく訊いた。{a}が答えると、{b}は真っ赤になって俯いた。「……ずるい｜……ずるいな｜……ずるいです」', m), why: '相手にされていなかった片想いが、とうとう届いた（' + b.name + 'の惹かれ ' + Math.round(ctx.R(b, a).att) + '）', mag: 36 };
         }
-        var af = a.tr.fc + a.tr.cp > 1.15 ? 'persist' : a.tr.cold > 0.6 ? 'cold' : 'smile';
+        /* 諦めるか、諦めないか（heart-persist.js の HK.HeartP.reject：態度・一途・本命・惹かれ・心の強さ・関係・断り方で決める。2026-11-04） */
+        var rj = fill(ctx.pick(D.reject[k]), m), hp = HK.HeartP && HK.HeartP.reject ? HK.HeartP.reject(ctx, a, b, { k: k }) : null;
+        var af = hp ? (hp.st === 'keep' ? 'persist' : a.tr.cold > 0.6 ? 'cold' : 'smile') : a.tr.fc + a.tr.cp > 1.15 ? 'persist' : a.tr.cold > 0.6 ? 'cold' : 'smile';
         ctx.stress(a, 18); ctx.mod2(a, b, { att: af === 'persist' ? 4 : -6 }, k === 'dislike' ? { ten: 8 } : { aff: 2 });
         if (af === 'persist') a.flags.unreqPersist = b.i;
-        return { text: open + fill(ctx.pick(D.reject[k]), m) + fill(ctx.pick(D.after[af]), m), why: U.why(ctx, a, b) + '／' + { persist: '諦めない（FC・CP）', smile: '笑ってみせた', cold: '引き下がった（ドライさ）' }[af], mag: 30, with: k === 'other' && c ? [c] : null };
+        /* 乱数の引き方を今までと同じに保つ（今までの「そのあと」の型で一度引き、諦めないと決めた人は heart-persist.js の文に替える） */
+        var af0 = a.tr.fc + a.tr.cp > 1.15 ? 'persist' : a.tr.cold > 0.6 ? 'cold' : 'smile', aft0 = fill(ctx.pick(D.after[af0]), m);
+        var aft = hp && hp.st === 'keep' && hp.text ? hp.text : af === af0 ? aft0 : fill(D.after[af][0], m);
+        return { text: open + rj + aft, why: U.why(ctx, a, b) + (hp ? hp.why : '／' + { persist: '諦めない（FC・CP）', smile: '笑ってみせた', cold: '引き下がった（ドライさ）' }[af]), mag: 30, with: k === 'other' && c ? [c] : null };
       }),
     /* 想う相手の恋を手伝う */
     mk('u_help', 'help', function (ctx, a) { return 0.4 + a.tr.np * 0.7 + a.tr.ac * 0.3 - a.tr.jealous * 0.4; },
