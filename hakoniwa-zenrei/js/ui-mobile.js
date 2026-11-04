@@ -50,8 +50,6 @@
     '#view-box .bxsel-a .bxmore{display:none}' +
     /* 右上の「表示」のメニューを開いているあいだは、ヘッダーを結果タブの上に止まる切替（z-index 20）より前に出す（スマホで切替がメニューの上に重なっていた。2026-11-04） */
     '.wrap>header.top:has(.uidispmenu:not([hidden])){z-index:30}' +
-    /* 住人の行の一行の要約に出すグループの札（幅の狭い画面で要約が出るとき） */
-    '#view-cast .res .rsub .rsgrp{display:inline-block;margin-right:6px;padding:0 6px;border:1px solid var(--ui-line2,var(--line));border-radius:8px;font-size:11px;line-height:1.6;color:var(--ui-ink,var(--ink))}' +
     /* 「横にスクロールできます」はスマホ幅だけ */
     '.tblhint{display:none;margin:0 0 4px;font-size:12px;color:var(--muted)}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);

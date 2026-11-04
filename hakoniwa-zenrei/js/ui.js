@@ -593,27 +593,27 @@
       '<button type="button" role="menuitem" data-act="mvdown">' + MI.down + '並び順を一つ下へ</button><button type="button" role="menuitem" data-act="gearbasic" title="グループ・タグ・メモ・エゴグラムの数値を設定の窓で決めます">' + MI.dup + 'グループ・メモ・エゴグラム</button>' +
       '<hr><button type="button" role="menuitem" class="danger" data-act="del" data-ask="1">' + MI.del + '削除する…</button></div>';
     var tw = HK.egoToneWord ? HK.egoToneWord(c) : '';
+    var TS = HK.TagSel;   /* グループの選択・タグの札（ui-tagsel.js。2026-11-04）と、まとめて付けるときの行のチェック */
     return '<div class="res" data-id="' + c.id + '">' +
       '<button type="button" class="draghandle" aria-label="' + nm + 'を並び替える（ドラッグ、または上下の矢印キー）" title="ドラッグで並び替え（上下キーでも動かせます）">' + DOTS + '</button>' +
-      '<div class="rwho"><span class="avset">' + '<button type="button" class="avbtn" data-act="iconpick" aria-label="' + nm + 'のアイコンを' + (c.icon ? '変える' : '設定する') + '" title="アイコンを' + (c.icon ? '変える' : '設定する') + '">' + HK.Icons.html(c.name, i, 40) + '</button>' +
+      '<div class="rwho">' + (TS ? TS.check(c) : '') + '<span class="avset">' + '<button type="button" class="avbtn" data-act="iconpick" aria-label="' + nm + 'のアイコンを' + (c.icon ? '変える' : '設定する') + '" title="アイコンを' + (c.icon ? '変える' : '設定する') + '">' + HK.Icons.html(c.name, i, 40) + '</button>' +
       (c.icon ? '<button type="button" class="avdel" data-act="icondel" aria-label="' + nm + 'のアイコンを外す" title="アイコンを外す">×</button>' : '') + '</span>' +
       '<div class="who"><input type="text" id="nm-' + c.id + '" data-f="name" value="' + nm + '" aria-label="名前" maxlength="24" title="名前（押すと書き換えられます）">' +
       '<div class="codeline"><input type="text" class="code" id="cd-' + c.id + '" data-f="code" value="' + HK.toCode(c.eg) + '" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="5文字コード（CP NP A FC AC）" title="5文字コード（CP NP A FC AC の順に A〜D）">' +
       (HK.egoTypeName ? '<span class="egatt egname" title="エゴグラムから見た性格の型。「設定」の「この住人の傾向」に説明があります">' + esc(HK.egoTypeName(c)) + '</span>' : '') +
       '<span class="ty" title="' + esc(HK.egoType(c.eg).label) + '">' + esc(HK.egoType(c.eg).label) + '</span></div>' +
-      '<div class="rsub">' + (c.group ? '<span class="rsgrp">' + esc(grpList(c).join('・')) + '</span>' : '') + esc(tw.replace(/^口調：/, '')) + (tw ? '・' : '') + esc(rowSex(c)) + '</div></div></div>' +
+      '<div class="rsub">' + esc(tw.replace(/^口調：/, '')) + (tw ? '・' : '') + esc(rowSex(c)) + '</div></div></div>' +
       '<div class="ego" role="group" aria-label="' + nm + 'のエゴグラム（0〜20）">' + HK.FACTORS.map(function (k) {
         return '<label title="' + esc(HK.FACTOR_FULL[k]) + '（押すと書き換えられます）"><span class="egk">' + k + '</span><input type="number" id="eg-' + c.id + '-' + k + '" inputmode="decimal" min="0" max="20" step="1" data-f="eg" data-k="' + k + '" value="' + c.eg[k] + '"></label>';
       }).join('') + '</div>' +
       '<div class="rtone">' + (tw ? '<span class="egtone" title="この住人の口調（台詞の話し方）。おまかせだとエゴグラムから決まります">' + esc(tw) + '</span>' : '') + '<span class="rsex">' + esc(rowSex(c)) + '</span></div>' +
       '<div class="gwrap" aria-hidden="true">' + egoGraph(c.eg, i) + '</div>' +
-      '<div class="memo"><div class="memo1"><input type="text" class="grp" id="gp-' + c.id + '" data-f="group" value="' + esc(c.group || '') + '" placeholder="＋グループ" maxlength="40" list="grplist" aria-label="' + nm + 'のグループ" title="同じグループ名をつけた住人は、箱庭でまとめて選んだり、並び替えたり、一覧で絞り込んだりできます。読点（、）かカンマで区切ると複数のグループに入れられます（例：生徒会、2年A組）">' +
-        '<input type="text" class="tags" id="tg-' + c.id + '" data-f="tags" value="' + esc(c.tags || '') + '" placeholder="＋タグ" maxlength="80" list="taglist" aria-label="' + nm + 'のタグ" title="グループとは別に付ける目印です。住人の一覧で探したり、「タグで絞り込む」で絞り込んだりできます（結果には影響しません）。読点（、）かカンマで区切ると複数付けられます"></div>' +
+      '<div class="memo">' + (TS ? '' : '<div class="memo1"><input type="text" class="grp" id="gp-' + c.id + '" data-f="group" value="' + esc(c.group || '') + '" placeholder="＋グループ" maxlength="40" aria-label="' + nm + 'のグループ"><input type="text" class="tags" id="tg-' + c.id + '" data-f="tags" value="' + esc(c.tags || '') + '" placeholder="＋タグ" maxlength="80" aria-label="' + nm + 'のタグ"></div>') +
         '<input type="text" class="mm" id="mm-' + c.id + '" data-f="memo" value="' + esc(c.memo) + '" placeholder="メモ（任意・結果には影響しません）" maxlength="80" aria-label="' + nm + 'のメモ">' +
       '<span class="csum" hidden>' + (HK.UI && HK.UI.summary ? HK.UI.summary(c) : '') + '</span></div>' +
       '<div class="ract"><button type="button" class="btn small gearbtn" data-act="gear" aria-label="' + nm + 'の設定（口調・プロフィール・恋愛・相手ごとの設定など）" title="口調・一人称・呼び方・性別・恋愛・イメージカラー・関係をまとめて設定"><span class="gearic" aria-hidden="true">' + GEAR_SVG + '</span><span class="gbl">設定</span><span class="gchev" aria-hidden="true">' + CHEV_R + '</span></button>' +
       '<button type="button" class="btn small icon rmore" data-uimenu aria-haspopup="menu" aria-expanded="false" aria-controls="' + mid + '" aria-label="' + nm + 'のほかの操作（複製・アイコン・並び順・削除）">' + MORE_SVG + '</button>' + menu + '</div>' +
-      '</div>';
+      (TS ? TS.line(c) : '') + '</div>';
   }
 
   /* ---------- 住人の一覧の上の道具：並び（登録順に戻す・グループ順）と、グループで絞り込む（表示だけ。保存・書き出し・箱庭の参加者選びは全員のまま） ---------- */
@@ -640,7 +640,6 @@
     var html =
       (CT ? CT.head(S.chars.length, { topics: nTopic, ties: (S.ties || []).length, pane: pane }) : '<h2 class="sec">住人　<span class="num">' + S.chars.length + '/' + MAX + '</span></h2>') +
       '<input type="file" id="iconfile" accept="image/*" hidden>' +
-      '<datalist id="grplist">' + groupsOf().map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>' +
       P('list', list) +
       P('voice', HK.VoiceSet ? HK.VoiceSet.html() : '') +   /* 口調の全体設定（口調・喘ぎの設定。全体／住人。ui-voice.js。2026-10-28 担当LA） */
       P('topics', HK.TopicsUI ? HK.TopicsUI.html() : '') +   /* 話題（出来事の文に時々出る語。ui-topics.js。2026-11-01 担当TA） */

@@ -318,6 +318,8 @@ js/ui-topics.js
 js/ui-ties.js
 js/ui-env.js
 js/ui-cast-tools.js
+# 住人の一覧のグループの選択・タグの札（描くだけ。押したあとの一覧は late の ui-tagsel-pop.js。2026-11-04）
+js/ui-tagsel.js
 js/ui-box-style.js
 js/ui-box-draw.js
 js/ui-box-list.js
@@ -444,5 +446,7 @@ late js/packs.js
 late js/packs-ui.js
 # スマホでも PC と同じことができるように：住人の設定の窓の「グループ・メモ」の節（2026-11-04）
 late js/ui-gear-basic.js
+# グループ・タグの小さな一覧（今あるものから選ぶ・新しく作る・名前の変更・削除）と、まとめて付ける操作（2026-11-04）
+late js/ui-tagsel-pop.js
 # 右上の「表示」のメニューの「不具合の記録」の窓（記録は中核の ui-guard.js）
 late js/ui-guard-view.js

@@ -200,22 +200,27 @@
   function rename(o) {
     var n = window.prompt('グループ「' + o + '」の新しい名前（20文字まで）', o);
     if (n == null) return;
+    var r = renameTo(o, n);
+    if (r) { redraw(); toast(r); }
+  }
+  /* 名前を変える本体（住人の行のグループの一覧 ui-tagsel-pop.js からも）。変えたら知らせの文、変えなかったら ''（理由は toast） */
+  function renameTo(o, n) {
     n = String(n).trim().slice(0, 20);
-    if (!n || n === o) return;
-    if (/[,，、]/.test(n)) { toast('グループの名前に読点（、）やカンマは使えません'); return; }
+    if (!n || n === o) return '';
+    if (/[,，、]/.test(n)) { toast('グループの名前に読点（、）やカンマは使えません'); return ''; }
     var St = S(), mem2 = St.chars.filter(function (c) { return gl(c).indexOf(o) >= 0; }), next = {}, over = 0;
     mem2.forEach(function (c) {
       var l = []; gl(c).forEach(function (x) { x = x === o ? n : x; if (l.indexOf(x) < 0) l.push(x); });
       next[c.id] = l.join('、'); if (next[c.id].length > 40) over++;
     });
-    if (over) { toast('グループの欄が40文字を超える住人がいるので、変えられませんでした（短い名前にしてください）'); return; }
+    if (over) { toast('グループの欄が40文字を超える住人がいるので、変えられませんでした（短い名前にしてください）'); return ''; }
     mem2.forEach(function (c) { c.group = next[c.id]; });
     [St.grpHide, St.grpComrade].forEach(function (m) { if (m && m[o]) { m[n] = 1; delete m[o]; } });
     if (St.randFrom === o) St.randFrom = n;
     if (HK.CastPages && HK.CastPages.renameGroup) HK.CastPages.renameGroup(o, n);
     /* 話題のグループ（ui-topics.js）も新しい名前に */
     if (HK.TopicsUI) HK.TopicsUI.renameGroup(o, n);
-    redraw(); toast('グループ「' + o + '」を「' + n + '」にしました（' + mem2.length + '人）');
+    return 'グループ「' + o + '」を「' + n + '」にしました（' + mem2.length + '人）';
   }
 
   /* ---------- 「1 人追加 ▾」のメニュー ---------- */
@@ -403,7 +408,7 @@
   HK.CastTools = {
     /* ui.js から：S（住人の状態を返す関数）・max（上限）・io（「名簿・JSON」の欄に渡す { jp, pick }） */
     bind: function (ctx) { P = ctx; },
-    head: head, bottom: bottom, actions: actions, split: split, chips: chips, sortSel: sortSel, foldBtns: foldBtns, grpTools: grpTools, mark: mark,
+    head: head, bottom: bottom, actions: actions, split: split, chips: chips, sortSel: sortSel, foldBtns: foldBtns, grpTools: grpTools, renameTo: renameTo, mark: mark,
     /* 住人タブを描き直したあと（ui.js の renderCast）：ダイアログを開いていれば中身を描き直す。メニューの位置も合わせる */
     after: function () { mark(); if (isOpen()) paint(); place(); },
     /* ダイアログの中身だけを描き直す（開いていなければ false：呼んだ側が住人タブを描き直す） */

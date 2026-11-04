@@ -202,7 +202,8 @@
     /* タグで絞り込む：札を押すと、その札のタグを持つ人だけ（いくつも押すと、すべてのタグを持つ人＝AND） */
     var tagRow = TG.list.length ? '<div class="row cptools cptags"><span class="hint">タグで絞り込む：</span>' + TG.list.map(function (t) { var on = !!sel[t]; return '<button type="button" class="chip" data-act="cptag" data-t="' + esc(t) + '" aria-pressed="' + on + '" title="' + esc(t) + 'のタグを持つ住人' + (on ? 'の絞り込みをやめる' : 'だけを出す（いくつも選ぶと、すべてを持つ人）') + '">' + esc(t) + '（' + TG.n[t] + '）</button>'; }).join('') +
       (Object.keys(sel).length ? '<button type="button" class="btn small ghost" data-act="cptagclear">タグの絞り込みをやめる</button>' : '') + '</div>' : '';
-    var dl = '<datalist id="taglist">' + TG.list.map(function (t) { return '<option value="' + esc(t) + '">'; }).join('') + '</datalist>';
+    /* 住人の行のタグの欄は札＋「＋タグ」（ui-tagsel.js）になったので、候補の datalist は要らない。グループの絞り込みの下に「まとめてグループ・タグを付ける」 */
+    var dl = '';
     /* ツールバー（1本）：探す｜グループの件数つきチップ｜並び｜すべて折りたたむ・すべて開く＋「50 人 / 頁」（チップと並びは ui-cast-tools.js） */
     var CT = HK.CastTools;
     /* 2026-11-01 担当UA（見本 01）：探す（虫眼鏡つき）・並び・グループの札・折りたたみ／1ページの人数、右に「取り込み」「データ」「＋住人を追加」（ui-cast-tools.js の actions）。
@@ -213,7 +214,7 @@
       (CT ? CT.sortSel() : '') +
       (v.grouped || many ? '<span class="ctview">' + (v.grouped && CT ? CT.foldBtns() : '') +
         (many ? '<select id="cpsize" aria-label="1ページに出す住人の数">' + SIZES.map(function (n) { return '<option value="' + n + '"' + (n === V.size ? ' selected' : '') + '>' + n + ' 人 / 頁</option>'; }).join('') + '</select>' : '') + '</span>' : '') : '') +
-      (CT && CT.actions ? CT.actions() : '') + '</div>' + (S.chars.length > 1 && CT ? CT.chips().replace('class="ctchips"', 'class="ctchips cptools"') : '') + tagRow;
+      (CT && CT.actions ? CT.actions() : '') + '</div>' + (S.chars.length > 1 && CT ? CT.chips().replace('class="ctchips"', 'class="ctchips cptools"') : '') + tagRow + (HK.TagSel ? HK.TagSel.bulkBar() : '');
     v.secs.forEach(function (s, no) {
       var rows = (v.q || s.open) ? s.show.filter(function (i) { return on[i]; }) : [];
       if (v.grouped) body += castHead(s, rows.length, v, no);
@@ -230,7 +231,7 @@
     if (!S.chars.length) body = '<p class="hint uiempty">住人がいません。右上の「＋住人を追加」か「診断結果をまとめて取り込む」から登録してください。</p>';
     /* 表（2026-11-01 担当UA：見本 01）：列の見出し・住人の行・いちばん下に「＋住人を1人追加」。列の見出しは住人の行と同じ格子（index.html の CSS） */
     var full = X.max ? S.chars.length >= X.max : false;
-    var hd = '<div class="reshd" aria-hidden="true"><span></span><span>住人</span><span class="reshd-eg">' + (HK.FACTORS || ['CP', 'NP', 'A', 'FC', 'AC']).map(function (k) { return '<span>' + k + '</span>'; }).join('') + '</span><span>口調・性別</span><span>グループ・メモ</span><span class="r">操作</span></div>';
+    var hd = '<div class="reshd" aria-hidden="true"><span></span><span>住人</span><span class="reshd-eg">' + (HK.FACTORS || ['CP', 'NP', 'A', 'FC', 'AC']).map(function (k) { return '<span>' + k + '</span>'; }).join('') + '</span><span>口調・性別</span><span>' + (HK.TagSel ? 'メモ' : 'グループ・メモ') + '</span><span class="r">操作</span></div>';
     return { tools: tools, view: v, body: pager('cppage', '住人', st.page, v.pages, v.from, v.size, v.total, '人', note, 'top') +
       '<div class="uitable">' + hd + '<div class="cast" id="castlist">' + body + '</div>' +
       '<button type="button" class="uiaddrow" data-act="add"' + (full ? ' disabled' : '') + '><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M7 2v10 M2 7h10"/></svg>住人を1人追加</button></div>' +
