@@ -159,7 +159,7 @@
     },
     {
       id: 'confess', cat: 'romance', scope: 'pair',
-      when: function (ctx, a, b) { var r = R(ctx, a, b); return r.aff > 45 && r.att > 45 && !ctx.pair(a, b).confessed[a.i] && !ctx.pair(a, b).couple && (!HK.Poly || HK.Poly.canTry(ctx, a, b)); },
+      when: function (ctx, a, b) { var r = R(ctx, a, b); return r.aff > 45 && r.att > 45 && !ctx.pair(a, b).confessed[a.i] && !ctx.pair(a, b).couple && (!HK.Poly || HK.Poly.canTry(ctx, a, b)) && !(HK.HeartP && HK.HeartP.state && HK.HeartP.state(ctx, a, b)); },
       w: function (ctx, a) { return 0.4 + a.tr.honesty * 1.4 + a.stress / 120; },
       run: function (ctx, a, b) {
         var p = ctx.pair(a, b), rb = R(ctx, b, a);
@@ -172,7 +172,9 @@
         p.rejected = a.i;
         ctx.mod2(a, b, { ten: 14, att: -8 }, { ten: 10, aff: -2 });
         ctx.stress(a, 30);
-        return { mag: 20, text: ctx.t('{a}が{b}に想いを告げた。{b}は申し訳なさそうに首を振った。', a, b), why: b.name + 'の好意（' + Math.round(rb.aff) + '）・惹かれ（' + Math.round(rb.att) + '）がまだ足りなかった' };
+        /* 諦めるか、諦めないか（heart-persist.js。族のかたまり pack-rel に無ければ今までどおり） */
+        var hp = HK.HeartP && HK.HeartP.reject ? HK.HeartP.reject(ctx, a, b, { k: rb.att > 25 ? 'soft' : '' }) : null;
+        return { mag: 20, text: ctx.t('{a}が{b}に想いを告げた。{b}は申し訳なさそうに首を振った。', a, b) + (hp ? hp.text : ''), why: b.name + 'の好意（' + Math.round(rb.aff) + '）・惹かれ（' + Math.round(rb.att) + '）がまだ足りなかった' + (hp ? hp.why : '') };
       }
     },
     {

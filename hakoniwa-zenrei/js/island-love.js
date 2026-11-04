@@ -168,7 +168,9 @@
       ctx.mod2(a, b, { ten: 12, att: -6 }, { ten: 8, aff: -2 });
       ctx.stress(a, 25);
       t += ctx.t(pk(ctx, NO, b), a, b) + ctx.t(ctx.pick(AFTER_NO), a, b);
-      return { mag: 22, text: t, why: a.name + 'が想いを告げた（惹かれ ' + Math.round(R(ctx, a, b).att) + '）。' + b.name + 'の気持ちはまだ育っていなかった（好意 ' + Math.round(rb.aff) + '・惹かれ ' + Math.round(rb.att) + '）' };
+      /* 諦めるか、諦めないか（heart-persist.js。文はこの箱庭の「そのあと」のまま） */
+      var hp = HK.HeartP && HK.HeartP.reject ? HK.HeartP.reject(ctx, a, b, { k: rb.att > 22 ? 'soft' : '', silent: true }) : null;
+      return { mag: 22, text: t, why: a.name + 'が想いを告げた（惹かれ ' + Math.round(R(ctx, a, b).att) + '）。' + b.name + 'の気持ちはまだ育っていなかった（好意 ' + Math.round(rb.aff) + '・惹かれ ' + Math.round(rb.att) + '）' + (hp ? hp.why : '') };
     }
   });
   /* 恋人どうしの小さな場面 */

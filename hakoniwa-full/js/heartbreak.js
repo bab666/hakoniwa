@@ -38,7 +38,10 @@
   /* 文の {c}：恋愛相手を複数固定している人なら、固定した相手（生きている人）を全員の名前で */
   function lockNm(ctx, b, c) { var L = HK.lockPeople(ctx.chars, b).filter(alive); return L.length > 1 && L.indexOf(c) >= 0 ? L.map(function (x) { return x.name; }).join('・') : c.name; }
   /* 告白して断られたか（unreq.js の告白：pf.uconf、実らなかった） */
-  function rejected(ctx, a, b) { var pf = ctx.pair(a, b); return !!pf.uconf && !pf.couple; }
+  /* heart-persist.js（HK.HeartP）が告白の失敗を覚えていれば、その告白も（events-common.js の confess・箱庭の告白） */
+  function rejected(ctx, a, b) { var pf = ctx.pair(a, b); return (!!pf.uconf || !!(HK.HeartP && HK.HeartP.state && HK.HeartP.state(ctx, a, b))) && !pf.couple; }
+  /* 断られても諦めない人（heart-persist.js）は、ひとりで泣く場面にしない */
+  function keeps(ctx, a, b) { return HK.HeartP && HK.HeartP.keeps ? HK.HeartP.keeps(ctx, a, b) : !!a.flags.unreqPersist; }
   function forceful(a) { var t = a.tr; return t.aggr > 0.55 || (t.cp > 0.6 && t.impulse > 0.5) || (t.impulse > 0.65 && t.ac < 0.4); }
   function friendOf(ctx, a, b, c) {
     var best = null, bv = 12;
@@ -105,7 +108,7 @@
       }),
     /* ふられたあと：ひとりで受け止める */
     mk('hb_alone', 'solo', function () { return 3; },
-      function (ctx, a, b) { var pf = ctx.pair(a, b); return alive(a) && (rejected(ctx, a, b) || pf.hbNews != null) && !pf.hbAlone && !a.flags.unreqPersist; },
+      function (ctx, a, b) { var pf = ctx.pair(a, b); return alive(a) && (rejected(ctx, a, b) || pf.hbNews != null) && !pf.hbAlone && !keeps(ctx, a, b); },
       function (ctx, a, b) {
         var pf = ctx.pair(a, b), m = { a: a.name, b: b.name };
         pf.hbAlone = true; ctx.stress(a, 10);
@@ -142,6 +145,7 @@
       function (ctx, a, b) {
         var pf = ctx.pair(a, b), c = pf.hbBy != null ? ctx.chars[pf.hbBy] : null, m = { a: a.name, b: b.name, c: c ? c.name : '' };
         pf.hbLet = true; ctx.mod2(a, b, { att: -14, aff: 4 }, {}); if (c) ctx.mod(a, c, { ten: -8 });
+        if (HK.HeartP && HK.HeartP.letGo) HK.HeartP.letGo(ctx, a, b);
         return { text: fill(ctx.pick(D.letgo), m), why: a.name + 'は、' + b.name + 'への想いに区切りをつけはじめた', mag: 16 };
       })
   ];
