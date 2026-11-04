@@ -6,6 +6,10 @@
      ・設定に合わない形（0 件が合格）：形の組の向きが HK.Pos.orients に無い／受ける人が自分で攻めを選んでいる（HK.Pos.hardTopIn）／
        sandwich の真ん中がリバ・おまかせでない（HK.Pos.midOk）・後ろの人が跨る組（女性の攻め×男性）
      ・場面の状態（0 件が合格）：同じ動き（HK.SexFlow.MOTION）の二度出し・繋がったあとの脱がせる文・応答を求める攻めの台詞のあとに受けの台詞が無い
+     ・ペニバンとフタナリ（2026-11-04。0 件が合格）：ペニバン（張り型）の文が、女性の攻め（男性器なし）× 受けの組（HK.Trio3.strapOk）でない人・組に出た／
+       ペニバンを使った場面の印（info.spE）が無いのに文が出た／フタナリ（性器の欄が「両方」）の攻めの組が男性器で繋がる組（m）になっていない／
+       ペニバンの出る割合（ペニバンを使える組のある場面のうち。目安 2〜3 割）が 12〜40% の外（使える場面が 60 件以上のときだけ判定）
+       配役の体：m 男性・f 女性・x フタナリ（女性で性器の欄が「両方」）。環境変数 HK_TRIO_BODY=fmm,xmf のように体を絞れる
    文の数（trio-form-text-r18.js の表）も出す（分岐ごとの地の文の数の最小） */
 'use strict';
 const core = require('./audit/core.js');
@@ -20,12 +24,13 @@ const PASS = function* (HK, opt) {
   const NAMES = ['アキラ', 'ミナト', 'ユキノ'];
   /* 受け攻めの設定（三人）× 体（性別・性器） */
   const POS = [['top', 'top', 'bottom'], ['top', 'bottom', 'bottom'], ['top', 'riba', 'bottom'], ['riba', 'riba', 'riba'], ['', '', ''], ['top', 'top', 'top'], ['top', 'riba', 'riba'], ['riba', 'bottom', 'bottom']];
-  const BODY = [['m', 'm', 'f'], ['m', 'f', 'f'], ['f', 'f', 'f'], ['f', 'm', 'm'], ['m', 'm', 'm'], ['f', 'f', 'm'], ['m', 'f', 'm']];
+  let BODY = [['m', 'm', 'f'], ['m', 'f', 'f'], ['f', 'f', 'f'], ['f', 'm', 'm'], ['m', 'm', 'm'], ['f', 'f', 'm'], ['m', 'f', 'm'], ['x', 'm', 'f'], ['x', 'f', 'm'], ['f', 'x', 'm']];
+  if (opt.body) BODY = opt.body.split(',').map(b => b.split(''));
   for (const sc of ids) {
     const scen = HK.SCENARIOS[sc];
     for (let pi = 0; pi < POS.length; pi++) for (let bi = 0; bi < BODY.length; bi++) for (let s = 0; s < N; s++) {
       const k = pi * 100 + bi * 10 + s;
-      const chars = [0, 1, 2].map(i => ({ name: NAMES[i], gender: BODY[bi][i], likes: 'both', pos: POS[pi][i], posLike: '', tone: '', fp: '', memo: '', color: '', call: '', calls: {}, loveLock: '', genital: '',
+      const chars = [0, 1, 2].map(i => ({ name: NAMES[i], gender: BODY[bi][i] === 'x' ? 'f' : BODY[bi][i], likes: 'both', pos: POS[pi][i], posLike: '', tone: '', fp: '', memo: '', color: '', call: '', calls: {}, loveLock: '', genital: BODY[bi][i] === 'x' ? 'mf' : '',
         eg: { CP: (k * 7 + i * 5) % 21, NP: (k * 3 + i * 11) % 21, A: (k * 13 + i * 3) % 21, FC: (k * 5 + i * 7) % 21, AC: (k * 11 + i * 3) % 21 } }));
       const env = {};
       (scen.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
@@ -43,7 +48,8 @@ const PASS = function* (HK, opt) {
 /* ---------- 判定 trio（ページの中） ---------- */
 const JUDGE = function (HK, opt) {
   const X = HK.Trio3, P = HK.Pos, F = HK.SexFlow;
-  const out = { scenes: 0, dupS: 0, byP: {}, byPV: {}, byPos: {}, bySc: {}, bad: 0, badEx: [], flow: { motion: 0, undress: 0, pending: 0, dupS: 0 }, flowEx: [], ex: {}, touch: 0, noX: !X };
+  const out = { scenes: 0, dupS: 0, byP: {}, byPV: {}, byPos: {}, bySc: {}, bad: 0, badEx: [], flow: { motion: 0, undress: 0, pending: 0, dupS: 0 }, flowEx: [], ex: {}, touch: 0, noX: !X,
+    sp: { cap: 0, n: 0, byP: {}, bySc: {}, byBody: {}, bad: 0, ex: [] }, futa: { n: 0, m: 0, bad: 0, ex: [] }, strapEx: [] };
   if (!X) return { finish() { return out; } };
   let cur = null;
   const SHOW = opt.show == null ? 2 : opt.show;
@@ -78,8 +84,28 @@ const JUDGE = function (HK, opt) {
         const r1 = new RegExp(y + 'の[^。、]{0,4}' + MW + 'を[^。]{0,12}' + x + 'の[^。]{0,10}(?:中|ナカ|奥|膣|内)'), r2 = new RegExp(x + '[はが][^。]{0,24}' + y + 'の[^。、]{0,4}' + MW + 'を[^。]{0,16}(?:呑みこ|呑み込|迎え入れ|受け入れ)');
         const hit = ss.filter(t => r1.test(t) || r2.test(t));
         if (hit.length) { out.rev = (out.rev || 0) + 1; if (out.revEx = out.revEx || [], out.revEx.length < 10) out.revEx.push(cur.sc + '#' + cur.s + ' ' + sp.p + ' ' + x + '→' + y + ' | ' + hit[0]); } });
-      g.filter(c => P.hasM && !P.hasM(c)).forEach(c => { const hit = ss.filter(t => new RegExp(c.name + 'の' + MW).test(t));
+      g.filter(c => P.hasM && !P.hasM(c)).forEach(c => { const hit = ss.filter(t => new RegExp(c.name + 'の\\{?' + MW).test(t));
         if (hit.length) { out.fem = (out.fem || 0) + 1; if (out.femEx = out.femEx || [], out.femEx.length < 10) out.femEx.push(cur.sc + '#' + cur.s + ' ' + sp.p + ' ' + c.name + ' | ' + hit[0]); } }); }
+    /* ペニバン・フタナリ（2026-11-04） */
+    { const SPW = /ペニバン|張り型/, ss = sents(all).filter(t => SPW.test(t)), spE = info.spE || [], scK = cur.sc;
+      const bK = cur.meta.body, bb = out.sp.byBody[bK] = out.sp.byBody[bK] || { scenes: 0, cap: 0, n: 0, futaM: 0 };
+      bb.scenes++;
+      if (info.strapCap) { out.sp.cap++; bb.cap++; out.sp.bySc[scK] = out.sp.bySc[scK] || { cap: 0, n: 0 }; out.sp.bySc[scK].cap++; }
+      if (info.strap) { out.sp.n++; bb.n++; add(out.sp.byP, sp.p); if (out.sp.bySc[scK]) out.sp.bySc[scK].n++; }
+      if (g.some(c => P.genSet(c) === 'mf' && new RegExp(c.name + 'の\\{?(?:男性器|肉棒|男根|昂り|熱いもの|ちんぽ|竿|モノ|陰茎|ペニス)').test(NAR(all)))) bb.futaM++;
+      const spBad = [];
+      if (ss.length && !info.strap) spBad.push('ペニバンの場面の印が無いのに文が出た');
+      spE.forEach(e => { if (!X.strapOk || !X.strapOk(e[0], e[1])) spBad.push(e[0].name + '→' + e[1].name + ' はペニバンを使える組でない'); if (!has(edges(sp), e[0], e[1])) spBad.push(e[0].name + '→' + e[1].name + ' は形の組でない'); });
+      /* 文の上で、ペニバンを着けた・張り型の持ち主の名前（「Xは腰にペニバン」「ペニバンを着けたX」「Xの張り型」） */
+      ss.forEach(t => g.forEach(c => { const n = c.name;
+        if (new RegExp(n + '(?:は|が)[^。、]{0,10}腰に(?:着けた|締めた)?ペニバン|ペニバンを着けた' + n + '|' + n + 'の(?:腰の)?張り型').test(t) && !spE.some(e => e[0] === c)) spBad.push(n + 'が張り型を使う文（ペニバンの組の攻めでない）| ' + t); }));
+      if (spBad.length) { out.sp.bad++; if (out.sp.ex.length < 10) out.sp.ex.push(cur.sc + '#' + cur.s + ' ' + sp.p + ' ' + spBad.join('・')); }
+      if (info.strap && out.strapEx.length < 6) out.strapEx.push(cur.sc + '#' + cur.s + ' ' + sp.p + '/' + info.v + ' [' + g.map(c => c.name + ':' + (P.of(c) || '任') + (P.genSet(c) === 'mf' ? 'x' : c.gender)).join(' ') + '] ' + all.slice(0, 900));
+      /* フタナリの攻め：形の組で攻めになる、性器の欄が「両方」の人の組は m（{男性器} で挿れる）で、ペニバン・指だけの組（sp・fm・ff）にならない */
+      edges(sp).forEach(e => { if (P.genSet(e[0]) !== 'mf') return; out.futa.n++; const k = X.edgeKind(e[0], e[1]);
+        if (k === 'm') out.futa.m++;
+        if (k !== 'm' && k !== 'n' || spE.some(x => x[0] === e[0])) { out.futa.bad++; if (out.futa.ex.length < 10) out.futa.ex.push(cur.sc + '#' + cur.s + ' ' + sp.p + ' ' + e[0].name + '→' + e[1].name + ' 組の体 ' + k); } });
+    }
     if (why.length) { out.bad++; if (out.badEx.length < 30) out.badEx.push(cur.sc + '#' + cur.s + ' ' + sp.p + ' [' + g.map(c => c.name + ':' + (P.of(c) || '-') + c.gender).join(' ') + '] ' + why.join('・')); }
     /* 場面の状態 */
     if (F && F.MOTION) {
@@ -140,11 +166,20 @@ function print(r, errors, o) {
   console.log('挿入の向きが受け攻めと逆：' + (r.rev || 0) + ' 件／男性器の無い人の男性器（女性器だけの人が入れる側）：' + (r.fem || 0) + ' 件');
   (r.revEx || []).concat(r.femEx || []).forEach(x => console.log('    ' + x));
   r.badEx.forEach(x => console.log('    ' + x));
+  const sp = r.sp || { cap: 0, n: 0, byP: {}, bySc: {}, ex: [] }, fu = r.futa || { n: 0, m: 0, ex: [] };
+  console.log('ペニバン：使える組のある場面 ' + sp.cap + ' 件のうち ' + sp.n + ' 件（' + (sp.cap ? Math.round(sp.n * 1000 / sp.cap) / 10 : 0) + '%。目安 2〜3 割）　形ごと：' + Object.keys(sp.byP).map(k => k + ' ' + sp.byP[k]).join('・') +
+    '　箱庭ごと：' + Object.keys(sp.bySc).map(k => k + ' ' + sp.bySc[k].n + '/' + sp.bySc[k].cap).join('・'));
+  console.log('ペニバンの文が合わない人・組に出た：' + (sp.bad || 0) + ' 件／フタナリの攻めの組 ' + fu.n + ' 組のうち男性器で繋がる組 ' + fu.m + '・合わない組 ' + (fu.bad || 0) + ' 件／割合が 12〜40% の外：' + strapRateBad(r) + ' 件');
+  sp.ex.concat(fu.ex).forEach(x => console.log('    ' + x));
+  console.log('体ごと（場面・ペニバンを使える場面・使った場面・フタナリの男性器の文がある場面）：' + Object.keys(sp.byBody || {}).sort().map(k => { const b = sp.byBody[k]; return k + ' ' + b.scenes + '/' + b.cap + '/' + b.n + '/' + b.futaM; }).join('　'));
+  if (o.why) (r.strapEx || []).forEach(x => console.log('  ペニバンの例 ' + x));
   console.log('場面の状態：動きの二度出し ' + r.flow.motion + '・繋がったあとの脱がせる ' + r.flow.undress + '・応答待ちのあと受けの台詞なし ' + r.flow.pending + '・同じ地の文の二度出し ' + (r.flow.dupS || 0));
   if (o.why) r.flowEx.forEach(x => console.log('    ' + x));
   if (o.why) Object.keys(r.ex).sort().forEach(k => { console.log('■ ' + k); r.ex[k].forEach(x => console.log('  ' + x.slice(0, 1600))); });
   console.log('pageerr', JSON.stringify((errors || []).slice(0, 3)));
 }
+/* ペニバンの割合の判定（使える場面が 60 件以上のときだけ。12〜40% の外なら 1 件） */
+function strapRateBad(r) { const sp = r && r.sp; if (!sp || sp.cap < 60) return 0; const q = sp.n / sp.cap; return q < 0.12 || q > 0.40 ? 1 : 0; }
 /* 文の表の数（ページの外：trio-form-text-r18.js を読む） */
 function tableStats(dir) {
   global.window = { HK: { Trio3: {} } };
@@ -162,12 +197,14 @@ function tableStats(dir) {
   return st;
 }
 /* audit-all.js の追加の配役パス（--extra=trio）用のまとめ（2026-11-04。単独で回したときの終了コードの条件と同じ 5 項目。判定は変えていない） */
-const LABEL = { bad: '設定に合わない形', rev: '挿入の向きが逆', fem: '男性器の無い人の男性器', motion: '動きの二度出し', undress: '繋がったあとの脱がせる', pending: '応答待ちのあと受けの台詞なし', dupS: '同じ地の文の二度出し' };
+const LABEL = { bad: '設定に合わない形', rev: '挿入の向きが逆', fem: '男性器の無い人の男性器', strap: 'ペニバンの文が合わない人・組', futa: 'フタナリの攻めが男性器で繋がらない', strapRate: 'ペニバンの割合が目安の外', motion: '動きの二度出し', undress: '繋がったあとの脱がせる', pending: '応答待ちのあと受けの台詞なし', dupS: '同じ地の文の二度出し' };
 function summarize(r) {
   const items = {}, ex = {};
   if (!r || r.noX) return { items: {}, ex: {}, info: { 三人の場面: r && r.noX ? 'HK.Trio3 なし' : 0 }, err: 0 };
-  Object.keys(LABEL).forEach(k => { items[k] = k === 'bad' ? r.bad : k === 'rev' || k === 'fem' ? (r[k] || 0) : (r.flow[k] || 0); ex[k] = k === 'bad' ? r.badEx.slice(0, 3) : k === 'rev' || k === 'fem' ? (r[k + 'Ex'] || []).slice(0, 3) : r.flowEx.filter(x => x.indexOf(k === 'motion' ? '動き' : k === 'undress' ? '脱が' : k === 'pending' ? '応答待ち' : '同じ文') >= 0).slice(0, 3); });
-  return { items, ex, info: { 三人の場面: r.scenes, 触れ合いだけ: r.touch }, err: 0 };
+  Object.keys(LABEL).forEach(k => {
+    if (k === 'strap' || k === 'futa' || k === 'strapRate') { const o = k === 'strap' ? r.sp : r.futa; items[k] = k === 'strapRate' ? strapRateBad(r) : (o && o.bad) || 0; ex[k] = k === 'strapRate' ? [((r.sp && r.sp.n) || 0) + '/' + ((r.sp && r.sp.cap) || 0)] : ((o && o.ex) || []).slice(0, 3); return; }
+    items[k] = k === 'bad' ? r.bad : k === 'rev' || k === 'fem' ? (r[k] || 0) : (r.flow[k] || 0); ex[k] = k === 'bad' ? r.badEx.slice(0, 3) : k === 'rev' || k === 'fem' ? (r[k + 'Ex'] || []).slice(0, 3) : r.flowEx.filter(x => x.indexOf(k === 'motion' ? '動き' : k === 'undress' ? '脱が' : k === 'pending' ? '応答待ち' : '同じ文') >= 0).slice(0, 3); });
+  return { items, ex, info: { 三人の場面: r.scenes, 触れ合いだけ: r.touch, ペニバン: ((r.sp && r.sp.n) || 0) + '/' + ((r.sp && r.sp.cap) || 0) }, err: 0 };
 }
 module.exports = { passes: { trio: PASS }, judges: { trio: JUDGE }, print, summarize, LABEL, DEF_SCEN, tableStats };
 
@@ -175,9 +212,9 @@ if (require.main === module) (async () => {
   const args = process.argv.slice(2).filter(a => !/^--/.test(a));
   const dir = args[0], N = +args[1] || 4, only = args[2] ? args[2].split(',') : null, WHY = process.argv.includes('--why');
   const sh = (process.argv.find(a => a.indexOf('--show=') === 0) || '').slice(7);
-  const t = await core.runTool({ dir, hash: 'r18', lewdMode: 'direct', mod: module.exports, pass: 'trio', judge: 'trio', opt: { N, only, why: WHY, show: sh ? +sh : 2 } });
+  const t = await core.runTool({ dir, hash: 'r18', lewdMode: 'direct', mod: module.exports, pass: 'trio', judge: 'trio', opt: { N, only, why: WHY, show: sh ? +sh : 2, body: process.env.HK_TRIO_BODY || '' } });
   print(t.r, t.errors, { why: WHY });
   const st = tableStats(dir);
   if (st) console.log('文の表：繋がる段の文 ' + st.in + ' 本（分岐は 組A・組B・締めの 3 文）・最中の段 ' + st.mid + ' 本（地の文の最小 ' + st.inMin + ' 文）・山場 ' + st.peak + ' 本（最小 ' + st.peakMin + ' 文）・待つ受けの反応 ' + st.waitr + ' 本・導入の台詞 ' + st.intro + ' 本・事後の一言 ' + st.aft + ' 本・触れ合いだけ ' + st.touch + ' 本');
-  const r = t.r; if (r && (r.bad || r.rev || r.fem || r.flow.motion || r.flow.undress || r.flow.pending || r.flow.dupS)) process.exitCode = 1;
+  const r = t.r; if (r && (r.bad || r.rev || r.fem || r.flow.motion || r.flow.undress || r.flow.pending || r.flow.dupS || (r.sp && r.sp.bad) || (r.futa && r.futa.bad) || strapRateBad(r))) process.exitCode = 1;
 })();
