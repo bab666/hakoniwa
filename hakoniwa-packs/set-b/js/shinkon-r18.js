@@ -45,6 +45,9 @@
   function text(ctx, key, i, sh, fb, a, b) { return PR.text(ctx, SRC, key, i, sh, fb, a, b); }
   /* 文の予備は共通の部品（kit-r18.js の HK.PairR18.FB） */
   var FB = PR.FB;
+  var LEAD_FB = L('{who}の気持ちは、もう溢れそうだった。一日の終わりの寝室で、{who}は黙って手を伸ばした。|二人きりの夜、どちらからともなく目が合った。{who}は、もう気持ちを隠すのをやめた。|灯りを落とした部屋で、{who}がそっと身を寄せた。新婚の夜に、それを止める理由はどこにもなかった。');
+  /* 理由の欄に出す表の行の言葉：最初の句だけ（途中で切ると「エッチない」のように崩れるため） */
+  function rowWhy(t) { var s0 = String(t || '').split(/[、。]/)[0]; return s0.length > 22 ? s0.slice(0, 22) + '…' : s0; }
   /* ---------- 回数・起こりやすさ ---------- */
   var SH = HK.ShinkonR18 = {};
   var K = HK.ShinkonKit;
@@ -99,6 +102,12 @@
     /* 体調を崩している人がいる夜・まだだるい日・離れている夜は出さない（shinkon.js の restNight）。イエスノー枕で断られた夜も */
     if (SKN && SKN.restNight && SKN.restNight(ctx, day)) return false;
     if (day.noSex) return false;
+    /* 恋愛へ進む段の出ていない二人（shinkon.js の loveLater）は、まだ夜にしない */
+    if (S.loveLater && !S.stepDone) return false;
+    /* 願望の高まりやすさ「ゆっくり」：最初の二日の夜はまだ体の関係にしない（2026-11-04 報告「ゆっくりなのに 2 日目にエッチ」） */
+    if (env.speed === 'slow' && day.d < 2 && !last) return false;
+    /* 夜の起こりやすさ 0（本体の共通の設定）：夜の場面を出さない（きっかけの段だけが出ていた。2026-11-04 報告） */
+    if (env.night === 0 || env.night === '0') return false;
     var o = P && P.order ? P.order(A, B) : [A, B], a = o[0], b = o[1], sh = shape(a, b);
     var hasM = P && P.hasM ? (P.hasM(a) || P.hasM(b)) : sh !== 'ff';
     var prevTrip = day.d > 0 && ((A.life.days[day.d - 1] || {}).trip || (B.life.days[day.d - 1] || {}).trip);
@@ -156,7 +165,8 @@
       lt = mk(ctx, pickOk(ctx, (MO().LEAD || {})[cute], a, b), a, b);
       if (cute === 'gomu') { var bg = MO().BEG || {}; lt += mk(ctx, pickOk(ctx, bg[per(b)] || bg.gentle, a, b), a, b) + mk(ctx, pickOk(ctx, MO().BEG_ANS, a, b), a, b); lwho = [b, a]; }
     } else {
-      var lt0 = witness ? text(ctx, 'WITNESS', 0, sh, pickOf(ctx, FB.witness), a, b) : text(ctx, 'TRIGGER', ti, sh, pickOf(ctx, FB.lead), a, b);
+      /* 行の文が二人に合わず無いときの予備は、表の行（作り手のメモの言葉）を差しこまない文にする（2026-11-04 報告「理性が溶ける。」がそのまま本文に出た） */
+      var lt0 = witness ? text(ctx, 'WITNESS', 0, sh, pickOf(ctx, FB.witness), a, b) : text(ctx, 'TRIGGER', ti, sh, pickOf(ctx, LEAD_FB), a, b);
       if (lewdEv) { var le = text(ctx, 'LEWD', R.LEWD.indexOf(lewdEv), sh, '', a, b); if (le) lt0 = le; }
       lt = mk(ctx, lt0, a, b, { who: who.name, trig: trig.t.replace(/。$/, ''), s: s ? s.name : '', w: w ? w.name : '' });
     }
@@ -186,9 +196,10 @@
       leadB: !kn && (cute === 'ini' || cute === 'gomu' || (cute === 'jeal' && day.jealBy === b) || (cute === 'x' && X0.x === b)), entry: entry, resume: !!kn }, xsrc);
     day.r18x = null;
     form = full.form;
-    var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚部屋：' + (cute === 'x' && X0.k === 'futari' ? '昼' : '夜') + '（' + FORM[form] + '）' + (pairS ? '・' + pairS.why : cute === 'x' ? '・' + ENTRY[entry] : (form === 'short' || form === 'mid') && !kn ? '・' + play.t.slice(0, 18) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
+    var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚部屋：' + (cute === 'x' && X0.k === 'futari' ? '昼' : '夜') + '（' + FORM[form] + '）' + (pairS ? '・' + pairS.why : cute === 'x' ? '・' + ENTRY[entry] : (form === 'short' || form === 'mid') && !kn ? '・' + rowWhy(play.t) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
-    if (!e) return !!kn;
+    /* 場面が出せなかった夜は、きっかけの段も取り消す（きっかけだけが残らないように） */
+    if (!e) { if (le0 && !kn) { var li = ctx.log.lastIndexOf(le0); if (li >= 0) ctx.log.splice(li, 1); } return !!kn; }
     if (form === 'long') S.longN = (S.longN || 0) + 1;
     countNight(ctx, S, A, B, form, entry);
     return true;

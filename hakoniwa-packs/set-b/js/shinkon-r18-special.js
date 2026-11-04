@@ -41,7 +41,7 @@
   X.apron = function (ctx, S, day, x, y) {
     var t = SK().pickT(ctx, X.APRON, x, y), u = SK().pickT(ctx, X.APRON_ANS, x, y);
     if (!t) return null;
-    var e = ctx.act2({ actors: [x, y], cat: 'romance', text: SK().fill(ctx, t, x, y) + SK().fill(ctx, u, x, y), why: '新婚部屋：新婚らしい出来事（' + x.name + 'が裸エプロンで出迎えた）', fx: function () { ctx.mod2(x, y, { att: 4 }, { att: 6, aff: 2 }); } });
+    var e = ctx.act2({ actors: [x, y], cat: 'romance', text: SK().fill(ctx, t, x, y) + SK().fill(ctx, u, x, y), why: '新婚部屋：' + (ctx.sk && ctx.sk.wed ? '新婚らしい出来事' : '暮らしの出来事') + '（' + x.name + 'が裸エプロンで出迎えた）', fx: function () { ctx.mod2(x, y, { att: 4 }, { att: 6, aff: 2 }); } });
     if (e && canNight(ctx, S, day, x, y) && !day.r18x) day.r18x = { k: 'apron', x: x, y: y };
     return e;
   };

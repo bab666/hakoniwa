@@ -29,7 +29,8 @@
   if (!HK) return;
   var KN = HK.ShinkonKnock = {};
   function TX() { return HK.ShinkonKnockText; }
-  function pickOf(ctx, arr) { return arr && arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : ''; }
+  /* 住まい・時間帯などに合わない文は外す（HK.Shinkon.okText。2026-11-04 報告：平屋で「隣の部屋の住人」） */
+  function pickOf(ctx, arr) { var L0 = (arr || []).filter(function (x) { return !HK.Shinkon || HK.Shinkon.okText(ctx, x); }); if (!L0.length) L0 = arr || []; return L0.length ? L0[Math.floor(ctx.rng() * L0.length)] : ''; }
   function att(c, o) { return HK.ShinkonR18 && HK.ShinkonR18.att ? HK.ShinkonR18.att(c, o) : 'gentle'; }
   var DOOR_CLS = { fam: 1, pfam: 1, known: 1, ex: 1, weak: 1 };
   var TYPE_NAME = { ignore: '無視して続けた', answer: '中断して出た', hush: '声を殺して続けた', tease: '電話に出させていたずら', stop: 'その夜はお預け' };
@@ -73,7 +74,7 @@
     if (ctx.rng() > p) return null;
     var r1 = ctx.rng() < 0.5 ? a : b, r2 = ctx.rng() < 0.5 ? a : b;
     cands.push({ via: 'door', x: r1, y: r1 === a ? b : a, cls: 'parcel', who: '宅配便の配達員', w: 0.9 });
-    cands.push({ via: 'door', x: r2, y: r2 === a ? b : a, cls: 'neighbor', who: '隣の部屋の住人', w: 0.5 });
+    cands.push({ via: 'door', x: r2, y: r2 === a ? b : a, cls: 'neighbor', who: ctx.sk && ctx.sk.homeK === 'house' ? '隣の家の人' : '隣の部屋の住人', w: 0.5 });
     cands.push({ via: 'phone', x: r2, y: r2 === a ? b : a, cls: 'work', who: '職場の人', w: 0.7 });
     cands.push({ via: 'phone', x: r1, y: r1 === a ? b : a, cls: 'unknown', who: '知らない番号', w: 0.3 });
     var v = HK.weighted(ctx.rng, cands, function (x) { return x.w; });

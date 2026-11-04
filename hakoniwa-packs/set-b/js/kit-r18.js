@@ -100,7 +100,7 @@
   }
   /* ---------- 場面の長さ（2026-11-03 利用者の指示「長さの偏りは直そう」「多めのときの長い場面は最初ではなく後のほうに」）----------
      ・描写の有無「ほのめかす」なら、いつも ほのめかす（本体の共通の設定と同じ読み方：行為は書かない）
-     ・描写の長さ：段落分けして厚く＝長い 65%・中くらい 35%／混ぜる＝短い・中くらい・長い を 3 分の 1 ずつ／数行で短く＝短い 70%・中くらい 30%
+     ・描写の長さ：段落分けして厚く＝長い 65%・中くらい 35%／混ぜる＝短い・中くらい・長い を 3 分の 1 ずつ／数行で短く＝いつも短い（2026-11-04 報告「短くなのに中くらいの場面」）
      ・エッチ多め：その遊びの最後のエッチ（回数の目安の最後、か最後の夜）を長い場面にする（「数行で短く」以外）。混ぜるときは、それより前は短い・中くらい
      ・性器なしの人がいる組は中くらいの場面が無いので短い場面に（男性向けも中くらいの場面がある） */
   function formOf(ctx, S, env, lv, nogen, last) {
@@ -108,7 +108,7 @@
     var len = env.lewdLen === 'thick' || env.lewdLen === 'short' ? env.lewdLen : 'mix', hi = env.lewdN === 'high';
     var fin = S.sex + 1 >= S.lewdMax || last;
     if (hi && len !== 'short' && !S.longN && fin) return 'long';
-    var W = len === 'thick' ? [['long', 0.65], ['mid', 0.35]] : len === 'short' ? [['short', 0.7], ['mid', 0.3]] : hi && !fin ? [['short', 0.5], ['mid', 0.5]] : [['short', 1], ['mid', 1], ['long', 1]];
+    var W = len === 'thick' ? [['long', 0.65], ['mid', 0.35]] : len === 'short' ? [['short', 1]] : hi && !fin ? [['short', 0.5], ['mid', 0.5]] : [['short', 1], ['mid', 1], ['long', 1]];
     var f0 = HK.weighted(ctx.rng, W, function (x) { return x[1]; })[0];
     return f0 === 'mid' && nogen ? 'short' : f0;
   }
@@ -155,8 +155,14 @@
       /* 濃い：もう一度（短い版の一文は形を問わない書き方なので、女性どうしは段落の版にする） */
       if (high && HK.ThickEro) body += '\n\n' + HK.ThickEro.again(ctx, pk, a, b, ero && form === 'mid', form === 'short' && sh !== 'ff');
     }
+    body = flowFix(body, a, b, sh, aft);
     return { text: mk(ctx, body + (aft ? '\n\n' + aft : ''), a, b), form: form };
   }
-  HK.PairR18 = { sexOk: sexOk, shape: shape, text: text0, att: att, nightAdd: nightAdd, insert1: insert1, formOf: formOf, scene: sceneText, FB: FB, pickOf: pickOf, mk: mk };
+  /* 短い・中くらいの場面も本体の流れの管理（HK.SexFlow.fix：段階の逆戻り・体位の矛盾・二度出しを直す）に通す（2026-11-04 報告「挿入後に服を脱がせる」「入れる前に抜く」） */
+  function flowFix(body, a, b, sh, aft) {
+    var F = HK.SexFlow; if (!F || !F.fix || !body) return body;
+    try { var r = F.fix(body, { a: a, b: b, mode: sh, after: aft || '' }); return r && typeof r.text === 'string' && r.text ? r.text : body; } catch (e) { return body; }
+  }
+  HK.PairR18 = { flowFix: flowFix, sexOk: sexOk, shape: shape, text: text0, att: att, nightAdd: nightAdd, insert1: insert1, formOf: formOf, scene: sceneText, FB: FB, pickOf: pickOf, mk: mk };
 })();
 /* r18:end */

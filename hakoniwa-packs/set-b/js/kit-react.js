@@ -122,7 +122,10 @@
   R.say = function (ctx, kind, who, other) {
     var p = per(who), odd = ctx.rng() < R.pOdd(ctx);
     var src = odd ? R.ODD[kind] : R.T[kind], arr = src && (src[p] || src.gentle);
-    var t = pick(ctx, arr);
+    /* 一回の遊びで同じ受け止め方は 2 回まで（まだ使っていないものから。2026-11-04 報告「ありがとう。うれしい」が 7 回など） */
+    var U = ctx._rcUsed = ctx._rcUsed || {}, a0 = (arr || []).filter(function (x) { return !U[x]; }), a1 = (arr || []).filter(function (x) { return (U[x] || 0) < 2; });
+    var t = pick(ctx, a0.length ? a0 : a1);
+    if (t) U[t] = (U[t] || 0) + 1;
     if (!t) return { text: '', odd: false, per: p };
     return { text: t, odd: odd, per: p };
   };
