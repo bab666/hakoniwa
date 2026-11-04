@@ -441,7 +441,9 @@
   };
   T.fingerOut = function (fore, body, mode, ero) {
     fore = String(fore || ''); body = String(body || '');
-    if (mode === 'ff' || !FIN_IN.test(fore) || FIN_OUT.test(fore) || FIN_OUT.test(body)) return '';
+    /* 髪に指を差し入れる文は、指を入れた文に数えない（点検 misc の FI と同じ。2026-11-04） */
+    var finS = FIN_IN.test(String(fore).replace(/髪に指[^。]*/g, ''));
+    if (mode === 'ff' || !finS || FIN_OUT.test(fore) || FIN_OUT.test(body)) return '';
     var l = T.FINGER_OUT[ero ? 'ero' : 'novel'];
     return l[fore.length % l.length];
   };

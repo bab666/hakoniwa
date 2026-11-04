@@ -13,6 +13,7 @@
        (c) 二度出し     … 同じ台詞・同じ動き（突き倒す・手首を押さえる など）の二度目は、飾りの部品ごと外すか、その一文を外す
        (d) 応答待ち     … 応答を求める台詞（言え・呼べ・声を出せ）のあとに受けのリアクションが無ければ、受けの態度 9 種のリアクションを入れる
        (e) 性感         … 山場は受けの heat が 60 以上（攻めが男性の体・女性の攻め×男性なら攻めも 50 以上）・焦らしの直後でないときだけ。届かなければ追い上げの段を前に入れる
+     2026-11-04：文ごとの状態（挿入中か・指・目隠し・体位・場所・終わりの台詞）で (i)〜(n) も見て直す（F.walk。設計の 7 章）
      そのうえで、段階ごとの段数の上限（下の CAP。描写の長さ「厚く」は少し多め）と、似た役割の部品（夜の主導・夜の性格・焦らし）の重ねを 1 回までにする。
    ■ 夜の主導（誘い受け・襲い受け）は「傾向」（2026-11-03 利用者の指示）：長い場面のたびに、その夜に受けから始めるかを確率で決め（F.leadTonight）、
      場面のあいだだけ HK.Pos.leadOf をその夜の値に差し替える（夜の主導の段・能動性の型の両方に効く）。嫉妬・強引・愛憎・攻めのサド／意地悪の夜は攻めから。
@@ -83,7 +84,7 @@
     chg: {
       aUp: /\{b\}を[^。{]{0,20}(?:押し倒|組み敷|仰向けに|突き倒|転がし|ベッドに(?:押しつけ|沈め|横たえ)|シーツに(?:押しつけ|沈め))|組み敷(?:き直|いた(?!まま))|寝かせ直|(?:敷布|ベッド)へ(?:乱暴に)?(?:転がし|突き倒)|両脚を(?:抱え上げ|肩に)|face>/,
       rear: /うつ伏せに(?:返|させ|押し|し)|四つん這いに(?:させ|な)|後ろを向かせ|腰だけを引き上げ|背後から(?:覆|抱き|のしかか)|背中を向けて跨り直し|背を向けるように体を返し、改めて腰の上に跨り直し|back>/,
-      bUp: /\{b\}[はが](?:[^。「]{0,30})(?:跨が(?!らせ)|跨っ|跨り|馬乗り|上に乗(?!せ)|上になっ|乗り上げ)|\{b\}を[^。]{0,14}(?:上に乗せ|腰の上(?:へ|に)|跨がらせ)|\{a\}を[^。{]{0,12}(?:押し倒|仰向けに|組み敷)|ride>/,
+      bUp: /\{b\}[はが](?:[^。「]{0,30})(?:跨が(?!らせ)|跨っ|跨り|跨い|またが(?!らせ)|またい|馬乗り|上に乗(?!せ)|上になっ|乗り上げ)|\{b\}を[^。]{0,14}(?:上に乗せ|腰の上(?:へ|に)|跨がらせ)|\{a\}を[^。{]{0,12}(?:押し倒|仰向けに|組み敷)|ride>/,
       sit: /膝の上(?:へ|に)(?:座らせ|乗せ|抱き上げ|乗り上げ|跨(?:っ|が|り)?)|向かい合わせに膝|膝をまたが|対面座位|lap>/
     },
     at: {
@@ -161,17 +162,20 @@
   /* 段の特徴 */
   /* 流れを整える段（つなぎ・追い上げ・攻めが迫る段・リアクション）は、本文からも見分ける（点検が本文だけを見ても同じ数え方になるように） */
   var FLOWT = null;
+  /* 場所の語を言い換えても（シーツ→クッションなど。(l) の直し）同じ段と見分けられるように、寝床の語をそろえて比べる */
+  function normPl(x) { return String(x).replace(/シーツ|クッション|ラグ|敷布|ベッド|ソファ|寝床|布団/g, '□'); }
   function flowKind(p) {
     var X = TX();
     if (!FLOWT) {
       FLOWT = { exact: {}, pre: [] };
-      var put = function (o, kind) { if (!o) return; Object.keys(o).forEach(function (k) { var v = o[k]; if (Array.isArray(v)) v.forEach(function (x) { FLOWT.exact[x] = kind; }); else put(v, kind); }); };
-      put(X.BRIDGE, 'bridge'); put(X.BUILD, 'build'); put(X.BUILD_PRE, 'build'); put(X.PRESS, 'press');
-      var pr = function (o) { if (!o) return; Object.keys(o).forEach(function (k) { var v = o[k]; if (Array.isArray(v)) v.forEach(function (x) { FLOWT.pre.push(x); }); else pr(v); }); };
+      var put = function (o, kind) { if (!o) return; Object.keys(o).forEach(function (k) { var v = o[k]; if (Array.isArray(v)) v.forEach(function (x) { FLOWT.exact[normPl(x)] = kind; }); else put(v, kind); }); };
+      put(X.BRIDGE, 'bridge'); put(X.MOVE, 'move'); put(X.BUILD, 'build'); put(X.BUILD_PRE, 'build'); put(X.PRESS, 'press');
+      var pr = function (o) { if (!o) return; Object.keys(o).forEach(function (k) { var v = o[k]; if (Array.isArray(v)) v.forEach(function (x) { FLOWT.pre.push(normPl(x)); }); else pr(v); }); };
       pr(X.REACT);
       if (!X.BRIDGE) FLOWT = null;
       if (!FLOWT) return '';
     }
+    p = normPl(p);
     if (FLOWT.exact[p]) return FLOWT.exact[p];
     for (var i = 0; i < FLOWT.pre.length; i++) if (p.indexOf(FLOWT.pre[i]) === 0) return 'react';
     return '';
@@ -233,13 +237,130 @@
     if (mb) return 'b';
     return '';
   };
+  /* ---------- 文ごとの状態（2026-11-04。看病・新婚の遊んで確かめた報告）：挿入中か・指が入っているか・目隠し中か・場所・終わりの台詞を出したか ----------
+     段の中の文を前から順に読み、状態に合わない文を数える（F.check の最後で、呼ぶ側の事後の段 ext.tail も含めて見る）。
+       (i) 挿入の状態：入れていない・抜いたあとの「抜かないまま」「繋がったまま」、指を入れていないのに「指を抜く」
+       (j) 目隠し中に、受けが見る・攻めが「こっちを見ろ」
+       (k) 後ろからの体位のまま、顔を見つめる・目を合わせる・額をつける
+       (l) 場所の飛び：場面の中で場所の語が変わるのに、移る文（運ぶ・立たせる・もつれ込む…）が無い
+       (m) 終わりの台詞（「じゃあな」「先に帰る」など、その場を切り上げる台詞）のあとに、会話や寄り添う文が続く
+       (n) 体の組に合わない語：男性器の無い人の男性器・女性どうしの場面の男性器の語・受けが入れる側になる文 */
+  var ST2 = F.ST2 = {
+    needIn: /抜かないまま|抜かずに|抜かれる前に|抜こうとすると|繋がったまま|(?:挿れ|入れ|沈め|埋め|呑み込ん|咥え込ん)たまま(?![^。]{0,4}(?:指|舌))|中で締めつけたまま/,
+    wd: /引き抜|抜け出(?:す|し|た|る)|ずるりと抜|ぬるりと抜|(?:\{男性器\}|もの|自身|それ|腰)を(?:[^。]{0,4})抜(?:き|い|く)|体を離(?:し|す|した)|腰を浮かせて[^。]{0,12}抜/,
+    fin: /指(?:を|が)[^。「」]{0,16}(?:ねじ込|挿|差し入|入れ|入っ|沈|埋|潜り込|滑り込|突き入|咥え|呑み込|抜き差し|出し入れ)|指で[^。「」]{0,12}(?:ほぐ|掻き回|かき回|抉|擦|こす|責め|突)|指(?:を|が)[^。「」]{0,8}(?:動か|曲げ)|指が一本|指を[一二三]本/,
+    /* 点検 misc の FI と同じく、髪に指を差し入れる文だけを除く */
+    finNot: /髪に指|指を絡/,
+    fout: /指を[^。「」]{0,10}(?:抜|引き抜)|指が[^。「」]{0,6}(?:抜け|抜か)/,
+    blOn: /目隠し(?:を|で)?[^。]{0,8}(?:し|させ|され|巻|結|つけ|付け|当て|覆)|(?:布|ネクタイ|タオル|手のひら|リボン)で[^。]{0,8}目(?:を|元を)?(?:覆|塞)/,
+    blOff: /目隠しを?[^。]{0,8}(?:外|取|解|ずら|ほど|剥)/,
+    look: /\{b\}[はが][^。「]{0,30}(?:見つめ|見上げ|目を合わせ|見返|睨|見下ろ|見入|視線を(?:合わせ|向け|上げ)|目で追|見て(?:い|しま))/,
+    lookLine: /(?:こっち|こちら|私|前)を?見(?:ろ|て|な|よ|なさい|るんだ)|目を(?:開け|逸らす|見て|閉じるな)|見つめ(?:て|ろ)/,
+    rearFace: /(?:顔|目|瞳)を[^。]{0,6}(?:じっと)?(?:見つめ|覗き込|のぞき込|見下ろ|のぞ)|見つめ合|目を合わせ|視線を合わせ|視線が絡|額を(?:つけ|合わせ|くっつけ|押し当て|寄せ)|額と額|額をこつん|鼻先を(?:すり|擦|寄せ)|まぶたに|唇を重ね/,
+    rearOk: /振り向|振り返|肩越し|鏡|横顔|首をひね|後ろを向かせ(?:たまま)?顔|体を返|向き合|仰向け|向かい合|(?:シーツ|枕|敷布|布団|壁|腕)に額/,
+    move: /運(?:ん|び|ぶ|ば)|連れ(?:て|込|出)|移(?:っ|し|動|ろ|る)|向か(?:っ|い|う)|抱き上げ|抱え上げ|抱えて|もつれ(?:る|込)|(?:へ|まで)[^。]{0,6}(?:行|戻|導|誘)|倒れ込|場所を変え|起き上が|降ろ|下ろ|立たせ|立ち上が|引っ張|手を引|押し倒|押しつけ|押し付け|座らせ|寝かせ|横たえ|押し込|引き倒|追い込|崩れ落ち|たどり着|から上が|戻っ|降り/,
+    bye: /じゃあ(?:な|ね)|それじゃ(?:あ|、|。|ね)|^では[。、]?$|(?:先に|もう)(?:帰|行|戻|上が)|失礼(?:する|します)|帰って(?:いい|くれ)|出て(?:いけ|って)/,
+    stay: /寄り添|抱き(?:寄せ|しめ|合|直)|腕枕|毛布|くるま|話し込|語り合|髪を(?:撫|梳)|胸に(?:頬|顔)|指を絡|肩を寄せ|頭を(?:預|撫)|腕の中|寝息|眠りに|微睡|まどろ/,
+    mWord: /\{(?:男性器|亀頭|竿|陰嚢|先走り|精液|カリ)\}|射精|吐精|びゅるる|びゅくっ|どぷっ/
+  };
+  var PLACE = F.PLACE = [
+    ['bed', /ベッド|寝床|布団|寝台|シーツ|敷布|寝室/],
+    ['sofa', /ソファ|長椅子/],
+    ['kitchen', /台所|キッチン|調理台|シンク|流し台/],
+    ['bath', /浴室|風呂(?!上が)|湯船|浴槽|シャワー|脱衣所|洗面台/],
+    ['desk', /机|デスク|テーブル/],
+    ['wall', /壁(?:際|に(?:手|背|押し|もた|預け|つ|両手|額|胸|頬)|へ(?:押し|追い)|を背|に向か)/],
+    ['door', /玄関|ドアに|扉に/],
+    ['floor', /(?:^|[^寝敷])床(?:に|へ|の上)(?![^。]{0,6}(?:落ち|散ら|脱ぎ|放|投げ|置))|ラグの上|畳の上|絨毯/]
+  ];
+  var PLACE_JA = F.PLACE_JA = { bed: 'ベッド', sofa: 'ソファ', kitchen: '台所', bath: '浴室', desk: '机', wall: '壁際', door: '玄関', floor: '床' };
+  function placeOf(n) {
+    var out = [];
+    PLACE.forEach(function (p) { var re = new RegExp(p[1].source, 'g'), m; while ((m = re.exec(n))) { if (n.substr(m.index + m[0].length, 2) === 'より') continue; out.push({ k: p[0], i: m.index }); break; } });
+    out.sort(function (x, y) { return x.i - y.i; });
+    return out;
+  }
+  F.placeOf = placeOf;
+  function esc(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\  /* ---------- 状態を進めながら、段ごとの食い違いを数える ---------- */'); }
+  /* all：段（最後に呼ぶ側の事後の段があれば ext.tailAt 以降）。戻り値：食い違いの配列（k: i〜n、i: 段の番号、s: 文、line: 台詞） */
+  function walk(all, mode, ext) {
+    ext = ext || {};
+    var v = [], st = { inside: false, finger: false, blind: false, place: null, moves: 0, bye: null, climax: false, posture: null };
+    var aM = ext.aM != null ? ext.aM : mode !== 'ff' && mode !== 'fm', bM = ext.bM != null ? ext.bM : mode === 'fm';
+    var seen = {};
+    var add = function (x) { var key = x.k + '|' + x.i + '|' + (x.s || '') + '|' + (x.line ? x.line.raw : ''); if (seen[key]) return; seen[key] = 1; v.push(x); };
+    for (var i = 0; i < all.length; i++) {
+      var u = all[i], ss = [].concat.apply([], u.paras.map(sentences));
+      for (var j = 0; j < ss.length; j++) {
+        var s = ss[j], n = narrOf(s), ls = linesOf(s);
+        /* 体位（段をまたいで続く。変える動きのある文で切り替える） */
+        var chg = [];
+        Object.keys(POS.chg).forEach(function (k) { if (k === 'bUp' && mode === 'fm') return; var m = POS.chg[k].exec(n); if (m) chg.push({ k: k, i: m.index }); });
+        if (mode === 'fm' && FM_AUP.test(n)) chg.push({ k: 'aUp', i: 0 });
+        chg.sort(function (x, y) { return x.i - y.i; });
+        var rearBefore = st.posture === 'rear' && !chg.length;
+        if (chg.length) st.posture = chg[chg.length - 1].k;
+        /* (i) 挿入の状態 */
+        var isIns = mode !== 'ff' && (RE.insert.test(n) && !RE.oralOnly.test(n) || RE.inside.test(n) && !/指|舌|口で|唇で|玩具|ローター/.test(n));
+        var finIn = ST2.fin.test(n.replace(/髪に指[^。]*/g, '').replace(/指を絡[^。]*/g, ''));
+        var mNeed = ST2.needIn.exec(n);
+        if (mNeed && !st.inside && !isIns && !(st.finger || finIn) && !/指|舌/.test(n.slice(Math.max(0, mNeed.index - 12), mNeed.index + mNeed[0].length + 4)) && !/(?:顔|頬|額|鼻|唇|口)を[^。]{0,4}$/.test(n.slice(0, mNeed.index))) {
+          add({ k: 'i', i: i, s: s, why: '入れていない（抜いたあとの）「' + mNeed[0] + '」', sub: mNeed[0], again: st.wasIn });
+        }
+        if (ST2.fout.test(n) && !st.finger && !finIn && !(mode === 'ff' && st.inside)) add({ k: 'i', i: i, s: s, why: '指を入れていないのに指を抜く' });
+        if (finIn) { st.finger = true; if (mode === 'ff') st.inside = true; }
+        if (isIns) { st.inside = true; st.wasIn = true; }
+        if (ST2.fout.test(n)) { st.finger = false; if (mode === 'ff') st.inside = false; }
+        if (ST2.wd.test(n) && !/指|舌/.test(n.slice(Math.max(0, n.search(ST2.wd) - 10), n.search(ST2.wd) + 8))) st.inside = false;
+        /* (j) 目隠し */
+        if (ST2.blOff.test(n)) st.blind = false;
+        else if (ST2.blOn.test(n)) st.blind = true;
+        else if (st.blind) {
+          if (ST2.look.test(n)) add({ k: 'j', i: i, s: s, why: '目隠し中に受けが見る' });
+          ls.forEach(function (l) { if (l.who === 'a' && ST2.lookLine.test(l.s)) add({ k: 'j', i: i, s: s, line: l, why: '目隠し中に「' + l.s + '」' }); });
+        }
+        /* (k) 後ろからの体位のまま、顔を合わせる */
+        if (rearBefore && ST2.rearFace.test(n) && !ST2.rearOk.test(n)) add({ k: 'k', i: i, s: s, why: '後ろからの体位のまま「' + ST2.rearFace.exec(n)[0] + '」' });
+        /* (l) 場所 */
+        var pl = /(?:余裕|暇)も(?:な|無)|ないまま/.test(n) ? [] : placeOf(n);
+        /* 山場のあと（事後・翌朝）は場所が変わってよい */
+        if (st.climax) { if (pl.length) st.place = pl[pl.length - 1].k; pl = []; }
+        if (pl.length) {
+          var mv = ST2.move.test(n);
+          pl.forEach(function (p) {
+            if (!st.place) { st.place = p.k; st.placeS = s; st.placeI = i; st.placeFirst = true; return; }
+            if (p.k === st.place) return;
+            if (mv && st.moves < 2) { st.moves++; st.place = p.k; st.placeS = s; st.placeI = i; st.placeFirst = false; return; }
+            add({ k: 'l', i: i, s: s, why: '場所が「' + PLACE_JA[st.place] + '」から「' + PLACE_JA[p.k] + '」へ飛ぶ', from: st.place, to: p.k, from0: st.placeS, fromI: st.placeI, first: st.placeFirst });
+            st.placeFirst = false;
+          });
+        }
+        /* (m) 終わりの台詞のあと */
+        if (hasClimax(n) && !RE.notClimax.test(n)) { st.climax = true; st.posture = null; st.blind = false; }
+        if (st.bye) {
+          if (ls.length || ST2.stay.test(n)) add({ k: 'm', i: st.bye.i, s: st.bye.s, line: st.bye.line, why: '終わりの台詞「' + st.bye.line.s + '」のあとに' + (ls.length ? '会話' : '寄り添う文') + '：' + n.slice(0, 30) });
+          if (ls.length || ST2.stay.test(n)) st.bye = null;
+        }
+        if (st.climax) ls.forEach(function (l) { if (l.who && ST2.bye.test(l.s.replace(/[…―]+/g, ''))) st.bye = { i: i, s: s, line: l }; });
+        /* (n) 体の組に合わない語 */
+        if (mode === 'ff' && ST2.mWord.test(n)) add({ k: 'n', i: i, s: s, why: '女性どうしの場面で男性器の語「' + ST2.mWord.exec(n)[0] + '」' });
+        else {
+          if (!aM && /\{a\}の(?:[^。、{]{0,4})\{(?:男性器|亀頭|竿|陰嚢|先走り|カリ)\}/.test(n)) add({ k: 'n', i: i, s: s, why: '男性器の無い攻めの男性器' });
+          if (!bM && /\{b\}の(?:[^。、{]{0,4})\{(?:男性器|亀頭|竿|陰嚢|先走り|カリ)\}/.test(n)) add({ k: 'n', i: i, s: s, why: '男性器の無い受けの男性器' });
+          if (mode !== 'fm' && aM && (/\{b\}の[^。、]{0,4}\{男性器\}を[^。]{0,12}\{a\}の[^。]{0,10}(?:中|\{ナカ\}|奥|\{後ろ\}|\{女性器\})/.test(n) || /\{a\}[はが][^。]{0,24}\{b\}の[^。、]{0,4}\{男性器\}を[^。]{0,16}(?:呑みこ|呑み込|迎え入れ|受け入れ)/.test(n) || /\{b\}[はが][^。]{0,16}\{a\}の(?:\{ナカ\}|\{後ろ\}|\{女性器\}|中|奥)(?:へ|に|を)[^。]{0,8}(?:突き入れ|沈め|穿|埋め|ねじ込)/.test(n))) add({ k: 'n', i: i, s: s, why: '受けが入れる側になる文' });
+        }
+      }
+    }
+    return v;
+  }
+  F.walk = walk;
   /* ---------- 状態を進めながら、段ごとの食い違いを数える ---------- */
-  var HEAT = { lead: [5, 5], undress: [5, 5], fore: [20, 10], insert: [15, 20], play: [20, 20], climax: [0, 0], flow: [10, 5], build: [25, 25], bridge: [5, 5], react: [10, 5], press: [5, 5] };
+  var HEAT = { move: [0, 0], lead: [5, 5], undress: [5, 5], fore: [20, 10], insert: [15, 20], play: [20, 20], climax: [0, 0], flow: [10, 5], build: [25, 25], bridge: [5, 5], react: [10, 5], press: [5, 5] };
   var TH_B = 60, TH_T = 50;
   F.TH = { b: TH_B, t: TH_T };
   /* units：F.split の段（feat 済みでなくてよい）。戻り値：{ v: [{ k: 'a'|'b'|'c'|'d'|'e', i: 段の番号, why, ... }], st: 最後の状態, stages: [段ごとの段階] } */
   /* play：エッチの型（play-r18.js の HK.Play）。{ prop, lock（型の体位の posture）, posT（型の繋がる段の頭の段落） }。あれば型の矛盾（h）も数える */
-  F.check = function (units, mode, play) {
+  F.check = function (units, mode, play, ext) {
     var posIdx = -1;
     if (play && play.posT) for (var pi0 = 0; pi0 < units.length; pi0++) if (units[pi0].paras.join('\n\n').indexOf(play.posT) >= 0) { posIdx = pi0; break; }
     var st = { stage: 'lead', insert: false, climax: false, posture: null, heatB: 0, heatT: 0, hold: false, used: { lines: {}, motions: {}, mpos: {} }, pending: null, posPrev: null }, v = [], stages = [];
@@ -319,13 +440,23 @@
         }
       }
     }
+    /* (i)〜(n) 文ごとの状態（ext を渡したときだけ。ext.tail は呼ぶ側の事後の段） */
+    if (ext) walk(ext.tail ? units.concat([ext.tail]) : units, mode, ext).forEach(function (x) { v.push(x); });
     return { v: v, st: st, stages: stages, posIdx: posIdx };
   };
+  /* 体の組（男性器のある人）と呼ぶ側の事後の段 */
+  /* 男性器のある人：体の設定（性器の欄）があればそれ、なければ場面の組（mf＝攻め・fm＝受け。オメガバースの女性のαの攻めは mf）か性別 */
+  function extOf(a, b, tail, mode) {
+    var P = HK.Pos;
+    var hm = function (c, byMode) { if (P && P.genSet && P.genSet(c)) return !!P.hasM(c); if (byMode) return true; return P && P.hasM ? !!P.hasM(c) : !!c && c.gender === 'm'; };
+    return { aM: hm(a, mode === 'mf'), bM: hm(b, mode === 'fm'), tail: tail && tail.length ? { paras: tail, tail: true } : null };
+  }
+  F.extOf = extOf;
   /* 本文を見る（点検用）：{ units, tail, check } */
   F.analyze = function (text, a, b, mode, after, play) {
     var t = normNames(text, a, b), af = after ? normNames(after, a, b) : '';
     var sp = F.split(t, af);
-    sp.check = F.check(sp.units, mode || 'mf', play || null);
+    sp.check = F.check(sp.units, mode || 'mf', play || null, extOf(a, b, sp.tail, mode || 'mf'));
     return sp;
   };
 
@@ -431,9 +562,123 @@
     if (u.f.insert || u.f.inside) { for (var j = 0; j < i; j++) if (units[j].f && (units[j].f.insert || units[j].f.inside)) return false; return true; }
     return false;
   }
+  /* ---------- (i)〜(n) を直す（2026-11-04） ----------
+     言い換え（抜いたあとの「抜かないまま」→「もう一度沈め直して」など）→ 移る段（場所）→ その一文を外す、の順。挿入・山場の一文は外さない */
+  var SUB = F.SUB = {
+    i: [['抜かないまま、', 'もう一度奥まで沈め直して、'], ['抜かないまま', 'もう一度沈め直して'], ['抜かずに', 'もう一度沈め直して'], ['抜かれる前に、', 'もう一度沈め直すと、'], ['抜かれる前に', 'もう一度沈め直すと'],
+      ['繋がったまま', 'もう一度繋がって'], ['挿れたまま', '挿れ直して'], ['入れたまま', '入れ直して'], ['沈めたまま', '沈め直して'], ['埋めたまま', '埋め直して'], ['呑み込んだまま', '呑み込み直して'], ['咥え込んだまま', '咥え込み直して']],
+    j: [['{a}を見上げ', '{a}のほうへ顔を上げ'], ['見上げ', '顔を上げ'], ['涙目で睨み返すと', '涙声で首を振ると'], ['睨み返すと', '首を振ると'], ['睨み返し', '首を振り'], ['{a}を睨んだ', '顔を背けた']],
+    k: [['見つめ合ったまま', '指を絡め合ったまま'], ['額を合わせたまま', '肌を重ねたまま'], ['{b}の額に、頬に、まぶたに、', '{b}のうなじに、肩に、背中に、'], ['鼻先をすり寄せて、笑いかける', '背中に頬をすり寄せて、小さく笑う']],
+    /* 場所：寝床の語を、ソファ・床の場面の語に */
+    l: { sofa: [['シーツ', 'クッション'], ['敷布', 'クッション'], ['ベッド', 'ソファ'], ['寝床', 'ソファ'], ['布団', 'ソファ']], floor: [['シーツ', 'ラグ'], ['敷布', 'ラグ'], ['ベッド', '床'], ['寝床', '床'], ['布団', 'ラグ']] }
+  };
+  function unitAt(S, i) { return i < S.units.length ? S.units[i] : S.tailU; }
+  /* 段 i の手前の状態（場所・目隠し）。差し込む文（つなぎ・リアクション・追い上げ）を選ぶときに、合わない文を外すため */
+  function stateAt(S, i) {
+    var o = { place: null, blind: false };
+    for (var j = 0; j < i && j < S.units.length; j++) S.units[j].paras.forEach(function (p) {
+      sentences(p).forEach(function (x) { var n = narrOf(x), q = placeOf(n); if (q.length) o.place = q[q.length - 1].k; if (ST2.blOff.test(n)) o.blind = false; else if (ST2.blOn.test(n)) o.blind = true; });
+    });
+    return o;
+  }
+  function fitCand(S, i, list) {
+    if (!list || !list.length) return list;
+    var o = stateAt(S, i), all = S.units.map(function (u) { return u.paras.join('\n\n'); }).join('\n\n');
+    var out = list.filter(function (t) {
+      /* 本文にもう出ている文は選ばない（直し直しの二回目に、同じ追い上げの段を重ねないように） */
+      if (all.indexOf(normNames(t, S.a, S.b)) >= 0 || all.indexOf(t) >= 0) return false;
+      var n = narrOf(t), q = placeOf(n);
+      if (o.place && q.some(function (z) { return z.k !== o.place; })) return false;
+      if (o.blind && (ST2.look.test(n) || /見上げ|見つめ|睨|目を合わせ|見下ろ/.test(n))) return false;
+      return true;
+    });
+    return out.length ? out : list;
+  }
+  /* 段の中の文 s の中の from を to に（一つだけ） */
+  function subIn(u, s, from, to) {
+    for (var k = 0; k < u.paras.length; k++) {
+      var q = u.paras[k].indexOf(s); if (q < 0) continue;
+      var r = s.indexOf(from); if (r < 0) return false;
+      u.paras[k] = u.paras[k].slice(0, q) + s.slice(0, r) + to + s.slice(r + from.length) + u.paras[k].slice(q + s.length);
+      delete u.f;
+      return true;
+    }
+    return false;
+  }
+  /* 段の中の文 s をそのまま外す（挿入・山場の文は外さない）。段が空になれば段ごと（呼ぶ側の事後の段は空のまま） */
+  function cutExact(S, i, s) {
+    var u = unitAt(S, i); if (!u) return false;
+    var n = narrOf(s);
+    if (hasClimax(n) || RE.insert.test(n)) return false;
+    for (var k = 0; k < u.paras.length; k++) {
+      var q = u.paras[k].indexOf(s); if (q < 0) continue;
+      var np = (u.paras[k].slice(0, q) + u.paras[k].slice(q + s.length)).replace(/^[\s　]+|[\s　]+$/g, '').replace(/^――/, '');
+      if (!narrOf(np).replace(/\{[ab]\}|[\s　―…]/g, '') && !/「/.test(np)) u.paras.splice(k, 1); else u.paras[k] = np;
+      if (!u.paras.length && u !== S.tailU) S.units.splice(i, 1);
+      delete u.f;
+      return true;
+    }
+    return false;
+  }
+  function domPlace(S) {
+    var cnt = {}, first = {}, k = 0, done = false;
+    S.units.forEach(function (u) { if (done) return; u.paras.forEach(function (p) { sentences(p).forEach(function (x) { if (done) return; var n = narrOf(x); if (hasClimax(n) && !RE.notClimax.test(n)) { done = true; return; } placeOf(n).forEach(function (q) { cnt[q.k] = (cnt[q.k] || 0) + 1; if (first[q.k] == null) first[q.k] = k++; }); }); }); });
+    var best = null; Object.keys(cnt).forEach(function (q) { if (!best || cnt[q] > cnt[best] || cnt[q] === cnt[best] && first[q] < first[best]) best = q; });
+    return best;
+  }
+  function fitPlace(list, to) { var o = list.filter(function (t) { return placeOf(narrOf(t)).every(function (q) { return q.k === to; }); }); return o.length ? o : list; }
+  function fixWalk(S, x) {
+    var u = unitAt(S, x.i), T = TX();
+    if (!u) return false;
+    /* 流れを整える段（つなぎ・リアクション・追い上げ・迫る段・移る段）は、寝床の語の言い換えのほかは書き換えずに段ごと外す
+       （本文だけを見る点検が、同じ段として見分けられるように）。要る段はあとで選び直す */
+    if (!u.flow && u !== S.tailU && u.paras.length === 1) { var fk0 = flowKind(u.paras[0]); if (fk0) u.flow = fk0; }
+    if (u.flow && u !== S.tailU) {
+      var lf = x.k === 'l' && x.to === 'bed' && SUB.l[x.from] ? SUB.l[x.from].filter(function (p) { return x.s.indexOf(p[0]) >= 0; })[0] : null;
+      if (lf && subIn(u, x.s, lf[0], lf[1])) { u.flow = flowKind(u.paras[0]) || u.flow; return true; }
+      S.units.splice(x.i, 1); return true;
+    }
+    if (x.k === 'i' && x.sub) {
+      if (x.again) { var si = SUB.i.filter(function (p) { return x.s.indexOf(p[0]) >= 0; })[0]; if (si && subIn(u, x.s, si[0], si[1])) return true; }
+      return cutExact(S, x.i, x.s);
+    }
+    if (x.k === 'm') {
+      /* 終わりの台詞（攻めの一言の部品なら部品ごと）を外す */
+      var pm = partOf(S.parts, u);
+      if (pm && pm.t.indexOf(x.line.raw.replace(/^\{[ab]\}/, '')) >= 0 && pm.t.length < 200) { cutPart(S.units, pm.t); S.parts.splice(S.parts.indexOf(pm), 1); return true; }
+      return cutLine(u, x.line.raw) || cutExact(S, x.i, x.s);
+    }
+    if (x.k === 'j' && x.line) return cutLine(u, x.line.raw);
+    if (x.k === 'j' || x.k === 'k') {
+      var sl = SUB[x.k].filter(function (p) { return x.s.indexOf(p[0]) >= 0; })[0];
+      if (sl && subIn(u, x.s, sl[0], sl[1])) return true;
+      return cutExact(S, x.i, x.s);
+    }
+    if (x.k === 'l') {
+      /* 場面の主な場所（山場までに場所の語がいちばん多く出る場所）。少ないほうの場所の文を直す */
+      var D = S.domPlace || (S.domPlace = domPlace(S));
+      var mv = T.MOVE && T.MOVE[x.to];
+      var canMove = mv && !S.moved && x.i < S.units.length && !(S.units[x.i - 1] && S.units[x.i - 1].flow === 'move');
+      var addMove = function () { S.moved = true; S.units.splice(x.i, 0, flowUnit(pickFrom(S.R, fitPlace(mv, x.to), S.usedText), 'move')); return true; };
+      if (x.to === D && x.from !== D) {
+        /* 主な場所へ戻る：場面の始まりが別の場所なら移る段を入れる。途中に挟まった別の場所の文なら、その文を外す */
+        if (x.first && canMove) return addMove();
+        if (x.from0 && x.fromI != null && cutExact(S, x.fromI, x.from0)) return true;
+        if (canMove) return addMove();
+      }
+      /* 寝床の語 → その場面の語（ソファ・床） */
+      var ls = x.to === 'bed' && SUB.l[x.from] ? SUB.l[x.from].filter(function (p) { return x.s.indexOf(p[0]) >= 0; })[0] : null;
+      if (ls && subIn(u, x.s, ls[0], ls[1])) return true;
+      if (cutExact(S, x.i, x.s)) return true;
+      if (canMove) return addMove();
+      return false;
+    }
+    return cutExact(S, x.i, x.s);
+  }
   /* 一つの食い違いを直す。直せたら true */
   function fixOne(S, x) {
     var units = S.units, mode = S.mode, R = S.R, T = TX(), u = units[x.i];
+    if (/^[i-n]$/.test(x.k)) return fixWalk(S, x);
     if (x.k === 'a') {
       var pt = partOf(S.parts, u, x.re);
       if (pt) {
@@ -472,7 +717,7 @@
       if (l && !(units[x.i - 1] && units[x.i - 1].flow === 'bridge')) {
         var cand = l;
         if (mode === 'fm' && noM(S.b)) cand = l.filter(function (s) { return !NOM.test(s); });
-        units.splice(x.i, 0, flowUnit(pickFrom(R, cand.length ? cand : l, S.usedText), 'bridge'));
+        units.splice(x.i, 0, flowUnit(pickFrom(R, fitCand(S, x.i, cand.length ? cand : l), S.usedText), 'bridge'));
         return true;
       }
       /* つなぎの段が無い体位（女性の攻め×男性で受けが上 など）：その言い回しの一文を外す */
@@ -508,7 +753,7 @@
       var ph = S.insertBefore(x.i) || mode === 'ff' && S.foreBefore(x.i) ? 'post' : 'pre';
       var tl = T.TAIL && T.TAIL[mode] ? T.TAIL[mode][ph] : [];
       if (mode === 'fm' && noM(S.b)) tl = tl.filter(function (s) { return !NOM.test(s); });
-      units.splice(x.i, 0, flowUnit(pickFrom(R, lst, S.usedText) + (tl.length ? pickFrom(R, tl, S.usedText) : ''), 'react'));
+      units.splice(x.i, 0, flowUnit(pickFrom(R, fitCand(S, x.i, lst), S.usedText) + (tl.length ? pickFrom(R, fitCand(S, x.i, tl), S.usedText) : ''), 'react'));
       return true;
     }
     if (x.k === 'e') {
@@ -523,7 +768,7 @@
       /* 追い上げの段は一つの山場の前に二つまで */
       var nb = 0; for (var q = x.i - 1; q >= 0 && units[q].flow; q--) if (units[q].flow === 'build') nb++;
       if (nb >= 2) return false;
-      units.splice(x.i, 0, flowUnit(pickFrom(R, c2, S.usedText), 'build'));
+      units.splice(x.i, 0, flowUnit(pickFrom(R, fitCand(S, x.i, c2), S.usedText), 'build'));
       return true;
     }
     return false;
@@ -593,7 +838,7 @@
     var t = normNames(text, a, b), af = info.after ? normNames(info.after, a, b) : '';
     var sp = F.split(t, af);
     var S = {
-      units: sp.units, mode: mode, b: b, thick: !!info.thick, usedText: {}, play: info.play || null, lock: info.play && info.play.lock || null, posIdx: -1,
+      units: sp.units, mode: mode, a: a, b: b, thick: !!info.thick, usedText: {}, play: info.play || null, lock: info.play && info.play.lock || null, posIdx: -1,
       parts: (info.parts || []).map(function (p) { return { role: p.role, t: normNames(p.t, a, b) }; }).filter(function (p) { return p.t && p.t.length >= 8; }),
       R: rngOf(hashOf((a && a.name) + '|' + (b && b.name) + '|' + t.length + '|' + t.slice(0, 60)))
     };
@@ -607,12 +852,15 @@
     var markKeep = function () { S.units.forEach(function (u) { var tt = u.paras.join('\n\n'); u.keep = keepL.some(function (k) { return tt.indexOf(k) >= 0; }); }); };
     if (keepL.length) markKeep();
     S.climaxBefore = function (i) { for (var j = 0; j < i && j < S.units.length; j++) { var f = S.units[j].f || (S.units[j].f = feat(S.units[j], mode)); if (f.climax) return true; } return false; };
-    var before = F.check(S.units, mode, S.play), n0 = S.units.length, fixed = 0;
+    S.ext = extOf(a, b, sp.tail, mode); S.tailU = S.ext.tail;
+    var before = F.check(S.units, mode, S.play, S.ext), n0 = S.units.length, fixed = 0;
     var capped = capUnits(S);
     if (!before.v.length && !capped && !keepL.length && !(info.press && F.starter(S.units[0] ? S.units[0].paras.join('') : '') === 'b')) return { text: text, changed: false, before: before.v.length };
-    for (var it = 0; it < 60; it++) {
+    var TR = F.trace ? [] : null;
+    var runLoop = function (lim) {
+    for (var it = 0; it < lim; it++) {
       if (keepL.length) markKeep();
-      var ck = F.check(S.units, mode, S.play);
+      var ck = F.check(S.units, mode, S.play, S.ext);
       S.posIdx = ck.posIdx;
       if (!ck.v.length) break;
       S.posture = ck.st.posture;
@@ -622,24 +870,32 @@
         var x = ck.v[q];
         S.posture = x.from || null;
         done = fixOne(S, x);
+        if (TR) TR.push(x.k + (done ? '✓' : '✗') + ' ' + String(x.why).slice(0, 80));
       }
       if (!done) break;
       fixed++;
       if (it === 30) capUnits(S);
     }
+    };
+    runLoop(60);
     /* きっかけが攻めの主導を決める夜：受けから始める部品（夜の主導・能動性の型の主導の段）は外す */
     if (info.press) S.parts.slice().forEach(function (p) { if ((p.role === 'lead' || p.role === 'ini-lead') && cutPart(S.units, p.t)) S.parts.splice(S.parts.indexOf(p), 1); });
     /* きっかけが攻めの主導を決める夜（嫉妬・強引・愛憎・攻めのサド／意地悪）に、頭の段で受けが先に手を出していたら、攻めが迫る段を頭に置く */
     if (info.press && S.units.length && F.starter(S.units[0].paras.join('')) === 'b') {
       var PR = TX().PRESS, pl0 = PR && (PR[info.press] || PR.rough);
-      if (pl0 && pl0[mode]) { S.units.unshift(flowUnit(pickFrom(S.R, pl0[mode], S.usedText), 'press')); fixed++; }
+      /* 場面の場所（最初に出る場所の語）と違う場所の文は選ばない（2026-11-04） */
+      var pl1 = null; S.units.some(function (u) { var q0 = placeOf(narrOf(u.paras.join(''))); if (q0.length) { pl1 = q0[0].k; return true; } return false; });
+      var prc = pl0 && pl0[mode] ? pl0[mode].filter(function (x) { return placeOf(narrOf(x)).every(function (q1) { return !pl1 || q1.k === pl1; }); }) : [];
+      if (pl0 && pl0[mode]) { S.units.unshift(flowUnit(pickFrom(S.R, prc.length ? prc : pl0[mode], S.usedText), 'press')); fixed++; runLoop(30); }
     }
     /* 段を外したり動かしたりして、指を入れた段落のすぐ次が挿入になったら、指を抜く一文を足す（thick-sex.js の T.fingerOut と同じ文） */
     var ps = [].concat.apply([], S.units.map(function (u) { return u.paras; }));
     for (var pi = 0; pi < ps.length - 1; pi++) {
       var mk2 = function (x) { return narrOf(x).replace(/\{(?![ab]\})[^{}]{1,6}\}/g, '〇〇'); };
       var n0 = mk2(ps[pi]);
-      if (!FIN.test(n0) || FOUT.test(n0)) continue;
+      /* 髪・頬などに指を差し入れる文は数えない（指を入れていないのに「指を抜く」一文が付いていた。2026-11-04） */
+      var n0h = n0.replace(/髪に指[^。]*/g, '');
+      if (!(FIN.test(n0h) || ST2.fin.test(n0h)) || FOUT.test(n0)) continue;
       var nj = pi + 1; while (nj < ps.length && speechPara(ps[nj])) nj++;
       if (nj >= ps.length) break;
       var n1 = mk2(ps[nj]);
@@ -647,10 +903,19 @@
       var FO = HK.ThickSex && HK.ThickSex.FINGER_OUT, fl = FO ? FO[info.ero ? 'ero' : 'novel'] : ['{a}は濡れた指を、ゆっくりと引き抜いた。'];
       ps[pi] = ps[pi] + fl[n0.length % fl.length];
     }
-    var out = ps.concat(sp.tail).join('\n\n');
+    if (TR) TR.push('END ' + F.check(S.units, mode, S.play, S.ext).v.map(function (x) { return x.k + ':' + String(x.why).slice(0, 60); }).join(' / '));
+    var out = ps.concat(S.tailU ? S.tailU.paras : sp.tail).join('\n\n');
     if (!hadPh) out = out.replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name);
-    if (F.log) F.log.push({ a: a.name, b: b.name, mode: mode, before: before.v.length, after: F.check(S.units, mode).v.length, units0: n0, units1: S.units.length });
-    return { text: out, changed: true, before: before.v.length };
+    if (F.log) F.log.push({ a: a.name, b: b.name, mode: mode, before: before.v.length, after: F.check(S.units, mode, S.play, S.ext).v.length, units0: n0, units1: S.units.length });
+    /* 直したあとの本文を段に分け直して（点検と同じ見方で）もう一度見る。段の切れ目が変わって残った食い違いがあれば、もう一回だけ直す */
+    if (!(info._depth >= 2)) {
+      var ck2 = F.check(F.split(normNames(out, a, b), af).units, mode, S.play, extOf(a, b, F.split(normNames(out, a, b), af).tail, mode));
+      if (ck2.v.length) {
+        var fx2 = F.fix(out, Object.assign({}, info, { _depth: (info._depth || 0) + 1 }));
+        if (fx2.changed) return { text: fx2.text, changed: true, before: before.v.length, trace: TR && fx2.trace ? TR.concat(['── もう一回'], fx2.trace) : TR };
+      }
+    }
+    return { text: out, changed: true, before: before.v.length, trace: TR };
   };
 
   /* ---------- 夜の主導は傾向（その夜に受けから始めるか） ---------- */
@@ -739,6 +1004,7 @@
         var t1 = pl ? pl.text : r.text;
         var fx = F.fix(t1, { a: a, b: b, mode: md, after: opt.after || '', thick: thickOf(opt), parts: parts, press: pressK, ero: obj === HK.ThickEro, play: pl && pl.play, keep: pl && pl.keep });
         r.text = fx.changed ? fx.text : t1;
+        if (fx.trace) r._trace = fx.trace;
         r.flow = { play: pl ? { entry: pl.play.entry, focus: pl.play.focus, prop: pl.play.prop, pos: pl.play.pos, finish: pl.play.finish, scene: pl.play.scene || '', posT: pl.play.posT, lock: pl.play.lock, act: pl.play.act || '' } : null, lead: lt, why: whyL, parts: parts.map(function (p) { return p.role; }), partT: parts.filter(function (p) { return p.role === 'lead' || p.role === 'ini-lead'; }).map(function (p) { return { role: p.role, t: p.t }; }) };
         return r;
       } finally {

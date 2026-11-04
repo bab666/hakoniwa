@@ -10,6 +10,8 @@
      (e) 性感（heat）が閾値の前の山場・焦らしの直後の山場
      (f) 同じ遊び（一回のシミュレーション）の中で、同じ住人に同じ導入の台詞（夜の主導 HK.PosLead・能動性の型の主導の段の台詞。直前 5 回以内）が出た／嫉妬のきっかけなのに受けから始まった
      (g) 似た役割の重ね：焦らしの段が 2 回以上（描写の長さ「厚く」は 3 回以上）、受けから始める主導の段が 2 回以上
+     (i)〜(n) 文ごとの状態（2026-11-04。HK.SexFlow.walk。呼ぶ側の事後の段も見る）：(i) 入れていない・抜いたあとの「抜かないまま」・入れていない指を抜く／(j) 目隠し中に見る・「こっちを見ろ」／
+         (k) 後ろからの体位のまま顔を合わせる／(l) 移る文なしに場所が変わる（山場まで）／(m) 別れの台詞のあとの会話・寄り添い／(n) 体の組に合わない語（男性器の無い人の男性器・女性どうしの男性器の語・受けが入れる側）
      (h) 型の矛盾（エッチの型 HK.Play。2026-11-03）：着衣の型なのに脱がせる、型の体位の段のあと（山場まで）に別の体位へ変える動き。型の内訳（入り方・主な責め・道具・体位・終わり方）も出す
    ほかに、段数（段＝地の文の段落と、それに続く台詞だけの段落）と段落数の分布、夜の主導の設定 × きっかけ ごとの始まり方の内訳（受けから／攻めから／どちらともなく）を出す。
    配役：pos-audit と同じ範囲（3 組＋男性どうし・態度 9 種が出る気質・夜の性格・受け攻めの指定・夜の主導）。audit-all.js の追加の配役パス（--extra=sexflow）からも呼べる */
@@ -55,9 +57,10 @@ const PASS = function* (HK, opt) {
 /* ---------- 判定 sexflow（ページの中）：opt = { why, raw } ---------- */
 const JUDGE = function (HK, opt) {
   const WHY = !!opt.why, F = HK.SexFlow;
-  const out = { dump: [], scenes: 0, v: { a: 0, b: 0, c: 0, d: 0, e: 0, f: 0, g: 0, h: 0 }, ex: { a: [], b: [], c: [], d: [], e: [], f: [], g: [], h: [] }, units: [], paras: [], start: {}, bySc: {}, noFlow: !F, play: { n: 0, none: 0, entry: {}, focus: {}, prop: {}, pos: {}, finish: {}, act: 0 } };
+  const out = { dump: [], scenes: 0, v: { a: 0, b: 0, c: 0, d: 0, e: 0, f: 0, g: 0, h: 0, i: 0, j: 0, k: 0, l: 0, m: 0, n: 0 }, ex: { a: [], b: [], c: [], d: [], e: [], f: [], g: [], h: [], i: [], j: [], k: [], l: [], m: [], n: [] }, units: [], paras: [], start: {}, bySc: {}, noFlow: !F, play: { n: 0, none: 0, entry: {}, focus: {}, prop: {}, pos: {}, finish: {}, act: 0 } };
   if (!F) return { accept() { return false; }, finish() { return out; } };
   F.off = !!opt.raw;
+  if (opt.dump) F.trace = true;
   /* 包みを入れ終えるため、一度だけ回してから、いちばん外側に取り込みの包みを置く */
   try { const sc = HK.SCEN_ORDER.filter(id => HK.SCENARIOS[id])[0]; HK.simulate({ scenId: sc, seed: 1, env: {}, chars: [{ name: 'イチ', gender: 'm', eg: {} }, { name: 'ニイ', gender: 'f', eg: {} }], perChar: [{ pick: {} }, { pick: {} }], ties: [] }); } catch (e) { /* 準備の回は数えない */ }
   let cur = null, depth = 0;
@@ -102,10 +105,10 @@ const JUDGE = function (HK, opt) {
         if (pl) { out.play.n++; ['entry', 'focus', 'prop', 'pos', 'finish'].forEach(k => { const v = pl[k] || '-'; out.play[k][v] = (out.play[k][v] || 0) + 1; }); if (pl.act && (String(x.text).indexOf(pl.act.slice(0, 30)) >= 0 || String(x.text).indexOf(pl.act.replace(/\{a\}/g, a.name).replace(/\{b\}/g, b.name).slice(0, 30)) >= 0)) out.play.act++; }
         else out.play.none++;
         out.scenes++; bs.n++;
-        if (opt.dump && out.dump.length < opt.dump) out.dump.push({ sc: run.sc + '#' + run.s, set: x.set, flow: x.r.flow || null, v: an.check.v.map(v => v.k + ':' + v.i + ':' + v.why), stages: an.check.stages, units: an.units.map(u => u.paras.join(' ⏎ ')) });
+        if (opt.dump && out.dump.length < opt.dump) out.dump.push({ sc: run.sc + '#' + run.s, set: x.set, flow: x.r.flow || null, trace: x.r._trace || null, mode: mode, aM: !!(HK.Pos && HK.Pos.hasM && HK.Pos.hasM(a)), bM: !!(HK.Pos && HK.Pos.hasM && HK.Pos.hasM(b)), v: an.check.v.map(v => v.k + ':' + v.i + ':' + v.why + (v.s ? '｜' + v.s : '')), stages: an.check.stages, units: an.units.map(u => u.paras.join(' ⏎ ')), tail: an.tail.join(' ⏎ ') });
         out.units.push(an.units.length + (an.tail.length ? 1 : 0));
         out.paras.push(String(x.text).split(/\n\n+/).length);
-        an.check.v.forEach(v => { bs.v++; const u = an.units[Math.min(v.i, an.units.length - 1)]; add(v.k, v.why, run.sc + '#' + run.s, u ? u.paras.join(' ') : ''); });
+        an.check.v.forEach(v => { bs.v++; const u = v.i >= an.units.length && an.tail.length ? { paras: an.tail } : an.units[Math.min(v.i, an.units.length - 1)]; add(v.k, v.why + (v.s ? '｜文：' + v.s.slice(0, 120) : ''), run.sc + '#' + run.s, u ? u.paras.join(' ') : ''); });
         /* 始まり方：夜の主導の部品が残っていれば受けから。なければ頭の段の主語 */
         const fl = x.r.flow || {}, roles = fl.parts || [];
         const kd = HK.Attr && HK.Attr.nightKind ? HK.Attr.nightKind(a, b) : '';
@@ -156,7 +159,7 @@ function dist(a) {
   const s = a.slice().sort((x, y) => x - y);
   return '最小 ' + s[0] + '・中央 ' + s[s.length >> 1] + '・最大 ' + s[s.length - 1] + '（13 以上 ' + s.filter(x => x >= 13).length + ' 件・20 以上 ' + s.filter(x => x >= 20).length + ' 件）';
 }
-const LABEL = { h: '型の矛盾（着衣なのに脱がせる・型の体位のあとに別の体位）', a: '段階の逆戻り', b: '体位の矛盾', c: '同じ台詞・動きの二度出し', d: '応答待ちのあとリアクション無し', e: '閾値前の山場', f: '導入の台詞の二度出し・嫉妬で受けから', g: '似た役割の重ね（焦らし・主導の段）' };
+const LABEL = { h: '型の矛盾（着衣なのに脱がせる・型の体位のあとに別の体位）', a: '段階の逆戻り', b: '体位の矛盾', c: '同じ台詞・動きの二度出し', d: '応答待ちのあとリアクション無し', e: '閾値前の山場', f: '導入の台詞の二度出し・嫉妬で受けから', g: '似た役割の重ね（焦らし・主導の段）', i: '挿入の状態の矛盾（抜いたあとの「抜かないまま」・入れていない指を抜く）', j: '目隠し中に見る・「こっちを見ろ」', k: '後ろからの体位のまま顔を合わせる', l: '場所の飛び（移る文なしに場所が変わる）', m: '終わりの台詞のあとの会話・寄り添い', n: '体の組に合わない語（男性器の無い人の男性器・受けが入れる側）' };
 function print(r, errors, o) {
   if (!r) { console.log('結果なし'); return; }
   if (r.noFlow) console.log('（HK.SexFlow がありません：数えるだけ）');
