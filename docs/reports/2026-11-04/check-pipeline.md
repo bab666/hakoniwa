@@ -202,6 +202,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | 単独・乱順の読み込み（chunk-regress）（`chunk-regress`） | heavy | `order` `buildtool` | build | 1 | 450 秒 | 両ビルド |
 | かたまりの境目（chunk-audit）（`chunk-audit`） | heavy | `order` `buildtool` | build | 1 | 60 秒 | 両ビルド |
 | 口調の辞書の成績（dict-regress。参考）（`dict-regress`） | heavy | `dict` | — | 1 | 10 秒 | 終了コードに入れない（成績を出すだけ） |
+| デートの舞台と段（date-setting-audit）（`date-setting`） | pre | `pack` | — | 0 | 1 秒 | set-b のデートの日々を変えたとき。行き先 52 か所 × 汎用の出来事の舞台の矛盾・段の付いていない行（ページを開かない） |
 | パックの出来事の一覧（event-catalog --pack）（`pack-catalog`） | build | `pack` | — | 1 | 3 秒 | 作り直してから catalog-check |
 | パックの試しのフォルダ（pack-site）（`pack-site`） | build | `pack` | build | 1 | 40 秒 | 本体を写してパックを組み立てる（キャッシュの中に作る） |
 | パックの点検の一式（audit-all・HK_ONLY_SCEN）（`pack-audit`） | heavy | `pack` | pack-site | 2 | 150 秒 | 変えた部屋だけ（共有の部品 kit などを変えたらそのパックの全部屋）。長い場面を変えたら --extra=sexflow も |

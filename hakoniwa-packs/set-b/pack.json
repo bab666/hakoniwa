@@ -129,14 +129,18 @@
         "js/date-places-x10.js",
         "js/date-places-x11.js",
         "js/date-places-x12.js",
+        "js/date-phase.js",
+        "js/date-setting.js",
         "js/date-text-a.js",
         "js/date-text-b.js",
         "js/date-text-c.js",
         "js/date-text-d.js",
         "js/date-text-e.js",
+        "js/date-text-f.js",
         "js/date-tone.js",
         "js/date.js",
         "js/date-r18-text.js",
+        "js/date-r18-yoin-text.js",
         "js/date-r18.js"
       ]
     }

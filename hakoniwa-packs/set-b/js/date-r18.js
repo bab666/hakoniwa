@@ -12,6 +12,9 @@
 /* @event scen=set-b-date id=dt_long_ouchi cat=romance tie=- tags=night label=デートの余韻のまま玄関で始まる夜 */
 /* @event scen=set-b-date id=dt_long_car cat=romance tie=- tags=night label=夜景の見える駐車場の車の中で */
 /* @event scen=set-b-date id=dt_long_yado cat=romance tie=- tags=night label=旅館の布団と浴衣で過ごす旅先の夜 */
+/* @event scen=set-b-date id=dt_yoin_iri cat=romance tie=- tags=night label=デートの余韻のまま始まる夜（観覧車・映画・海など） */
+/* @event scen=set-b-date id=dt_yoin_naka cat=romance tie=- tags=night label=夜の最中にデートの一日を思い出す一幕 */
+/* @event scen=set-b-date id=dt_yoin_owari cat=romance tie=- tags=night label=デートの夜の終わり方（次の約束・写真・窓の灯り） */
 /* @event scen=set-b-date id=dt_form_fade cat=romance tie=- tags=night label=夜の場面・ほのめかす（暗転と翌朝） */
 /* @event scen=set-b-date id=dt_form_short cat=romance tie=- tags=night label=夜の場面・短い場面（デートの夜） */
 /* @event scen=set-b-date id=dt_form_mid cat=romance tie=- tags=night label=夜の場面・中くらいの場面（反応と山場） */
@@ -24,7 +27,10 @@
        エッチの場面を出したら true。場面の直前に必ず「きっかけ」の段（記録の一件。理由の欄は「きっかけ：…」、e.tag＝'きっかけ'）：その日のデートの余韻・性欲・関係から、言い出した人の夜の態度9種の台詞
      ・恋愛感情の有無では止めない（本体の決まり）。恋人どうしでない二人は起こりやすさを少し下げる（不仲・敵対の二人は、喧嘩で途中で帰る日がある分だけ起こりにくい）
      ・長さ・山場・喘ぎは共通の部品 HK.PairR18（formOf・scene）。長い場面は、この部屋の専用の長い場面（HK.Play.addScene：ラブホ・お家の玄関・車の中・旅先の宿）が選ばれやすい
-     ・DR.heatTail(ctx, 攻め, 受け, 場所)：デート中の人目を盗んだキスのあとに足す、触れ合いの一文（R18版だけ。体の関係にしてよい二人）
+     ・DR.heatTail(ctx, 攻め, 受け, 場所, 舞台)：デート中の人目を盗んだキスのあとに足す、触れ合いの一文（R18版だけ。体の関係にしてよい二人）
+     ・デートならではの夜（2026-11-04。不具合リスト 1104 の 11。文は date-r18-yoin-text.js）：その日のスポットの余韻 yo（観覧車・映画・海・湯上がり・夜景・はしゃいだ・買い物）で、
+       きっかけの一文（LEAD_YO）・入り方（PLAY の yo の行が選ばれやすい）・長い場面の始まり（OPEN_YO）・最中の一幕（NAKA＋受けの態度9種の一言。短い・中くらいの場面）・
+       終わり方（OWARI＋受けの態度9種の一言。ほのめかす以外）が変わる。一回の遊びで同じ文を二度出さない（S.used）
    文は date-r18-text.js（HK.DateR18Text）。体の語は印。登場人物はすべて成人として扱う */
 (function () {
   'use strict';
@@ -65,14 +71,57 @@
   }
   DR.can = function (ctx) { var S = ctx.dt; return !!(S && S.sex < S.lewdMax && pairOk(ctx)); };
   /* デート中の触れ合いの一文（人目を盗んだキスのあと）：半分ほど */
-  DR.heatTail = function (ctx, a, b, place) {
+  DR.heatTail = function (ctx, a, b, place, so) {
     var S = ctx.dt, T = TX();
     if (!S || S.lewdMax <= 0 || !pairOk(ctx) || ctx.rng() > 0.5) return '';
-    var H = T.HEAT || {}, t = DT.pickT(ctx, (H[place] || []).concat(H.all || []), a, b);
+    var H = T.HEAT || {}, t = DT.pickT(ctx, (H[place] || []).concat(H.all || []), a, b, false, so || null);
     if (!t) return '';
     S.cnt.heatR18 = (S.cnt.heatR18 || 0) + 1;
     return t;
   };
+  /* ---------- その日のスポットの余韻（yo）。最後にいた行き先ほど強く、最後のデートの観覧車の山場も ---------- */
+  var YO_ID = { eiga: 'eiga', gekijo: 'eiga', planetarium: 'eiga', umi: 'umi', okinawa: 'umi', onsen: 'onsen', kyoto: 'onsen', tenbo: 'yakei', dinner: 'yakei', illumi: 'yakei', hanabi: 'yakei', hotel: 'yakei' };
+  function yoOf(d) {
+    var o = [], has = function (x) { return (' ' + (d.flags || '') + ' ').indexOf(' ' + x + ' ') >= 0; };
+    if (has('kanran')) o.push('kanran');
+    if (YO_ID[d.id]) o.push(YO_ID[d.id]);
+    if (d.kind === 'fun') o.push('asobi');
+    if (d.kind === 'shop') o.push('kaimono');
+    return o;
+  }
+  function yoinOf(ctx, day) {
+    var S = ctx.dt, P = day && day.P, W = {};
+    if (!P) return '';
+    var last = P.slots.length ? P.slots[P.slots.length - 1].d : P.main;
+    P.slots.forEach(function (sl) { yoOf(sl.d).forEach(function (k, i) { W[k] = (W[k] || 0) + (sl.d === last ? 3 : 1) / (i + 1); }); });
+    if (day.last && S.climax === 'kanran') W.kanran = (W.kanran || 0) + 4;
+    var ks = Object.keys(W);
+    if (!ks.length || ctx.rng() < 0.15) return '';
+    return HK.weighted(ctx.rng, ks, function (k) { return W[k]; });
+  }
+  DR.yoinOf = yoinOf;
+  /* 表の行から、余韻に合う行（yo が合う行を重く、合わない余韻の行は使わない） */
+  function rowPick(ctx, rows, yo) {
+    var ok = (rows || []).filter(function (r) { return !r.yo || r.yo.split(' ').indexOf(yo) >= 0; });
+    if (!ok.length) return null;
+    return HK.weighted(ctx.rng, ok, function (r) { return r.yo ? 4 : 1; });
+  }
+  /* 最中の一幕と受けの一言、終わり方と受けの一言（{a}＝攻め、{b}＝受け。名前は場面の組み立てで当てる） */
+  /* 場面の部品は {date} を知らないので、先に「デート」「お出かけ」にする */
+  function dw(ctx, t) { return String(t).split('{date}').join(ctx.dt && ctx.dt.dword || 'デート'); }
+  function nakaOf(ctx, yo, a, b, sh) {
+    var T = TX(), r = rowPick(ctx, T.NAKA_ROWS, yo); if (!r) return null;
+    var t = DT.pickT(ctx, ((T.NAKA || {})[r.k] || {})[sh], a, b); if (!t) return null;
+    var sy = DT.pickT(ctx, (T.NAKA_SAY || {})[PR.att(b, a)] || (T.NAKA_SAY || {}).gentle, a, b) || '';
+    return { k: r.k, name: r.name, text: dw(ctx, t + (sy ? '\n\n' + sy : '')) };
+  }
+  function owariOf(ctx, yo, a, b, sh) {
+    var T = TX(), r = rowPick(ctx, T.OWARI_ROWS, yo); if (!r) return null;
+    var t = DT.pickT(ctx, ((T.OWARI || {})[r.k] || {})[sh], a, b); if (!t) return null;
+    var sy = DT.pickT(ctx, (T.OWARI_SAY || {})[PR.att(b, a)] || (T.OWARI_SAY || {}).gentle, a, b) || '';
+    return { k: r.k, name: r.name, text: dw(ctx, t + sy) };
+  }
+
   /* 部屋の専用の長い場面（HK.Play.addScene）を選ぶための、今夜の分かれ道 */
   function curBr(ctx) { return ctx && ctx.dt && ctx.dt.curBr || ''; }
   DR.night = function (ctx, br, day, last) {
@@ -95,6 +144,9 @@
     var AV = HK.Avoid;
     if (AV && AV.of && AV.of(ctx, x, y)) { if (AV.of(ctx, y, x)) return false; var sw = x; x = y; y = sw; }
     var L0 = DT.pickT(ctx, (T.LEAD || {})[entry], x, y) || DT.pickT(ctx, (T.LEAD || {})[entry], x, y, true);
+    /* その日のスポットの余韻（観覧車のあと・映画のあと・海のあと…）の一文 */
+    var yo = br === 'car' ? '' : yoinOf(ctx, day), ly = yo && L0 ? DT.pickT(ctx, (T.LEAD_YO || {})[yo], x, y) : '';
+    if (ly) L0 += ly;
     /* 初めてのお泊まりをラブホで：ホテルのきっかけに、初めての夜の一文を足す */
     if (first && br === 'hotel' && L0) L0 += DT.pickT(ctx, T.FIRST_ADD, x, y, true) || '';
     var FE = T.FEEL || {}, fe = DT.pickT(ctx, FE[PR.att(x, y)] || FE.gentle, x, y) || DT.pickT(ctx, FE.gentle, x, y, true);
@@ -103,27 +155,45 @@
     var dest = day.P && day.P.main ? day.P.main.name : '';
     var lt = DT.fill(ctx, L0 + (fe || '') + (fa || ''), x, y, { dest: dest });
     var lcat = S.love && (!ctx.romanceOk || ctx.romanceOk([x, y], false)) ? 'romance' : 'bond';
-    var le = ctx.say({ kind: 'event', cat: lcat, actors: [x, y], text: lt, why: 'きっかけ：' + (first ? ENTRY.first + (br === 'hotel' ? '・ラブホ' : '') : ENTRY[entry]) + '（' + x.name + 'から・' + (dest ? dest + 'の' : '') + (S.love ? 'デートの余韻' : 'お出かけのあと') + '）', mag: 0 });
+    var le = ctx.say({ kind: 'event', cat: lcat, actors: [x, y], text: lt, why: 'きっかけ：' + (first ? ENTRY.first + (br === 'hotel' ? '・ラブホ' : '') : ENTRY[entry]) + '（' + x.name + 'から・' + (dest ? dest + 'の' : '') + (S.love ? 'デートの余韻' : 'お出かけのあと') + (yo && T.YO_NAME ? '・' + T.YO_NAME[yo] : '') + '）', mag: 0 });
     if (le) le.tag = 'きっかけ';
     /* 2. 場面 */
     var lv = LV ? LV.lv(env) : 'mid', ero = !!(LV && LV.ero(env) && HK.ThickEro), nogen = !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b));
     var form = PR.formOf(ctx, S, env, lv, nogen, last || S.sex + 1 >= S.lewdMax);
     SRC.R = { BOTTOM: T.BOTTOM_ROWS, TOP: T.TOP_ROWS };
-    var rows = T.PLAY_ROWS, play = J.pick(ctx, 'dtplay', rows, function (r) { return !r.br || r.br.indexOf(br) >= 0 ? 1 : 0; }) || rows[0], pi = rows.indexOf(play);
+    /* 入り方：その日の余韻に合う行（yo）が選ばれやすい。合わない余韻の行は使わない */
+    var rows = T.PLAY_ROWS, play = J.pick(ctx, 'dtplay', rows, function (r) { if (r.br && r.br.indexOf(br) < 0) return 0; return r.yo ? (r.yo === yo ? 5 : 0) : 1; }) || rows[0], pi = rows.indexOf(play);
+    /* デートならではの夜：入り方の本文に最中の一幕を続け、事後を終わり方にする（文はこの夜のために選んで、場面の部品に渡す） */
+    var src = SRC, naka = null, owari = null, Tx2 = null, iri = '';
+    if (form !== 'fade') {
+      Tx2 = Object.create(T);
+      var pr0 = T.PLAY[pi] || {}, pl0 = (form === 'short' || form === 'mid') && !(form === 'short' && ero) && !nogen ? DT.pickT(ctx, pr0[sh] || pr0.all, a, b) : '';
+      if (pl0 && ctx.rng() < 0.75) naka = nakaOf(ctx, yo, a, b, sh);
+      if (pl0) { var P2 = T.PLAY.slice(), o2 = {}; o2[sh] = [pl0 + (naka ? '\n\n' + naka.text : '')]; P2[pi] = o2; Tx2.PLAY = P2; }
+      if (ctx.rng() < 0.7) owari = owariOf(ctx, yo, a, b, sh);
+      if (owari) Tx2.AFTER = [owari.text];
+      var oy = form === 'long' && yo && ctx.rng() < 0.7 ? DT.pickT(ctx, (T.OPEN_YO || {})[yo], a, b) : '';
+      src = Object.assign({}, SRC, { TX: function () { return Tx2; }, MO: oy ? function () { var m = SRC.MO(); m.OPEN = [oy]; return m; } : SRC.MO });
+      /* 入り方として出たもの（短い・中くらい：余韻の行の本文／長い：余韻の始まり） */
+      iri = play && play.yo && pl0 ? play.k : oy && T.YO_NAME ? T.YO_NAME[yo] + 'の始まり' : '';
+    }
     CUR = ctx; S.curBr = br;
     var full;
-    try { full = PR.scene(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: pi, afi: 0, jealTop: !!day.jeal && x === a, leadB: x === b, entry: entry, resume: false }, SRC); }
+    try { full = PR.scene(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: pi, afi: 0, jealTop: !!day.jeal && x === a, leadB: x === b, entry: entry, resume: false }, src); }
     finally { S.curBr = ''; }
     form = full.form;
     full.text = dedupe(full.text, a, b);
     remember(ctx, full.text, [T.OPEN, T.FADE], a, b);
-    var e = ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: full.text, why: 'デートの日々：夜（' + FORM[form] + '・' + (first ? ENTRY.first : ENTRY[entry]) + '）', sex: true, lewd: form !== 'fade',
+    var e = ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: full.text, why: 'デートの日々：夜（' + FORM[form] + '・' + (first ? ENTRY.first : ENTRY[entry]) + (iri ? '・入り方：' + iri : '') + (naka ? '・最中：' + naka.name : '') + (owari ? '・終わり方：' + owari.name : '') + '）', sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
     if (!e) { if (le) { var L = ctx.log, i = L.indexOf(le); if (i >= 0) L.splice(i, 1); } return false; }
     S.sex++;
     if (form === 'long') S.longN = (S.longN || 0) + 1;
     S.forms[form] = (S.forms[form] || 0) + 1;
     S.entries[first ? 'first' : entry] = (S.entries[first ? 'first' : entry] || 0) + 1;
+    if (iri) S.cnt['iri_' + yo] = (S.cnt['iri_' + yo] || 0) + 1;
+    if (naka) S.cnt['naka_' + naka.k] = (S.cnt['naka_' + naka.k] || 0) + 1;
+    if (owari) S.cnt['owari_' + owari.k] = (S.cnt['owari_' + owari.k] || 0) + 1;
     return true;
   };
 
