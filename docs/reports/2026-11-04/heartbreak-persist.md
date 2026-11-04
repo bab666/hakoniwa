@@ -108,7 +108,7 @@
 
 - 両ビルドで build.js、catalog-check 0 件（足した出来事 hp_stay・hp_again を一覧に追加）
 - base-lint：問題 9（既知の 9 件のまま）
-- audit-all `--extra=group,relcons,name`：orient・pos・state・loveflag・seg・qa・misc・relcons・name・topics はすべて 0 件、group の嫉妬の割合 42〜44％（変える前と同じくらい）。**名前の呼びかけ（call）だけ 0 にならない**（R18版 short 2・全年齢モード short 1・全年齢版 reply 1）。どれもオメガバースの回の、もとからある文（関係の口調の挨拶「〇〇さん、ごきげんよう」・発情期のモブの場面の「〇〇、こっちに来て！」・火照り期の事後の一言・強気の「思ったよりやるじゃない」の二人称の置き換え）で、断られた人の出来事が増えて回の流れが変わり、点検の見本に当たるようになったもの。変える前の版では同じ点検が 0 件。文の持ち主（口調の書き下ろし・R18 の合意のない場面）が別の担当なので、ここでは直していない
+- audit-all `--extra=group,relcons,name`：orient・pos・state・loveflag・seg・qa・misc・relcons・name・topics はすべて 0 件、group の嫉妬の割合 42〜44％（変える前と同じくらい）。名前の呼びかけ（call）も 0 件。最初の版ではオメガバースの回の流れが変わり、もとからある 4 つの文（関係の口調の挨拶「〇〇さん、ごきげんよう」・発情期のモブの場面の「〇〇、こっちに来て！」・事後の一言「……お前、ずるいな」・強気の「……お前、思ったよりやるな」）が点検に当たったので、名前の呼びかけを外す・二人称を主語の「あなたは」にする形に直し、その文を鍵にした口調の書き下ろし（tone-fix・tone-fix-g1・tone-fix-g5・tone-brush5・tone-darui・voice-override・voice-override-rows の 10 行）も直した
 - tone-feel（既定・`--base`）：全口調 ◯。基準より悪化と出る 6 口調（aniki・usan・kansai・hero・gyaru・chara）は変える前の版でも同じ数字で出る（基準の json が古い）
 - regress（r18・safe・全年齢版）：指紋が変わるのは 出られない部屋・クラスメイト・無人島・オメガバース だけ。`HK.HeartP.reject` を無効にして新しい出来事を外すと、全箱庭の指紋が変える前と一致する（＝変わるのは告白で断られた回だけ）
 - chunk-audit 0 件（両ビルド）、chunk-regress 0 件
