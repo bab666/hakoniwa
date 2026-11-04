@@ -39,9 +39,17 @@
     '結腸': { nd: '結腸／最奥', ns: '奥の奥', nb: '奥の奥', ed: '結腸／奥の奥', es: '結腸', eb: '奥の奥', m: 'S状結腸' },
     '股間': { nd: '股間', ns: '脚の間／股間', nb: '脚の間', ed: '股間', es: '股間', eb: '股', m: '陰部' }
   };
+  /* 女性器のある人の {尻}・{後ろ}：「ケツ」系の語を使わない列（濃い作風でも「尻」「尻の穴」まで。2026-11-04 の利用者の指摘「女性相手だとお尻表記に」）。
+     ここにない列は元の表のまま（元の表でケツ系の語があるのは男性向けの直接の列 ed だけ） */
+  var TF = {
+    '尻': { ed: '尻／お尻' },
+    '後ろ': { ed: 'アナル／尻の穴' }
+  };
   var KEYS = Object.keys(T);
   var TABLE = {};
   KEYS.forEach(function (k) { TABLE[k] = {}; Object.keys(T[k]).forEach(function (c) { TABLE[k][c] = T[k][c].split('／'); }); });
+  var TABLE_F = {};
+  Object.keys(TF).forEach(function (k) { TABLE_F[k] = {}; Object.keys(TF[k]).forEach(function (c) { TABLE_F[k][c] = TF[k][c].split('／'); }); });
   var RE = new RegExp('\\{(' + KEYS.join('|') + ')\\}', 'g');
   var MARK = '⁤';
   /* 台詞の態度 → 列（n＝小説調の列。e＝男性向けの列） */
@@ -137,10 +145,19 @@
     return cols[0] && cols.every(function (x) { return x === cols[0]; }) ? { col: cols[0] } : null;
   }
   /* 一語を選ぶ。同じ文の同じ印（同じ列）は同じ語。候補が複数なら、まだ使っていない語から */
-  function pick(key, col, ctx, seedStr) {
-    var memoK = col + '|' + key;
+  /* {尻}・{後ろ} の持ち主が女性器のある人か（2026-11-04）。持ち主が分かればその人。分からなければ、その場に女性器のある人で
+     自分で「攻め」を選んでいない人（受けに回りうる女性）がいれば、女性の体として扱う（台詞で女性の相手に「ケツ」と言わないため）。
+     その場が男性の体の人だけ・女性が攻めの人だけなら、今までどおり作風の語（男性の受けは「ケツ」も出る） */
+  function femButt(key, c, ctx) {
+    if (!TABLE_F[key]) return false;
+    if (c) return hasF(c);
+    var Q = P();
+    return !!(ctx.here && ctx.here.some(function (h) { return hasF(h) && !(Q && Q.hardTop ? Q.hardTop(h) : false); }));
+  }
+  function pick(key, col, ctx, seedStr, fem) {
+    var memoK = col + '|' + key + (fem ? '|F' : '');
     if (ctx.memo[memoK]) return ctx.memo[memoK];
-    var arr = (TABLE[key] && TABLE[key][col]) || TABLE[key].ns;
+    var arr = (fem && TABLE_F[key] && TABLE_F[key][col]) || (TABLE[key] && TABLE[key][col]) || TABLE[key].ns;
     var k0 = hash(seedStr + '|' + key + '|' + col) % arr.length, w = arr[k0], best = 1e9;
     for (var d = 0; d < arr.length; d++) {
       var t = arr[(k0 + d) % arr.length], u = ctx.used[t] || 0;
@@ -169,7 +186,7 @@
       if (key === '女性器' && c.partF) return c.partF;
     }
     var col = inQ ? quoteCol(who, ctx) : (X.MODE !== 'direct' && partCol(owner, ctx)) || narrCol(ctx);
-    return pick(key, col, ctx, seedStr);
+    return pick(key, col, ctx, seedStr, femButt(key, c, ctx));
   }
   /* V10：その場の住人の誰にも、その印の体がない */
   function checkV10(key, ctx, text) {
@@ -191,7 +208,7 @@
         if (!owner && X.MODE !== 'direct' && ctx.people.length) {
           var g = guessOwner(sent, off, key, ctx);
           if (g && g.one) owner = g.one;
-          else if (g && g.col) return pick(key, g.col, ctx, seed + sent.length + '|' + off);
+          else if (g && g.col) return pick(key, g.col, ctx, seed + sent.length + '|' + off, femButt(key, null, ctx));
         }
         return wordFor(key, ctx, null, owner, seed + sent.length + '|' + off, false);
       });

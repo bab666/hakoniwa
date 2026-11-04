@@ -27,6 +27,7 @@ const TAGS = {
   zen: 'r18 の印（全年齢版の中身が変わる）',
   order: '読み込み順・かたまりの振り分け',
   buildtool: 'build の道具',
+  butt: '体の語の印（lewd-words.js）・喘ぎ・R18 の文（お尻の語の点検）',
   doc: '文書・コメントだけ（何も回さない）'
 };
 
@@ -50,6 +51,7 @@ const FILE_RULES = [
   { re: PACKJS, tags: [] },
   /* js の名前（本体・パック共通） */
   { b: /^(?:ui|view)(?:[-.])|-view\.js$|^(?:packs-ui|event-catalog-ui|share-card|export-out|icons|save-folder|saves|history|notice|tips|tips-scen-[a-z]|egoquiz|ego-image|portable)\.js$/, tags: ['ui'], ui: true },
+  { b: /^lewd-words\.js$|-r18\.js$|-ero\d*\.js$|^moan-|r18-|^ero-/, tags: ['butt'] },
   { b: /^(?:tone-(?:dict-builtin|engine|registry|plus|keigo-unify)|lewd-words|lewd-unify|part-words|pair-name|sib-word|attr-yomi|safe)\.js$/, tags: ['dict', 'name', 'serifu', 'sim'] },
   { b: /^(?:voice|voice-seg|voice-tone|voice-fp|voice-more)\.js$/, tags: ['serifu', 'sim'] },
   { b: /^(?:tone-|voice-override)|-tone\.js$/, tags: ['tone', 'serifu'], toneOnly: true },
@@ -112,6 +114,7 @@ const CHECKS = [
   { id: 'sex-flow', name: '長い場面の流れ（sex-flow-audit）', stage: 'heavy', tags: ['thick'], after: ['build'], est: 10, weight: 1, tools: [TC + 'sex-flow-audit.js'], why: 'audit-all を全箱庭で回すときは --extra=sexflow に入れる（同じ関数。ページを開き直さない）' },
   { id: 'trio-shape', name: '三人の場面の形（trio-shape-audit）', stage: 'heavy', tags: ['trio'], after: ['build'], est: 10, weight: 1, tools: [TC + 'trio-shape-audit.js'], why: 'audit-all を全箱庭で回すときは --extra=trio に入れる' },
   { id: 'force-repeat', name: '無理やりの二回目・三回目（force-repeat-audit）', stage: 'heavy', tags: ['force'], after: ['build'], est: 10, weight: 1, tools: [TC + 'force-repeat-audit.js'], why: '' },
+  { id: 'butt-word', name: '女性の受けのお尻の語（butt-word-audit）', stage: 'heavy', tags: ['butt'], after: ['build'], est: 60, weight: 1, tools: [TC + 'butt-word-audit.js'], why: '受けが女性の体の組（男×女・女×女）の記録に「ケツ」が 0 件（男性の受けの件数は参考）。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN）' },
   { id: 'regress', name: '結果の指紋（regress。比べる相手のコミットと）', stage: 'heavy', tags: ['ui', 'order', 'buildtool'], after: ['build'], est: 15, weight: 1, tools: [BD + 'regress.js'], why: 'R18版・全年齢モード・全年齢版。比べる相手の指紋は、そのコミットのビルドを取り出して取る（キャッシュに残る）' },
   { id: 'chunk-regress', name: '単独・乱順の読み込み（chunk-regress）', stage: 'heavy', tags: ['order', 'buildtool'], after: ['build'], est: 450, weight: 1, tools: [BD + 'chunk-regress.js'], why: '両ビルド' },
   { id: 'chunk-audit', name: 'かたまりの境目（chunk-audit）', stage: 'heavy', tags: ['order', 'buildtool'], after: ['build'], est: 60, weight: 1, tools: [BD + 'chunk-audit.js'], why: '両ビルド' },

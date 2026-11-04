@@ -215,7 +215,7 @@ function classify(files) {
     }
     /* index.html：scripts:begin〜end（build が書く目録）の中だけの変更は作り直されたもの */
     if (/\/index\.html$/.test(p) && oldS != null && newS != null) {
-      const cut = s => s.replace(/<!-- scripts:begin -->[\s\S]*<!-- scripts:end -->/, '');
+      const cut = s => s.replace(/<!-- scripts:begin[\s\S]*<!-- scripts:end -->/, '');
       if (cut(oldS) === cut(newS)) { R.gen.push(p); return; }
     }
     if ((isMain || isPack) && !f.commentOnly) {
@@ -338,6 +338,8 @@ function decide(R) {
   });
   if (on('force') || toolOn('force-repeat')) add({ id: 'force-repeat', stage: 'heavy', label: CHECK['force-repeat'].name, why: O.all ? '--all' : why(['force']) || '道具を変えた', weight: 1 });
   else skip('force-repeat', '無理やりの部品を変えていない');
+  if (on('butt') || toolOn('butt-word')) add({ id: 'butt-word', stage: 'heavy', label: CHECK['butt-word'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['butt']) || '道具を変えた', scope: sScope, weight: 1 });
+  else skip('butt-word', '体の語の印・喘ぎ・R18 の文を変えていない');
   if (anyOn(['ui', 'order', 'buildtool']) || toolOn('regress')) ['r18', 'safe', 'zen'].forEach(m => add({ id: 'regress', stage: 'heavy', key: 'regress:' + m, label: CHECK.regress.name + '：' + ({ r18: 'R18版', safe: '全年齢モード', zen: '全年齢版' })[m], mode: m, why: O.all ? '--all' : why(['ui', 'order', 'buildtool']) || '道具を変えた', weight: 1 }));
   else skip('regress', '画面・読み込み順・build の道具を変えていない（結果が変わる変更は audit-all で見る）');
   ['chunk-regress', 'chunk-audit'].forEach(id => {
@@ -395,7 +397,7 @@ function manifestPart(b, scope) {
 function buildInputs(b) {
   const dir = path.join(ROOT, BUILDS[b]);
   const js = fs.readdirSync(path.join(dir, 'js')).filter(f => f !== 'event-catalog.js' && (f.endsWith('.js') || f === '_order.txt')).sort().map(f => BUILDS[b] + '/js/' + f);
-  const html = String(readOr(path.join(dir, 'index.html'), '')).replace(/<!-- scripts:begin -->[\s\S]*<!-- scripts:end -->/, '');
+  const html = String(readOr(path.join(dir, 'index.html'), '')).replace(/<!-- scripts:begin[\s\S]*<!-- scripts:end -->/, '');
   return sha(hashFiles(js) + sha(html) + hashFiles(toolsOf('build')) + hashFiles(fs.readdirSync(path.join(ROOT, 'hakoniwa-tools/build')).filter(f => /^build(?:-min|-manifest|-tone)?\.js$/.test(f)).map(f => 'hakoniwa-tools/build/' + f)));
 }
 function buildOutputs(b) {
@@ -426,6 +428,7 @@ function keyOf(t) {
     case 'tone-feel': inp = hashFiles(chunkFiles('full', t.scen.filter(id => manifest('full') && manifest('full').scen[id]))) + manifestPart('full', t.scen); break;
     case 'moan-tone': case 'sex-flow': case 'trio-shape': inp = hashFiles(chunkFiles('full', t.scope)) + manifestPart('full', t.scope); break;
     case 'force-repeat': inp = hashFiles(chunkFiles('full', 'all')); break;
+    case 'butt-word': inp = hashFiles(chunkFiles('full', t.scope)) + manifestPart('full', t.scope); break;
     case 'regress': { const b = t.mode === 'zen' ? 'zen' : 'full'; inp = hashFiles(chunkFiles(b, 'all')) + manifestPart(b, 'all') + (gitOk(['rev-parse', BASE_SHA + ':' + BUILDS[b]]) || ''); break; }
     case 'chunk-regress': case 'chunk-audit': inp = hashFiles(chunkFiles(t.b, 'all')) + String(readOr(path.join(ROOT, BUILDS[t.b], 'index.html'), '')); break;
     case 'dict-regress': inp = hashFiles(fs.readdirSync(path.join(ROOT, 'hakoniwa-full/js')).filter(f => /^(?:tone-|core|ego-desc|persona)/.test(f)).map(f => 'hakoniwa-full/js/' + f)); break;
@@ -540,6 +543,11 @@ const RUN = {
   'sex-flow': async (t) => { const r = await spawnLog(t, N, [TCD + 'sex-flow-audit.js', BUILDS.full, '24'].concat(t.scope === 'all' ? [] : [t.scope.join(',')])); return flowRes(r); },
   'trio-shape': async (t) => { const r = await spawnLog(t, N, [TCD + 'trio-shape-audit.js', BUILDS.full, '4'].concat(t.scope === 'all' ? [] : [t.scope.join(',')])); return trioRes(r); },
   'force-repeat': async (t) => { const r = await spawnLog(t, N, [TCD + 'force-repeat-audit.js', BUILDS.full]); return { rc: r.rc, n: r.rc ? null : 0, sum: lastLine(r.text), log: r.log }; },
+  'butt-word': async (t) => {
+    const r = await spawnLog(t, N, [TCD + 'butt-word-audit.js', BUILDS.full, '6'].concat(t.scope === 'all' ? [] : [t.scope.join(',')]));
+    const m = r.text.match(/\(a\) 受けが女性の体の組[^:]*: (\d+) 件/), mb = r.text.match(/\(b\) [^:]*: (\d+) 件/);
+    return { rc: r.rc, n: m ? +m[1] : null, sum: (m ? '女性の受けの「ケツ」' + m[1] + ' 件' : lastLine(r.text)) + (mb ? '・男性の受け（参考）' + mb[1] + ' 件' : ''), log: r.log };
+  },
   regress: async (t) => {
     const b = t.mode === 'zen' ? 'zen' : 'full', mode = t.mode === 'zen' ? 'r18' : t.mode;
     const run = async (dir, tag) => { const r = await spawnLog(Object.assign({}, t, { key: t.key + tag }), N, [BDD + 'regress.js', dir, '6', mode]); try { return JSON.parse(lastLine(r.text, /^\{/)); } catch (e) { return { err: lastLine(r.text), log: r.log }; } };

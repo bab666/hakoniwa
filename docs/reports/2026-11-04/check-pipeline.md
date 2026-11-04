@@ -130,6 +130,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `zen` | r18 の印（全年齢版の中身が変わる） |
 | `order` | 読み込み順・かたまりの振り分け |
 | `buildtool` | build の道具 |
+| `butt` | 体の語の印（lewd-words.js）・喘ぎ・R18 の文（お尻の語の点検） |
 | `doc` | 文書・コメントだけ（何も回さない） |
 
 | ファイルの場所・名前 | 付く印 |
@@ -145,6 +146,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `/^hakoniwa-(?:full\|zenrei)\/js\/[^/]+\.js$/` | `js` |
 | `/^hakoniwa-packs\/[^/_][^/]*\/js\/[^/]+\.js$/` | — |
 | `/^(?:ui\|view)(?:[-.])\|-view\.js$\|^(?:packs-ui\|event-catalog-ui\|share-card\|export-out\|icons\|save-folder\|saves\|history\|notice\|tips\|tips-scen-[a-z]\|egoquiz\|ego-image\|portable)\.js$/`（js の名前） | `ui`（画面：台詞の印を付けない） |
+| `/^lewd-words\.js$\|-r18\.js$\|-ero\d*\.js$\|^moan-\|r18-\|^ero-/`（js の名前） | `butt` |
 | `/^(?:tone-(?:dict-builtin\|engine\|registry\|plus\|keigo-unify)\|lewd-words\|lewd-unify\|part-words\|pair-name\|sib-word\|attr-yomi\|safe)\.js$/`（js の名前） | `dict` `name` `serifu` `sim` |
 | `/^(?:voice\|voice-seg\|voice-tone\|voice-fp\|voice-more)\.js$/`（js の名前） | `serifu` `sim` |
 | `/^(?:tone-\|voice-override)\|-tone\.js$/`（js の名前） | `tone` `serifu`（口調だけ：sim を付けない） |
@@ -192,6 +194,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | 長い場面の流れ（sex-flow-audit）（`sex-flow`） | heavy | `thick` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=sexflow に入れる（同じ関数。ページを開き直さない） |
 | 三人の場面の形（trio-shape-audit）（`trio-shape`） | heavy | `trio` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=trio に入れる |
 | 無理やりの二回目・三回目（force-repeat-audit）（`force-repeat`） | heavy | `force` | build | 1 | 10 秒 |  |
+| 女性の受けのお尻の語（butt-word-audit）（`butt-word`） | heavy | `butt` | build | 1 | 60 秒 | 受けが女性の体の組（男×女・女×女）の記録に「ケツ」が 0 件（男性の受けの件数は参考）。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN） |
 | 結果の指紋（regress。比べる相手のコミットと）（`regress`） | heavy | `ui` `order` `buildtool` | build | 1 | 15 秒 | R18版・全年齢モード・全年齢版。比べる相手の指紋は、そのコミットのビルドを取り出して取る（キャッシュに残る） |
 | 単独・乱順の読み込み（chunk-regress）（`chunk-regress`） | heavy | `order` `buildtool` | build | 1 | 450 秒 | 両ビルド |
 | かたまりの境目（chunk-audit）（`chunk-audit`） | heavy | `order` `buildtool` | build | 1 | 60 秒 | 両ビルド |

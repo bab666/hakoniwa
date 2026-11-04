@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.601ceaf44a.js",
+  "core": "core.f52426523d.js",
   "late": "late.3c4c5fde80.js",
   "pack-rel": "pack-rel.b97fcf9d08.js",
   "pack-sim": "pack-sim.8767994e6e.js",
@@ -15,7 +15,7 @@
   "scen-trial": "scen-trial.56e8c9b6d2.js",
   "scen-dungeon": "scen-dungeon.f784f5ffbe.js",
   "scen-massage": "scen-massage.ce635472f4.js",
-  "scen-hole": "scen-hole.b611919a0d.js",
+  "scen-hole": "scen-hole.677d58fc80.js",
   "scen-futari": "scen-futari.258d2b21dd.js",
   "scen-zombie": "scen-zombie.1c4d47e665.js",
   "scen-rpg": "scen-rpg.1be91741a9.js",
@@ -78,7 +78,7 @@
   "late": "late.3c4c5fde80.js",
   "pack-rel": "pack-rel.b97fcf9d08.js",
   "pack-sim": "pack-sim.8767994e6e.js",
-  "pack-lewd": "pack-lewd.2dbfca4a4a.js",
+  "pack-lewd": "pack-lewd.57e3cbecfb.js",
   "scen-goukon": "scen-goukon.a4555f4361.js",
   "scen-classroom": "scen-classroom.cb0129276c.js",
   "scen-island": "scen-island.aeeda08327.js",
@@ -329,8 +329,8 @@
    5933
   ],
   "js/lewd-words.js": [
-   13982,
-   5433
+   14502,
+   5560
   ],
   "js/part-words.js": [
    4129,
