@@ -392,7 +392,7 @@
       if (HK.HeartP && HK.HeartP.reject) HK.HeartP.reject(ctx, a, b, { k: p2 ? 'taken' : '', silent: true });
       ctx.mod2(a, b, { aff: -6, ten: 8, att: pf.rejCount >= 2 ? -15 : 0 }, { ten: 6 });
       ctx.stress(a, 14);
-      return { text: ctx.t(p2 ? '{a}は{b}に想いを伝えた。{b}は申し訳なさそうに、恋人のいる方の手を見せた。' : ctx.pick(['{a}は{b}に告白した。{b}は「ごめん｜すまない｜ごめんなさい」と言った。理由は言わなかった。', '{a}の告白に、{b}は長い沈黙のあと「友達のままがいい｜＝｜友達のままがいいです」と答えた。']), a, b), why: b.name + 'の気持ちはまだそこになかった', mag: 18 };
+      return { text: ctx.t(p2 ? '{a}は{b}に想いを伝えた。{b}は申し訳なさそうに、恋人のいる方の手を見せた。' : ctx.pick(['{a}は{b}に告白した。{b}は「ごめん｜すまない｜ごめんなさい」と言った。理由は言わなかった。', HK.Kin && HK.Kin.of(ctx, a, b) ? '{a}の告白に、{b}は長い沈黙のあと「' + HK.Kin.of(ctx, a, b) + 'のままがいい｜＝｜' + HK.Kin.of(ctx, a, b) + 'のままがいいです」と答えた。' : '{a}の告白に、{b}は長い沈黙のあと「友達のままがいい｜＝｜友達のままがいいです」と答えた。']), a, b), why: b.name + 'の気持ちはまだそこになかった', mag: 18 };
     }
   });
 

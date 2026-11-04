@@ -127,6 +127,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `name` | 言い換え（名前が壊れうる） |
 | `rel` | 関係を前提にした文・場面や結末を足した |
 | `pair` | 二人きりで出うる文（出られない部屋・執着・関係・共通の出来事。第三者を前提にした文） |
+| `kin` | 血縁の二人の札・文（親子・きょうだいを「友人」にしない。結末・関係図・共通の出来事） |
 | `event` | 出来事の印（@event・label・場面の書き方） |
 | `zen` | r18 の印（全年齢版の中身が変わる） |
 | `order` | 読み込み順・かたまりの振り分け |
@@ -161,6 +162,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `/kill\|grief\|deathgame\|corpse\|-bite\|-cure\|state-store\|^reset/`（js の名前） | `death` `sim` |
 | `/^(?:ties?\|tie-\|rel-\|room-know\|room-end\|room-awkward\|fam-kin\|endings\|epilogue\|attr-meet)\|-after\.js$\|-rel\.js$/`（js の名前） | `rel` `sim` |
 | `/^(?:scenario-room\|room-\|mini\|obsess\|ties?[-.]\|tie-\|common\|engine\|endings\|hate-kit\|sib-feud\|fwbcrush\|solo-room-jealous\|sex-lead\|cold-fear)/`（js の名前） | `pair` `sim` |
+| `/^(?:engine\|view-map\|ties\|tie-\|rel-\|mini\|hate-kit\|endings\|epilogue\|sib-word\|room-end\|fam-kin\|topics)\|-after\.js$\|-rel\.js$\|-bond\.js$/`（js の名前） | `kin` `sim` |
 | `/^hakoniwa-packs\/[^/_][^/]*\/pack\.json$/` | `sim` |
 | `/^hakoniwa-tools\//` | 道具（その道具の点検を回し直す） |
 
@@ -178,6 +180,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `/\bdead\b\|\.dead\|alive\|revive\|退場\|蘇\|死ん\|死体\|死ぬ/` | `death` |
 | `/relFilter\|relClass\|初対面\|初めまして\|連絡先\|付き合い始め\|出会/` | `rel` |
 | `/ほかの誰か\|他の誰か\|別の誰か\|みんな\|全員\|人目\|誰と話\|誰に笑いかけ\|周りの人\|noThird\|THIRD_RE/` | `pair` |
+| `/友人\|友達\|友だち\|親友\|HK\.Kin\b\|KIN_FR_TXT\|\.family\b/` | `kin` |
 | `/@event\|@labels\|@event-table\|@event-ok/` | `event` `rel` `js` |
 | `/r18:(?:begin\|end\|ok)/` | `zen` `js` |
 | `/\blabel\s*:\s*['"]\|\btag\s*:\s*['"]\|kind\s*:\s*['"]climax\|\bsex\s*:\s*true/`・ファイルの追加と削除 | `event` |
@@ -202,6 +205,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | 結果の指紋（regress。比べる相手のコミットと）（`regress`） | heavy | `ui` `order` `buildtool` | build | 1 | 15 秒 | R18版・全年齢モード・全年齢版。比べる相手の指紋は、そのコミットのビルドを取り出して取る（キャッシュに残る） |
 | 単独・乱順の読み込み（chunk-regress）（`chunk-regress`） | heavy | `order` `buildtool` | build | 1 | 450 秒 | 両ビルド |
 | かたまりの境目（chunk-audit）（`chunk-audit`） | heavy | `order` `buildtool` | build | 1 | 60 秒 | 両ビルド |
+| 血縁の二人の札（kin-label-audit）（`kin-label`） | heavy | `kin` | build | 1 | 45 秒 | 親子・きょうだい・親戚・双子・擬似親子の二人の結末・関係図の札（開始時・転機）・台詞・地の文に「友人・友達・親友」が 0 件（R18版・全年齢モード・全年齢版）。箱庭のかたまりだけ変えたときはその箱庭だけ |
 | 口調の辞書の成績（dict-regress。参考）（`dict-regress`） | heavy | `dict` | — | 1 | 10 秒 | 終了コードに入れない（成績を出すだけ） |
 | デートの舞台と段（date-setting-audit）（`date-setting`） | pre | `pack` | — | 0 | 1 秒 | set-b のデートの日々を変えたとき。行き先 52 か所 × 汎用の出来事の舞台の矛盾・段の付いていない行（ページを開かない） |
 | 看病の部屋の役と状態（kanbyo-role-audit）（`kanbyo-role`） | heavy | `pack` | pack-site | 1 | 30 秒 | set-b の看病の部屋を変えたとき。報告の 16 通りで、看る人・看られる人の取り違え・通いの行き来・熱の数字と言葉・関係の取り違え・三人目・結末のあとが 0 件 |
@@ -217,6 +221,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 - 既定の一式が要らず追加の配役パスだけで足りるのは、名前・言い換えの印だけが付いたとき（`--only-extra`）。r18 の印だけを変えたときは全年齢版だけ（`--modes=zen`）。
 - 点検の道具（hakoniwa-tools/ の js）を変えたら、その道具を使う点検を全範囲で回し直す（キャッシュの鍵にも道具の中身が入っている）。check.js・check/table.js・text-studio は何も回さない。
 - 文書（*.md・docs/）・CLAUDE.md は何も回さない。
+- 血縁の二人の札（kin-label。2026-11-04）：結末の分類・関係図・関係の出来事・共通の小さな出来事・結末の js か、友人の語・`HK.Kin` に触れた行で回す。親子・きょうだい・親戚・双子・擬似親子の二人を全箱庭で回し、結末・関係図の札・台詞・地の文に「友人・友達・親友」が 0 件で合格（`docs/reports/2026-11-04/kin-and-topics.md`）。
 
 ## 4. 重複の解消で変えた道具（判定は変えていない）
 

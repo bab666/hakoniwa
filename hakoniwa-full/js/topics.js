@@ -122,15 +122,41 @@
     var kinds = opts && opts.kinds, not = ((opts && opts.not) || []).slice();
     /* 二人で好き嫌いが割れる語は、意見が割れる場面（conflict）だけで使う */
     if (b && !(opts && opts.clash)) { var cf = T.conflict(x, a, b); if (cf) not.push(cf.word); }
-    var c = (b ? T.shared(x, a, b) : T.forChar(x, a)).filter(function (o) { return kindOk(o, kinds) && not.indexOf(o.word) < 0; });
+    var c = (b ? T.shared(x, a, b) : T.forChar(x, a)).filter(function (o) { return kindOk(o, kinds) && not.indexOf(o.word) < 0 && T.wordOk(x, o.word); });
     if (!c.length) return null;
     var r = recent(x), fresh = c.filter(function (o) { return r.indexOf(o.word) < 0; });
     if (fresh.length) c = fresh;
     var o = c.length === 1 ? c[0] : HK.weighted(x.rng, c, function (y) { return T.weight(y, a, b); });
     if (!o) return null;
-    if (!(opts && opts.peek)) remember(x, o.word);
+    if (!(opts && opts.peek)) { remember(x, o.word); if (x._tpCap) x._tpCap.got.push(o.word); }
     return out(o, a, b);
   };
+  /* ---------- 共通の上限（2026-11-04。不具合リスト 1104：同居生活で、関係の制限で暮らしの出来事が弾かれると話題が穴埋めになって 7 割を占めた） ----------
+     一回の遊びで話題の記録は出来事の T.CAP.share（12%）まで・一日（一区切り。箱庭の topicDay(x) があればその日）に T.CAP.perDay（1 件）まで・同じ語は二日続けて出さない。
+     箱庭ごとの上書き：箱庭の topicCap = { share, perDay }（話題を会話の種として多めに出したい箱庭の口。今は無し）。
+     数えるのは話題の出来事（tp_*）・雑談に添える一文・物語型のひと言。話題が無い回は何も数えない（乱数も引かない） */
+  T.CAP = { share: 0.12, perDay: 1 };
+  function capOf(x) { var o = x && x.scen && x.scen.topicCap; return { share: o && o.share != null ? o.share : T.CAP.share, perDay: o && o.perDay != null ? o.perDay : T.CAP.perDay }; }
+  function dayKey(x) { var sc = x && x.scen; if (sc && typeof sc.topicDay === 'function') return sc.topicDay(x); return typeof x.stepIndex === 'number' ? x.stepIndex : String(x.label || ''); }
+  function capSt(x) {
+    var s = x._tpCap || def(x, '_tpCap', { key: null, seq: 0, n: 0, all: 0, words: {}, len: 0, ev: 0, got: [] });
+    var k = dayKey(x);
+    if (k !== s.key) { s.key = k; s.seq++; s.n = 0; }
+    /* 出来事の数（記録の kind が event のもの。前回数えたところから足す） */
+    var L = x.log || EMPTY;
+    for (; s.len < L.length; s.len++) if (L[s.len] && L[s.len].kind === 'event') s.ev++;
+    return s;
+  }
+  T.capOk = function (x) {
+    if (!x || !T.has(x)) return false;
+    var s = capSt(x), c = capOf(x);
+    if (s.n >= c.perDay) return false;
+    return s.all + 1 <= Math.max(1, c.share * (s.ev + 1));
+  };
+  /* 前の日に出た語は使わない（同じ日の語は perDay が止める） */
+  T.wordOk = function (x, w) { var s = x && x._tpCap; if (!s) return true; var d = s.words[w]; return d == null || s.seq - d !== 1; };
+  T.capBegin = function (x) { capSt(x).got = []; };
+  T.capHit = function (x) { var s = capSt(x); s.n++; s.all++; s.got.forEach(function (w) { s.words[w] = s.seq; }); s.got = []; };
   T.pair2 = function (x, a, b) {
     var L = T.shared(x, a, b), seen = {};
     if (L.filter(function (o) { if (seen[o.word]) return false; seen[o.word] = 1; return true; }).length < 2) return null;
@@ -358,8 +384,8 @@
       when: function (ctx, a, b) { return !!b && T.has(ctx) && !!T.conflict(ctx, a, b); },
       w: function (ctx, a) { var q = tr(a); return T.RATE.clash * (0.4 + (q.cp || 0.5) * 0.6 + (q.fc || 0.5) * 0.3) * damp(ctx); },
       run: function (ctx, a, b) {
-        var c = T.conflict(ctx, a, b); if (!c) return null;
-        remember(ctx, c.word);
+        var c = T.conflict(ctx, a, b); if (!c || !T.wordOk(ctx, c.word)) return null;
+        remember(ctx, c.word); if (ctx._tpCap) ctx._tpCap.got.push(c.word);
         ctx.mod2(a, b, { ten: 6, aff: -1 }, { ten: 6, aff: -1 }); count(ctx);
         return { text: ctx.t(fill(ctx, ctx.pick(TX.clash), c), c.liker, c.hater), why: c.liker.name + 'の好きな' + c.word + 'が、' + c.hater.name + 'には苦手なもの（話題）', mag: 6 };
       }
@@ -428,6 +454,12 @@
       }
     }
   );
+  /* 共通の上限（T.capOk）を、話題の出来事すべての when と run に当てる */
+  EV.forEach(function (e) {
+    var w0 = e.when, r0 = e.run;
+    e.when = function (ctx) { return T.capOk(ctx) && (!w0 || w0.apply(this, arguments)); };
+    e.run = function (ctx) { T.capBegin(ctx); var r = r0.apply(this, arguments); if (r) T.capHit(ctx); return r; };
+  });
   HK.addTo(HK.COMMON, EV);
   T.EVENTS = EV;
 
@@ -436,9 +468,10 @@
   if (talk) HK.wrap(talk, 'run', function (prev) {
     return function (ctx, a, b) {
       var r = prev.apply(this, arguments);
-      if (r && typeof r.text === 'string' && b && T.has(ctx) && T.avail(ctx, a, b) && !bad(ctx, a, b) && ctx.rng() < T.RATE.talk * sk(ctx)) {
+      if (r && typeof r.text === 'string' && b && T.has(ctx) && T.avail(ctx, a, b) && !bad(ctx, a, b) && T.capOk(ctx) && ctx.rng() < T.RATE.talk * sk(ctx)) {
+        T.capBegin(ctx);
         var t = T.pick(ctx, a, b);
-        if (t) { r.text += ctx.t(fill(ctx, ctx.pick(TX.talk), t), a, b); r.why = (r.why ? r.why + '／' : '') + '話題：' + t.word; }
+        if (t) { r.text += ctx.t(fill(ctx, ctx.pick(TX.talk), t), a, b); r.why = (r.why ? r.why + '／' : '') + '話題：' + t.word; T.capHit(ctx); }
       }
       return r;
     };
@@ -449,7 +482,8 @@
   function hereS(p) { return !!p && (HK.State && HK.State.here ? HK.State.here(p) : p.alive !== false) && !p.bound && !p.locked && !p.mad && !p.away && !p.panic && !p.out && !p.taken; }
   function storyEmit(S, live) {
     var ST = HK.Story;
-    if (!ST || !S || !S.P || !T.has(S)) return false;
+    if (!ST || !S || !S.P || !T.has(S) || !T.capOk(S)) return false;
+    T.capBegin(S);
     var P = (live || S.P).filter(hereS);
     if (!P.length) return false;
     var a = P[Math.floor(S.rng() * P.length)], os = P.filter(function (p) { return p !== a && !bad(S, a, p) && T.avail(S, a, p); });
@@ -467,6 +501,7 @@
       text = names(fill(S, ST.pick(S, TX[SOLO_OF[t1.kind]]), t1), a); wy = why(a, null, t1);
     }
     ST.say(S, { actors: actors, tag: '話題', text: text, why: wy, mag: 3 });
+    T.capHit(S);
     return true;
   }
   T.storyEmit = storyEmit;

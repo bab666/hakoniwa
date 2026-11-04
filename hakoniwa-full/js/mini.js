@@ -232,6 +232,9 @@
      ・友達の前提（ずっと友達・友達のまま・友達に戻れない など）は、家族（親子・擬似親子・きょうだい・親族）か恋人どうしの組には使わない
      ・「付き合ってもいない」の前提は、恋人どうし（箱庭の中で恋人になった組・恋人の関係）には使わない */
   var FRIEND_TXT = /ずっとも|ずっと友|友達(?:じゃ|では|で|に|の)(?:いられ|戻れ|まま)|友人(?:では|で|に|の)(?:いられ|戻れ|まま)/, UNPAIRED_TXT = /付き合って(?:も)?いない|付き合ってない/;
+  /* 家族の組には、二人を友人として扱う文（「親友の{b}」「友人として」など）も使わない（2026-11-04 の利用者の指示：親子・血縁を友人にしない）。
+     第三者の友人（「友達に会う」「友人の声」など）は数えない（点検 kin-label-audit.js と同じ考え方） */
+  var KIN_FR_TXT = /親友(?!のよう|や幼馴染のよう)|友人(?!の(?:声|家|結婚)|に会|と会|と長電話|「)|友達(?!に会|と会|と遊|と飲|の家|から|に誘|にも教え|を一人)|友だち/;
   var FAM_TIES = ['parent', 'pparent', 'sibling', 'sibprot', 'sibclose', 'twin', 'sibbad', 'stepsib', 'relative'], LOVE_TIES = ['lover', 'spouse', 'mate', 'fiance', 'fated'];
   function tieAny(ctx, a, b, l) { return !!(HK.Ties && HK.Ties.has && ctx.ties) && l.some(function (t) { return HK.Ties.has(ctx, a, b, t); }); }
   /* 閉じ込められた部屋（出られない部屋）で、目覚めの区切りよりあとに「初めまして」「名前、なんて呼べばいい？」などの出会いの文を出さない（2026-10-31 担当RC。
@@ -243,6 +246,7 @@
     if (!b) return true;
     var fr = FRIEND_TXT.test(t), un = UNPAIRED_TXT.test(t);
     if (REL_ANY.test(t) && !relTextFits(relClass(ctx, a, b), t)) return false;
+    if (KIN_FR_TXT.test(t) && tieAny(ctx, a, b, FAM_TIES)) return false;
     if (!fr && !un) return true;
     var cp = !!ctx.pair(a, b).couple || tieAny(ctx, a, b, LOVE_TIES);
     if (un && cp) return false;
@@ -319,7 +323,7 @@
     var keep = ss.filter(function (x) { return x.indexOf('「') >= 0 || !BYSTAND_TXT.test(x); });
     return keep.length && keep.length < ss.length ? keep.join('') : t;
   }
-  HK.dropBystand = dropBystand; HK.BYSTAND_TXT = BYSTAND_TXT;
+  HK.dropBystand = dropBystand; HK.BYSTAND_TXT = BYSTAND_TXT; HK.KIN_FR_TXT = KIN_FR_TXT;
   HK.relClass = relClass; HK.relFilter = relFilter; HK.sealedLate = sealedLate; HK.relGroupFits = relGroupFits; HK.relTextFits = relTextFits;
   HK.REL_TXT = { FIRSTMEET: FIRSTMEET_TXT, MEET: MEET_TXT, WARM: WARM_TXT, KNOWN: KNOWN_TXT, NEWCP: NEWCP_TXT, HOME: HOME_TXT, OUT: OUT_TXT, WORKQ: WORKQ_TXT, ANY: REL_ANY };
   HK.relFits = relFits;
@@ -371,7 +375,7 @@
         if (HK.noThird && HK.noThird(ctx)) { var n3 = cand.filter(function (t) { return !HK.THIRD_RE.test(t); }); if (n3.length) cand = n3; else return null; }
         /* 年齢が決まっている二人なら、「同い年」「年上」の文は実際の年齢に合うものだけ */
         if (b && a.age && b.age) { var ag = cand.filter(function (t) { return ageFits(t, a, b); }); if (ag.length) cand = ag; else return null; }
-        if (b && cand.some(function (t) { return FRIEND_TXT.test(t) || UNPAIRED_TXT.test(t) || REL_ANY.test(t) || FIRSTMEET_TXT.test(t); })) { var rf = cand.filter(function (t) { return relFits(ctx, t, a, b); }); if (rf.length) cand = rf; else return null; }
+        if (b && cand.some(function (t) { return FRIEND_TXT.test(t) || KIN_FR_TXT.test(t) || UNPAIRED_TXT.test(t) || REL_ANY.test(t) || FIRSTMEET_TXT.test(t); })) { var rf = cand.filter(function (t) { return relFits(ctx, t, a, b); }); if (rf.length) cand = rf; else return null; }
         var text = ctx.t(ctx.pick(cand.length ? cand : list), a, b, c);
         /* 問いで終わる文には、いつも相手の答え（HK.TAILS_Q）を続ける。問いでない文は今までどおり（乱数の引き方も同じ） */
         var isQ = withTail && b ? askEnd(text, a, b) : '', ans = isQ === 'a' ? a : b;

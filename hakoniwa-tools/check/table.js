@@ -24,6 +24,7 @@ const TAGS = {
   name: '言い換え（名前が壊れうる）',
   rel: '関係を前提にした文・場面や結末を足した',
   pair: '二人きりで出うる文（出られない部屋・執着・関係・共通の出来事。第三者を前提にした文）',
+  kin: '血縁の二人の札・文（親子・きょうだいを「友人」にしない。結末・関係図・共通の出来事）',
   event: '出来事の印（@event・label・場面の書き方）',
   zen: 'r18 の印（全年齢版の中身が変わる）',
   order: '読み込み順・かたまりの振り分け',
@@ -67,6 +68,8 @@ const FILE_RULES = [
   { b: /^(?:ties?|tie-|rel-|room-know|room-end|room-awkward|fam-kin|endings|epilogue|attr-meet)|-after\.js$|-rel\.js$/, tags: ['rel', 'sim'] },
   /* 二人きりの文（2026-11-04）：出られない部屋・執着・関係・小イベント・共通の出来事・不仲の部品 */
   { b: /^(?:scenario-room|room-|mini|obsess|ties?[-.]|tie-|common|engine|endings|hate-kit|sib-feud|fwbcrush|solo-room-jealous|sex-lead|cold-fear)/, tags: ['pair', 'sim'] },
+  /* 血縁の二人（2026-11-04）：結末の分類・関係図・関係の出来事・共通の小さな出来事・結末 */
+  { b: /^(?:engine|view-map|ties|tie-|rel-|mini|hate-kit|endings|epilogue|sib-word|room-end|fam-kin|topics)|-after\.js$|-rel\.js$|-bond\.js$/, tags: ['kin', 'sim'] },
   /* 名前で決まらない js は、シミュレーションの結果が変わりうるものとして扱う（check.js が、ui・toneOnly のほかに当たらなかったときに sim を付ける） */
   /* パックの組み立ての決まり */
   { re: /^hakoniwa-packs\/[^/_][^/]*\/pack\.json$/, tags: ['sim'], packAll: true },
@@ -89,7 +92,9 @@ const LINE_RULES = [
   { re: /\bdead\b|\.dead|alive|revive|退場|蘇|死ん|死体|死ぬ/, tags: ['death'] },
   { re: /relFilter|relClass|初対面|初めまして|連絡先|付き合い始め|出会/, tags: ['rel'] },
   /* 第三者を前提にした言い回し（どの箱庭の文でも。出られない部屋の二人で出ないかを pair で見る） */
-  { re: /ほかの誰か|他の誰か|別の誰か|みんな|全員|人目|誰と話|誰に笑いかけ|周りの人|noThird|THIRD_RE/, tags: ['pair'] }
+  { re: /ほかの誰か|他の誰か|別の誰か|みんな|全員|人目|誰と話|誰に笑いかけ|周りの人|noThird|THIRD_RE/, tags: ['pair'] },
+  /* 友人の語・血縁の判定（血縁の二人に出ないかを kin-label で見る） */
+  { re: /友人|友達|友だち|親友|HK\.Kin\b|KIN_FR_TXT|\.family\b/, tags: ['kin'] }
 ];
 /* コメントの中身の変更でも付ける印（コメントだけの変更でも、出来事の一覧・全年齢版の中身が変わる） */
 const COMMENT_RULES = [
@@ -124,6 +129,7 @@ const CHECKS = [
   { id: 'regress', name: '結果の指紋（regress。比べる相手のコミットと）', stage: 'heavy', tags: ['ui', 'order', 'buildtool'], after: ['build'], est: 15, weight: 1, tools: [BD + 'regress.js'], why: 'R18版・全年齢モード・全年齢版。比べる相手の指紋は、そのコミットのビルドを取り出して取る（キャッシュに残る）' },
   { id: 'chunk-regress', name: '単独・乱順の読み込み（chunk-regress）', stage: 'heavy', tags: ['order', 'buildtool'], after: ['build'], est: 450, weight: 1, tools: [BD + 'chunk-regress.js'], why: '両ビルド' },
   { id: 'chunk-audit', name: 'かたまりの境目（chunk-audit）', stage: 'heavy', tags: ['order', 'buildtool'], after: ['build'], est: 60, weight: 1, tools: [BD + 'chunk-audit.js'], why: '両ビルド' },
+  { id: 'kin-label', name: '血縁の二人の札（kin-label-audit）', stage: 'heavy', tags: ['kin'], after: ['build'], est: 45, weight: 1, tools: [TC + 'kin-label-audit.js'], why: '親子・きょうだい・親戚・双子・擬似親子の二人の結末・関係図の札（開始時・転機）・台詞・地の文に「友人・友達・親友」が 0 件（R18版・全年齢モード・全年齢版）。箱庭のかたまりだけ変えたときはその箱庭だけ' },
   { id: 'dict-regress', name: '口調の辞書の成績（dict-regress。参考）', stage: 'heavy', tags: ['dict'], after: [], est: 10, weight: 1, tools: [TC + 'dict-regress.js'], info: true, why: '終了コードに入れない（成績を出すだけ）' },
   /* 追加パック（変えたパック、本体の「パックが頼るかたまり」を変えたときはそのパック） */
   { id: 'date-setting', name: 'デートの舞台と段（date-setting-audit）', stage: 'pre', tags: ['pack'], est: 1, tools: [TC + 'date-setting-audit.js'], why: 'set-b のデートの日々を変えたとき。行き先 52 か所 × 汎用の出来事の舞台の矛盾・段の付いていない行（ページを開かない）' },

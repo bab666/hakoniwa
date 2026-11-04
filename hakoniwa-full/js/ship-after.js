@@ -197,7 +197,8 @@
     if (HK.Obsess && HK.Obsess.storyLevel && HK.Obsess.storyLevel(S, q, a) >= 35) return 'obsess';
     if (isLover(S, q, a)) return 'lover';
     if (lv && (q.honmei === a.i || ts.some(function (t) { return (t.type === 'crush' && t.a === q.i) || t.type === 'almost'; }))) return 'honmei';
-    if (A.family(S, q, a)) return 'family';
+    /* 「恋愛：あり」にした家族も家族のまま（「親友・相棒」にしない。2026-11-04 の利用者の指示） */
+    if (A.family(S, q, a) || ts.some(function (t) { return HK.TIES[t.type] && HK.TIES[t.type].family; })) return 'family';
     if (ts.some(function (t) { return /^(best|buddy|childhood|friend|sworn)$/.test(t.type); }) || A.bond(S, q, a) >= 0.6) return 'friend';
     return 'close';
   }

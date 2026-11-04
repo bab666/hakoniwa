@@ -309,7 +309,7 @@
       case 'repaid': return n(cl.dir) + 'はようやく恩を返し、' + other(cl.dir) + 'と並んで立てるようになった。';
       case 'bossbeyond': return '上司と部下という肩書きを越えて、互いを頼れる相手になった。';
       case 'classre': return '昔の同級生は、今はいちばん近くにいる特別な人になった。';
-      case 'relbond': return '遠い親族だった二人が、家族として互いを支え合う形に落ち着いた。';
+      case 'relbond': return cl.kin && cl.kin !== '親戚' ? cl.kin + 'として、互いを支え合う形に落ち着いた。' : '遠い親族だった二人が、家族として互いを支え合う形に落ち着いた。';
     }
     return null;
   };
