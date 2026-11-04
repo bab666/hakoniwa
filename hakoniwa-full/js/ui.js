@@ -337,6 +337,7 @@
   /* ---------- タブ ---------- */
   /* keep：描き直すだけ（HK.UI.refresh・読み終えたあとの描き直し）。見ている位置を動かさない（タブの頭へ戻すのは、タブを押したときだけ） */
   function setTab(t, quick, keep) {
+    if (t !== tab && HK.Guard && HK.Guard.note) HK.Guard.note('tab', 'タブ：' + tab + ' → ' + t);
     tab = t;
     ['cast', 'box', 'result', 'saves'].forEach(function (k) {
       var tb = $('#tab-' + k), vw = $('#view-' + k);

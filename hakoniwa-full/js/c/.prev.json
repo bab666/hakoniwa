@@ -1,7 +1,7 @@
 {
  "cur": {
-  "core": "core.f52426523d.js",
-  "late": "late.3c4c5fde80.js",
+  "core": "core.05a6d8ab56.js",
+  "late": "late.576f842926.js",
   "pack-rel": "pack-rel.b97fcf9d08.js",
   "pack-sim": "pack-sim.8767994e6e.js",
   "pack-lewd": "pack-lewd.57e3cbecfb.js",
@@ -74,8 +74,8 @@
   "tone-yankee": "tone-yankee.0addf2a42e.js"
  },
  "prev": {
-  "core": "core.601ceaf44a.js",
-  "late": "late.3c4c5fde80.js",
+  "core": "core.2a436abe6d.js",
+  "late": "late.3547a54d41.js",
   "pack-rel": "pack-rel.b97fcf9d08.js",
   "pack-sim": "pack-sim.8767994e6e.js",
   "pack-lewd": "pack-lewd.57e3cbecfb.js",
@@ -89,7 +89,7 @@
   "scen-trial": "scen-trial.56e8c9b6d2.js",
   "scen-dungeon": "scen-dungeon.f784f5ffbe.js",
   "scen-massage": "scen-massage.ce635472f4.js",
-  "scen-hole": "scen-hole.b611919a0d.js",
+  "scen-hole": "scen-hole.677d58fc80.js",
   "scen-futari": "scen-futari.258d2b21dd.js",
   "scen-zombie": "scen-zombie.1c4d47e665.js",
   "scen-rpg": "scen-rpg.1be91741a9.js",
@@ -157,8 +157,8 @@
    801
   ],
   "js/ui-guard.js": [
-   10679,
-   4358
+   13051,
+   4912
   ],
   "js/scenarios-init.js": [
    129,
@@ -529,8 +529,8 @@
    3517
   ],
   "js/ui.js": [
-   120867,
-   35857
+   120951,
+   35885
   ],
   "js/ui-cast-ops.js": [
    6623,

@@ -17,14 +17,24 @@
      スクロールの見張り（プログラムによるスクロール・大きな飛び・ページの高さの急な変化）は late の ui-guard-scroll.js
    ・HK.Guard.act()／act(true)：利用者の操作で始まった処理（箱庭を回す）の始まり／終わり。HK.Guard.acting() は始まりから 3 秒以内か終わりから 1 秒以内で真
      （その結果のスクロールを「操作から」とみなす。userAt は利用者が自分でスクロールした時刻なので、これでは動かさない）
-   ・記録と知らせる文に iOS の版・画面の向きを添える */
+   ・記録と知らせる文に iOS の版・画面の向きを添える
+   2026-11-04 追記（報告「iOS 18.2.1 の iPhone で、住人／箱庭／結末のどのタブでも、下にスクロールすると真っ白。iOS 27 では起きない」。safari-scroll.md の 8）：
+   ・iPhone・iPad の Safari 16〜18 だけの保守的な表示（セーフモード）：html に hk-ios-legacy を付け、全タブ共通の層を作る指定を外す
+     （上に貼り付く切替 .tabs と目次の sticky・画面上端の帯 body::before・overflow-anchor:none・切替の 100vmax の影と clip-path・
+     content-visibility／contain-intrinsic-size・参加表の zoom／scale（縮尺は late の ui-perzoom.js が 100% に固定）。下に固定する帯は残して層を分ける）
+   ・判定：hk-webkit で、iPhone・iPad（「デスクトップ用」で UA が Mac のときも）の Safari の版（Version/）が 16〜18。iOS の版（UA の OS）は見ない
+     （iOS 18.7 でも Version/26 なら対象外。iOS 26 以降は UA の OS が 18_6 前後に固定される）。Version/ が無い WebView は対象
+   ・利用者のスイッチ（自動／入／切。localStorage の hakoniwa-iossafe。画面は late の ui-guard-view.js）。HK.Guard.safe で読む・変える。変えたら hk-ios-safe の知らせ
+   ・HK.Guard.touching()：指で触っている最中か。HK.Guard.tabAt()：タブの切り替え・描き直し・ページに戻ったとき（note の tab・redraw・page）の最後の時刻
+     （その直後の高さの変化を見張りが縮みと数えないように） */
 (function () {
   'use strict';
   var HK = window.HK = window.HK || {};
   if (typeof document === 'undefined' || HK.Guard) return;
   var KEY = 'hakoniwa-errlog', MAX = 40, log = [], trace = [];
   /* 直前の出来事の控え（保存しない）。記録を残すときに添える */
-  function note(k, m) { trace.push({ ts: Date.now(), k: String(k), m: String(m || '').slice(0, 160) }); if (trace.length > 30) trace.splice(0, trace.length - 30); }
+  var tabT = 0;
+  function note(k, m) { if (k === 'tab' || k === 'redraw' || k === 'page') tabT = Date.now(); trace.push({ ts: Date.now(), k: String(k), m: String(m || '').slice(0, 160) }); if (trace.length > 30) trace.splice(0, trace.length - 30); }
   /* 利用者が自分でスクロール・操作した時刻（指・ホイール・キー）。指で触っているあいだ（touching）は空の判定もしない */
   var userT = 0, touching = 0, actS = 0, actE = 0;
   function mark() { userT = Date.now(); }
@@ -42,6 +52,22 @@
   /* iOS の版（「デスクトップ用」のときは UA に出ないので Version/ の版） */
   var iosV = (ua.match(/OS (\d+)[_.](\d+)(?:[_.](\d+))?/) || [])[0] || '';
   iosV = iosV ? 'iOS ' + iosV.replace(/^OS /, '').replace(/_/g, '.') : (webkit && (navigator.maxTouchPoints || 0) > 1 ? 'iOS/iPadOS（デスクトップ表示）Safari ' + ((ua.match(/Version\/([\d.]+)/) || [])[1] || '?') : '');
+  /* iPhone・iPad の WebKit が Safari 16〜18 か（セーフモードの自動の判定）。iOS の版（OS 18_7 など）ではなく Safari の版（Version/）で見る：
+     iOS 18.7 に Safari 26 が載る例（Version/26.6.1）では起きていない。Version/ の無いアプリ内の表示（WebView）は版が分からないので対象にする */
+  var legacy = (function () {
+    if (!webkit || !(ios || /iP(hone|od|ad)/.test(ua))) return false;
+    var m = ua.match(/Version\/(\d+)/);
+    if (!m) return true;
+    return +m[1] >= 16 && +m[1] <= 18;
+  })();
+  var SKEY = 'hakoniwa-iossafe', smode = 'auto';
+  try { var sv = window.localStorage && localStorage.getItem(SKEY); if (sv === 'on' || sv === 'off') smode = sv; } catch (e) { smode = 'auto'; }
+  function safeOn() { return smode === 'on' || (smode === 'auto' && legacy); }
+  function safeApply() {
+    var on = safeOn();
+    if (de.classList.contains('hk-ios-legacy') !== on) de.classList.toggle('hk-ios-legacy', on);
+    return on;
+  }
   function orient() { var w = window.innerWidth || 0, h = window.innerHeight || 0; return w > h ? '横' : '縦'; }
   if (webkit) {
     de.classList.add('hk-webkit');
@@ -50,6 +76,23 @@
       'html.hk-webkit #castlist .res,html.hk-webkit .tiebox .tierow{content-visibility:visible!important}';
     (document.head || de).appendChild(st);
   }
+  /* セーフモード（hk-ios-legacy）。スイッチの「入」はほかのブラウザでも当てる（試すため） */
+  (function () {
+    var L = 'html.hk-ios-legacy ', st2 = document.createElement('style');
+    st2.id = 'hk-ios-legacy';
+    st2.textContent = L + 'body::before{content:none!important;display:none!important}' +
+      'html.hk-ios-legacy{overflow-anchor:auto!important}' +
+      L + '.tabs,' + L + '.wrap>.tabs,' + L + '.rvw .rvtabs,' + L + '.bxtabs,' + L + '.rvw .rvtoc,' + L + '.rvw .rvrail,' + L + '.rvw .rvlist,' + L + '#view-cast .tsbulk.on{position:static!important;top:auto!important}' +
+      L + '.wrap>.tabs{box-shadow:none!important;clip-path:none!important}' +
+      L + '.rvw .rvtoc,' + L + '.rvw .rvrail,' + L + '.rvw .rvlist{max-height:none!important;overflow:visible!important}' +
+      L + '#view-box[hidden]{display:none!important}' +
+      L + '*{content-visibility:visible!important;contain-intrinsic-size:none!important}' +
+      L + '.tblwrap.pz>table.per{zoom:1!important;transform:none!important;margin-right:0!important;margin-bottom:0!important}' +
+      /* 下に固定する帯・ボタンは残し、それぞれ自分の層にする（ページの層と分ける） */
+      L + '#view-box>.runbar,' + L + '#pagejump,' + L + '#view-cast .uimobar{-webkit-transform:translateZ(0);transform:translateZ(0)}';
+    (document.head || de).appendChild(st2);
+    safeApply();
+  })();
 
   /* ---------- 記録 ---------- */
   function where() {
@@ -201,6 +244,22 @@
     blank: blank,
     webkit: webkit,
     ios: iosV,
+    touching: function () { return touching > 0; },
+    tabAt: function () { return tabT; },
+    /* セーフモード：mode（auto・on・off）・legacy（自動の判定）・on（いま当たっているか）・set(mode) */
+    safe: {
+      legacy: legacy,
+      mode: function () { return smode; },
+      on: safeOn,
+      set: function (m) {
+        smode = m === 'on' || m === 'off' ? m : 'auto';
+        try { if (window.localStorage) { if (smode === 'auto') localStorage.removeItem(SKEY); else localStorage.setItem(SKEY, smode); } } catch (e) { /* 残せなくてもこのページでは切り替える */ }
+        var on = safeApply();
+        note('safe', 'Safari の表示を軽くする：' + ({ auto: '自動', on: '入', off: '切' })[smode] + '（' + (on ? '有効' : '無効') + '）');
+        try { window.dispatchEvent(new Event('hk-ios-safe')); } catch (e) { /* 古い環境 */ }
+        return on;
+      }
+    },
     note: note,
     trace: function () { return trace.slice(); },
     userAt: function () { return userT; },
@@ -209,7 +268,7 @@
     /* 知らせるための文（新しい順）。ブラウザ・画面・版も添える */
     text: function () {
       var head = '箱庭シミュレーター 不具合の記録（' + new Date().toLocaleString() + '）\n' +
-        'ブラウザ：' + ua + (iosV ? '\n端末：' + iosV : '') + '\n画面：' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0) + '・' + orient() + '・倍率 ' + (window.devicePixelRatio || 1) + (webkit ? '・WebKit・描き直しの一押し：' + (HK.IosPaint && HK.IosPaint.on ? '有効' : '未読込') : '') + (window.navigator.standalone ? '・ホーム画面から' : '') + '\n版：' + ((window.HK_MANIFEST && window.HK_MANIFEST.v) || '') + '\n';
+        'ブラウザ：' + ua + (iosV ? '\n端末：' + iosV : '') + '\n画面：' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0) + '・' + orient() + '・倍率 ' + (window.devicePixelRatio || 1) + (webkit ? '・WebKit・描き直しの一押し：' + (HK.IosPaint && HK.IosPaint.on ? '有効' + (safeOn() ? '（層を作り直す）' : '') : '未読込') : '') + (safeOn() ? '・Safari 16〜18 のセーフモード：有効' + (smode === 'on' ? '（入）' : '（自動）') : smode === 'off' ? '・セーフモード：切' : '') + (window.navigator.standalone ? '・ホーム画面から' : '') + '\n版：' + ((window.HK_MANIFEST && window.HK_MANIFEST.v) || '') + '\n';
       if (!log.length) return head + '（記録はありません）';
       return head + log.slice().reverse().map(function (e) {
         return '---\n' + e.t + '［' + e.kind + (e.n > 1 ? ' ×' + e.n : '') + '］' + e.msg + '\nタブ：' + (e.tab || '-') + '・箱庭：' + (e.scen || '-') + '・画面：' + e.vw + '・位置：' + e.y + (e.stack ? '\n' + e.stack : '') + (e.tr ? '\n直前：' + e.tr.join(' ／ ') : '');

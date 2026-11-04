@@ -9,7 +9,9 @@
      iOS が欄を選んだときに自動で拡大しないようにする（実際の大きさを 16px 以上に。欄の幅はそのまま。離れたら戻す）。ほかの欄は表といっしょに縮む。
    ・PC 幅（601px 以上。600px 以下は ui-mobile.js が帯を画面の下に固定する）で箱庭タブを見ているあいだ、本物の帯（.runbar）が画面に見えていなければ
      右下（上へ／下へのボタンの左）に「箱庭を動かす」の浮いたボタン（.runfab）を出す。押すと帯のボタンと同じ動作（data-act="run"。シードの欄はそのまま）。
-     参加する人数が足りない・箱庭が選ばれていないときは押せない（帯のボタンが押せないときも同じ disabled と title）。 */
+     参加する人数が足りない・箱庭が選ばれていないときは押せない（帯のボタンが押せないときも同じ disabled と title）。
+   ・2026-11-04：Safari の表示を軽くしている（html.hk-ios-legacy。ui-guard.js のセーフモード）あいだは、縮尺を 100% に固定して −・＋・全体を表示を押せなくする
+     （zoom・scale は層を作るため。表の形の積む／並べるは使える。選んだ縮尺は残し、切れば戻る） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -80,11 +82,13 @@
     }
     return z;
   }
+  function locked() { return document.documentElement.classList.contains('hk-ios-legacy'); }
+  var LOCKT = 'Safari の表示を軽くしているあいだは 100% に固定しています（右上の「表示」で切り替えられます）';
   function apply(w) {
-    var b = ensure(w), f = form();
+    var b = ensure(w), f = form(), lk = locked();
     if (w.classList.contains('pz-stack') !== (f === 'stack')) w.classList.toggle('pz-stack', f === 'stack');
     if (!w.classList.contains('pz')) w.classList.add('pz');
-    var z = st.fit ? fitZ(w) : st.z;
+    var z = lk ? 1 : st.fit ? fitZ(w) : st.z;
     if (z == null) z = +w.dataset.pzFit || 1;
     if (st.fit) { w.dataset.pzFit = String(z); w.dataset.pzW = String(w.clientWidth); } else { delete w.dataset.pzFit; delete w.dataset.pzW; }
     setZ(w, z);
@@ -93,8 +97,11 @@
     var v = b.querySelector('.pz-v'); if (v && v.textContent !== pct(z)) v.textContent = pct(z);
     var q = function (k) { return b.querySelector('[data-pz="' + k + '"]'); };
     var dis = function (k, v) { var x = q(k); if (x.disabled !== v) x.disabled = v; }, prs = function (k, v) { var x = q(k); if (x.getAttribute('aria-pressed') !== String(v)) x.setAttribute('aria-pressed', String(v)); };
-    dis('out', !st.fit && st.z <= STEPS[0]); dis('in', !st.fit && st.z >= 1);
-    prs('fit', st.fit); prs('stack', f === 'stack'); prs('row', f === 'row');
+    dis('out', lk || (!st.fit && st.z <= STEPS[0])); dis('in', lk || (!st.fit && st.z >= 1)); dis('fit', lk);
+    var g = b.querySelector('.pz-g');
+    if (g) { if (lk) g.title = LOCKT; else g.removeAttribute('title'); }
+    if (b.hasAttribute('data-lock') !== lk) { if (lk) b.setAttribute('data-lock', ''); else b.removeAttribute('data-lock'); }
+    prs('fit', st.fit && !lk); prs('stack', f === 'stack'); prs('row', f === 'row');
   }
   var vb = null, raf = 0;
   function all() { raf = 0; if (vb) wraps(vb).forEach(apply); }
@@ -201,6 +208,10 @@
     /* 箱庭の選び替え・参加の切り替えで押せるかが変わる */
     document.addEventListener('change', function () { setTimeout(fabSync, 0); });
     document.addEventListener('click', function () { setTimeout(fabSync, 0); });
+    var lst = document.createElement('style');
+    lst.textContent = '.perzoom[data-lock]::after{content:"縮尺は 100% に固定しています（Safari の表示を軽くしているため）";font-size:11px;color:var(--muted)}';
+    document.head.appendChild(lst);
+    window.addEventListener('hk-ios-safe', tick);
     tick();
   }
   HK.PerZoom = { state: function () { return { z: st.z, fit: st.fit, form: form() }; }, act: function (k) { var w = vb && wraps(vb)[0]; act(k, w); }, sync: function () { all(); fabSync(); } };
