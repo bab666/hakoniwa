@@ -74,6 +74,15 @@
     'HEAT.crowd': { need: 'crowd' }, 'HEAT.quiet': { not: 'space' }, 'HEAT.view': { need: 'night' },
     'RICH.ヘリコプターで迎えに来る': { not: 'space vehicle' }, 'RICH.専属のシェフを呼ぶ': { not: 'space' }, 'RICH.店を丸ごと貸し切る': { need: 'shop city' }, 'RICH.リムジンで送り迎え': { need: 'city' },
     'RICH.百本のバラの花束': { not: 'space' }, 'RICH.二人のためだけに夜空を飾る': { need: 'out', not: 'space' }, 'RICH.プライベートジェットで飛ぶ': { not: 'space vehicle' }, 'RICH.屋上を一晩借りる': { need: 'city', not: 'space' },
+    /* 追加の出来事（date-more.js。2026-11-04） */
+    'MORE.acc_nanpa': { need: 'crowd', not: 'home space' }, 'MORE.acc_ame': { need: 'out', not: 'space home' }, 'MORE.acc_aiai': { need: 'out', not: 'space home water' },
+    'MORE.acc_yuki': { need: 'out', not: 'space' }, 'MORE.acc_kaze': { need: 'out', not: 'space' }, 'MORE.acc_harema': { need: 'out', not: 'space' },
+    'MORE.acc_kutsu': { need: 'walk', not: 'home space vehicle' }, 'MORE.acc_saifu': { need: 'shop', not: 'home' }, 'MORE.acc_maigo': { need: 'crowd', not: 'home space' },
+    'MORE.acc_photo': { any: 'crowd sight', not: 'home space' }, 'MORE.acc_hitogomi': { need: 'crowd', not: 'home space' }, 'MORE.acc_tokugi': { not: 'space' }, 'MORE.acc_kobosu': { any: 'shop stall' },
+    'MORE.sea_hanami': { need: 'out', not: 'space abroad' }, 'MORE.sea_kafun': { need: 'out', not: 'space' }, 'MORE.sea_haru': { need: 'out walk', not: 'space' },
+    'MORE.sea_hanabi': { need: 'out night', not: 'space abroad' }, 'MORE.sea_kakigori': { any: 'shop stall', not: 'space abroad' }, 'MORE.sea_yudachi': { need: 'out', not: 'space' },
+    'MORE.sea_momiji': { need: 'out', not: 'space' }, 'MORE.sea_kinmokusei': { need: 'out walk', not: 'space abroad' }, 'MORE.sea_aki': { need: 'out', not: 'space' },
+    'MORE.sea_illumi': { need: 'out city night', not: 'space' }, 'MORE.sea_tebukuro': { need: 'out', not: 'space' }, 'MORE.sea_iki': { need: 'out', not: 'space' },
     /* 名簿の住人とばったり会う・後日「〇〇で見たよ」：海外・宇宙・船の上・おうちでは会わない */
     BATTARI: { not: 'abroad space vehicle home' }, MITA: { not: 'abroad space vehicle home' }, C_BATTARI: { not: 'abroad space vehicle home' },
     /* 行き先の料理を使い切ったときの街の店の予備 */
