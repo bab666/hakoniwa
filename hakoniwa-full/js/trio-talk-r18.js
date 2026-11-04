@@ -961,7 +961,9 @@
           var k = self.demandOf(m[0]);
           if (!k) continue;
           var end = m.index + m[0].length, rest = p.t.slice(end) + (ord2[pi + 1] ? ord2[pi + 1].t : ''), bs = botsOf(tc);
-          var okR = bs.some(function (b) { return rest.slice(0, 160).indexOf(b.name + '「') >= 0 && rest.indexOf(b.name + '「') <= rest.search(/[^\s　]/) + 40; })
+          /* すぐ次の台詞が受けのものか（点検 trio-shape-audit.js と同じ見方。以前は「40 字以内に受けの台詞」で、間に同じ攻めの台詞が挟まっても通していた。2026-11-04） */
+          var nx = /([^「」。、\s]{1,24})「/.exec(rest);
+          var okR = !!nx && bs.some(function (b) { return nx[1].slice(-b.name.length) === b.name; })
             || bs.some(function (b) { return new RegExp(b.name + '(?:[はが][^。]{0,40}(?:首を|唇を噛|顔を|答え|頷|目を|声|名前を呼|呟|囁)|の(?:声|喉|唇|顔)[はがも])').test(rest.slice(0, 160)); });
           if (okR) continue;
           var b0 = bs[0], rx = p.st === 'peak' ? self.botLine(b0, 'mid', tc) : self.reactTo(k, tc, b0);
