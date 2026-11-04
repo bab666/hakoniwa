@@ -29,7 +29,7 @@
 /* @event scen=set-b-kanbyo id=kb_form_mid cat=romance tie=- tags=night label=夜の場面・中くらいの場面（反応と山場） */
 /* @event scen=set-b-kanbyo id=kb_form_long cat=romance tie=- tags=night label=夜の場面・段落を分けた長い場面 */
 /* 看病の部屋の夜（R18版だけ。全年齢版のパックを組み立てるとき、この印の間は落ちる。2026-11-03）
-   ■ HK.KanbyoR18.quota(ctx, 'none'|'low'|'high')：一回の遊びのエッチの回数の上限（0／1／2）
+   ■ HK.KanbyoR18.quota(ctx, 'none'|'low'|'mid'|'high')：一回の遊びのエッチの回数の上限（0／1／2／3。なし・少なめ・ふつう・多め）
    ■ HK.KanbyoR18.night(ctx, entry, day, last)：その夜にエッチの場面を出したら true。kanbyo.js が、誰も病気でない夜（治った日の夜・治ったあと・うつった人が治った夜）で、
      体の関係にしてよい組のときに呼ぶ
      ・入口 entry：heal 治った日の夜／date お礼のデートの夜／back うつった人が治った夜／amai いつもより甘い数日の夜（恋人どうし）／after 治ったあとの夜（恋人どうしでない二人）
@@ -230,10 +230,7 @@
     if (!PR.sexOk(ctx, A, B) || (P && P.okSex && !P.okSex(A, B))) return false;
     var o = P && P.order ? P.order(A, B) : [A, B], a = o[0], b = o[1], sh = PR.shape(a, b);
     if (AV && ((AV.topOk && !AV.topOk(ctx, a, b)) || (AV.okSex && !AV.okSex(ctx, a, b)))) return false;
-    /* 起こりやすさ：低め（恋人どうしでない二人はさらに低い）。性欲で上下 */
-    /* 起こりやすさ：まれに（2026-11-04 報告：16 本中 3 本は多い。遊び全体で 1 割以下に） */
-    var p = (S.couple ? 0.25 : 0.15) * (P && P.libMul ? Math.min(1.5, P.libMul([A, B])) : 1);
-    if (ctx.rng() > p) return false;
+    /* 起こりやすさは kanbyo.js の illNight が決める（回数の設定ごとの一回の遊びの割合。2026-11-04 利用者「30% かな」） */
     /* 入口の選び方：受けが看病される人なら「受けから迫る」も。看る側が攻めなら「理性が揺らぐ」も */
     var bt = PR.att(b, a), tp = PR.att(a, b), ld = P && P.leadOf ? P.leadOf(b) : '', kd = HK.Attr && HK.Attr.nightKind ? HK.Attr.nightKind(a, b) : '';
     var W = [['yukkuri', 1.2], ['soine', /devoted|gentle|shy|free/.test(PR.att(B, A)) ? 1.1 : 0.6]];
@@ -373,7 +370,7 @@
     S.entries = S.entries || {}; S.entries.ill_jiinext = (S.entries.ill_jiinext || 0) + 1;
     return true;
   };
-  KR.quota = function (ctx, v) { return v === 'none' ? 0 : v === 'low' ? 1 : 2; };
+  KR.quota = function (ctx, v) { return v === 'none' ? 0 : v === 'low' ? 1 : v === 'high' ? 3 : 2; };
   KR.night = function (ctx, entry, day, last) {
     var S = ctx.kb, env = ctx.env, LV = HK.Lewd, P = HK.Pos, A = S.A, B = S.B, T = TX();
     if (!T.PLAY) return false;
@@ -385,7 +382,8 @@
     if (AV && ((AV.topOk && !AV.topOk(ctx, a, b)) || (AV.okSex && !AV.okSex(ctx, a, b)))) return false;
     var p = { heal: 0.5, date: 0.75, back: 0.6, amai: 0.45, after: 0.4 }[entry] || 0.4;
     /* 恋人どうしでない二人は起こりにくく（不仲・敵対・元恋人はさらに） */
-    if (!S.couple) p *= /^(bad|ex)$/.test(S.rk) ? 0.55 : 0.75;
+    /* 恋愛にしない二人（お礼のデートの夜が無い）は、近づく段のあとの夜を下げない（性的な出来事の門。2026-11-04） */
+    if (!S.couple && !(entry === 'after' && !S.love && S.nearDay != null)) p *= /^(bad|ex)$/.test(S.rk) ? 0.55 : 0.75;
     p *= P && P.libMul ? Math.min(1.5, P.libMul([A, B])) : 1;
     if (last && S.sex < S.lewdMax) p = Math.max(p, S.couple ? 0.85 : 0.5);
     if (ctx.rng() > p) return false;
