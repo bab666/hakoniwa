@@ -5,7 +5,7 @@
      node hakoniwa-tools/tone-check/tone-feel.js hakoniwa-full --scen=locker         # 場面を足した箱庭だけ
      node hakoniwa-tools/tone-check/tone-feel.js hakoniwa-full --tones=kansai,sondai --why   # 口調を絞り、違和感の台詞を頻度順に
      node hakoniwa-tools/tone-check/tone-feel.js hakoniwa-zenrei                     # 全年齢版（ページは無印。内容のスイッチは全年齢版にあるものだけ）
-   ほかの指定：--N=24（箱庭ごとの回数）、--seeds=2000,21001（最初が「直すときに見た種」、残りが「見ていない種」）、--mode=r18|safe（R18版のページの hash。既定 r18）、
+   ほかの指定：--dump=出力.json（判定の前の全部の台詞。2026-11-04）、--N=24（箱庭ごとの回数）、--seeds=2000,21001（最初が「直すときに見た種」、残りが「見ていない種」）、--mode=r18|safe（R18版のページの hash。既定 r18）、
               --topics（見本の話題を入れて回す。話題の文の台詞も集める）、--tie=twin（話し手と相手に関係を配役する。2026-10-31 双子の点検用。--tie=fear+love+body で関係の「恋愛：あり」「体の関係：あり」も付ける、+rev で向きを相手→話し手に。2026-11-03）、--why（違和感の台詞を口調ごとに 30 件。--why=100 で件数）、--json=出力.json、--base=基準.json（悪化した口調を出す）、--jobs=2（ページを何本並べるか）
    ・台詞の集め方は口調直しの trace.js と同じ：話し手（ハルカ）の口調を固定し、相手はおまかせ。エゴグラム 6 種・男女半々・受け攻め半々・3 回に 1 回は恋人。
      自動の態度口調（proud など HK.PERSONA の 9 種）は、口調を「おまかせ」にして、その口調になるエゴグラムを 8 種探して使う（丁寧 polite だけは口調を設定。TD の作り方）。
@@ -17,9 +17,10 @@
 const path = require('path'), fs = require('fs');
 const { openBuild, buildUrl } = require('./lib.js');
 
-const FEEL = ['mx', 'tx', 'tk', 'ta', 'tb', 'tc', 'td'].map(f => require('./feel/' + f + '.js'));
-const JUDGE = {}; /* 口調 → 判定の並び */
-FEEL.forEach(m => m.tones.forEach(t => { (JUDGE[t] = JUDGE[t] || []).push(m); }));
+const FEEL = ['mx', 'tx', 'tk', 'ta', 'tb', 'tc', 'td', 'tr'].map(f => require('./feel/' + f + '.js'));
+const JUDGE = {}; /* 口調 → 判定の並び（tr＝2026-11-04 の口調の点検のやり直しの判定は、全口調に当てる。tones: '*'） */
+FEEL.forEach(m => m.tones !== '*' && m.tones.forEach(t => { (JUDGE[t] = JUDGE[t] || []).push(m); }));
+const TR = FEEL.find(m => m.tones === '*');
 const AUTO = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite']; /* 自動の態度口調（TD の配役） */
 const DEF_SCEN = ['whiteroom', 'locker', 'omega'];
 
@@ -63,25 +64,41 @@ function collectInPage(a) {
       let R; runs++;
       try { R = HK.simulate({ scenId: sc, seed: SEED + s * 7, env, chars, ties: a.tie ? [Object.assign(/\+rev/.test(a.tie) ? { a: 1, b: 0 } : { a: 0, b: 1 }, { type: String(a.tie).split('+')[0] }, /\+love/.test(a.tie) ? { love: 'ok' } : {}, /\+body/.test(a.tie) ? { body: 'ok' } : {})] : s % 3 === 0 ? [{ a: 0, b: 1, type: 'lover' }] : [], perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })), topics: a.topics || undefined }); } catch (e) { errs.push(sc + '/' + (SEED + s * 7) + ':' + e.message); continue; }
       bySc[sc]++;
+      /* 2026-11-04（tone-redo）：話し手の一人称（口調・性別から決まるもの）と、1 回の遊びの中で同じ台詞・同じ決め台詞を何回言ったか（連発の判定 feel/tr.js が使う） */
+      let fpWant = ''; try { fpWant = (V.fpDefault && V.fpDefault(chars[0])) || ''; } catch (e) { /* 無ければ判定しない */ }
+      const inRun = [];
       (R.log || []).forEach(e => { (e.seg || []).forEach(g2 => {
         if ((g2.t === 'l' || g2.t === 'e') && g2.who === 0) {
           const q = g2.s.replace(/^ハルカ/, '').replace(/^「|」$/g, '');
           if (/[♡ぁぃぅぇぉ]/.test(q) && q.length < 14) return;
-          const k = g + '\t' + q, c = cnt[k] = cnt[k] || { n: 0, sc: {}, seed: {} };
-          c.n++; c.sc[sc] = 1; c.seed[SEED] = (c.seed[SEED] || 0) + 1;
+          inRun.push(q);
         }
       }); });
+      const SIG = a.sig ? new RegExp(a.sig, 'g') : null, sigN = {}, lineN = {};
+      const brk = q => /[♡ぁぃぅぇぉ]|[…‥]っ|っ[…‥]|……っ|ッ|[イい]く[、…！]|[^、。！？]{0,3}っ[、！？]?$/.test(q);   /* 崩れた声（喘ぎ・山場）は決め台詞に数えない（判定と同じ） */
+      inRun.forEach(q => { lineN[q] = (lineN[q] || 0) + 1; if (SIG && !brk(q)) (q.match(SIG) || []).filter((w, i, l) => l.indexOf(w) === i).forEach(w => { sigN[w] = (sigN[w] || 0) + 1; }); });
+      /* 一人称の混在（2026-11-04）：この回の話し手の台詞でいちばん多い一人称（私＝わたし、僕＝ぼく＝ボク）と違う一人称を含む台詞に印。回ごとに見る（口調によってはエゴグラムで一人称が変わるので、回をまたいでは比べない） */
+      const FPR = a.fpre ? new RegExp(a.fpre, 'g') : null, fpN = a.fpnorm || {}, fpsOf = q => FPR ? (q.replace(/『[^』]*』/g, '').match(FPR) || []).map(x => fpN[x] || x) : [];
+      const fpc = {}; let fpAll = 0; inRun.forEach(q => { if (!brk(q)) fpsOf(q).forEach(x => { fpc[x] = (fpc[x] || 0) + 1; fpAll++; }); });
+      const fpTop = Object.keys(fpc).sort((x, y) => fpc[y] - fpc[x])[0], fpMain = fpTop && fpc[fpTop] >= fpAll * 0.6 ? fpTop : '';
+      inRun.forEach(q => {
+        const mix = fpMain && !brk(q) && fpsOf(q).some(x => x !== fpMain) ? 1 : 0;
+        const k = g + mix + '\t' + q, c = cnt[k] = cnt[k] || { n: 0, sc: {}, seed: {}, fp: fpWant, rep: 0, sigRep: 0, fpMix: mix };
+        c.n++; c.sc[sc] = 1; c.seed[SEED] = (c.seed[SEED] || 0) + 1;
+        c.rep = Math.max(c.rep, lineN[q]);
+        if (SIG && !brk(q)) c.sigRep = Math.max(c.sigRep, ...((q.match(SIG) || []).map(w => sigN[w] || 0)), 0);
+      });
     }
   }
   V.processText = pt0; V.overrideFor = of0;
   const rows = Object.keys(cnt).map(k0 => {
-    const v = cnt[k0], g = k0[0], k = k0.slice(2);
+    const v = cnt[k0], g = k0[0], k = k0.slice(3);   /* 鍵は 性別＋一人称の混在（0/1）＋タブ＋台詞 */
     const m = RAW[k] || RAW[k.replace(/^[^「]*「/, '')] || {};
     const raw = Object.keys(m).sort((x, y) => m[y] - m[x])[0] || '';
     const alts = raw.replace(/^⁢/, '').replace(/レン|ソラ|ハルカ/g, '〈〉').split('｜');
     const hx = alts.find(x => HITS.has(x));
     const src = hx ? HITS.get(hx) : raw.indexOf('｜') >= 0 ? 'D3' : raw ? 'D1' : '?';
-    return { n: v.n, g, s: k, sc: Object.keys(v.sc), seed: v.seed, src, raw: raw.replace(/レン|ソラ|ハルカ/g, '〈〉').replace(/[⁠-⁤]/g, '') };
+    return { n: v.n, g, s: k, sc: Object.keys(v.sc), seed: v.seed, fp: v.fp, rep: v.rep, sigRep: v.sigRep, fpMix: v.fpMix, src, raw: raw.replace(/レン|ソラ|ハルカ/g, '〈〉').replace(/[⁠-⁤]/g, '') };
   });
   const label = (HK.TONES && HK.TONES[TONE] && HK.TONES[TONE].label) || (HK.PERSONA && HK.PERSONA[TONE] && (HK.PERSONA[TONE].label || HK.PERSONA[TONE].name)) || TONE;
   return { tone: TONE, label, runs, bySc, errs, wrong, egs: EGS.length, rows };
@@ -89,7 +106,8 @@ function collectInPage(a) {
 
 /* ---------- 判定（Node 側） ---------- */
 function judgeTone(res, seeds) {
-  const js = JUDGE[res.tone] || [];
+  const js = (JUDGE[res.tone] || []).concat(TR ? [TR] : []);
+  if (TR) TR.prep(res.rows);
   const perSeed = {}; seeds.forEach(sd => { perSeed[sd] = { total: 0, bad: 0 }; });
   const rules = {}, badMap = new Map();
   let total = 0, bad = 0, kinds = 0;
@@ -137,7 +155,7 @@ async function waitReady(page) {
     N: Math.max(1, +arg('N', 24) || 24),
     seeds: String(arg('seeds', '2000,21001')).split(',').map(Number).filter(x => x > 0),
     jobs: Math.max(1, +arg('jobs', 2) || 1),
-    why: arg('why', false), json: arg('json', ''), base: arg('base', '')
+    why: arg('why', false), json: arg('json', ''), base: arg('base', ''), dump: arg('dump', '')
   };
   const whyN = o.why === true ? 30 : +o.why || 0;
   const T0 = Date.now();
@@ -150,7 +168,7 @@ async function waitReady(page) {
   if (unknown.length) { await first.browser.close(); console.error('知らない口調・箱庭：' + unknown.join(',')); process.exit(2); }
   const noJudge = want.filter(t => !JUDGE[t]);
   log('tone-feel：' + path.basename(dir) + (mode ? '#' + mode : '') + '・' + want.length + ' 口調 × ' + o.scen.join(',') + ' × N=' + o.N + ' × 種 ' + o.seeds.join(',') + '・ページ ' + o.jobs + ' 本' + (noJudge.length ? '（判定の無い口調：' + noJudge.join(',') + '）' : ''));
-  const queue = want.slice(), results = {}, pageErr = [];
+  const queue = want.slice(), results = {}, pageErr = [], dumped = {};
   const worker = async (pre) => {
     const ob = pre || await openBuild(dir, mode);
     try {
@@ -161,10 +179,11 @@ async function waitReady(page) {
         if (!fresh) { await ob.page.goto(buildUrl(dir, mode)); await waitReady(ob.page); }
         fresh = false;
         const n0 = ob.errors.length;
-        const res = await ob.page.evaluate(collectInPage, { tone: t, auto: AUTO.indexOf(t) >= 0 || info.persona.indexOf(t) >= 0 && !JUDGE[t], scen: o.scen, N: o.N, seeds: o.seeds, tie: o.tie, topics: o.topics });
+        const res = await ob.page.evaluate(collectInPage, { tone: t, auto: AUTO.indexOf(t) >= 0 || info.persona.indexOf(t) >= 0 && !JUDGE[t], scen: o.scen, N: o.N, seeds: o.seeds, tie: o.tie, topics: o.topics, sig: TR ? TR.SIG.source : '', fpre: TR ? TR.FP_RE.source : '', fpnorm: TR ? TR.FP_NORM : {} });
         res.pageErr = ob.errors.slice(n0);
         res.pageErr.forEach(e => pageErr.push(t + ': ' + e));
         results[t] = judgeTone(res, o.seeds);
+        if (o.dump) dumped[t] = res.rows;
         const R = results[t];
         log('  ' + t.padEnd(12) + R.mark + ' ' + R.rate.toFixed(1) + '%（' + R.bad + '/' + R.total + ' 本）・' + ((Date.now() - t1) / 1000).toFixed(1) + ' 秒' + (R.simErr ? '・シミュレーションの失敗 ' + R.simErr : '') + (res.pageErr.length ? '・ページのエラー ' + res.pageErr.length : ''));
       }
@@ -212,5 +231,7 @@ async function waitReady(page) {
     order.forEach(t => { const R = Object.assign({}, results[t]); R.bads = R.bads.slice(0, 40); out.tones[t] = R; });
     fs.writeFileSync(o.json, JSON.stringify(out, null, 1) + '\n');
   }
+  /* --dump=出力.json：判定の前の、口調ごとの全部の台詞（性別・本数・出どころ・元の台詞・一人称・連発の数）。崩れの型を探すとき用（2026-11-04） */
+  if (o.dump) fs.writeFileSync(o.dump, JSON.stringify(dumped) + '\n');
   process.exitCode = notO.length || simErr || pageErr.length ? 1 : 0;
 })().catch(e => { console.error(e && e.stack || e); process.exitCode = 1; });

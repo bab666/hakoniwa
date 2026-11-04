@@ -221,7 +221,9 @@
     else if (/[てで]おり$/.test(stem)) stem = stem.slice(0, -2) + 'い';
     var last = stem.slice(-1), pre = stem.slice(0, -1);
     /* する（〜します・勉強します・何とかします）：「し」の前が五段の「す」で終わる動詞の漢字一字（話し・出し・返し）でなければ する */
-    var suru = last === 'し' && !/[話出返消押渡隠回落戻倒起鳴指示伸干放正済許殺探離貸刺移映残直試流通増減足察差指刺外越殴壊卸干貸]$/.test(pre) && !/(過ご|なく|無く|増や|減ら|こぼ|ずら|ころ|まわ|かく|こわ|なお|かえ|はな|わた|おと|さが|よこ|ほど|ゆる|たお|もど|お|だ|け|さ|ど)$/.test(pre);
+    /* 2026-11-04（口調の点検のやり直し）：「暮らします」→「暮らする」、「もう一回します」→「もう一回す」になっていた。
+       漢字＋送りがなの五段の「す」（暮らし・冷まし・散らかし・動かし・燃やし・伸ばし・転がし・満たし・起こし など）は「す」、数＋「回し」（一回し・何回し）・「だけし」「半分こし」は「する」 */
+    var suru = last === 'し' && (/(?:[一二三四五六七八九十百何数毎も]|もう一)回$/.test(pre) || !/[話出返消押渡隠回落戻倒起鳴指示伸干放正済許殺探離貸刺移映残直試流通増減足察差指刺外越殴壊卸干貸写汚乱騙超崩延]$/.test(pre) && !/(過ご|なく|無く|増や|減ら|こぼ|ずら|ころ|まわ|かく|こわ|なお|かえ|はな|わた|おと|さが|よこ|ほど|ゆる|たお|もど|お|だ|け|さ|ど)$/.test(pre) && !/[一-鿿々][らまかやば]$/.test(pre) && !/(?:起こ|寄こ|転が|逃が|焦が|満た|果た)$/.test(pre) || /(?:だけ|わけ|半分こ|[何誰]か)$/.test(pre));
     /* 一段の「い」「み」は、いる・みる（〜ている・〜てみる）のときだけ。それ以外の い・み は五段（思い・飲み） */
     /* 語幹は前の語とつながって切り出される（「そばにい」「問題あり」）ので、助詞・副詞の直後の い・み も いる・みる（そばにいます→そばにいる） */
     var ichiIM = (last === 'い' || last === 'み') && (!pre || /[てでにがはもとをへやだう、\s　…‥]$/.test(pre.replace(new RegExp(MARK, 'g'), '、')));
@@ -859,7 +861,8 @@
     if (fx.bangOff && newRules(r) && !/。$/.test(q0)) q = q.replace(/。$/, '');
     if (fx.stammer) q = fxStammer(q, seed);
     /* 前に……：文頭に「……」（けだるげ）。間を置く：文の切れ目の「。」を「。……」に（半分くらい） */
-    if (fx.dots && !/^[…‥]/.test(q)) q = '……' + q;
+    /* 2026-11-04：台詞の途中にもう「……」があるときは、頭に足さない（けだるげ（軽）の「……いい顔してる。……覚えておくよ」） */
+    if (fx.dots && !/^[…‥]/.test(q) && !/[^…‥][…‥]{2}/.test(q)) q = '……' + q;
     if (fx.pause) { var pk = 0; q = q.replace(/(?<![…‥])。(?=[^…‥])/g, function (m) { pk++; return hash(seed + '#pz' + pk) % 100 < 50 ? '。……' : m; }); }
     /* 「……」の重なり：語彙（ありがとう=……ありがと）や効果が足した「……」が元の「……」と並んだら一つに（元の文にあった長さまでは残す） */
     if (!/[…‥]。/.test(q0)) q = q.replace(/([…‥])。/g, '$1');
@@ -1082,6 +1085,71 @@
   };
   T.help = function () { return '書き方：[口調] 名前=／ベース=K・F・P／一人称=／二人称=／態度=（省略可）。[文末] 元=先（／で候補）。[語彙] 元=先（「ばかり=ばかり」のように同じ語を書くと、短い語「ばか」がその長い語の中に当たらない）。[規則] 否定=ぬ・へん・ん／進行=ておる・とる／断定=や／助詞落とし=0.3／縮約=はい／ため口を混ぜる=0.15（ベース=P のとき、問い・感嘆・念押しの文を くだけた形に。言い切りの文は この割合で）／強調語=マジ／めっちゃ／前置き=フッ……。／やれやれ（前置きの割合=0.3）／言い切りの前置き=まあ、（言い切りの台詞だけ）／反応の前置き=へえ、／ほう、（〜ですね・〜ますね の台詞だけ）／一度だけ=けどね（足すのは台詞の最後の文に一度だけ）／驚き=なんと！／おお……（文頭の え・うそ・マジ などを置き換え。空なら消す）／笑い=フハハ（はは・ふふ などを置き換え。空なら消す）／言い切り=0.3（文末の よ・ね・さ・ぞ を落とす割合）／動揺=く……ッ！／バカな……！（「！」の強い文の頭に。動揺の割合=0.5）。[効果] 感嘆符を落とす・伸ばす・言い切りに！・短くする・言いよどみ=はい。\n※ 試作中：3本のベース（K｜F｜P）で書かれた台詞にだけ効きます。1本の台詞はこれまでの言い換えになります。'; };
   T.sample = function () { return '[口調]\n名前=ですぞ侍\nベース=P\n一人称=拙者\n二人称=貴殿\n[文末]\nです=ですぞ／ですな\nですか=ですかな\nますか=ますかな\nました=ましたぞ\nません=ませぬ\nください=くだされ\n[語彙]\nありがとうございます=かたじけない\nすみません=面目ない\n[規則]\n否定=ぬ\n進行=ておる'; };
+
+  /* ---------- 2026-11-04（口調の点検のやり直し。docs/reports/2026-11-04/tone-redo.md）：性別の語尾の仕上げ（V.genderEnd）の後ろに足す ----------
+     (1) 男性の話し手に残った女性語：tone-plus.js の mascFix は自動の態度口調だけなので、ほかの口調（意地っ張り（中性的・柔らかい）・健気（くだけた）・ほんわか・
+         ふつうのタメ口・ギャル など）と、1 本の台詞（persona.js の「あらあら、〜大丈夫よ」など）の言い換えに「〜てよね」「雑用よね」「平気よ」「決めたの」「〜のよ」が残っていた。
+         お姉さん・お嬢様（女性語が口調）・関西弁（「〜わ」が男女とも）・神の命令（古風な「〜よ」）は除く。問い（？・何・どう など）の「〜の」「〜よ」はそのまま
+     (2) ヤンキー・強気・熱血の男性の、やわらかい「名詞＋だよ」（隙ありだよ・今夜だけだよ）は言い切りの「だ」に（利用者の報告）
+     (3) 決め台詞の連発：一回の遊び（HK.simulate の一回）で、同じ話し手が同じ決め台詞（ありがとう存じます・ごめんあそばせ・
+         いやはや・やれやれ・べ、別に・サンキュ など、口調の辞書が足す言い回し）を 3 回目に言うときは、ふつうの言い方に戻す（利用者の報告「お嬢様の『ありがとう存じます』が 3 回」） */
+  var V = HK.Voice;
+  if (V && V.genderEnd && !V.genderEnd._redo) {
+    var ge0 = V.genderEnd;
+    var GE_END = '(?=[。！？!?…‥、」　〜]|$)', GE_END2 = '(?=[。！？!?…‥」　〜]|$)';
+    var FEM_TONE = { ane: 1, ojou: 1, kansai: 1, god: 1 };
+    var Q_SENT = /[？?]|何|なに|なん[でだの]|どう|誰|どこ|いつ|なぜ|どれ|どっち|どんな|どの/;
+    var sentAt = function (str, off) {
+      var a = str.slice(0, off), b = str.slice(off), st = Math.max(a.lastIndexOf('。'), a.lastIndexOf('！'), a.lastIndexOf('？'), a.lastIndexOf('!'), a.lastIndexOf('?')) + 1, m = b.match(/[。！？!?]/);
+      return str.slice(st, off + (m ? m.index + 1 : b.length));
+    };
+    var noQ = function (f) { return function (m) { var a = arguments, off = a[a.length - 2], str = a[a.length - 1]; return Q_SENT.test(sentAt(str, off)) ? m : f.apply(null, a); }; };
+    var mascMore = function (q) {
+      return q.replace(new RegExp('ないでよね' + GE_END, 'g'), 'ないでよ').replace(new RegExp('([てで])よね' + GE_END, 'g'), '$1よ')
+        .replace(new RegExp('([一-鿿々ァ-ヶー]|ゆっくり|ばかり|つもり|はず|こと|もの|だけ|まで|一緒)よね' + GE_END, 'g'), noQ(function (m, w) { return w + 'だよね'; }))
+        .replace(new RegExp('([うくすつぬむぶぐるたい])わよ' + GE_END, 'g'), '$1よ').replace(new RegExp('([一-鿿々ァ-ヶー])わよ' + GE_END, 'g'), '$1だよ')
+        .replace(new RegExp('(な)?のよ' + GE_END, 'g'), noQ(function (m, na) { return na ? 'なんだ' : 'んだ'; }))
+        .replace(new RegExp('かしら' + GE_END, 'g'), 'かな').replace(new RegExp('なのね' + GE_END, 'g'), 'なんだね').replace(new RegExp('([だたいる])わね' + GE_END, 'g'), '$1ね').replace(new RegExp('だわ' + GE_END, 'g'), 'だ')
+        .replace(new RegExp('((?:[一-鿿々ァ-ヶー])(?<![見寝来出居得似着煮経])|だけ|ばかり|こと|はず|つもり|一緒|平気|大丈夫|本当|ほんと)よ' + GE_END2, 'g'), noQ(function (m, w) { return w + 'だよ'; }))
+        .replace(/(たい|(?<!っ)た|しい|好きな|嫌いな|な)の(?=[。！!…‥」]|$)/g, noQ(function (m, w) { return (w === 'な' ? 'なん' : w + 'ん') + 'だ'; }));
+    };
+    var SOFT_DAYO = { yankee: 1, proud: 1, hero: 1 };
+    var CAP = [['ありがとう存じます', 'ありがとうございます'], ['感謝いたしますわ', 'ありがとうございますわ'], ['ごめんあそばせ', '申し訳ございません'], ['かたじけない', '礼を言うぞ'],
+      ['いやはや、', ''], ['やれやれ。', ''], ['やれやれ、', ''], ['フッ……。', ''], ['ふむ、', ''], ['あざっす', 'ありがとっす'], ['あざっした', 'ありがとっした'], ['サンキュー', 'ありがと'], ['サンキュ', 'ありがと'],
+      ['べ、別に', '別に'], ['フハハ', 'はは']];
+    var runMemo = {}, depth = 0, hooked = false, topFn = null;
+    var runHook = function () {
+      /* 付けたあとの HK.simulate（包みの並びのいちばん外。HK.wrap が後の包みを外に足すので、印は外の関数に残らない）と同じなら付けてある */
+      if (typeof HK.simulate !== 'function' || HK.simulate === topFn) return;
+      var make = function (sim0) {
+        var f = function () { if (!depth) runMemo = {}; hooked = false; depth++; try { return sim0.apply(this, arguments); } finally { depth--; } };
+        Object.keys(sim0 || {}).forEach(function (k) { f[k] = sim0[k]; });
+        f._toneRunMemo = true;
+        return f;
+      };
+      if (HK.wrap) HK.wrap(HK, 'simulate', make); else HK.simulate = make(HK.simulate);
+      topFn = HK.simulate;
+      /* 回の途中で付けたときは、その回の覚えをここから始める */
+      runMemo = {}; hooked = true;
+    };
+    V.genderEnd = function (q, who) {
+      q = ge0.apply(this, arguments);
+      if (!q || !who || typeof q !== 'string') return q;
+      var tone = HK.toneOf ? HK.toneOf(who) : who.tone;
+      if (who.gender === 'm' && !FEM_TONE[tone]) q = mascMore(q);
+      if (who.gender === 'm' && SOFT_DAYO[tone]) q = q.replace(new RegExp('([一-鿿々ァ-ヶー]|だけ|まで|から|もう一回|一分|今度|こっち|そっち|あっち|なし|あり|扱い)だよ' + GE_END2, 'g'), noQ(function (m, w) { return w + 'だ'; }));
+      /* 回ごとの覚え：HK.simulate の入口で空にする（入口の包みは、最初に台詞を整えたときに付ける。付けたときも空にするので、回の順番によらず同じ結果になる） */
+      runHook();
+      if (depth || hooked) CAP.forEach(function (c) {
+        if (q.indexOf(c[0]) < 0) return;
+        var k = (who.name || '') + '|' + c[0];
+        runMemo[k] = (runMemo[k] || 0) + 1;
+        if (runMemo[k] > 2) q = q.replace(c[0], c[1]).replace(/^[、\s　]+/, '');
+      });
+      return q;
+    };
+    V.genderEnd._redo = true;
+  }
 
   /* 以前の箱庭全体の辞書（高度設定の adv.tone）は廃止した。保存の文字列は当てず（T.user に入れない・選択欄に足さない）、
      ui.js の移行（その辞書で作った口調を選んでいた住人の「辞書を直接書く」に写す）が読めるよう、文字列だけ T.userText に置く */
