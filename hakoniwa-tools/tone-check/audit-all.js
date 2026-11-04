@@ -62,8 +62,9 @@ const PASSES = {
   /* 長いエッチの場面の流れ（2026-11-03。sex-flow-audit.js）：段階の逆戻り・体位の矛盾・二度出し・応答待ち・閾値前の山場・導入の台詞・似た役割の重ね */
   sexflow: { tool: 'sexflow', id: 'sexflow', opt: { N: 24 }, lewd: 'direct', est: 8, modes: ['r18'], extra: true, out: () => 'sexflow-r18' },
   /* 三人の場面の形（2026-11-04。trio-shape-audit.js の単独実行と同じ関数・同じ回数。check.js が全箱庭の audit-all に相乗りさせる） */
-  /* noMisc：文の崩れ（misc）は当てない（単独の trio-shape-audit と同じ判定だけ。misc を当てると T2「空の記録」が媚薬ロッカーの三人の夜で 4 件出る。docs/reports/2026-11-04/check-pipeline.md の残った課題） */
-  trio: { tool: 'trio', id: 'trio', opt: { N: 4 }, lewd: 'direct', est: 10, modes: ['r18'], extra: true, noMisc: true, out: () => 'trio-r18' }
+  /* 文の崩れ（misc）も当てる（2026-11-04 に戻した。前は媚薬ロッカーの三人のベッドで描写の長さ「短く」のとき前戯〜最中が空の「三人の夜」が出て T2 が 4 件だったので noMisc にしていた。locker-trio-bed.js で空の記録を出さないように直した）。
+     P.noMisc（パスの印）は、misc を当てたくないパスのために残す */
+  trio: { tool: 'trio', id: 'trio', opt: { N: 4 }, lewd: 'direct', est: 10, modes: ['r18'], extra: true, out: () => 'trio-r18' }
 };
 const DEFAULT = ['orient', 'pos', 'pos-hot', 'pos-ffhot', 'state', 'loveflag', 'seg', 'qa', 'noname', 'call', 'topics-state', 'topics-seg'];
 /* 判定：cross＝ほかのパスの回にも当てる。modes＝当てるモード */

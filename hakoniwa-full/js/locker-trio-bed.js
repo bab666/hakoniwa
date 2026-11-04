@@ -226,9 +226,12 @@
     tops2.forEach(function (z) { put('peak', moan(S, z[0], true) + climaxBy(S, api, z[0], z[1], true), sh3 ? 3 : 2); api.bumpClimax(z[0]); });
     put('after', pick(S, TB.CL), 2);
     if (T3) { var o3 = T3.render(); t2 = o3.fore + o3.in + o3.mid; t3 = o3.peak + o3.after; }
+    /* 描写の長さが「短く」だと、組み立て（HK.Trio3 の fit）が山場の文だけを残して前戯〜最中が空になることがある。
+       そのときは空の「三人の夜」を出さず、山場の文をその記録に入れて一つにまとめる（2026-11-04。空の記録 4 件の直し） */
+    if (!String(t2).trim()) { t2 = t3; t3 = ''; }
     ST.say(S, { actors: m3, tag: '三人の夜', text: t2, why: whyBase + '・仮眠室のベッドで', mag: 46, kind: 'climax' });
     labels.push({ oneTwo: '攻め一人が二人を', twoOne: '攻め二人が一人を', sandwich: '真ん中を挟んで', ring: '輪になって' }[sp.p]);
-    ST.say(S, { actors: m3, tag: '三人の絶頂', text: t3, why: '媚薬が切れるまで、三人は仮眠室を出なかった', mag: 46, kind: 'climax' });
+    if (String(t3).trim()) ST.say(S, { actors: m3, tag: '三人の絶頂', text: t3, why: '媚薬が切れるまで、三人は仮眠室を出なかった', mag: 46, kind: 'climax' });
     /* 一夜のうちに、もう一、二度ずつ */
     m3.forEach(function (p) { p.cnt.climax += 1 + rng.int(2); });
     var tone = lhTone(S, api, m3) || (sweetIn(S, api, m3) ? 'sweet' : rng() < 0.5 ? 'sweet' : 'plain');
