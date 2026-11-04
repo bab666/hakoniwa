@@ -198,6 +198,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | 三人の場面の形（trio-shape-audit）（`trio-shape`） | heavy | `trio` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=trio に入れる |
 | 無理やりの二回目・三回目（force-repeat-audit）（`force-repeat`） | heavy | `force` | build | 1 | 10 秒 |  |
 | 女性の受けのお尻の語（butt-word-audit）（`butt-word`） | heavy | `butt` | build | 1 | 60 秒 | 受けが女性の体の組（男×女・女×女）の記録に「ケツ」が 0 件（男性の受けの件数は参考）。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN） |
+| 自分の口調に言及する台詞（meta-tone-audit）（`meta-tone`） | heavy | `moan` `serifu` `tone` | build | 1 | 25 秒 | 台詞・喘ぎで本人が自分の話し方（敬語・言葉遣い・口調・タメ口…）に触れるもの 0 件。R18版・全年齢版の記録と、喘ぎの表・書き下ろし・「」の中のソース（静的。本体の両ビルドと全パック）。箱庭のかたまりだけ変えたときは記録はその箱庭だけ |
 | 結果の指紋（regress。比べる相手のコミットと）（`regress`） | heavy | `ui` `order` `buildtool` | build | 1 | 15 秒 | R18版・全年齢モード・全年齢版。比べる相手の指紋は、そのコミットのビルドを取り出して取る（キャッシュに残る） |
 | 単独・乱順の読み込み（chunk-regress）（`chunk-regress`） | heavy | `order` `buildtool` | build | 1 | 450 秒 | 両ビルド |
 | かたまりの境目（chunk-audit）（`chunk-audit`） | heavy | `order` `buildtool` | build | 1 | 60 秒 | 両ビルド |
