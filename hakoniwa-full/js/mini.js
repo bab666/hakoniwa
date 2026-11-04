@@ -367,6 +367,8 @@
         }
         var cand = c ? list : list.filter(function (t) { return t.indexOf('{c}') < 0; });
         if (hasLove && !loveTalkOk(ctx, [a, b, c])) { var nl = cand.filter(function (t) { return !LOVE_TXT.test(t); }); if (nl.length) cand = nl; }
+        /* 二人きりの部屋（engine.js の HK.noThird）：その場にいない第三者を前提にした文（「さっき誰と話してたの」など）は使わない。全部そうなら起こさない（2026-11-04 担当PR） */
+        if (HK.noThird && HK.noThird(ctx)) { var n3 = cand.filter(function (t) { return !HK.THIRD_RE.test(t); }); if (n3.length) cand = n3; else return null; }
         /* 年齢が決まっている二人なら、「同い年」「年上」の文は実際の年齢に合うものだけ */
         if (b && a.age && b.age) { var ag = cand.filter(function (t) { return ageFits(t, a, b); }); if (ag.length) cand = ag; else return null; }
         if (b && cand.some(function (t) { return FRIEND_TXT.test(t) || UNPAIRED_TXT.test(t) || REL_ANY.test(t) || FIRSTMEET_TXT.test(t); })) { var rf = cand.filter(function (t) { return relFits(ctx, t, a, b); }); if (rf.length) cand = rf; else return null; }

@@ -98,7 +98,7 @@
     var headline, lines = ['部屋：「' + (room.label || HK.roomLabel(res.env)) + '」'];
     if (isOne) {
       var e = ex[0];
-      if (!e) headline = '誰も扉をくぐれなかった。全員がまだ部屋の中にいる。';
+      if (!e) headline = '誰も扉をくぐれなかった。' + (X.C.length === 2 ? '二人とも' : '全員が') + 'まだ部屋の中にいる。';
       else if (e.how === 'sacrifice') headline = X.nm(e.b) + 'が' + X.nm(e.a) + 'を外へ逃がし、自分は部屋に残った。';
       else headline = X.nm(e.a) + 'だけが、' + X.names(left) + 'を置いて部屋を出た。';
       if (e) lines.push(e.label + '　' + (e.how === 'sacrifice' ? X.nm(e.b) + 'が' + X.nm(e.a) + 'の背中を押した' : X.nm(e.a) + 'が' + X.nm(e.b) + 'の隙をついた'));
@@ -107,7 +107,7 @@
       var trios = ex.filter(function (e) { return e.trio; });
       /* 見出しの書式（順6・2026-10-26）：誰が条件を満たしたか → 取り残された人・自分から残った人 → 「〇人で脱出した。」をいつも最後に。
          恋人どうしの組・恋人の三人（円満な三人）のように全員が出た結末でも、人数を書く */
-      if (group) headline = '条件を満たし、' + X.names(group.group) + 'が全員で部屋を出た。';
+      if (group) headline = '条件を満たし、' + X.names(group.group) + (group.group.length === 2 ? 'が二人そろって部屋を出た。' : 'が全員で部屋を出た。');
       else if (trios.length) headline = trios.map(function (e) { return X.names(e.group) + 'の' + (['', '', '二人', '三人', '四人', '五人'][e.group.length] || e.group.length + '人'); }).join('と') + 'が、一緒に条件を満たした。' + (pairs.length ? 'ほかに' + pairs.map(function (e) { return X.nm(e.a) + '×' + X.nm(e.b); }).join('、') + 'も成立。' : '') + (left.length ? X.names(left) + 'は取り残された。' : '');
       else if (pairs.length) headline = pairs.map(function (e) { return X.pn2(e.a, e.b); }).join('、') + (pairs.length > 1 ? ' の' + pairs.length + '組' : '') + 'が成立。' + (left.length ? X.names(left) + 'は取り残された。' : '');
       else headline = '誰も条件を満たせず、' + (left.length > 2 ? '全員' : X.names(left)) + 'が部屋に取り残された。';
@@ -123,7 +123,7 @@
         var p = X.pair(e.a, e.b);
         lines.push(e.label + '　' + X.pn2(e.a, e.b) + '　条件を満たして' + (e.stay != null ? X.nm(e.a) + 'が脱出（' + X.nm(e.stay) + 'は自分から残った）' : '脱出') + '。部屋を出たあとの関係は「' + (p ? p.name : '―') + '」');
       });
-      if (group) lines.push(group.label + '　全員で脱出');
+      if (group) lines.push(group.label + '　' + (group.group.length === 2 ? '二人で脱出' : '全員で脱出'));
     }
     if (LF) {
       headline += HK.RoomLeft.note(res, X);
@@ -216,7 +216,7 @@
     var how = [rescued.length ? '救助' + rescued.length : '', raft.length ? 'イカダ' + raft.length : '', solo.length ? '単独' + solo.length : ''].filter(Boolean).join('・');
     var headline = n + '人中' + home + '人が帰還' + (home ? '（' + how + '）' : '') +
       (dead.length ? '、' + dead.length + '人が島で死亡' : '') + (stay.length ? '、' + stay.length + '人が島に残った' : '') + '。';
-    if (!dead.length && home === n) headline = '全員が生きて島を出た（' + how + '）。';
+    if (!dead.length && home === n) headline = (n === 2 ? '二人とも' : '全員が') + '生きて島を出た（' + how + '）。';
     var lines = [];
     if (home) lines.push('帰還：' + X.names(rescued.concat(raft)));
     solo.forEach(function (c) { lines.push((/助けを呼びに/.test(c.fate) ? '先に島を出た：' : '抜け駆け：') + c.name + '（' + c.fateNote + '）'); });

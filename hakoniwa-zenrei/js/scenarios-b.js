@@ -38,6 +38,8 @@
     id: 'island', name: '無人島', kicker: 'サバイバル・共同生活',
     desc: '漂着した島で救助を待つ日々。食料が尽きれば体力が削れ、人間関係も削れる。',
     unit: '日', preRel: 0, lethal: true, factions: true,
+    /* 島にほかの人はいない：二人きりのとき、第三者を前提にした文を出さない（engine.js の ctx.noThird。2026-11-04 担当PR） */
+    closed: true,
     derived: ['caution', 'lead', 'cold', 'warmth'],
     env: [
       { id: 'days', label: '救助までの日数', min: 4, max: 15, def: 8, lo: '4日', hi: '15日', unit: '日' },

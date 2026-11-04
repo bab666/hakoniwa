@@ -69,7 +69,8 @@
     noCall: L('{a}は本土に着いた。だが、島のことは誰にも話さなかった。|{a}は無事に家へ帰った。島の皆が待っていることを、思い出さないようにしていた。')
   };
 
-  function pick(ctx, arr) { return arr[Math.floor(ctx.rng() * arr.length)]; }
+  /* 二人だけのときは「全員」「皆」の文を避ける（乱数の引き方は同じ。2026-11-04 担当PR） */
+  function pick(ctx, arr) { if (arr.length > 1 && typeof arr[0] === 'string' && ctx.few && ctx.few()) { var f = arr.filter(function (x) { return !/全員|皆(?![無目既様])|みんな/.test(x); }); if (f.length) arr = f; } return arr[Math.floor(ctx.rng() * arr.length)]; }
   function mm(a, b) { return { a: a.name, b: b ? b.name : '' }; }
   function tieOf(ctx, a, b) {
     if (RK && RK.kind && RK.kind(ctx, a, b)) return RK.kind(ctx, a, b);

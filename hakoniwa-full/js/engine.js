@@ -320,6 +320,17 @@
   };
   /* その場にいる人。監禁（執着の暴走）されている人は閉じ込められているので、監禁が終わるまで場に出てこない（obsess-kit.js の flags.caged） */
   Ctx.prototype.present = function () { return this.chars.filter(function (c) { return HK.State.here(c); }); };
+  /* 二人きり（2026-11-04 担当PR。docs/reports/2026-11-04/pair-only.md）：ほかに誰もいない箱庭（scen.closed：出られない部屋など）で、場にいる人が二人以下。
+     第三者がいないと成り立たない文（ほかの誰かに話しかける・人目・みんな・「さっき誰と話してた？」）を出さないのに使う */
+  Ctx.prototype.noThird = function () { return !!(this.scen && this.scen.closed) && this.present().length < 3; };
+  HK.noThird = function (ctx) { return !!(ctx && typeof ctx.noThird === 'function' && ctx.noThird()); };
+  /* 文の候補（配列）から、二人きりのときに成り立たない文を外す。全部外れるときは元の候補のまま（呼ぶ側が二人用の文を足すこと） */
+  HK.THIRD_RE = /ほかの誰か(?!を好き|に渡|のもの)|他の誰か(?!を好き|に渡|のもの)|別の誰か|別の人|ほかの人と|他の人と|ほかの人の前|他の人の前|みんな|皆が|皆の|人目|誰と話して|誰と話す|誰と何|誰かと(?:笑|楽しそう|話)|誰に笑いかけ|誰かに(?:笑いかけ|話しかけ)|周りの人|周りに人/;
+  HK.pairOnly = function (ctx, arr) {
+    if (!arr || !HK.noThird(ctx)) return arr;
+    var f = arr.filter(function (t) { return !HK.THIRD_RE.test(t); });
+    return f.length ? f : arr;
+  };
   Ctx.prototype.alive = function () { return this.chars.filter(function (c) { return c.alive; }); };
   /* 同じ場にいる相手（箱庭が場所を持つときは、その箱庭が決める） */
   Ctx.prototype.others = function (a) {
@@ -334,6 +345,8 @@
     if (arr && arr.length > 1 && typeof arr[0] === 'string' && this.present().length <= 2) {
       var f = arr.filter(function (t) { return !GROUP_RE.test(t.replace(/\{[a-z]+\}/g, '')); });
       if (f.length) arr = f;
+      /* ほかに誰もいない箱庭の二人きり（noThird）では、「別の人」「さっき誰と話してた」「人目」なども避ける（2026-11-04 担当PR） */
+      if (arr.length > 1 && this.noThird()) { var g = arr.filter(function (t) { return !HK.THIRD_RE.test(t); }); if (g.length) arr = g; }
     }
     /* 同じ文がすぐに繰り返されないよう、最近使った文はできるだけ避ける */
     var r = this._recent || (this._recent = []), t = this.rng.pick(arr);

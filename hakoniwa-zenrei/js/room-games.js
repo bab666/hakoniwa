@@ -468,7 +468,7 @@
       if (HK._trioPrev) HK._trioPrev.res = { n: C.length, few: true };
       /* 二人しかいない：三人の場面でだけ数える、は成り立たないので、二人ずつ数える部屋に（部屋の名前は、最初の記録（元の名前）のあとで付け直す） */
       ctx.flags.trioFall = 'few';
-      ctx.flags.trioLabel = HK.roomLabelOf(ctx.env, ctx.rules, { two: true });
+      ctx.flags.trioLabel = HK.roomLabelOf(ctx.env, ctx.rules, { two: true, n: ctx.chars.length });
       return;
     }
     ctx.flags.trioOnly = true;
@@ -485,7 +485,7 @@
           safeNg = true; ctx.flags.trioFall = 'ngs';
           var hr0 = ruleK(ctx, 'h');
           if (hr0) { if (ruleK(ctx, 'hug')) ctx.rules.splice(ctx.rules.indexOf(hr0), 1); else hr0.k = 'hug'; }
-          ctx.flags.trioLabel = HK.roomLabelOf(ctx.env, ctx.rules);
+          ctx.flags.trioLabel = HK.roomLabelOf(ctx.env, ctx.rules, { n: ctx.chars.length });
         }
       }
       if (HK._trioPrev) HK._trioPrev.res = { n: C.length, soft: true, safe: !!HK.SAFE_ON, hug: safeNg };
@@ -518,7 +518,7 @@
       ctx.flags.trioSoft = true; ctx.flags.trioFall = 'ng';
       var hr = ruleK(ctx, 'h');
       if (hr) { if (ruleK(ctx, 'hug')) ctx.rules.splice(ctx.rules.indexOf(hr), 1); else hr.k = 'hug'; }
-      ctx.flags.trioLabel = HK.roomLabelOf(ctx.env, ctx.rules);
+      ctx.flags.trioLabel = HK.roomLabelOf(ctx.env, ctx.rules, { n: ctx.chars.length });
     }
     /* r18:end */
     if (!ctx.flags.trioSoft && !ctx.flags.trioNG) ctx.flags.trioSoft = true;

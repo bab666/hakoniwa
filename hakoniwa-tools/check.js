@@ -215,7 +215,7 @@ function classify(files) {
     }
     /* index.html：scripts:begin〜end（build が書く目録）の中だけの変更は作り直されたもの */
     if (/\/index\.html$/.test(p) && oldS != null && newS != null) {
-      const cut = s => s.replace(/<!-- scripts:begin -->[\s\S]*<!-- scripts:end -->/, '');
+      const cut = s => s.replace(/<!-- scripts:begin[\s\S]*<!-- scripts:end -->/, '');
       if (cut(oldS) === cut(newS)) { R.gen.push(p); return; }
     }
     if ((isMain || isPack) && !f.commentOnly) {
@@ -315,7 +315,7 @@ function decide(R) {
     const scope = toolOn('audit-all') ? 'all' : scenAll();
     const extra = new Set();
     Object.keys(T.EXTRA_OF).forEach(t => { if (on(t)) extra.add(T.EXTRA_OF[t]); });
-    if (O.all) ['sexgate', 'feud', 'group', 'state-hot', 'name', 'relcons'].forEach(x => extra.add(x));
+    if (O.all) ['sexgate', 'feud', 'group', 'state-hot', 'name', 'relcons', 'pair'].forEach(x => extra.add(x));
     /* 全箱庭で回すときは、長い場面・三人の場面も同じページで回す（単独の道具と同じ関数。ページを開き直さない） */
     if (scope === 'all' && (on('thick') || toolOn('sex-flow'))) { extra.add('sexflow'); folded['sex-flow'] = 1; }
     if (scope === 'all' && (on('trio') || toolOn('trio-shape'))) { extra.add('trio'); folded['trio-shape'] = 1; }
@@ -355,10 +355,10 @@ function decide(R) {
       const tg = t => all || X.tags.has(t);
       rooms.forEach(room => {
         if (all || tg('sim') || tg('ui') || tg('serifu') || tg('tone')) {
-          /* 追加の配役パス：長い場面（sexflow）は HK_ONLY_SCEN の部屋で回る。relcons・trio は箱庭の決まった並びを回す（部屋に絞れない）ので入れない */
+          /* 追加の配役パス：長い場面（sexflow）は HK_ONLY_SCEN の部屋で回る。relcons・trio は箱庭の決まった並びを回す（部屋に絞れない）ので入れない。pair は出られない部屋だけを回すので入れない */
           const extra = [];
           if (tg('thick')) extra.push('sexflow');
-          Object.keys(T.EXTRA_OF).forEach(t => { if (X.tags.has(t) && T.EXTRA_OF[t] !== 'relcons') extra.push(T.EXTRA_OF[t]); });
+          Object.keys(T.EXTRA_OF).forEach(t => { if (X.tags.has(t) && T.EXTRA_OF[t] !== 'relcons' && T.EXTRA_OF[t] !== 'pair') extra.push(T.EXTRA_OF[t]); });
           add({ id: 'pack-audit', stage: 'heavy', key: 'pack-audit:' + room, label: 'パックの audit-all：' + room + (extra.length ? ' ＋ ' + extra.join(',') : ''), pack: id, room, extra, why: X.why.slice(0, 3).join('・'), weight: Math.min(2, O.jobs) });
         }
         if (tg('serifu') || tg('tone')) add({ id: 'pack-feel', stage: 'heavy', key: 'pack-feel:' + room, label: 'パックの tone-feel：' + room, pack: id, room, why: X.why.slice(0, 3).join('・'), weight: 1 });
@@ -395,7 +395,7 @@ function manifestPart(b, scope) {
 function buildInputs(b) {
   const dir = path.join(ROOT, BUILDS[b]);
   const js = fs.readdirSync(path.join(dir, 'js')).filter(f => f !== 'event-catalog.js' && (f.endsWith('.js') || f === '_order.txt')).sort().map(f => BUILDS[b] + '/js/' + f);
-  const html = String(readOr(path.join(dir, 'index.html'), '')).replace(/<!-- scripts:begin -->[\s\S]*<!-- scripts:end -->/, '');
+  const html = String(readOr(path.join(dir, 'index.html'), '')).replace(/<!-- scripts:begin[\s\S]*<!-- scripts:end -->/, '');
   return sha(hashFiles(js) + sha(html) + hashFiles(toolsOf('build')) + hashFiles(fs.readdirSync(path.join(ROOT, 'hakoniwa-tools/build')).filter(f => /^build(?:-min|-manifest|-tone)?\.js$/.test(f)).map(f => 'hakoniwa-tools/build/' + f)));
 }
 function buildOutputs(b) {

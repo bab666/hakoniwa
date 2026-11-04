@@ -7,7 +7,8 @@
   var isl = HK.SCENARIOS.island;
   if (!isl) return;
   function R(ctx, a, b) { return ctx.R(a, b); }
-  function pk(ctx, arr) { return arr[ctx.rng.int(arr.length)]; }
+  /* 二人だけのときは「全員」「皆」の文を避ける（乱数の引き方は同じ。2026-11-04 担当PR） */
+  function pk(ctx, arr) { if (arr.length > 1 && typeof arr[0] === 'string' && ctx.few && ctx.few()) { var f = arr.filter(function (x) { return !/全員|皆(?![無目既様])|みんな/.test(x); }); if (f.length) arr = f; } return arr[ctx.rng.int(arr.length)]; }
   function sk(ctx, c, id) { return ctx.stat(c, id); }
   function names(list) { return list.map(function (c) { return c.name; }).join('・'); }
 
@@ -123,7 +124,7 @@
       } else {
         var down = pk(ctx, party);
         fx = function () { down.hp -= B.dmg * 1.3; if (B.venom) down.flags.venom = 3; P.forEach(function (c) { ctx.stress(c, 12); }); };
-        text = intro + pk(ctx, [B.name + 'は想像以上に素早かった。' + down.name + 'がやられ、全員で引きずるようにして逃げ帰った。', wpn + 'は' + B.name + 'に弾かれた。' + down.name + '「逃げろ！｜＝｜逃げてください！」――撤退するしかなかった。']);
+        text = intro + pk(ctx, [B.name + 'は想像以上に素早かった。' + down.name + 'がやられ、' + (party.length > 2 ? '全員で' : '') + '引きずるようにして逃げ帰った。', wpn + 'は' + B.name + 'に弾かれた。' + down.name + '「逃げろ！｜＝｜逃げてください！」――撤退するしかなかった。']);
         H.stage = 'avoid'; why += '（力が及ばなかった）';
         cat = 'conflict';
       }

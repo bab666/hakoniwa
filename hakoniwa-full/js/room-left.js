@@ -194,9 +194,21 @@
   };
 
   /* ---------- 書く ---------- */
-  function persons(ctx, L0, key, U) {
+  /* 人数に合わせた文（2026-11-04 担当PR）：外に出た人がいない回は「出ていった人たち」「みんな」の文を外し、一人だけなら名前に、
+     残った人が二人なら「残った人たち」「隣の人」を相手の名前にする（二人だけの部屋で、いない第三者に話しかけないように） */
+  function fit(arr, c, G, outs) {
+    var b = G.length === 2 ? (G[0] === c ? G[1] : G[0]).name : null, o1 = outs && outs.length === 1 ? outs[0].name : '';
+    var r = arr.map(function (t) {
+      if (outs && !outs.length && /出ていった|先に出た|みんな/.test(t)) return null;
+      if (o1) t = t.replace(/出ていった人の名前を、一人ずつ数えるように呼んだ/g, '出ていった' + o1 + 'の名前を、何度も呼んだ').replace(/(出ていった|先に出た)人たち?/g, '$1' + o1).replace(/みんなは?/g, o1 + 'は');
+      if (b) t = t.replace(/残った人たちに/g, b + 'に').replace(/隣(?:に)?(?:いた)?の人/g, b).replace(/隣にいた人/g, b).replace(/残った顔ぶれ/g, b).replace(/誰かの隣/g, b + 'の隣').replace(/眠れない人の背中/g, '眠れない' + b + 'の背中').replace(/弱音を吐く者がいれば/g, b + 'が弱音を吐けば');
+      return t;
+    }).filter(function (t) { return t; });
+    return r.length ? r : arr;
+  }
+  function persons(ctx, L0, key, U, outs) {
     var out = [];
-    L0.slice(0, 3).forEach(function (c) { out.push(fill(pk(ctx, T[key][att(c)] || T[key].gentle, U), { a: c.name })); });
+    L0.slice(0, 3).forEach(function (c) { out.push(fill(pk(ctx, fit(T[key][att(c)] || T[key].gentle, c, L0, outs), U), { a: c.name })); });
     return out.join('');
   }
   function groupKind(ctx, a, b) {
@@ -226,7 +238,7 @@
       G.slice(0, 3).forEach(function (c) {
         var mk = moodKey(c);
         var TA = G.length > 1 ? T.aloneWith : T.alone;
-        parts.push(fill(pk(ctx, TA[att(c)] || TA.gentle, U), { a: c.name }) + fill(pk(ctx, T.aloneMood[mk], U), { a: c.name }));
+        parts.push(fill(pk(ctx, fit(TA[att(c)] || TA.gentle, c, G, outs), U), { a: c.name }) + fill(pk(ctx, fit(T.aloneMood[mk], c, G, outs), U), { a: c.name }));
         bump(ctx, c, mk === 'anger' ? { anger: 8, grief: 10 } : { grief: 18, fear: 8 }, '部屋に取り残された');
       });
       why = '結末：取り残された人の結末（孤独）' + (why ? '／' + why : '') + '／気分：' + G.slice(0, 3).map(function (c) { return c.name + ((HK.Emo && HK.Emo.NAME) ? HK.Emo.NAME[moodKey(c)] : ''); }).join('・');
@@ -242,7 +254,7 @@
       why = '結末：取り残された人の結末（' + r.name + 'が助けに来た）／' + r.name + 'から' + x.name + 'への' + { lover: '恋人としての想い', crush: '想い', obsess: '執着', friend: '友情・絆' }[o.bond];
     } else if (o.id === 'rescue') {
       parts.push(fill(pk(ctx, outs.length ? T.rescueOpen.report : T.rescueOpen.none), { L: LN, O: nm(outs.slice(0, 3)) }));
-      parts.push(persons(ctx, G, 'joy', U));
+      parts.push(persons(ctx, G, 'joy', U, outs));
       G.forEach(function (c) { bump(ctx, c, { joy: 40, fear: -30 }, '救助隊が来た'); });
       /* 出ていった人への誓い（穏やかでは少なく、重いでは多く） */
       var pv = Math.min(1, 0.85 * (HK.Dark ? HK.Dark.f(ctx, 'spite') : 1));
@@ -260,7 +272,7 @@
     } else {
       parts.push(fill(pk(ctx, T.loopOpen), { L: LN }));
       parts.push(pk(ctx, T.loopHall));
-      parts.push(persons(ctx, G, 'loopReact', U));
+      parts.push(persons(ctx, G, 'loopReact', U, outs));
       parts.push(pk(ctx, T.loopEnd));
       G.forEach(function (c) { bump(ctx, c, { fear: 35 }, '白い部屋に戻った'); });
       why = '結末：取り残された人の結末（ループ）';

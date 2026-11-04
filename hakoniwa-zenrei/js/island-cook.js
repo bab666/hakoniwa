@@ -58,7 +58,14 @@
     ['「ここに店を出せる」と誰かが言った。', '盛り付けまで美しく、しばらく誰も手をつけられなかった。', '全員が黙って、ゆっくり味わった。', '「帰ってもこれが食べたい」と誰かが言った。']
   ];
 
+  /* 二人だけのときは「全員が」「誰かが」の文を使わない（2026-11-04 担当PR。全部当たるときは元のまま） */
+  function two(ctx, list) {
+    if (!(ctx.few && ctx.few())) return list;
+    var f = list.filter(function (x) { return !/全員|誰か|誰も/.test(x); });
+    return f.length ? f : list;
+  }
   function pickNew(ctx, list, used) {
+    list = two(ctx, list);
     var fresh = list.filter(function (x) { return !used[x]; });
     var src = fresh.length ? fresh : list;
     return src[ctx.rng.int(src.length)];
@@ -80,7 +87,7 @@
     var ss = SEASON.filter(function (x) { return x.need <= q + 1 && (!x.item || have.indexOf(x.item) >= 0); });
     var season = q === 0 ? null : pickNew(ctx, ss.map(function (x) { return x.t; }), I.usedSeason = I.usedSeason || {});
     if (season) I.usedSeason[season] = 1;
-    return { name: name, main: main, season: season, taste: ctx.rng.pick(TASTE[q]) };
+    return { name: name, main: main, season: season, taste: ctx.rng.pick(two(ctx, TASTE[q])) };
   };
 
   /* ---------- 料理の手伝い ---------- */

@@ -53,8 +53,18 @@
     return S;
   };
   /* 最近使った文を避けて選ぶ */
+  /* ほかに誰もいない箱庭（scen.closed：宇宙船など）で、生きている人が二人以下：「全員」「皆」「一人ずつ」など第三者を前提にした文を避ける（2026-11-04 担当PR。
+     乱数の引き方は変えない＝選ぶ候補だけを絞る。全部当たるときは元のまま） */
+  ST.GROUP_RE = /全員|皆(?![無目既様])|みんな|一人ずつ|ひとりずつ|当番|見物|ほかの誰か|他の誰か|別の誰か|誰と話|人目|周りの人|仲間の(?:顔|名前)|乗組員たち|船じゅう|野営地じゅう/;
+  ST.few = function (S) { return !!(S && S.scen && S.scen.closed && S.P && S.P.filter(function (p) { return p.alive !== false && !p.dead; }).length <= 2); };
+  ST.two = function (S, arr) {
+    if (!arr || arr.length < 2 || typeof arr[0] !== 'string' || !ST.few(S)) return arr;
+    var two = arr.filter(function (t) { return !ST.GROUP_RE.test(t); });
+    return two.length ? two : arr;
+  };
   ST.pick = function (S, arr) {
     if (!arr || !arr.length) return '';
+    arr = ST.two(S, arr);
     var r = S.recent, t = arr[S.rng.int(arr.length)];
     for (var i = 0; i < 6 && r.indexOf(t) >= 0; i++) t = arr[S.rng.int(arr.length)];
     r.push(t); if (r.length > 60) r.shift();
