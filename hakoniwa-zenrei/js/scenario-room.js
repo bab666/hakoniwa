@@ -84,7 +84,8 @@
       : nounN(r[0]) + 'と' + nounN(r[1]) + '、両方を済ませないと';
     /* 「一人しか出られない」をほかの条件と併用（env.only1）：条件を満たしても、扉をくぐれるのは一人 */
     /* 条件1に「一人しか出られない」・条件2にほかの条件、を選んだときも同じ（順164）。全員で出られる（env.allout）は、その旨を添える（順26） */
-    return tri + s + (oneWith(env) ? '出られない部屋（ただし、出られるのは一人だけ）' : allOutEnv(env) ? '出られない部屋（ただし、条件を満たした人と一緒に、ほかの全員も出られる）' : '出られない部屋');
+    /* 二人だけの部屋（o.n：参加の人数。2026-11-04 担当PR）では、「ほかの全員も出られる」は成り立たないので添えない */
+    return tri + s + (oneWith(env) ? '出られない部屋（ただし、出られるのは一人だけ）' : allOutEnv(env) && !(o && o.n != null && o.n < 3) ? '出られない部屋（ただし、条件を満たした人と一緒に、ほかの全員も出られる）' : '出られない部屋');
   };
   /* 「一人しか出られない」：条件1で選ぶ（ほかの条件なし）か、ほかの条件と併用する（env.only1、または条件1に選んで条件2を足す） */
   HK.roomOnlyOne = function (env) { return rulesOf(env)[0].k === 'one' || oneWith(env); };
@@ -508,7 +509,7 @@
     var vic = kr ? ctx.chars.filter(function (c) { return (c.alive === false && c.killedBy != null) || c.flags.knocked; }) : [];
     if (ctx.flags.oneCond) { var od = oneDoor(ctx, P, '', '部屋全体の条件がそろった'); if (od.text) ctx.say({ kind: 'event', cat: od.cat, actors: P, text: od.text, why: od.why, mag: od.mag }); doorFlush(ctx); return; }
     var vn = names(vic);
-    P.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = kr ? (HK.SAFE_ON ? vn + 'を気絶させて開いた扉から、部屋を出た' : vn + 'の命と引き換えに開いた扉から、部屋を出た') : '条件を満たし、全員で部屋を出た'; });
+    P.forEach(function (c) { c.out = true; c.fate = '脱出'; c.fateNote = kr ? (HK.SAFE_ON ? vn + 'を気絶させて開いた扉から、部屋を出た' : vn + 'の命と引き換えに開いた扉から、部屋を出た') : P.length === 2 ? '条件を満たし、' + P[c === P[0] ? 1 : 0].name + 'と二人で部屋を出た' : P.length < 2 ? '条件を満たし、部屋を出た' : '条件を満たし、全員で部屋を出た'; });
     var exG = { group: P.map(function (c) { return c.i; }), label: ctx.label };
     (ctx.flags.exits = ctx.flags.exits || []).push(exG);
     /* 出ていく様子（倒れた人を残して・顔を見合わせて）は、最後の「結末」の段に任せる */
@@ -599,7 +600,7 @@
         np: ['「誰かに飲ませるくらいなら、私が飲む」{a}はそう言って、媚薬の瓶を{n}本空けた。', '{a}は震える手で{n}本目の封を切った。「大丈夫、まだ平気」', '{a}は残りの本数を数えて、自分の分を多めに引き寄せた。'],
         fc: ['「どうせ全部飲むんでしょ」{a}は笑いながら{n}本を立て続けに空けた。', '{a}は瓶を光にかざして「ピンクだ」と面白がり、そのまま{n}本飲み干した。', '{a}は乾杯の真似をして、{n}本を一息に呷った。'],
         cold: ['「効率の問題だ」{a}は表情も変えずに{n}本を空けた。', '{a}は残りの本数と時間を計算して、黙々と{n}本飲んだ。', '{a}は{n}本を並べ、薬を飲むように一本ずつ流し込んだ。'],
-        ac: ['{a}は皆の顔を見回して、誰も手を伸ばさないのを確かめてから、{n}本を手に取った。', '{a}は「私が飲めば、みんなは」と小さく言って、{n}本を飲んだ。']
+        ac: ['{a}は誰も手を伸ばさないのを確かめてから、{n}本を手に取った。', '{a}は「私が飲めば、ほかは飲まなくて済む」と小さく言って、{n}本を飲んだ。']
       },
       effect: function (ctx, c, n) {
         c.flags.aphro = (c.flags.aphro || 0) + n;
@@ -618,13 +619,13 @@
     sake: {
       fit: function (c) { return c.tr.fc * 0.5 + c.tr.impulse * 0.3 + c.tr.cold * 0.2 + ctx0(c); },
       lines: {
-        np: ['{a}は「つまみがないのが惜しいね」と笑って、{n}杯空けた。', '{a}は皆の分まで引き受けるように、{n}杯を飲み干した。'],
+        np: ['{a}は「つまみがないのが惜しいね」と笑って、{n}杯空けた。', '{a}はほかの分まで引き受けるように、{n}杯を飲み干した。'],
         fc: ['「一気！一気！」{a}は自分で囃し立てて{n}杯空けた。', '{a}は{n}杯目で歌い始めた。', '{a}は「これ、いい酒だ」と目を輝かせて{n}杯呷った。'],
         cold: ['{a}は水でも飲むように{n}杯空けた。顔色ひとつ変わらない。', '{a}は「分担しよう。俺はあと{n}杯」と事務的に言って、その通りにした。'],
         ac: ['{a}は勧められるまま、断れずに{n}杯飲んだ。', '{a}は「私、強くないんだけど……」と言いながら{n}杯空けた。'],
         /* キャラの設定「お酒」が弱い（1・2）／強い（4・5）人 */
         weak: ['{a}は「お酒、弱いんだけど｜酒には弱いんだ｜お酒は弱いんです」と前置きして、{n}杯を少しずつ流し込んだ。もう頬が赤い。', '{a}は鼻をつまむようにして{n}杯飲んだ。一杯目の途中で、もう目が潤んでいた。', '{a}は{n}杯空けると、壁に手をついて深く息を吐いた。「……回るの、早すぎ｜……回るのが、早すぎる｜……回るのが、早すぎます」'],
-        strong: ['{a}は「任せて。酒なら強い｜任せろ。酒なら強い｜任せてください。お酒なら強いです」と言って、{n}杯を涼しい顔で空けた。', '{a}は水でも飲むように{n}杯飲み干し、「次｜次だ｜次をください」と杯を差し出した。', '{a}は{n}杯空けても顔色ひとつ変えず、皆の残りの杯数を数え直した。']
+        strong: ['{a}は「任せて。酒なら強い｜任せろ。酒なら強い｜任せてください。お酒なら強いです」と言って、{n}杯を涼しい顔で空けた。', '{a}は水でも飲むように{n}杯飲み干し、「次｜次だ｜次をください」と杯を差し出した。', '{a}は{n}杯空けても顔色ひとつ変えず、残りの杯数を数え直した。']
       },
       effect: function (ctx, c, n) { c.flags.drunk = (c.flags.drunk || 0) + n * 12 * (1.4 - ctx.stat(c, 'hp') * 0.12) * HK.drunkRate(c); if (c.flags.drunk > 70 + ctx.stat(c, 'hp') * 8 && ctx.rng() < 0.4) { c.flags.down = 2; c.flags.justDown = true; c.flags.drunk *= 0.5; } c.tr.honesty = HK.clamp(c.tr.honesty + 0.05 * n); c.tr.impulse = HK.clamp(c.tr.impulse + 0.04 * n); ctx.stress(c, -4 * n); },
       state: function (c) { if (c.flags.justDown) { c.flags.justDown = false; return '{a}はそのまま床に突っ伏して、寝息を立て始めた。'; } var x = c.flags.drunk || 0; return x >= 60 ? '{a}の呂律が回らなくなってきた。' : x >= 30 ? '{a}の目元が赤い。' : ''; }
@@ -632,7 +633,7 @@
     spicy: {
       fit: function (c) { return c.tr.cp * 0.4 + c.tr.fc * 0.4 + c.tr.np * 0.2; },
       lines: {
-        np: ['{a}は涙を流しながら、{n}杯目を完食した。「みんなの分、少しでも減らしたくて」', '{a}は汗だくで{n}杯を平らげ、残りのスープまで飲んだ。'],
+        np: ['{a}は涙を流しながら、{n}杯目を完食した。「残りの分、少しでも減らしたくて」', '{a}は汗だくで{n}杯を平らげ、残りのスープまで飲んだ。'],
         fc: ['「辛っ！でもうまっ！」{a}は叫びながら{n}杯をかき込んだ。', '{a}はなぜか楽しそうに{n}杯完食して、舌を出してみせた。'],
         cold: ['{a}は無言で{n}杯を食べ切った。唇だけが真っ赤だった。', '{a}は一口ごとに水を飲む配分まで計算して、{n}杯を処理した。'],
         cp: ['「この程度で音を上げるか」{a}は意地で{n}杯を平らげた。', '{a}は誰にも負けたくない一心で、{n}杯を完食した。']
@@ -714,6 +715,8 @@
     id: 'whiteroom', name: '出られない部屋', kicker: '密室・関係性',
     desc: '目覚めると白い部屋。扉の紙には脱出条件。条件は自由に組み立てられる（例：媚薬を10本飲み切って、エッチしないと出られない部屋）。',
     unit: '時間', preRel: 0, lethal: false,
+    /* 部屋の外に誰もいない：二人きりのとき、第三者を前提にした文を出さない（engine.js の ctx.noThird。2026-11-04 担当PR） */
+    closed: true,
     /* 脱出条件そのものが恋愛・性的な行為なので、「恋愛の起こりやすさ」0や恋愛対象で止めない（部屋の側の嫌がり方で扱う） */
     romanceCore: true,
     catBias: { romance: 1.5, escape: 1.2 }, decay: 0.995, miniShare: 0.75, priBoost: 3,
@@ -759,7 +762,7 @@
       ctx.place = '白い部屋';
       ctx.rules = rulesOf(ctx.env);
       ctx.flags.prog = {}; ctx.flags.consumed = {}; ctx.flags.drank = {};
-      ctx.flags.roomLabel = HK.roomLabel(ctx.env);
+      ctx.flags.roomLabel = HK.roomLabelOf(ctx.env, rulesOf(ctx.env), { n: ctx.chars.length });
       ctx.flags.romantic = ctx.rules.some(function (r) { var T = K[r.k]; return (T.type === 'act' && T.lvl >= 2) || r.k === 'love' || r.k === 'aphro'; });
       ctx.flags.hasAphroRule = ctx.rules.some(function (r) { return r.k === 'aphro'; });
       ctx.flags.isOne = ctx.rules[0].k === 'one';
@@ -1441,7 +1444,7 @@
       ctx.flags.oneOut = true;
       (ctx.flags.exits = ctx.flags.exits || []).push({ a: a.i, b: b.i, label: ctx.label, how: 'grab' });
       ctx.others(a).forEach(function (o) { ctx.mod(o, a, { aff: -30, ten: 35, trust: -40 }); });
-      var tx = ctx.t(ctx.pick(['{b}が目を離した隙に、{a}は一人で扉に手をかけた。振り返らなかった。', '{a}は{b}の手を振りほどいて、扉に手をかけた。', '眠ったふりをしていた{a}は、皆が寝静まるのを待って、扉に手をかけた。']), a, b);
+      var tx = ctx.t(ctx.pick(['{b}が目を離した隙に、{a}は一人で扉に手をかけた。振り返らなかった。', '{a}は{b}の手を振りほどいて、扉に手をかけた。', '眠ったふりをしていた{a}は、{b}が寝静まるのを待って、扉に手をかけた。']), a, b);
       doorOpen(ctx, { g: [a, b], why: '一人しか出られない部屋。' + a.name + 'が一人で出た' });
       return { mag: 45, text: tx, why: a.name + 'のドライさ（A高・NP低）と攻撃性。焦り ' + Math.round(a.stress) };
     }

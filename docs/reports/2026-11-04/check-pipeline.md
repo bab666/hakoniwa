@@ -126,6 +126,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `death` | 死・退場・蘇り |
 | `name` | 言い換え（名前が壊れうる） |
 | `rel` | 関係を前提にした文・場面や結末を足した |
+| `pair` | 二人きりで出うる文（出られない部屋・執着・関係・共通の出来事。第三者を前提にした文） |
 | `event` | 出来事の印（@event・label・場面の書き方） |
 | `zen` | r18 の印（全年齢版の中身が変わる） |
 | `order` | 読み込み順・かたまりの振り分け |
@@ -159,6 +160,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `/^rel-group\|heartbreak\|^poly\|^pining\|jealous\|rival\|fwbcrush/`（js の名前） | `group` `sim` |
 | `/kill\|grief\|deathgame\|corpse\|-bite\|-cure\|state-store\|^reset/`（js の名前） | `death` `sim` |
 | `/^(?:ties?\|tie-\|rel-\|room-know\|room-end\|room-awkward\|fam-kin\|endings\|epilogue\|attr-meet)\|-after\.js$\|-rel\.js$/`（js の名前） | `rel` `sim` |
+| `/^(?:scenario-room\|room-\|mini\|obsess\|ties?[-.]\|tie-\|common\|engine\|endings\|hate-kit\|sib-feud\|fwbcrush\|solo-room-jealous\|sex-lead\|cold-fear)/`（js の名前） | `pair` `sim` |
 | `/^hakoniwa-packs\/[^/_][^/]*\/pack\.json$/` | `sim` |
 | `/^hakoniwa-tools\//` | 道具（その道具の点検を回し直す） |
 
@@ -175,6 +177,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `/嫉妬\|失恋\|三角関係\|応援\|祝福\|ダブルデート\|jealous\|heartbreak/` | `group` |
 | `/\bdead\b\|\.dead\|alive\|revive\|退場\|蘇\|死ん\|死体\|死ぬ/` | `death` |
 | `/relFilter\|relClass\|初対面\|初めまして\|連絡先\|付き合い始め\|出会/` | `rel` |
+| `/ほかの誰か\|他の誰か\|別の誰か\|みんな\|全員\|人目\|誰と話\|誰に笑いかけ\|周りの人\|noThird\|THIRD_RE/` | `pair` |
 | `/@event\|@labels\|@event-table\|@event-ok/` | `event` `rel` `js` |
 | `/r18:(?:begin\|end\|ok)/` | `zen` `js` |
 | `/\blabel\s*:\s*['"]\|\btag\s*:\s*['"]\|kind\s*:\s*['"]climax\|\bsex\s*:\s*true/`・ファイルの追加と削除 | `event` |
@@ -188,7 +191,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | 3 本の台詞の約束（base-lint）（`base-lint`） | pre | `serifu` `tone` | — | 0 | 6 秒 | 比べる相手のコミットに無かった問題だけを数える（今ある誤検出 9 件は数えない） |
 | build（両ビルド）（`build`） | build | `js` | — | 1 | 40 秒 | ビルドのフォルダの js・_order.txt・index.html を変えたビルドだけ。入力が前回の build と同じで出力も同じなら飛ばす。中核（core）の br（かたまり・ファイルごとの目安の合計）が 900KB を超えたら不合格（2026-11-04） |
 | 出来事の一覧（catalog-check）（`catalog`） | post | `js` `event` | build・pack-catalog | 0 | 6 秒 | build のあと。一覧が古い・表示名の無い出来事・印の無い新しい場面 |
-| 点検の一式（audit-all）（`audit-all`） | heavy | `sim` `ui` `zen` `moan` `thick` `trio` `force` `sexgate` `feud` `group` `death` `name` `rel` | build | 2 | 240 秒 | 既定の一式（orient・pos×3・state・loveflag・seg・qa・call・misc）。印で追加の配役パス（--extra）を足す。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN） |
+| 点検の一式（audit-all）（`audit-all`） | heavy | `sim` `ui` `zen` `moan` `thick` `trio` `force` `sexgate` `feud` `group` `death` `name` `rel` `pair` | build | 2 | 240 秒 | 既定の一式（orient・pos×3・state・loveflag・seg・qa・call・misc）。印で追加の配役パス（--extra）を足す。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN） |
 | 口調の違和感（tone-feel）（`tone-feel`） | heavy | `serifu` `tone` | build | 1 | 155 秒 | 変えた箱庭だけ（--scen=）。本体の共通の文なら既定の 3 箱庭 |
 | 喘ぎの口調（moan-tone-audit）（`moan-tone`） | heavy | `moan` | build | 1 | 420 秒 | 箱庭のかたまりだけ変えたときは --scen= |
 | 長い場面の流れ（sex-flow-audit）（`sex-flow`） | heavy | `thick` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=sexflow に入れる（同じ関数。ページを開き直さない） |
@@ -207,7 +210,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | パックの三人の場面（trio-shape-audit 部屋）（`pack-flow`） | heavy | `pack` | pack-site | 1 | 30 秒 | 三人の部品を変えた部屋だけ（長い場面はパックの audit-all に --extra=sexflow で入れる） |
 
 補足：
-- 印 → 追加の配役パス：sexgate→sexgate、feud→feud、group→group、death→state-hot、name→name、rel→relcons（＋topics-relcons）。audit-all を全箱庭で回すときは thick→sexflow、trio→trio も相乗り（絞るときは sex-flow-audit・trio-shape-audit を箱庭の引数で単独に）。
+- 印 → 追加の配役パス：sexgate→sexgate、feud→feud、group→group、death→state-hot、name→name、rel→relcons（＋topics-relcons）、pair→pair（出られない部屋の二人きりの文。2026-11-04 担当PR）。audit-all を全箱庭で回すときは thick→sexflow、trio→trio も相乗り（絞るときは sex-flow-audit・trio-shape-audit を箱庭の引数で単独に）。
 - 既定の一式が要らず追加の配役パスだけで足りるのは、名前・言い換えの印だけが付いたとき（`--only-extra`）。r18 の印だけを変えたときは全年齢版だけ（`--modes=zen`）。
 - 点検の道具（hakoniwa-tools/ の js）を変えたら、その道具を使う点検を全範囲で回し直す（キャッシュの鍵にも道具の中身が入っている）。check.js・check/table.js・text-studio は何も回さない。
 - 文書（*.md・docs/）・CLAUDE.md は何も回さない。

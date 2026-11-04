@@ -23,6 +23,7 @@ const TAGS = {
   death: '死・退場・蘇り',
   name: '言い換え（名前が壊れうる）',
   rel: '関係を前提にした文・場面や結末を足した',
+  pair: '二人きりで出うる文（出られない部屋・執着・関係・共通の出来事。第三者を前提にした文）',
   event: '出来事の印（@event・label・場面の書き方）',
   zen: 'r18 の印（全年齢版の中身が変わる）',
   order: '読み込み順・かたまりの振り分け',
@@ -64,6 +65,8 @@ const FILE_RULES = [
   { b: /^rel-group|heartbreak|^poly|^pining|jealous|rival|fwbcrush/, tags: ['group', 'sim'] },
   { b: /kill|grief|deathgame|corpse|-bite|-cure|state-store|^reset/, tags: ['death', 'sim'] },
   { b: /^(?:ties?|tie-|rel-|room-know|room-end|room-awkward|fam-kin|endings|epilogue|attr-meet)|-after\.js$|-rel\.js$/, tags: ['rel', 'sim'] },
+  /* 二人きりの文（2026-11-04）：出られない部屋・執着・関係・小イベント・共通の出来事・不仲の部品 */
+  { b: /^(?:scenario-room|room-|mini|obsess|ties?[-.]|tie-|common|engine|endings|hate-kit|sib-feud|fwbcrush|solo-room-jealous|sex-lead|cold-fear)/, tags: ['pair', 'sim'] },
   /* 名前で決まらない js は、シミュレーションの結果が変わりうるものとして扱う（check.js が、ui・toneOnly のほかに当たらなかったときに sim を付ける） */
   /* パックの組み立ての決まり */
   { re: /^hakoniwa-packs\/[^/_][^/]*\/pack\.json$/, tags: ['sim'], packAll: true },
@@ -84,7 +87,9 @@ const LINE_RULES = [
   { re: /不仲|敵対|険悪|feud|'enemy'|"enemy"/, tags: ['feud'] },
   { re: /嫉妬|失恋|三角関係|応援|祝福|ダブルデート|jealous|heartbreak/, tags: ['group'] },
   { re: /\bdead\b|\.dead|alive|revive|退場|蘇|死ん|死体|死ぬ/, tags: ['death'] },
-  { re: /relFilter|relClass|初対面|初めまして|連絡先|付き合い始め|出会/, tags: ['rel'] }
+  { re: /relFilter|relClass|初対面|初めまして|連絡先|付き合い始め|出会/, tags: ['rel'] },
+  /* 第三者を前提にした言い回し（どの箱庭の文でも。出られない部屋の二人で出ないかを pair で見る） */
+  { re: /ほかの誰か|他の誰か|別の誰か|みんな|全員|人目|誰と話|誰に笑いかけ|周りの人|noThird|THIRD_RE/, tags: ['pair'] }
 ];
 /* コメントの中身の変更でも付ける印（コメントだけの変更でも、出来事の一覧・全年齢版の中身が変わる） */
 const COMMENT_RULES = [
@@ -107,7 +112,7 @@ const CHECKS = [
   { id: 'build', name: 'build（両ビルド）', stage: 'build', tags: ['js'], est: 40, weight: 1, tools: [BD + 'build.js', BD + 'event-catalog.js'], why: 'ビルドのフォルダの js・_order.txt・index.html を変えたビルドだけ。入力が前回の build と同じで出力も同じなら飛ばす。中核（core）の br（かたまり・ファイルごとの目安の合計）が 900KB を超えたら不合格（2026-11-04）' },
   { id: 'catalog', name: '出来事の一覧（catalog-check）', stage: 'post', tags: ['js', 'event'], after: ['build', 'pack-catalog'], est: 6, tools: [BD + 'catalog-check.js', BD + 'event-catalog.js'], why: 'build のあと。一覧が古い・表示名の無い出来事・印の無い新しい場面' },
   /* 重い点検（ページを開く。並べて回す） */
-  { id: 'audit-all', name: '点検の一式（audit-all）', stage: 'heavy', tags: ['sim', 'ui', 'zen', 'moan', 'thick', 'trio', 'force', 'sexgate', 'feud', 'group', 'death', 'name', 'rel'], after: ['build'], est: 240, weight: 2, tools: [TC + 'audit-all.js'],
+  { id: 'audit-all', name: '点検の一式（audit-all）', stage: 'heavy', tags: ['sim', 'ui', 'zen', 'moan', 'thick', 'trio', 'force', 'sexgate', 'feud', 'group', 'death', 'name', 'rel', 'pair'], after: ['build'], est: 240, weight: 2, tools: [TC + 'audit-all.js', TC + 'pair-only-audit.js'],
     why: '既定の一式（orient・pos×3・state・loveflag・seg・qa・call・misc）。印で追加の配役パス（--extra）を足す。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN）' },
   { id: 'tone-feel', name: '口調の違和感（tone-feel）', stage: 'heavy', tags: ['serifu', 'tone'], after: ['build'], est: 155, weight: 1, tools: [TC + 'tone-feel.js'], why: '変えた箱庭だけ（--scen=）。本体の共通の文なら既定の 3 箱庭' },
   { id: 'moan-tone', name: '喘ぎの口調（moan-tone-audit）', stage: 'heavy', tags: ['moan'], after: ['build'], est: 420, weight: 1, tools: [TC + 'moan-tone-audit.js', TC + 'moan-audit.js'], why: '箱庭のかたまりだけ変えたときは --scen=' },
@@ -129,7 +134,7 @@ const CHECKS = [
 ];
 
 /* 印 → 追加の配役パス（audit-all の --extra） */
-const EXTRA_OF = { sexgate: 'sexgate', feud: 'feud', group: 'group', death: 'state-hot', name: 'name', rel: 'relcons' };
+const EXTRA_OF = { sexgate: 'sexgate', feud: 'feud', group: 'group', death: 'state-hot', name: 'name', rel: 'relcons', pair: 'pair' };
 /* 既定の口調の箱庭（tone-feel の既定と同じ） */
 const FEEL_DEF = ['whiteroom', 'locker', 'omega'];
 

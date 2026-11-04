@@ -196,7 +196,7 @@
     var own = !!(HK.Ties && (HK.Ties.from(ctx, T, H, 'yan') || HK.Ties.from(ctx, T, H, 'abuse')));
     var mk = own ? 'own' : lv >= 50 ? 'hate' : r.att >= 30 ? 'want' : t.aggr >= 0.62 ? 'power' : p.type === 'fear' ? 'fear' : 'cold';
     var ty = p.type === 'fear' ? 'fear' : 'cold';
-    var parts = [pk(ctx, LEAD.mot[mk]), pk(ctx, LEAD.sit), pk(ctx, LEAD.res[ty])];
+    var parts = [pk(ctx, LEAD.mot[mk]), pk(ctx, HK.pairOnly ? HK.pairOnly(ctx, LEAD.sit) : LEAD.sit), pk(ctx, LEAD.res[ty])];
     return {
       text: parts.map(function (s) { return fl(s, T, H); }).join(''),
       why: 'きっかけ：' + T.name + 'が' + H.name + 'に迫った理由＝' + MOT_JA[mk] + '／' + (ty === 'fear' ? H.name + 'は' + T.name + 'を恐れていた（拒みきれなかった理由：恐怖で体がすくんだ）' : H.name + 'は' + T.name + 'に無関心だった（拒みきれなかった理由：油断と力の差）')

@@ -62,6 +62,8 @@
   var R18ON = !!SH.R18;
   var scen = {
     id: 'ship', name: '宇宙船漂流記', kicker: 'SF・サバイバル（2〜8人）', solo: true, minCast: 2, maxCast: 8,
+    /* 船の外に誰もいない：二人きりのとき、第三者を前提にした文を避ける（solo-story-kit.js の ST.few。2026-11-04 担当PR） */
+    closed: true,
     desc: '故障した宇宙船で漂流する一年。閉ざされた船の中で役割を分け合い、新しい星を探す。星には資源・生命体・文明があり、探検するほど正体が明らかになる。辿り着けるのは、ただ一つの星だけ。',
     note: '※死の描写を含みます。',
     unit: '月', simulate: function (input) { return run(input); },
@@ -154,7 +156,7 @@
   function best(S, type, ex) { return live(S).filter(function (p) { return !ex || ex.indexOf(p) < 0; }).sort(function (a, b) { return skill(b, type) - skill(a, type); })[0]; }
   function names(l) { return l.map(function (p) { return p.name; }).join(l.length > 2 ? '・' : 'と'); }
   /* R18版は、一回の遊びを通して使った文を避ける選び方（ero-kit.js の HK.Ero.fresh。12か月の長い回でも同じ夜の文が戻ってこないように） */
-  function pk(S, a) { return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(S, a, function (l) { return ST.pick(S, l); }) : ST.pick(S, a); }
+  function pk(S, a) { if (ST.two) a = ST.two(S, a); return HK.Ero && HK.Ero.fresh ? HK.Ero.fresh(S, a, function (l) { return ST.pick(S, l); }) : ST.pick(S, a); }
   function F(t, m) { return ST.fmt(t, m || {}); }
 
   /* ---------- 星を作る ---------- */
