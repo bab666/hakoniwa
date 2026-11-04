@@ -303,6 +303,7 @@
              1回だけキャッシュを通らずに取り直す（元の URL のキャッシュも新しい版で上書きして、次に開いたときも治るように） */
           if (!busted && web()) {
             busted = true;
+            if (HK.Guard) try { HK.Guard.note('load', name + ' を読んだのに終わりの印が無いので取り直す'); } catch (x) { /* 何もしない */ }
             url = src + (src.indexOf('?') < 0 ? '?' : '&') + 'r=' + Date.now();
             var again = function () { go(); };
             if (window.fetch) { try { window.fetch(src, { cache: 'reload' }).then(again, again); return; } catch (e) { /* 古いブラウザ */ } }
@@ -339,6 +340,8 @@
       active--; s.p = null; s.failed = false; resumeQueue();
     }, function (e) {
       active--; s.p = null; s.failed = true; resumeQueue();
+      /* 不具合の記録（ui-guard.js）に、どのかたまりが・なぜ読めなかったかを残す（依存の失敗で連なったものは元のかたまりの名前） */
+      if (HK.Guard && (!e || !e.chunk || e.chunk === name)) { try { HK.Guard.add('load', 'かたまり ' + name + ' を読み込めませんでした（' + ((e && e.reason) || String(e && e.message || e)) + '）'); } catch (x) { /* 記録できなくても続ける */ } }
       throw e;
     });
     return s.p;

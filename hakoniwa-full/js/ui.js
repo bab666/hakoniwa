@@ -522,7 +522,8 @@
   }
 
   /* ---------- タブ ---------- */
-  function setTab(t, quick) {
+  /* keep：描き直すだけ（HK.UI.refresh・読み終えたあとの描き直し）。見ている位置を動かさない（タブの頭へ戻すのは、タブを押したときだけ） */
+  function setTab(t, quick, keep) {
     tab = t;
     ['cast', 'box', 'result', 'saves'].forEach(function (k) {
       var tb = $('#tab-' + k), vw = $('#view-' + k);
@@ -536,6 +537,7 @@
     if (HK.UI && HK.UI.applyColors) HK.UI.applyColors(t === 'result' && result && result.input ? result.input.chars : S.chars);
     /* タブの位置まで戻す。タブを押したとき（quick）は、描画の直前（rAF）に測る（ここで測ると、描き終える前のレイアウトを一度余計に計算する） */
     var up = function () { var top = $('.tabs').getBoundingClientRect().top + window.pageYOffset - 4; if (window.pageYOffset > top) window.scrollTo(0, top); };
+    if (keep) return;
     if (quick && window.requestAnimationFrame) requestAnimationFrame(up); else up();
   }
 
@@ -1166,13 +1168,13 @@
     return rp ? rp + 'に描写あり' : '';
   }
   /* 箱庭タブ：選んだ箱庭の本体がまだなら読み込み、読み終えたら描き直す（load.js）。失敗はカードに「もう一度」 */
-  var boxBusy = {}, boxErr = {};
+  var boxBusy = {}, boxErr = {}, boxTry = {}, BOX_RETRY = [1500, 4000, 10000];
   function boxLoad(id, wasStub) {
     if (!HK.Load || !HK.Load.manifest || boxBusy[id] || boxErr[id]) return;
     boxBusy[id] = 1;
     HK.Load.ensure(id).then(function () {
-      delete boxBusy[id];
-      if (scenStub(id)) boxErr[id] = { reason: 'broken' };   /* 読み終えたのに本体が登録されていない */
+      delete boxBusy[id]; boxTry[id] = 0;
+      if (scenStub(id)) { boxErr[id] = { reason: 'broken' }; if (HK.Guard) HK.Guard.add('load', '箱庭「' + id + '」のかたまりを読んだのに箱庭が登録されていません'); }   /* 読み終えたのに本体が登録されていない */
       if (tab !== 'box' || S.scenId !== id) return;
       /* 描き直す（族のかたまりで全箱庭共通の環境値・欄が増えることがある）。文字を入力中の欄があれば、カードの印だけ外し、欄を離れてから描き直す */
       var ae = document.activeElement, typing = !wasStub && !boxErr[id] && ae && ae.closest && ae.closest('#view-box') && (ae.tagName === 'TEXTAREA' || (ae.tagName === 'INPUT' && /^(text|number|search)$/.test(ae.type)));
@@ -1180,7 +1182,16 @@
       Array.prototype.forEach.call(document.querySelectorAll('#view-box .scload'), function (x) { x.remove(); });
       ae.addEventListener('blur', function () { setTimeout(function () { if (tab === 'box' && S.scenId === id) boxRedraw(); }, 0); }, { once: true });
     }, function (e) {
-      delete boxBusy[id]; boxErr[id] = e || { reason: 'net' };
+      delete boxBusy[id];
+      var why = (e && e.reason) || 'net', n = boxTry[id] || 0;
+      if (HK.Guard) HK.Guard.add('load', '箱庭「' + id + '」を読み込めませんでした（' + why + (e && e.chunk ? '・' + e.chunk : '') + '・' + (n + 1) + '回目）');
+      /* 通信の失敗・中身が途中で切れた（broken）は、少し待って自動でやり直す（3回まで。そのあいだカードは「読み込み中…」のまま）。新しい版・通信できないときは待たない */
+      if (why !== 'stale' && why !== 'offline' && n < BOX_RETRY.length) {
+        boxTry[id] = n + 1;
+        setTimeout(function () { if (S.scenId === id && !boxErr[id] && HK.Load.has && !HK.Load.has(id)) boxLoad(id, wasStub); }, BOX_RETRY[n]);
+        return;
+      }
+      boxTry[id] = 0; boxErr[id] = e || { reason: 'net' };
       if (e && e.reason === 'stale' && HK.Load.staleNotice) HK.Load.staleNotice();
       if (tab === 'box' && S.scenId === id) boxRedraw();
     });
@@ -1360,6 +1371,8 @@
     id = id || pickPrev || S.scenId;
     pickOpen = false; pickPrev = ''; pickSideId = ''; sheetOpen = false;
     if (id && id !== S.scenId && scenOf(id)) { S.scenId = id; delete boxErr[id]; renderBox({ defer: true }); saveSoon(); toast('箱庭を「' + scenOf(id).name + '」にしました'); }
+    /* 選んでいる箱庭をもう一度選んだ：読み込めていない（失敗した・途中）なら、読み込みをやり直す（前は何も起きず、別の箱庭を選んでからでないと選び直せなかった） */
+    else if (id && id === S.scenId && HK.Load && HK.Load.manifest && !HK.Load.has(id)) { delete boxErr[id]; boxTry[id] = 0; renderBox({ defer: true }); }
     else pickSync();
     var b = document.querySelector('#view-box [data-act="pickopen"]');
     if (b) { try { b.focus({ preventScroll: true }); } catch (e) { b.focus(); } }
@@ -1706,7 +1719,8 @@
   }
   HK.onLate = function () {
     if (HK.LATE_FAILED) toast('データの一部を読み込めませんでした。ページを読み込み直してください');
-    if (tab === 'cast') renderCast(); else if (tab === 'box') boxRedraw();
+    /* 読み終えた描き直しで見ている位置を動かさない（iPhone の Safari はスクロールの位置の補正 scroll anchoring が無く、上の行の高さが変わると文が飛ぶ） */
+    keepY(function () { if (tab === 'cast') renderCast(); else if (tab === 'box') boxRedraw(); });
     flushPending(pending);
   };
   /* onRes：描画の前に結果を渡す（履歴に結果を置く写しは、描画より前に取る。結末の組み立て HK.Endings.build は結果を書き換えないが、念のため） */
@@ -1733,7 +1747,8 @@
        描き終わる前のずれで途中に飛ぶので、フォーカスを外し、すぐ・次のフレーム・少し後にも念を押して上へ戻す */
     if (record) {
       try { var ae = document.activeElement; if (ae && ae !== document.body && ae.blur) ae.blur(); } catch (e) { /* 外せなくてもよい */ }
-      var toTop = function () { window.scrollTo(0, 0); if (document.documentElement) document.documentElement.scrollTop = 0; if (document.body) document.body.scrollTop = 0; };
+      /* 念押しのあいだに利用者が自分でスクロールし始めたら、もう上へ戻さない（スクロール中に先頭へ引き戻されて文が消えたように見えるため） */
+      var t0 = Date.now(), toTop = function () { if (HK.Guard && HK.Guard.userAt && HK.Guard.userAt() > t0) return; window.scrollTo(0, 0); if (document.documentElement) document.documentElement.scrollTop = 0; if (document.body) document.body.scrollTop = 0; };
       toTop();
       if (window.requestAnimationFrame) window.requestAnimationFrame(toTop);
       setTimeout(toTop, 150); setTimeout(toTop, 500);
@@ -2086,7 +2101,7 @@
         S.join = S.join || {}; S.join[S.scenId] = []; save(); renderBox(); break;
       case 'gobox': setTab('box', true); break;
       case 'run': run(false); break;
-      case 'scenretry': delete boxErr[S.scenId]; renderBox(); break;
+      case 'scenretry': delete boxErr[S.scenId]; boxTry[S.scenId] = 0; renderBox(); break;
       case 'reroll': run(true); break;
       case 'iconpick': iconTarget = row && row.dataset.id; var fi = $('#iconfile'); if (fi) { fi.value = ''; fi.click(); } break;
       case 'icondel':
@@ -2197,7 +2212,7 @@
     else if (f === 'scen') {
       /* 「箱庭を選ぶ」の窓の中：押したカードを右に出すだけ（決めるのは「この箱庭にする」。pickGo） */
       if (pickOpen) { pickPrev = t.value; pickSync(); return; }
-      S.scenId = t.value; delete boxErr[t.value]; renderBox({ defer: true }); saveSoon(); return;
+      S.scenId = t.value; delete boxErr[t.value]; boxTry[t.value] = 0; renderBox({ defer: true }); saveSoon(); return;
     }
     /* 窓の「いまの住人で遊べるものだけ」（画面だけの設定） */
     else if (f === 'bxfit') { bxPref.fit = !!t.checked; bxPrefSave(); pickSync(); return; }
@@ -2425,7 +2440,16 @@
   /* サンプルの住人のうち、まだいない人（名前で見る）。「＋住人を追加 ▾」の「サンプルの住人から足す」 */
   function sampleLeft() { var have = {}; S.chars.forEach(function (c) { have[c.name] = 1; }); return SAMPLE.filter(function (c) { return !have[c.name]; }); }
   if (HK.CastTools) HK.CastTools.bind({ S: function () { return S; }, max: MAX, io: function () { return { jp: jpOpen, pick: pickPanel() }; }, sampleLeft: function () { return sampleLeft().length; }, dup: function (id) { dupRes(id); } });
-  HK.UI.refresh = function () { setTab(tab); };
+  /* 描き直す前後で見ている位置を保つ（描き直しのあいだに利用者がスクロールしていなければ） */
+  function keepY(fn) {
+    var y = window.pageYOffset, t0 = Date.now();
+    fn();
+    if (Math.abs(window.pageYOffset - y) > 1 && !(HK.Guard && HK.Guard.userAt && HK.Guard.userAt() > t0)) window.scrollTo(0, y);
+  }
+  HK.UI.refresh = function (why) {
+    if (HK.Guard && HK.Guard.note) HK.Guard.note('redraw', (why || '') + ' ' + tab);
+    keepY(function () { setTab(tab, false, true); });
+  };
   HK.UI.autoTone = autoTone; HK.UI.pickGo = pickGo; HK.UI.cardInfo = cardInfo; HK.UI.smin = smin;   /* 箱庭の一覧（ui-box-list.js）から */
   /* 書き出し・読み込み・入力の組み立て（点検・往復の試験から呼ぶ。画面の操作と同じ関数） */
   HK.UI.rosterJSON = rosterJSON; HK.UI.importJSON = importJSON; HK.UI.buildInput = buildInput; HK.UI.normState = normState;

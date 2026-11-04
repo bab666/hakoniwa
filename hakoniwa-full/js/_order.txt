@@ -719,3 +719,5 @@ late js/ui-gear-basic.js
 late js/ui-tagsel-pop.js
 # 右上の「表示」のメニューの「不具合の記録」の窓（記録は中核の ui-guard.js）
 late js/ui-guard-view.js
+# スクロールの見張り（プログラムによるスクロール・大きな飛び・高さの急な変化を不具合の記録へ。2026-11-04）
+late js/ui-guard-scroll.js
