@@ -12,6 +12,7 @@ const PASS = function* (HK, opt) {
   const N = opt.N || 30;
     const NAMES = ['アキラ', 'ミナト', 'ユキノ', 'カオル', 'ハルカ', 'レンジ'];
     for (const sc of Object.keys(HK.SCENARIOS)) {
+      if (HK.SCEN_ONLY && HK.SCEN_ONLY.indexOf(sc) < 0) continue;   /* lib.js が HK_ONLY_SCEN のときだけ入れる */
       const scen = HK.SCENARIOS[sc]; if ((scen.maxCast || 6) < 3) continue;
       for (let s = 0; s < N; s++) {
         const n = Math.max(scen.minCast || 3, Math.min(scen.maxCast || 6, 3 + (s % 4)));

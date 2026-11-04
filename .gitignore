@@ -12,3 +12,6 @@ package-lock.json
 hakoniwa-packs/codes.local.json
 # 配布用の zip（build-pack.js --dist・build-dist.js が作る）
 dist/
+
+# 点検の結果のキャッシュ（node hakoniwa-tools/check.js が書く。docs/reports/2026-11-04/check-pipeline.md）
+hakoniwa-tools/.check-cache/

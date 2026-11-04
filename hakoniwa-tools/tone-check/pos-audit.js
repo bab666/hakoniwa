@@ -67,7 +67,8 @@ const PASS = function* (HK, opt) {
       { g: ['f', 'f', 'f', 'f', 'f', 'f'], p: ['', 'top', 'riba', 'bottom', '', ''], l: [], ties: [{ a: 0, b: 2, type: 'enemy' }, { a: 1, b: 3, type: 'lover' }], gn: ['none', 'm', '', 'none', '', ''] }
     ];
     if (FF) CASTS.splice(0, CASTS.length, ...FFC);
-    const ids = (only || Object.keys(HK.SCENARIOS));
+    /* HK.SCEN_ONLY：lib.js が HK_ONLY_SCEN のときだけ入れる（check.js・パックの点検で箱庭を絞る。ふだんの回は変わらない） */
+    const ids = (only || Object.keys(HK.SCENARIOS)).filter(id => !HK.SCEN_ONLY || HK.SCEN_ONLY.indexOf(id) >= 0);
     for (const sc of ids) {
       const scen = HK.SCENARIOS[sc]; if (!scen) continue;
       for (let s = 0; s < N; s++) {

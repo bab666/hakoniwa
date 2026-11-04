@@ -44,6 +44,8 @@ async function openBuild(dir, hash, opts) {
       await Promise.all(ids.map(id => window.HK.Load.ensure(id)));
     }
     if (only.length) { const keep = window.HK.SCEN_ORDER.filter(id => only.indexOf(id) >= 0); window.HK.SCEN_ORDER.length = 0; Array.prototype.push.apply(window.HK.SCEN_ORDER, keep); }
+    /* HK.SCEN_ORDER でなく HK.SCENARIOS の全部を回すパス（pos・state・noname）も絞れるように、絞る箱庭を残す（2026-11-04。check.js の箱庭の範囲・パックの部屋） */
+    if (only.length) window.HK.SCEN_ONLY = only.slice();
   }, [(process.env.HK_PACK_CODES || '').split(',').filter(Boolean), (process.env.HK_ONLY_SCEN || '').split(',').filter(Boolean)]);
   const lewdMode = process.env.HK_LEWD_MODE || (opts && opts.lewdMode) || '';
   if (lewdMode) await page.evaluate(m => { if (window.HK && window.HK.LewdWords) window.HK.LewdWords.MODE = m === 'none' ? null : m; }, lewdMode);
