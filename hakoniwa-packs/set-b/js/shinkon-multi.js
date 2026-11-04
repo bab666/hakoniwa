@@ -167,17 +167,22 @@
     return e;
   };
   /* ---------- 最後の夜のキス ---------- */
+  /* 最後の夜のキス（2026-11-04 利用者の回答「恋愛もする組み合わせの全員がキスすべき」）：恋の相手の組（S.lp）のすべてが口づける。
+     口づけるのは受けの側（HK.Pos.order の後ろ）で、恋の相手の多い人（受けの中心）から順に。文は口づける人の態度 9 種（edgeP）。
+     恋の相手でない組（攻めどうし・受けどうし）は口づけない（拳を合わせる・肩を叩く・乾杯・目を合わせる。NL[気持ち].kiss） */
   M.kiss = function (ctx, S) {
-    var T = S.spouses, MX = MT(), K = MX.KISS || {}, all = T.length === 4 ? '四人' : '三人';
-    var E = S.lp.slice(), parts = [];
-    var sh = S.shape || {};
-    if (sh.hub) E.sort(function (x, y) { return (x[0] === sh.hub || x[1] === sh.hub ? 0 : 1) - (y[0] === sh.hub || y[1] === sh.hub ? 0 : 1); });
-    var used = {};
-    var open = pk(ctx, K.open) || '';
+    var T = S.spouses, MX = MT(), K = MX.KISS || {}, all = T.length === 4 ? '四人' : '三人', P = HK.Pos;
+    var deg = {}; T.forEach(function (c) { deg[c.i] = 0; }); S.lp.forEach(function (p) { deg[p[0].i]++; deg[p[1].i]++; });
+    var E = S.lp.map(function (p) {
+      var o = P && P.order ? P.order(p[0], p[1]) : p, x = o[1], y = o[0];
+      if (!P || !P.order) { if (deg[p[1].i] > deg[p[0].i]) { x = p[1]; y = p[0]; } else { x = p[0]; y = p[1]; } }
+      return [x, y];
+    });
+    E.sort(function (u, v) { return (deg[v[0].i] - deg[u[0].i]) || (u[0].i - v[0].i); });
+    var used = {}, parts = [], open = pk(ctx, K.open) || '';
     var eds = E.map(function (p) {
-      var x = p[0], y = p[1];
-      if (sh.hub && y === sh.hub) { x = p[1]; y = p[0]; }
-      var L0 = (K.edge || []).filter(function (t) { return !used[t]; }), t = pk(ctx, L0.length ? L0 : K.edge);
+      var x = p[0], y = p[1], EP = (K.edgeP || {})[SK().per(x)] || K.edge || [];
+      var L0 = EP.filter(function (t) { return !used[t]; }), t = pk(ctx, L0.length ? L0 : EP);
       used[t] = 1;
       return t.split('{x}').join(x.name).split('{y}').join(y.name);
     });
@@ -188,8 +193,8 @@
       if (t) parts.push(fillN(ctx, t, x.x, x.y));
     });
     parts.push(fillN(ctx, (pk(ctx, K.close) || '').split('{all}').join(all), T[0], T[1]));
-    var tx = parts.join('');
-    return !!ctx.act2({ actors: T.slice(), cat: 'romance', text: tx, why: '新婚部屋：最後の夜（' + all + 'の幸せなキス）',
+    S.kissPairs = E.map(function (p) { return [p[0].i, p[1].i]; });
+    return !!ctx.act2({ actors: T.slice(), cat: 'romance', text: parts.join(''), why: '新婚部屋：最後の夜（' + all + 'の幸せなキス）',
       fx: function () { S.lp.forEach(function (p) { ctx.mod2(p[0], p[1], { aff: 5, att: 5 }, { aff: 5, att: 5 }); }); } });
   };
   M.mood = function (S, a, b) { var x = S && S.nl && S.nl[key(a, b)]; return x ? x.mood : ''; };

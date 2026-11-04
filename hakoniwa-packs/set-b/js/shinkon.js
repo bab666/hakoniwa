@@ -1118,7 +1118,7 @@
       relFrom: S.relFrom, relLine: relLine(S), start: S.cal && CL ? CL.label(S, 0) : '', end: S.cal && CL ? CL.label(S, S.days - 1) : '',
       bdays: (S.bdays || []).map(function (b) { return { i: b.c.i, label: b.label }; }), sea: S.calN || 0, past: S.pastN || 0, wedN: S.wedN || 0,
       fear: S.fearP ? { x: S.fearP.x.i, y: S.fearP.y.i, ex: S.fearP.ex, lv: S.fearP.lv, n: S.fearN || 0, end: S.fearEnd || '', freed: !!S.fearP.freed, love: !!S.fearLove, body: !!S.fearP.body } : null,
-      nl: S.nl ? Object.keys(S.nl).map(function (k) { var x = S.nl[k]; return { a: x.x.i, b: x.y.i, kind: x.kind, mood: x.mood }; }) : [], shape: S.shape ? S.shape.k : '', focus: S.fcnt || null, nlDays: S.nlDayN || 0,
+      nl: S.nl ? Object.keys(S.nl).map(function (k) { var x = S.nl[k]; return { a: x.x.i, b: x.y.i, kind: x.kind, mood: x.mood }; }) : [], shape: S.shape ? S.shape.k : '', kissPairs: S.kissPairs || (S.trio && S.full !== false && S.kissed ? 'all' : null), focus: S.fcnt || null, nlDays: S.nlDayN || 0,
       acts: S.acts, fights: S.fights, makeups: S.makeups, sex: S.sex, long: S.longN || 0, trioSex: S.trioSex || 0, kissed: S.kissed, love: S.love, best: S.best, troubles: S.troubles, visits: S.visits, odd: S.odd };
     P.forEach(function (c) { c.fate = S.quad ? '四人婚の新婚' : S.trio ? '三人婚の新婚' : S.wed ? '新婚の夫婦' : S.love ? '一緒に暮らす恋人' : '同じ家で暮らす二人'; c.fateNote = P.filter(function (o) { return o !== c; }).map(function (o) { return o.name; }).join('と') + 'と、' + S.days + '日を過ごした'; });
     ctx.flags.outcome = S.quad ? P.map(function (c) { return c.name; }).join('と') + 'の四人の新婚の' + S.days + '日' + (S.kissed ? '――最後の夜、四人は幸せなキスを交わした' : '')

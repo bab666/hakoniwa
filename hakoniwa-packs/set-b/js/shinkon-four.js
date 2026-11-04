@@ -364,10 +364,10 @@
     /* 恋の相手どうしでない組が混ざる四人（2026-11-04 NO 1・2）：二組の恋が輪になった四人（cycle）は、輪の順に口づける文（{a}→{b}→{c}→{d}→{a} がどれも恋の相手）。
        ほかの形は、恋の相手の組だけが口づける最後の夜（shinkon-multi.js の HK.ShinkonMulti.kiss） */
     var T = S.spouses, KQ = FT().Q.KISS;
-    if (S.full === false) {
-      if (S.shape && S.shape.k === 'cycle') { T = HK.ShinkonMulti.order(ctx, S); KQ = KQ.slice(0, 1); }
-      else if (HK.ShinkonMulti) return HK.ShinkonMulti.kiss(ctx, S);
-    }
+    /* 2026-11-04 利用者の回答「恋愛もする組み合わせの全員がキスすべき」：全員が恋の相手の四人も、恋の相手の 6 組すべてが口づける文（shinkon-multi.js）にする
+       （「最後の夜の四人のキス」の輪の文は 4 組しか書いていないので、二組の恋が輪になった四人（恋の相手がちょうどその 4 組）だけに使う） */
+    if (S.shape && S.shape.k === 'cycle') { T = HK.ShinkonMulti.order(ctx, S); KQ = KQ.slice(0, 1); S.kissPairs = [[T[0].i, T[1].i], [T[1].i, T[2].i], [T[2].i, T[3].i], [T[3].i, T[0].i]]; }
+    else if (HK.ShinkonMulti && S.lp) return HK.ShinkonMulti.kiss(ctx, S);
     var kt = F.say(ctx, KQ, T[0], T[1], T[2], T[3]);
     if (!kt) return false;
     return !!ctx.act2({ actors: T.slice(), cat: 'romance', text: kt, why: '新婚部屋：最後の夜（四人の幸せなキス）', fx: function () { for (var i = 0; i < 4; i++) for (var j = i + 1; j < 4; j++) ctx.mod2(T[i], T[j], { aff: 5, att: 5 }, { aff: 5, att: 5 }); } });
