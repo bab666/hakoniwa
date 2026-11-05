@@ -8,11 +8,7 @@
   /* 投稿に付けるリンク。空なら全年齢版の公開URL（js/safe.js の HK.PUBLIC_URL。R18版・全年齢版・全年齢モードのどれでも同じ。共有カードの og タグが付くページ）。それも無ければ Tool置き場 */
   if (CONF.siteUrl == null) CONF.siteUrl = '';
   CONF.toolsUrl = CONF.toolsUrl || 'https://kaimin.sakura.ne.jp/archive/#/links';
-  CONF.boothUrl = CONF.boothUrl || 'https://bab666.booth.pm';
-  /* R-18版の販売ページ。全年齢版の箱庭一覧の「R-18版」欄からここへ飛ぶ。商品ページができたらURLを書き換える */
-  CONF.r18Url = CONF.r18Url || 'https://bab666.booth.pm/items/9016418';
-  /* 同じR-18版の note の販売ページ。「R-18版」欄に BOOTH と並べて出す */
-  CONF.noteUrl = CONF.noteUrl || 'https://note.com/unimi_note/n/n6fe17bec9d5a';
+  /* 販売ページの URL（boothUrl・r18Url・noteUrl）は中核の js/safe.js にある（起動時の描画で読むため） */
   var TAG = '#箱庭シミュレーター';
   var FONT_D = '"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif';
   var FONT_B = '"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo","Noto Sans JP",sans-serif';

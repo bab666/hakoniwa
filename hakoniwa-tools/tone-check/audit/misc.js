@@ -189,9 +189,7 @@ const JUDGE = function (HK, opt) {
             if (MOBFI.test(paras[i] + paras[j])) continue;
             /* 次の段落が玩具を当てる・挿れる場面（「震える先端を花芯に押し当てた」）は、指のあとの挿入ではない（2026-10-29 担当MQ） */
             if (/玩具|ローター|バイブ|張り型|張形|ディルド/.test(paras[j])) continue;
-            /* 「繋がったまま」は繋がっている状態の言い回しで、新しい挿入ではない。指の段落がもう奥を突いている（繋がっている）ときも数えない（2026-11-05） */
-            if (/奥を[^。]{0,8}(?:突|穿|抉)/.test(pi)) continue;
-            if (INS.test(pj.replace(/繋がったまま/g, '')) && !OUT.test(pj) && !FINGER.test(pj)) {
+            if (INS.test(pj) && !OUT.test(pj) && !FINGER.test(pj)) {
               o.FI++;
               if (outS.samples['F>I'].length < SHOW) outS.samples['F>I'].push(id + '#' + s + '：' + paras[i].slice(0, 70) + ' ／→ ' + paras[j].slice(0, 70));
             }
