@@ -264,7 +264,11 @@
     var I = PS.info(ctx, S, S.A, S.B), U = S.pastUsed = S.pastUsed || {}, T = TX(), c = [];
     if (I.exr && S.wed) Object.keys((T.EXEV || {})[I.exr.k] || {}).forEach(function (k) { if (!U['ex:' + I.exr.k + ':' + k]) c.push({ t: 'ex', k: k, w: 1.2 }); });
     if (I.past) Object.keys((T.PAST || {})[I.past.k] || {}).forEach(function (k) { if (!U['p:' + I.past.k + ':' + k + ':' + key(S.A, S.B)]) c.push({ t: 'past', k: k, w: 1 }); });
-    if (!c.length || ctx.rng() > 0.42) return;
+    /* 元の関係の出来事を、前半・中盤・終盤に散らす（2026-11-05 報告「先輩後輩の関係が消える」）：前の 3 分の 1 では一つまで、後半で少なければ起こりやすく */
+    var nU = Object.keys(U).length, fr = (day.d + 1) / Math.max(1, S.days);
+    if (fr <= 0.34 && nU >= 1) return;
+    var pP = fr > 0.5 && nU < Math.min(3, Math.ceil(S.days / 3)) ? 0.7 : 0.42;
+    if (!c.length || ctx.rng() > pP) return;
     var p = HK.weighted(ctx.rng, c, function (x) { return x.w; });
     day.pastEv = { t: p.t, k: p.k, part: p.t === 'ex' ? EXP[p.k] : PP[p.k], I: I };
   };

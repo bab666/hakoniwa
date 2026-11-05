@@ -58,7 +58,15 @@
   function pickOk(ctx, arr, a, b) { var l = (arr || []).filter(function (x) { return okT(ctx, x, a, b); }); return pickOf(ctx, l.length ? l : arr); }
   /* その行に、二人で使える文が一つでもあるか（無い行の予備の文は家事をしないので使える） */
   function rowOk(ctx, key, i, sh, a, b) { var T = TX()[key], p = T && T[i]; if (p && !Array.isArray(p) && typeof p === 'object') p = p[sh] || p.all; if (!Array.isArray(p) || !p.length || !HK.Shinkon) return true; return p.some(function (x) { return HK.Shinkon.okText(ctx, x, a, b); }); }
-  SH.quota = function (ctx, v) { var r = ctx.rng(); return v === 'low' ? 1 : v === 'high' ? 2 + (r < 0.5 ? 1 : 0) : 1 + (r < 0.5 ? 1 : 0); };
+  /* 回数は日数に合わせる（2026-11-05 報告「14 日・多めで場面が 5 日目までの 3 回だけ」）：多め＝日数の 3 分の 1（2 以上）＋0〜1（7 日で 2〜3、10 日で 3〜4、14 日で 4〜5）、
+     ふつう＝日数の 7 分の 1（1 以上）＋0〜1、少なめ＝1 */
+  SH.quota = function (ctx, v, days) {
+    var r = ctx.rng(), n = +days || (ctx.env && +ctx.env.days) || 7;
+    return v === 'low' ? 1 : v === 'high' ? Math.max(2, Math.floor(n / 3)) + (r < 0.5 ? 1 : 0) : Math.max(1, Math.floor(n / 7)) + (r < 0.5 ? 1 : 0);
+  };
+  /* 日数に配る：その日（0 から）までに出してよい回数は、回数の目安を日数で割った分まで（前半で使い切らないように。後半にも必ず残る） */
+  SH.paceOk = function (ctx, S, d) { if (!S || !S.lewdMax || !S.days) return true; return S.sex < Math.ceil(S.lewdMax * (d + 1) / S.days); };
+  SH.behind = function (ctx, S, d) { return !!(S && S.lewdMax && S.days && S.sex < Math.ceil(S.lewdMax * (d + 1) / S.days) - 1); };
   /* 入口の名前（記録の理由の欄・出来事の一覧と同じ言葉） */
   var ENTRY = { lewd: 'ちょっとえっちな出来事', trig: '日々の気持ちの高まり', witness: 'ひとりでしているところを見て', gomu: 'ゴムを買いそびれた夜', late: '遅く帰った夜', rain: '雨に濡れて帰った夜', dark: '停電の夜', trip: '出張から帰った夜', jeal: 'ヤキモチ', ini: '受けのほうから',
     /* 新婚らしい出来事・季節の贈り物から来る入口（2026-11-03。shinkon-r18-special.js の HK.ShinkonR18X） */
@@ -131,6 +139,7 @@
     var lewdEv = !cute && ctx.rng() < 0.3 ? J.pick(ctx, 'lewd', R.LEWD, function (x, i) { return rowOk(ctx, 'LEWD', i, sh, a, b) ? 1 : 0; }) : null;
     var p = Math.max(day.urge || 0, lewdEv ? 0.75 : 0, pc, 0.12) * (P && P.libMul ? Math.min(1.6, P.libMul([A, B])) : 1);
     if (left >= nightsLeft) p = 1;
+    else if (SH.behind(ctx, S, day.d)) p = Math.max(p, 0.8);
     if (day.d === 0 && p < 1) p *= 0.5;
     if (ctx.rng() > p) return false;
     var who = day.urgeBy || (J.of(ctx, A).pt >= J.of(ctx, B).pt ? A : B);
@@ -159,7 +168,9 @@
       /* {x}＝遅く帰った人・出張から帰った人（受け攻めに関係なく）、{n}＝離れていた日数 */
       var aw = HK.Shinkon && HK.Shinkon.away ? HK.Shinkon.away(ctx) : { n: 1, who: [] };
       var lx = cute === 'late' ? day.lateHome || a : aw.who[0] || a, ly = lx === A ? B : A;
-      lt = mk(ctx, pickOk(ctx, (MO().LEAD || {})[cute], a, b), a, b, { x: lx.name, y: ly.name, n: KANJI[Math.max(1, Math.min(9, aw.n))] + '日' });
+      /* 出張から帰ってきた夜は、夜の段の頭で玄関の再会を出しているので、玄関で迎える文を重ねない（shinkon.js の BACK_N。2026-11-05 通し読み） */
+      var LL = ((MO().LEAD || {})[cute] || []), LL2 = cute === 'trip' && day.back ? LL.filter(function (t) { return !/玄関/.test(t); }) : LL;
+      lt = mk(ctx, pickOk(ctx, LL2.length ? LL2 : LL, a, b), a, b, { x: lx.name, y: ly.name, n: KANJI[Math.max(1, Math.min(9, aw.n))] + '日' });
       lwho = [lx, ly];
     } else if (cute) {
       lt = mk(ctx, pickOk(ctx, (MO().LEAD || {})[cute], a, b), a, b);
@@ -196,7 +207,7 @@
       leadB: !kn && (cute === 'ini' || cute === 'gomu' || (cute === 'jeal' && day.jealBy === b) || (cute === 'x' && X0.x === b)), entry: entry, resume: !!kn }, xsrc);
     day.r18x = null;
     form = full.form;
-    var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚部屋：' + (cute === 'x' && X0.k === 'futari' ? '昼' : '夜') + '（' + FORM[form] + '）' + (pairS ? '・' + pairS.why : cute === 'x' ? '・' + ENTRY[entry] : (form === 'short' || form === 'mid') && !kn ? '・' + rowWhy(play.t) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
+    var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚部屋：' + (cute === 'x' && X0.k === 'futari' ? '昼' : '夜') + '（' + FORM[form] + '）' + (full.room ? '・新婚の段' : '') + (pairS ? '・' + pairS.why : cute === 'x' ? '・' + ENTRY[entry] : (form === 'short' || form === 'mid') && !kn ? '・' + rowWhy(play.t) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
     /* 場面が出せなかった夜は、きっかけの段も取り消す（きっかけだけが残らないように） */
     if (!e) { if (le0 && !kn) { var li = ctx.log.lastIndexOf(le0); if (li >= 0) ctx.log.splice(li, 1); } return !!kn; }

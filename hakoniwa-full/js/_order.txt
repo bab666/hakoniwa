@@ -43,6 +43,7 @@
 @chunk pack-roomkit deps=pack-rel
 js/load.js
 js/load-order.js
+js/solo-warn.js @pack:sim
 js/ui-guard.js
 js/scenarios-init.js
 js/core.js
@@ -211,6 +212,7 @@ js/drunk-goukon.js @scen:goukon
 js/drunk-omega.js @scen:omega
 js/goukon-mob.js @scen:goukon
 js/solo-goukon-night.js @scen:goukon
+js/solo-warn-goukon.js @scen:goukon
 js/mini-room.js @scen:whiteroom
 js/mini-room-cute.js @scen:whiteroom
 js/mini-classroom.js @scen:classroom
@@ -227,6 +229,7 @@ js/dungeon-rich.js
 js/dungeon-persona.js
 js/dungeon-kit.js @pack:sim
 js/dungeon.js @scen:dungeon
+js/solo-warn-dungeon.js @scen:dungeon
 js/dungeon-bosses.js @scen:dungeon
 js/dungeon-party.js @scen:dungeon
 js/dungeon-tempt.js @scen:dungeon
@@ -237,7 +240,9 @@ js/solo-kit.js @pack:sim
 js/solo-massage-thick.js @scen:massage
 js/solo-massage-cast.js @scen:massage
 js/solo-massage.js @scen:massage
+js/solo-warn-massage.js @scen:massage
 js/solo-hole.js @scen:hole
+js/solo-warn-hole.js @scen:hole
 js/hole-host.js @scen:hole
 js/dungeon-events-a.js @scen:dungeon
 js/dungeon-events-b.js @scen:dungeon
@@ -339,16 +344,19 @@ js/solo-kaihen-data.js @scen:kaihen
 js/solo-kaihen-more.js @scen:kaihen
 js/solo-kaihen-voice.js @scen:kaihen
 js/solo-kaihen.js @scen:kaihen
+js/solo-warn-kaihen.js @scen:kaihen
 js/solo-succubus-data.js @scen:succubus
 js/solo-succubus-more.js @scen:succubus
 js/solo-succubus-kohyo.js @scen:succubus
 js/solo-succubus.js @scen:succubus
+js/solo-warn-succubus.js @scen:succubus
 js/solo-succubus-rival.js @scen:succubus
 js/solo-succubus-target.js @scen:succubus
 js/solo-saimin-data.js @scen:saimin
 js/solo-saimin-more.js @scen:saimin
 js/solo-saimin-sex.js @scen:saimin
 js/solo-saimin.js @scen:saimin
+js/solo-warn-saimin.js @scen:saimin
 js/saimin-note.js @scen:saimin
 js/solo-variety-data.js @scen:variety
 js/solo-variety-more.js @scen:variety
@@ -358,6 +366,7 @@ js/solo-flow.js @scen:kaihen
 js/solo-flow-succubus.js @scen:succubus
 js/solo-flow-omega.js @pack:sim
 js/solo-variety.js @scen:variety
+js/solo-warn-variety.js @scen:variety
 js/solo-locker-data.js
 js/solo-locker-more.js @scen:locker
 js/solo-locker-bed.js @scen:locker
@@ -375,6 +384,7 @@ js/locker-night-bot.js @scen:locker
 js/locker-night.js @scen:locker
 js/locker-night-light.js @scen:locker
 js/solo-locker.js @scen:locker
+js/solo-warn-locker.js @scen:locker
 js/locker-note.js @scen:locker
 js/trap-open-locker.js @scen:locker
 js/rpg-data.js @scen:rpg
@@ -444,7 +454,9 @@ js/solo-r18-moan.js @pack:lewd
 js/solo-feud-r18.js @pack:lewd
 js/jashin-dark-thick.js @pack:story
 js/solo-yakata-r18.js @scen:yakata
+js/solo-warn-yakata.js @scen:yakata
 js/solo-jashin-r18.js @scen:jashin
+js/solo-warn-jashin.js @scen:jashin
 js/jashin-duo-r18.js @scen:jashin
 js/solo-jashin-r18-climax.js @scen:jashin
 js/scenario-jinro.js @scen:jinro
@@ -531,6 +543,7 @@ js/kiss-text2.js @pack:lewd
 js/kiss.js @pack:lewd
 js/futari-r18.js @scen:futari
 js/futari-r18-more.js @scen:futari
+js/futari-r18-scene.js @scen:futari
 js/reset.js
 js/voice-seg.js
 js/voice-fp.js
@@ -702,6 +715,7 @@ js/solo-train-ero.js @scen:train
 js/solo-train-mob.js @scen:train
 js/solo-train-text2.js @scen:train
 js/solo-train-text3.js @scen:train
+js/solo-train-text4.js @scen:train
 js/solo-train.js @scen:train
 js/solo-succubus-types.js @scen:succubus
 js/solo-succubus-ero.js @scen:succubus

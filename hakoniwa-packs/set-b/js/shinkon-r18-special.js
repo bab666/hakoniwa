@@ -24,6 +24,8 @@
   function SK() { return HK.Shinkon; }
   function canNight(ctx, S, day, a, b) {
     if (HK.SAFE_ON || !S || S.sex >= S.lewdMax || !a || !b) return false;
+    /* 回数を日数に配る（shinkon-r18.js の paceOk） */
+    if (HK.ShinkonR18 && HK.ShinkonR18.paceOk && day && !HK.ShinkonR18.paceOk(ctx, S, day.d)) return false;
     if (!PR.sexOk(ctx, a, b)) return false;
     if (SK() && SK().restNight && SK().restNight(ctx, day)) return false;
     return true;
