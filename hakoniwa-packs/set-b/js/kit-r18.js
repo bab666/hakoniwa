@@ -9,12 +9,16 @@
      ・PR.scene(ctx, S, env, a, b, sh, form, o, src)：場面の本文 { text, form }。src は部屋の文 { TX(): 表の行ごとの文（PLAY・BOTTOM・TOP・AFTER・PEAK）, MO(): 始まり・ほのめかす・男性向けの山場（OPEN・REOPEN・FADE・PEAK_E）,
        R: 表（BOTTOM・TOP の行）, ok(): 文の絞り込みの関数 }。長い場面は本体の HK.ThickSex.scene・HK.ThickEro.scene、中くらいは態度9種の山場の喘ぎ
      ・PR.FB：文の予備（形ごとに 3 文以上）
+     ・部屋専用の段（2026-11-05。遊んで確かめた報告 3 回目「3 部屋に共通する文が場面の 4 割強」）：PR.addMid(部屋の id, 文の表)・PR.addEnd・PR.addOpen・PR.addFore・PR.addInsert・PR.addPeak・PR.addPeakE・PR.addAgain
+       （まとめて PR.addRoom(部屋の id, { open, fore, insert, mid, peak, peakE, end, again, ok })）。部屋の段がそろっていれば、中くらい・長い場面は部屋の段だけで組み（PR.compose）、
+       共通の段（本体の HK.ThickSex・HK.ThickEro・下の FB）は補い。重みは最中の一幕の数で決まる（12 本以上で 95%。PR.roomW）。一回の遊びで同じ段落は二度出さない（ctx._pkLru。PR.lru）。
+       書き方と決まりは hakoniwa-packs/README.md の「部屋専用の段」
    体の語は印（{男性器} など）。登場人物はすべて成人として扱う */
 (function () {
   'use strict';
   var HK = window.HK;
   if (!HK || !HK.Journal) return;
-  var J = HK.Journal, K = HK.PairKit;
+  var J = HK.Journal, K = HK.PairKit, PR0 = {};
   function L(s) { return s.split('|'); }
   function pickOf(ctx, arr) { return arr && arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : ''; }
   /* 一回の遊びで同じ文を続けて使わない（山場の文。2026-11-04：三人・四人で暮らす家の昼の場面で場面の数が増え、同じ山場の文が 3 回出ることがあった） */
@@ -115,8 +119,19 @@
   /* 場面の本文：{ text（名前を当てたもの）, form } */
   function sceneText(ctx, S, env, a, b, sh, form, o, src) {
     var R = src.R, MO = src.MO, text = function (c, key, i, s2, f2, x, y) { return text0(c, src, key, i, s2, f2, x, y); };
-    var pk = function (arr) { return pickOf(ctx, arr); }, high = o.lv === 'high', ero = o.ero, body, lo = { jealous: !!o.jealTop, leadB: !!o.leadB };
+    /* 一回の遊びで同じ段落を二度出さない（本体の HK.Ero.freshPick。2026-11-05 報告「男性向けの同じ段落が同じ回の別の夜に再登場」） */
+    var pk0 = function (arr) { return pickOf(ctx, arr); }, pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(ctx, pk0) : pk0;
+    var high = o.lv === 'high', ero = o.ero, body, lo = { jealous: !!o.jealTop, leadB: !!o.leadB };
+    /* 描写の長さ「数行で短く」：もう一度の段は付けず、一つの段落にまとめる（2026-11-05 報告「数行で短くなのに 5 段落」） */
+    var oneP = env.lewdLen === 'short';
+    if (oneP) high = false;
     var aft = text(ctx, 'AFTER', o.afi, sh, pickOf(ctx, FB.after), a, b);
+    /* 部屋専用の段（PR.addRoom など）がそろっていれば、中くらい・長い場面は部屋の段で組む（共通の段は補い） */
+    var rid = roomOf(ctx), rw = (form === 'long' || form === 'mid') && !o.nogen && !o.noRoom && bodyFits(sh, a, b) ? roomW(rid, sh, ero) : 0;
+    if (rw > 0 && ctx.rng() < rw) {
+      var cb = compose(ctx, S, env, a, b, sh, form, { ero: ero, lv: o.lv, entry: o.entry, jealTop: o.jealTop, leadB: o.leadB, open: o.open || (o.resume && MO().REOPEN ? pickOf(ctx, MO().REOPEN) : '') }, rid);
+      if (cb) { cb = flowFix(cb, a, b, sh, aft); if (PR0.trace) PR0.trace.push({ text: cb, a: a, b: b, sh: sh, after: aft, room: rid }); return { text: mk(ctx, cb + (aft ? '\n\n' + aft : ''), a, b), form: form, room: true }; }
+    }
     var openL = o.resume && MO().REOPEN ? MO().REOPEN : MO().OPEN || ['{a}は{b}を抱き寄せた。'];
     if (form === 'fade') body = pickOf(ctx, MO().FADE || FB.after);
     else if (form === 'long' && HK.ThickSex) {
@@ -156,6 +171,7 @@
       if (high && HK.ThickEro) body += '\n\n' + HK.ThickEro.again(ctx, pk, a, b, ero && form === 'mid', form === 'short' && sh !== 'ff');
     }
     body = flowFix(body, a, b, sh, aft);
+    if (oneP) return { text: mk(ctx, (body + (aft ? '\n\n' + aft : '')).replace(/\n\n+/g, ''), a, b), form: form };
     return { text: mk(ctx, body + (aft ? '\n\n' + aft : ''), a, b), form: form };
   }
   /* 短い・中くらいの場面も本体の流れの管理（HK.SexFlow.fix：段階の逆戻り・体位の矛盾・二度出しを直す）に通す（2026-11-04 報告「挿入後に服を脱がせる」「入れる前に抜く」） */
@@ -163,6 +179,135 @@
     var F = HK.SexFlow; if (!F || !F.fix || !body) return body;
     try { var r = F.fix(body, { a: a, b: b, mode: sh, after: aft || '' }); return r && typeof r.text === 'string' && r.text ? r.text : body; } catch (e) { return body; }
   }
-  HK.PairR18 = { flowFix: flowFix, sexOk: sexOk, shape: shape, text: text0, att: att, nightAdd: nightAdd, insert1: insert1, formOf: formOf, scene: sceneText, FB: FB, pickOf: pickOf, mk: mk };
+  /* ---------- 部屋専用の段（2026-11-05） ----------
+     表の形：文字列（三つの組で使える文）、{ mf: [...], ff: [...], fm: [...], all: [...], when(ctx, a, b, sh) }、{ t, sh, when } の配列か、{ mf, ff, fm, all } の一つ。
+     段の役割（sex-flow の段階に合わせる）：
+       open（書き出し。寝床へ向かう・口づけ。挿入・山場なし）／fore（前戯。挿入なし）／insert（繋がる段。mf＝{男性器}で、ff＝指で、fm＝指と手（まれにペニバン））／
+       mid（最中の一幕。山場・脱がせる・体位を変える動きは書かない。{mm} に受けの喘ぎ）／peak（山場。{m} に受けの絶頂の喘ぎ）／peakE（男性向けの山場。2 文以上）／
+       end（終わり方：果てたあとの一幕。体位の言い回し・挿入は書かない）／again（濃いときのもう一度）
+     ok(ctx, t, a, b)：部屋の文の絞り込み（家事をしない人の家事の文・住まいに合わない文を外す） */
+  var ROOMS = PR0.ROOMS = {}, KINDS = ['open', 'fore', 'insert', 'mid', 'peak', 'peakE', 'end', 'again'];
+  function normList(list) {
+    var out = [];
+    var push = function (t, sh, when) { if (typeof t === 'string' && t) out.push({ t: t, sh: sh || 'all', when: when || null }); };
+    (Array.isArray(list) ? list : [list]).forEach(function (x) {
+      if (!x) return;
+      if (typeof x === 'string') return push(x, 'all');
+      if (typeof x.t === 'string') return push(x.t, x.sh, x.when);
+      ['mf', 'ff', 'fm', 'all'].forEach(function (k) { (x[k] || []).forEach(function (t) { push(t, k, x.when); }); });
+    });
+    return out;
+  }
+  function roomRec(id) { return ROOMS[id] || (ROOMS[id] = { ok: null, w: 0.95 }); }
+  function addPart(id, kind, list) {
+    if (!id || KINDS.indexOf(kind) < 0) return;
+    var r = roomRec(id), l = r[kind] || (r[kind] = []), have = {};
+    l.forEach(function (x) { have[x.sh + '|' + x.t] = 1; });
+    normList(list).forEach(function (x) { if (!have[x.sh + '|' + x.t]) { have[x.sh + '|' + x.t] = 1; l.push(x); } });
+  }
+  function addRoom(id, def) {
+    if (!id || !def) return;
+    var r = roomRec(id);
+    if (typeof def.ok === 'function') r.ok = def.ok;
+    if (def.w != null) r.w = +def.w;
+    KINDS.forEach(function (k) { if (def[k]) addPart(id, k, def[k]); });
+  }
+  /* 今の遊びの部屋の id */
+  function roomOf(ctx) {
+    if (ctx && ctx.input && ctx.input.scenId) return ctx.input.scenId;
+    if (HK.Play && HK.Play.scenIdOf) return HK.Play.scenIdOf({ ctx: ctx });
+    return '';
+  }
+  /* 一回の遊びで、いちばん前に使った（まだ使っていない）文から選ぶ（本体の S._pkLru と同じ型。ctx に持つ） */
+  function lru(ctx, arr) {
+    if (!arr || !arr.length) return '';
+    var m = ctx._pkLru = ctx._pkLru || { n: 0, at: {} }, best = [], bv = Infinity;
+    for (var i = 0; i < arr.length; i++) { var v = m.at['$' + arr[i]] || 0; if (v < bv) { bv = v; best = [arr[i]]; } else if (v === bv) best.push(arr[i]); }
+    var x = best[Math.floor(ctx.rng() * best.length)];
+    m.at['$' + x] = ++m.n;
+    return x;
+  }
+  function cands(ctx, id, kind, sh, a, b) {
+    var r = ROOMS[id]; if (!r || !r[kind]) return [];
+    var bM = !!(b && HK.Pos && HK.Pos.hasM && HK.Pos.hasM(b));
+    return r[kind].filter(function (x) {
+      if (x.sh !== 'all' && x.sh !== sh) return false;
+      try { if (x.when && !x.when(ctx, a, b, sh)) return false; if (r.ok && a && !r.ok(ctx, x.t, a, b)) return false; } catch (e) { return false; }
+      /* 体の語：受けに男性器があれば女性器の語の文を、なければ受けの男性器の文を使わない（男性どうしは mf の文から） */
+      if (bM && BODY_F.test(x.t)) return false;
+      if (!bM && /\{b\}の(?:[^。、{]{0,4})\{(?:男性器|先走り|亀頭)\}/.test(x.t)) return false;
+      return true;
+    }).map(function (x) { return x.t; });
+  }
+  /* 部屋の段を一つ（無ければ ''）。avoid：同じ場面ですでに使った文 */
+  function part(ctx, id, kind, sh, a, b, avoid) {
+    var l = cands(ctx, id, kind, sh, a, b);
+    if (avoid) { var l2 = l.filter(function (t) { return avoid.indexOf(t) < 0; }); if (l2.length) l = l2; }
+    return lru(ctx, l);
+  }
+  var BODY_F = /\{(?:女性器|陰核|愛液)\}|潮を/;
+  var REAR = /うつ伏せ|四つん這い|後ろから|背後から|背中から/, REAR_NG = /見つめ|目を合わせ|目が合|額|唇を重ね|顔を(?:見|のぞ|覗)|見下ろ|見上げ|頬を|胸に頬|脚を絡め|首に(?:腕|しがみ)/;
+  function count(id, kind, sh) { var r = ROOMS[id]; return r && r[kind] ? r[kind].filter(function (x) { return x.sh === 'all' || x.sh === sh; }).length : 0; }
+  /* 部屋の段で組む割合：段がそろっていて、最中の一幕が 12 本以上なら部屋の重み（既定 95%）。少なければ本数に比例 */
+  function roomW(id, sh, ero) {
+    var r = ROOMS[id]; if (!r) return 0;
+    var need = ['open', 'fore', 'insert', 'mid', 'end', ero ? 'peakE' : 'peak'];
+    if (need.some(function (k) { return !count(id, k, sh); })) return 0;
+    return Math.min(1, count(id, 'mid', sh) / 12) * (r.w != null ? r.w : 0.95);
+  }
+  /* 体の組が形に合うときだけ（フタナリ・性器の指定で形と体が食い違う組は共通の組み立て） */
+  function bodyFits(sh, a, b) {
+    var P = HK.Pos, hm = P && P.hasM; if (!hm) return true;
+    return sh === 'mf' ? hm(a) : sh === 'ff' ? !hm(a) && !hm(b) : sh === 'fm' ? !hm(a) && hm(b) : false;
+  }
+  /* 部屋の段だけで組む中くらい・長い場面の本文（名前は {a}{b} のまま）。組めなければ '' */
+  function compose(ctx, S, env, a, b, sh, form, o, id) {
+    var ero = !!o.ero, T = HK.ThickSex, pk = function (arr) { return pickOf(ctx, arr); }, used = [];
+    /* 後ろからの体位の繋がる段のあとは、顔を合わせる文を使わない（sex-flow の (k)） */
+    var rear = false;
+    var P1 = function (kind) {
+      var l0 = cands(ctx, id, kind, sh, a, b), l = l0.filter(function (t) { return used.indexOf(t) < 0 && !(rear && REAR_NG.test(t)); });
+      if (!l.length) l = l0.filter(function (t) { return !(rear && REAR_NG.test(t)); });
+      var t = lru(ctx, l); if (t) used.push(t);
+      if (kind === 'insert' && REAR.test(t)) rear = true;
+      return t;
+    };
+    var moan = function (cl) {
+      if (ero && HK.ThickEro && HK.ThickEro.fill) return String(HK.ThickEro.fill(ctx, cl ? '{mb2}' : '{mb1}', a, b));
+      return T && T.moan ? String(T.moan(pk, b, cl, ctx.rng)) : '';
+    };
+    var say0 = function () {
+      var m = ero && HK.ThickEro && HK.ThickEro.fill ? String(HK.ThickEro.fill(ctx, '{mb0}', a, b)) : T && T.moan0 ? String(T.moan0(pk, b, ctx.rng)) : '';
+      return m ? '{b}「' + m.replace(/^「|」$/g, '') + '」' : '';
+    };
+    var say = function (cl) { var m = moan(cl); return m ? '{b}「' + m.replace(/^「|」$/g, '') + '」' : ''; };
+    if (HK.NovelMoan) HK.NovelMoan.top = a;
+    var long = form === 'long', thick = env.lewdLen === 'thick';
+    var ps = [];
+    if (long || o.open) ps.push(o.open || P1('open'));
+    ps.push(P1('fore'));
+    if (long && (thick || ctx.rng() < 0.5)) { var f2 = P1('fore'); if (f2) ps.push(f2); }
+    ps.push(P1('insert'));
+    /* 最中の一幕：中くらいは 2、長いは 2〜3（流れの管理の性感が山場の前に閾値に届く数。届かないと共通の追い上げの段が入る） */
+    var nMid = long && thick ? 3 : 2;
+    for (var i = 0; i < nMid; i++) { var m0 = P1('mid'); if (m0) ps.push(m0); }
+    var pkT = P1(ero ? 'peakE' : 'peak'); ps.push(pkT);
+    ps.push(P1('end'));
+    if (ps.some(function (x) { return !x; })) return '';
+    var body = ps.join('\n\n').replace(/\{mm\}/g, function () { return say(false); }).replace(/\{m0\}/g, function () { return say0(); });
+    body = body.replace('{m}', say(true)).replace(/\{m\}/g, '');
+    if (ero && HK.ThickEro && HK.ThickEro.fill) body = HK.ThickEro.fill(ctx, body, a, b);
+    /* 夜の性格の一文と夜の主導の段（受けから始める夜など）は、書き出しのあとに */
+    /* 本体の型の体位の一文（HK.Play の shortLine）は、部屋の段の体位と食い違うので足さない */
+    var PL = HK.Play, off0 = PL ? PL.off : null, na;
+    if (PL) PL.off = true;
+    try { na = nightAdd(ctx, a, b, sh, ero, o.entry, { jealous: !!o.jealTop, leadB: !!o.leadB }); } finally { if (PL) PL.off = off0; }
+    body = insert1(body, na);
+    if (o.lv === 'high') { var ag = P1('again'); body += '\n\n' + (ag || (HK.ThickEro ? HK.ThickEro.again(ctx, pk, a, b, ero, false) : '')); }
+    return body;
+  }
+  PR0.addRoom = addRoom; PR0.addPart = addPart; PR0.roomOf = roomOf; PR0.lru = lru; PR0.part = part; PR0.roomW = roomW; PR0.compose = compose; PR0.bodyFits = bodyFits; PR0.count = count;
+  KINDS.forEach(function (k) { PR0['add' + k.charAt(0).toUpperCase() + k.slice(1)] = function (id, list) { addPart(id, k, list); }; });
+  HK.PairR18 = PR0; Object.assign(PR0, { flowFix: flowFix, sexOk: sexOk, shape: shape, text: text0, att: att, nightAdd: nightAdd, insert1: insert1, formOf: formOf, scene: sceneText, FB: FB, pickOf: pickOf, mk: mk });
 })();
 /* r18:end */
