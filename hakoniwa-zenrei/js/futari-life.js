@@ -46,9 +46,9 @@
     lines: L('休日の朝、{a}が起きてくると、{b}はもう居間で新聞を広げていた。{b}「コーヒー、まだ温かいよ｜コーヒーは、まだ温かい｜コーヒー、まだ温かいですよ」|休みの日の朝は、家じゅうがのんびりしていた。{a}と{b}は、どちらも寝間着のまま、昼近くまで居間でごろごろしていた。|{a}は休日の朝に掃除機をかける派で、{b}は昼まで寝ていたい派だった。二人は、掃除機は十時から、という決まりをその場で作った。|休日の朝、{a}と{b}は同じ時間に台所に立って、なんとなく二人分のトーストを焼いた。'),
     fx: function (ctx, a, b) { ctx.mod2(a, b, { aff: 1 }, { aff: 1 }); ctx.stress(a, -3); ctx.stress(b, -3); }, why: '休日の朝' });
   add({ id: 'ft_l_home', label: '仕事帰りの同居人を迎える', cat: 'help', tm: 'e', w: 0.9, spot: function () { return '自宅の玄関'; },
-    need: function (ctx) { return !ctx.ft.hol; },
+    need: function (ctx) { return !ctx.ft.hol && ctx.ft.homeDay !== ctx.ft.day; },
     lines: L('{b}が仕事から帰ると、玄関の明かりがついていた。{a}「おかえり。風呂、沸いてるよ｜おかえり。風呂は沸いている｜おかえりなさい。お風呂、沸いてますよ」|疲れた顔で帰ってきた{b}に、{a}は何も訊かずに温かいお茶を出した。{b}は湯呑みを両手で包んで、長い息を吐いた。|{a}は、{b}の帰りが遅い日は、居間の明かりを一つ残しておくようになっていた。{b}は、それに気づいていた。|{b}は玄関で靴を脱ぎながら、「ただいま｜ただいま｜ただいま帰りました」と言った。返ってくる声があるのに、まだ少し慣れなかった。'),
-    fx: function (ctx, a, b) { ctx.mod(b, a, { aff: 1, trust: 3 }); ctx.stress(b, -5); }, why: function (ctx, a, b) { return b.name + 'の仕事帰りを、' + a.name + 'が迎えた'; } });
+    fx: function (ctx, a, b) { ctx.ft.homeDay = ctx.ft.day; ctx.mod(b, a, { aff: 1, trust: 3 }); ctx.stress(b, -5); }, why: function (ctx, a, b) { return b.name + 'の仕事帰りを、' + a.name + 'が迎えた'; } });
   add({ id: 'ft_l_shop', label: '二人で日用品の買い出しに行く', cat: 'bond', tm: 'd', w: 0.9, spot: function () { return '近所のスーパー'; },
     need: function (ctx) { return ctx.ft.hol; },
     lines: L('{a}と{b}は、近所のスーパーで日用品をまとめ買いした。洗剤の銘柄で少しもめて、結局二種類買った。|買い出しのメモを持ってきたのは{a}だったが、メモにない菓子をかごに入れたのも{a}だった。{b}は、黙って同じ菓子をもう一つ入れた。|{a}と{b}は、重い米の袋を交代で持って帰った。家に着くころには、どちらも腕が棒のようになっていた。|スーパーのレジで、{a}と{b}は割り勘の計算をした。端数の十円は、じゃんけんで{b}が払った。'),
@@ -65,9 +65,10 @@
   add({ id: 'ft_l_sick', label: '熱を出した同居人の世話をする', cat: 'help', tm: 'me', w: 0.5, spot: function () { return '自宅の寝室'; },
     need: function (ctx, a) { return ctx.ft.day >= 2 && chore(ctx, a); },
     lines: L('{b}が熱を出して寝込んだ。{a}は枕元に水とゼリーを置いて、「何かあったら呼んで｜何かあったら呼べ｜何かあったら呼んでください」とだけ言った。|{a}は、寝込んだ{b}の部屋の前を、一時間おきに通った。扉は開けなかったが、足音だけで{b}には分かった。|{b}は風邪で一日寝込んだ。{a}が何度か様子を見に行くと、そのたびに{b}は布団の中から小さく手を振った。翌朝、{a}の机の上に、{b}の字で「ありがとう」と書いた付箋が貼ってあった。|{a}は、熱でぼんやりしている{b}のために、薬局で薬と冷却シートを買ってきた。'),
-    fx: function (ctx, a, b) { ctx.mod(b, a, { aff: 1, trust: 5 }); ctx.stress(b, -4); }, why: function (ctx, a, b) { return b.name + 'の看病（' + a.name + 'の世話焼き）'; } });
+    /* 寝込んだ人を覚えておく（その日はその人を職場の一文・家事の主語にしない。通し読み 1105：寝込んだ日の昼に職場の文） */
+    fx: function (ctx, a, b) { (ctx.ft.sick = ctx.ft.sick || {})[b.i] = ctx.ft.day; ctx.mod(b, a, { aff: 1, trust: 5 }); ctx.stress(b, -4); }, why: function (ctx, a, b) { return b.name + 'の看病（' + a.name + 'の世話焼き）'; } });
   add({ id: 'ft_l_tv', label: '居間のテレビを一緒に眺める', cat: 'bond', tm: 'en', w: 0.8, spot: function () { return '自宅の居間'; },
-    lines: L('{a}が見ていた料理番組を、{b}もいつの間にか隣で見ていた。番組が終わると、二人とも無性にお腹がすいていた。|居間のテレビのチャンネルは、いつの間にか曜日ごとに{a}と{b}で交代することになっていた。|{a}と{b}は、クイズ番組の答えを先に言い合った。勝ったのは{b}だったが、{a}は最後まで認めなかった。|夜のニュースを、{a}と{b}は黙って眺めていた。天気予報だけ、二人とも少し身を乗り出した。'),
+    lines: L('{a}が見ていた料理番組を、{b}もいつの間にか隣で見ていた。番組が終わると、二人とも無性にお腹がすいていた。|居間のテレビのチャンネルは、いつの間にか曜日ごとに{a}と{b}で交代することになっていた。|{a}と{b}は、クイズ番組の答えを先に言い合った。勝ったのは{b}だったが、{a}は最後まで認めなかった。|[n]夜のニュースを、{a}と{b}は黙って眺めていた。天気予報だけ、二人とも少し身を乗り出した。'),
     fx: function (ctx, a, b) { ctx.mod2(a, b, { aff: 1 }, { aff: 1 }); }, why: '居間のテレビ' });
   add({ id: 'ft_l_rain', label: '急な雨で洗濯物を取り込む', cat: 'help', tm: 'de', w: 0.6, spot: function () { return '自宅のベランダ'; },
     need: function (ctx, a) { return chore(ctx, a); },

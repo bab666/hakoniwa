@@ -354,7 +354,15 @@
       default: return 1;
     }
   }
-  function sitOk(ctx, t, a) { return !/作り置き/.test(t) || H.cookGood(ctx, a); }
+  /* すれ違いの場面の文の時間帯（通し読み 1105：朝の区切りに「昼寝をしていた」）。ctx.ft.t：0 朝・1 昼・2 夕方・3 夜 */
+  function sitTime(ctx, t) {
+    var tt = ctx.ft ? ctx.ft.t : -1;
+    if (/昼寝/.test(t) && tt !== 1 && tt !== 2) return false;
+    if (/夕方になっても/.test(t) && tt < 2) return false;
+    if (/夜中|夜遅く|夜の長電話/.test(t) && tt === 1) return false;
+    return true;
+  }
+  function sitOk(ctx, t, a) { return (!/作り置き/.test(t) || H.cookGood(ctx, a)) && sitTime(ctx, t); }
   function resPick(ctx, a, b, p, x) {
     var w = { gaman: 1, memo: 1, talk: 1.2, laugh: 0.8, spat: 0.6 }, v = x.awk || 0;
     if (/^(shy|devoted)$/.test(p)) { w.gaman *= 3; w.memo *= 2; w.spat *= 0.3; }
@@ -602,7 +610,9 @@
       when: function (ctx, a, b) { var f = ctx.ft; if (!b || !HK.Kiss || tm.indexOf(FC.TC.charAt(f.t)) < 0) return false; var x = FC.stOf(ctx, a, b); return FC.couple(ctx, a, b) && FC.loveOk(ctx, a, b) && FC.together(ctx, a, b) && x.s >= 3 && f.day - (x.kissDay == null ? -9 : x.kissDay) >= 2 && (!need || need(ctx, a, b, x)); },
       w: function () { return w; },
       run: function (ctx, a, b) {
-        var x = FC.stOf(ctx, a, b), r = HK.Kiss.text(ctx, a, b, { trig: trig, x: a, y: b, len: ctx.rng() < 0.6 ? 's' : 'm' });
+        var len = ctx.rng() < 0.6 ? 's' : 'm', x = FC.stOf(ctx, a, b), r = HK.Kiss.text(ctx, a, b, { trig: trig, x: a, y: b, len: len });
+        /* 夜（おやすみ前）のキスで「続きは夜」のお預けにしない（通し読み 1105：布団の中で「続きは夜よ」） */
+        if (r && r.text && FC.TC.charAt(ctx.ft.t) === 'n' && /続きは、?夜|夜まで(?:我慢|お預け)/.test(r.text)) r = HK.Kiss.text(ctx, a, b, { trig: trig, x: a, y: b, len: len, end: 'hold' });
         if (!r || !r.text) return null;
         x.kissDay = ctx.ft.day; if (once) x[once] = true;
         return { text: r.text, why: FC.W(ctx, FC.spotHere(ctx, a, b)) + (r.why || 'キスだけの触れ合い') };
