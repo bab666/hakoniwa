@@ -19,6 +19,8 @@
 /* @event scen=set-b-date id=dt_form_short cat=romance tie=- tags=night label=夜の場面・短い場面（デートの夜） */
 /* @event scen=set-b-date id=dt_form_mid cat=romance tie=- tags=night label=夜の場面・中くらいの場面（反応と山場） */
 /* @event scen=set-b-date id=dt_form_long cat=romance tie=- tags=night label=夜の場面・段落を分けた長い場面 */
+/* @event scen=set-b-date id=dt_night_uchi cat=romance tie=- tags=night label=おうちデートの家でそのまま迎える夜 */
+/* @event scen=set-b-date id=dt_night_none cat=bond tie=- tags=night label=夜の場面が無かった二人のわけ */
 /* デートの日々の夜（R18版だけ。全年齢版のパックを組み立てるとき、この印の間は落ちる。2026-11-03）
    ■ HK.DateR18（DR）
      ・DR.quota(ctx, 'none'|'low'|'mid'|'high')：一回の遊びのエッチの回数の上限（0／1／3／5）
@@ -45,7 +47,7 @@
   function fresh(arr) { var U = CUR && CUR.dt && CUR.dt.used; if (!U || !arr) return arr; var q = arr.filter(function (x) { return !U['r18:' + x]; }); return q.length ? q : arr; }
   function remember(ctx, text, lists, a, b) { var U = ctx.dt.used; lists.forEach(function (l) { (l || []).forEach(function (x) { var k = ctx.t(String(x).replace(/「[^」]*」/g, ''), a, b).replace(/\{[^}]+\}/g, '').slice(0, 14); if (k && text.indexOf(k) >= 0) U['r18:' + x] = 1; }); }); }
   var SRC = { TX: TX, MO: function () { var T = TX(); return { OPEN: fresh(T.OPEN), REOPEN: fresh(T.OPEN), FADE: fresh(T.FADE), PEAK_E: PR.FB.peakE }; }, R: null, ok: function () { return DT.okText; } };
-  var ENTRY = { ouchi: 'お家に寄った夜', tomari: '泊まった夜', hotel: 'ラブホの夜', yado: '旅先の宿の夜', kaeru: 'デート帰りの家の夜', first: '初めてのお泊まりの夜', car: '帰り道の車の中' };
+  var ENTRY = { ouchi: 'お家に寄った夜', tomari: '泊まった夜', hotel: 'ラブホの夜', yado: '旅先の宿の夜', kaeru: 'デート帰りの家の夜', first: '初めてのお泊まりの夜', car: '帰り道の車の中', uchi: 'おうちデートの夜' };
   var FORM = { fade: 'ほのめかす', short: '短い場面', mid: '中くらいの場面', long: '長い場面' };
   function dedupe(t, a, b) {
     var seen = {}, nm = function (x) { return a && b ? x.split('{a}').join(a.name).split('{b}').join(b.name) : x; };
@@ -63,6 +65,8 @@
   DR.quota = function (ctx, v) { return v === 'none' ? 0 : v === 'low' ? 1 : v === 'high' ? 5 : 3; };
   function pairOk(ctx) {
     var S = ctx.dt, A = S.A, B = S.B, P = HK.Pos;
+    /* 片想い・両片想いの二人は、想いを告げて付き合い始めるまで体の関係にしない（2026-11-05 報告「3 回目の夜にエッチ→4 回目に告白」） */
+    if (S.pine && !S.confessed) return null;
     if (!PR.sexOk(ctx, A, B)) return null;
     if (P && P.okSex && !P.okSex(A, B)) return null;
     var o = P && P.order ? P.order(A, B) : [A, B], a = o[0], b = o[1], AV = HK.Avoid;
@@ -80,7 +84,10 @@
     return t;
   };
   /* ---------- その日のスポットの余韻（yo）。最後にいた行き先ほど強く、最後のデートの観覧車の山場も ---------- */
-  var YO_ID = { eiga: 'eiga', gekijo: 'eiga', planetarium: 'eiga', umi: 'umi', okinawa: 'umi', onsen: 'onsen', kyoto: 'onsen', tenbo: 'yakei', dinner: 'yakei', illumi: 'yakei', hanabi: 'yakei', hotel: 'yakei' };
+  /* 行き先ごとの余韻（2026-11-05：プラネタリウムの日に「映画のあと」、イルミネーションに行っていない日に「光の中を歩いた余韻」が出ていたので、行き先ごとに分けた） */
+  var YO_ID = { eiga: 'eiga', gekijo: 'butai', live: 'butai', planetarium: 'hoshi', umi: 'umi', okinawa: 'umi', onsen: 'onsen', kyoto: 'onsen', tenbo: 'yakei', dinner: 'yakei', illumi: 'hikari', hanabi: 'hanabi', hotel: 'yakei' };
+  /* 表の行（入り方・最中・終わり方）の余韻の印に当てるときの読み替え（観劇・ライブは映画の行、光・花火は夜景の行も使う） */
+  var YO_ROW = { butai: 'eiga', hikari: 'yakei', hanabi: 'yakei' };
   function yoOf(d) {
     var o = [], has = function (x) { return (' ' + (d.flags || '') + ' ').indexOf(' ' + x + ' ') >= 0; };
     if (has('kanran')) o.push('kanran');
@@ -102,7 +109,7 @@
   DR.yoinOf = yoinOf;
   /* 表の行から、余韻に合う行（yo が合う行を重く、合わない余韻の行は使わない） */
   function rowPick(ctx, rows, yo) {
-    var ok = (rows || []).filter(function (r) { return !r.yo || r.yo.split(' ').indexOf(yo) >= 0; });
+    var ok = (rows || []).filter(function (r) { return !r.yo || r.yo.split(' ').indexOf(yo) >= 0 || (YO_ROW[yo] && r.yo.split(' ').indexOf(YO_ROW[yo]) >= 0); });
     if (!ok.length) return null;
     return HK.weighted(ctx.rng, ok, function (r) { return r.yo ? 4 : 1; });
   }
@@ -118,14 +125,78 @@
   function owariOf(ctx, yo, a, b, sh) {
     var T = TX(), r = rowPick(ctx, T.OWARI_ROWS, yo); if (!r) return null;
     var t = DT.pickT(ctx, ((T.OWARI || {})[r.k] || {})[sh], a, b); if (!t) return null;
-    var sy = DT.pickT(ctx, (T.OWARI_SAY || {})[PR.att(b, a)] || (T.OWARI_SAY || {}).gentle, a, b) || '';
+    var sy = ctx.rng() < 0.5 ? DT.pickT(ctx, (T.OWARI_SAY || {})[PR.att(b, a)] || (T.OWARI_SAY || {}).gentle, a, b) || '' : '';
     return { k: r.k, name: r.name, text: dw(ctx, t + sy) };
   }
 
   /* 部屋の専用の長い場面（HK.Play.addScene）を選ぶための、今夜の分かれ道 */
   function curBr(ctx) { return ctx && ctx.dt && ctx.dt.curBr || ''; }
-  DR.night = function (ctx, br, day, last) {
-    var S = ctx.dt, env = ctx.env, LV = HK.Lewd, P = HK.Pos, A = S.A, B = S.B, T = TX();
+  /* ---------- 今夜の舞台（宿の種類・場所・その日にあったこと。2026-11-05 遊んで確かめた報告 3 回目「宿は旅館に固定」「車の場面にシーツ」「その日に無かった出来事を参照」） ---------- */
+  var INN_OF = { onsen: 'ryokan', kyoto: 'ryokan', hokkaido: 'hotel', hotel: 'hotel', kaigai: 'abroad', okinawa: 'resort', cruise: 'ship', uchu: 'space', aurora: 'cottage', glamping: 'tent' };
+  function kindOf(ctx, br, day) {
+    var S = ctx.dt, P = day && day.P || {};
+    if (br === 'hotel') return 'love';
+    if (br === 'car') return 'car';
+    if (br === 'yado') {
+      var D = P.main || {}, k = INN_OF[D.id] || 'hotel';
+      /* 宇宙旅行の帰還まで進んだ夜は地上のホテル */
+      if (k === 'space' && day.phAt && D.ph && D.ph.inn && day.phAt[D.id] != null && D.ph.inn[D.ph.k[day.phAt[D.id]]]) k = 'hotel';
+      return k;
+    }
+    if (P.home && !S.cohab && (br === 'ouchi' || br === 'tomari')) return 'uchi';
+    return S.cohab || br === 'kaeru' ? 'kaeru' : 'home';
+  }
+  var SHOP_K = /^(shop)$/, TICKET_K = /^(fun|movie|culture)$/;
+  function dayFlags(ctx, day, br) {
+    var P = day && day.P || {}, k = day && day.k || {}, o = {}, ds = (P.slots || []).map(function (x) { return x.d; }).concat(P.main ? [P.main] : []);
+    if (ds.some(function (d) { return SHOP_K.test(d.kind || '') || /outlet|shopping|kagu/.test(d.id); })) o.shop = 1;
+    if (k.photo) o.photo = 1;
+    if (P.trip) { o.trip = 1; o.tsukare = 1; }
+    if (P.len === 'long') o.tsukare = 1;
+    if (day.ateDin || day.ateIn) o.dinner = 1;
+    if (day.trouble) o.trouble = 1;
+    if (day.fight) o.fight = 1;
+    if (day.toki) o.toki = 1;
+    if (day.kiss || k.kiss) o.kiss = 1;
+    if (day.rich) o.rich = 1;
+    if (P.bud && P.bud <= 3000) o.low = 1;
+    if (k.ame || k.acc_ame || k.acc_yudachi) o.ame = 1;
+    if (ds.some(function (d) { return (' ' + (d.flags || '') + ' ').indexOf(' kanran ') >= 0; }) && !P.trip) o.kanran = 1;
+    if (ds.some(function (d) { return TICKET_K.test(d.kind || ''); })) o.ticket = 1;
+    if (o.shop || P.trip) o.omiyage = 1;
+    if (br === 'ouchi') o.ouchi = 1;
+    var sk = Object.keys(day && day.spots || {}), last = sk.length ? sk[sk.length - 1].split(':') : null;
+    if (last && last[1] && last[1].length <= 12) { o.spot = 1; o.spotName = last[1]; }
+    return o;
+  }
+  /* 場面の部品の長い場面（本体の HK.ThickSex／ThickEro。部屋の段で組めなかったときの補い）に場所を渡す（場面のあいだだけ包む） */
+  function withSpot(spot, fn) {
+    if (!spot || !HK.SexSpot) return fn();
+    var undo = [];
+    [HK.ThickSex, HK.ThickEro].forEach(function (X) {
+      if (!X || typeof X.scene !== 'function') return;
+      var f0 = X.scene;
+      X.scene = function (o) { if (o && !o.spot) { var o2 = {}; Object.keys(o).forEach(function (k) { o2[k] = o[k]; }); o2.spot = spot; return f0.call(this, o2); } return f0.apply(this, arguments); };
+      Object.keys(f0).forEach(function (k) { X.scene[k] = f0[k]; });
+      undo.push(function () { X.scene = f0; });
+    });
+    try { return fn(); } finally { undo.forEach(function (u) { u(); }); }
+  }
+  /* 今夜は長い場面にするか（エッチ多め：まだ長い場面が無ければ、最後のデートか、後半の泊まり・ラブホの夜に） */
+  DR.wantLong = function (ctx, day, br) {
+    var S = ctx.dt, env = ctx.env;
+    if (env.lewdN !== 'high' || env.lewdLen === 'short' || S.longN) return false;
+    if (day.last || S.sex + 1 >= S.lewdMax) return true;
+    return day.d >= Math.floor(S.n / 2) && /^(yado|hotel|tomari|kaeru)$/.test(br);
+  };
+  /* 部屋の文の {dest}・{spot}・{date} を当てる（場面の部品はこの印を知らない） */
+  function fillEx(ctx, t, N, dest) { return String(t).split('{dest}').join(dest || 'デートの行き先').split('{spot}').join(N && N.f.spotName || dest || '行き先').split('{date}').join(ctx.dt && ctx.dt.dword || 'デート'); }
+  /* 部品の名前の覚え */
+  function nm(o, k) { return o && o[k] ? o[k].filter(function (x, i, l) { return l.indexOf(x) === i; }).join('・') : ''; }
+  /* opt：{ force（必ず場面にする）} */
+  DR.night = function (ctx, br, day, last, opt) {
+    opt = opt || {};
+    var S = ctx.dt, env = ctx.env, LV = HK.Lewd, P = HK.Pos, A = S.A, B = S.B, T = TX(), RM = HK.DateRoom;
     if (!T.PLAY || S.sex >= S.lewdMax) return false;
     var ab = pairOk(ctx);
     if (!ab) return false;
@@ -133,68 +204,134 @@
     var first = last && S.endK === 'tomari' && (br === 'tomari' || br === 'hotel');
     var p = { hotel: 1, tomari: 0.75, yado: S.couple ? 0.75 : 0.3, ouchi: 0.55, kaeru: 0.32, car: 1 }[br] || 0.4;
     if (first) p = 0.95;
-    if (!S.couple && br !== 'hotel') p *= 0.78;
+    if (!S.couple && !S.fwb && br !== 'hotel') p *= 0.78;
     if (br !== 'hotel' && br !== 'car') p *= P && P.libMul ? Math.min(1.5, P.libMul([A, B])) : 1;
+    /* エッチ多め（5 回まで）：泊まり・お家・宿の夜はほとんど場面にする（2026-11-05 報告「多めで平均 2.2 回」） */
+    if (env.lewdN === 'high') p = Math.max(p, S.couple || S.fwb ? 0.94 : 0.72);
+    if (opt.force) p = 1;
     /* 喧嘩した日も止めない（その場で仲直りした夜。帰ってしまった日は夜の区切りが無い） */
     if (ctx.rng() > p) return false;
     var entry = first && br !== 'hotel' ? 'first' : br;
+    var kind = kindOf(ctx, br, day);
+    if (kind === 'uchi' && entry !== 'first') entry = 'uchi';
+    var dest = day.P && day.P.main ? day.P.main.name : '';
     /* 1. きっかけ：言い出す人（{a}）。ラブホ・車は性欲の強い方・夜の性格が攻めの方、ほかはデートの余韻から */
     var la = P && P.libK ? P.libK(A) : 1, lb = P && P.libK ? P.libK(B) : 1;
     var x = br === 'hotel' || br === 'car' ? (la > lb ? A : lb > la ? B : (ctx.rng() < 0.6 ? a : b)) : (ctx.rng() < 0.55 ? a : b), y = x === A ? B : A;
     var AV = HK.Avoid;
     if (AV && AV.of && AV.of(ctx, x, y)) { if (AV.of(ctx, y, x)) return false; var sw = x; x = y; y = sw; }
-    var L0 = DT.pickT(ctx, (T.LEAD || {})[entry], x, y) || DT.pickT(ctx, (T.LEAD || {})[entry], x, y, true);
-    /* その日のスポットの余韻（観覧車のあと・映画のあと・海のあと…）の一文 */
-    var yo = br === 'car' ? '' : yoinOf(ctx, day), ly = yo && L0 ? DT.pickT(ctx, (T.LEAD_YO || {})[yo], x, y) : '';
+    /* 宿の種類ごとのきっかけ（旅館・ホテル・船室・テント…・おうちデートの家）。ラブホは前からの文と半々 */
+    var LI = RM && RM.LEAD && RM.LEAD[kind] ? RM.LEAD[kind] : null;
+    var L0 = LI && (br !== 'hotel' || ctx.rng() < 0.6) && entry !== 'first' ? DT.pickT(ctx, LI, x, y) : '';
+    if (!L0) L0 = DT.pickT(ctx, (T.LEAD || {})[entry === 'uchi' ? 'ouchi' : entry], x, y) || DT.pickT(ctx, (T.LEAD || {})[entry === 'uchi' ? 'ouchi' : entry], x, y, true);
+    if (entry === 'uchi' && L0 && /部屋に上が|玄関の扉が閉ま|帰り道/.test(L0) && LI) L0 = DT.pickT(ctx, LI, x, y, true);
+    /* その日のスポットの余韻（観覧車のあと・映画のあと・海のあと…）の一文。その日に行った行き先からだけ */
+    var yo = br === 'car' ? '' : yoinOf(ctx, day), lyl = yo ? ((T.LEAD_YO || {})[yo] || (RM && RM.LEAD_YO[yo]) || null) : null, ly = lyl && L0 ? DT.pickT(ctx, lyl, x, y) : '';
     if (ly) L0 += ly;
     /* 初めてのお泊まりをラブホで：ホテルのきっかけに、初めての夜の一文を足す */
     if (first && br === 'hotel' && L0) L0 += DT.pickT(ctx, T.FIRST_ADD, x, y, true) || '';
     var FE = T.FEEL || {}, fe = DT.pickT(ctx, FE[PR.att(x, y)] || FE.gentle, x, y) || DT.pickT(ctx, FE.gentle, x, y, true);
     var FA = T.FANS || {}, fa = DT.pickT(ctx, FA[PR.att(y, x)] || FA.gentle, x, y) || DT.pickT(ctx, FA.gentle, x, y, true);
     if (!L0) return false;
-    var dest = day.P && day.P.main ? day.P.main.name : '';
     var lt = DT.fill(ctx, L0 + (fe || '') + (fa || ''), x, y, { dest: dest });
     var lcat = S.love && (!ctx.romanceOk || ctx.romanceOk([x, y], false)) ? 'romance' : 'bond';
-    var le = ctx.say({ kind: 'event', cat: lcat, actors: [x, y], text: lt, why: 'きっかけ：' + (first ? ENTRY.first + (br === 'hotel' ? '・ラブホ' : '') : ENTRY[entry]) + '（' + x.name + 'から・' + (dest ? dest + 'の' : '') + (S.love ? 'デートの余韻' : 'お出かけのあと') + (yo && T.YO_NAME ? '・' + T.YO_NAME[yo] : '') + '）', mag: 0 });
+    var KN = RM ? RM.NAME : {};
+    var le = ctx.say({ kind: 'event', cat: lcat, actors: [x, y], text: lt, why: 'きっかけ：' + (first ? ENTRY.first + (br === 'hotel' ? '・ラブホ' : '') : ENTRY[entry] || ENTRY[br]) + '（' + x.name + 'から・' + (dest ? dest + 'の' : '') + (S.love ? 'デートの余韻' : 'お出かけのあと') + (br === 'yado' && KN[kind] ? '・' + KN[kind] : '') + (yo && T.YO_NAME ? '・' + T.YO_NAME[yo] : '') + '）', mag: 0 });
     if (le) le.tag = 'きっかけ';
     /* 2. 場面 */
     var lv = LV ? LV.lv(env) : 'mid', ero = !!(LV && LV.ero(env) && HK.ThickEro), nogen = !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b));
     var form = PR.formOf(ctx, S, env, lv, nogen, last || S.sex + 1 >= S.lewdMax);
+    /* エッチ多め：一度は長い場面（最後のデートか後半の泊まり。2026-11-05 報告「多めで長い場面が無い遊びが 4 回に 1 回」） */
+    if (form !== 'fade' && DR.wantLong(ctx, day, br)) form = 'long';
     SRC.R = { BOTTOM: T.BOTTOM_ROWS, TOP: T.TOP_ROWS };
+    var N = RM ? RM.begin(ctx, { kind: kind, br: br, yo: yo, f: dayFlags(ctx, day, br), dest: dest }) : null;
     /* 入り方：その日の余韻に合う行（yo）が選ばれやすい。合わない余韻の行は使わない */
-    var rows = T.PLAY_ROWS, play = J.pick(ctx, 'dtplay', rows, function (r) { if (r.br && r.br.indexOf(br) < 0) return 0; return r.yo ? (r.yo === yo ? 5 : 0) : 1; }) || rows[0], pi = rows.indexOf(play);
-    /* デートならではの夜：入り方の本文に最中の一幕を続け、事後を終わり方にする（文はこの夜のために選んで、場面の部品に渡す） */
-    var src = SRC, naka = null, owari = null, Tx2 = null, iri = '';
+    var rows = T.PLAY_ROWS, play = J.pick(ctx, 'dtplay', rows, function (r) { if (r.br && r.br.indexOf(br) < 0) return 0; return r.yo ? (r.yo === yo || r.yo === YO_ROW[yo] ? 5 : 0) : 1; }) || rows[0], pi = rows.indexOf(play);
+    var src = SRC, naka = null, owari = null, Tx2 = null, iri = '', open = '', rmName = '';
     if (form !== 'fade') {
       Tx2 = Object.create(T);
-      var pr0 = T.PLAY[pi] || {}, pl0 = (form === 'short' || form === 'mid') && !(form === 'short' && ero) && !nogen ? DT.pickT(ctx, pr0[sh] || pr0.all, a, b) : '';
-      if (pl0 && ctx.rng() < 0.75) naka = nakaOf(ctx, yo, a, b, sh);
+      /* 宿・車・おうちデートの家の夜は、その舞台の入り方（短い場面は書き出し＋繋がる段、中くらい・長い場面は書き出し） */
+      var spec = !!(RM && N && (RM.pick(ctx, 'open', sh, a, b) || ''));
+      if (spec && form !== 'short') { open = RM.pick(ctx, 'open', sh, a, b); rmName = KN[kind] || ''; }
+      var oy = (form === 'long' || form === 'mid') && yo && ctx.rng() < 0.6 ? DT.pickT(ctx, (T.OPEN_YO || {})[yo] || (RM && RM.OPEN_YO[yo]), a, b) : '';
+      if (oy && (!open || ctx.rng() < 0.5)) { open = oy; rmName = ''; }
+      var pl0 = '';
+      if (form === 'short' && !(ero) && !nogen) {
+        var o1 = RM && N && /^(love|ryokan|hotel|abroad|resort|ship|space|cottage|tent|car|uchi)$/.test(kind) ? RM.pick(ctx, 'open', sh, a, b) : '';
+        /* 女性の攻め×男性の受けは、指と手の繋がる段（部屋の段）で（前からの入り方の文は跨る形ばかりだった。2026-11-05 報告「女攻め×男が騎乗位に寄る」） */
+        if (!o1 && RM && N && (sh === 'fm' || ctx.rng() < 0.5)) o1 = RM.pick(ctx, 'open', sh, a, b, true);
+        var i1 = o1 ? RM.pick(ctx, 'insert', sh, a, b, true) : '';
+        if (o1 && i1) { pl0 = o1 + '\n\n' + i1.replace(/\n\n\{mm\}$/, ''); rmName = KN[kind] || ''; }
+        else pl0 = DT.pickT(ctx, (T.PLAY[pi] || {})[sh] || (T.PLAY[pi] || {}).all, a, b);
+      }
+      if (pl0 && ctx.rng() < 0.8) {
+        /* 最中の一幕：その日のこと・宿の文を先に。無ければ前からの余韻の一幕 */
+        var m1 = RM ? RM.pick(ctx, 'mid', sh, a, b) : '';
+        if (m1) naka = { k: 'room', name: (RM.seen(m1.split('{a}').join(a.name).split('{b}').join(b.name), a, b).mid || [])[0] || 'デートの一幕', text: m1.replace(/\n\n\{mm\}/g, '') };
+        else naka = nakaOf(ctx, yo, a, b, sh);
+      }
       if (pl0) { var P2 = T.PLAY.slice(), o2 = {}; o2[sh] = [pl0 + (naka ? '\n\n' + naka.text : '')]; P2[pi] = o2; Tx2.PLAY = P2; }
-      if (ctx.rng() < 0.7) owari = owariOf(ctx, yo, a, b, sh);
-      if (owari) Tx2.AFTER = [owari.text];
-      var oy = form === 'long' && yo && ctx.rng() < 0.7 ? DT.pickT(ctx, (T.OPEN_YO || {})[yo], a, b) : '';
-      src = Object.assign({}, SRC, { TX: function () { return Tx2; }, MO: oy ? function () { var m = SRC.MO(); m.OPEN = [oy]; return m; } : SRC.MO });
-      /* 入り方として出たもの（短い・中くらい：余韻の行の本文／長い：余韻の始まり） */
-      iri = play && play.yo && pl0 ? play.k : oy && T.YO_NAME ? T.YO_NAME[yo] + 'の始まり' : '';
+      /* 終わり方（短い場面）・事後の一言（中くらい・長い場面は部屋の段の終わり方のあとに、受けの一言だけ） */
+      var sayT = DT.pickT(ctx, (T.OWARI_SAY || {})[PR.att(b, a)] || (T.OWARI_SAY || {}).gentle, a, b) || DT.pickT(ctx, (T.OWARI_SAY || {}).gentle, a, b, true) || '';
+      if (form === 'short') {
+        var e1 = RM ? RM.pick(ctx, 'end', sh, a, b, ctx.rng() < 0.5) : '';
+        if (e1) owari = { k: 'room', name: '舞台の終わり方', text: e1 + (ctx.rng() < 0.4 ? sayT : '') };
+        else if (ctx.rng() < 0.8) owari = owariOf(ctx, yo, a, b, sh);
+        if (!owari) owari = { k: 'say', name: '', text: (DT.pickT(ctx, ((T.AFTER || [])[0] || {}).all, a, b) || '') + sayT };
+        Tx2.AFTER = [owari.text];
+        if (!owari.name) owari = null;
+      } else Tx2.AFTER = [' '];
+      src = Object.assign({}, SRC, { TX: function () { return Tx2; }, MO: open && form === 'long' ? function () { var m = SRC.MO(); m.OPEN = [open]; return m; } : SRC.MO });
+      iri = open ? (rmName || (T.YO_NAME ? T.YO_NAME[yo] + 'の始まり' : '')) : play && play.yo && pl0 ? play.k : rmName;
     }
     CUR = ctx; S.curBr = br;
-    var full;
-    try { full = PR.scene(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: pi, afi: 0, jealTop: !!day.jeal && x === a, leadB: x === b, entry: entry, resume: false }, src); }
-    finally { S.curBr = ''; }
+    var full, spot = N && N.spot || '', PL = HK.Play, off0 = PL ? PL.off : null;
+    /* 短い場面に本体の型の体位の一文を足さない（舞台と食い違うため。入り方の文が体位を決めている） */
+    if (PL && form === 'short') PL.off = true;
+    try { full = withSpot(spot, function () { return PR.scene(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: pi, afi: 0, jealTop: !!day.jeal && x === a, leadB: x === b, entry: entry, resume: false, open: open }, src); }); }
+    finally { S.curBr = ''; if (PL) PL.off = off0; }
     form = full.form;
-    full.text = dedupe(full.text, a, b);
+    full.text = fillEx(ctx, dedupe(full.text, a, b), N, dest).replace(/\s+$/, '');
+    if (spot && HK.SexSpot && HK.SexSpot.fix) full.text = HK.SexSpot.fix(full.text, spot);
+    var seen = RM && full.room ? RM.seen(full.text, a, b) : {};
+    if (RM) RM.end(ctx);
     remember(ctx, full.text, [T.OPEN, T.FADE], a, b);
-    var e = ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: full.text, why: 'デートの日々：夜（' + FORM[form] + '・' + (first ? ENTRY.first : ENTRY[entry]) + (iri ? '・入り方：' + iri : '') + (naka ? '・最中：' + naka.name : '') + (owari ? '・終わり方：' + owari.name : '') + '）', sex: true, lewd: form !== 'fade',
+    var parts = full.room ? ['部屋の段' + (nm(seen, 'mid') ? '・最中：' + nm(seen, 'mid') : '') + (nm(seen, 'end') ? '・終わり方：' + nm(seen, 'end') : '')] : [];
+    var e = ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: full.text, why: 'デートの日々：夜（' + FORM[form] + '・' + (first ? ENTRY.first : ENTRY[entry] || ENTRY[br]) + (iri ? '・入り方：' + iri : '') + (naka ? '・最中：' + naka.name : '') + (owari ? '・終わり方：' + owari.name : '') + (parts.length ? '・' + parts.join('') : '') + '）', sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
     if (!e) { if (le) { var L = ctx.log, i = L.indexOf(le); if (i >= 0) L.splice(i, 1); } return false; }
     S.sex++;
     if (form === 'long') S.longN = (S.longN || 0) + 1;
     S.forms[form] = (S.forms[form] || 0) + 1;
     S.entries[first ? 'first' : entry] = (S.entries[first ? 'first' : entry] || 0) + 1;
-    if (iri) S.cnt['iri_' + yo] = (S.cnt['iri_' + yo] || 0) + 1;
+    S.cnt['inn_' + kind] = (S.cnt['inn_' + kind] || 0) + 1;
+    if (iri) S.cnt['iri_' + (yo || kind)] = (S.cnt['iri_' + (yo || kind)] || 0) + 1;
     if (naka) S.cnt['naka_' + naka.k] = (S.cnt['naka_' + naka.k] || 0) + 1;
     if (owari) S.cnt['owari_' + owari.k] = (S.cnt['owari_' + owari.k] || 0) + 1;
+    if (full.room) S.cnt.room = (S.cnt.room || 0) + 1;
     return true;
+  };
+
+  /* ---------- エッチの場面が一度も無かったとき、そのわけを一つ（最後のデートの夜のあと。2026-11-05 報告「出ないときは理由の文を一つ」） ---------- */
+  var NONE = {
+    body: ['二人の夜は、最後まで穏やかなまま過ぎていった。手をつなぐことはあっても、それ以上を求める空気は、この二人のあいだには生まれなかった。', '{a}と{b}は、何度出かけても、夜はそれぞれの部屋で眠った。それ以上の夜を、二人のどちらも望んでいなかった。'],
+    pine: ['想いを告げられないまま、二人は毎回それぞれの家に帰った。触れたい気持ちはあっても、想いを伝えるより先に夜を共にすることは、どちらもしなかった。', '{a}は{b}への気持ちを、最後まで言葉にできなかった。気持ちを伝えるまでは、それ以上は踏みこまない――{a}はそう決めていた。'],
+    chance: ['二人は毎回、その日のうちにそれぞれの家に帰った。名残惜しい夜はあっても、一緒に朝を迎える機会は、とうとう訪れなかった。', '別れ際の手は何度もなかなか離れなかったが、二人が同じ部屋で夜を過ごすことはなかった。終電の時間は、いつも少しだけ早すぎた。'],
+    chanceF: ['二人は毎回、その日のうちにそれぞれの家に帰った。お互いに踏みこみすぎない距離が、この二人にはちょうどよかった。', '楽しい一日のあとも、二人はいつも駅で手を振って別れた。夜まで一緒に過ごすほどの理由は、二人のあいだにはまだ無かった。'],
+    chanceC: ['同じ家に帰っても、デートの日の夜はいつも疲れて、二人ともすぐに眠ってしまった。それはそれで、幸せな眠りだった。'],
+    fight: ['喧嘩をして途中で帰ってしまった日が続いて、二人は甘い夜を過ごしそびれた。仲直りの続きは、またいつかの夜に持ち越しになった。']
+  };
+  DR.noneWhy = function (ctx, day) {
+    var S = ctx.dt; if (!S || S.lewdMax <= 0 || S.sex > 0 || S.noneSaid || HK.SAFE_ON) return;
+    if (S.grp === 'fam' || S.rk === 'pfam' || !(ctx.env.lewdN === 'high' || S.love)) return;
+    S.noneSaid = true;
+    var PR0 = HK.PairR18, P = HK.Pos, A = S.A, B = S.B, k, why;
+    if (S.pine && !S.confessed) { k = 'pine'; why = '告白の前の二人だった'; }
+    else if (!PR0.sexOk(ctx, A, B) || (P && P.okSex && !P.okSex(A, B))) { k = 'body'; why = '体の関係にならない二人（恋愛対象・受け攻め・性欲・関係の設定）'; }
+    else if (S.kaeru >= Math.max(1, Math.ceil(S.n / 3))) { k = 'fight'; why = '喧嘩で途中で帰った日が多かった'; }
+    else { k = S.cohab ? 'chanceC' : S.love ? 'chance' : 'chanceF'; why = '夜を一緒に過ごす日が無かった'; }
+    var t = NONE[k][Math.floor(ctx.rng() * NONE[k].length)];
+    ctx.act2({ actors: [A, B], cat: 'bond', text: DT.fill(ctx, t, A, B), why: 'デートの日々：夜の場面が無かったわけ（' + why + '）' });
   };
 
   /* ---------- 三人の恋人の三人デートの夜（本体の HK.Pos.trioPlan・HK.Trio3。直接の行為は plan の組だけ。形は受け攻めの設定から） ---------- */
