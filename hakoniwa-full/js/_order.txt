@@ -252,6 +252,7 @@ js/futari-text.js @scen:futari
 js/scenario-futari.js @scen:futari
 js/futari-house.js @scen:futari
 js/futari-life.js @scen:futari
+js/futari-days.js @scen:futari
 js/island-after.js @scen:island
 js/zombie-data.js
 js/zombie-core.js @scen:zombie

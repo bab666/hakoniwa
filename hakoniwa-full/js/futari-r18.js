@@ -51,7 +51,7 @@
       fm: L('初めての夜だった。{a}は{b}をベッドに座らせると、その膝の上にそっと乗って、真上から顔を覗き込んだ。{a}「今夜は、私からさせて」|{a}は{b}の胸を軽く押して仰向けにさせ、その腰の上に跨った。{a}「……緊張してる？　私も」――照れたように笑って、{a}は唇を重ねた。|灯りを一つだけ残して、{a}は{b}の上に身をかがめた。ほどいた髪が、{b}の頬にかかった。')
     },
     lover: {
-      mf: L('寝室の扉を閉めるなり、{a}は{b}を引き寄せて口づけた。今日一日、ずっとこうしたかったのだと、{a}の腕が言っていた。|{a}は{b}をベッドに押し倒し、シャツの裾から手を差し入れた。{b}の肌は、風呂上がりの熱をまだ残していた。|{b}が布団に入ってくるのを待ちきれずに、{a}はその腰を抱き寄せた。{a}「眠いなら、寝てていいよ」――言葉とは裏腹に、手はもう止まらなかった。'),
+      mf: L('寝室の扉を閉めるなり、{a}は{b}を引き寄せて口づけた。今日一日、ずっとこうしたかったのだと、{a}の腕が言っていた。|{a}は{b}をベッドに押し倒し、シャツの裾から手を差し入れた。{b}の肌は、風呂上がりの熱をまだ残していた。|{b}が布団に入ってくるのを待ちきれずに、{a}はその腰を抱き寄せた。{a}「眠いなら、寝てていいよ｜眠いなら、寝ていていい｜眠いなら、寝ていてもいいですよ」――言葉とは裏腹に、手はもう止まらなかった。'),
       ff: L('寝室の扉を閉めると、{a}は{b}を壁際に追い詰めて、何度も唇を重ねた。{b}の指が、{a}の背中にしがみついた。|{a}は{b}のパジャマの胸元に指をかけ、ゆっくりとはだけさせた。{a}「今日、ずっと触りたかった」|布団の中で、{a}は{b}の脚に自分の脚を絡めた。くすくす笑っていた{b}の声が、すぐに甘く崩れた。'),
       fm: L('寝室に入るなり、{a}は{b}をベッドに押し倒して、その上に跨った。{a}「今日一日、我慢してたの。……もう待たない」|{a}は{b}のシャツのボタンを上から順に外しながら、胸板に唇を落としていった。{b}の喉が、ごくりと鳴った。|{a}は布団の中で{b}の上に乗り上げ、耳元で囁いた。{a}「起きてるの、知ってるよ」')
     },
@@ -219,6 +219,23 @@
   var LEAD_QWANT = L('{a}「……私もしたかった｜……私もしたかった｜……私もしたかったです」|{a}「昨日のこと、ちょっとだけ妬けた。……私もしたかった｜昨日のことは、少しだけ妬けた。……私もしたかった｜昨日のこと、少しだけ妬けました。……私もしたかったです」');
   /* 相手（{b}）の応え（性別・受け攻めを問わない） */
   var LEAD_R = L('{b}は少し驚いた顔をしてから、小さく頷いた。|{b}は何も言わずに、{a}の袖を引いた。|{b}は照れくさそうに笑って、部屋の明かりを落とした。|{b}は一瞬だけ迷って、それから扉の鍵を閉めた。|{b}は返事のかわりに、{a}を部屋の中へ招き入れた。');
+  /* 部屋の場面の種（futari-r18-more.js の LONG）と、その場所・体位・始まりの段（場所を言わない文。3 組） */
+  var ROOMK = { kabe: 'kabe', rusu: 'rusu', bath: 'bath', sofa: 'sofa', kitchen: 'kitchen', late: 'genkan' };
+  var SPOT_K = { kabe: '自宅の寝室', rusu: '自宅の寝室', bath: '自宅の脱衣所', sofa: '自宅の居間', kitchen: '自宅の台所', genkan: '自宅の玄関' };
+  /* 体位の文が言う場所（play-text2-r18.js の POS：座位の ff はベッド・fm はソファ、立位は壁、後背位の mf はシーツ）に合わせて、組ごとに選ぶ */
+  var POS_BEDM = { mf: ['seijo', 'seijo', 'kijo', 'back', 'zai'], ff: ['seijo', 'seijo', 'kijo', 'back', 'zai'], fm: ['seijo', 'seijo', 'back'] };
+  var POS_K = { kabe: POS_BEDM, rusu: POS_BEDM, bath: { mf: ['tachi'], ff: ['tachi'], fm: ['tachi'] }, sofa: { mf: ['zai', 'kijo'], ff: ['kijo'], fm: ['zai'] }, kitchen: { mf: ['tachi'], ff: ['tachi'], fm: ['tachi'] }, genkan: { mf: ['tachi'], ff: ['tachi'], fm: ['tachi'] } };
+  var PLACE_W = /布団|ベッド|シーツ|寝室|寝床|枕|ソファ|壁|床/, BED_W = /布団|ベッド|シーツ|寝室|寝床|枕/, NOBED_W = /ソファ|玄関|台所|エンドロール|映画|湯船|浴室|脱衣所|洗面所/;
+  var OPEN_N = {
+    mf: L('{a}は{b}の手を取って、指を一本ずつ絡めた。言葉はいらなかった。今夜がどういう夜になるのか、二人とも分かっていた。|{a}は{b}の顎にそっと指をかけて、顔を上げさせた。目が合うと、{b}のほうが先にまぶたを伏せた。|{a}は{b}の名前を一度だけ呼んだ。それだけで、{b}の肩から力が抜けた。'),
+    ff: L('{a}は{b}の髪を耳にかけて、その指先で頬をなぞった。{b}は小さく息をついて、{a}の手に頬を預けた。|{a}と{b}は額を寄せ合って、しばらく何も言わなかった。先に笑ったのは{b}だった。|{a}は{b}の手首の内側に、そっと唇を当てた。{b}の指が、ぴくりと跳ねた。'),
+    fm: L('{a}は{b}の胸に手を置いて、そのまま顔を覗き込んだ。{a}「今夜は、私からね｜今夜は、私からだ｜今夜は、私からです」|{a}は{b}の手を引いて、自分の腰に回させた。{b}を見つめる目が、楽しそうに細くなった。|{a}は{b}の唇を指でなぞってから、自分の唇でふさいだ。{b}の喉が、小さく鳴った。')
+  };
+  /* 体だけ・勢いの夜の事後の攻めの一言（恋人の言葉を言わない） */
+  var TOP_AFTER_FREE = L('……水、飲む？｜……水、飲むか｜……お水、飲みますか|' +
+    '朝になったら、いつもどおりね｜朝になったら、いつもどおりだ｜朝になったら、いつもどおりですよ|' +
+    '……シャワー、先に使っていいよ｜……シャワーは先に使っていい｜……シャワー、先にどうぞ|' +
+    '今夜のことは、二人だけの話にしよう｜今夜のことは、二人だけの話にしておこう｜今夜のことは、二人だけの話にしましょう');
   var LEAD_N = { first: '恋人になって初めての夜', lover: '恋人どうしの夜', home: '部屋を一つにした二人の夜', engaged: '結婚の約束をした夜', trip: '旅先の宿', free: '体だけの夜', impulse: '勢いで過ごす一夜', naka: '仲直りのあと', jeal: 'やきもちを焼いた夜', bath: '風呂上がりに鉢合わせて', sofa: '居間のソファで映画のあと', late: '遅く帰った夜', rain: '雨と雷の夜', oyasumi: 'おやすみの挨拶から', ini: '受けのほうから誘う', wanted: '三人の夜に加わらなかった人の「私もしたかった」' };
 
   /* ======================= 三人の夜（{a}{b}{c}。形が決まったわけは {t}{m}{u}） ======================= */
@@ -292,8 +309,29 @@
     for (var i = 0; i < ks.length; i++) { r -= W0[ks[i]]; if (r <= 0) return ks[i]; }
     return 'lover';
   }
+  /* 夜の種類・回数で文を選ぶ（2026-11-04・遊んで確かめた報告 1104 の A5・A8・A9）：
+     体だけ・勢いの夜（CAS）は「大好き」「明日も」「今夜も」のような恋人の文を、二度目より前の夜（FIRST）は「何度も一緒に眠った」「今夜も」を、
+     恋人どうしの夜は「今夜だけ」を、部屋を一つにした二人は「{b}の部屋」を、恋人になった当日の夜は「まだ数日」を選ばない */
+  var CAS_NG = /大好き|好きだよ|好き」|明日も|明後日も|ずっと|恋人|毎晩|今夜も|特別|愛して|指輪|デート/, FIRST_NG = /何度も|何度目|今夜も|毎晩|いつもの夜|もう慣れ|すっかり慣れ|見慣れた/;
+  function nightOk(info, kind) {
+    var cas = kind === 'free' || kind === 'impulse' || !!(info && (info.free || info.impulse)), nth = info && info.nth != null ? info.nth : 9, st = info && info.stage || 0, since = info && info.sinceCp != null ? info.sinceCp : 99;
+    var ctx0 = HK._curCtx, h = ctx0 && ctx0.ft && ctx0.ft.house, duty = !h || h.chores === 'duty', FC0 = HK.FutariCore;
+    /* 明日が休みでない夜に「明日は休み」「休日の前の夜」を言わない */
+    var tmw = ctx0 && ctx0.ft && FC0 && FC0.dateOf ? FC0.dateOf(ctx0.env, ctx0.ft.day + 1).w : 6, offT = tmw === 0 || tmw === 6;
+    return function (t) {
+      if (cas && CAS_NG.test(t)) return false;
+      if (nth < 2 && FIRST_NG.test(t)) return false;
+      if (!cas && /今夜だけ/.test(t)) return false;
+      if (st >= 4 && /{[ab]}の部屋|隣の部屋|自分の部屋|部屋の前|部屋の扉/.test(t)) return false;
+      if (since < 2 && /まだ数日/.test(t)) return false;
+      if (!duty && /当番/.test(t)) return false;
+      if (!offT && /明日(?:は|、)?休み|休日の前|明日、?お休み|明日休み/.test(t)) return false;
+      return true;
+    };
+  }
   function leadOf(ctx, A, B, kind, info) {
-    var upk = upkOf(ctx), a = A, b = B;
+    var upk0 = upkOf(ctx), a = A, b = B, okT = nightOk(info, kind), U0 = ctx.ft.used;
+    var upk = function (arr) { var l = (arr || []).filter(function (t) { return !U0[t] && okT(t); }); if (!l.length) l = (arr || []).filter(okT); return l.length ? upk0(l) : ''; };
     /* 言い出した人：受けから誘う夜は受け、やきもちの夜は妬いた人（info.jealBy）、私もしたかったは加わらなかった人、ほかは攻めか受けのどちらか */
     if (kind === 'ini') { a = B; b = A; }
     else if (kind === 'wanted') { a = info.who || A; b = a === A ? B : A; }
@@ -333,7 +371,9 @@
       var pk0 = function (arr) { return rng.pick(arr); }, pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(ctx, pk0) : pk0;
       /* この箱庭の文は、同じ回の中で一度だけ（使い切ったら、その段は書かない） */
       var U = ctx.ft.used;
-      function upk(arr) { var l = (arr || []).filter(function (t) { return !U[t]; }); if (!l.length) return ''; var t = rng.pick(l); U[t] = 1; return t; }
+      var okT = nightOk(info, kind);
+      function upk(arr) { var l = (arr || []).filter(function (t) { return !U[t] && okT(t); }); if (!l.length) return ''; var t = rng.pick(l); U[t] = 1; return t; }
+      function fP9(o) { var r = {}; Object.keys(o || {}).forEach(function (k) { r[k] = (o[k] || []).filter(okT); }); return r; }
       /* 夜の場面の数：日数に比例し（10 日で長い・短い各 2〜3 回）、描写の濃さで増減。同じ二人の夜は3日以上あける（初めての夜・私もしたかったは別） */
       var days = ctx.ft.days || 30, R = ctx.ft.r18x = ctx.ft.r18x || { thick: 0, short: 0, last: {} }, sc = lv === 'high' ? 1 : lv === 'low' ? 0.5 : 0.75;
       var capT = Math.max(2, Math.round((1 + days / 5) * sc)), capS = Math.max(2, Math.round((1 + days / 5) * sc));
@@ -344,12 +384,29 @@
       var nt = HK.Attr ? HK.Attr.nightOf(A, B) : '', nb = HK.Attr ? HK.Attr.nightOf(B, A) : '';
       var why = (info.free ? '体だけの夜（' : info.impulse ? '勢いの一夜（' : '恋人どうしの夜（') + A.name + 'と' + B.name + '・' + LEAD_N[kind] + (nt ? '・' + A.name + 'の夜の性格：' + (NIGHT_N[nt] || nt) : '') + (nb ? '・' + B.name + 'の夜の性格：' + (NIGHT_N[nb] || nb) : '') + '）';
       var lead = leadOf(ctx, A, B, kind, info);
-      function out(t) { return { lead: lead, text: t, why: why, a: A, b: B }; }
+      /* 場所は入り方（今夜のきっかけの種）で決めて、場面の中で動かさない（A8：「ベッドに押し倒した」→「湯上がりの…」→「壁と」） */
+      var rk = ROOMK[kind] && HK.FutariR18.LONG && HK.FutariR18.LONG[ROOMK[kind]] ? ROOMK[kind] : null;
+      function out(t) { return { lead: lead, text: t, why: why, a: A, b: B, spot: rk ? SPOT_K[rk] : null }; }
+      /* 寝室でない場所の夜は、事後・余韻の文も寝床の語（布団・ベッド・シーツ）を使わない */
+      if (rk && !/^(kabe|rusu)$/.test(rk)) { var okT1 = okT; okT = function (t) { return okT1(t) && !BED_W.test(t); }; }
       /* 攻めの台詞（場面の表＋共通の表 HK.EroTop）：始まりと事後に一言ずつ。空なら何も足さない（名前だけ残さない） */
       var rel = kind === 'first' ? 'first' : kind === 'free' || kind === 'impulse' ? 'casual' : 'lover';
-      var tb = { start: kind === 'first' ? TOP_FIRST : kind === 'free' || kind === 'impulse' ? TOP_FREE : TOP.start, after: TOP.after };
+      var tb = { start: kind === 'first' ? TOP_FIRST : kind === 'free' || kind === 'impulse' ? TOP_FREE : fP9(TOP.start), after: kind === 'free' || kind === 'impulse' ? TOP_AFTER_FREE : fP9(TOP.after) };
       var tsay = function (stg, o) { var l = HK.EroT3 ? HK.EroT3.topSay(ctx, A, B, stg, tb, Object.assign({ rel: rel }, o || {})) : ''; return /「[^」]+」/.test(l || '') ? l : ''; };
-      function fin(t) { var tx = ctx.t(t, A, B); if (ff && HK.FF && HK.FF.fix) tx = HK.FF.fix(ctx, tx, A, B); return out(tx); }
+      /* 体だけ・勢いの夜の「大好き」、初めての夜の「今夜も」のような、共通の部品の段落（性格が目立つ行為の段など）は外す（段落が四つ以上あるときだけ） */
+      var CAS_P = /「[^」]*(?:大好き|好きだよ|愛して)[^」]*」|明日も、?隣で/, FIRST_P = /「[^」]*今夜も[^」]*」|何度も一緒に眠った/, LOVER_P = /「[^」]*今夜だけ[^」]*」/;
+      function dropP(tx) {
+        var cas = kind === 'free' || kind === 'impulse', fst = (info.nth || 0) < 2;
+        var ps0 = tx.split(/\n\n/); if (ps0.length < 4) return tx;
+        var keep = ps0.filter(function (p, i) { return i === 0 || !((cas && CAS_P.test(p)) || (fst && FIRST_P.test(p)) || (!cas && LOVER_P.test(p))); });
+        return keep.length >= 3 ? keep.join('\n\n') : tx;
+      }
+      /* 恋人どうしの夜：共通の部品（after-reply-top-r18.js・ero-flavor-lines-r18.js）の導入の台詞の「今夜だけ」を言い換える（「今夜だけの話、でいいな」は外し、「今夜だけならいい」は「いい」、残りは「今夜は」。A9） */
+      function noOnly(tx) {
+        if (kind === 'free' || kind === 'impulse' || !/今夜だけ/.test(tx)) return tx;
+        return tx.replace(/[^。」\n]*「[^」]*今夜だけの話[^」]*」/g, '').replace(/今夜だけなら、?/g, '').replace(/今夜だけ/g, '今夜は');
+      }
+      function fin(t) { var tx = noOnly(dropP(ctx.t(t, A, B))); if (ff && HK.FF && HK.FF.fix) tx = HK.FF.fix(ctx, tx, A, B); return out(tx); }
       function fade() { var ft = upk(FADE); return ft ? fin(ft) : null; }
       /* ほのめかす（と、厚い版・短い版を使い切った夜）：まだ使っていないぼかした一文。使い切ったら全年齢と同じ「同じ布団で眠った」に戻す */
       if (lv === 'low' || (R.thick >= capT && R.short >= capS)) { var fd = fade(); if (fd) { fd.why = why.replace(/）$/, '・ほのめかす）'); R.last[pk2] = day; } return fd; }
@@ -362,7 +419,9 @@
       var glow = (HK.FutariR18.afterX ? HK.FutariR18.afterX(ctx, A, B, kind, nth, upk) : '') + upk(AFTER_PS[ps] || AFTER_PS.gentle) + tail;
       var short = (LW ? LW.short(env, rng) : false) || R.thick >= capT, ero = LW && LW.ero(env) && HK.ThickEro, high = LW && LW.high(env), TS = HK.ThickSex;
       if (short && R.short >= capS) return fade();
-      var op0 = upk(OPEN[okind][mode]) || (info.free ? '' : upk(OPEN.lover[mode]) || upk(OPEN.home[mode]));
+      /* 寝室の夜（部屋の場面の種でない夜）の導入は、ソファ・玄関・台所・映画のような別の場所を言わない（場面は寝床で進むので、途中で場所が飛んだ。A8） */
+      var bedOnly = function (l) { return rk ? l : (l || []).filter(function (t) { return !NOBED_W.test(t); }); };
+      var op0 = upk(bedOnly(OPEN[okind][mode])) || (info.free ? '' : upk(bedOnly(OPEN.lover[mode])) || upk(bedOnly(OPEN.home[mode])));
       var s1 = tsay('start', { own: 0.85 }), s2 = tsay('after', { own: 0.85 });
       var open = op0 ? op0 + (op0.indexOf('{a}「') < 0 ? s1 : '') + (rng() < 0.75 ? upk(OPEN_PS[ps] || OPEN_PS.gentle) : '') : '';
       if (!short && TS) {
@@ -370,6 +429,15 @@
         var after = upk(PEAK_PS[ps] || PEAK_PS.gentle) + s2 + '\n\n' + (high && HK.ThickEro ? HK.ThickEro.again(ctx, pk, A, B, !!ero, false) + '\n\n' : '') + glow;
         var o = { S: ctx, ctx: ctx, pick: pk, rng: rng, a: A, b: B, style: TS.style(A), after: after, again: false, place: kind === 'bath' ? 'bath' : kind === 'sofa' ? 'sofa' : null, jealous: kind === 'jeal' };
         if (open) o.open = open;
+        if (kind === 'free' || kind === 'impulse') o.rel = 'casual';
+        /* 部屋の場面の種（壁の薄い夜・留守・風呂上がり・ソファ・台所・玄関）：導入はその場面の入り方だけ（始まりの段は場所を言わない文）、体位も場所に合わせる。
+           ほかの夜：始まりの段（寝室・布団）が導入。型の入り方は場所を言わないもの（キス・囁き・甘え）、体位は寝床でのもの */
+        var rp0 = function (l) { return l[Math.floor(rng() * l.length)]; };
+        if (rk) {
+          var on0 = upk(OPEN_N[mode] || OPEN_N.mf);
+          o.open = on0 ? on0 + (rng() < 0.6 ? upk((OPEN_PS[ps] || OPEN_PS.gentle).filter(function (t) { return !PLACE_W.test(t); })) : '') : o.open;
+          o.playScene = 'futari-' + rk; o.play = { pos: rp0(POS_K[rk][mode] || POS_K[rk].mf) };
+        } else o.play = { entry: rp0(['kiss', 'kiss', 'whisper', 'amae']), pos: rp0(POS_BEDM[mode] || POS_BEDM.mf) };
         var r = ero ? HK.ThickEro.scene(o) : TS.scene(o);
         return fin(r.text);
       }
