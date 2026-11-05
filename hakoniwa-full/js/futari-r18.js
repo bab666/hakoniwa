@@ -1,3 +1,4 @@
+/* @event-ok 長い夜の台詞・一幕・受けの一文の本数を増やし、一回の遊びで同じ文は 2 回まで（2026-11-05 担当R2。新しい出来事ではない） */
 /* @event-ok 攻めの始まり・事後の台詞・口論のあとのきっかけの文を足した（既にある夜の出来事の言い回し。2026-11-05） */
 /* 箱庭シミュレーター: 今日から同居生活の夜（R18版のみ。scenario-futari.js・lewd-unify.js より後に読む。2026-11-04 担当FT が作り直した：きっかけの段・エッチの型・三人の夜）
    ■ エッチの入口（@event）
@@ -554,7 +555,7 @@
         }
         /* 本体の「感じていく」段のあとの受けの一文（HK.PlayText.MID_B）を、この部屋の受けの一文に差し替える */
         var MB = HK.PlayText && HK.PlayText.MID_B;
-        if (MB && HK.FutariR18.midB) Object.keys(MB).forEach(function (k) { (MB[k] || []).forEach(function (z) { String(z).split('¦').forEach(function (q) { if (q && rt.indexOf(q) >= 0) rt = rt.replace(q, HK.FutariR18.midB(ctx, B)); }); }); });
+        if (MB && HK.FutariR18.midB) Object.keys(MB).forEach(function (k) { (MB[k] || []).forEach(function (z) { String(z).split('¦').forEach(function (q) { if (q && rt.indexOf(q) >= 0) { var mb = HK.FutariR18.midB(ctx, B); if (mb) rt = rt.replace(q, mb); } }); }); });
         return fin(rt);
       }
       if (!open) return fade();
