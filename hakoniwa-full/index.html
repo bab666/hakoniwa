@@ -1660,7 +1660,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
 <!-- 古いブラウザの知らせ（2026-11-04）：本体は正規表現の後読み（iOS 16.4・Safari 16.4 から）を使うので、それより前の版では読み込みの段階で止まり、何も表示されない。そのときだけ、何が要るかを画面の上に出す -->
 <script>(function(){try{new RegExp('(?<=a)b');}catch(e){document.addEventListener('DOMContentLoaded',function(){var d=document.createElement('p');d.setAttribute('role','alert');d.style.cssText='margin:12px 16px;padding:12px 14px;border:1px solid #c33;border-radius:8px;background:#fff;color:#16233b;font-size:14px;line-height:1.7';d.textContent='このブラウザの版では箱庭シミュレーターが動きません。iPhone・iPad は iOS 16.4 以降、Mac の Safari は 16.4 以降に更新してください（Chrome・Edge・Firefox の新しい版でも動きます）。';document.body.insertBefore(d,document.body.firstChild);});}})();</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"3ee972c316","api":1,"build":"full","core":"js/c/core.bee5bcf3d2.js",
+<script>window.HK_MANIFEST={"v":"664c950805","api":1,"build":"full","core":"js/c/core.bee5bcf3d2.js",
 "chunks":{
   "late":{"src":"js/c/late.374f8689e0.js","br":238085,"deps":["pack-sim","pack-lewd"]},
   "pack-sim":{"src":"js/c/pack-sim.3137f0d567.js","br":155699,"deps":[]},
@@ -1677,7 +1677,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "scen-dungeon":{"src":"js/c/scen-dungeon.d34a30de1b.js","br":121751,"deps":["pack-sim","pack-story"]},
   "scen-massage":{"src":"js/c/scen-massage.8303fc50a7.js","br":99516,"deps":["pack-sim","pack-solo"]},
   "scen-hole":{"src":"js/c/scen-hole.8988a523aa.js","br":92734,"deps":["pack-sim","pack-solo"]},
-  "scen-futari":{"src":"js/c/scen-futari.5e027236af.js","br":150345,"deps":["pack-sim","pack-rel"]},
+  "scen-futari":{"src":"js/c/scen-futari.29ce20e6d2.js","br":152925,"deps":["pack-sim","pack-rel"]},
   "scen-zombie":{"src":"js/c/scen-zombie.281f5c7959.js","br":173901,"deps":["pack-sim","pack-rel"]},
   "scen-rpg":{"src":"js/c/scen-rpg.b4e34a326f.js","br":27438,"deps":["pack-sim","pack-story"]},
   "scen-kaihen":{"src":"js/c/scen-kaihen.a2f8d90fa5.js","br":155895,"deps":["pack-sim","pack-rel","pack-solo"]},
@@ -1694,7 +1694,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "pack-roomkit":{"src":"js/c/pack-roomkit.98ba1c5d9a.js","br":3840,"deps":["pack-sim","pack-rel"]},
   "pack-solo":{"src":"js/c/pack-solo.f6162b9885.js","br":20073,"deps":["pack-sim","pack-lewd"]},
   "scen-train":{"src":"js/c/scen-train.dec78844ad.js","br":112597,"deps":["pack-sim","pack-rel","pack-solo"]},
-  "tone-base":{"src":"js/c/tone-base.fd8480fc10.js","br":59810,"deps":[]},
+  "tone-base":{"src":"js/c/tone-base.6097196398.js","br":59853,"deps":[]},
   "tone-ane":{"src":"js/c/tone-ane.37208200fa.js","br":10597,"deps":[]},
   "tone-boku-n":{"src":"js/c/tone-boku-n.f0285b280d.js","br":6240,"deps":[]},
   "tone-calm":{"src":"js/c/tone-calm.6439404039.js","br":7416,"deps":[]},
@@ -1721,7 +1721,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "tone-keigo-twist":{"src":"js/c/tone-keigo-twist.b99003d166.js","br":716,"deps":[]},
   "tone-kohai":{"src":"js/c/tone-kohai.6f274d93c8.js","br":15500,"deps":[]},
   "tone-mixed":{"src":"js/c/tone-mixed.007a52d301.js","br":37595,"deps":[]},
-  "tone-mukuchi":{"src":"js/c/tone-mukuchi.19324945f4.js","br":22747,"deps":[]},
+  "tone-mukuchi":{"src":"js/c/tone-mukuchi.83ccd3e4d6.js","br":22768,"deps":[]},
   "tone-mukuchi-ne":{"src":"js/c/tone-mukuchi-ne.1c2c61ec3b.js","br":3448,"deps":[]},
   "tone-mystic":{"src":"js/c/tone-mystic.61bb790b6d.js","br":9933,"deps":[]},
   "tone-noja":{"src":"js/c/tone-noja.2b8296f6c3.js","br":31778,"deps":[]},
@@ -1733,7 +1733,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "tone-tsun-n":{"src":"js/c/tone-tsun-n.38d1f9eb54.js","br":5891,"deps":[]},
   "tone-tsun-soft":{"src":"js/c/tone-tsun-soft.262cd3483e.js","br":581,"deps":[]},
   "tone-usan":{"src":"js/c/tone-usan.3bcd6dec94.js","br":16925,"deps":[]},
-  "tone-yankee":{"src":"js/c/tone-yankee.4cb99d7c26.js","br":21339,"deps":[]}},
+  "tone-yankee":{"src":"js/c/tone-yankee.f0a8420acd.js","br":21339,"deps":[]}},
 "order":["goukon","whiteroom","futari","classroom","island","ship","zombie","jashin","yakata","omega","dungeon","massage","hole","kaihen","train","succubus","saimin","variety","locker","rpg","jinro"],
 "scen":{
   "goukon":{"id":"goukon","name":"合コン","kicker":"恋愛・社交","desc":"居酒屋の個室で一晩。酒が回るほど本音と衝動が出る。最後に誰と帰ったかで決着。","unit":"時刻","preRel":0,"lethal":false,"env":[{"id":"alcohol","label":"酒の進み"},{"id":"mood","label":"場の空気"},{"id":"second","label":"二次会"},{"id":"kingsgame","label":"王様ゲーム"},{"id":"mobs","label":"モブの参加者"},{"id":"rel","label":"住人どうしの関係"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"}],"stats":[{"id":"drink","label":"酒の強さ"},{"id":"looks","label":"見た目の自信"}],"card":{"desc":"居酒屋の個室で一晩、最後に誰と一緒に帰るか。","descLong":"居酒屋の個室で一晩の合コン。酒が回るほど本音と衝動があふれ出す。最後に誰と誰が一緒に帰ったかで決着がつく。","r18plot":"お持ち帰りの夜"},"tags":["relCore","night","race","food","drink","mob","romance"],"chunks":["scen-goukon"]},
