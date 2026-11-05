@@ -126,6 +126,25 @@
     if (!t) return null;
     return FC.emit(ctx, { actors: actors, cat: cat, text: FC.fill(ctx, t, actors[0], actors[1], actors[2] || null, ex), why: why, tag: tag, fx: fx });
   }
+  /* 同居の理由の中身と家の持ち主（2026-11-05・遊んで確かめた報告 2 回目の A3：給湯器・火事なのに「水浸し」、取り壊しなのに「修理の終わった部屋」、
+     貸してくれた人なのに「会社の借り上げ」、持ち主でない人の「ここ、私の家だし」）。始まりの文（まだ名前を入れる前の文）から、
+     理由の中身 h.sub（前の部屋に住めなくなった：water 水漏れ・heater 給湯器・demolish 取り壊し・evict 大家の都合・blaze 火事／仕事：company 借り上げ・lend 部屋を貸してくれた）と、
+     家の持ち主 h.owner・来た側 h.mover（人の番号。決まらなければ null）を決める。毎日の種（futari-days.js）と結末は、これを見て文を選ぶ */
+  function reasonMeta(ctx, raw, A, B) {
+    var h = hs(ctx); if (!h || !raw) return;
+    if (h.sub == null) {
+      if (h.reason === 'fire') h.sub = /水漏れ|水浸し/.test(raw) ? 'water' : /取り壊|建て替え/.test(raw) ? 'demolish' : /給湯器/.test(raw) ? 'heater' : /大家の都合|部屋を出なければ/.test(raw) ? 'evict' : /火事/.test(raw) ? 'blaze' : null;
+      else if (h.reason === 'work') h.sub = /貸してくれた/.test(raw) ? 'lend' : /借り上げ|寮|会社が用意/.test(raw) ? 'company' : null;
+    }
+    if (h.owner != null || !A || !B) return;
+    var ob = /\{b\}の(?:家|部屋の空いた|祖父母の家|住む街)|\{b\}は(?:迷わず、)?自分の家|\{b\}が空いた部屋|私の家に来|\{a\}の(?:部屋の水漏れ|部屋の給湯器|住んでいたアパート|部屋が、上の階)/.test(raw), oa = /\{a\}の(?:親が持っている|遠い親戚)|\{a\}が預かる|\{a\}は、恋人の\{b\}に鍵/.test(raw);
+    if (ob) { h.owner = B.i; h.mover = A.i; } else if (oa) { h.owner = A.i; h.mover = B.i; }
+  }
+  H.reasonMeta = reasonMeta;
+  /* 理由の中身（無ければ ''）・家の持ち主と来た側（無ければ null） */
+  H.sub = function (ctx) { var h = hs(ctx); return (h && h.sub) || ''; };
+  H.owner = function (ctx) { var h = hs(ctx); return h && h.owner != null ? ctx.chars[h.owner] : null; };
+  H.mover = function (ctx) { var h = hs(ctx); return h && h.mover != null ? ctx.chars[h.mover] : null; };
   H.intro = function (ctx) {
     var f = ctx.ft, h = hs(ctx), P = ctx.present(), T = TX();
     if (!h || !h.on || !T.REASON) return false;
@@ -134,7 +153,8 @@
     /* 恋人どうしの二人：同居の理由（恋人どうしの文）→ 関係の始まり（scenario-futari.js の introTie）（2026-11-04・遊んで確かめた報告 1104 の B11：恋人の回は同居の理由が出なかった） */
     if (P.length === 2 && FC.st(ctx, A, B) >= 3) {
       var lvR = (T.REASON_LV || {})[h.reason];
-      if (lvR) emitT(ctx, [A, B], 'bond', FC.fresh(ctx, lvR), sp + '同居の理由：' + R.label + '（恋人どうし）', null, 'meet');
+      var lvT = lvR ? FC.fresh(ctx, lvR) : ''; reasonMeta(ctx, lvT, A, B);
+      if (lvR) emitT(ctx, [A, B], 'bond', lvT, sp + '同居の理由：' + R.label + '（恋人どうし）', null, 'meet');
       FC.introTie(ctx, A, B);
       return true;
     }
@@ -143,12 +163,15 @@
       var kn = FC.kinOf ? FC.kinOf(ctx, A, B) : null;
       /* 家族の二人：同居の理由を選んでいれば、その理由の一文を続ける（「親どうしが決めた」が出なかった・義理のきょうだいが「親戚」になった。2026-11-04） */
       var kx = ctx.env && /^(rent|fire|parents|recruit|work|house)$/.test(ctx.env.reason) ? FC.fresh(ctx, (T.REASON_KINX || {})[h.reason]) : '';
-      if (kn && T.REASON_KIN) emitT(ctx, [A, B], 'bond', FC.fresh(ctx, kn.step && T.REASON_STEP ? T.REASON_STEP : T.REASON_KIN) + (kx || ''), sp + '同居の理由：' + kn.label + 'の二人の同居' + (kx ? '・' + R.label : ''), { rel: kn.label }, 'meet');
-      else emitT(ctx, [A, B], 'bond', FC.fresh(ctx, s0 === 0 ? R.s : R.f), sp + '同居の理由：' + R.label + (s0 === 0 ? '（知らない人どうし）' : ''), null, 'meet');
+      var kt = kn && T.REASON_KIN ? FC.fresh(ctx, kn.step && T.REASON_STEP ? T.REASON_STEP : T.REASON_KIN) + (kx || '') : FC.fresh(ctx, s0 === 0 ? R.s : R.f);
+      reasonMeta(ctx, kt, A, B);
+      if (kn && T.REASON_KIN) emitT(ctx, [A, B], 'bond', kt, sp + '同居の理由：' + kn.label + 'の二人の同居' + (kx ? '・' + R.label : ''), { rel: kn.label }, 'meet');
+      else emitT(ctx, [A, B], 'bond', kt, sp + '同居の理由：' + R.label + (s0 === 0 ? '（知らない人どうし）' : ''), null, 'meet');
       if (s0 === 0) greet(ctx, A, B, sp);
       else FC.introTie(ctx, A, B);
     } else {
-      emitT(ctx, P.slice(), 'bond', FC.fresh(ctx, R.g), sp + '同居の理由：' + R.label + '（' + P.length + '人の同居）', { G: names(P), d: P[3] ? P[3].name : '' }, 'meet');
+      var gt = FC.fresh(ctx, R.g); reasonMeta(ctx, gt, null, null);
+      emitT(ctx, P.slice(), 'bond', gt, sp + '同居の理由：' + R.label + '（' + P.length + '人の同居）', { G: names(P), d: P[3] ? P[3].name : '' }, 'meet');
       groupArrive(ctx, P, sp);
       var gn = 0;
       FC.pairs(ctx).forEach(function (p) {
@@ -210,7 +233,10 @@
   function back(ctx, c, o, w) {
     var f = ctx.ft, h = hs(ctx), T = TX();
     c.gone = false; delete h.away[c.i];
-    var x = FC.stOf(ctx, c, o), t = FC.freshP(ctx, T.BACK, c) + (o.gone ? '' : FC.fresh(ctx, T.TAKE));
+    /* 家の持ち主が決まっていて、帰ってきた人がその人でなければ「ここ、私の家だし」を選ばない（A3） */
+    var ow = H.owner(ctx), BK = T.BACK;
+    if (ow && ow !== c) { BK = {}; Object.keys(T.BACK).forEach(function (k) { BK[k] = T.BACK[k].filter(function (z) { return !/私の家/.test(z); }); }); }
+    var x = FC.stOf(ctx, c, o), t = FC.freshP(ctx, BK, c) + (o.gone ? '' : FC.fresh(ctx, T.TAKE));
     var who = o.gone ? ctx.present().filter(function (y) { return y !== c; })[0] : o;
     emitT(ctx, who ? [c, who] : [c], 'help', t, FC.W(ctx, '自宅の玄関') + c.name + 'が' + w.w + 'から帰ってきた（' + (f.day - w.day) + '日ぶり）。仲直り', { b: o.name }, 'back',
       function () { ctx.mod2(c, o, { ten: -25, aff: 4, trust: 3 }, { ten: -25, aff: 4, trust: 3 }); });
