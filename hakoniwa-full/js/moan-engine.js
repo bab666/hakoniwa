@@ -498,10 +498,15 @@
     }
     return p.name;
   };
-  /* {名} のある行：相手が分かれば呼び方に、分からなければその行を使わない */
+  /* 名前を呼ばない相手（2026-11-05。通し読みの申し送り：見知らぬ乗客にも攻めの崩れの「〇〇……！」が出ていた）：
+     相手か話し手がモブ（HK.Mob で作った人・箱庭の乗客や客。c.mob。モブは住人の名前を知らず、住人もモブの名前を知らない）、
+     呼ぶ側が名前を呼ばない場面だと渡したとき（ctx.noName）は、{名} の行を使わない */
+  function isMobC(c) { if (!c) return false; if (c.mob) return true; var src = M.chars && c.name ? M.chars[plainName(c.name)] : null; return !!(src && src.mob); }
+  M.noCall = function (who, p, ctx) { return !p || isMobC(p) || isMobC(who) || !!(ctx && typeof ctx === 'object' && ctx.noName); };
+  /* {名} のある行：相手が分かれば呼び方に、分からなければ（名前を呼ばない相手も）その行を使わない */
   function fillName(list, who, ctx) {
     if (!list || !list.some(function (x) { return x.indexOf('{名}') >= 0; })) return list;
-    var p = partnerOf(who, ctx), nm = p ? M.callName(who, p) : '';
+    var p = partnerOf(who, ctx), nm = p && !M.noCall(who, p, ctx) ? M.callName(who, p) : '';
     var out = nm ? list.map(function (x) { return x.replace(/\{名\}/g, nm); }) : list.filter(function (x) { return x.indexOf('{名}') < 0; });
     return out.length ? out : null;
   }

@@ -1,3 +1,4 @@
+/* @event-ok 褒める・打ち明ける の言い回しを増やし、決め台詞（「知ってる」「で、どうしたいの」の型）を一回の遊びで 2 回までにした（2026-11-05） */
 /* 箱庭診断: どの箱庭でも起きる共通イベント */
 (function () {
   'use strict';
@@ -38,6 +39,59 @@
     return t;
   }
   function spent(ctx, arr) { var u = ctx._ecUsed; return !!u && arr.every(function (t) { return u[t]; }); }
+  /* 同じ型（決め台詞の型）を一回の遊びで何回出したか。上限（既定 2）に達したら、呼ぶ側は別の型へ（2026-11-05。通し読みの申し送り：
+     「〇〇は『知ってる』と笑った」が 2 日続けて、「で、どうしたいの」が左右を入れ替えて数日あけて出ていた） */
+  /* 本筋の乱数を使わずに選ぶ（言い回しを増やしても、ほかの出来事の流れが変わらないように。回の seed と呼んだ回数から決める）：まだ使っていない文から */
+  function hq(s) { var h = 2166136261; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function freshQ(ctx, arr, salt) {
+    var u = ctx._ecUsed || (ctx._ecUsed = {}), rest = arr.filter(function (t) { return !u[t]; }), l = rest.length ? rest : arr;
+    ctx._ecQ = (ctx._ecQ || 0) + 1;
+    var t = l[hq((ctx.seed || 0) + '|' + salt + '|' + ctx._ecQ) % l.length];
+    u[t] = 1;
+    return t;
+  }
+  function capped(ctx, k, n) { var c = ctx._ecCap || (ctx._ecCap = {}); return (c[k] || 0) >= (n || 2); }
+  function bump(ctx, k) { var c = ctx._ecCap || (ctx._ecCap = {}); c[k] = (c[k] || 0) + 1; }
+  /* 褒められた人の返し（{g}＝褒めたところ）：得意げに受ける型（一回の遊びで 2 回まで）／照れて受ける型／照れて返せない型（褒められ慣れていない人） */
+  var PRAISE_PROUD = [
+    '{a}が{b}の{g}を褒めた。{b}は「知ってる｜知っている｜知っています」と笑った。',
+    '{a}が{b}の{g}を褒めると、{b}は「でしょう？｜だろう｜でしょう？」と胸を張った。',
+    '{a}に{g}を褒められた{b}は、「もっと言っていいよ｜もっと言っていいぞ｜もっと言ってくださって構いませんよ」と得意げに笑った。',
+    '{a}が{b}の{g}を褒めた。{b}は「今ごろ気づいたの？｜今ごろ気づいたのか｜今ごろお気づきになったんですか」と、まんざらでもない顔で返した。'
+  ];
+  var PRAISE_PLAIN = [
+    '{a}にさりげなく{g}を褒められて、{b}は「そう？｜そうか｜そうですか？」と言いながら、しばらく機嫌がよかった。',
+    '{b}の{g}を、{a}は短く褒めた。{b}は何も言わなかったが、口元が少しだけ緩んでいた。',
+    '{a}が{b}の{g}を褒めると、{b}は照れくさそうに頭をかいて、話を別のほうへそらした。',
+    '{a}に{g}を認められて、{b}は「次も頑張る｜次も励む｜次も頑張ります」と短く答えた。'
+  ];
+  var PRAISE_SHY = [
+    '{a}に{g}を褒められて、{b}は返事をし損ねて俯いた。',
+    '{a}に{g}を褒められた{b}は、耳まで赤くして「そ、そんなこと……｜そ、そんなことは……｜そ、そんなことは……」と小さく首を振った。',
+    '{a}が{b}の{g}を褒めると、{b}は聞こえなかったふりをして、少しだけ口元を緩めた。'
+  ];
+  /* 打ち明けた悩みへの返し：突き放す型（一回の遊びで 2 回まで）・受け止める型・曖昧な型 */
+  var CONFIDE_COLD = [
+    '{a}が打ち明けた悩みに、{b}は「で、どうしたいの｜で、どうしたいんだ｜で、どうしたいんですか」とだけ返した。{a}は話すのをやめた。',
+    '{a}の悩みを聞き終えると、{b}は「それ、私に言ってどうするの｜それを私に言って、どうする｜それを私に言って、どうなさるんですか」と首をかしげた。{a}は笑ってごまかした。',
+    '{a}が弱音を吐きかけると、{b}は「結論から言って｜結論から言え｜結論からお願いします」と遮った。{a}は口をつぐんだ。',
+    '{a}の打ち明け話に、{b}は相づちも打たずに手元の作業を続けた。{a}は途中で話をやめた。'
+  ];
+  var CONFIDE_WARM = [
+    '{a}がぽつりと弱音をこぼした。{b}は茶化さずに最後まで聞いた。',
+    '{a}がこぼした弱音を、{b}は黙って聞いて、最後に{a}の肩を軽く叩いた。',
+    '{a}が言いよどみながら悩みを話すあいだ、{b}は一度も口を挟まなかった。話し終えた{a}の顔は、少しだけ軽くなっていた。'
+  ];
+  var CONFIDE_MID = [
+    '{a}は{b}に少しだけ本音を話した。{b}は曖昧に頷いた。',
+    '{a}は{b}に悩みを打ち明けかけて、途中で冗談にした。{b}も、それ以上は訊かなかった。',
+    '{a}が少しだけ本音をこぼすと、{b}はどう返していいか分からない顔で、お茶を淹れ直した。'
+  ];
+  function praise(ctx, shy) {
+    if (shy) return freshQ(ctx, PRAISE_SHY, 'ps');
+    if (!capped(ctx, 'praiseProud') && hq((ctx.seed || 0) + '|pp|' + (ctx._ecQ || 0)) % 10 < 6) { bump(ctx, 'praiseProud'); return freshQ(ctx, PRAISE_PROUD, 'pp'); }
+    return freshQ(ctx, PRAISE_PLAIN, 'pl');
+  }
   var GLANCE_SEEN = [
     '{a}は気づけば{b}を目で追っていた。{b}がそれに気づいて、視線が一瞬だけぶつかった。',
     '{a}の視線は、いつの間にか{b}のほうへ流れていた。振り向いた{b}と目が合い、{a}は慌てて顔を逸らした。',
@@ -121,21 +175,22 @@
       }
     },
     {
-      id: 'confide', cat: 'bond', scope: 'pair',
+      id: 'confide', label: '相手に悩みや弱音を打ち明ける', cat: 'bond', scope: 'pair',
       when: function (ctx, a, b) { return R(ctx, a, b).trust > 12 || a.stress > 45; },
       w: function (ctx, a, b) { return (a.tr.ac * 0.5 + a.tr.honesty * 0.4) * (0.5 + a.stress / 70) + R(ctx, a, b).trust / 150; },
       run: function (ctx, a, b) {
         if (b.tr.np > 0.55) {
           ctx.mod2(a, b, { aff: 9, trust: 10, att: 3 }, { aff: 6, trust: 6 });
           ctx.stress(a, -18);
-          return { text: ctx.t('{a}がぽつりと弱音をこぼした。{b}は茶化さずに最後まで聞いた。', a, b), why: a.name + 'の弱音を' + b.name + 'の' + lv(b, 'NP') + 'が受け止めた' };
+          return { text: ctx.t(freshQ(ctx, CONFIDE_WARM, 'cw'), a, b), why: a.name + 'の弱音を' + b.name + 'の' + lv(b, 'NP') + 'が受け止めた' };
         }
-        if (b.tr.cold > 0.6) {
+        if (b.tr.cold > 0.6 && !capped(ctx, 'confideCold')) {
           ctx.mod2(a, b, { aff: -6, trust: -8 }, { trust: 2 });
-          return { cat: 'conflict', text: ctx.t('{a}が打ち明けた悩みに、{b}は「で、どうしたいの｜で、どうしたいんだ｜で、どうしたいんですか」とだけ返した。{a}は話すのをやめた。', a, b), why: b.name + 'のドライさ（A高・NP低）が' + a.name + 'の求めるものと噛み合わなかった' };
+          bump(ctx, 'confideCold');
+          return { cat: 'conflict', text: ctx.t(freshQ(ctx, CONFIDE_COLD, 'cc'), a, b), why: b.name + 'のドライさ（A高・NP低）が' + a.name + 'の求めるものと噛み合わなかった' };
         }
         ctx.mod2(a, b, { trust: 5, aff: 3 }, { trust: 3 });
-        return { text: ctx.t('{a}は{b}に少しだけ本音を話した。{b}は曖昧に頷いた。', a, b), why: '打ち明けたい' + a.name + 'と、受け止め方に迷う' + b.name };
+        return { text: ctx.t(freshQ(ctx, CONFIDE_MID, 'cm'), a, b), why: '打ち明けたい' + a.name + 'と、受け止め方に迷う' + b.name };
       }
     },
     {
@@ -165,7 +220,7 @@
         var shy = b.tr.ac > 0.6;
         ctx.mod2(a, b, { att: 4, aff: 2 }, { att: shy ? 8 : 5, aff: 4 });
         return {
-          text: ctx.t(shy ? '{a}に' + topic(ctx, 'good') + 'を褒められて、{b}は返事をし損ねて俯いた。' : '{a}が{b}の' + topic(ctx, 'good') + 'を褒めた。{b}は「知ってる｜知っている｜知っています」と笑った。', a, b),
+          text: ctx.t(praise(ctx, shy).replace('{g}', topic(ctx, 'good')), a, b),
           why: a.name + 'の素直さ（NP・FC）' + (shy ? '、' + b.name + 'のAC高（褒められ慣れていない）' : '')
         };
       }

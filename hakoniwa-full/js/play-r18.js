@@ -510,8 +510,10 @@
         foreT = fn.join('') + (fbl ? pickFresh(R, fbl) : '') + '\n\n{b}「{mf}」';
       }
       foreT = foreT.replace(/\{mf\}/g, function () { return moanPre(b, ero); });
-      var pf = pr && pr.fore ? pickT(R, pr.fore, mode, b) : '';
-      if (pf) foreT = pf + foreT;
+      /* 着衣の型の前戯の頭（「服を一枚も乱さないまま」「ボタンを一つも外さず、布の上から」）は、場面がもう直に触れた・口や下着の中まで進んだあと
+         （前戯の段より前の本文・入り方の段・呼ぶ側の opt.direct）には出さない（2026-11-05。通し読み T5 の申し送り） */
+      var pf = pr && pr.fore && !(play.prop === 'chakui' && (opt.direct || P.bareBefore(t.slice(0, fo ? fo.s : bo ? bo.s : co ? co.s : 0) + '\n\n' + entT))) ? pickT(R, pr.fore, mode, b) : '';
+      if (pf) { foreT = pf + foreT; play.pfT = pf; }
     }
     /* 体位：繋がる段と最中の段 */
     var posT = '';
@@ -589,6 +591,9 @@
     return { text: out, play: play, keep: keep, act: actT };
   }
 
+  /* 直に触れた・脱がせた・口や指で中まで進んだ言い回しがあるか（着衣の型の前戯の頭を出すかどうか。台詞の中は見ない） */
+  var BARE_BEFORE = /素肌|直に|直接(?:触|撫|肌)|服の(?:下|中|内側)(?:へ|に|で)|(?:下着|ショーツ)の(?:中|下)|(?:下着|ショーツ|ボタン)を(?:ずら|外)|脱が|はだけ|裸|口に含|咥え|舌を這わせ|舐め(?:上げ|回|た|る|て)|吸い上げ|指を[^。]{0,10}(?:沈め|差し入れ|埋め)|\{ナカ\}|\{後孔\}/;
+  P.bareBefore = function (s) { return BARE_BEFORE.test(String(s || '').replace(/「[^」]*」/g, '')); };
   /* ---------- 短い・中くらいの場面：主な責めと体位の一文 ---------- */
   P.shortLine = function (a, b, mode, opt) {
     if (P.off || HK.SAFE_ON || !a || !b) return '';
