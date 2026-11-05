@@ -761,6 +761,20 @@
       }
       ctx.ft.prevCouple[K(a, b)] = !!pf.couple;
     }
+    /* 恋愛相手を互いに固定し合った輪（真ん中の人が二人以上を固定し、その人たちも真ん中の人を固定している）：はじめから恋人として始める
+       （2026-11-05 利用者の報告「同居で 3P・4P をしない。恋愛を設定していても」。関係で恋人を付けていなくても、住人の設定の輪で三人・四人の夜に届くように） */
+    C.forEach(function (h) {
+      var L = C.filter(function (x) { return x !== h && HK.lockTo && HK.lockTo(h, x) && HK.lockTo(x, h) && loveOk(ctx, h, x) && (!HK.Pos || !HK.Pos.okSex || HK.Pos.okSex(h, x)); });
+      if (L.length < 2) return;
+      L.forEach(function (x) {
+        var pf = ctx.pair(h, x), y = stOf(ctx, h, x);
+        if (!pf.couple) { pf._polyRestore = true; pf.couple = true; delete pf._polyRestore; }
+        if (!pf.couple || y.s >= 3) return;
+        y.s = 3; y.at[1] = y.at[2] = y.at[3] = 0; y.since = 0; y.preset = true; y.lockRing = true;
+        ctx.ft.prevCouple[K(h, x)] = true;
+      });
+      if (HK.Poly && HK.Poly.register) HK.Poly.register(ctx, [h].concat(L), h);
+    });
     /* 同居の仕組み（futari-house.js）：同居の理由・家事・生活時間・なじみ（ぎこちなさ） */
     if (HK.FutariHouse) HK.FutariHouse.setup(ctx);
   }
@@ -788,7 +802,8 @@
     if (f.t === 0 && s > 0) PS.forEach(function (p) {
       var a = p[0], b = p[1], k = K(a, b);
       /* 一緒に眠った翌朝は、前の夜に本当に同じ布団で眠った二人だけ（f.bedDay。夜を見送っただけの f.slept では出さない。2026-11-05・報告 2 回目の A2） */
-      if ((f.bedDay || {})[k] === f.day - 1 && couple(ctx, a, b) && f.day - (stOf(ctx, a, b).mornDay == null ? -9 : stOf(ctx, a, b).mornDay) >= 3 && rng() < 0.3 && (stOf(ctx, a, b).mornDay = f.day) >= 0) { var o = rng() < 0.5 ? [a, b] : [b, a], t = fresh(ctx, MORNING); if (t) emit(ctx, { actors: o, cat: 'romance', text: fill(ctx, t, o[0], o[1]), why: W(ctx, f.tripPrev ? '温泉宿' : '自宅の寝室') + '一緒に眠った翌朝', fx: relFx(ctx, o[0], o[1], { aff: 2 }, { aff: 2 }) }); }
+      /* 三人で眠った翌朝は、二人だけの「一緒に眠った翌朝」の文を出さない（通し読み 2026-11-05：三人の夜の翌朝に「二人は布団の中で」） */
+      if ((f.bedDay || {})[k] === f.day - 1 && f.trioBed !== f.day - 1 && couple(ctx, a, b) && f.day - (stOf(ctx, a, b).mornDay == null ? -9 : stOf(ctx, a, b).mornDay) >= 3 && rng() < 0.3 && (stOf(ctx, a, b).mornDay = f.day) >= 0) { var o = rng() < 0.5 ? [a, b] : [b, a], t = fresh(ctx, MORNING); if (t) emit(ctx, { actors: o, cat: 'romance', text: fill(ctx, t, o[0], o[1]), why: W(ctx, f.tripPrev ? '温泉宿' : '自宅の寝室') + '一緒に眠った翌朝', fx: relFx(ctx, o[0], o[1], { aff: 2 }, { aff: 2 }) }); }
       else if (f.liv === 'apart' && !together(ctx, a, b) && st(ctx, a, b) >= 2 && rng() < 0.3) msg(ctx, a, b, 'm');
     });
     /* 旅の始まり */
@@ -870,7 +885,7 @@
   }
   function introTie(ctx, a, b) {
     var x = stOf(ctx, a, b);
-    if (x.s >= 3) { var t = fresh(ctx, MEET.lovers); emit(ctx, { actors: [a, b], cat: 'romance', text: fill(ctx, t, a, b), why: W(ctx, '') + '関係の設定：恋人' + (x.married ? '（夫婦）' : x.fiance ? '（許嫁）' : '') }); return; }
+    if (x.s >= 3) { var t = fresh(ctx, MEET.lovers); emit(ctx, { actors: [a, b], cat: 'romance', text: fill(ctx, t, a, b), why: W(ctx, '') + (x.lockRing ? '住人の設定：互いに恋愛相手に固定（恋人として）' : '関係の設定：恋人' + (x.married ? '（夫婦）' : x.fiance ? '（許嫁）' : '')) }); return; }
     var T = HK.Ties ? HK.Ties.get(ctx, a, b) : null, lab = T ? (HK.tieLabel ? HK.tieLabel(T) : (HK.TIES[T.type] || {}).label) : '知り合い';
     var t2 = fresh(ctx, MEET.tie);
     if (t2) emit(ctx, { actors: [a, b], cat: 'bond', text: fill(ctx, t2, a, b, null, { rel: lab || '知り合い' }), why: W(ctx, '') + '関係の設定：' + (lab || '知り合い') });
@@ -881,14 +896,18 @@
      攻め同士・受け同士など対象にならない組は恋人でなくてよい（張りつめていなければ）。恋人の組が二つ以上（中心の人が二人と付き合っている）。
      四人なら、条件に合う三人の組から一つを選び、残りの一人は加わらない（left） */
   function trioPairOk(ctx, x, y, hubRing) {
-    if (!together(ctx, x, y) || !apOk(ctx, x, y)) return false;
-    if (ctx.R(x, y).ten >= 50 || ctx.R(y, x).ten >= 50 || ctx.R(x, y).aff < 0 || ctx.R(y, x).aff < 0) return false;
     var Q = HK.Quad && !HK.SAFE_ON ? HK.Quad : null;
-    if (Q && Q.hardOk && !Q.hardOk(ctx, x, y)) return false;
+    /* 恋人の二人は、同じ二人にほかの関係（片想い・ライバル・無関心など）が重なっていても恋人として扱う（2026-11-05 利用者の指示。HK.Quad.loverTie） */
+    var lv = Q && Q.loverTie ? Q.loverTie(ctx, x, y) : couple(ctx, x, y);
+    if (!together(ctx, x, y) || (!lv && !apOk(ctx, x, y))) return false;
+    var want = Q && Q.wantOk ? Q.wantOk(ctx, x, y) : loveOk(ctx, x, y) && (!HK.Pos || !HK.Pos.okSex || HK.Pos.okSex(x, y));
+    /* 張りつめ・好意は、性的に対象になる組だけ見る（2026-11-05 利用者の報告「同居で 3P をしない」：攻めどうしがライバル・恋敵で張りつめていて（緊張 70 以上）、
+       受けを中心にした輪でも三人の夜が一度も出なかった。作業の決まり「攻めどうし・受けどうしは不問」。同じ場にいてよいか（hardOk の緊張以外）は見る） */
+    if (want && !lv && (ctx.R(x, y).ten >= 50 || ctx.R(y, x).ten >= 50 || ctx.R(x, y).aff < 0 || ctx.R(y, x).aff < 0)) return false;
+    if (Q && Q.hardOk && !Q.hardOk(ctx, x, y, !want)) return false;
     /* 受けを中心にした輪（残りの二組が恋人で、真ん中の人を共有している）なら、輪の外側の組は恋人でなくてよい（2026-11-05 の利用者の指摘：
        A×B・C×B の恋人で、A と C が互いに対象になりうる組（おまかせどうし・リバと攻めなど）でも三人の夜が出なかった。A×C は三人の場面でも触れ合わない） */
     if (hubRing) return true;
-    var want = Q && Q.wantOk ? Q.wantOk(ctx, x, y) : loveOk(ctx, x, y) && (!HK.Pos || !HK.Pos.okSex || HK.Pos.okSex(x, y));
     /* 対象にならない組（攻め同士など）は、恋人でなくてよい（関係の設定に恋人と書いてあっても、恋愛対象の判定で恋人にならない組） */
     return want ? couple(ctx, x, y) && loveOk(ctx, x, y) : true;
   }
@@ -900,6 +919,8 @@
       var nc = Q3.filter(function (q) { return couple(ctx, q[0], q[1]); }).length;
       if (nc < 2) continue;
       if (!Q3.every(function (q) { return trioPairOk(ctx, q[0], q[1], nc === 2 && !couple(ctx, q[0], q[1])); })) continue;
+      /* 輪の判定は本体の HK.Quad.ringOk に一本化（同居・新婚部屋・デートの日々で同じ。R18版） */
+      if (HK.Quad && HK.Quad.ringOk && !HK.SAFE_ON && !HK.Quad.ringOk(ctx, M)) continue;
       out.push(M);
     }
     if (!out.length) return null;
@@ -936,37 +957,50 @@
     return ps.join('\n\n');
   }
 /* r18:end */
+  /* 四人の夜（本体の HK.Quad.scene）。出せたら真 */
+  function quadNight(ctx, P4, R) {
+    var f = ctx.ft, rng = ctx.rng, LW = HK.Lewd, lv0 = LW ? LW.lv(ctx.env) : 'mid', shortQ = lv0 === 'low' || (f.quadN || 0) >= 1 || !!(LW && LW.short && LW.short(ctx.env, rng));
+    var rq = HK.Quad.scene(ctx, P4.map(function (c) { return c.i; }), { len: shortQ ? 'short' : 'long', lead: R.quadLead ? R.quadLead(ctx, P4) : null, leadWhy: '四人の夜（' + P4.map(function (c) { return c.name; }).join('・') + '・同じ家の居間で）', why: W(ctx, '自宅の居間') });
+    if (!rq) return false;
+    if (rq.kind === 'three' && !shortQ && rq.e && typeof quadHold === 'function') rq.e.text = quadHold(rq.e.text, rq.pairs);
+    f.sexTonight = true; f.quadDay = f.day; f.quadN = (f.quadN || 0) + 1;
+    pairs(ctx).forEach(function (q) { f.slept[K(q[0], q[1])] = f.day; });
+    rq.pairs.forEach(function (q) { var kk = K(q[0], q[1]), pf = ctx.pair(q[0], q[1]); f.r18[kk] = (f.r18[kk] || 0) + 1; pf.nights = (pf.nights || 0) + 1; pf.night = true; });
+    return true;
+  }
+  /* 三人の夜（R18版）か、三人で並んで眠る（全年齢の一文）。出せたら真 */
+  function groupTrio(ctx, tg, R) {
+    var f = ctx.ft, g = tg.g, did = false;
+    if (R && R.trio) did = trioNight(ctx, g, tg.left);
+    if (!did) {
+      var t3 = fresh(ctx, NIGHT3);
+      if (t3) { emit(ctx, { actors: g.slice(), cat: 'bond', text: fill(ctx, t3, g[0], g[1], g[2]), why: W(ctx, '自宅の寝室') + '三人の場面・円満（仲良し）：同じ部屋で眠った' + (tg.left ? '（' + tg.left.name + 'は自分の部屋で）' : '') }); did = true; }
+    }
+    if (did) { f.trioBed = f.day; [[g[0], g[1]], [g[0], g[2]], [g[1], g[2]]].forEach(function (q) { f.slept[K(q[0], q[1])] = f.day; (f.bedDay = f.bedDay || {})[K(q[0], q[1])] = f.day; }); }
+    else f.trioTried = f.day;
+    return did;
+  }
   function nights(ctx, PS) {
     var f = ctx.ft, rng = ctx.rng, R = !HK.SAFE_ON && HK.FutariR18 ? HK.FutariR18 : null;
     f.sexTonight = false;
-    /* 軽い四人の夜（R18版。本体の HK.Quad）：四人全員が同じ家にいて、全組が恋人かセフレなど体の関係のある関係で、恋愛対象・受け攻め・恋愛の制限を満たすときだけ。三日以上あける */
     var P4 = ctx.present();
-    /* 2026-11-04（NO 9）：受けを中心にした輪が完成していれば（HK.Quad.ok）。二日あけて、夜の起こりやすさ 50 で 0.15（全員が恋人の家で、夜の 3〜4 割が複数人の夜になるように） */
     var nk = HK.Pos && HK.Pos.nightK ? HK.Pos.nightK(ctx) : 1;
-    if (R && nk > 0 && HK.Quad && HK.Quad.ok && f.liv !== 'apart' && P4.length === 4 && f.day - (f.quadDay == null ? -9 : f.quadDay) >= 2 && pairs(ctx).every(function (q) { return together(ctx, q[0], q[1]) && !onTrip(ctx, q[0]) && !onTrip(ctx, q[1]); }) && HK.Quad.ok(ctx, P4.map(function (c) { return c.i; })) && rng() < Math.min(0.4, 0.15 * nk)) {
-      var LW = HK.Lewd, lv0 = LW ? LW.lv(ctx.env) : 'mid', shortQ = lv0 === 'low' || (f.quadN || 0) >= 1 || !!(LW && LW.short && LW.short(ctx.env, rng));
-      var rq = HK.Quad.scene(ctx, P4.map(function (c) { return c.i; }), { len: shortQ ? 'short' : 'long', lead: R.quadLead ? R.quadLead(ctx, P4) : null, leadWhy: '四人の夜（' + P4.map(function (c) { return c.name; }).join('・') + '・同じ家の居間で）', why: W(ctx, '自宅の居間') });
-      if (rq) {
-        if (rq.kind === 'three' && !shortQ && rq.e && typeof quadHold === 'function') rq.e.text = quadHold(rq.e.text, rq.pairs);
-        f.sexTonight = true; f.quadDay = f.day; f.quadN = (f.quadN || 0) + 1;
-        pairs(ctx).forEach(function (q) { f.slept[K(q[0], q[1])] = f.day; });
-        rq.pairs.forEach(function (q) { var kk = K(q[0], q[1]), pf = ctx.pair(q[0], q[1]); f.r18[kk] = (f.r18[kk] || 0) + 1; pf.nights = (pf.nights || 0) + 1; pf.night = true; });
-        return;
-      }
-    }
-    /* 三人で円満な恋人たち：ときどき三人の夜（R18版）か、三人で並んで眠る（全年齢の一文） */
+    var allHome = f.liv !== 'apart' && pairs(ctx).every(function (q) { return together(ctx, q[0], q[1]) && !onTrip(ctx, q[0]) && !onTrip(ctx, q[1]); });
+    var quadOk = !!(R && nk > 0 && HK.Quad && HK.Quad.ok && allHome && P4.length === 4 && HK.Quad.ok(ctx, P4.map(function (c) { return c.i; })));
     var tg = trioOf(ctx);
-    /* 三人の夜の割合（2026-11-05 計測：受けを中心にした三人で、夜の 3〜4 割） */
-    if (tg && rng() < (R ? Math.min(0.5, (ctx.present().length >= 4 ? 0.15 : 0.24) * nk) : 0.15)) {
-      var g = tg.g, did = false;
-      if (R && R.trio) did = trioNight(ctx, g, tg.left);
-      if (!did) {
-        var t3 = fresh(ctx, NIGHT3);
-        if (t3) { emit(ctx, { actors: g.slice(), cat: 'bond', text: fill(ctx, t3, g[0], g[1], g[2]), why: W(ctx, '自宅の寝室') + '三人の場面・円満（仲良し）：同じ部屋で眠った' + (tg.left ? '（' + tg.left.name + 'は自分の部屋で）' : '') }); did = true; }
-      }
-      if (did) { [[g[0], g[1]], [g[0], g[2]], [g[1], g[2]]].forEach(function (q) { f.slept[K(q[0], q[1])] = f.day; (f.bedDay = f.bedDay || {})[K(q[0], q[1])] = f.day; }); }
-      else f.trioTried = f.day;
+    /* 輪のそろった家（三人全員、四人なら四人全員が輪に入る）で全員が家にいる夜は、三人・四人の夜を主にする（R18版。2026-11-05 利用者の指示「3P・4P をメインに。
+       たまに留守のときに 2P」。新婚部屋と同じ：夜の起こりやすさを一度だけ振り、当たれば三人・四人の夜、外れればその夜は誰も抱き合わない。二人の夜は誰かが留守の夜に） */
+    if (R && nk > 0 && allHome && (quadOk || (tg && !tg.left))) {
+      var chG = nk >= 1.69 ? 1 : Math.min(1, 0.5 * nk);
+      if (rng() >= chG) { pairs(ctx).forEach(function (q) { f.slept[K(q[0], q[1])] = f.day; }); return; }
+      if (quadOk && quadNight(ctx, P4, R)) return;
+      if (tg && !tg.left && groupTrio(ctx, tg, R)) return;
     }
+    /* 軽い四人の夜（R18版。本体の HK.Quad）：輪がそろっていても、誰かが留守の夜などのあと。二日あけて、夜の起こりやすさ 50 で 0.15 */
+    if (quadOk && f.day - (f.quadDay == null ? -9 : f.quadDay) >= 2 && rng() < Math.min(0.4, 0.15 * nk) && quadNight(ctx, P4, R)) return;
+    /* 三人で円満な恋人たち：ときどき三人の夜（R18版）か、三人で並んで眠る（全年齢の一文） */
+    /* 三人の夜の割合（2026-11-05 計測：受けを中心にした三人で、夜の 3〜4 割） */
+    if (tg && rng() < (R ? Math.min(0.5, (ctx.present().length >= 4 ? 0.15 : 0.24) * nk) : 0.15)) groupTrio(ctx, tg, R);
     /* 「私もしたかった」：三人の夜に加わらなかった人と、その恋人（次の夜か、その次の夜。R18版） */
     var wt = f.wanted;
     if (R && wt && !f.sexTonight && f.day - wt.day >= 1) {
@@ -1558,6 +1592,8 @@
   if (HK.SCEN_ORDER.indexOf('futari') < 0) { var wi = HK.SCEN_ORDER.indexOf('whiteroom'); if (wi >= 0) HK.SCEN_ORDER.splice(wi + 1, 0, 'futari'); else HK.SCEN_ORDER.push('futari'); }
   /* 箱庭タブの参加者の節の下の案内（ui.js の HK.ScenUI） */
   if (HK.ScenUI && HK.ScenUI.add) HK.ScenUI.add('futari', { joinNote: function () { return '<p class="hint" style="margin-top:8px">2〜4人で同じ家に住みます。知らない人どうし・友人どうしなら、同居の理由と初対面の挨拶から。関係で恋人を二組つけると、恋人が二組の同居になります。住人ごとの「家事・生活時間・片づけ」は、下の住人ごとの欄で選べます。</p>'; } });
+  /* 開始前の注意：三人・四人の夜が起きない配役（本体の HK.Quad.groupWarn。同居生活・新婚部屋・デートの日々で同じ文言。R18版だけ。2026-11-05 利用者の報告「同居で 3P・4P をしない」） */
+  if (HK.SoloWarn && HK.SoloWarn.add) HK.SoloWarn.add('futari', function (input) { return HK.Quad && HK.Quad.groupWarn ? HK.Quad.groupWarn(input, { grow: true, body: false }) : []; });
 
   /* 同居の仕組み（futari-house.js）と夜（futari-r18.js）が使う部品 */
   HK.FutariCore = { kinOf: kinOf, kinName: kinName, scen: scen, EV: EV, ev: ev, K: K, att: att, NEAR: NEAR, PK: PK, L: L, P9: P9, TL: TL, TC: TC,

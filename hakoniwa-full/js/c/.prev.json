@@ -1,10 +1,10 @@
 {
  "cur": {
-  "core": "core.54b9c2615a.js",
+  "core": "core.9562b594d0.js",
   "late": "late.09cbebb103.js",
   "pack-sim": "pack-sim.3137f0d567.js",
   "pack-rel": "pack-rel.4092a88bb4.js",
-  "pack-lewd": "pack-lewd.3cc1ab318f.js",
+  "pack-lewd": "pack-lewd.9ec6461796.js",
   "scen-goukon": "scen-goukon.74fe310c08.js",
   "scen-classroom": "scen-classroom.1e871b9ef8.js",
   "scen-island": "scen-island.98b8038a87.js",
@@ -16,7 +16,7 @@
   "scen-dungeon": "scen-dungeon.d34a30de1b.js",
   "scen-massage": "scen-massage.8303fc50a7.js",
   "scen-hole": "scen-hole.8988a523aa.js",
-  "scen-futari": "scen-futari.06ad66ff20.js",
+  "scen-futari": "scen-futari.8247514005.js",
   "scen-zombie": "scen-zombie.281f5c7959.js",
   "scen-rpg": "scen-rpg.b4e34a326f.js",
   "scen-kaihen": "scen-kaihen.a2f8d90fa5.js",
@@ -75,11 +75,11 @@
   "tone-yankee": "tone-yankee.4cb99d7c26.js"
  },
  "prev": {
-  "core": "core.9562b594d0.js",
+  "core": "core.54b9c2615a.js",
   "late": "late.09cbebb103.js",
   "pack-sim": "pack-sim.3137f0d567.js",
   "pack-rel": "pack-rel.4092a88bb4.js",
-  "pack-lewd": "pack-lewd.9ec6461796.js",
+  "pack-lewd": "pack-lewd.3cc1ab318f.js",
   "scen-goukon": "scen-goukon.74fe310c08.js",
   "scen-classroom": "scen-classroom.1e871b9ef8.js",
   "scen-island": "scen-island.98b8038a87.js",
@@ -91,7 +91,7 @@
   "scen-dungeon": "scen-dungeon.d34a30de1b.js",
   "scen-massage": "scen-massage.8303fc50a7.js",
   "scen-hole": "scen-hole.8988a523aa.js",
-  "scen-futari": "scen-futari.8247514005.js",
+  "scen-futari": "scen-futari.06ad66ff20.js",
   "scen-zombie": "scen-zombie.281f5c7959.js",
   "scen-rpg": "scen-rpg.b4e34a326f.js",
   "scen-kaihen": "scen-kaihen.a2f8d90fa5.js",
@@ -175,8 +175,8 @@
    2776
   ],
   "js/ties.js": [
-   82040,
-   24064
+   82150,
+   24097
   ],
   "js/poly.js": [
    35559,
@@ -303,8 +303,8 @@
    4092
   ],
   "js/engine.js": [
-   54559,
-   18375
+   54587,
+   18379
   ],
   "js/sib-word.js": [
    12833,
@@ -363,8 +363,8 @@
    266
   ],
   "js/pos.js": [
-   27462,
-   8737
+   27588,
+   8755
   ],
   "js/attr.js": [
    61806,

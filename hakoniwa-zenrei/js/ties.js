@@ -48,8 +48,8 @@
     /* 夫婦（配偶者）：箱庭に渡すときに「恋人」（夫婦の印つき）に開く。冷えた・別居は惹かれが下がり、険悪さが上がる。離婚した二人は「元恋人」に開く（HK.Ties.expand） */
     spouse: { mods: { att: 1.15, ten: 0.9 }, effect: '恋人の上に重なる、暮らしを共にする二人。円満・冷えている・別居中・離婚した（元夫婦）を選べる', label: '夫婦', ab: { aff: 55, att: 50, trust: 50 }, pol: 2, chem: 1.2, pull: 2.4, couple: true, expandTo: 'lover', bias: { romance: 1.6, help: 1.5, combat: 0.15, betray: 0.35 } },
     /* 義理のきょうだい・異母（異父）きょうだい：箱庭に渡すときに「親族」（義理の印つき）に開く。「恋愛：あり」も選べる */
-    stepsib: { mods: { att: 0.1, trust: 1.05 }, effect: '親の再婚でできたきょうだい・片親だけが同じきょうだい。家族としての距離感があり、恋愛にはならない（「恋愛：あり」も選べる）', label: '義理の兄弟', ab: { aff: 22, trust: 25, ten: 8 }, pol: 1, chem: 0.05, pull: 1.5, family: true, expandTo: 'relative', bias: { help: 1.4, bond: 1.2, conflict: 1.1, romance: 0.1, betray: 0.4, combat: 0.4 } },
-    relative: { mods: { att: 0.1, trust: 1.1 }, effect: 'いとこ・おじおば・甥姪など、親子やきょうだいでない親族。気安いが遠慮もあり、いざとなれば助け合う。恋愛にはならない（「恋愛：あり」も選べる）', label: '親族', ab: { aff: 25, trust: 30, ten: 5 }, pol: 1, chem: 0.05, pull: 1.5, family: true, bias: { help: 1.5, bond: 1.2, romance: 0.1, betray: 0.4, combat: 0.4 } },
+    stepsib: { mods: { att: 0.1, trust: 1.05 }, effect: '親の再婚でできたきょうだい・片親だけが同じきょうだい。家族としての距離感があり、恋愛には進みにくい（止めるときは住人の設定「恋愛にしない相手」）', label: '義理の兄弟', ab: { aff: 22, trust: 25, ten: 8 }, pol: 1, chem: 0.05, pull: 1.5, family: true, expandTo: 'relative', bias: { help: 1.4, bond: 1.2, conflict: 1.1, romance: 0.1, betray: 0.4, combat: 0.4 } },
+    relative: { mods: { att: 0.1, trust: 1.1 }, effect: 'いとこ・おじおば・甥姪など、親子やきょうだいでない親族。気安いが遠慮もあり、いざとなれば助け合う。恋愛には進みにくい（止めるときは住人の設定「恋愛にしない相手」）', label: '親族', ab: { aff: 25, trust: 30, ten: 5 }, pol: 1, chem: 0.05, pull: 1.5, family: true, bias: { help: 1.5, bond: 1.2, romance: 0.1, betray: 0.4, combat: 0.4 } },
     /* 本命（{a}＝想う人、{b}＝本命）：本命との恋愛の出来事が起きやすく、ほかの人の誘いは一途に断りがち。耐えがたい状況（強い媚薬・焦りの限界・重い条件の部屋）では妥協する（HK.honmeiFactor） */
     honmei: { mods: { att: 1.25 }, effect: '想う人は本命との恋愛の出来事が起きやすく、ほかの人からの誘いは断りがち。強い媚薬や焦りの限界など耐えがたい状況では、ほかの人とも妥協する', label: '本命', dir: true, roleA: '想う人', roleB: '本命', ab: { att: 40, aff: 30 }, ba: {}, pol: 1, pull: 2.2, biasA: { romance: 1.9, bond: 1.2 }, biasB: {} },
     /* 歪んだ関係（{a}＝支配する側、{b}＝支配される側）：恋人どうしだが、支配する側が束縛・暴言・暴力で相手を縛る。
@@ -78,7 +78,7 @@
   var FEAR_NIGHT = 'この二人は恋愛にも夜にもならない';
   /* r18:begin */
   FEAR_NIGHT = 'この二人は恋愛にならない。体の関係は、内容のスイッチ「合意のない展開」が入のときだけ、恐れられる側が力ずくで迫る形で起きる（恐れられる側の性欲が「なし」・性行為の相手の固定などで止まるときは起きない）。' +
-    '関係の欄の「体の関係：あり」にすると、夜の場面も止めない（怖いのか、興奮なのか分からないまま）。「恋愛：あり」は恐怖が和らぐ見込みがあるという意味で、和らいだあとにだけ恋愛になる';
+    '住人の設定で互いを「性行為の相手」にすると、夜の場面も止めない（怖いのか、興奮なのか分からないまま）。恋愛は、恐怖が和らいだあとにだけ起きる';
   /* r18:end */
   T.fear = { mods: {}, modsA: { trust: 0.5, aff: 0.6 }, effect: '恐れる側は相手を避け（同じ場所にいたがらない・目を合わせない・話しかけられると固まる）、命じられると逆らえずに従い、ほかの人に庇護を求める。' + FEAR_NIGHT, label: '恐怖', dir: true, roleA: '恐れる側', roleB: '恐れられる側', ab: { ten: 42, aff: -12, trust: -18 }, ba: {}, pol: -1, chem: 0.05, fric: 1.2, pull: 1.1, fear: true, stiffA: { ten: 0.4 }, biasA: { romance: 0, help: 0.3, bond: 0.25, conflict: 0.35, combat: 0.25, betray: 0.7 }, biasB: { romance: 0.2 } };
   /* 気持ちの関係（2026-10-29。docs/reports/2026-10-29/lovehate-design.md）：どの関係にも重ねられる、向きのある気持ち。表の顔は重ねた関係が決める。
@@ -1074,7 +1074,10 @@
           if (o.feel === 'eager' && o.feelB === 'eager' && HK.canLove && HK.canLove(A, B) && HK.canLove(B, A) && (!HK.Pos || (HK.Pos.okLove ? HK.Pos.okLove(A, B) : HK.Pos.okSex(nr(A), nr(B))))) { p.couple = true; o.couple = true; }
         }
         list.push(o);
-        list.sort(function (x, y) { return PRIO.indexOf(x.type) - PRIO.indexOf(y.type); });
+        /* 代表の関係：恋人・夫婦・許嫁・番・運命の相手が一つでもあれば、それを代表にする（2026-11-05 利用者の指示「恋人がついていれば、
+           他にどんな関係性がついていても恋人に」。関係図の札・結果欄の表示も恋人で出る）。ほかは今までの順（PRIO） */
+        var rk = function (x) { return /^(mate|fated|lover|fiance)$/.test(x.type) || x.spouse ? -2 + PRIO.indexOf(x.type) / 100 : PRIO.indexOf(x.type); };
+        list.sort(function (x, y) { return rk(x) - rk(y); });
         ctx.ties[k] = list[0];
         p.tie = list[0];
         list[0].also = list.slice(1).map(function (x) { return x.type; });

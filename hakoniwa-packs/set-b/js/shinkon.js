@@ -1506,6 +1506,12 @@
   };
 
   HK.SCENARIOS[ID] = scen;
+  /* 開始前の注意：三人・四人の夜が起きない配役（本体の HK.Quad.groupWarn。同居生活・新婚部屋・デートの日々で同じ文言。R18版だけ。2026-11-05 利用者の報告「同居で 3P・4P をしない」） */
+  if (HK.SoloWarn && HK.SoloWarn.add) HK.SoloWarn.add(ID, function (input) {
+    /* 立場「新婚の夫婦」を選んだ人どうしは夫婦（恋人と同じ）として数える */
+    var sp = function (c) { var p = input.perChar && input.perChar[c.i]; return !!(p && p.pick && p.pick.part === 'couple'); };
+    return HK.Quad && HK.Quad.groupWarn ? HK.Quad.groupWarn(input, { bond: function (a, b) { return sp(a) && sp(b); } }) : [];
+  });
   /* R18 の描写の設定（描写の有無・長さ・作風）をほかの R18 の箱庭と同じ共通の設定にする（lewd-unify.js。全年齢では「ほのめかす」だけ） */
   if (HK.Lewd && HK.Lewd.install) HK.Lewd.install(ID, { lenDef: 'mix', desc: HK.SAFE_BUILD ? '' : '夜の場面の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();

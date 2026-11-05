@@ -585,7 +585,9 @@
     var why = typeof o.why === 'function' ? o.why(r) : o.why;
     if (!text) { this.flush(); return null; }
     var actors = (o.actors || []).filter(Boolean);
-    var e = this.say({ kind: 'event', cat: o.cat || 'bond', actors: actors, text: text, why: why || '', mag: this._mag + (o.mag || 0), odd: !!o.odd, sex: sexEv(this, o).sex, force: sexEv(this, o).force, lewd: typeof o.lewd === 'function' ? o.lewd(r) : o.lewd });
+    /* 三人以上の場面の直接の行為の組（trioPairs）も記録の門（say の romanceOk）まで渡す（2026-11-05：渡していなかったので、攻めどうしが恋愛相手の固定で
+       恋愛にならない三人（受けを中心にした輪）の三人の夜が、act2 の門は通っても say で落ち、新婚部屋の三人婚の夜が記録に残らなかった） */
+    var e = this.say({ kind: 'event', cat: o.cat || 'bond', actors: actors, text: text, why: why || '', mag: this._mag + (o.mag || 0), odd: !!o.odd, sex: sexEv(this, o).sex, force: sexEv(this, o).force, trioPairs: o.trioPairs || null, lewd: typeof o.lewd === 'function' ? o.lewd(r) : o.lewd });
     if (actors[0]) actors[0].cats[e.cat] = (actors[0].cats[e.cat] || 0) + 1;
     if (o.odd && actors[0]) actors[0].odd.push(e.n);
     for (var kk in this._touched) { var pr = this._touched[kk]; this.pair(pr[0], pr[1]).moments.push({ n: e.n, mag: e.mag }); }

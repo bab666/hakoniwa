@@ -139,7 +139,7 @@
     };
     var lt = q4 ? SK().fill(ctx, pk(R3.LEAD4), a, bc[0], { c: bc[1].name, x: opt.away.name }) : SK().fill(ctx, pk(R3.LEAD), a, bc[0], { c: bc[1].name }), fl = R3.FORM_LEAD[touch ? 'touch' : sp.p];
     if (fl) lt += sub(pk(fl));
-    var le = ctx.say({ kind: 'event', cat: 'romance', actors: g, text: lt, why: 'きっかけ：三人の夜（' + (q4 ? opt.away.name + 'が留守の夜・' : '') + a.name + 'から）', mag: 0 });
+    var le = ctx.say({ kind: 'event', cat: 'romance', actors: g, text: lt, why: 'きっかけ：三人の夜（' + (q4 ? opt.away.name + 'が留守の夜・' : '') + a.name + 'から）', mag: 0, trioPairs: pl ? pl.pairs : null });
     if (le) le.tag = 'きっかけ';
     var text, why;
     if (touch) { text = X3.touchScene(ctx, [a, bc[0], bc[1]]); why = '三人とも攻めなので、口づけと手だけ'; }
@@ -170,7 +170,8 @@
     if (!text) return false;
     var e = ctx.act2({ actors: g, cat: 'romance', text: text, why: '新婚部屋：三人の夜（' + (q4 ? opt.away.name + 'が留守・' : '') + why + '）',
       sex: !touch, lewd: lv !== 'low', trioPairs: pl ? pl.pairs : [], fx: function () { ctx.mod2(g[0], g[1], { att: 4, aff: 2 }, { att: 4, aff: 2 }); ctx.mod2(g[0], g[2], { att: 4, aff: 2 }, { att: 4, aff: 2 }); ctx.mod2(g[1], g[2], { att: 4, aff: 2 }, { att: 4, aff: 2 }); } });
-    if (!e) return false;
+    /* 記録の門で落ちた場面（e.skipped）は出せなかったものとして、きっかけの段も外す（2026-11-05） */
+    if (!e || e.skipped) { if (le && !le.skipped) { var li = ctx.log.lastIndexOf(le); if (li >= 0) ctx.log.splice(li, 1); } return false; }
     if (!touch) S.trioSex = (S.trioSex || 0) + 1;
     return true;
   };

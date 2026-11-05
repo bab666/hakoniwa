@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.dbc674a426.js",
+  "core": "core.8fdd55c35b.js",
   "late": "late.025fd2311f.js",
   "pack-rel": "pack-rel.ae8ff9a2a6.js",
   "pack-sim": "pack-sim.902b8fb13e.js",
@@ -13,7 +13,7 @@
   "scen-trial": "scen-trial.c3755db66f.js",
   "scen-omega": "scen-omega.b3f0d43545.js",
   "scen-massage": "scen-massage.b0cc1e2fca.js",
-  "scen-futari": "scen-futari.5f8ac723d1.js",
+  "scen-futari": "scen-futari.01d7c800b2.js",
   "scen-zombie": "scen-zombie.69ec1d2147.js",
   "scen-rpg": "scen-rpg.2079863ac2.js",
   "scen-saimin": "scen-saimin.e2dc6a7f0d.js",
@@ -67,7 +67,7 @@
   "tone-yankee": "tone-yankee.381a559020.js"
  },
  "prev": {
-  "core": "core.8fdd55c35b.js",
+  "core": "core.dbc674a426.js",
   "late": "late.025fd2311f.js",
   "pack-rel": "pack-rel.ae8ff9a2a6.js",
   "pack-sim": "pack-sim.902b8fb13e.js",
@@ -80,7 +80,7 @@
   "scen-trial": "scen-trial.c3755db66f.js",
   "scen-omega": "scen-omega.b3f0d43545.js",
   "scen-massage": "scen-massage.b0cc1e2fca.js",
-  "scen-futari": "scen-futari.01d7c800b2.js",
+  "scen-futari": "scen-futari.5f8ac723d1.js",
   "scen-zombie": "scen-zombie.69ec1d2147.js",
   "scen-rpg": "scen-rpg.2079863ac2.js",
   "scen-saimin": "scen-saimin.e2dc6a7f0d.js",
@@ -159,8 +159,8 @@
    2776
   ],
   "js/ties.js": [
-   81218,
-   23808
+   81385,
+   23860
   ],
   "js/poly.js": [
    35559,
@@ -287,8 +287,8 @@
    4092
   ],
   "js/engine.js": [
-   54559,
-   18375
+   54587,
+   18379
   ],
   "js/sib-word.js": [
    12833,

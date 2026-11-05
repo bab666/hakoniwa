@@ -34,11 +34,22 @@
      ・繋がる組（plan の各段）は、どれも体の関係のある組（pairOk）で、四人とも少なくとも一つの段に入る */
   /* noTen：緊張（ten 60 以上）を見ない。性的に対象にならない組（攻めどうし・受けどうし）は張り合っていても同じ場にいてよい
      （作業の決まり「三人・四人の夜の条件は性的に対象になる組がすべて恋人など。攻めどうし・受けどうしは不問」。2026-11-05 新婚部屋の申し送り） */
+  /* 恋人の二人（ctx.pair(a,b).couple）で、関係に恋人・夫婦・許嫁・番などが一つでもある組。同じ二人にほかの関係（片想い・ライバル・無関心・恐怖など）が
+     重なっていても、恋人として扱う（2026-11-05 利用者の指示「攻め受けの間に恋人がついていれば、他にどんな関係性がついていても三人の恋人に」）。
+     関係の種類の傾向（張り合い・片想いの段）は残し、三人・四人の夜の可否はこれで決める */
+  var LOVER_T = /^(lover|spouse|fiance|mate|fated)$/;
+  function loverTie(ctx, a, b) {
+    if (!a || !b || a === b || !ctx.pair(a, b).couple) return false;
+    var ts = HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, a, b) || [] : [];
+    return !ts.length || ts.some(function (t) { return LOVER_T.test(t.type) || t.spouse; });
+  }
   function hardOk(ctx, a, b, noTen) {
     if (HK.SAFE_ON || !a || !b || a === b || a.alive === false || b.alive === false) return false;
     if (a.noR18 || b.noR18) return false;
     if (ctx.pair(a, b).kin) return false;
-    if (HK.Ties && HK.Ties.apathy && (HK.Ties.apathy(ctx, a, b) || HK.Ties.apathy(ctx, b, a))) return false;
+    var lv = loverTie(ctx, a, b);
+    if (lv) noTen = true;
+    if (!lv && HK.Ties && HK.Ties.apathy && (HK.Ties.apathy(ctx, a, b) || HK.Ties.apathy(ctx, b, a))) return false;
     /* その場にいて、R18に参加してよい人（HK.State.pairSex は受け攻めの組も見るので、ここでは本人ごとに見る。組は wantOk・pairOk で見る） */
     var St = HK.State;
     if (St && St.here && (!St.here(a) || !St.here(b))) return false;
@@ -47,7 +58,7 @@
     /* 設定の「恋愛・R18にしない相手」・無関心・恐怖（noSex）の組は同じ場に置かない。恋愛相手の固定の食い違い・同じ人の恋人どうし（coNG）は、
        繋がらないだけで同じ場にいてよい（受けを中心にした輪の攻めどうし） */
     if ((HK.ngExplicit && HK.ngExplicit(a, b)) || (HK.noSexPair && HK.noSexPair(a, b))) return false;
-    if (HK.fearHeld && (HK.fearHeld(ctx, a, b) || HK.fearHeld(ctx, b, a)) && !(HK.tieBodyOK && HK.tieBodyOK(ctx, a, b))) return false;
+    if (!lv && HK.fearHeld && (HK.fearHeld(ctx, a, b) || HK.fearHeld(ctx, b, a)) && !(HK.tieBodyOK && HK.tieBodyOK(ctx, a, b))) return false;
     if (!noTen && ctx.R && (ctx.R(a, b).ten >= 60 || ctx.R(b, a).ten >= 60)) return false;
     return true;
   }
@@ -59,24 +70,79 @@
     if (HK.Avoid && HK.Avoid.topOk && !HK.Avoid.topOk(ctx, a, b) && !HK.Avoid.topOk(ctx, b, a)) return false;
     return true;
   }
+  /* 住人の設定で互いを指定し合った二人（恋愛相手の固定・性行為の相手の固定。どちらも両方向）。2026-11-05 利用者の指示：
+     「恋愛相手を固定」「性行為の相手」で輪ができていれば、恋人の関係を付けていなくても三人・四人の夜を許す（同居・新婚・デートで同じ判定） */
+  function lockBond(a, b) {
+    if (!a || !b || a === b) return false;
+    var sl = function (x, y) { return Array.isArray(x.sexLocks) && x.sexLocks.indexOf(y.i) >= 0; };
+    return !!((HK.lockTo && HK.lockTo(a, b) && HK.lockTo(b, a)) || (sl(a, b) && sl(b, a)));
+  }
   function bodyTie(ctx, a, b) {
     if (ctx.pair(a, b).couple) return true;
+    if (lockBond(a, b)) return true;
     var ts = HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, a, b) || [] : [];
     return ts.some(function (t) { return BODY.test(t.type) && t.cold !== 'separated' && t.cold !== 'divorced'; });
   }
   /* 繋がってよい組：同じ場にいてよく、性的に対象で、体の関係のある関係 */
   function pairOk(ctx, a, b) { return hardOk(ctx, a, b) && wantOk(ctx, a, b) && (!HK.State || !HK.State.pairSex || HK.State.pairSex(a, b)) && bodyTie(ctx, a, b); }
-  Q.hardOk = hardOk; Q.wantOk = wantOk; Q.bodyTie = bodyTie; Q.pairOk = pairOk;
+  Q.hardOk = hardOk; Q.wantOk = wantOk; Q.bodyTie = bodyTie; Q.pairOk = pairOk; Q.lockBond = lockBond; Q.loverTie = loverTie;
   /* 輪が完成しているか（g は何人でも）：全組が hardOk（性的に対象にならない組は緊張を見ない）、性的に対象になる組はすべて体の関係、体の関係の組が人数−2 以上 */
+  /* 三人のときは、受けを中心にした輪（真ん中の人が二人と体の関係で、その二組が性的に対象）なら、外側の組は体の関係でなくてよい
+     （2026-11-05 同居生活の申し送り：A×B・C×B の恋人で A と C が互いに対象になりうる組でも三人の夜を許す。三人の場面でも A×C は触れ合わない） */
   Q.ringOk = function (ctx, g) {
-    var n = 0;
+    var n = 0, loose = 0;
     for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) {
       var w = wantOk(ctx, g[i], g[j]);
       if (!hardOk(ctx, g[i], g[j], !w)) return false;
-      if (w) { if (!bodyTie(ctx, g[i], g[j])) return false; n++; }
+      if (w) { if (!bodyTie(ctx, g[i], g[j])) { if (g.length !== 3) return false; loose++; continue; } n++; }
     }
+    if (loose) return loose === 1 && n === 2;
     /* 体の関係の組が人数−2 以上（四人なら、恋人どうしが二組で並ぶ「二組に分かれて」も含む。誰も置いていかない組み分けは plan が見る） */
     return n >= g.length - 2;
+  };
+
+  /* ---------- 開始前の注意（三人・四人の夜が起きない配役。同居生活・新婚部屋・デートの日々で同じ文言。HK.SoloWarn.add で登録） ----------
+     Q.groupWarn(input, opt) → [{ level: 'warn', text }]。input は箱庭タブの HK.UI.buildInput と同じ形。
+     opt.bond(a, b)：部屋が恋人として扱う組（新婚部屋の配偶者など）。opt.body：性行為の相手の固定だけの輪も数えるか（既定は数える）。opt.grow：遊びの途中で恋人になりうる部屋 */
+  Q.groupWarn = function (input, opt) {
+    opt = opt || {};
+    var IC = (input && input.chars) || [], n = IC.length;
+    if (HK.SAFE_ON || n < 3 || n > 4 || !HK.Pos || !HK.Pos.okSex || !HK.charFlags) return [];
+    var C = IC.map(function (c, i) {
+      var o = { i: i, name: c.name, gender: c.gender || '', likes: c.likes || '', pos: c.pos || '', posLike: c.posLike || '', futa: !!c.futa, eg: c.eg || {}, ng: (Array.isArray(c.loveNG) ? c.loveNG : []).filter(function (x) { return x >= 0; }) };
+      o.tr = HK.traits ? HK.traits(o.eg) : {};
+      HK.charFlags(c, o, input.scenId);
+      return o;
+    });
+    var ties = (input && input.ties) || [], TC = { ties: ties };
+    var tb = function (a, b) { return ties.some(function (t) { return t && ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)) && /^(lover|spouse|fiance|mate|fated|fwb|mistress)$/.test(t.type) && t.cold !== 'separated' && t.cold !== 'divorced'; }); };
+    var sl = function (x, y) { return Array.isArray(x.sexLocks) && x.sexLocks.indexOf(y.i) >= 0; };
+    var want = function (a, b) { try { return !!(HK.Pos.okSex(a, b) && HK.canLove(a, b, TC) && HK.canLove(b, a, TC) && !HK.sexBlocked(a, b)); } catch (e) { return false; } };
+    var bond = function (a, b) { return tb(a, b) || !!(HK.lockTo && HK.lockTo(a, b) && HK.lockTo(b, a)) || (opt.body !== false && sl(a, b) && sl(b, a)) || !!(opt.bond && opt.bond(a, b)); };
+    var nm = function (p) { return p[0].name + 'と' + p[1].name; };
+    var judge = function (g) {
+      var W = [], miss = [], nb = 0;
+      for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) if (want(g[i], g[j])) { W.push([g[i], g[j]]); if (bond(g[i], g[j])) nb++; else miss.push([g[i], g[j]]); }
+      var ok = g.length === 3 ? W.length >= 2 && nb >= 2 && miss.length <= (W.length === 3 ? 1 : 0) : W.length >= 2 && !miss.length;
+      return { ok: ok, W: W, miss: miss, nb: nb };
+    };
+    var T3 = [];
+    for (var a = 0; a < n; a++) for (var b = a + 1; b < n; b++) for (var c = b + 1; c < n; c++) T3.push(judge([C[a], C[b], C[c]]));
+    var out = [], ok3 = T3.some(function (x) { return x.ok; });
+    var RULE = '三人・四人の夜は、性的に対象になる組（恋愛対象と受け攻めが合う組）がすべて、恋人（関係の設定）か、住人の設定の「恋愛相手を固定」' + (opt.body !== false ? '・「性行為の相手」' : '') + 'で互いに指定し合った相手のときに起きます（攻めどうし・受けどうしは問いません）';
+    var tail = opt.grow ? '。遊びの途中で恋人になれば起きることがあります' : '';
+    if (!ok3) {
+      var best = T3.filter(function (x) { return x.W.length >= 2; }).sort(function (x, y) { return y.nb - x.nb; })[0];
+      if (!best) out.push({ level: 'warn', text: '三人の夜は起きません：性的に対象になる組（恋愛対象と受け攻めが合う組）が二組以上つながる三人がいません（攻めどうし・受けどうしは組になりません）' });
+      else {
+        var bodyOnly = best.miss.some(function (p) { return opt.body === false && sl(p[0], p[1]) && sl(p[1], p[0]); });
+        out.push({ level: 'warn', text: '三人の夜は起きません：' + best.miss.map(nm).join('、') + 'が、恋人にも、互いに指定し合った相手にもなっていません。' + RULE + (bodyOnly ? '（この箱庭では「性行為の相手」だけの指定では足りません。恋人か恋愛相手の固定にしてください）' : '') + tail });
+      }
+    } else if (n === 4) {
+      var q = judge(C);
+      if (!q.ok) out.push({ level: 'warn', text: '四人の夜は起きません（三人の夜は起きます）：' + (q.miss.length ? q.miss.map(nm).join('、') + 'が、恋人にも、互いに指定し合った相手にもなっていません。' : '性的に対象になる組が足りません。') + RULE + tail });
+    }
+    return out;
   };
   function chars(ctx, ids) { return (ids || []).map(function (i) { return typeof i === 'number' ? ctx.chars[i] : i; }); }
   function order(a, b) { var o = HK.Pos && HK.Pos.order ? HK.Pos.order(a, b, [a, b]) : [a, b]; return o && o[0] && o[1] ? o : [a, b]; }
