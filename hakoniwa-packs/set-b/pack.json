@@ -98,6 +98,7 @@
         "js/kanbyo-text-e.js",
         "js/kanbyo-text-f.js",
         "js/kanbyo-text-g.js",
+        "js/kanbyo-text-h.js",
         "js/kanbyo-tone.js",
         "js/kanbyo-tone-b.js",
         "js/kanbyo-tone-c.js",
@@ -111,6 +112,8 @@
         "js/kanbyo-r18-room-b.js",
         "js/kanbyo-r18-room-c.js",
         "js/kanbyo-r18-room-d.js",
+        "js/kanbyo-r18-fm.js",
+        "js/kanbyo-r18-body.js",
         "js/kanbyo-kiss.js",
         "js/kanbyo-topics.js"
       ]
