@@ -1,3 +1,4 @@
+/* @event-ok 女性の攻め（男性器なし）×男性の受けの跨る・受け入れる文を、指と手（ペニバン）の文に直した（新しい出来事ではない。2026-11-05） */
 /* @event-ok 夜の能動性の型（既にある山場に段を差すだけ。新しい出来事ではない。2026-10-31 担当E2） */
 /* 箱庭シミュレーター（R18版のみ）: 夜の能動性の判定（HK.Initiative）と、山場への型の差し込み。文の表は ero-initiative-text-r18.js（HK.IniText）
    利用者の要望（2026-10-31）：「騎乗位、受け優位の展開、あるいは逆転など、夜の性格や能動性に合わせたエッチなイベント」
@@ -116,7 +117,8 @@
       var pc = (ld === 'osoi' ? 0.55 : 0.4) + (libU === 'high' ? 0.1 : 0) + (o.heat || o.drug || o.drunk ? 0.08 : 0) + (nth >= 2 ? 0.05 : 0);
       var ch = ini.change != null ? ini.change : r() < pc ? (I.canSwap(T, U, mode) && r() < 0.4 ? 'swap' : (r() < (ld === 'sasoi' ? 0.65 : 0.5) ? 'ride_b' : 'shift')) : '';
       if (ch === 'swap' && !I.canSwap(T, U, mode)) ch = 'shift';
-      if (ch === 'ride_b' && mode === 'fm' && !P.hasM(U)) ch = 'shift';
+      /* 女性の攻め（男性器なし）×男性の受け：受けが上に乗って繋がる型（ride_b）は、受けが挿れる形になるので使わず、主導だけが移る型に（2026-11-05） */
+      if (ch === 'ride_b' && mode === 'fm') ch = 'shift';
       pl.change = ch;
       if (ch) pl.why = o.heat ? 'heat' : o.drug ? 'drug' : o.drunk ? 'drunk' : nth >= 2 && r() < 0.6 ? 'tired' : libU === 'high' && r() < 0.7 ? 'libido' : (kT === 'mean' || kT === 'sadist') && r() < 0.6 ? 'provoked' : 'lead';
     }
@@ -421,6 +423,8 @@
       return function (S, o) {
         if (HK.SAFE_ON || !S || !o || !o.x || !o.y || o.lew === 'low' || S._iniBed) return b0.apply(this, arguments);
         var T = o.x, U = o.y, ero = !!(HK.Ero && HK.Ero.on && HK.Ero.on(S)), mode = o.ff ? 'ff' : P.isF(T, U) && !P.isF(U, T) ? 'fm' : modeOf(T, U);
+        /* 女性の攻め（男性器なし）×男性の受け（LK.fmOn。リバ・おまかせの女性が攻めに回る組も）：この表の fm は跨る型なので足さない（ロッカーの指と手・ペニバンの段のまま。2026-11-05） */
+        if (LK.fmOn && LK.fmOn(T, U)) return b0.apply(this, arguments);
         var own = S.rng || S, memo = own ? (own._iniMemo || (own._iniMemo = {})) : null, nth = HK.Ero && HK.Ero.pairNight ? HK.Ero.pairNight(S, T, U, true) + 1 : 1;
         var st = { mode: mode, ero: ero, drug: true, nth: nth, memo: memo, seenHost: S, r: rngOf(hashOf(T.name + '\u0001' + U.name + '\u0001' + (S.log ? S.log.length : 0) + '\u0001' + (S.seed || ''))) };
         if (o.lead) st.ini = { lead: false };

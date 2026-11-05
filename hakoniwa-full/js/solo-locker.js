@@ -1,3 +1,4 @@
+/* @event-ok 女性の攻め（男性器なし）×男性の受けの跨る・受け入れる文を、指と手（ペニバン）の文に直した（新しい出来事ではない。2026-11-05） */
 /* 箱庭シミュレーター: 媚薬ロッカー（R18）
    媚薬の充満する狭いロッカーに閉じ込められた二人。仕掛けを解いて脱出できるか。
    一人のとき・三人以上のときは locker-crowd.js（LK.crowd）で進める。
@@ -290,8 +291,9 @@
       var ty = clashType(a), C = LK.CLASH;
       ST.sayB(S, { actors: [a, b], tag: C.tag[ty], text: ST.fmt(pk(C.hold[ty]), { a: a.name, b: b.name }) + (rng() < 0.5 ? ST.fmt(pk(C.reply), { a: a.name, b: b.name }) : ''), why: a.name + (a.noR18 ? 'は媚薬で火照っていた（' : 'は発情していた（') + Math.round(a.m.heat) + '）が、' + b.name + (libNo ? 'とは体の関係にならない（' + libWho.name + 'は性欲が「なし」）ので、手は出さなかった（' : nightNo ? night0().hold : ngP ? 'とは' + (tieNL ? nlWhy + 'の二人' : '恋愛・R18にしない組') + 'なので、手は出さなかった（' : sexP ? 'とは体の関係にならない（' + sexWhy + '）ので、手は出さなかった（' : 'とは受け攻めの向きが合わない二人なので、手は出さなかった（') + { solve: 'CP・A', care: 'NP', shy: 'AC', joke: 'FC', endure: '我慢' }[ty] + '）', mag: 16 }, a.name + 'は手を出さずに耐えた', a.cnt.hold === 1);
     }
-    /* 女性の攻め（t）×男性の受け（u）か：女性が跨る書き方にする */
-    function fmPair(t, u) { return !!(Pos && !ff && Pos.isF(t) && !Pos.isF(u)); }
+    /* 女性の攻め（t。男性器なし）×男性の受け（u）か：指と手で書く（跨る・受け入れる書き方にしない） */
+    /* 体で決める（2026-11-05：リバ・おまかせの女性が攻めに回る組も、フタナリの攻めは挿れる組。solo-locker-more.js の LK.fmOn） */
+    function fmPair(t, u) { return !!(Pos && !ff && (LK.fmOn ? LK.fmOn(t, u) : Pos.isF(t) && !Pos.isF(u))); }
     /* 手錠の人に、手を使う文（H:攻めの手／B:受けの手）を使わない */
     /* 手錠の人の手を使う文（応じる・嗜める・なだめる）は使わない。全部消えるときは元のまま */
     function hands(arr, a, b) {
@@ -494,8 +496,8 @@
         var FFA = ff && LK.FF_ACT && LK.FF_ACT[LV[lv]];
         var FMA = !FFA && LV[lv] === 'sex' && axTop && fmPair(ax, bx) && LK.FM_ACT && LK.FM_ACT.sex;
         var actPool = FFA ? (ax.bound ? FFA.bound : FFA.t) : FMA ? (ax.bound ? FMA.bound : FMA.t) : LV[lv] === 'sex' ? (ax.bound ? (axTop ? act.boundTop : act.bound) : (axTop ? act.t : act.ride)) : (ax.bound ? act.bound : act.t);
-        /* ノリノリの受けは、自分から跨る・誘う（相手が拘束されていないときだけ） */
-        var noriAct = !swap && !FFA && LV[lv] === 'sex' && !aTop && !b.bound && Pos && Pos.nori(a) && rng() < 0.6 && (a.bound ? act.noriBound : act.nori);
+        /* ノリノリの受けは、自分から跨る・誘う（相手が拘束されていないときだけ。相手が男性器のない女性の攻めなら跨らない） */
+        var noriAct = !swap && !FFA && LV[lv] === 'sex' && !aTop && !b.bound && !fmPair(b, a) && Pos && Pos.nori(a) && rng() < 0.6 && (a.bound ? act.noriBound : act.nori);
         if (noriAct) actPool = noriAct;
         var vA = { a: ax.name, b: bx.name }, vT = { a: a.name, b: b.name };
         var t = swap ? ST.fmt(pk(LK.TEMPT), vT) : ST.fmt(pk(actPool), vA);
