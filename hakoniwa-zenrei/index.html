@@ -1657,7 +1657,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
 <!-- 古いブラウザの知らせ（2026-11-04）：本体は正規表現の後読み（iOS 16.4・Safari 16.4 から）を使うので、それより前の版では読み込みの段階で止まり、何も表示されない。そのときだけ、何が要るかを画面の上に出す -->
 <script>(function(){try{new RegExp('(?<=a)b');}catch(e){document.addEventListener('DOMContentLoaded',function(){var d=document.createElement('p');d.setAttribute('role','alert');d.style.cssText='margin:12px 16px;padding:12px 14px;border:1px solid #c33;border-radius:8px;background:#fff;color:#16233b;font-size:14px;line-height:1.7';d.textContent='このブラウザの版では箱庭シミュレーターが動きません。iPhone・iPad は iOS 16.4 以降、Mac の Safari は 16.4 以降に更新してください（Chrome・Edge・Firefox の新しい版でも動きます）。';document.body.insertBefore(d,document.body.firstChild);});}})();</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"7855bc20c6","api":1,"build":"zenrei","core":"js/c/core.3ae86de175.js",
+<script>window.HK_MANIFEST={"v":"8b3042fc8d","api":1,"build":"zenrei","core":"js/c/core.3ae86de175.js",
 "chunks":{
   "late":{"src":"js/c/late.e79fd05944.js","br":147126,"deps":["pack-sim"]},
   "pack-rel":{"src":"js/c/pack-rel.1d5aea8b5c.js","br":283558,"deps":["pack-sim"]},
@@ -1669,7 +1669,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "pack-trap":{"src":"js/c/pack-trap.0ffcccb2a9.js","br":33295,"deps":["pack-sim"]},
   "scen-whiteroom":{"src":"js/c/scen-whiteroom.77c0d9a1a1.js","br":223151,"deps":["pack-sim","pack-rel","pack-trap"]},
   "scen-trial":{"src":"js/c/scen-trial.c3755db66f.js","br":53848,"deps":["pack-sim","pack-rel"]},
-  "scen-omega":{"src":"js/c/scen-omega.2536a49ad1.js","br":136294,"deps":["pack-sim","pack-rel"]},
+  "scen-omega":{"src":"js/c/scen-omega.0e477b41bb.js","br":136297,"deps":["pack-sim","pack-rel"]},
   "scen-massage":{"src":"js/c/scen-massage.a904b9d9f4.js","br":54451,"deps":["pack-sim"]},
   "scen-futari":{"src":"js/c/scen-futari.50626f0abc.js","br":95522,"deps":["pack-sim","pack-rel"]},
   "scen-zombie":{"src":"js/c/scen-zombie.46cc1a3f99.js","br":143023,"deps":["pack-sim","pack-rel"]},
