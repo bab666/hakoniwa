@@ -81,6 +81,12 @@
   /* ---------- 切り替えボタン（R18版だけ） ---------- */
   /* 全年齢版の公開URL。共有ボタン（share-card.js）が付けるリンクもこれ（R18版・全年齢モードからの共有も全年齢版へ）。index.html の og:url・og:image も同じURL */
   var SAFE_URL = HK.PUBLIC_URL = 'https://kaimin.sakura.ne.jp/archive/tools/hakoniwa/';
+  /* 販売ページの URL（全年齢版の箱庭の一覧の最後の「R-18版のご案内」＝ui.js の窓・ui-box-list.js の PC の一覧と、共有 share-card.js が読む）。
+     share-card.js は late なので、起動時の描画で読む URL はここ（中核）に置く（2026-11-05：late に移った回に PC の一覧から案内が消えた） */
+  var CONF = HK.CONF = HK.CONF || {};
+  CONF.boothUrl = CONF.boothUrl || 'https://bab666.booth.pm';
+  CONF.r18Url = CONF.r18Url || 'https://bab666.booth.pm/items/9016418';   /* R-18版の BOOTH の販売ページ */
+  CONF.noteUrl = CONF.noteUrl || 'https://note.com/unimi_note/n/n6fe17bec9d5a';   /* 同じ R-18版の note の販売ページ */
   function toggleUI() {
     if (BUILD) return;
     var brand = document.querySelector('header.top .brand');

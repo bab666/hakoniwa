@@ -1,7 +1,7 @@
 {
  "cur": {
-  "core": "core.7d3b8412ca.js",
-  "late": "late.f338fd13db.js",
+  "core": "core.df506512c6.js",
+  "late": "late.c83e600d45.js",
   "pack-sim": "pack-sim.79c8d1db88.js",
   "pack-rel": "pack-rel.b25e8d7613.js",
   "pack-lewd": "pack-lewd.78737ac194.js",
@@ -90,7 +90,7 @@
   "scen-trial": "scen-trial.3a6f0e9787.js",
   "scen-dungeon": "scen-dungeon.75d7da805c.js",
   "scen-massage": "scen-massage.690a4353c8.js",
-  "scen-hole": "scen-hole.6161fd3239.js",
+  "scen-hole": "scen-hole.e6911f65ac.js",
   "scen-futari": "scen-futari.554a2d186a.js",
   "scen-zombie": "scen-zombie.cb39e48c05.js",
   "scen-rpg": "scen-rpg.a250400f60.js",
@@ -443,8 +443,8 @@
    13098
   ],
   "js/safe.js": [
-   23141,
-   9068
+   23367,
+   9169
   ],
   "js/saves.js": [
    26070,
@@ -511,8 +511,8 @@
    3002
   ],
   "js/ui-box-list.js": [
-   12839,
-   4488
+   14310,
+   4837
   ],
   "js/ui-import.js": [
    8911,
@@ -531,8 +531,8 @@
    3517
   ],
   "js/ui.js": [
-   120951,
-   35885
+   120969,
+   35896
   ],
   "js/ui-cast-ops.js": [
    6623,
