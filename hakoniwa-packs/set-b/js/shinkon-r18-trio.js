@@ -43,6 +43,42 @@
     ring: L('三人は輪になって、互いの肌を求め合った。{t}が{m}を、{m}が{u}を、{u}が{t}を――誰もが誰かを抱き、誰かに抱かれていた。終わりのない輪の中で、三人の声が重なり合った。')
   };
   R3.AFTER = L('事のあと、三人は汗ばんだ体を寄せ合ったまま、くすくすと笑い合った。{a}の両手は、{b}と{c}の手をそれぞれ握ったままだった。|三人は布団に川の字になって、天井を見上げた。{b}が「＠{b}＠三人だと、布団が足りない｜三人だと、布団が足りないな｜三人だと、布団が足りませんね」と言うと、{c}が吹き出し、{a}もつられて笑った。');
+  /* 触れ合いの段（2026-11-05 報告「三人婚が 1 段落で、挿入より先に喘ぎ」）：繋がる前の段。形の組と同じ向き。挿入・山場は書かない */
+  R3.TOUCH = {
+    twoOne: L('{t}が{u}の唇をふさぐと、{m}は{u}の背中に回って、うなじに口づけを落とした。前と後ろから同時に触れられて、{u}の肩が小さく跳ねる。二人の手が、{u}の服のボタンを一つずつ外していった。|' +
+      '{u}を真ん中に寝かせて、{t}と{m}は両側から{u}の肌をなぞった。片方が胸を、片方が脇腹を撫でるたびに、{u}は身をよじって笑い、それから笑えなくなった。{u}の息が、少しずつ熱を帯びていく。'),
+    oneTwo: L('{t}は{m}と{u}を並べて座らせ、順番に唇を重ねた。片方に口づけているあいだも、もう片方の手を握ったまま離さない。{m}と{u}の頬が、そろって赤く染まっていった。|' +
+      '{t}は{m}の首筋に口づけながら、空いた手で{u}の髪を撫でた。{m}が甘い声をもらすと、{u}も待ちきれずに{t}の背中にしがみつく。二人の伴侶の体温を、{t}は両腕で確かめた。'),
+    sandwich: L('{m}は{u}を抱き寄せて口づけ、その{m}の背中を、{t}が後ろからゆっくりと撫で下ろした。触れられるたびに{m}の口づけが乱れ、{u}がくすくすと笑う。三人の体が、少しずつ近づいていった。|' +
+      '{t}が{m}の耳を甘く噛むと、{m}はたまらず{u}の肩に額を押しつけた。{u}は{m}の髪を撫でながら、{t}と目を合わせて微笑んだ。真ん中の{m}を、二人がかりでとろかしていく。'),
+    show: L('{t}は{m}を抱き寄せ、深く口づけた。{u}は二人のすぐそばに座り、{m}の手をそっと握っている。{m}の指が、{u}の手のひらをきゅっと握り返した。|' +
+      '{t}と{m}が肌を重ねはじめると、{u}は{m}の頭をそっと自分の膝にのせた。{m}は{u}の手に頬をすり寄せ、{t}に身を委ねた。'),
+    ring: L('三人は向かい合って座り、順番に唇を重ねていった。{t}から{m}へ、{m}から{u}へ、{u}から{t}へ。輪になった口づけが、だんだん長くなっていった。')
+  };
+  /* 本体の三人の場面（HK.Trio3.quick）を、きっかけ→触れ合い→挿入→喘ぎ→山場→事後の順の段落に並べ直す。
+     繋がる文より前にある喘ぎ・繋がったあとを前提にした台詞は、繋がる文のあとへ。最中の段（新婚部屋の一段）は山場の前に */
+  var INS3 = /抱いたのは|満たし|沈め|沈みこ|沈み込|貫|挿(?:れ|入)|突き入|呑み込|呑みこ|繋が|埋め|押し入|迎え入れ|指を[^。]{0,10}(?:沈|差し入|入れ)|突かれ|揺さぶられ|突き上げ/;
+  var CLI3 = /果て|達し|昇りつめ|上り詰め|絶頂|崩れた|熱を(?:注|吐き出|放)|弾け/;
+  var POST3 = /形を|中が|奥|出る|白濁|イく|イっ|締め|動いて|腰|もっと|欲張り|集中/;
+  function order3(body, touch, mid) {
+    var t = String(body || '').replace(/\n\n+/g, ''), re = /[^。「」\uE3A0\uE3A1]{1,12}「[^」]*」(?:\uE3A0[^\uE3A1]*\uE3A1)?|[^。「」]+。/g, segs = [], m;
+    while ((m = re.exec(t))) segs.push(m[0]);
+    if (!segs.length || segs.join('').length < t.length * 0.9) return (touch ? touch + '\n\n' : '') + body + (mid ? '\n\n' + mid : '');
+    var ii = -1, ci = -1;
+    segs.forEach(function (x, i) { var n = x.replace(/「[^」]*」/g, ''); if (ii < 0 && INS3.test(n)) ii = i; if (ci < 0 && ii >= 0 && i > ii && CLI3.test(n)) ci = i; });
+    if (ii < 0) ii = 0;
+    var pre = [], moved = [], rest = [];
+    segs.forEach(function (x, i) {
+      if (i < ii) { var q = /「/.test(x), moan = /「\u2060/.test(x); if (q && (moan || POST3.test(x))) moved.push(x); else pre.push(x); }
+    });
+    var ins = [segs[ii]].concat(moved), during = segs.slice(ii + 1, ci < 0 ? segs.length : ci), peak = ci < 0 ? [] : segs.slice(ci);
+    var P = [];
+    if (touch || pre.length) P.push((touch || '') + pre.join(''));
+    P.push(ins.concat(during).join(''));
+    if (mid) P.push(mid);
+    if (peak.length) P.push(peak.join(''));
+    return P.filter(function (x) { return x; }).join('\n\n');
+  }
   function okPair(ctx) { return function (x, y) { return PR.sexOk(ctx, x, y); }; }
   /* 四人婚で一人が留守の夜（2026-11-04 利用者の回答「三人の夜があってもよい」）：残る三人の文。きっかけで「一人が留守だから三人で」が分かるように（{a}{b}{c}＝三人、{x}＝留守の人） */
   R3.LEAD4 = L('{x}が出張で家を空けた夜、寝室の布団は一つ分だけ広かった。{a}が明かりを落とすと、{b}と{c}は顔を見合わせた。いつもは四人の寝室に、今夜は三人。その分だけ、互いの体温が近かった。|' +
@@ -82,8 +118,12 @@
     else {
       var short = !!(LV && LV.short && LV.short(env, ctx.rng));
       /* 山場は本体の形ごとの文（受けの態度 9 種）に任せる。最中の段は新婚部屋の一段（形の組と同じ向き） */
-      var body = X3.quick(ctx, g, { sp: sp, plan: pl, env: env, ero: !!(LV && LV.ero && LV.ero(env)), short: short, mid: short ? '' : sub(pk((R3.MID[sp.p] || R3.MID.ring).filter(function (x) { return !q4 || !NOT4.test(x); }))) });
+      var mid3 = short ? '' : sub(pk((R3.MID[sp.p] || R3.MID.ring).filter(function (x) { return !q4 || !NOT4.test(x); })));
+      var body = X3.quick(ctx, g, { sp: sp, plan: pl, env: env, ero: !!(LV && LV.ero && LV.ero(env)), short: short, mid: '' });
       if (!body) return false;
+      var tch = env.lewdLen === 'short' ? '' : sub(pk(R3.TOUCH[sp.p] || R3.TOUCH.ring));
+      body = order3(body, tch, mid3);
+      if (env.lewdLen === 'short') body = body.replace(/\n\n+/g, '');
       text = body + '\n\n' + K.say(ctx, q4 ? R3.AFTER.filter(function (x) { return !/布団が足りない/.test(x); }) : R3.AFTER, a, bc[0], bc[1]);
       why = (X3.FORM_JA && X3.FORM_JA[sp.p] || '') + '：' + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: '真ん中の' + sp.m.name + 'を挟んで', ring: '輪になって', show: sp.t.name + 'と' + sp.m.name + '、' + sp.u.name + 'は見守る' }[sp.p];
     }

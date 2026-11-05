@@ -52,6 +52,7 @@
   R4.futari = function (ctx, S, day) {
     var f = F();
     if (HK.SAFE_ON || !f || S.sex >= S.lewdMax || day.noSex || day.r18x || day.futari || day.sick || day.dull) return false;
+    if (HK.ShinkonR18 && HK.ShinkonR18.paceOk && !HK.ShinkonR18.paceOk(ctx, S, day.d)) return false;
     if (SK().restNight && SK().restNight(ctx, day)) return false;
     var H = f.house(S);
     if (H.length < 3 || (S.futariN || 0) >= (ctx.env.lewdN === 'high' ? 2 : 1)) return false;
@@ -87,6 +88,31 @@
     '四人とも早く帰った夜だった。夕飯のあと、{a}が「＠{a}＠今夜は、みんな一緒にいたい｜今夜は、皆と一緒にいたい｜今夜は、皆さんと一緒にいたいです」と言うと、{b}が照れくさそうに笑い、{c}と{d}は顔を見合わせてうなずいた。|' +
     '休みの前の夜、寝室に布団を並べ終えたところで、{a}が{b}の手を取った。それを見ていた{c}が{d}の袖を引き、四人の距離が自然に縮まった。結婚してから、こういう夜は初めてだった。|' +
     '風呂上がりの{a}が寝室に戻ると、{b}と{c}と{d}が布団の上で待っていた。「＠{b}＠遅い｜遅いぞ｜遅いですよ」と{b}が言い、{a}は笑ってその輪の中に腰を下ろした。誰が言い出すでもなく、明かりが消えた。');
+  /* 四人の夜の長い版（2026-11-05 報告「四人婚の夜が『B→A、D→C』の 2 行だけ」）：組ごとに、入り方（前戯）・繋がる段・最中の一幕・山場・終わり方を
+     新婚部屋専用の段（shinkon-r18-more.js の HK.PairR18.addRoom）から組む。組が三つ以上（受け一人に攻め三人など）は繋がる段・山場・終わり方だけ。
+     体の組が形に合わない組（性器の指定など）は本体の二人の段のまま。最後は本体の締めの一文 */
+  function quadLong(ctx, r) {
+    var PR = HK.PairR18, TS = HK.ThickSex;
+    if (!PR || !PR.part || !r.pairs || !r.pairs.length) return;
+    var ps = String(r.e.text).split(/\n\n+/), endP = ps.length > r.pairs.length ? ps[ps.length - 1] : '';
+    var kinds = r.pairs.length >= 3 ? ['insert', 'peak', 'end'] : ['fore', 'insert', 'mid', 'peak', 'end'];
+    var out = [];
+    r.pairs.forEach(function (pr, i) {
+      var a = pr[0], b = pr[1], sh = PR.shape(a, b);
+      if (!PR.bodyFits(sh, a, b)) { if (ps[i]) out.push(ps[i]); return; }
+      var pk = function (l) { return l[Math.floor(ctx.rng() * l.length)]; }, used = [];
+      var segs = kinds.map(function (k) { var t = PR.part(ctx, 'set-b-shinkon', k, sh, a, b, used); used.push(t); return t; });
+      if (segs.some(function (x) { return !x; })) { if (ps[i]) out.push(ps[i]); return; }
+      if (HK.NovelMoan) HK.NovelMoan.top = a;
+      var mo = function (cl) { var m = TS && TS.moan ? String(TS.moan(pk, b, cl, ctx.rng)) : ''; return m ? '{b}「' + m.replace(/^「|」$/g, '') + '」' : ''; };
+      var body = segs.join('\n\n').replace(/\{m0\}|\{mm\}/g, function () { return mo(false); }).replace('{m}', mo(true)).replace(/\{m\}/g, '');
+      body = PR.flowFix(body, a, b, sh, '', { ctx: ctx });
+      out.push(PR.mk(ctx, body, a, b));
+    });
+    if (endP) out.push(endP);
+    r.e.text = out.join('\n\n');
+    if (typeof r.e.why === 'string') r.e.why = r.e.why.replace('四人の夜（軽く。', '四人の夜（組ごとに。');
+  }
   R4.quad = function (ctx, S, day, last) {
     var Q = HK.Quad, f = F();
     if (HK.SAFE_ON || !S.quad || !Q || !Q.ok || !Q.scene || !f) return false;
@@ -99,10 +125,11 @@
     if (!(ctx.rng() < 0.3 || (!S.quadSex && last))) return false;
     var o = S.spouses.slice().sort(function () { return ctx.rng() - 0.5; }), a = o[0];
     var lead = SK().fill(ctx, SK().pickT(ctx, R4.QLEAD, a, o[1]), a, o[1], { c: o[2].name, d: o[3].name });
-    var len = ctx.env.lewdLen === 'thick' ? 'long' : ctx.env.lewdLen === 'short' ? 'short' : ctx.rng() < 0.3 ? 'long' : 'short';
+    var len = ctx.env.lewdLen === 'thick' ? 'long' : ctx.env.lewdLen === 'short' ? 'short' : ctx.rng() < 0.7 ? 'long' : 'short';
     var r = Q.scene(ctx, ids, { len: len, lead: lead, why: '新婚部屋：', leadWhy: '四人の夜（新婚の四人・' + a.name + 'から）',
       fx: function () { for (var i = 0; i < 4; i++) for (var j = i + 1; j < 4; j++) ctx.mod2(o[i], o[j], { att: 3, aff: 2 }, { att: 3, aff: 2 }); } });
     if (!r) return false;
+    if (len === 'long' && r.e) quadLong(ctx, r);
     S.quadSex = (S.quadSex || 0) + 1;
     return true;
   };

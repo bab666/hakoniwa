@@ -130,7 +130,7 @@
     var rid = roomOf(ctx), rw = (form === 'long' || form === 'mid') && !o.nogen && !o.noRoom && bodyFits(sh, a, b) ? roomW(rid, sh, ero) : 0;
     if (rw > 0 && ctx.rng() < rw) {
       var cb = compose(ctx, S, env, a, b, sh, form, { ero: ero, lv: o.lv, entry: o.entry, jealTop: o.jealTop, leadB: o.leadB, open: o.open || (o.resume && MO().REOPEN ? pickOf(ctx, MO().REOPEN) : '') }, rid);
-      if (cb) { cb = flowFix(cb, a, b, sh, aft); if (PR0.trace) PR0.trace.push({ text: cb, a: a, b: b, sh: sh, after: aft, room: rid }); return { text: mk(ctx, cb + (aft ? '\n\n' + aft : ''), a, b), form: form, room: true }; }
+      if (cb) { var cb0 = cb; cb = flowFix(cb, a, b, sh, aft, { ctx: ctx }); if (PR0.trace) PR0.trace.push({ text: cb, raw: cb0, a: a, b: b, sh: sh, after: aft, room: rid }); return { text: mk(ctx, cb + (aft ? '\n\n' + aft : ''), a, b), form: form, room: true }; }
     }
     var openL = o.resume && MO().REOPEN ? MO().REOPEN : MO().OPEN || ['{a}は{b}を抱き寄せた。'];
     if (form === 'fade') body = pickOf(ctx, MO().FADE || FB.after);
@@ -138,8 +138,10 @@
       var st = HK.ThickSex.style(a), open = K ? K.mark(pickOf(ctx, openL)) : pickOf(ctx, openL);
       if (K) aft = K.mark(aft);
       var again = high && HK.ThickEro ? HK.ThickEro.again(ctx, pk, a, b, ero, false) + '\n\n' : '';
-      var rr = ero ? HK.ThickEro.scene({ S: ctx, pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: again + aft, jealous: o.jealTop, leadB: o.leadB })
-        : HK.ThickSex.scene({ pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: again + aft, ctx: ctx, jealous: o.jealTop, leadB: o.leadB });
+      /* 恋人・夫婦の二人は rel: 'lover'（本体の色の台詞・返事が「今夜だけ」を出さない。2026-11-05 報告「夫婦で今夜だけ」） */
+      var cpl = !!((ctx.pair && ctx.pair(a, b).couple) || (ctx.sk && (ctx.sk.wed || ctx.sk.love)) || o.couple), rel = cpl ? 'lover' : undefined;
+      var rr = ero ? HK.ThickEro.scene({ S: ctx, pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: again + aft, jealous: o.jealTop, leadB: o.leadB, rel: rel })
+        : HK.ThickSex.scene({ pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: again + aft, ctx: ctx, jealous: o.jealTop, leadB: o.leadB, rel: rel });
       return { text: ctx.t(rr.text, a, b), form: form };
     } else if (form === 'short' && ero && HK.ThickEro && HK.ThickEro.short) {
       body = HK.ThickEro.short({ S: ctx, pick: pk, a: a, b: b, open: '', again: high, after: '' }).text;
@@ -170,14 +172,33 @@
       /* 濃い：もう一度（短い版の一文は形を問わない書き方なので、女性どうしは段落の版にする） */
       if (high && HK.ThickEro) body += '\n\n' + HK.ThickEro.again(ctx, pk, a, b, ero && form === 'mid', form === 'short' && sh !== 'ff');
     }
-    body = flowFix(body, a, b, sh, aft);
+    body = flowFix(body, a, b, sh, aft, { ctx: ctx, short: form === 'short' });
     if (oneP) return { text: mk(ctx, (body + (aft ? '\n\n' + aft : '')).replace(/\n\n+/g, ''), a, b), form: form };
     return { text: mk(ctx, body + (aft ? '\n\n' + aft : ''), a, b), form: form };
   }
   /* 短い・中くらいの場面も本体の流れの管理（HK.SexFlow.fix：段階の逆戻り・体位の矛盾・二度出しを直す）に通す（2026-11-04 報告「挿入後に服を脱がせる」「入れる前に抜く」） */
-  function flowFix(body, a, b, sh, aft) {
+  /* opt（2026-11-05）：{ ctx, short }。流れの管理が山場の前に足す追い上げの段（本体の HK.SexFlowText.BUILD。3 部屋で同じ段落になる）は、
+     部屋の最中の一幕があればそれに置き換え、短い場面（short）では外す */
+  function flowFix(body, a, b, sh, aft, opt) {
     var F = HK.SexFlow; if (!F || !F.fix || !body) return body;
-    try { var r = F.fix(body, { a: a, b: b, mode: sh, after: aft || '' }); return r && typeof r.text === 'string' && r.text ? r.text : body; } catch (e) { return body; }
+    var t;
+    try { var r = F.fix(body, { a: a, b: b, mode: sh, after: aft || '' }); t = r && typeof r.text === 'string' && r.text ? r.text : body; } catch (e) { return body; }
+    if (!opt || t === body) return t;
+    var BU = ((HK.SexFlowText || {}).BUILD || {})[sh === 'ff' || sh === 'fm' ? sh : 'mf'] || [];
+    if (!BU.length) return t;
+    var nm = function (x) { return String(x).split('{a}').join(a.name).split('{b}').join(b.name); };
+    var ctx = opt.ctx, rid = ctx ? roomOf(ctx) : '', TS = HK.ThickSex;
+    /* 追い上げの段の頭の一文で見分ける（流れの管理が段落に喘ぎなどを足していても見つかるように） */
+    var heads = []; BU.forEach(function (x) { var h = String(x).split('。')[0]; if (h.length >= 10) heads.push(h, nm(h)); });
+    var isB = function (p) { return heads.some(function (h) { return p.indexOf(h) >= 0; }); };
+    return t.split('\n\n').map(function (p) {
+      if (!isB(p)) return p;
+      if (opt.short) return null;
+      var m = ctx && bodyFits(sh, a, b) ? part(ctx, rid, 'mid', sh, a, b) : '';
+      if (!m) return p;
+      var mo = TS && TS.moan ? String(TS.moan(function (l) { return pickOf(ctx, l); }, b, false, ctx.rng)) : '';
+      return m.replace(/\{mm\}/g, mo ? '{b}「' + mo.replace(/^「|」$/g, '') + '」' : '');
+    }).filter(function (p) { return p != null; }).join('\n\n');
   }
   /* ---------- 部屋専用の段（2026-11-05） ----------
      表の形：文字列（三つの組で使える文）、{ mf: [...], ff: [...], fm: [...], all: [...], when(ctx, a, b, sh) }、{ t, sh, when } の配列か、{ mf, ff, fm, all } の一つ。
@@ -276,11 +297,14 @@
       if (ero && HK.ThickEro && HK.ThickEro.fill) return String(HK.ThickEro.fill(ctx, cl ? '{mb2}' : '{mb1}', a, b));
       return T && T.moan ? String(T.moan(pk, b, cl, ctx.rng)) : '';
     };
+    /* 女性の受けに、舌打ち・命令の荒い声を出さない（2026-11-05 報告「強気の女性が『……ちっ。好きにしろよ』」） */
+    var fB = !!(HK.Pos && HK.Pos.isF && HK.Pos.isF(b)), ROUGH = /ちっ|しろよ|しやがれ|てめえ|んじゃねえ/;
+    var tryM = function (f) { var m = ''; for (var i = 0; i < 6; i++) { m = f(); if (!fB || !ROUGH.test(m)) return m; } return fB && ROUGH.test(m) ? '' : m; };
     var say0 = function () {
-      var m = ero && HK.ThickEro && HK.ThickEro.fill ? String(HK.ThickEro.fill(ctx, '{mb0}', a, b)) : T && T.moan0 ? String(T.moan0(pk, b, ctx.rng)) : '';
+      var m = tryM(function () { return ero && HK.ThickEro && HK.ThickEro.fill ? String(HK.ThickEro.fill(ctx, '{mb0}', a, b)) : T && T.moan0 ? String(T.moan0(pk, b, ctx.rng)) : ''; });
       return m ? '{b}「' + m.replace(/^「|」$/g, '') + '」' : '';
     };
-    var say = function (cl) { var m = moan(cl); return m ? '{b}「' + m.replace(/^「|」$/g, '') + '」' : ''; };
+    var say = function (cl) { var m = tryM(function () { return moan(cl); }); return m ? '{b}「' + m.replace(/^「|」$/g, '') + '」' : ''; };
     if (HK.NovelMoan) HK.NovelMoan.top = a;
     var long = form === 'long', thick = env.lewdLen === 'thick';
     var ps = [];
@@ -292,6 +316,8 @@
     var nMid = long && thick ? 3 : 2;
     for (var i = 0; i < nMid; i++) { var m0 = P1('mid'); if (m0) ps.push(m0); }
     var pkT = P1(ero ? 'peakE' : 'peak'); ps.push(pkT);
+    /* 濃いときのもう一度は、終わり方（眠る・体を拭く）の前に */
+    if (o.lv === 'high') { var ag = P1('again'); ps.push(ag || (HK.ThickEro ? HK.ThickEro.again(ctx, pk, a, b, ero, false) : '') || '{a}と{b}は、もう一度だけ互いを求め合った。'); }
     ps.push(P1('end'));
     if (ps.some(function (x) { return !x; })) return '';
     var body = ps.join('\n\n').replace(/\{mm\}/g, function () { return say(false); }).replace(/\{m0\}/g, function () { return say0(); });
@@ -303,7 +329,6 @@
     if (PL) PL.off = true;
     try { na = nightAdd(ctx, a, b, sh, ero, o.entry, { jealous: !!o.jealTop, leadB: !!o.leadB }); } finally { if (PL) PL.off = off0; }
     body = insert1(body, na);
-    if (o.lv === 'high') { var ag = P1('again'); body += '\n\n' + (ag || (HK.ThickEro ? HK.ThickEro.again(ctx, pk, a, b, ero, false) : '')); }
     return body;
   }
   PR0.addRoom = addRoom; PR0.addPart = addPart; PR0.roomOf = roomOf; PR0.lru = lru; PR0.part = part; PR0.roomW = roomW; PR0.compose = compose; PR0.bodyFits = bodyFits; PR0.count = count;

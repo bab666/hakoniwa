@@ -46,7 +46,9 @@
   function f(ctx) { return ctx.sk; }
   var SAD_RE = /不安|すれ違|気まず|もどかし|拗ね|寂し|胸がざわ|眉を寄せ|ため息/;
   var HOUSE_NG = /上の階|下の階|階下の|階上の|隣の部屋|両隣と上|隣室|エレベーター|オートロック|管理人室/, FLAT_NG = /縁側|庭の草|庭に出|庭先|二階の|一階の/;
-  var DAY_NG = /白み始め|寝息を立て|夜更け|真夜中|深夜|眠りにつ|布団に入っ|風呂から上がると|月明かり|夜空/, NIGHT_NG = /昼下がり|朝起きると|朝の光|午前中|昼過ぎ|日差しの中|ピクニック/;
+  var DAY_NG = /白み始め|寝息を立て|夜更け|真夜中|深夜|眠りにつ|布団に入っ|風呂から上がると|月明かり|夜空/, NIGHT_NG = /昼下がり|朝起きると|朝の光|午前中|昼過ぎ|日差しの中|ピクニック|休みの朝|出かける前に|今朝は早く|朝から鏡/;
+  /* 平屋（一階だけの家）：階段・二階の文を出さない（2026-11-05 報告「平屋で階段を下りて」）。一軒家・古民家は二階があってよい */
+  var FLAT1_NG = /階段|二階|上の階|下の階|階下|階上|二階建て/;
   function houseKind(h) { return /平屋|一軒家|古民家|隠れ家/.test(h) ? 'house' : /アパート|マンション|タワマン|ロフト/.test(h) ? 'flat' : ''; }
   /* 文の候補を、二人に合うものに絞る（恋愛・結婚・家事の担い手・関係） */
   function okText(ctx, x, a, b) {
@@ -59,6 +61,9 @@
     /* 住まいに合わない文（平屋・一軒家なのに上の階・隣の部屋・エレベーター。2026-11-04 報告） */
     if (S && S.homeK === 'house' && HOUSE_NG.test(x)) return false;
     if (S && S.homeK === 'flat' && FLAT_NG.test(x)) return false;
+    if (S && S.hira && FLAT1_NG.test(x)) return false;
+    /* 同居人・三人目がいる家：「誰もいない家」「二人きりの家」を出さない */
+    if (S && S.H && S.H.length >= 3 && /誰もいない家|二人きりの家|家には二人きり|二人だけの家/.test(x)) return false;
     /* 区切りに合わない時間帯の文（日中に夜明け・寝息、夜に昼下がり・朝の光。2026-11-04 報告） */
     if (S && S.part === 1 && DAY_NG.test(x)) return false;
     if (S && S.part === 2 && NIGHT_NG.test(x)) return false;
@@ -287,7 +292,7 @@
   Object.defineProperty(scen, 'actions', { get: function () { return RUN ? ACT0 : []; }, enumerable: true, configurable: true });
   Object.defineProperty(scen, 'goals', { get: function () { return RUN ? GOAL0 : []; }, enumerable: true, configurable: true });
   /* R18版：エッチの回数 */
-  if (!HK.SAFE_BUILD) scen.env.push({ id: 'lewdN', label: 'エッチの回数（R18）', type: 'select', def: 'mid', options: [{ v: 'low', label: '少なめ（1回）' }, { v: 'mid', label: 'ふつう（1〜2回）' }, { v: 'high', label: '多め（2〜3回。一度は長い場面）' }], desc: '一回の遊びの中で起きるエッチの場面の回数の目安（体の関係にしてよい二人だけ）。多めなら一度は段落を分けた長い場面になる（描写の長さが「数行で短く」のときを除く）' });
+  if (!HK.SAFE_BUILD) scen.env.push({ id: 'lewdN', label: 'エッチの回数（R18）', type: 'select', def: 'mid', options: [{ v: 'low', label: '少なめ（1回）' }, { v: 'mid', label: 'ふつう（1〜2回。14日なら2〜3回）' }, { v: 'high', label: '多め（2〜3回。14日なら4〜5回。一度は長い場面）' }], desc: '一回の遊びの中で起きるエッチの場面の回数の目安（体の関係にしてよい二人だけ）。日数が長いほど増え、前半だけに偏らないように日数に配る。多めなら一度は段落を分けた長い場面になる（描写の長さが「数行で短く」のときを除く）' });
 
   /* 新婚の二人（住人ごとの「立場」。おまかせは上から） */
   function partOf(input, i) { var p = input && input.perChar && input.perChar[i]; return p && p.pick ? p.pick.part : null; }
@@ -464,7 +469,7 @@
     /* 元○○（ライバル・不仲などで結婚した二人。shinkon-past.js）：元の関係のままでも、結婚した夫婦として始める（なれそめの言葉は使わない） */
     var X0 = exAB ? exAB(ctx, S, A, B).exr : null;
     if (X0 && keep && S.love) { S.rel = -1; S.wed = true; S.exLabel = EX_PAST[X0.k] || ''; }
-    S.wedAll = !!S.wed; S.homeK = houseKind(D.HOME[S.home] || '');
+    S.wedAll = !!S.wed; S.homeK = houseKind(D.HOME[S.home] || ''); S.hira = /平屋/.test(D.HOME[S.home] || '');
     /* 元の関係のまま、恋人でも夫婦でもない二人（擬似親子・友人・先輩後輩など）で恋愛にしてよい二人は、恋愛へ進む段（気持ちの変化・告白・暗黙の了解）が出るまで、
        恋愛・キス・夜の出来事を出さない（2026-11-04 報告「親代わりで、恋愛になる段がないまま 5 日目にキスと長いエッチ」） */
     if (!T3 && S.love && !S.wed && S.keep && !ri.loveTie && !(ri.t && ri.t.type === 'fear')) { S.love = false; S.loveLater = true; }
@@ -496,7 +501,7 @@
       var w = wishOf(ctx, c, pickOfChar(ctx, c, 'wish'));
       J.wish(ctx, c, w, D.WISH[w].init);
     });
-    if (!HK.SAFE_ON && HK.ShinkonR18 && HK.ShinkonR18.quota) S.lewdMax = HK.ShinkonR18.quota(ctx, env.lewdN) + (T3 ? 1 : 0) + (S.H.length >= 3 && !T3 ? 1 : 0);
+    if (!HK.SAFE_ON && HK.ShinkonR18 && HK.ShinkonR18.quota) S.lewdMax = HK.ShinkonR18.quota(ctx, env.lewdN, S.days) + (T3 ? 1 : 0) + (S.H.length >= 3 && !T3 ? 1 : 0);
     /* どの関係を夫婦に直したか（2026-11-03 利用者のメモ「元の関係 → 夫婦を細かく表示する」）：結末・結果の画面に出す */
     S.relFrom = relFromAll(ctx, S);
     /* 二人の紹介 */
@@ -862,6 +867,69 @@
       S.day.urgeBy = S.day.urgeBy || c;
     }
   }
+  /* ---------- 受け止め方の書き足し（2026-11-05 報告「ふんと鼻を鳴らして…拳を握っていた」「とそっけなく言った」が 10 本で 12 回）----------
+     新婚部屋の遊びだけ、共通の受け止め方（kit-react.js の HK.PairReact）に態度 9 種 × 3 種 × 2 本を足して 4 本ずつにし、一回の遊びで同じ文は 2 回まで、
+     同じ型の付け足し（鼻を鳴らす・そっけなく・拳を握る・口の端…）も 2 回までにする。相手が出張・日中で家にいないときは「おかえり」「迎えた」「玄関」の文を使わない。
+     {a}＝受け止める人、{b}＝相手。家事・料理の言い回しは書かない */
+  var RX = {
+    warm: {
+      proud: L('{a}は腕を組んだまま、{b}のしたことを横目で確かめた。文句をつけるところが一つも見つからなくて、{a}は小さく咳払いをした。|{a}は「……まあ、合格｜……まあ、合格だ｜……まあ、合格です」と言って、{b}の頭に手を置いた。照れ隠しの手つきは、思ったより優しかった。'),
+      stern: L('{a}は少し考えてから、{b}の目を見て「ありがとう｜感謝する｜ありがとうございます」と言い直した。一度で済ませないところが、{a}らしかった。|{a}は黙ってうなずき、{b}の肩を一度だけ軽く叩いた。それが{a}なりの、いちばんのお礼だった。'),
+      tsun: L('{a}は「こ、こんなの、別に普通だし｜こ、こんなもの、別に普通だ｜こ、こんなの、別に普通ですし」と言いながら、何度も{b}のほうを盗み見た。|{a}は返事をする代わりに、{b}の袖の端をつまんだ。顔はそっぽを向いたままだった。'),
+      gentle: L('{a}は「助かった。……あなたがいてくれてよかった｜助かった。……あなたがいてよかった｜助かりました。……あなたがいてくれてよかったです」と、目を細めた。|{a}は{b}の背中にそっと手を当てた。言葉より先に、その手のぬくもりが伝わった。'),
+      devoted: L('{a}は「ありがとう、ありがとう｜ありがとう。本当に、ありがとう｜ありがとうございます、本当に」と何度も繰り返した。{b}が笑い出すまで、やめなかった。|{a}は{b}の手を両手で包んで、しばらく離さなかった。こんな人と暮らしているのだと、何度でも確かめたかった。'),
+      cool: L('{a}は「……効率がいい｜……効率がいいな｜……効率がいいですね」とだけ言った。けれど、その日の{a}は、いつもより少しだけ{b}の近くに座っていた。|{a}は表情を変えずに、{b}の湯のみにお茶を注ぎ足した。{a}なりの、ありがとうの代わりだった。'),
+      free: L('{a}は「天才じゃん！｜天才だな！｜天才じゃないですか！」と{b}の背中をばしばし叩いた。{b}がむせても、{a}は笑うのをやめなかった。|{a}はその場でくるりと回って、{b}の両手を取った。うれしいことがあると、{a}はいつも体ごと喜んだ。'),
+      shy: L('{a}は「あ、あの……うれしい……｜あ、あの……うれしい｜あ、あの……うれしいです」と、消え入りそうな声で言った。耳まで真っ赤だった。|{a}はお礼を言おうとして、言葉が見つからずに、ぺこりと頭を下げた。顔を上げると、{b}がやさしく笑っていた。'),
+      polite: L('{a}は「お手数をおかけしました。……ありがとう｜手間をかけた。……ありがとう｜お手数をおかけしました。……ありがとうございます」と、丁寧に頭を下げた。|{a}は{b}に向き直り、きちんと礼を言った。他人行儀だと笑われても、{a}はこの言い方を変える気はなかった。')
+    },
+    oops: {
+      proud: L('{a}は大きなため息をついてから、「仕方ないな｜仕方がないな｜仕方ありませんね」と袖をまくった。ため息のわりに、手を貸す動きは早かった。|{a}は{b}の失敗を見て、一瞬だけ笑いをこらえた。それから何事もなかった顔で、{b}の隣に並んだ。'),
+      stern: L('{a}はまず{b}にけががないかを確かめた。それから落ち着いた声で、何から片づけるかを一つずつ決めていった。|{a}は「次からは、こうしよう｜次からは、こうしよう｜次からは、こうしましょう」と、責めずに段取りだけを伝えた。{b}は少しだけ肩の力を抜いた。'),
+      tsun: L('{a}は「ほんと、目が離せないんだから｜まったく、目が離せない｜本当に、目が離せないんですから」とぼやきながら、真っ先に駆け寄った。|{a}は呆れた顔を作ったが、{b}がしょんぼりすると、すぐに「……別に、怒ってないし｜……別に、怒っていない｜……別に、怒ってませんけど」と付け足した。'),
+      gentle: L('{a}は「大丈夫、大丈夫｜大丈夫だ｜大丈夫ですよ」と笑って、{b}の背中をさすった。失敗のことより、{b}がしょげていることのほうが気になった。|{a}は散らかったものを一緒に拾いながら、「こういう日もあるよね｜こういう日もある｜こういう日もありますよね」と言った。'),
+      devoted: L('{a}は自分のことのように慌てて、{b}のそばに飛んでいった。{b}が笑ってみせるまで、{a}はそばを離れなかった。|{a}は{b}の手を取って、どこも痛くないかを何度も確かめた。大げさだと言われても、{a}は気にしなかった。'),
+      cool: L('{a}は一歩引いたところから状況を眺め、必要なものだけを黙って{b}に手渡した。それで、だいたいのことは片づいた。|{a}は「……想定の範囲内｜……想定の範囲内だ｜……想定の範囲内です」と言った。本当は少し驚いていたことは、{b}には言わなかった。'),
+      free: L('{a}は「それ、絶対あとで笑い話になるやつ｜それは、絶対にあとで笑い話になる｜それ、絶対あとで笑い話になりますよ」と言って、{b}の肩に腕を回した。|{a}は{b}の失敗を見るなり吹き出したが、すぐに腕まくりをして手伝いに回った。笑いながらでも、手は止まらなかった。'),
+      shy: L('{a}はおろおろしながらも、{b}の隣にしゃがみこんだ。何を言えばいいか分からなくて、ただ黙って手を動かした。|{a}は「わ、私も、よくやる、から｜わ、私も、よくやる……から｜わ、私も、よくやりますから」と、小さな声で{b}を励ました。'),
+      polite: L('{a}は「慌てなくて大丈夫ですよ｜慌てなくていい｜慌てなくて大丈夫ですよ」と静かに言い、{b}が落ち着くのを見てから片づけにかかった。|{a}は{b}が落ち着くのを待ってから、「では、一緒に直しましょう｜では、一緒に直そう｜では、一緒に直しましょう」と申し出た。')
+    },
+    wait: {
+      proud: L('{a}は時計を見て、それから見ていないふりをした。待っているなんて、{b}に知られたら負けだと思っていた。|{a}は「別に、待ってたわけじゃない｜別に、待っていたわけではない｜別に、待っていたわけじゃありません」と独り言を言って、またスマートフォンを手に取った。'),
+      stern: L('{a}は{b}の分の予定を手帳に書き足しながら、何度も時計に目をやった。几帳面な字が、少しだけ乱れていた。|{a}は待つあいだに、明日の段取りをひととおり確かめた。それでも、時間はなかなか進まなかった。'),
+      tsun: L('{a}は「遅いんだから｜遅い｜遅いんですから」と、届かないメッセージを打っては消した。三回目には、ただのスタンプだけを送った。|{a}はクッションを抱えて、{b}の座る場所をじっと見ていた。空いたままの場所が、妙に広く見えた。'),
+      gentle: L('{a}は{b}の好きな飲み物を冷蔵庫に冷やしておいた。帰ってきたときに、すぐ渡せるように。|{a}は{b}から届いた短いメッセージを、何度も読み返した。それだけで、待つ時間が少しやわらかくなった。'),
+      devoted: L('{a}は{b}が疲れて帰ってくるのを想像して、部屋の灯りをやわらかい色に変えた。何度もそわそわと立ち上がっては、また座った。|{a}は眠気をこらえて、{b}の連絡を待った。先に寝ていて、と言われても、そうする気にはなれなかった。'),
+      cool: L('{a}は本を開いたが、同じページを三回読んでいた。気づいたところで、{a}は静かに本を閉じた。|{a}は待つあいだ、黙って部屋を片づけていた。{b}がいないと、家の中の音がやけに大きく聞こえた。'),
+      free: L('{a}は{b}に、どうでもいい写真を立て続けに送った。返事がなくても、送るのが楽しかった。|{a}は{b}の枕を勝手に抱きしめて、ソファで足をばたつかせた。待つのは、{a}がいちばん苦手なことだった。'),
+      shy: L('{a}は「早く会いたい」と打ちかけて、恥ずかしくなって「気をつけてね」に書き直した。送ってから、少しだけ後悔した。|{a}は{b}の上着をそっと羽織ってみた。袖が余るのを見て、一人で顔を赤くした。'),
+      polite: L('{a}は{b}に「無理はなさらないでください｜無理はしないでくれ｜無理はなさらないでください」とだけ送った。それ以上を書くのは、{b}の邪魔になる気がした。|{a}は{b}の分の座布団を整えて、背筋を伸ばして待っていた。待つ姿まで、どこか礼儀正しかった。')
+    }
+  };
+  var RX_KIND = [/鼻を鳴らし/, /そっけなく/, /拳を握/, /口の端/, /機嫌がよ/, /そっぽを向/, /真っ赤/, /耳まで/];
+  function L(t) { return t.split('|'); }
+  if (HK.PairReact && HK.wrap && !HK.PairReact.say._sk) HK.wrap(HK.PairReact, 'say', function (say0) {
+    var g = function (ctx, kind, who, other) {
+      var R0 = HK.PairReact;
+      if (!ctx || !ctx.input || ctx.input.scenId !== ID || !R0.T || !R0.T[kind]) return say0.apply(this, arguments);
+      var p = R0.per(who), odd = ctx.rng() < R0.pOdd(ctx), S = f(ctx), day = S && S.day;
+      var arr = ((odd ? R0.ODD[kind] : R0.T[kind]) || {})[p] || [];
+      if (!odd) arr = arr.concat((RX[kind] || {})[p] || []);
+      /* 相手が出張・日中で家にいないとき（待つ・離れている）：帰ってきた場面の文は使わない */
+      if (day && (day.apart || S.part !== 2 || kind === 'wait')) { var a2 = arr.filter(function (x) { return !/おかえり|迎えた|迎えに|玄関|帰ってきた/.test(x); }); if (a2.length) arr = a2; else if (odd) { odd = false; arr = (R0.T[kind][p] || []).concat((RX[kind] || {})[p] || []).filter(function (x) { return !/おかえり|迎えた|玄関/.test(x); }); } }
+      var U = ctx._rcUsed = ctx._rcUsed || {}, KC = ctx._rcKind = ctx._rcKind || {};
+      var kindOf = function (x) { for (var i = 0; i < RX_KIND.length; i++) if (RX_KIND[i].test(x)) return i; return -1; };
+      var okK = function (x) { var k = kindOf(x); return k < 0 || (KC[k] || 0) < 2; };
+      var a0 = arr.filter(function (x) { return !U[x] && okK(x); }), a1 = arr.filter(function (x) { return (U[x] || 0) < 2 && okK(x); });
+      var l = a0.length ? a0 : a1, t = l.length ? l[Math.floor(ctx.rng() * l.length)] : '';
+      if (!t) return { text: '', odd: false, per: p };
+      U[t] = (U[t] || 0) + 1;
+      var kk = kindOf(t); if (kk >= 0) KC[kk] = (KC[kk] || 0) + 1;
+      return { text: t, odd: odd, per: p };
+    };
+    g._sk = true;
+    return g;
+  });
   /* 性格による関係の動きの大きさ（受け止める人の態度で。健気・穏やか・内気はうれしいことに大きく動き、冷静・厳格は小さい） */
   var PK_WARM = { devoted: 3, gentle: 2.5, shy: 2.5, free: 2, tsun: 2, polite: 1.5, proud: 1.5, stern: 1, cool: 1 };
   function persK(c, kind) { var p = RC() ? RC().per(c) : 'gentle'; return kind === 'warm' ? PK_WARM[p] || 1.5 : 1; }
@@ -998,18 +1066,19 @@
     /* 寝る前の新婚らしい出来事（イエスノー枕。夜の場面の直前） */
     if (S.loveLater && !S.stepDone) loveStep(ctx, S, day2, d);
     if (HK.ShinkonWed) HK.ShinkonWed.run(ctx, S, day2, 'bed');
-    var sexed = false, lastN = d === S.days - 1;
+    /* 回数を日数に配る（その日までに出してよい回数を超えていれば、この夜は場面を出さない。HK.ShinkonR18.paceOk） */
+    var held = !HK.SAFE_ON && !!HK.ShinkonR18 && !!HK.ShinkonR18.paceOk && !HK.ShinkonR18.paceOk(ctx, S, d), sexed = false, lastN = d === S.days - 1;
     /* 四人婚の四人の夜（本体の HK.Quad。条件がそろったときだけ軽く。shinkon-r18-four.js） */
-    if (S.quad && !HK.SAFE_ON && HK.ShinkonR18Four) sexed = HK.ShinkonR18Four.quad(ctx, S, day2, lastN);
+    if (!held && S.quad && !HK.SAFE_ON && HK.ShinkonR18Four) sexed = HK.ShinkonR18Four.quad(ctx, S, day2, lastN);
     /* 四人婚で一人が留守の夜（2026-11-04 利用者の回答「三人の夜があってもよい」）：残る三人が三人婚と同じ条件（HK.Pos.trioPlan で組が二つ以上・形が作れる）なら、半々で三人の夜（HK.Trio3 の形）。満たさなければ二人の夜 */
-    if (!sexed && S.quad && !HK.SAFE_ON && HK.ShinkonR18Trio && S.sex < S.lewdMax && !restNight(ctx, day2) && !day2.r18x && !day2.noSex && !day2.futari) {
+    if (!sexed && !held && S.quad && !HK.SAFE_ON && HK.ShinkonR18Trio && S.sex < S.lewdMax && !restNight(ctx, day2) && !day2.r18x && !day2.noSex && !day2.futari) {
       var away4 = S.spouses.filter(function (c) { return !cHome(S, day2, c); });
       if (away4.length === 1 && ctx.rng() < 0.5) sexed = HK.ShinkonR18Trio.night(ctx, S, day2, lastN, { g: S.spouses.filter(function (c) { return c !== away4[0]; }), away: away4[0] });
     }
     /* 三人婚の三人の夜（shinkon-r18-trio.js）：三人とも家にいて、体の関係にしてよい組が二つ以上（HK.Pos.trioPlan） */
-    if (!sexed && S.trio && !HK.SAFE_ON && HK.ShinkonR18Trio && S.sex < S.lewdMax && !restNight(ctx, day2) && !day2.r18x && !day2.noSex && cHome(S, day2, S.C) &&
+    if (!sexed && !held && S.trio && !HK.SAFE_ON && HK.ShinkonR18Trio && S.sex < S.lewdMax && !restNight(ctx, day2) && !day2.r18x && !day2.noSex && cHome(S, day2, S.C) &&
       (ctx.rng() < 0.4 || (!S.trioSex && (lastN || S.lewdMax - S.sex >= S.days - d)))) sexed = HK.ShinkonR18Trio.night(ctx, S, day2, lastN);
-    if (!sexed && !HK.SAFE_ON && HK.ShinkonR18 && S.sex < S.lewdMax && !restNight(ctx, day2) && !day2.futari) {
+    if (!sexed && !held && !HK.SAFE_ON && HK.ShinkonR18 && S.sex < S.lewdMax && !restNight(ctx, day2) && !day2.futari) {
       /* 三人婚・四人婚でその日の二人が恋の相手どうしでない夜は、家にいる恋の相手の組の夜（攻めどうし・受けどうしの夜は出さない） */
       var NP = [A, B], MU2 = HK.ShinkonMulti;
       if ((S.trio || S.quad) && MU2 && S.lp && !S.love) NP = MU2.lovePair(ctx, S, day2, function (c) { return cHome(S, day2, c); });
