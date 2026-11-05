@@ -358,6 +358,8 @@ R18版だけの無料アップデートの箱庭。既存の「常識改変」�
 5. 二人の夜（迎えのあとの部屋の夜。車内ではない長い場面）で、共通の型「押さえつけ」の段から「手首をシーツに縫いとめ」が二度出る（sex-flow の (c) wristPin）。比べる相手（a575649e）でも train 400 回で 1 件あり、電車の側では直していない（play-text2-r18.js の型の文の側で、同じ動きを避ける必要がある）。
 6. pos-audit の V2 が「（モブ）は（攻めの住人）の指と舌に代わる代わる責められ」（play-text2-r18.js）を、攻めの住人が責められる文と読む。電車では攻めを主語にした書き方に置き換えている（`CAR_SUB`）。共通の文の書き方か、V2 の「の指と舌に」の除外のどちらかがあるとよい。
 
+→ 1〜6 は本体で直した（2026-11-05、work/body-followups。sex-flow-design.md の 8・9 章）。電車は車内の場面に `opt.spot='car'` を渡し、`CAR_NG`・`CAR_SUB`・`mobNameFix` は本体（`HK.SexSpot`・`HK.SexFlow.mobName`）に移した。
+
 ### 14-5. 点検（2026-11-05）
 
 - check.js（比べる相手 HEAD a575649e）：すべて合格（回した 12）。構文・r18 の印・2000 行・両ビルドの同名ファイル・base-lint（比べる相手に無かった問題 0）・build（中核の br 570KB・目安の合計 703KB、増減なし）・butt-word 0・kin-label 0・meta-tone 0・catalog-check 0・tone-feel（whiteroom・locker・omega・train の 49 口調）すべて ◯・audit-all ＋ sexgate・feud・group・relcons・pair・sexflow すべて 0 件（R18版 17772 回・全年齢モード 4864 回・全年齢版 5852 回）。

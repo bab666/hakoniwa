@@ -299,10 +299,9 @@
     var gb = a.mob && b && !b.mob && b.noGive;
     var MO = HK.SexFlow && HK.SexFlow.MOTION, usedM = {};
     /* 攻めが受けの手で先に果てる駆け引きの文（「{a}は不意を突かれて先にイった」）は、攻めを受ける側に読ませるので、この部屋では使わない */
-    /* 車内の場面では、寝床・膝の上・うつ伏せ・目隠しなど、立ったままの満員車両に合わない候補を外す（残りが無ければ元の表のまま。報告 1） */
+    /* 車内の場面では、寝床・膝の上・うつ伏せ・目隠しなど、立ったままの満員車両に合わない候補は、本体の場所の口（opt.spot='car'。sex-spot-r18.js の HK.SexSpot）が外す（報告 1） */
     var pick = function (l) {
       var l2 = noGuide(gb ? noGuide(l, GUIDE_RE_B) : l, TOP_FIRST_RE);
-      if (o.car && l2 && l2.length > 1) { var f = l2.filter(function (x) { return typeof x !== 'string' || !CAR_NG.test(x); }); if (f.length) l2 = f; }
       /* 甘めの性格の乗客には、駆け引きの台詞（先に音を上げたほうが負け・貸し一つ など）を言わせない（報告 2） */
       if (o.flavor === 'sweet' && l2 && l2.length > 1) { var g = l2.filter(function (x) { return typeof x !== 'string' || !DEAL_RE.test(x); }); if (g.length) l2 = g; }
       /* 候補を絞ったぶん、同じ動き（手首を押さえる・髪を掴む など。HK.SexFlow.MOTION）が一つの場面で二度選ばれないように、使った動きの候補を外す */
@@ -313,6 +312,7 @@
     };
     S._trainScene = o.car ? 'car' : '';
     var opt = { S: S, ctx: S, pick: pick, rng: S.rng, a: a, b: b, style: HK.ThickSex.style(a), open: o.open, after: o.after, again: false };
+    if (o.car) opt.spot = 'car';
     /* 乗客の性格に合う夜の色（疲れた・おどおど＝甘め、無言・事務的＝ドライ、からかう・強気＝駆け引き。報告 2） */
     if (o.flavor) opt.flavor = o.flavor;
     var r, kept = [];
@@ -329,24 +329,14 @@
     if (S.lv === 'high' && HK.ThickEro && HK.ThickEro.again) { var ag = HK.ThickEro.again(S, pick, a, b, !!S.ero, false); if (ag) t += '\n\n' + ag; }
     var an = a.mob ? a.short || a.name : a.name, bn = b.mob ? b.short || b.name : b.name;
     t = t.replace(/\{a\}/g, an).replace(/\{b\}/g, bn);
+    /* 場面の外で足した段（もう一度 HK.ThickEro.again）にも、本体の場所の直し・モブの呼びかけの直しを当てる */
     if (o.car) t = carFix(t, o.flavor === 'sweet');
-    if (a.mob !== b.mob) t = mobNameFix(t, a.mob ? b.name : a.name);
+    if (!a.mob !== !b.mob && HK.SexFlow && HK.SexFlow.mobName) t = HK.SexFlow.mobName(t, a.mob ? b.name : a.name);
     return t;
   }
   /* ---------- 車内の場面の直し（報告 1・8） ----------
-     候補を外しても残った寝室の言い回しを、立ったままの車内の言い方に置き換え、置き換えられない文は落とす。目隠しのあとの「見る」文も落とす */
-  var CAR_NG = /寝床|ベッド|シーツ|布団|毛布|うつ伏せ|膝の上|膝に跨|膝へ跨|跨が|跨っ|跨り|腰の上|仰向け|枕|横たえ|押し倒|寝台|ソファ|四つん這い|組み敷|目隠し/;
-  var CAR_SUB = [
-    [/毛布を引き寄せて顔を隠した/g, '相手の胸に顔を埋めて隠した'], [/シーツを握りしめ/g, '手すりを握りしめ'], [/シーツを掴/g, '手すりを掴'], [/指がシーツを/g, '指が手すりを'],
-    [/爪先がシーツを掻き/g, '爪先が床を掻き'], [/シーツの擦れる音/g, '服の擦れる音'], [/握っていたシーツ/g, '握っていた手すり'], [/寝床の端を掴/g, '扉の手すりを掴'],
-    [/寝床から浮/g, '扉から浮'], [/背中がシーツから浮/g, '背中が扉から浮'], [/シーツに顔を埋めて/g, '扉に額を押し当てて'],
-    [/をうつ伏せに返し、/g, 'を扉のほうへ向かせ、'], [/をうつ伏せにさせ、/g, 'に扉へ手をつかせ、'], [/をうつ伏せにして、/g, 'を扉のほうへ向かせて、'],
-    [/腰だけを引き上げさせた/g, '腰を突き出させた'], [/腰だけを引き上げて/g, '腰を突き出させて'],
-    /* 共通の文の「（相手）は（攻め）の指と舌に…責められ」を、攻めを主語にした書き方に（攻めの住人が受ける文に読めないように） */
-    [/([^\s。」、「]+)は([^\s。」、「]+?)の指と舌に代わる代わる責められ、/g, '$2は指と舌で$1を代わる代わる責め、$1は'],
-    [/を抱き起こして膝の上に座らせ、/g, 'を抱え上げ、'], [/を膝の上に抱き上げ、/g, 'を抱え上げ、'], [/膝の上の/g, '抱え上げた'], [/の上から降りた/g, 'から体を離した']
-  ];
-  var LOOK_RE = /顔を見せ|目を見|見つめ|潤んだ目|目が合|見上げ|見下ろ|こっちを見|私を見/;
+     場所に合わない言い回しの置き換え・落とす文は本体（HK.SexSpot.fix(t, 'car')）。目隠しのあとの「見る」文は流れの管理の (j) が直す。
+     ここでは、甘めの性格の乗客の駆け引きの文（音を上げ・貸し一つ など）だけを落とす */
   function sents(p) {
     var out = [], d = 0, st = 0;
     for (var i = 0; i < p.length; i++) { var c = p.charAt(i); if (c === '「') d++; else if (c === '」') d = Math.max(0, d - 1); else if (!d && (c === '。' || c === '！' || c === '？')) { var e = i + 1; while (p.charAt(e) === '」') e++; out.push(p.slice(st, e)); st = e; i = e - 1; } }
@@ -355,29 +345,9 @@
   }
   var DEAL_RE = /音を上げ|貸し一つ|主導権|強引なほど|値踏み|負けを認め|勝ち誇|取引/;
   function carFix(t, sweet) {
-    CAR_SUB.forEach(function (x) { t = t.replace(x[0], x[1]); });
-    var blind = false;
-    return t.split('\n\n').map(function (p) {
-      var ss = sents(p).filter(function (x) {
-        var nar = x.replace(/「[^」]*」/g, '');
-        if (/目隠し/.test(nar)) { blind = true; return false; }
-        if (CAR_NG.test(nar) || /毛布|ベッド|布団|シーツ|枕|寝床/.test(x)) return false;
-        if (sweet && DEAL_RE.test(x)) return false;
-        if (blind && LOOK_RE.test(x)) return false;
-        return true;
-      });
-      return ss.join('');
-    }).filter(function (p) { return /\S/.test(p); }).join('\n\n');
-  }
-  /* 見知らぬ乗客は住人の名前を知らない（報告 3）：乗客の台詞の中の住人の名前は二人称に、乗客が「名前を呼ぶ」文は囁く文にする */
-  function mobNameFix(t, rn) {
-    if (!rn) return t;
-    var esc = rn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), self = new RegExp('^[\\s　]*' + esc + '(?:$|[はがも])');
-    t = t.replace(/([^。」\n]*)「([^」]*)」/g, function (all, pre, q) {
-      if (q.indexOf(rn) < 0 || self.test(pre)) return all;
-      return pre + '「' + q.replace(new RegExp(esc + '([、,…]*)', 'g'), function (w, pun, i) { return i === 0 ? '' : 'あなた' + pun; }) + '」';
-    });
-    return t.replace(/名前を呼ぼうとして/g, '何か言おうとして').replace(/私の名前を[、]?呼んで/g, 'もっと声を聞かせて').replace(/名前で呼んで/g, '声を聞かせて').replace(/名前をひとつ呼んだ/g, '短く囁いた').replace(/名前をもう一度呼んだ/g, 'もう一度囁いた').replace(/名前を呼んだ/g, '囁いた').replace(/名前を呼ばれ/g, '囁かれ').replace(/名前を呼ぶ/g, '囁く').replace(/名前を呼び/g, '囁き');
+    if (HK.SexSpot) t = HK.SexSpot.fix(t, 'car');
+    if (!sweet) return t;
+    return t.split('\n\n').map(function (p) { return sents(p).filter(function (x) { return !DEAL_RE.test(x); }).join(''); }).filter(function (p) { return /\S/.test(p); }).join('\n\n');
   }
   /* きっかけの段（エッチの場面の直前に、別の段で） */
   function lead(S, actors, text, why) {
@@ -1018,7 +988,7 @@
       var an = A.mob ? A.short : A.name, bn = B.mob ? B.short : B.name;
       text = pk(S, X.MID[mode]).replace(/\{a\}/g, an).replace(/\{b\}/g, bn).replace('{mb}', mb || '……っ');
       text += '\n\n' + fm(pk(S, X.CROWD), V) + fm(rx(S, (top ? X.PEAK_A : X.PEAK_B)[ps(p)]), V);
-      text = carFix(mobNameFix(text, p.name));
+      text = carFix(HK.SexFlow && HK.SexFlow.mobName ? HK.SexFlow.mobName(text, p.name) : text);
     }
     else {
       text = longScene(S, A, B, { car: true, flavor: fl, open: pk(S, X.OPEN[mode]), after: pk(S, X.SC_AFTER2).replace(/\{b\}/g, '{b}') });

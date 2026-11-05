@@ -197,20 +197,30 @@
     if (ok) return;
     if (X.V10.length < 2000) X.V10.push({ mk: key, scen: ctx.scen || '', names: ctx.here.map(function (c) { return c.name.split(MARK).join(''); }), text: String(text).split(MARK).join('') });
   }
+  /* 語のすぐあとに同じ語が「の〇〇」で続く（「{胸}の膨らみ」で {胸}＝膨らみ → 「膨らみの膨らみ」）なら、続かない語にする（2026-11-05。電車の報告の申し送り）。
+     同じ印の語のうち、直後と重ならないもの（基本の列 nb を先に）。無ければ印の名前（胸） */
+  function noDup(key, w, next) {
+    if (!w || !next || next.charAt(0) !== 'の') return w;
+    var tail = function (x) { var m = /[ぁ-んァ-ヶー一-龠々]{2,}$/.exec(x); return m ? m[0] : x; };
+    var dup = function (x) { return next.indexOf('の' + x) === 0 || next.indexOf('の' + tail(x)) === 0; };
+    if (!dup(w)) return w;
+    var T0 = TABLE[key] || {}, cand = [].concat(T0.nb || [], T0.ns || [], T0.nd || []).filter(function (x) { return x && !dup(x); });
+    return cand[0] || (dup(key) ? w : key);
+  }
   /* 一続きの地の文を、文ごとに置き換える */
   function narrSeg(seg, ctx, seed) {
     return seg.split(/(?<=[。！？\n])/).map(function (sent) {
       if (sent.indexOf('{') < 0) return sent;
       ctx.memo = {};
       return sent.replace(RE, function (m, key, off) {
-        var owner = ctx.people.length ? ownerOf(sent, off, ctx.people) : null;
+        var owner = ctx.people.length ? ownerOf(sent, off, ctx.people) : null, nx = sent.slice(off + m.length, off + m.length + 8);
         /* 「名前の」がなければ、文と場から持ち主を推し量る（点検の direct では推し量らない） */
         if (!owner && X.MODE !== 'direct' && ctx.people.length) {
           var g = guessOwner(sent, off, key, ctx);
           if (g && g.one) owner = g.one;
-          else if (g && g.col) return pick(key, g.col, ctx, seed + sent.length + '|' + off, femButt(key, null, ctx));
+          else if (g && g.col) return noDup(key, pick(key, g.col, ctx, seed + sent.length + '|' + off, femButt(key, null, ctx)), nx);
         }
-        return wordFor(key, ctx, null, owner, seed + sent.length + '|' + off, false);
+        return noDup(key, wordFor(key, ctx, null, owner, seed + sent.length + '|' + off, false), nx);
       });
     }).join('');
   }
@@ -272,7 +282,7 @@
           if (buf.indexOf('{') >= 0) {
             var who = speakerOf(text, qs, ctx.people) || segWho(text, qs, ctx), memo0 = ctx.memo;
             ctx.memo = {};
-            buf = buf.replace(RE, function (m, key, off) { return wordFor(key, ctx, who, X.MODE === 'direct' ? null : quoteOwner(buf, off, key, who, ctx), seed + '|q' + qs + '|' + off, true); });
+            buf = buf.replace(RE, function (m, key, off) { return noDup(key, wordFor(key, ctx, who, X.MODE === 'direct' ? null : quoteOwner(buf, off, key, who, ctx), seed + '|q' + qs + '|' + off, true), buf.slice(off + m.length, off + m.length + 8)); });
             ctx.memo = memo0;
           }
           out += buf; buf = '';

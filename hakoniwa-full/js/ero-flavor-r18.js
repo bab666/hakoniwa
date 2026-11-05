@@ -290,6 +290,8 @@
 
   /* ---------- 色の文 ---------- */
   function freshPick(S, arr) { var r = rngOf(S), base = function (l) { return l[Math.floor(r() * l.length)]; }; return HK.Ero && HK.Ero.fresh && S ? HK.Ero.fresh(S, arr, base) : base(arr); }
+  var ONLY_TONIGHT = /今夜だけ|一晩だけ|今夜限り/;
+  F.ONLY_TONIGHT = ONLY_TONIGHT;
   /* 攻めの一言（「…」だけ。言わないときは ''） */
   F.line = function (S, top, bot, stage, fl, opt) {
     var D = HK.EROFLAVOR; if (!D || (fl !== 'dry' && fl !== 'deal')) return '';
@@ -299,6 +301,8 @@
     if (RL && (rk.rel === 'master' || rk.rel === 'boss') && rk.dir && rk.dir !== (rk.top === nm(top) ? 'a' : 'b')) RL = null;
     var rel = RL && RL[st] ? RL[st] : null, r = rngOf(S);
     var pool = rel && r() < 0.5 ? rel : base.length ? base : rel || [];
+    /* 恋人・夫婦の夜には「今夜だけ」の台詞を出さない（勢い・体だけ・一夜の夜だけ。2026-11-05。同居生活の報告の申し送り） */
+    if (/^(?:lover|pine)$/.test(rk.rel) || (opt && /^(?:lover|first)$/.test(opt.rel || '') && rk.rel !== 'one')) { var lo = pool.filter(function (l) { return !ONLY_TONIGHT.test(l); }); pool = lo.length ? lo : base.filter(function (l) { return !ONLY_TONIGHT.test(l); }); }
     if (HK.NoGen && HK.NoGen.on && HK.NoGen.on(top, bot)) { var ng = pool.filter(function (l) { return !NOGEN_NG.test(l); }); pool = ng.length ? ng : pool; }
     return pool.length ? freshPick(S, pool) : '';
   };

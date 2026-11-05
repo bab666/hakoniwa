@@ -141,7 +141,10 @@ const JUDGE = function (HK, opt) {
           pairs[pk] = 1;
           if (prevPairs[pk]) out.consec++;
           /* 名前を除いた残り */
-          const at = m.index + m[1].length, rest = (body.slice(0, at) + body.slice(at + m[0].length - m[1].length)).replace(/^[…‥、。！？!?\s　]+/, '');
+          /* 名前が二度出る台詞（「はは、ミナト、ミナト……」）も、呼びかけの名前は全部除いて数える（2026-11-05。今までは一つ目だけ除いていた） */
+          let rest = body;
+          names.forEach((nm, t2) => { if (t2 !== w) rest = rest.replace(new RegExp(reOf(w, t2).source, 'g'), (all, p0) => p0); });
+          rest = rest.replace(/^[…‥、。！？!?\s　]+/, '');
           const restLen = rest.replace(/[…‥、。！？!?っッ〜ー～♡\s　]/g, '').length;
           /* 名前だけの呼びかけ（「……ミナト」「ミナト！」）と重い場面は数えない */
           if (heavy || restLen === 0) { /* ここぞ */ }

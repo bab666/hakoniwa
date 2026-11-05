@@ -255,7 +255,8 @@
     blOn: /目隠し(?:を|で)?[^。]{0,8}(?:し|させ|され|巻|結|つけ|付け|当て|覆)|(?:布|ネクタイ|タオル|手のひら|リボン)で[^。]{0,8}目(?:を|元を)?(?:覆|塞)/,
     blOff: /目隠しを?[^。]{0,8}(?:外|取|解|ずら|ほど|剥)/,
     look: /\{b\}[はが][^。「]{0,30}(?:見つめ|見上げ|目を合わせ|見返|睨|見下ろ|見入|視線を(?:合わせ|向け|上げ)|目で追|見て(?:い|しま))/,
-    lookLine: /(?:こっち|こちら|私|前)を?見(?:ろ|て|な|よ|なさい|るんだ)|目を(?:開け|逸らす|見て|閉じるな)|見つめ(?:て|ろ)/,
+    /* 2026-11-05：「目を見て」「顔を見せて」「見つめて」も（電車の報告の申し送り。目隠しのあとの見る台詞） */
+    lookLine: /(?:こっち|こちら|私|前)を?見(?:ろ|て|な|よ|なさい|るんだ)|目を(?:開け|逸らす|見て|見ろ|閉じるな)|目、見て|見つめ(?:て|ろ|返して)|顔(?:を|、)?(?:見せ|上げ|よく見せ)(?:て|ろ|な|なさい)|顔(?:を|、)?隠す(?:な|んじゃない)/,
     rearFace: /(?:顔|目|瞳)を[^。]{0,6}(?:じっと)?(?:見つめ|覗き込|のぞき込|見下ろ|のぞ)|見つめ合|目を合わせ|視線を合わせ|視線が絡|額を(?:つけ|合わせ|くっつけ|押し当て|寄せ)|額と額|額をこつん|鼻先を(?:すり|擦|寄せ)|まぶたに|唇を重ね/,
     rearOk: /振り向|振り返|肩越し|鏡|横顔|首をひね|後ろを向かせ(?:たまま)?顔|体を返|向き合|仰向け|向かい合|(?:シーツ|枕|敷布|布団|壁|腕)に額/,
     move: /運(?:ん|び|ぶ|ば)|連れ(?:て|込|出)|移(?:っ|し|動|ろ|る)|向か(?:っ|い|う)|抱き上げ|抱え上げ|抱えて|もつれ(?:る|込)|(?:へ|まで)[^。]{0,6}(?:行|戻|導|誘)|倒れ込|場所を変え|起き上が|降ろ|下ろ|立たせ|立ち上が|引っ張|手を引|押し倒|押しつけ|押し付け|座らせ|寝かせ|横たえ|押し込|引き倒|追い込|崩れ落ち|たどり着|から上が|戻っ|降り/,
@@ -317,7 +318,7 @@
         else if (ST2.blOn.test(n)) st.blind = true;
         else if (st.blind) {
           if (ST2.look.test(n)) add({ k: 'j', i: i, s: s, why: '目隠し中に受けが見る' });
-          ls.forEach(function (l) { if (l.who === 'a' && ST2.lookLine.test(l.s)) add({ k: 'j', i: i, s: s, line: l, why: '目隠し中に「' + l.s + '」' }); });
+          ls.forEach(function (l) { if (l.who && ST2.lookLine.test(l.s)) add({ k: 'j', i: i, s: s, line: l, why: '目隠し中に「' + l.s + '」' }); });
         }
         /* (k) 後ろからの体位のまま、顔を合わせる */
         if (rearBefore && ST2.rearFace.test(n) && !ST2.rearOk.test(n)) add({ k: 'k', i: i, s: s, why: '後ろからの体位のまま「' + ST2.rearFace.exec(n)[0] + '」' });
@@ -470,6 +471,7 @@
   /* 一回の遊び（シミュレーション）のあいだ、使った文を覚えて避ける（F.memo.used。全部使ったら、いちばん前に使ったものから戻す） */
   function pickFrom(R, arr, used) {
     if (!arr || !arr.length) return '';
+    if (HK.SexSpot && HK.SexSpot.cur) arr = HK.SexSpot.filter(arr, HK.SexSpot.cur);
     var M = F.memo || (F.memo = {}), U = M.used || (M.used = {}), best = Infinity, sub = [];
     M.usedN = M.usedN || 0;
     arr.forEach(function (x) { var v = used[x] ? 1e9 : U[x] == null ? -1 : U[x]; if (v < best) { best = v; sub = [x]; } else if (v === best) sub.push(x); });
@@ -589,6 +591,7 @@
       if (all.indexOf(normNames(t, S.a, S.b)) >= 0 || all.indexOf(t) >= 0) return false;
       var n = narrOf(t), q = placeOf(n);
       if (o.place && q.some(function (z) { return z.k !== o.place; })) return false;
+      if (HK.SexSpot && HK.SexSpot.cur && !HK.SexSpot.fitsSub(t, HK.SexSpot.cur)) return false;
       if (o.blind && (ST2.look.test(n) || /見上げ|見つめ|睨|目を合わせ|見下ろ/.test(n))) return false;
       return true;
     });
@@ -964,10 +967,47 @@
   /* ---------- 組み立ての包み ---------- */
   function modeOf(r, a, b) { if (r && /^(mf|ff|fm)$/.test(r.mode)) return r.mode; var P = HK.Pos, fem = P && P.isF; return fem && fem(a) && fem(b) ? 'ff' : fem && fem(a) ? 'fm' : 'mf'; }
   function thickOf(opt) { var S = opt.ctx || opt.S, env = S && (S.env || (S.S && S.S.env)); return !!(env && env.lewdLen === 'thick'); }
+  /* ---------- 相手がモブの場面の呼びかけ（2026-11-05。電車の報告 3 の直しを本体へ） ----------
+     モブ（HK.Mob で作った人・箱庭の乗客や客。c.mob）は住人の名前を知らない。共通の台詞は相手を {a}／{b} の名前で呼ぶので、
+     住人が話し手でない台詞の中の住人の名前（印 tok と名前 rn）は、話し手の二人称（あなた。口調の辞書が言い換える）に、台詞の頭の呼びかけ（「ミナト、……」）は外す。
+     地の文の「名前を呼んだ」は「囁いた」に（モブの名前も住人は知らない）。住人が話し手の台詞（「＠住人＠」・住人が主語の文の台詞・「{b}「…」」）は変えない */
+  function escR(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  F.mobName = function (t, rn, tok) {
+    if (!t || !rn) return t;
+    var keys = [tok, rn].filter(Boolean), kre = keys.map(escR).join('|');
+    var self = new RegExp('(?:^|[。」\\n])[\\s　]*(?:' + kre + ')(?:$|[はがも、]|「$)'), selfQ = new RegExp('^＠(?:' + kre + ')＠');
+    var inQ = new RegExp('(' + kre + ')(?:さん|くん|ちゃん|様)?([、,…‥]*)', 'g');
+    t = String(t).replace(/([^。」\n]*)「([^」]*)」/g, function (all, pre, q) {
+      if (!keys.some(function (k) { return q.indexOf(k) >= 0; })) return all;
+      if (selfQ.test(q) || self.test(pre) || new RegExp('(?:' + kre + ')$').test(pre)) return all;
+      var mk = /^＠[^＠]*＠/.exec(q), head = mk ? mk[0] : '', body = q.slice(head.length);
+      body = body.replace(inQ, function (w, nm, pun, i) { return i === 0 || /^[…‥\s　]*$/.test(body.slice(0, i)) ? '' : 'あなた' + pun; });
+      return pre + '「' + head + body + '」';
+    });
+    return t.replace(/名前を呼ぼうとして/g, '何か言おうとして').replace(/私の名前を[、]?呼んで/g, 'もっと声を聞かせて').replace(/名前で呼んで/g, '声を聞かせて').replace(/名前をひとつ呼んだ/g, '短く囁いた').replace(/名前をもう一度呼んだ/g, 'もう一度囁いた').replace(/名前を呼んだ/g, '囁いた').replace(/名前を呼ばれ/g, '囁かれ').replace(/名前を呼ぶ/g, '囁く').replace(/名前を呼び/g, '囁き');
+  };
   /* 場面のあいだだけ関数を差し替えて、差し込まれた部品を覚える */
   function tap(obj, key, fn) { if (!obj || typeof obj[key] !== 'function') return null; var f0 = obj[key]; obj[key] = fn(f0); return function () { obj[key] = f0; }; }
   function makeWrap(sc0, obj) {
     var f = function (opt) {
+      /* 場所（opt.spot。sex-spot-r18.js の HK.SexSpot）：場面のあいだだけ候補を絞り、組み立てたあとに残った言い回しを直す */
+      var SPK = HK.SexSpot, spot = SPK && !HK.SAFE_ON && opt ? SPK.of(opt) : '';
+      var rs0;
+      if (spot && !F.cur) {
+        var sp0 = SPK.cur, o2 = {};
+        Object.keys(opt).forEach(function (k) { o2[k] = opt[k]; });
+        o2.pick = SPK.pick(opt.pick, spot);
+        SPK.cur = spot;
+        try { rs0 = f0.call(this, o2); if (rs0 && typeof rs0.text === 'string') rs0.text = SPK.fix(rs0.text, spot); } finally { SPK.cur = sp0; }
+      } else rs0 = f0.apply(this, arguments);
+      /* 相手がモブ（見知らぬ乗客・施術師・客など）：モブは住人の名前を知らないので、台詞の中の住人の名前は二人称に（F.mobName） */
+      if (rs0 && typeof rs0.text === 'string' && opt && opt.a && opt.b && !opt.a.mob !== !opt.b.mob && !HK.SAFE_ON) {
+        var res = opt.a.mob ? opt.b : opt.a;
+        rs0.text = F.mobName(rs0.text, res.name, opt.a.mob ? '{b}' : '{a}');
+      }
+      return rs0;
+    };
+    var f0 = function (opt) {
       if (F.off || F.cur || HK.SAFE_ON || !opt || !opt.a || !opt.b) return sc0.apply(this, arguments);
       var a = opt.a, b = opt.b, parts = [], undo = [], P = HK.Pos, self = this;
       var lt = F.leadTonight(a, b, opt), whyL = F.lastWhy;
@@ -996,12 +1036,14 @@
         }));
         var r = sc0.apply(self, arguments);
         if (!r || typeof r.text !== 'string') return r;
+        if (HK.SexSpot && HK.SexSpot.cur) r.text = HK.SexSpot.fix(r.text, HK.SexSpot.cur);
         var pressK = F.pressOf(a, b, opt), md = modeOf(r, a, b);
         /* エッチの型（play-r18.js の HK.Play）：入り方・主な責め・道具・体位・終わり方に沿って本文を組み替え、性格が目立つ行為の段を足す */
         var pl = null;
         if (HK.Play && HK.Play.apply) { try { pl = HK.Play.apply(r.text, { a: a, b: b, mode: md, opt: opt, ero: obj === HK.ThickEro, parts: parts, press: pressK, lead: lt }); } catch (e) { pl = null; if (F.log) F.log.push({ err: String(e) }); } }
         if (pl && pl.act) parts.push({ role: 'act', t: pl.act });
         var t1 = pl ? pl.text : r.text;
+        if (HK.SexSpot && HK.SexSpot.cur) t1 = HK.SexSpot.fix(t1, HK.SexSpot.cur);
         var fx = F.fix(t1, { a: a, b: b, mode: md, after: opt.after || '', thick: thickOf(opt), parts: parts, press: pressK, ero: obj === HK.ThickEro, play: pl && pl.play, keep: pl && pl.keep });
         r.text = fx.changed ? fx.text : t1;
         if (fx.trace) r._trace = fx.trace;

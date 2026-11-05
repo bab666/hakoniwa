@@ -29,6 +29,33 @@
   HK.GLOBAL_ENV.push({ id: 'mobYou', label: 'モブへの呼びかけ', type: 'select', def: 'you', all: 1, options: [{ v: 'you', label: '二人称で（あなた・きみ など、話し手の二人称）' }, { v: 'name', label: '名前で（名前のあるモブだけ。「佐伯さん」のように短く）' }], desc: '住人がモブ（客・施術者・略奪者・獲物など、住人でない人）に話しかける台詞の呼び方。地の文はモブの名前のまま' });
 
   function R(ctx, a, b) { return ctx.R(a, b); }
+  /* 一回の遊びで同じ文を二度出さない（共通の出来事が別の組で何度も起きても、文が重ならないように。2026-11-05）：
+     この回でまだ使っていない文から ctx.pick（最近の文を避ける仕組み）で選ぶ。全部使ったら、全部から選び直す */
+  function fresh(ctx, arr) {
+    var u = ctx._ecUsed || (ctx._ecUsed = {}), rest = arr.filter(function (t) { return !u[t]; });
+    var t = ctx.pick(rest.length ? rest : arr);
+    u[t] = 1;
+    return t;
+  }
+  function spent(ctx, arr) { var u = ctx._ecUsed; return !!u && arr.every(function (t) { return u[t]; }); }
+  var GLANCE_SEEN = [
+    '{a}は気づけば{b}を目で追っていた。{b}がそれに気づいて、視線が一瞬だけぶつかった。',
+    '{a}の視線は、いつの間にか{b}のほうへ流れていた。振り向いた{b}と目が合い、{a}は慌てて顔を逸らした。',
+    '{a}は{b}の横顔を盗み見ていた。{b}がふいにこちらを向いて、二人の目が合った。',
+    '{a}の目は、気づくと{b}を探していた。{b}がそれに気づいて、小さく首をかしげた。'
+  ];
+  var GLANCE = [
+    '{a}は気づけば{b}を目で追っていた。{b}は気づいていない。',
+    '{a}は、{b}の何気ない仕草から目を離せずにいた。{b}のほうは、まるで気づいていなかった。',
+    '{a}の視線は、いつの間にか{b}の背中を追っていた。{b}が振り向く前に、{a}はそっと目を逸らした。',
+    '{a}は、{b}の声がするたびに顔を上げてしまう自分に気づいた。{b}は何も知らずにいた。'
+  ];
+  var IGNORE = [
+    '{b}が話しかけても、{a}はほとんど反応しなかった。',
+    '{b}が声をかけても、{a}は短く頷いただけで、手元から目を上げなかった。',
+    '{b}の話を、{a}は聞いているのかいないのか分からない顔で聞き流した。',
+    '{b}が何か言いかけたが、{a}はそれより先に背を向けた。'
+  ];
   /* 何をめぐって・何を、が分かるように、箱庭ごとの話題を添える */
   var TOPIC = {
     island: { why: ['火の番の順番', '魚の分け方', '寝床の場所', '水の使い方', '拠点の屋根の直し方'], good: ['火起こしの手際', '魚の捌き方', '罠の仕掛け方', '寝床の作り方'] },
@@ -49,7 +76,7 @@
       run: function (ctx, a, b) {
         ctx.mod2(a, b, { aff: 5, trust: 3 }, { aff: 4 + b.tr.fc * 3, trust: 2 });
         return {
-          text: ctx.t(ctx.pick(['{a}は{b}に他愛ない話を振った。思ったより会話が続いた。', '{a}と{b}はしばらく並んで話していた。内容はたぶん、どうでもいいことだった。', '{a}が何気なく口にした一言に、{b}が少し笑った。']), a, b),
+          text: ctx.t(fresh(ctx, ['{a}は{b}に他愛ない話を振った。思ったより会話が続いた。', '{a}と{b}はしばらく並んで話していた。内容はたぶん、どうでもいいことだった。', '{a}が何気なく口にした一言に、{b}が少し笑った。']), a, b),
           why: a.name + 'の人懐こさ（NP・FC）'
         };
       }
@@ -75,7 +102,7 @@
         ctx.mod(a, b, { aff: 3 });
         ctx.stress(b, -12);
         return {
-          text: ctx.t(ctx.pick(['{a}は{b}の顔色の悪さに気づき、黙って隣に座った。', '{a}が{b}の分の飲み物を用意していた。{b}は小さく礼を言った。', '「無理してない？｜無理をしていないか｜無理をしていませんか？」と{a}が訊いた。{b}は答えるまでに少し時間がかかった。']), a, b),
+          text: ctx.t(fresh(ctx, ['{a}は{b}の顔色の悪さに気づき、黙って隣に座った。', '{a}が{b}の分の飲み物を用意していた。{b}は小さく礼を言った。', '「無理してない？｜無理をしていないか｜無理をしていませんか？」と{a}が訊いた。{b}は答えるまでに少し時間がかかった。']), a, b),
           why: a.name + 'の' + lv(a, 'NP') + (b.stress > 40 ? '、' + b.name + 'の疲弊' : '')
         };
       }
@@ -126,7 +153,7 @@
         if (HK.Obsess) HK.Obsess.feed(ctx, a, c, 6);
         return {
           with: [c],
-          text: ctx.t(ctx.pick(['{a}は、{c}と親しげに話す{b}から目を逸らせなかった。', '{c}の隣にいるのが自分ではなく{b}だという事実が、{a}を静かに苛立たせた。']), a, b, c),
+          text: ctx.t(fresh(ctx, ['{a}は、{c}と親しげに話す{b}から目を逸らせなかった。', '{c}の隣にいるのが自分ではなく{b}だという事実が、{a}を静かに苛立たせた。']), a, b, c),
           why: a.name + 'の嫉妬・執着（' + Math.round(a.tr.jealous * 100) + '）。' + c.name + 'への想いが' + b.name + 'への敵意に変わった'
         };
       }
@@ -144,15 +171,17 @@
       }
     },
     {
-      id: 'glance', cat: 'romance', scope: 'pair',
+      id: 'glance', cat: 'romance', scope: 'pair', label: '気づけば相手を目で追っていた',
       when: function (ctx, a, b) { return R(ctx, a, b).att > 22; },
-      w: function (ctx, a, b) { return (a.tr.ac * 0.7 + 0.2) * R(ctx, a, b).att / 40; },
+      /* 文を使い切ったら、その回はもう起きない（一回の遊びで同じ文を二度出さない） */
+      w: function (ctx, a, b) { return spent(ctx, GLANCE) && spent(ctx, GLANCE_SEEN) ? 0 : (a.tr.ac * 0.7 + 0.2) * R(ctx, a, b).att / 40; },
       run: function (ctx, a, b) {
         ctx.mod(a, b, { att: 6 });
         var noticed = ctx.rng() < b.tr.a * 0.7;
+        if (spent(ctx, noticed ? GLANCE_SEEN : GLANCE)) noticed = !noticed;
         if (noticed) ctx.mod(b, a, { att: 4 });
         return {
-          text: ctx.t(noticed ? '{a}は気づけば{b}を目で追っていた。{b}がそれに気づいて、視線が一瞬だけぶつかった。' : '{a}は気づけば{b}を目で追っていた。{b}は気づいていない。', a, b),
+          text: ctx.t(fresh(ctx, noticed ? GLANCE_SEEN : GLANCE), a, b),
           why: a.name + 'のAC（' + Math.round(a.eg.AC) + '）：想いを行動にせず内側で育てる' + (noticed ? '。' + b.name + 'のAが視線を拾った' : '')
         };
       }
@@ -184,7 +213,7 @@
         ctx.stress(a, -10);
         var c = ctx.crush(a, 55);
         return {
-          text: c ? ctx.t('{a}はひとりになって、{c}のことを考えていた。', a, null, c) : ctx.zb && HK.ZB && HK.ZB.soloFlavor ? HK.ZB.soloFlavor(ctx, a) : ctx.t(ctx.pick(['{a}は輪から少し離れて、状況を整理していた。', '{a}はしばらく誰とも話さなかった。']), a),
+          text: c ? ctx.t('{a}はひとりになって、{c}のことを考えていた。', a, null, c) : ctx.zb && HK.ZB && HK.ZB.soloFlavor ? HK.ZB.soloFlavor(ctx, a) : ctx.t(fresh(ctx, ['{a}は輪から少し離れて、状況を整理していた。', '{a}はしばらく誰とも話さなかった。']), a),
           why: a.name + 'のA（' + Math.round(a.eg.A) + '）／人懐こさ低め'
         };
       }
@@ -200,7 +229,7 @@
           return { text: ctx.t('{a}と{b}が大声で言い合った。終わる頃には二人とも少し笑っていた。', a, b), why: '二人ともFC高。ぶつかるほど距離が縮むタイプ' };
         }
         ctx.mod2(a, b, { ten: 14, aff: -8, trust: -4 }, { ten: 14, aff: -8, trust: -4 });
-        return { text: ctx.t(ctx.pick(['{a}と{b}は' + topic(ctx, 'why') + 'をめぐって口論になった。どちらも引かなかった。', topic(ctx, 'why') + 'をめぐる{a}の一言をきっかけに、{b}との間の空気が一気に冷えた。']), a, b), why: '積もった緊張（' + Math.round(R(ctx, a, b).ten) + '）と' + a.name + 'の攻撃性' };
+        return { text: ctx.t(fresh(ctx, ['{a}と{b}は' + topic(ctx, 'why') + 'をめぐって口論になった。どちらも引かなかった。', topic(ctx, 'why') + 'をめぐる{a}の一言をきっかけに、{b}との間の空気が一気に冷えた。']), a, b), why: '積もった緊張（' + Math.round(R(ctx, a, b).ten) + '）と' + a.name + 'の攻撃性' };
       }
     },
     {
@@ -227,11 +256,11 @@
       }
     },
     {
-      id: 'ignore', cat: 'conflict', scope: 'pair',
-      w: function (ctx, a, b) { return a.tr.cold * 0.5 * (R(ctx, a, b).aff < 0 ? 1.6 : 0.5) * (1.15 - a.tr.ac * 0.6) * (1.1 - a.tr.np * 0.6); },
+      id: 'ignore', cat: 'conflict', scope: 'pair', label: '話しかけられてもほとんど反応しない',
+      w: function (ctx, a, b) { return spent(ctx, IGNORE) ? 0 : a.tr.cold * 0.5 * (R(ctx, a, b).aff < 0 ? 1.6 : 0.5) * (1.15 - a.tr.ac * 0.6) * (1.1 - a.tr.np * 0.6); },
       run: function (ctx, a, b) {
         ctx.mod(b, a, { aff: -6, ten: 8 + b.tr.ac * 6 });
-        return { text: ctx.t('{b}が話しかけても、{a}はほとんど反応しなかった。', a, b), why: a.name + 'のドライさ（A高・NP低）' };
+        return { text: ctx.t(fresh(ctx, IGNORE), a, b), why: a.name + 'のドライさ（A高・NP低）' };
       }
     },
     {

@@ -510,6 +510,8 @@ js/ero-scene.js
 js/ero-flavor-lines-r18.js @pack:lewd
 js/ero-flavor-r18.js @pack:lewd
 # 長いエッチの場面の流れを段階で管理する（2026-11-03。場面の状態：段階・体位・性感・使った台詞と動き・応答待ち。いちばん外側の包み。設計は docs/reports/2026-11-03/sex-flow-design.md）
+# 長い場面の場所（opt.spot。寝室・ソファ・床・壁際・玄関・台所・風呂・立ったまま・車内。2026-11-05。設計は sex-flow-design.md の 9 章）
+js/sex-spot-r18.js @pack:lewd
 js/sex-flow-text-r18.js @pack:lewd
 js/sex-flow-r18.js @pack:lewd
 # エッチの型（2026-11-03。入り方・主な責め・道具・体位・終わり方で一回のエッチを組み替える HK.Play と、性格が目立つ行為の段 HK.PlayAct。sex-flow-r18.js の包みが呼ぶ。設計は docs/reports/2026-11-03/play-design.md）

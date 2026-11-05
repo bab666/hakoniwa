@@ -223,6 +223,8 @@ const JUDGE = function (HK, opt) {
           /* 指・舌・道具を伴わない挿入の動詞も、女性どうしでは男性の体を前提にした描写として数える */
           const PEN = /奥まで沈め|深く沈め|腰を沈め|腰を落と|繋がっ|繋がり|貫|突い|突き上げ|突かれ|一突き|中に入っ|中へ入っ|入ってき|熱を吐き出|腰を打ちつけ|中で果て|奥で果て|最奥で|自分の中に導|迎え入れ|受け入れ|挿れ|挿入|抜き差し|根元まで|ピストン|穿/;
           const TOOLW = /指|舌|玩具|張り型|張形|ローター|双頭|ディルド|バイブ|器具|道具|触手/;
+          /* 名前のあとが動作主の印（「の指と舌に」「の手で」「の唇に」）：受け身の文で、その人が責める側 */
+          const AGENT_OF = /^の(?:[^。「」はがをにで]{0,6}?)(?:指先?|舌先?|手|掌|手のひら|唇|口|腕|声|言葉|視線|息|責め|愛撫)(?:と(?:[^。「」はがをにで]{1,6}))?(?:に|で)/;
           const penFF = t.split(/[。！？]/).some(x => PEN.test(x) && !TOOLW.test(x) && SEXCORE.test(x));
           /* 女性の体：男性器のない人（性器を決めていない女性・女性器だけ・なし） */
           const allF = PC.every(c => !P.hasM(c));
@@ -253,6 +255,13 @@ const JUDGE = function (HK, opt) {
               if (m && /隠れ|半分/.test(t.slice(m.index, m.index + m[0].length + 12))) continue;
               /* 「アキラに貫かれた」「アキラに腰を掴まれて」の「に」は動かす側（攻め）の印。「アキラを根元まで受け入れた」は相手が受けている */
               if (m && k === 0 && /^(?:に|から|によ|の手で|を[^。]{0,20}受け入れ)/.test(t.slice(m.index + n0.length))) { sk('V2:攻めが動かす側', sc, t, m.index); continue; }
+              /* 「ミナトはアキラの指と舌に代わる代わる責められ」：攻めの名前のあとが「の（手・指・舌・唇…）に／で」なら、攻めは動作主。
+                 受け身の主語（その文で攻めの名前より前の「〇〇は／が」）が攻め本人でなければ数えない（2026-11-05。主語が攻めなら今までどおり数える） */
+              if (m && k === 0 && AGENT_OF.test(t.slice(m.index + n0.length))) {
+                const s0 = Math.max(t.lastIndexOf('。', m.index), t.lastIndexOf('」', m.index), t.lastIndexOf('\n', m.index)) + 1, head = t.slice(s0, m.index);
+                const sj = /([^\s。」、「]+?)(?:は|が)(?:[^は。」「]*)$/.exec(head);
+                if (!sj || sj[1].indexOf(n0) < 0) { sk('V2:攻めが動作主（受け身の主語は' + (sj ? sj[1] : '省略') + '）', sc, t, m.index); continue; }
+              }
               /* 「アキラも、レンジに貫かれていたミナトも」：受け身の動詞が、あとに続くほかの住人を修飾している（三人の場面） */
               if (m && k === 0 && PC.some(c => c !== T && c.name.indexOf(n0) < 0 && new RegExp('^(?:て(?:い)?(?:た|る))?' + c.name + '(?:も|は|が)').test(t.slice(m.index + m[0].length)))) { sk('V2:ほかの住人の連体修飾', sc, t, m.index); continue; }
               /* 「アキラの熱がミナトの奥に注がれ」：注がれたのは相手（アキラは注ぐ側。三人の場面の二回目など） */
@@ -262,7 +271,9 @@ const JUDGE = function (HK, opt) {
               /* 性的な語のない文（「縛られたまま連れ出された」「アキラの中で、点と点が」など）は数えない */
               if (m && (!SEXCORE.test(sentOf(t, m.index) + sentOf(t, Math.min(t.length - 1, m.index + m[0].length))) || /取り残された[^。]{0,12}縛られたまま|祭り囃子が近づ/.test(t))) { sk('V2:非性的', sc, t, m.index); continue; }
               /* 女性の攻めが男性の相手に跨って自分の中に迎える（女攻め×男）のは、攻めのまま。指・舌・道具で中を責められるときだけ数える */
-              if (m && k === 1 && P.hasF(T) && !/指|舌|玩具|張り型|ディルド|バイブ|双頭|器具|道具/.test(sentOf(t, m.index))) { sk('V2:女攻めが迎える(' + named.map(c => c.name + c.gender).join(',') + ')', sc, t, m.index); continue; }
+              /* 「（気持ち）が、アキラの中で一つになっていた」：心の中の話（2026-11-05） */
+              if (m && k === 1 && /^の中で(?:一つにな|ひとつにな|混ざ|渦巻|せめぎ|膨らん|ふくらん|揺れ|響)/.test(t.slice(m.index + n0.length)) && /(?:焦り|苛立ち|嫌悪|不安|気持ち|想い|思い|感情|迷い|怒り|悔し|記憶)[^。]{0,30}$/.test(t.slice(Math.max(0, m.index - 40), m.index))) { sk('V2:心の中', sc, t, m.index); continue; }
+              if (m && k === 1 && P.hasF(T) && !/指(?!輪)|舌|玩具|張り型|ディルド|バイブ|双頭|器具|道具/.test(sentOf(t, m.index))) { sk('V2:女攻めが迎える(' + named.map(c => c.name + c.gender).join(',') + ')', sc, t, m.index); continue; }
               if (m && k === 0 && P.hasF(T) && /受け入れ|跨がられ|跨られ/.test(m[0]) && !/指|舌|玩具|張り型|ディルド|バイブ|双頭/.test(sentOf(t, m.index))) continue;
               if (m) {
                 /* 「攻めの名前」の前後に、ほかの人が主語として受けている書き方（例：「アキラはミナトを押し倒した」）は除く */

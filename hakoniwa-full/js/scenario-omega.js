@@ -407,10 +407,12 @@
     om.dates.push({ a: a.i, b: b.i, place: d.name });
     ctx.mod2(a, b, { aff: 6, att: 4, trust: 3, ten: -4 }, { aff: 6, att: 4, trust: 3, ten: -4 });
     var lead = ctx.most([a, b], function (c) { return c.tr.lead; }), other = lead === a ? b : a;
+    /* 行き先の名前は名詞の引用（「＠＠…」。台詞として口調で言い換えない。中の「」は『』に） */
+    var dn = '「＠＠' + String(d.name).replace(/「/g, '『').replace(/」/g, '』') + '」';
     var scenes = [
-      '{a}と{b}は「' + d.name + '」へ出かけた。' + d.desc + '。',
-      '{a}が選んだ今回のデートは「' + d.name + '」。{b}は着いた瞬間に「分かってるね｜分かっているな｜分かっていますね」と笑った。',
-      '「' + d.name + '」で、{a}と{b}は気づけば日が暮れるまで過ごしていた。',
+      '{a}と{b}は' + dn + 'へ出かけた。' + d.desc + '。',
+      '{a}が選んだ今回のデートは' + dn + '。{b}は着いた瞬間に「分かってるね｜分かっているな｜分かっていますね」と笑った。',
+      dn + 'で、{a}と{b}は気づけば日が暮れるまで過ごしていた。',
       '{b}の「どこ行く？｜どこへ行く｜どこへ行きますか？」に、{a}は迷わず「' + d.name + '」と答えた。'
     ];
     var t = ctx.t(ctx.pick(scenes), lead, other);

@@ -363,6 +363,10 @@
     stat.sq++;
     if (!START_Q.test(lq)) { stat.smiss[lq] = (stat.smiss[lq] || 0) + 1; return ''; }
     var cell = OK_S[psOf(bot)] || OK_S.gentle;
+    /* 恋人・夫婦の夜には「今夜だけなら」の返事を出さない（勢い・体だけの夜だけ。2026-11-05） */
+    var EF = HK.EroFlavor, rk = '';
+    try { rk = EF && EF.relKey ? (EF.relKey(S, top, bot, opt) || {}).rel || '' : ''; } catch (e) { rk = ''; }
+    if (/^(?:lover|pine)$/.test(rk) || (opt && /^(?:lover|first)$/.test(opt.rel || ''))) { var c2 = cell.filter(function (x) { return !/今夜だけ|今夜限り/.test(x); }); if (c2.length) cell = c2; }
     stat.sqr++;
     return AR.fill(cell[Math.floor(hashRng(lq + '|' + top.name + '|' + bot.name + '|' + ((S && S.log && S.log.length) || 0))() * cell.length)], aT || top.name, bT || bot.name);
   };

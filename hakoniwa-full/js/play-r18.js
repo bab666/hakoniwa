@@ -126,9 +126,21 @@
     var A = HK.Attr, size = A && A.sizeDiff ? A.sizeDiff(a, b) : '', tall = A && A.heightDiff ? A.heightDiff(a, b) : '';
     var why = [];
     var fix = opt.play || {};
+    var SPK = HK.SexSpot, spot = SPK ? SPK.of(opt) || SPK.cur || '' : '';
+    /* 場所（opt.spot）：その場所で使わない値と、文の候補が一つも場所に合わない値は選ばない（全部 0 になるなら場所の絞りはしない） */
+    function spotOk(axis, k) {
+      if (!spot) return true;
+      if (axis === 'pos' && !SPK.okPos(spot, k)) return false;
+      if (axis === 'entry' && !SPK.okEntry(spot, k)) return false;
+      if (axis === 'prop' && !SPK.okProp(spot, k)) return false;
+      var T0 = TX(), tb = axis === 'pos' ? (T0.POS || {})[k] : axis === 'entry' ? (T0.ENTRY || {})[k] : axis === 'prop' ? ((T0.PROP || {})[k] || {}).fore : null;
+      var l = tb ? (Array.isArray(tb) ? tb : tb[mode] || tb.all) : null;
+      return !l || !l.length || l.some(function (t) { return SPK.fits(t, spot); });
+    }
     function done(axis, w) {
       (ng[axis] || []).forEach(function (k) { if (w[k] != null) w[k] = 0; });
       var rw = room[axis]; if (rw) Object.keys(rw).forEach(function (k) { if (w[k] != null || (TX()[axis.toUpperCase()] || {})[k]) w[k] = (w[k] || 0) + rw[k]; });
+      if (spot) { var w2 = {}, any = false; Object.keys(w).forEach(function (k) { w2[k] = spotOk(axis, k) ? w[k] : 0; if (w2[k] > 0) any = true; }); if (any) Object.keys(w2).forEach(function (k) { w[k] = w2[k]; }); }
       /* 前の夜と同じ値は選ばれにくく */
       if (last && last[axis] && w[last[axis]] > 0) w[last[axis]] *= 0.25;
       if (fix[axis] && w[fix[axis]] != null) return fix[axis];
@@ -298,8 +310,27 @@
     var l = byMode(tbl, mode);
     if (!l || !l.length) return '';
     if (mode === 'fm' && HK.Pos && HK.Pos.hasM && !HK.Pos.hasM(b)) { var f = l.filter(function (s) { return !NOM.test(s); }); if (f.length) l = f; }
-    return pickFresh(R, l);
+    return pickL(R, l);
   }
+  /* 型の段の文を選ぶ：場所（opt.spot。sex-spot-r18.js）に合わない文と、もう出た動きの文を避ける */
+  function pickL(R, l) {
+    if (!l || !l.length) return '';
+    if (HK.SexSpot && HK.SexSpot.cur) l = HK.SexSpot.filter(l, HK.SexSpot.cur);
+    /* 同じ動き（手首を押さえる など。HK.SexFlow.MOTION）が、もう本文か、この型で選んだ文にあれば、その動きのない文を選ぶ（P.apply の間だけ） */
+    if (MOV.on && l.length > 1) { var g = l.filter(function (s) { return !motionsOf(s).some(function (k) { return MOV.used[k]; }); }); if (g.length) l = g; }
+    var r = pickFresh(R, l);
+    if (MOV.on) motionsOf(r).forEach(function (k) { MOV.used[k] = 1; });
+    return r;
+  }
+  /* 型の段で使った動き（一回の場面の間。P.apply が本文の動きを入れて始める） */
+  var MOV = { on: false, used: {} };
+  function motionsOf(s) {
+    var MO = HK.SexFlow && HK.SexFlow.MOTION, n = narrOf(normPh(s)), out = [];
+    if (!MO || !s) return out;
+    Object.keys(MO).forEach(function (k) { if (k !== 'stop' && MO[k].test(n)) out.push(k); });
+    return out;
+  }
+  function normPh(s) { return String(s || ''); }
   P.pickT = pickT;
   /* 名前を {a}{b} にそろえる（sex-flow-r18.js と同じ） */
   function normNames(t, a, b) {
@@ -401,6 +432,10 @@
   /* ---------- 本文を型に沿って組み替える（sex-flow-r18.js の包みが F.fix の前に呼ぶ） ----------
      info = { a, b, mode, opt, ero, parts（差し込まれた部品）, press, lead }。戻り値：{ text, play（点検用の印つき）, keep（守る段落） } か null */
   P.apply = function (text, info) {
+    MOV.on = false; MOV.used = {};
+    try { return apply0(text, info); } finally { MOV.on = false; MOV.used = {}; }
+  };
+  function apply0(text, info) {
     var a = info.a, b = info.b, mode = info.mode || 'mf', opt = info.opt || {};
     var why0 = function (w) { if (P.log) P.log.push({ a: a.name, b: b.name, mode: mode, none: w }); return null; };
     if (!P.ok(a, b, mode)) return why0('ok');
@@ -442,6 +477,11 @@
         if (!bo && !co) return null;
       }
     }
+    /* 本文に残る（置き換えない）ところにある動きは、型の段で二度出さない（sex-flow の (c)。play-text2-r18.js の「押さえつけ」の手首など） */
+    var keepT = t;
+    [co, bo, fo].filter(Boolean).sort(function (x, y) { return y.s - x.s; }).forEach(function (z) { keepT = keepT.slice(0, z.s) + keepT.slice(z.e); });
+    MOV.on = true; MOV.used = {};
+    motionsOf(keepT).forEach(function (k) { MOV.used[k] = 1; });
     var pr = (T0.PROP || {})[play.prop] || null;
     /* 入り方（部屋の場面ならそのきっかけ） */
     var entT = '';
@@ -485,7 +525,7 @@
       if (midT) midT = 'そのまま、' + midT.replace(/^そのまま、?/, '');
     }
     /* 性格が目立つ行為の段（攻めの態度 × 夜の性格・受けの反応） */
-    var actT = AC() && AC().unit ? AC().unit(R, a, b, mode, t, { press: info.press, rough: !!(opt.force || opt.hate), pick: function (l) { return pickFresh(R, l); } }) : '';
+    var actT = AC() && AC().unit ? AC().unit(R, a, b, mode, t, { press: info.press, rough: !!(opt.force || opt.hate), pick: function (l) { return pickL(R, l); } }) : '';
     /* 攻めの夜の性格の一文（attr-r18.js）は、性格が目立つ行為の段と役割が重なるので外す（受けの夜の性格・相手に合わせる人の一文があるときは残す） */
     if (actT) {
       var A = HK.Attr, kdA = A && A.nightKind ? A.nightKind(a, b) : '', kdB = A && A.nightKind ? A.nightKind(b, a) : '';
@@ -547,7 +587,7 @@
     if (actT) play.act = actT.split(/\n\n/)[0];
     if (P.log) P.log.push({ a: a.name, b: b.name, mode: mode, play: { entry: play.entry, focus: play.focus, prop: play.prop, pos: play.pos, finish: play.finish, scene: play.scene || '' }, ero: ero });
     return { text: out, play: play, keep: keep, act: actT };
-  };
+  }
 
   /* ---------- 短い・中くらいの場面：主な責めと体位の一文 ---------- */
   P.shortLine = function (a, b, mode, opt) {

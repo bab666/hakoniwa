@@ -222,9 +222,8 @@
   /* 部屋の場面の種（futari-r18-more.js の LONG）と、その場所・体位・始まりの段（場所を言わない文。3 組） */
   var ROOMK = { kabe: 'kabe', rusu: 'rusu', bath: 'bath', sofa: 'sofa', kitchen: 'kitchen', late: 'genkan' };
   var SPOT_K = { kabe: '自宅の寝室', rusu: '自宅の寝室', bath: '自宅の脱衣所', sofa: '自宅の居間', kitchen: '自宅の台所', genkan: '自宅の玄関' };
-  /* 体位の文が言う場所（play-text2-r18.js の POS：座位の ff はベッド・fm はソファ、立位は壁、後背位の mf はシーツ）に合わせて、組ごとに選ぶ */
-  var POS_BEDM = { mf: ['seijo', 'seijo', 'kijo', 'back', 'zai'], ff: ['seijo', 'seijo', 'kijo', 'back', 'zai'], fm: ['seijo', 'seijo', 'back'] };
-  var POS_K = { kabe: POS_BEDM, rusu: POS_BEDM, bath: { mf: ['tachi'], ff: ['tachi'], fm: ['tachi'] }, sofa: { mf: ['zai', 'kijo'], ff: ['kijo'], fm: ['zai'] }, kitchen: { mf: ['tachi'], ff: ['tachi'], fm: ['tachi'] }, genkan: { mf: ['tachi'], ff: ['tachi'], fm: ['tachi'] } };
+  /* 長い場面に渡す場所（本体の場所の口 opt.spot。sex-spot-r18.js の HK.SexSpot が、場所に合わない段・体位・入り方を候補から外す） */
+  var SPOT_OF = { kabe: 'bed', rusu: 'bed', bath: 'bath', sofa: 'sofa', kitchen: 'kitchen', genkan: 'door' };
   var PLACE_W = /布団|ベッド|シーツ|寝室|寝床|枕|ソファ|壁|床/, BED_W = /布団|ベッド|シーツ|寝室|寝床|枕/, NOBED_W = /ソファ|玄関|台所|エンドロール|映画|湯船|浴室|脱衣所|洗面所/;
   var OPEN_N = {
     mf: L('{a}は{b}の手を取って、指を一本ずつ絡めた。言葉はいらなかった。今夜がどういう夜になるのか、二人とも分かっていた。|{a}は{b}の顎にそっと指をかけて、顔を上げさせた。目が合うと、{b}のほうが先にまぶたを伏せた。|{a}は{b}の名前を一度だけ呼んだ。それだけで、{b}の肩から力が抜けた。'),
@@ -420,7 +419,8 @@
       var short = (LW ? LW.short(env, rng) : false) || R.thick >= capT, ero = LW && LW.ero(env) && HK.ThickEro, high = LW && LW.high(env), TS = HK.ThickSex;
       if (short && R.short >= capS) return fade();
       /* 寝室の夜（部屋の場面の種でない夜）の導入は、ソファ・玄関・台所・映画のような別の場所を言わない（場面は寝床で進むので、途中で場所が飛んだ。A8） */
-      var bedOnly = function (l) { return rk ? l : (l || []).filter(function (t) { return !NOBED_W.test(t); }); };
+      var spot = rk ? SPOT_OF[rk] || 'bed' : 'bed';
+      var bedOnly = function (l) { if (rk) return l; var f = (l || []).filter(function (t) { return !NOBED_W.test(t); }); return HK.SexSpot ? HK.SexSpot.filter(f, 'bed') : f; };
       var op0 = upk(bedOnly(OPEN[okind][mode])) || (info.free ? '' : upk(bedOnly(OPEN.lover[mode])) || upk(bedOnly(OPEN.home[mode])));
       var s1 = tsay('start', { own: 0.85 }), s2 = tsay('after', { own: 0.85 });
       var open = op0 ? op0 + (op0.indexOf('{a}「') < 0 ? s1 : '') + (rng() < 0.75 ? upk(OPEN_PS[ps] || OPEN_PS.gentle) : '') : '';
@@ -430,14 +430,14 @@
         var o = { S: ctx, ctx: ctx, pick: pk, rng: rng, a: A, b: B, style: TS.style(A), after: after, again: false, place: kind === 'bath' ? 'bath' : kind === 'sofa' ? 'sofa' : null, jealous: kind === 'jeal' };
         if (open) o.open = open;
         if (kind === 'free' || kind === 'impulse') o.rel = 'casual';
-        /* 部屋の場面の種（壁の薄い夜・留守・風呂上がり・ソファ・台所・玄関）：導入はその場面の入り方だけ（始まりの段は場所を言わない文）、体位も場所に合わせる。
-           ほかの夜：始まりの段（寝室・布団）が導入。型の入り方は場所を言わないもの（キス・囁き・甘え）、体位は寝床でのもの */
-        var rp0 = function (l) { return l[Math.floor(rng() * l.length)]; };
+        /* 部屋の場面の種（壁の薄い夜・留守・風呂上がり・ソファ・台所・玄関）：導入はその場面の入り方だけ（始まりの段は場所を言わない文）。
+           ほかの夜：始まりの段（寝室・布団）が導入。どちらも場所を本体の場所の口（o.spot）に渡し、場所に合わない段・体位・入り方は本体が選ばない */
         if (rk) {
           var on0 = upk(OPEN_N[mode] || OPEN_N.mf);
           o.open = on0 ? on0 + (rng() < 0.6 ? upk((OPEN_PS[ps] || OPEN_PS.gentle).filter(function (t) { return !PLACE_W.test(t); })) : '') : o.open;
-          o.playScene = 'futari-' + rk; o.play = { pos: rp0(POS_K[rk][mode] || POS_K[rk].mf) };
-        } else o.play = { entry: rp0(['kiss', 'kiss', 'whisper', 'amae']), pos: rp0(POS_BEDM[mode] || POS_BEDM.mf) };
+          o.playScene = 'futari-' + rk;
+        }
+        o.spot = spot;
         var r = ero ? HK.ThickEro.scene(o) : TS.scene(o);
         return fin(r.text);
       }
