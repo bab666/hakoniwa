@@ -275,6 +275,32 @@
      区分：rough 荒い（強気・兄貴分・ヤンキー・熱血）／stiff 硬い（厳格・冷静・論客・無機質 など）／grand 紳士・尊大／god 神／noja のじゃ */
   var FIT_ROUGH = grp('proud aniki yankee hero');
   var FIT_POLITE = grp('polite devoted ojou kohai genki keigo_sarc keigo_bossy keigo_flat otaku keigo_twist chara_down mixed'), FIT_FEM = grp('ane ojou');
+  /* ---------- 強気の荒い語（〜ねえ・〜んな・うるせえ・てめえ・くっそ）を、荒く話さない人に残さない（2026-11-05 利用者の報告「厳格のハオンに『あたま、まわんねえ』」） ----------
+     夜の性格「サド」は声の基盤を強気の表にする（NIGHT_PS）。基盤の言葉（挑む・抗う中身）はそのまま使うが、強気の表の崩した話し方（まわんねえ・止めんな・足りねえ）は
+     強気の人の話し方なので、口調が荒くない人（厳格・冷静・紳士・穏やか・健気・敬語 など）には、その人の普段の態度の形（まわらない・止めるな・足りない）に戻す。
+     荒く話してよい口調：ROUGH_TALK（強気・兄貴分・ヤンキー・熱血・チャラい・ギャル・タメ口・けだるげ・意地っ張り・関西弁）と、普段の態度（喘ぎの口調があればその態度）が強気の人。
+     点検は moan-tone-audit.js の「態度の特徴の語が別の態度の人に」 */
+  var ROUGH_TALK = grp('proud aniki yankee hero chara gyaru tame darui darui_lite darui_talk tsun tsun_n kansai');
+  var UNROUGH_R = [
+    [new RegExp('うるせえ' + FE, 'g'), 'うるさい'], [/くっそ/g, 'くそ'], [/クッソ/g, 'クソ'],
+    [new RegExp('じゃねえ(か)?' + FE, 'g'), 'じゃない$1'], [new RegExp('くんねえ' + FE, 'g'), 'くれない'],
+    /* 「抑えらんねえ」「ぶってらんね」→「抑えられない」「ぶってられない」、「まわんねえ」「わかんね」「たまんねえ」→「まわらない」「わからない」「たまらない」（「ごめんね」「だもんね」は残す） */
+    [new RegExp('らんね(?:え|ぇ|ー)?' + FE, 'g'), 'られない'], [new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![めこそあどうもら])んね(?:え|ぇ|ー)?' + FE, 'g'), 'らない'],
+    /* 「足りねえ」「止まれねえ」「できねえ」「もたねえ」「悪く、ねえ」→「足りない」「止まれない」「できない」「もたない」「悪く、ない」（「いいわねえ」「効くねえ」「ねえねえ」「ねえ、もっと」は残す） */
+    [new RegExp('(?<=[らまがばきみりえけせてめれげべ])(?<![ねネ][えぇ])(?<![だん]が)ね(?:え|ぇ)' + FE, 'g'), 'ない'], [new RegExp('([もが持勝立]た)ね(?:え|ぇ)' + FE, 'g'), '$1ない'],
+    [new RegExp('((?:悪|わる|よ|良|すご|痛|いた|熱|あつ|甘|あま|強|弱|うま|上手)く)(、?)ね(?:え|ぇ)' + FE, 'g'), '$1$2ない'],
+    /* 「止めんな」「触んな」「すんな」「ふざけんな」「乗んな」「見てんな」→「止めるな」「触るな」「するな」「ふざけるな」「乗るな」「見てるな」（「とまんな（い）」「へんな」「こんな」は残す） */
+    [new RegExp('(^|[、…‥「\\s　♡！!っ。]|[にをはがもで]|調子に)(触|さわ|見|止め|とめ|進め|始め|乗|の|来|く|す|ふざけ|ざけ|もったい、?ぶ|ぶ|して|見て|笑って|動|うご|抜|入れ)んな' + FE, 'g'), function (m, b, w) { return b + (w === 'ざけ' ? 'ふざけ' : w === 'く' ? 'く' : w) + 'るな'; }],
+    [new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![なせ])ぜ' + FE, 'g'), '']
+  ];
+  function roughOk(t, who) { return !!ROUGH_TALK[t] || psBase(who) === 'proud'; }
+  function unrough(q, who) {
+    q = runR(q, UNROUGH_R);
+    var V = HK.Voice;
+    if (V && V.applyYou && /(?:てめえ|てめぇ)/.test(q)) q = V.applyYou(q, who.you || (HK.toneYou ? HK.toneYou(toneOf(who), who.gender) : '') || 'あなた');
+    return q;
+  }
+  M._unrough = unrough;
   function strongKind(t, grand) { return t === 'noja' ? 'noja' : t === 'god' ? 'god' : grand ? 'grand' : FIT_ROUGH[t] ? 'rough' : 'stiff'; }
   var GODAN = { 'か': 'く', 'さ': 'す', 'た': 'つ', 'な': 'ぬ', 'ま': 'む', 'ら': 'る', 'わ': 'う', 'が': 'ぐ', 'ば': 'ぶ' };
   var ST_NAI = new RegExp('([一-鿿々ぁ-ゖ])ないで(?:ぇ+)?' + FE, 'g');
@@ -292,6 +318,8 @@
     q = q.replace(ST_NAI, function (m, c, off, all) {
       if (ST_ASK_AFTER.test(all.slice(off + m.length))) return m;
       if (k === 'grand') return c + 'ないでくれたまえ';
+      /* 「触んないで」の「ん」は「ら」の崩し（触らないで）：荒い口調は「触んな」、そのほかは「触るな」（2026-11-05。以前は「触んるな」「触んんな」になっていた） */
+      if (c === 'ん') return k === 'rough' ? 'んな' : 'る' + (k === 'noja' ? 'でない' : 'な');
       var v = c === 'し' ? 'する' : c === 'こ' ? 'くる' : GODAN[c] ? (k === 'rough' && c === 'ら' ? 'ん' : GODAN[c]) : c + (k === 'rough' ? 'ん' : 'る');
       return v + (k === 'noja' ? 'でない' : 'な');
     });
@@ -464,6 +492,8 @@
     if (gf && g === 'f' && !masc && t !== 'kansai' && !soft) {
       q = daro(runR(q, FIT_MASC_R)).replace(FIT_ZO[0], FIT_ZO[1]);
     }
+    /* 強気の荒い語は、荒く話す人だけに（夜の性格サドで強気の基盤が当たった厳格の人などには、普段の形に戻す） */
+    if (!roughOk(t, who)) q = unrough(q, who);
     return q === q0 ? s : mk + q;
   }
   M.fit = function (s, who, light) { return M.isUser(s) ? s : fit(s, who, light); };
@@ -598,6 +628,8 @@
   /* ほかの喘ぎの表（ero-kit.js の E.moan など）も、喘ぎの口調で引けるように */
   M.toneOf = toneOf;
   M.psOf = psOf;
+  /* 普段の態度（夜の性格を入れない。喘ぎの口調があればその態度）。点検（moan-audit.js）が話し手の態度として見る */
+  M.psBase = psBase;
   M.moanToneOf = moanToneOf;
   /* 箱庭の本文へ出す喘ぎ（E.moan・{m:鍵}・HK.Moan.say）は、言葉のない声も台詞の言い換えを通さない（無口の「短くする」などで崩れないように）。
      利用者の辞書の行（M.lastSrc＝'user'）だけは、これまでどおり言い換えを通す。HK.Moan.pick を直に呼ぶ所（キスの声 k0 など）は、作風（♡を残すか）が分からないので印を付けない */
