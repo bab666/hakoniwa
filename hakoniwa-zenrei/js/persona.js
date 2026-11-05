@@ -124,6 +124,13 @@
     free: L('{a}「ねえねえ、面白いこと思いついた！」|{a}「{b}も一緒にやろうよ！絶対楽しいって！」|{a}は思いついたことを、そのまま口に出して{b}を笑わせた。|{a}「失敗した！あはは、まあいっか！」|{a}は{b}の腕を引っぱって、知らない場所へ駆け出した。|{a}は{b}の真似をして、本人に怒られた。'),
     shy: L('{a}「あ、あの……{b}さん、その……な、なんでもないです」|{a}は{b}に話しかける練習を、頭の中で三回してから声をかけた。|{a}「ご、ごめんなさい、わたし、邪魔でしたか……？」|{a}は{b}に褒められて、耳まで真っ赤になった。|{a}「……こ、ここにいても、いいですか」|{a}は{b}の後ろに、半分隠れるようにして立っていた。')
   };
+  /* 恋愛にならない組（HK.loveOK が偽で、体の相手でもない）には出さない一言と、その代わりの一言（2026-11-05 新婚部屋の申し送り：穏やかの「頭をそっと撫でた」が攻めどうし・受けどうしの伴侶にも出ていた） */
+  V.TALK_ROM = /頭をそっと撫で|隣に座りたくて|耳まで真っ赤/;
+  V.TALK_NR = {
+    gentle: L('{a}は{b}の肩をぽんと叩いた。「＠{a}＠よく頑張ったね｜よく頑張ったな｜よく頑張りましたね」|{a}は{b}が出しっぱなしにしていたものを、何も言わずに片づけておいた。'),
+    tsun: L('{a}は{b}の分の飲み物も持ってきて、黙ってそばに置いた。「＠{a}＠ついでだから。……ついでだって｜ついでだ。……ついでだと言っている｜ついでですから。……ついでですってば」'),
+    shy: L('{a}は{b}に褒められて、どう返事をすればいいのか分からず、何度も頭を下げた。')
+  };
   V.TALK.polite = L('{a}「お疲れさまです。少し休まれてはいかがですか」|{a}は{b}に深々と頭を下げた。「先ほどは、ありがとうございました」|{a}「失礼ですが、そのご意見には賛成いたしかねます」|{a}は誰に対しても、丁寧な言葉遣いを崩さなかった。{b}は少しだけ、その壁の向こうが気になった。|{a}「{b}さんは、本当にお優しいのですね」|{a}「よろしければ、私にもお手伝いさせてください」');
   /* ふだんの一言の前に添える状況（箱庭ごと） */
   var SCENE = {
@@ -183,12 +190,14 @@
     }
   });
   if (HK.COMMON) HK.COMMON.push({
-    id: 'sf_persona', label: 'その人らしい口調がにじむ一言', cat: 'bond', scope: 'pair',
+    id: 'sf_persona', label: 'その人らしい口調がにじむ一言', cat: 'bond', scope: 'pair', tie: '-',
     when: function (ctx, a) { return !!(a.persona && V.TALK[a.persona]) && ctx.scen.id !== 'br'; },
     w: function () { return 0.55; },
     run: function (ctx, a, b) {
       ctx.mod2(a, b, { aff: 2 }, { aff: 3, trust: 2 });
-      var line = ctx.pick(V.TALK[a.persona]);
+      var pool = V.TALK[a.persona], pf = b && ctx.pair ? ctx.pair(a, b) : null;
+      if (b && !(HK.loveOK && HK.loveOK(a, b)) && !(pf && (pf.couple || pf.night || pf.nights > 0))) pool = pool.filter(function (l) { return !V.TALK_ROM.test(l); }).concat(V.TALK_NR[a.persona] || []);
+      var line = ctx.pick(pool);
       /* 何をしている場面での一言かが分かるように、箱庭ごとの状況を前に添える */
       var SC = SCENE[ctx.scen.id] || SCENE._;
       if (ctx.rng() < 0.8) {

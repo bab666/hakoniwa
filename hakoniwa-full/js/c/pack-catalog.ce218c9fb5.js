@@ -45,7 +45,7 @@ ev:[
 {"i":"tp_irk","n":"苦手なものを思い出して不機嫌になる","k":"solo","t":[],"m":"a","c":[],"f":1},{"i":"tp_dream","n":"話題の場所に思いをはせる","k":"solo","t":[],"m":"a","c":[],"f":1},{"i":"tp_reread","n":"好きな作品の場面を思い返す","k":"solo","t":[],"m":"a","c":[],"f":1},
 {"i":"tp_ponder","n":"話題の物事について考え込む","k":"solo","t":[],"m":"a","c":[],"f":1},{"i":"tp_crowd","n":"三人で話題に花を咲かせる","k":"bond","t":[],"m":"a","c":[],"f":1},{"i":"tp_lost","n":"話題に一人だけついていけない","k":"bond","t":[],"m":"a","c":[],"f":1},
 {"i":"tie_senpai","n":"先輩の面倒見と後輩の憧れ","k":"bond","t":["senpai"],"m":"c","c":[],"f":2},{"i":"tie_buddy","n":"バディが目配せ一つで連携する","k":"help","t":["buddy"],"m":"c","c":[],"f":2},{"i":"tie_colleague","n":"同僚どうしの軽口と分担","k":"bond","t":["colleague"],"m":"c","c":[],"f":2},
-{"i":"sf_persona","n":"その人らしい口調がにじむ一言","k":"bond","t":[],"m":"-","c":[],"f":2},{"i":"tie_classmate","n":"同級生と昔話で笑い合う","k":"bond","t":["classmate"],"m":"c","c":[],"f":3},{"i":"tie_colleague2","n":"同僚の連携と仕事の外の顔","k":"bond","t":["colleague"],"m":"b","c":[],"f":3},
+{"i":"sf_persona","n":"その人らしい口調がにじむ一言","k":"bond","t":[],"m":"a","c":[],"f":2},{"i":"tie_classmate","n":"同級生と昔話で笑い合う","k":"bond","t":["classmate"],"m":"c","c":[],"f":3},{"i":"tie_colleague2","n":"同僚の連携と仕事の外の顔","k":"bond","t":["colleague"],"m":"b","c":[],"f":3},
 {"i":"tie_boss","n":"上司の責任と部下の支え","k":"help","t":["boss"],"m":"c","c":[],"f":3},{"i":"tie_spouse","n":"連れ添った二人のいつもの時間","k":"bond","t":["spouse"],"m":"c","c":[],"f":3},{"i":"tie_benefactor","n":"恩人の気遣いと消えない感謝","k":"help","t":["benefactor"],"m":"c","c":[],"f":3},
 {"i":"tie_relative","n":"親族どうしの思い出と助け合い","k":"help","t":["relative"],"m":"c","c":[],"f":3},{"i":"tie_worship","n":"崇める相手に尽くす","k":"help","t":["worship"],"m":"c","c":[],"f":3},{"i":"tie_nw_ap_talk","n":"無関心な相手に話しかけても響かない","k":"bond","t":["apathy"],"m":"c","c":[],"f":4},
 {"i":"tie_nw_ap_gift","n":"無関心な相手に好意を受け流される","k":"help","t":["apathy"],"m":"c","c":[],"f":4},{"i":"tie_nw_ap_other","n":"無関心な相手に素通りされる","k":"conflict","t":["apathy"],"m":"c","c":[],"f":4},{"i":"tie_nw_fr_avoid","n":"恐れる相手と同じ場所にいられない","k":"conflict","t":["fear"],"m":"c","c":[],"f":4},
@@ -632,4 +632,8 @@ ev:[
 ]};
 })();
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/pack-catalog.ce218c9fb5.js
 HK.Load.done('pack-catalog', 'ce218c9fb5', 1);
+========
+HK.Load.done('pack-catalog', 'f8244cade8', 1);
+>>>>>>>> work/quad-fix:hakoniwa-full/js/c/pack-catalog.f8244cade8.js

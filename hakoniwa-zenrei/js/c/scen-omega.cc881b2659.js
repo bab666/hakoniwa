@@ -3256,12 +3256,15 @@ tell:L('{a}と{b}は、職場に番になったことを報告した。{b}の上
 home:L('{a}と{b}は、二人で暮らす部屋を借りた。段ボールが積まれたままの床で、二人は最初の夜を並んで眠った。窓から見える景色は、どちらの前の部屋よりも広かった。|{b}の荷物が{a}の部屋に少しずつ増えていき、ある日、二人はそれを「引っ越し」と呼ぶことにした。歯ブラシが二本並んだ洗面台を、{b}はしばらく眺めていた。{a}は、合鍵に小さな飾りを付けて{b}に渡した。|新しい部屋の表札には、二人の名前が並んだ。{a}は「巣にするなら、いちばん日当たりのいい部屋を｜巣にするなら、いちばん日当たりのいい部屋にしよう｜巣にするなら、いちばん日当たりのいい部屋にしましょう」と言った。{b}は笑って、その部屋のカーテンを自分で選んだ。'),
 sleep:L('番になってから、{b}は夜中に目を覚まさなくなった。隣から漂う{a}の匂いが、どんな薬よりもよく効いた。朝、{a}の腕の中で目を覚ますたび、{b}は自分がどこにいるのかをゆっくり思い出した。|{a}が出張でいない夜、{b}は{a}のシャツを抱えて眠った。匂いが薄れるたびに、早く帰ってきてと思った。三日後に帰ってきた{a}は、玄関で{b}にしがみつかれて、荷物を落とした。|{a}は、{b}の寝息を聞きながらでないと眠れなくなっていた。番の絆は、αの側にも同じように効くらしい。{a}はそれを、少しも嫌だとは思わなかった。')
 };
+var KNOWN= /昔から|幼なじみ|久しぶり|学生時代|以前から/;
 var WHY={mark:'噛み跡の手入れ',heat:'番になって初めての発情期',tell:'まわりへの報告',home:'一緒に暮らし始める',sleep:'番の匂いで眠れるようになる'};
 OM.afterLate=function(ctx,x,y){
 if(!x|| !y|| !ctx.pair(x,y).couple||ctx.rng()>0.7)return;
 var A=x.om&&x.om.sex==='a'?x:y,O=A===x?y:x;
 var ks=Object.keys(T),k=ks[Math.floor(ctx.rng()*ks.length)];
-ctx.say({kind:'event',cat:'romance',actors:[A,O],text:'――番になって、しばらく経ったころ。'+ctx.t(ctx.pick(T[k]),A,O),why:A.name+'と'+O.name+'の後日談：'+WHY[k]});
+var tied= !!(ctx.pair(x,y).kin||(HK.Ties&&HK.Ties.all&&(HK.Ties.all(ctx,x,y)||[]).length));
+var pool=T[k].filter(function(l){return tied|| !KNOWN.test(l);});
+ctx.say({kind:'event',cat:'romance',actors:[A,O],text:'――番になって、しばらく経ったころ。'+ctx.t(ctx.pick(pool.length?pool:T[k]),A,O),why:A.name+'と'+O.name+'の後日談：'+WHY[k]});
 };
 })();
 });
@@ -4914,4 +4917,8 @@ HK.Load.toneData("gentle_m",{"F":[
 HK.Load.toneData("darui_talk",{"F":[
 ["また来てくださいね","また来なよ。……まあ、気が向いたらでいいけど"]]});
 });
+<<<<<<<< HEAD:hakoniwa-zenrei/js/c/scen-omega.cc881b2659.js
 HK.Load.done('scen-omega', 'cc881b2659', 1);
+========
+HK.Load.done('scen-omega', 'f7d0b20ae0', 1);
+>>>>>>>> work/quad-fix:hakoniwa-zenrei/js/c/scen-omega.f7d0b20ae0.js
