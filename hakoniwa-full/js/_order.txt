@@ -530,6 +530,7 @@ js/kiss-text2.js @pack:lewd
 js/kiss.js @pack:lewd
 js/futari-r18.js @scen:futari
 js/futari-r18-more.js @scen:futari
+js/futari-r18-scene.js @scen:futari
 js/reset.js
 js/voice-seg.js
 js/voice-fp.js
