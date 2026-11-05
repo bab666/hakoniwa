@@ -104,6 +104,22 @@
   }
   /* 場面の本文：{ text（名前を当てたもの）, form }（共通の部品 HK.PairR18.scene） */
   function sceneText(ctx, S, env, a, b, sh, form, o, src) { return PR.scene(ctx, S, env, a, b, sh, form, o, src || SRC); }
+  /* 三人婚・四人婚で全員が家にいる夜の、夜の場面の起こりやすさ（2026-11-05 不具合リスト NO 20「基本はその人数でのエッチがメイン」）。
+     二人の夜（SH.night）の起こりやすさと同じ考え方（願望の高まり・残りの回数・遅れ・初日は半分）で振り、当たれば三人・四人の夜にする（shinkon.js）。
+     外れた夜は二人の夜も出さない（全員がいる夜に、二人だけが抜けて夜を過ごす形を基本にしない） */
+  SH.multiRoll = function (ctx, S, day, last) {
+    var env = ctx.env, P = HK.Pos, SKN = HK.Shinkon;
+    if (env.night === 0 || env.night === '0') return false;
+    if (env.speed === 'slow' && day.d < 2 && !last) return false;
+    var many = (S.trioSex || 0) + (S.quadSex || 0);
+    if (last && !many) return true;
+    var left = S.lewdMax - S.sex, nightsLeft = S.days - day.d - (SKN && SKN.restAhead ? Math.max(0, SKN.restAhead(ctx, day.d + 1)) : 0);
+    var p = Math.max(day.urge || 0, 0.3) * (P && P.libMul ? Math.min(1.6, P.libMul(S.spouses)) : 1);
+    if (left >= nightsLeft) p = 1;
+    else if (SH.behind(ctx, S, day.d)) p = Math.max(p, 0.8);
+    if (day.d === 0 && p < 1) p *= 0.5;
+    return ctx.rng() < p;
+  };
   SH.night = function (ctx, A, B, day, last) {
     var S = ctx.sk, env = ctx.env, LV = HK.Lewd, P = HK.Pos, SKN = HK.Shinkon;
     if (!sexOk(ctx, A, B)) return false;

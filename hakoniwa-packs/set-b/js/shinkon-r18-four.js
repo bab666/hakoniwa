@@ -113,23 +113,65 @@
     r.e.text = out.join('\n\n');
     if (typeof r.e.why === 'string') r.e.why = r.e.why.replace('四人の夜（軽く。', '四人の夜（組ごとに。');
   }
-  R4.quad = function (ctx, S, day, last) {
+  /* 四人の組の見方を、新婚部屋の四人のあいだだけ直す（2026-11-05 不具合リスト NO 20「4P が発生しない」）。
+     ・本体の HK.Quad.split は、受けどうし（性的に対象にならない組）の HK.Pos.order の向きまで数えるので、受けが「リバ」に数えられ、攻め1・受け3の四人の組が作れなかった。
+       受け攻めは、性的に対象になる相手（HK.Quad.wantOk）との向きだけで数える。
+     ・本体の輪の条件（ringOk の hardOk）は、攻めどうし・受けどうしの組の張り合い（緊張 60 以上）でも四人の夜を止める。作業の決まり「三人・四人の夜の条件は、性的に対象になる組が
+       すべて恋人など（攻めどうし・受けどうしは不問）」に合わせ、恋の相手どうしでない組の緊張は、判定と場面のあいだだけ 59 までに見る（値そのものは変えない）。
+     どちらも本体の直しを申し送り（shinkon-design.md の 12 章）。呼び出しのあいだだけ包み、終わったら戻す */
+  function withQuadFix(ctx, S, fn) {
+    var Q = HK.Quad, o = Q.split, P = HK.Pos, saved = [];
+    var ord = function (a, b) { var r = P && P.order ? P.order(a, b, [a, b]) : [a, b]; return r && r[0] && r[1] ? r : [a, b]; };
+    Q.split = function (ctx2, ids) {
+      var g = (ids || []).map(function (i) { return typeof i === 'number' ? ctx2.chars[i] : i; }), out = o.apply(this, arguments), fx = { bottoms: [], tops: [], revs: [] };
+      var bad = false;
+      g.forEach(function (x) {
+        var ps = g.filter(function (y) { return y !== x && Q.wantOk(ctx2, x, y); });
+        if (!ps.length) { bad = true; return; }
+        var w = ps.filter(function (y) { return ord(x, y)[0] === x; }).length;
+        (w === ps.length ? fx.tops : w === 0 ? fx.bottoms : fx.revs).push(x);
+      });
+      return bad ? out : fx;
+    };
+    (S.nl ? Object.keys(S.nl) : []).forEach(function (k) {
+      var x = S.nl[k].x, y = S.nl[k].y;
+      [[x, y], [y, x]].forEach(function (p) { var r = ctx.R(p[0], p[1]); if (r && r.ten >= 60) { saved.push([r, r.ten]); r.ten = 59; } });
+    });
+    try { return fn(); } finally { Q.split = o; saved.forEach(function (s0) { s0[0].ten = s0[1]; }); }
+  }
+  R4.ok = function (ctx, S) {
+    var Q = HK.Quad;
+    if (HK.SAFE_ON || !S.quad || !Q || !Q.ok) return false;
+    var ids = S.spouses.map(function (c) { return c.i; });
+    return withQuadFix(ctx, S, function () { return Q.ok(ctx, ids); });
+  };
+  /* ほのめかす（描写の有無「ほのめかす」）の四人の夜（{a}{b}{c}{d}＝四人） */
+  R4.QFADE = L('寝室の戸が静かに閉まった。それから先のことは、四人しか知らない。翌朝の食卓で、{a}と{b}と{c}と{d}は、誰からともなく照れくさそうに笑い合った。|' +
+    '明かりの消えた寝室で、四人の影がゆっくりと二つずつ重なった。夜更けまで、小さな笑い声と息づかいが廊下に漏れていた。翌朝、四人の寝起きはそろって遅かった。');
+  /* opt.sure：その夜は四人の夜と決まっている（shinkon.js が夜の起こりやすさを振ったあと）。無ければ今までどおり 30%（まだ無く最後の夜なら必ず） */
+  R4.quad = function (ctx, S, day, last, opt) {
+    opt = opt || {};
     var Q = HK.Quad, f = F();
     if (HK.SAFE_ON || !S.quad || !Q || !Q.ok || !Q.scene || !f) return false;
-    if (S.sex >= S.lewdMax || day.noSex || day.r18x || day.futari || (SK().restNight && SK().restNight(ctx, day))) return false;
+    if (S.sex >= S.lewdMax || day.noSex || day.futari || (!opt.sure && day.r18x) || (SK().restNight && SK().restNight(ctx, day))) return false;
     if (!f.allHome(S, day, 'n') || S.spouses.some(function (c) { var p = f.pOf(S, day, c); return p && p.trip; })) return false;
     var LV = HK.Lewd, lv = LV ? LV.lv(ctx.env) : 'mid';
-    if (lv === 'low') return false;
     var ids = S.spouses.map(function (c) { return c.i; });
-    if (!Q.ok(ctx, ids)) return false;
-    if (!(ctx.rng() < 0.3 || (!S.quadSex && last))) return false;
+    if (!R4.ok(ctx, S)) return false;
+    if (!opt.sure && !(ctx.rng() < 0.3 || (!S.quadSex && last))) return false;
     var o = S.spouses.slice().sort(function () { return ctx.rng() - 0.5; }), a = o[0];
     var lead = SK().fill(ctx, SK().pickT(ctx, R4.QLEAD, a, o[1]), a, o[1], { c: o[2].name, d: o[3].name });
     var len = ctx.env.lewdLen === 'thick' ? 'long' : ctx.env.lewdLen === 'short' ? 'short' : ctx.rng() < 0.7 ? 'long' : 'short';
-    var r = Q.scene(ctx, ids, { len: len, lead: lead, why: '新婚部屋：', leadWhy: '四人の夜（新婚の四人・' + a.name + 'から）',
-      fx: function () { for (var i = 0; i < 4; i++) for (var j = i + 1; j < 4; j++) ctx.mod2(o[i], o[j], { att: 3, aff: 2 }, { att: 3, aff: 2 }); } });
+    if (lv === 'low') len = 'short';
+    var r = withQuadFix(ctx, S, function () { return Q.scene(ctx, ids, { len: len, lead: lead, why: '新婚部屋：', leadWhy: '四人の夜（新婚の四人・' + a.name + 'から）',
+      fx: function () { for (var i = 0; i < 4; i++) for (var j = i + 1; j < 4; j++) ctx.mod2(o[i], o[j], { att: 3, aff: 2 }, { att: 3, aff: 2 }); } }); });
     if (!r) return false;
-    if (len === 'long' && r.e) quadLong(ctx, r);
+    if (lv === 'low' && r.e) {
+      /* ほのめかす：場面の本文を、四人の夜を暗示する文にする */
+      r.e.text = SK().fill(ctx, SK().pickT(ctx, R4.QFADE, o[0], o[1]), o[0], o[1], { c: o[2].name, d: o[3].name });
+      r.e.lewd = false;
+      if (typeof r.e.why === 'string') r.e.why = r.e.why.replace(/・短く）$/, '・ほのめかす）');
+    } else if (len === 'long' && r.e) quadLong(ctx, r);
     S.quadSex = (S.quadSex || 0) + 1;
     return true;
   };
