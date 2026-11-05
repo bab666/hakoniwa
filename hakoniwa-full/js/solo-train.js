@@ -1,3 +1,4 @@
+/* @event-ok 場の設定「乗客の性別」（おまかせ／男だけ／女だけ）と、合わない住人の触れ合いの外の段（2026-11-05 担当TM。新しい出来事ではない） */
 /* @event-ok 乗車・後味・覚めたままの朝の文を増やし、覚めたまま続ける人の後味と朝を分けた（2026-11-05 担当R2。新しい出来事ではない） */
 /* @event-ok 戸惑いの二段目（打ち消せない）の段を足した（2026-11-05 担当TF） */
 /* 箱庭シミュレーター（R18版のみ）: 常識改変：電車
@@ -100,7 +101,11 @@
       { id: 'norm', label: '常識の強さ', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'loose', label: 'ゆるい（目をそらす人もいる）' }, { v: 'normal', label: 'ふつう' }, { v: 'strict', label: '徹底（駅員が「マナー」を促す）' }], desc: 'ゆるいほど違和感に気づきやすく、通報すると駅員が応じる。徹底では、通報しても「マナーですよ」と流される' },
       { id: 'dist', label: '降りる駅までの長さ', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'short', label: '短い（3駅）' }, { v: 'mid', label: 'ふつう（4駅）' }, { v: 'term', label: '終点まで（6駅）' }], desc: '長いほど触れ合いが深まる。2人で攻めの人がいるとき、その人が乗ってくる駅も変わる' },
       { id: 'days', label: '乗る日数', min: 1, max: 7, def: 3, lo: '1日', hi: '7日', unit: '日', desc: '日ごとに快楽・違和感・かかり具合を持ち越す。違和感が積もる日も、常識に馴染む日もある' },
-      { id: 'partner', label: '触れ合う相手', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'one', label: '一人の乗客' }, { v: 'many', label: '複数の乗客' }, { v: 'pair', label: '連れの住人（2人のとき）' }], desc: '「連れの住人」は、2人が同じ車両に乗るとき、恋愛対象・受け攻め・関係の設定で体の関係になれる二人だけ（なれなければ乗客）' }
+      { id: 'partner', label: '触れ合う相手', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'one', label: '一人の乗客' }, { v: 'many', label: '複数の乗客' }, { v: 'pair', label: '連れの住人（2人のとき）' }], desc: '「連れの住人」は、2人が同じ車両に乗るとき、恋愛対象・受け攻め・関係の設定で体の関係になれる二人だけ（なれなければ乗客）' },
+      /* 乗客の性別（2026-11-05 の利用者の要望）：おまかせ＝今までどおり（住人の恋愛対象・体の関係の相手に合わせる。男女両方なら半々）。
+         男だけ／女だけ＝乗客をその性別だけにする。住人の恋愛対象（体の関係の相手）に合わない人は、乗客とは触れ合わない（触れ合いの外で眺める。orient）。
+         開始前の注意は solo-warn-train.js、合う住人がいなければ始めない */
+      { id: 'mobsex', label: '乗客の性別', type: 'select', def: 'random', options: [{ v: 'random', label: 'おまかせ' }, { v: 'm', label: '男だけ' }, { v: 'f', label: '女だけ' }], desc: 'おまかせは住人の恋愛対象に合わせる。男だけ・女だけにすると、恋愛対象（体の関係の相手）に合わない住人は乗客と触れ合わず、触れ合いの外で眺める' }
     ],
     /* 住人ごとの「触れ合い」（不具合リスト 1104 の NO 17）：おまかせ／触る／触られる／両方／迎えに行く。
        受け攻めと合わない選び方は動かすときに直す（受け指定の人の「触る」「両方」→触られる、攻め指定の人の「触られる」「両方」→触る）。
@@ -199,10 +204,18 @@
     return r;
   }
   function mobGen(S, p) {
+    /* 場の設定「乗客の性別」が男だけ・女だけなら、その性別（合わない住人は run で p.canMob を落としてあるので、ここへは来ない） */
+    if (S.v && S.v.mobsex) return S.v.mobsex;
     var sl = HK.Pos && HK.Pos.sexLikeOf ? HK.Pos.sexLikeOf(p) : '', lk = sl === 'm' || sl === 'f' ? sl : p.likes;
     if (lk === 'm' || lk === 'f') return lk;
     return S.rng() < 0.5 ? 'm' : 'f';
   }
+  /* 住人が触れ合える乗客の性別（mobGen と同じ決まり：体の関係の相手が男性・女性ならそれ、なければ恋愛対象。男女両方・おまかせは両方） */
+  function mobGOk(p, g) {
+    var sl = HK.Pos && HK.Pos.sexLikeOf ? HK.Pos.sexLikeOf(p) : '', lk = sl === 'm' || sl === 'f' ? sl : p.likes;
+    return !(lk === 'm' || lk === 'f') || lk === g;
+  }
+  HK.TRAIN.mobGOk = mobGOk;
   /* 乗客は名前を出さず、見た目・雰囲気で呼ぶ（不具合リスト 1104 の NO 12）。表は solo-train-data.js の D.MOB（「最初の呼び名,あとの呼び名,態度」）。
      同じ回では、まだ出ていない見た目から選ぶ。態度（persona）は見た目の表に合わせる */
   /* soft：まだ出ていない乗客が残っていなければ null（同じ回に同じ乗客を二度出さない。「複数の乗客」の入れ替わりは、毎日一人ぶんを残して止める） */
@@ -648,6 +661,8 @@
     S.lv = HK.Lewd && HK.Lewd.lv ? HK.Lewd.lv(env) : 'mid';
     S.ero = !!(HK.Lewd && HK.Lewd.ero && HK.Lewd.ero(env) && HK.ThickEro);
     S.v = { crowd: crowd, line: line, norm: norm, dist: dist, days: days, partner: partner, LN: LN, nSt: { short: 3, mid: 4, term: 6 }[dist] };
+    /* 乗客の性別（おまかせは ''。乱数を使わないので、おまかせの回は今までと同じ結果） */
+    S.v.mobsex = env.mobsex === 'm' || env.mobsex === 'f' ? env.mobsex : '';
     /* 夜行で何晩も乗るときは、一つの旅（夜ごとに次の町へ進み、最後の夜明けに終点）。通勤・帰宅・終電は毎日同じ駅から乗る（報告 6） */
     S.v.trip = line === 'night' && days > 1;
     S.v.st0 = rng.int(Math.max(1, LN.st.length - S.v.nSt));
@@ -675,6 +690,8 @@
       if (p.action.id === 'give' && !p.top && !p.both) p.action = scen.actions[0];
       /* 乗客との触れ合いに出してよい人（性行為の相手を「固定した相手だけ」にした人・体の関係の相手「なし」の人は、触れ合いの外で眺める） */
       p.canMob = !!(HK.State ? HK.State.mobSexOk(p) : true) && !(HK.Pos && HK.Pos.sexLikeOf && HK.Pos.sexLikeOf(p) === 'none' && p.likes === 'none');
+      /* 場の設定「乗客の性別」が恋愛対象（体の関係の相手）に合わない人は、乗客とは触れ合わない */
+      if (p.canMob && S.v.mobsex && !mobGOk(p, S.v.mobsex)) { p.canMob = false; p.mobSexNo = S.v.mobsex; }
       p.reason0 = clamp(55 + p.eg.A * 1.1 + p.eg.CP * 0.9, 40, 100);
       p.m = {
         imm: clamp({ loose: 55, normal: 68, strict: 76 }[norm] + p.tr.ac * 14 - p.tr.a * 10 + (p.willK - 1) * 25, 20, 98),
@@ -955,6 +972,8 @@
     var rng = S.rng, v = S.v;
     if (p.state === 'awake' && p.branch !== 'thrill') return awakeRide(S, p, seg, nx);
     if (!p.canMob) {
+      /* 乗客の性別が恋愛対象に合わない人（場の設定「乗客の性別」）：理由の分かる触れ合いの外の段（文は solo-train-text5.js の D.OUT_SEX） */
+      if (p.mobSexNo && seg === 0 && D.OUT_SEX) { p.m.doubt += 6; say(S, { actors: [p], tag: '触れ合いの外', text: fm(pk(S, D.OUT_SEX[p.mobSexNo]), { a: p.name }), why: p.name + 'は乗客と触れ合わない（場の設定「乗客の性別」が' + (p.mobSexNo === 'm' ? '男だけ' : '女だけ') + 'で、' + p.name + 'の恋愛対象（体の関係の相手）に合わない）' }); return; }
       if (seg === 0) { p.m.doubt += 6; say(S, { actors: [p], tag: '触れ合いの外', text: p.name + 'は鞄を胸に抱え、触れ合う乗客たちのあいだで、ひとり腕を組んで立っていた。誰も、それを咎めはしなかった。この世界では、それも一つの乗り方だった。' + (rng() < 0.5 ? '窓に映る車内の光景を、' + p.name + 'は黙って眺め続けた。' : ''), why: p.name + 'は乗客との触れ合いに出ない設定（性行為の相手の固定・体の関係の相手）' }); }
       return;
     }
@@ -1146,7 +1165,7 @@
       if (prevB && D.BACK2) { p.backStage = 2; p.backAt = bk; p.m.doubt = clamp(p.m.doubt + 3, 0, 100); say(S, { actors: [p], tag: '打ち消せない', text: fm(pk(S, D.BACK2), V), why: p.name + 'は引っかかりをもう一度打ち消そうとしたが、うまくいかなかった（違和感 ' + Math.round(p.m.doubt) + '）' }); p.backN = S._sayN; return; }
       p.backStage = 1; p.backAt = bk; p.backDay = S.day;
       p.m.doubt = clamp(p.m.doubt - 4, 0, 100);
-      var bt = pk(S, D.BACK);
+      var bt = pk(S, untouched(S, p, D.BACK));
       say(S, { actors: [p], tag: '戸惑い', text: fm(bt, V), why: p.name + 'は引っかかりを、' + (/疲れ/.test(bt) ? '疲れのせいにした' : /ポスター|普通/.test(bt) ? '「これが普通」と言い聞かせて打ち消した' : '揺れと放送にまぎらせて打ち消した') });
       p.backN = S._sayN;
     }
@@ -1154,7 +1173,15 @@
 
   /* 違和感の芽の文（報告 5・7）：触る側の人は触る側の文、今日は連れとだけ触れ合った人は、見ず知らずの相手の文を使わない */
   var STRANGER_RE = /見ず知らず|初めて会った|初対面|知らない人|お名前/;
+  /* 乗客と触れ合っていない人（場の設定「乗客の性別」が恋愛対象に合わない人）には、触れられている前提の文（相手の手・体を預ける など）を出さない */
+  var TOUCHED_RE = /相手の手|体の上にある手|体を預け|体を許|こんなことを許|この人とは今日|受け入れながら|体は応えている|楽しんでいる自分|お名前も|会釈を返しながら|こんなところを|身を(?:引|離|よじ)|手から|外した|離した/;
+  function untouched(S, p, l, strict) {
+    if (!p || !p.mobSexNo || p.pairToday === S.day) return l;
+    var f = (l || []).filter(function (x) { return !TOUCHED_RE.test(x); });
+    return strict || f.length ? f : l;
+  }
   function noticeOf(S, p) {
+    if (p.mobSexNo && p.pairToday !== S.day) return untouched(S, p, D.NOTICE[ps(p)]);
     if (p.pairToday === S.day && p.mobToday !== S.day && D.NOTICE_PAIR) return D.NOTICE_PAIR;
     if (p.top && D.NOTICE_TOP && D.NOTICE_TOP[ps(p)]) return D.NOTICE_TOP[ps(p)];
     return D.NOTICE[ps(p)];
@@ -1166,11 +1193,12 @@
     p.m.imm = clamp(p.m.imm - 35, 0, 100); p.m.reason = clamp(p.m.reason + 15, 0, 100);
     /* 覚めたあとの動きを先に決め、覚める文はその動きと矛盾しないものだけから選ぶ（NO 13。対応表は train-design.md） */
     var bk = bk0 || pickBranch(S, p), wp = wakeLines(p, bk);
+    if (p.mobSexNo) wp = untouched(S, p, wp, true);
     var t = quiet ? '' : mobFmt(fm(pk(S, D.WAKE_TRIG), V), m) + '\n\n';
     /* 打ち消したばかりの引っかかりから覚める（申し送り T11）：戸惑いのすぐあと（同じ日の一つ前の駅）なら、戻ってきた一文を前に */
     if (!quiet && p.backStage === 1 && p.backDay === S.day && D.BACK_FAIL) t = fm(pk(S, D.BACK_FAIL), V) + '\n\n' + t;
     p.backStage = 0;
-    t += fm(pk(S, p.top || p.touchStop || S.pairStopDay === S.day ? keep(D.WAKE_SEE, function (x) { return !/自分の体の上にある手/.test(x); }) : D.WAKE_SEE), V) + (wp.length ? '\n\n' + fm(pk(S, wp), V) : '') + '\n\n' + mobFmt(fm(pk(S, D.WAKE_WORLD), V), m);
+    t += fm(pk(S, p.top || p.touchStop || S.pairStopDay === S.day || p.mobSexNo ? keep(D.WAKE_SEE, function (x) { return !/自分の体の上にある手/.test(x); }) : D.WAKE_SEE), V) + (wp.length ? '\n\n' + fm(pk(S, wp), V) : '') + '\n\n' + mobFmt(fm(pk(S, D.WAKE_WORLD), V), m);
     var o = say(S, { actors: [p], tag: '覚める', text: t, why: p.name + 'の常識が覚めた（覚めやすさ ' + Math.round(pw * 100) + '%：違和感 ' + Math.round(p.m.doubt) + '・理性 ' + Math.round(p.m.reason) + '・かかり具合 ' + Math.round(p.m.imm) + '・快楽 ' + Math.round(p.m.plea) + '）', mag: 32 });
     ST.key(S, o, p.name + 'が覚めた' + (p.cnt.wake > 1 ? '（' + p.cnt.wake + '度目）' : ''));
     branch(S, p, nx, bk);
@@ -1587,6 +1615,8 @@
       if (p.fk === 'switch' && p.followed && p.state !== 'awake' && D.FATE_FOLLOW_SW) t = fm(pk(S, D.FATE_FOLLOW_SW), { a: p.name, c: duo ? (p === a ? b.name : a.name) : '' });
       say(S, { actors: [p], tag: 'その後', text: t, why: p.name + 'の結末：' + p.fate });
       lines.push(p.name + '（' + p.roleLabel + '）：' + p.fate);
+      /* 乗客の性別が恋愛対象に合わず、乗客と触れ合わなかった人（場の設定「乗客の性別」） */
+      if (p.mobSexNo) lines.push(p.name + 'は、乗客が' + (p.mobSexNo === 'm' ? '男性' : '女性') + 'だけで恋愛対象に合わず、乗客とは触れ合わなかった（場の設定「乗客の性別」）。');
     });
     if (duo) {
       /* どちらかが路線を変えた（もう乗らない）なら、二人で並んで乗る結び（結ばれた・体を重ねた・二人で降りた）は出さない */
@@ -1630,7 +1660,7 @@
     var res = ST.result(S, input, {
       relmap: relmap,
       ending: { title: title, kind: kind, lines: lines },
-      estats: [['路線', LN.label], ['混み具合', { sparse: '空いている', busy: '混んでいる', packed: '満員' }[v.crowd]], ['常識の強さ', { loose: 'ゆるい', normal: 'ふつう', strict: '徹底' }[v.norm]], ['乗った日数', v.days + '日'], ['覚めた人', woke.length + '人']],
+      estats: [['路線', LN.label], ['混み具合', { sparse: '空いている', busy: '混んでいる', packed: '満員' }[v.crowd]], ['常識の強さ', { loose: 'ゆるい', normal: 'ふつう', strict: '徹底' }[v.norm]], ['乗った日数', v.days + '日']].concat(v.mobsex ? [['乗客', v.mobsex === 'm' ? '男だけ' : '女だけ']] : []).concat([['覚めた人', woke.length + '人']]),
       table: { title: '住人ごとの比較', hint: '山場は終点前の満員車両と二人の夜の回数。かかり具合は常識（催眠のようなもの）の効き方。', cols: ['立場', '乗った日', '山場', '違和感', 'かかり具合', '結末'], rows: rows },
       meters: [{ label: 'かかり具合', color: '--accent' }, { label: '違和感', color: '--warn' }, { label: '快楽', color: '--pine', dash: true }, { label: '理性', color: '--love' }],
       meta: LN.name + '・' + v.days + '日' + (S.mode === 'rescue' ? '・' + S.T.name + 'が途中から乗る' : S.mode === 'same' ? '・同じ車両' : ''),
