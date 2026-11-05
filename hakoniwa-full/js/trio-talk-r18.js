@@ -393,7 +393,25 @@
     var r = rngOf(S), base = function (l) { return l[Math.floor(r() * l.length)]; };
     return E.fresh && S ? E.fresh(S, arr, base) : base(arr);
   }
-  function psOf(c) { var p = c && (HK.personaOf ? HK.personaOf(c) : c.persona); return PS9.indexOf(p) >= 0 ? p : 'gentle'; }
+  /* 態度：夜の性格で選んだ態度（HK.Attr.nightAttSet。攻めの一言 HK.EroTop.say と同じ見方）があればそれ、なければふだんの態度（2026-11-05。
+     通し読み F17：同じ人が「どっちから欲しい？」の直後に「こ、ここで、いいのかな……」と、強気と内気の台詞が混ざっていた） */
+  function psOf(c) {
+    var p = c && (HK.personaOf ? HK.personaOf(c) : c.persona), A = HK.Attr, v = c && A && A.nightAttSet ? A.nightAttSet(c) : '';
+    if (PS9.indexOf(v) >= 0) return v;
+    return PS9.indexOf(p) >= 0 ? p : 'gentle';
+  }
+  /* 台詞の気の強さ：soft（内気・夜の性格が恥ずかしがり・甘えたがり）／bold（強気・厳格・クール・ツン・夜の性格がサド・意地悪）／''（どちらでもない） */
+  function temOf(c) {
+    var A = HK.Attr, kd = c && A && A.nightKind ? A.nightKind(c) : '', ps = psOf(c);
+    if (kd === 'shy' || kd === 'maso' || ps === 'shy') return 'soft';
+    if (kd === 'sadist' || kd === 'mean' || /^(proud|stern|cool|tsun)$/.test(ps)) return 'bold';
+    return '';
+  }
+  X.temOf = temOf;
+  /* 導入の台詞の気の強さ（くだけた常体で見る）：言い切り・命令・誘いは bold、ためらい（……・どうなっちゃう・優しく）は soft */
+  var INTRO_BOLD = /覚悟|おいで|欲しい？|が決めて|挟んであげ|しようかな|抱くから|いい子に|置いていかない|任せるから|食べ|来て。|ひとつになれる/;
+  var INTRO_SOFT = /……|優しく|どうなっちゃう|欲張り|変な感じ/;
+  X.introTem = function (t) { var k = String(t).split('｜')[0]; return INTRO_SOFT.test(k) ? 'soft' : INTRO_BOLD.test(k) ? 'bold' : ''; };
   function fill(s, r) { return String(s).replace(/\{([a-z])\}/g, function (m, k) { return r[k] && r[k].name ? r[k].name : m; }); }
   function unq(l) { l = String(l || ''); return l.charAt(0) === '「' && l.charAt(l.length - 1) === '」' ? l.slice(1, -1) : l; }
   /* a が b を抱く組の体 */
@@ -820,8 +838,11 @@
     var T = FM(), sp = this.sp;
     if (!T || !T.INTRO[sp.p]) return '';
     var memo = this.S._t3intro || (this.S._t3intro = {}), self = this, r = this.r3();
-    var ls = T.INTRO[sp.p].filter(function (q) { var w = r[q.r]; return w && (memo[w.name] || []).indexOf(q.t) < 0; });
-    if (!ls.length) ls = T.INTRO[sp.p];
+    /* 話し手の気の強さに合わない台詞は使わない（内気な人に命令・誘いの台詞、強気な人にためらいの台詞） */
+    var fit = T.INTRO[sp.p].filter(function (q) { var w = r[q.r], tm = w ? temOf(w) : '', it = X.introTem(q.t); return w && !(tm && it && tm !== it); });
+    var ls = fit.filter(function (q) { var w = r[q.r]; return (memo[w.name] || []).indexOf(q.t) < 0; });
+    if (!ls.length) ls = fit;
+    if (!ls.length) return '';
     var q = ls[Math.floor(this.rand() * ls.length)], w = r[q.r];
     if (!w) return '';
     var mm = memo[w.name] || (memo[w.name] = []); mm.push(q.t); if (mm.length > 5) mm.shift();

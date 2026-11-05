@@ -316,7 +316,8 @@
   var BWHO = { '{a}': '{b}', '{x}': '{y}', '{T}': '{U}', '{A}': '{B}' };
   function namesFor(top, bot, o) {
     var tn = (o && o.who) || top.name, bn = o && o.bwho ? o.bwho : o && o.who ? (BWHO[o.who] || '') : bot.name;
-    return { t: tn, b: bn };
+    /* c：攻めの台詞の {名} に入れる名前。モブ・名前を呼ばない相手（moan-engine.js の M.noCall）には呼ばない（2026-11-05） */
+    return { t: tn, b: bn, c: M.noCall && M.noCall(top, bot, o) ? '' : bn };
   }
   function kindFor(top, bot, o) {
     if (HK.NoGen && HK.NoGen.on && HK.NoGen.on(top, bot)) return '';
@@ -364,7 +365,7 @@
       if (pl.nt === 'mean' && !w.j3) { w.j0 *= 1.5; w.j1 *= 1.5; }
     }
     var key = wpick(r, w), nm = namesFor(top, bot, o);
-    var L = M.lineFor(S, top, key, { night: pl.nt, rel: relFor(S, top, bot, o), kind: kindFor(top, bot, o), nogen: !kindFor(top, bot, o) && !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(top, bot)), bname: nm.b });
+    var L = M.lineFor(S, top, key, { night: pl.nt, rel: relFor(S, top, bot, o), kind: kindFor(top, bot, o), nogen: !kindFor(top, bot, o) && !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(top, bot)), bname: nm.c });
     if (!L) return ['', ''];
     if (kind === 'z') sc.z++; else { sc.j++; if (pl.sweetJ) pl.sweetJ = false; }
     var tl = M.tilt(top, { partner: bot }, 'top');
@@ -401,11 +402,11 @@
     if (sc.provoked) { w = { u5: 1 }; sc.provoked = false; }
     else if (T <= 2) { w = { u0: 3, u1: 3, u5: 0.5 }; if (tl > 0.5) { w.u0 *= 1 + (tl - 0.5); w.u1 *= 1 + (tl - 0.5); } }
     else {
-      w = { u2: 3, u3: nm.b ? 2 : 0, u4: 3, u6: 2 };
+      w = { u2: 3, u3: nm.c ? 2 : 0, u4: 3, u6: 2 };
       if (tl < 0.5) { w.u2 *= 1 + (0.5 - tl); w.u6 *= 1 + (0.5 - tl); } else w.u4 *= 1 + (tl - 0.5);
     }
     var key = wpick(r, w), kd = kindFor(top, bot, o);
-    var L = M.lineFor(S, top, key, { kind: kd, nogen: !kd && !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(top, bot)), bname: nm.b });
+    var L = M.lineFor(S, top, key, { kind: kd, nogen: !kd && !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(top, bot)), bname: nm.c });
     if (!L) return '';
     M.lastU = key;
     if (L.user) return quote(nm.t, L.q, 0, r, 0);

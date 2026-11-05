@@ -259,6 +259,8 @@
     lookLine: /(?:こっち|こちら|私|前)を?見(?:ろ|て|な|よ|なさい|るんだ)|目を(?:開け|逸らす|見て|見ろ|閉じるな)|目、見て|見つめ(?:て|ろ|返して)|顔(?:を|、)?(?:見せ|上げ|よく見せ)(?:て|ろ|な|なさい)|顔(?:を|、)?隠す(?:な|んじゃない)/,
     rearFace: /見上げ|(?:顔|目|瞳)を[^。]{0,6}(?:じっと)?(?:見つめ|覗き込|のぞき込|見下ろ|のぞ)|見つめ合|目を合わせ|視線を合わせ|視線が絡|額を(?:つけ|合わせ|くっつけ|押し当て|寄せ)|額と額|額をこつん|鼻先を(?:すり|擦|寄せ)|まぶたに|唇を重ね/,
     rearOk: /振り向|振り返|肩越し|鏡|横顔|首をひね|後ろを向かせ(?:たまま)?顔|体を返|向き合|仰向け|向かい合|(?:シーツ|枕|敷布|布団|壁|腕)に額/,
+    /* 受けが上のときの、攻めが上にいる言い回し（攻めが見下ろす・攻めの額の汗が受けに落ちる） */
+    bUpDown: /\{a\}[はが](?:(?!\{b\}[はが])[^。「]){0,30}見下ろ(?!す\{b\}|され)|\{a\}の額から汗が(?:落ち|伝い落ち|滴り)[^。]{0,8}\{b\}の/,
     move: /運(?:ん|び|ぶ|ば)|連れ(?:て|込|出)|移(?:っ|し|動|ろ|る)|向か(?:っ|い|う)|抱き上げ|抱え上げ|抱えて|もつれ(?:る|込)|(?:へ|まで)[^。]{0,6}(?:行|戻|導|誘)|倒れ込|場所を変え|起き上が|降ろ|下ろ|立たせ|立ち上が|引っ張|手を引|押し倒|押しつけ|押し付け|座らせ|寝かせ|横たえ|押し込|引き倒|追い込|崩れ落ち|たどり着|から上が|戻っ|降り/,
     bye: /じゃあ(?:な|ね)|それじゃ(?:あ|、|。|ね)|^では[。、]?$|(?:先に|もう)(?:帰|行|戻|上が)|失礼(?:する|します)|帰って(?:いい|くれ)|出て(?:いけ|って)/,
     stay: /寄り添|抱き(?:寄せ|しめ|合|直)|腕枕|毛布|くるま|話し込|語り合|髪を(?:撫|梳)|胸に(?:頬|顔)|指を絡|肩を寄せ|頭を(?:預|撫)|腕の中|寝息|眠りに|微睡|まどろ/,
@@ -322,6 +324,8 @@
         }
         /* (k) 後ろからの体位のまま、顔を合わせる */
         if (rearBefore && ST2.rearFace.test(n) && !ST2.rearOk.test(n)) add({ k: 'k', i: i, s: s, why: '後ろからの体位のまま「' + ST2.rearFace.exec(n)[0] + '」' });
+        /* 受けが上（跨っている）のまま、下にいる攻めが見下ろす・攻めの汗が受けの胸に落ちる（2026-11-05。通し読み F16） */
+        else if (mode !== 'fm' && st.posture === 'bUp' && !chg.some(function (c) { return c.k !== 'bUp'; }) && ST2.bUpDown.test(n)) add({ k: 'k', i: i, s: s, bup: true, why: '受けが上のまま「' + ST2.bUpDown.exec(n)[0] + '」' });
         /* (l) 場所 */
         var pl = /(?:余裕|暇)も(?:な|無)|ないまま/.test(n) ? [] : placeOf(n);
         /* 山場のあと（事後・翌朝）は場所が変わってよい */
@@ -490,8 +494,10 @@
   function psOf(c) { var b = (HK.personaOf ? HK.personaOf(c) : c && c.persona) || (c && c.persona) || 'gentle'; if (HK.Attr && HK.Attr.psNight) b = HK.Attr.psNight(c, null, b) || b; return /^(proud|stern|tsun|gentle|devoted|cool|free|shy|polite)$/.test(b) ? b : 'gentle'; }
   var NOM = /根元|竿|\{男性器\}|\{亀頭\}|ものが|ものを|硬く|吐き出|射精|搾/;
   /* 着衣の型：直に触れる言い回しと、服の上から触れる言い回し（(h)） */
-  var BARE_RE = /素肌|直に|直接(?:触|撫|肌)|服の(?:下|中)(?:へ|に|で)|裾から(?:手|指)|(?:下着|ショーツ|ボタン)をずら|下着の(?:中|下)|肌に直/;
-  var OVER_RE = /服の上から|布越し|シャツ越し|ブラウス越し|スカート越し|ズボン越し|下着越し|服越し/, OVER_SEN = /[^。]*(?:服の上から|布越し|シャツ越し|ブラウス越し|スカート越し|ズボン越し|下着越し|服越し)[^。]*。/;
+  /* 2026-11-05：口や指で中まで進んだ（咥える・舌を這わせる・指を沈める）も直に触れたあと。着衣の型の前戯の頭の「服を一枚も乱さないまま」「ボタンを一つも外さず、布の上から」も服の上からの言い回し（通し読み T5） */
+  var BARE_RE = /素肌|直に|直接(?:触|撫|肌)|服の(?:下|中)(?:へ|に|で)|裾から(?:手|指)|(?:下着|ショーツ|ボタン)をずら|下着の(?:中|下)|肌に直|口に含|咥え|舌を這わせ|指を[^。]{0,10}(?:沈め|差し入れ)/;
+  var OVER_W = '服の上から|布越し|シャツ越し|ブラウス越し|スカート越し|ズボン越し|下着越し|服越し|一枚も乱さない|ボタンを一つも外さず|布の上から';
+  var OVER_RE = new RegExp(OVER_W), OVER_SEN = new RegExp('[^。]*(?:' + OVER_W + ')[^。]*。');
   var FACE = /胸に顔|首に腕|見上げ|見つめ|目を合わせ|鼻先|頬を両手|肩に額|顔をのぞ|見下ろ/;
   function noM(b) { var P = HK.Pos; return P && P.hasM ? !P.hasM(b) : false; }
   function flowUnit(text, kind) { return { paras: [text], flow: kind }; }
@@ -581,6 +587,9 @@
     i: [['抜かないまま、', 'もう一度奥まで沈め直して、'], ['抜かないまま', 'もう一度沈め直して'], ['抜かずに', 'もう一度沈め直して'], ['抜かれる前に、', 'もう一度沈め直すと、'], ['抜かれる前に', 'もう一度沈め直すと'],
       ['繋がったまま', 'もう一度繋がって'], ['挿れたまま', '挿れ直して'], ['入れたまま', '入れ直して'], ['沈めたまま', '沈め直して'], ['埋めたまま', '埋め直して'], ['呑み込んだまま', '呑み込み直して'], ['咥え込んだまま', '咥え込み直して']],
     j: [['{a}を見上げ', '{a}のほうへ顔を上げ'], ['見上げ', '顔を上げ'], ['涙目で睨み返すと', '涙声で首を振ると'], ['睨み返すと', '首を振ると'], ['睨み返し', '首を振り'], ['{a}を睨んだ', '顔を背けた']],
+    /* 受けが上のときの見下ろす・汗（(k) の bup）：上にいる受けを見上げる・受けの汗が攻めに落ちる */
+    kb: [['見下ろしながら', '見上げながら'], ['見下ろしたまま', '見上げたまま'], ['見下ろして', '見上げて'], ['見下ろした', '見上げた'], ['見下ろす', '見上げる'], ['見下ろし', '見上げ'],
+      ['{a}の額から汗が落ち、{b}の胸の上で弾けた', '{b}の額から汗が落ち、{a}の胸の上で弾けた'], ['{a}の額から汗が落ちて、{b}の肌で弾けた', '{b}の額から汗が落ちて、{a}の肌で弾けた']],
     k: [['見つめ合ったまま', '指を絡め合ったまま'], ['額を合わせたまま', '肌を重ねたまま'], ['{b}の額に、頬に、まぶたに、', '{b}のうなじに、肩に、背中に、'], ['鼻先をすり寄せて、笑いかける', '背中に頬をすり寄せて、小さく笑う']],
     /* 場所：寝床の語を、ソファ・床の場面の語に */
     l: { sofa: [['シーツ', 'クッション'], ['敷布', 'クッション'], ['ベッド', 'ソファ'], ['寝床', 'ソファ'], ['布団', 'ソファ']], floor: [['シーツ', 'ラグ'], ['敷布', 'ラグ'], ['ベッド', '床'], ['寝床', '床'], ['布団', 'ラグ']] }
@@ -667,7 +676,7 @@
     }
     if (x.k === 'j' && x.line) return cutLine(u, x.line.raw);
     if (x.k === 'j' || x.k === 'k') {
-      var sl = SUB[x.k].filter(function (p) { return x.s.indexOf(p[0]) >= 0; })[0];
+      var sl = SUB[x.bup ? 'kb' : x.k].filter(function (p) { return x.s.indexOf(p[0]) >= 0; })[0];
       if (sl && subIn(u, x.s, sl[0], sl[1])) return true;
       return cutExact(S, x.i, x.s);
     }
@@ -716,6 +725,19 @@
       return false;
     }
     if (x.k === 'h') {
+      /* 着衣の型の前戯の頭（play-r18.js が置いた二文。play.pfT）なら、その二文ごと外す */
+      if (x.re === OVER_SEN && S.play && S.play.pfT) {
+        var pfn = normNames(S.play.pfT, S.a, S.b);
+        for (var pk = 0; pk < u.paras.length; pk++) {
+          var pq = u.paras[pk].indexOf(pfn);
+          if (pq < 0) continue;
+          var pr2 = (u.paras[pk].slice(0, pq) + u.paras[pk].slice(pq + pfn.length)).replace(/^[\s　]+|[\s　]+$/g, '');
+          if (pr2) u.paras[pk] = pr2; else u.paras.splice(pk, 1);
+          if (!u.paras.length) units.splice(x.i, 1); else delete u.f;
+          S.play.pfT = '';
+          return true;
+        }
+      }
       if (x.re && cutSentence(u, x.re)) return true;
       var ph = partOf(S.parts, u);
       if (ph && !u.keep) { cutPart(units, ph.t); S.parts.splice(S.parts.indexOf(ph), 1); return true; }
@@ -1000,6 +1022,57 @@
     });
     return t.replace(/名前を呼ぼうとして/g, '何か言おうとして').replace(/私の名前を[、]?呼んで/g, 'もっと声を聞かせて').replace(/名前で呼んで/g, '声を聞かせて').replace(/名前をひとつ呼んだ/g, '短く囁いた').replace(/名前をもう一度呼んだ/g, 'もう一度囁いた').replace(/名前を呼んだ/g, '囁いた').replace(/名前を呼ばれ/g, '囁かれ').replace(/名前を呼ぶ/g, '囁く').replace(/名前を呼び/g, '囁き');
   };
+  /* ---------- 場面をまたぐ付け足しの繰り返し（2026-11-05。通し読み F16：同じ人の「律儀に名前を呼んだ」が別の夜の場面で繰り返された） ----------
+     一回の遊び（F.memo）のあいだ、長い場面の地の文の一文（台詞を含まない 16 字以上の文）を数え、同じ文の三度目は外す（2 回まで）。
+     段の状態を変える文（挿入・山場・体位・脱がせる・抜く・指・目隠し・場所・移る）は外さない。外すと主語の無い文が段落の頭に来るときも外さない */
+  function stateSent(n) {
+    if (hasClimax(n) || RE.insert.test(n) || RE.undress.test(n) || RE.inside.test(n) || ST2.wd.test(n) || ST2.fin.test(n) || ST2.fout.test(n) || ST2.blOn.test(n) || ST2.blOff.test(n) || ST2.move.test(n) || placeOf(n).length) return true;
+    return Object.keys(POS.chg).some(function (k) { return POS.chg[k].test(n); }) || FM_AUP.test(n);
+  }
+  function capRepeat(text, a, b) {
+    if (typeof text !== 'string' || !text) return text;
+    var M = F.memo || (F.memo = {}), C = M.sent || (M.sent = {});
+    var ps = text.split(/\n\n/), changed = false, past = false;
+    var who = [a && a.name, b && b.name, '{a}', '{b}'].filter(Boolean).map(escR).join('|');
+    var LQ = who ? new RegExp('(' + who + ')「(?!\u2060)([^」]{8,})」', 'g') : null;
+    for (var k = 0; k < ps.length; k++) {
+      /* 事後（山場の段より後ろ）の住人の台詞（喘ぎでない 8 字以上）も、同じ人の同じ台詞の三度目は外す（「明日の朝食は私が作る」など。2026-11-05） */
+      if (past && LQ) {
+        var p1 = ps[k].replace(LQ, function (all, nm, q) {
+          var lk = nm + '「' + q + '」';
+          if ((C[lk] || 0) >= 2) return '\u0000';
+          C[lk] = (C[lk] || 0) + 1; return all;
+        });
+        if (p1 !== ps[k]) {
+          var p2 = p1.replace(/\u0000(?:――)?/g, '').replace(/^[\s　]+|[\s　]+$/g, '');
+          if (narrOf(p2).replace(/\{[ab]\}|[\s　―…]/g, '').length >= 8) { ps[k] = p2; changed = true; }
+        }
+      }
+      if (hasClimax(narrOf(normNames(ps[k], a, b)))) past = true;
+      var ss = sentences(ps[k]), keep = [];
+      for (var j = 0; j < ss.length; j++) {
+        var x = ss[j], key = x.replace(/^[\s　]+|[\s　]+$/g, '');
+        var plain = !/[「」＠]/.test(key) && key.replace(/\{[^{}]*\}|[\s　、。…]/g, '').length >= 16;
+        if (!plain) { keep.push(x); continue; }
+        var n = normNames(key, a, b);
+        /* 受けのリアクションの文は、直前に台詞（応答を求める攻めの台詞かもしれない）があるときは外さない（(d) の応答待ちを崩さない） */
+        var lineBefore = /「/.test(keep.join('')) || (!keep.length && k > 0 && /」[\s　]*$/.test(ps[k - 1]));
+        if ((C[key] || 0) >= 2 && !stateSent(n) && !(RE.react.test(n) && lineBefore)) {
+          var nx = ss[j + 1];
+          var headless = !keep.length && nx && !/^[\s　]*(?:[^。「]{0,16})(?:\{[ab]\}|二人|ふたり)/.test(normNames(nx, a, b)) && !/「/.test(nx.slice(0, 2));
+          if (!headless) { changed = true; continue; }
+        }
+        C[key] = (C[key] || 0) + 1;
+        keep.push(x);
+      }
+      /* 段落が空になる（または台詞だけが残る）なら外さない（段の数と性感の見積もりを変えないため） */
+      if (keep.length !== ss.length && narrOf(keep.join('')).replace(/\{[ab]\}|[\s　―…]/g, '').length >= 8) ps[k] = keep.join('').replace(/^[\s　]+/, '');
+      else if (keep.length !== ss.length) ss.forEach(function (x) { var kx = x.replace(/^[\s　]+|[\s　]+$/g, ''); if (keep.indexOf(x) < 0) C[kx] = (C[kx] || 0) + 1; });
+    }
+    if (!changed) return text;
+    return ps.filter(function (p) { return /\S/.test(p); }).join('\n\n');
+  }
+  F.capRepeat = capRepeat;
   /* 場面のあいだだけ関数を差し替えて、差し込まれた部品を覚える */
   function tap(obj, key, fn) { if (!obj || typeof obj[key] !== 'function') return null; var f0 = obj[key]; obj[key] = fn(f0); return function () { obj[key] = f0; }; }
   function makeWrap(sc0, obj) {
@@ -1067,6 +1140,7 @@
         if (HK.SexSpot && HK.SexSpot.cur) t1 = HK.SexSpot.fix(t1, HK.SexSpot.cur);
         var fx = F.fix(t1, { a: a, b: b, mode: md, after: opt.after || '', thick: thickOf(opt), parts: parts, press: pressK, ero: obj === HK.ThickEro, play: pl && pl.play, keep: pl && pl.keep });
         r.text = fx.changed ? fx.text : t1;
+        if (!F.noCap) r.text = capRepeat(r.text, a, b);
         if (fx.trace) r._trace = fx.trace;
         r.flow = { play: pl ? { entry: pl.play.entry, focus: pl.play.focus, prop: pl.play.prop, pos: pl.play.pos, finish: pl.play.finish, scene: pl.play.scene || '', posT: pl.play.posT, lock: pl.play.lock, act: pl.play.act || '' } : null, lead: lt, why: whyL, parts: parts.map(function (p) { return p.role; }), partT: parts.filter(function (p) { return p.role === 'lead' || p.role === 'ini-lead'; }).map(function (p) { return { role: p.role, t: p.t }; }) };
         return r;
