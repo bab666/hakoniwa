@@ -1,15 +1,15 @@
 {
  "cur": {
-  "core": "core.237abd5c25.js",
-  "late": "late.91eaa652f0.js",
+  "core": "core.6520d9dc16.js",
+  "late": "late.9d4218d9ce.js",
   "pack-rel": "pack-rel.399f04c5fa.js",
   "pack-sim": "pack-sim.d8c39ea7e3.js",
-  "pack-lewd": "pack-lewd.777c0c2b76.js",
+  "pack-lewd": "pack-lewd.a4cedec882.js",
   "scen-goukon": "scen-goukon.2438deaf5d.js",
   "scen-classroom": "scen-classroom.d48da3b7a2.js",
   "scen-island": "scen-island.85f43a107d.js",
   "pack-trap": "pack-trap.94333e1b84.js",
-  "scen-whiteroom": "scen-whiteroom.27cbb1c159.js",
+  "scen-whiteroom": "scen-whiteroom.0211800d83.js",
   "scen-omega": "scen-omega.d098ba8791.js",
   "scen-br": "scen-br.790ebb9b99.js",
   "scen-trial": "scen-trial.eb1b825fd7.js",
@@ -25,7 +25,7 @@
   "scen-variety": "scen-variety.d69f53a670.js",
   "scen-locker": "scen-locker.0f303495f6.js",
   "scen-jashin": "scen-jashin.416ed4c86b.js",
-  "scen-yakata": "scen-yakata.e99eb1a2c2.js",
+  "scen-yakata": "scen-yakata.a9d406698a.js",
   "scen-ship": "scen-ship.75f735f929.js",
   "pack-story": "pack-story.bb6c616aab.js",
   "scen-jinro": "scen-jinro.011ae08b2a.js",
@@ -75,16 +75,16 @@
   "tone-yankee": "tone-yankee.2cb5dd563d.js"
  },
  "prev": {
-  "core": "core.237abd5c25.js",
+  "core": "core.6520d9dc16.js",
   "late": "late.91eaa652f0.js",
   "pack-rel": "pack-rel.399f04c5fa.js",
   "pack-sim": "pack-sim.d8c39ea7e3.js",
-  "pack-lewd": "pack-lewd.f41e5aa077.js",
+  "pack-lewd": "pack-lewd.a4cedec882.js",
   "scen-goukon": "scen-goukon.2438deaf5d.js",
   "scen-classroom": "scen-classroom.d48da3b7a2.js",
   "scen-island": "scen-island.85f43a107d.js",
   "pack-trap": "pack-trap.94333e1b84.js",
-  "scen-whiteroom": "scen-whiteroom.27cbb1c159.js",
+  "scen-whiteroom": "scen-whiteroom.0211800d83.js",
   "scen-omega": "scen-omega.d098ba8791.js",
   "scen-br": "scen-br.790ebb9b99.js",
   "scen-trial": "scen-trial.eb1b825fd7.js",
@@ -363,8 +363,8 @@
    266
   ],
   "js/pos.js": [
-   26851,
-   8547
+   27462,
+   8737
   ],
   "js/attr.js": [
    61806,

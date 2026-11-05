@@ -93,8 +93,26 @@
   P.isFBody = function (c) { var g = P.genSet(c); if (g) return g === 'f' || g === 'mf' || (g === 'none' && src(c, 'gender') === 'f'); return src(c, 'gender') === 'f'; };
   /* ふたなり（R18版のみ）：女性で、自分で「攻め」か「リバ」を選び、設定で「ふたなり」を付けた人。
      攻めに回る場面では男性の体（いちもつ）を前提にした描写で書く。自分で「受け」を選んだ人・おまかせの女性には効かない。
-     性器を「両方」にした人は、受けの指定でなければ同じ扱い（性別・ふたなりの欄に関係なく） */
-  P.futa = function (c, o) { var g = P.genSet(c); if (g) return g === 'mf' && P.of(c, o) !== 'bottom'; return futaOld(c, o); };
+     性器を「両方」にした人は、受けの指定でなければ同じ扱い（性別・ふたなりの欄に関係なく）。
+     受け攻めがおまかせ（女性のおまかせは P.of が受け）の「両方」の人は、二人の向き（P.order）で攻めに回るなら同じ扱い
+     （2026-11-05：三人の場面と同じく「フタナリが攻めの側なら {男性器} で挿れる」。受けに回るときは今までどおり女性の体）。
+     相手 o を渡せばその二人の向きで、渡さなければ、この回にその人が P.order で並べられた向き（autoRole）がすべて攻めのときだけ */
+  var autoRole = {};
+  function futaAuto(c, o) {
+    if (!o || o === c || typeof o !== 'object') { var r = autoRole[nameOf(c)]; return r === 1; }
+    try { return P.orients(c, o).length > 0 && P.order(c, o)[0] === c; } catch (e) { return false; }
+  }
+  /* P.order の結果を、受け攻めがおまかせの「両方」の人について覚える（1＝攻めだけ・2＝受けだけ・3＝両方。P.reset で消す） */
+  function noteAuto(r) {
+    if (HK.SAFE_ON || !r || r.length !== 2 || !r[0] || !r[1] || r[0] === r[1]) return;
+    for (var i = 0; i < 2; i++) {
+      var c = r[i], o = r[1 - i];
+      if (typeof c !== 'object' || P.genSet(c) !== 'mf' || explicit(c, o)) continue;
+      if (!P.orients(c, o).length) continue;
+      var k = nameOf(c); autoRole[k] = (autoRole[k] || 0) | (i === 0 ? 1 : 2);
+    }
+  }
+  P.futa = function (c, o) { var g = P.genSet(c); if (g) return g === 'mf' && (explicit(c, o) ? P.of(c, o) !== 'bottom' : futaAuto(c, o)); return futaOld(c, o); };
   /* 描写の上で「女性の体」として書く人（ふたなりの攻めは除く）。女性どうし（ff）・女性が攻め（fm）の判定はこれで行う */
   P.isF = function (c, o) { return P.isFBody(c) && !P.futa(c, o); };
   /* 女性どうしの組（いちもつの描写を使わない）。ふたなりの攻めが入る組は、男性の体を前提にした描写でよい */
@@ -189,7 +207,8 @@
 
   /* 二人のうち、攻め（動く側・挿入する側）を先にして返す。fb は場面側の希望 [攻め, 受け]
      指定の合わない組でも、自分で攻めを選んだ人を受けの位置には置かない（呼ぶ側は P.okSex で先に確かめること） */
-  P.order = function (a, b, fb) {
+  P.order = function (a, b, fb) { var r = order0(a, b, fb); noteAuto(r); return r; };
+  function order0(a, b, fb) {
     if (!a || !b || a === b) return fb || [a, b];
     fb = fb && fb.length === 2 ? fb : [a, b];
     var os = P.orients(a, b), r;
@@ -217,7 +236,7 @@
     } else r = fb;
     lock[k] = nameOf(r[0]);
     return r;
-  };
+  }
   /* 向きが決まっている組か（＝途中の逆転・入れ替わりを起こしてはいけない） */
   P.fixed = function (a, b) { return !(P.of(a, b) === 'riba' && P.of(b, a) === 'riba'); };
   /* 二人の組で a が攻めか */
@@ -247,7 +266,7 @@
      女性どうし・女性上位の見直し（pos-ff.js・pos-fm.js）は、この組を直さない。名前の組 攻め\u0001受け */
   P.maleTop = {};
   P.isMaleTop = function (a, b) { return !!(a && b && P.maleTop[a.name + '\u0001' + b.name]); };
-  P.reset = function () { lock = {}; P.maleTop = {}; };
+  P.reset = function () { lock = {}; P.maleTop = {}; autoRole = {}; };
   /* ノリノリな性格（奔放・衝動的）：受けやおまかせでも、自分から跨ったり誘ったりする */
   /* 夜の主導（lead。R18版だけ）：受けが主導（誘い受け・襲い受け）の人はノリノリ、攻めが主導の人はノリノリにしない */
   P.leadOf = function (c) { if (!c || HK.SAFE_ON) return ''; var v = src(c, 'lead'); return v === 'top' || v === 'sasoi' || v === 'osoi' ? v : ''; };

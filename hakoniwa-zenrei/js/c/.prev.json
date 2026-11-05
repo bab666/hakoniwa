@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.2506198aa4.js",
+  "core": "core.6c62271625.js",
   "late": "late.0cc08133d7.js",
   "pack-rel": "pack-rel.f69ad5ddcd.js",
   "pack-sim": "pack-sim.e6c0d68017.js",
@@ -69,7 +69,7 @@
  "prev": {
   "core": "core.2506198aa4.js",
   "late": "late.0cc08133d7.js",
-  "pack-rel": "pack-rel.81b1193b5b.js",
+  "pack-rel": "pack-rel.f69ad5ddcd.js",
   "pack-sim": "pack-sim.e6c0d68017.js",
   "scen-goukon": "scen-goukon.feb5a3fd0a.js",
   "scen-classroom": "scen-classroom.16c3a8c461.js",
@@ -339,8 +339,8 @@
    917
   ],
   "js/pos.js": [
-   18439,
-   6368
+   19050,
+   6577
   ],
   "js/attr.js": [
    58225,

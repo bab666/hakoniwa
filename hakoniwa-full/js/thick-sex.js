@@ -458,7 +458,7 @@
     if (HK.NoGen && HK.NoGen.on(a, b)) { var ng = HK.NoGen.scene({ pick: opt.pick, rng: opt.rng, a: a, b: b, open: opt.open, after: opt.after || false }); return { text: ng.text, hard: false, jealous: false, mode: ng.mode }; }
     /* この回で二人が体を重ねた回数（二度目以降は崩れ方を後戻りさせない） */
     var nth = HK.Ero && HK.Ero.pairNight ? HK.Ero.pairNight(opt.rng, a, b) : 1;
-    var P = HK.Pos, fem = P && P.isF, mode = fem && fem(a) && fem(b) ? 'ff' : fem && fem(a) && !fem(b) ? 'fm' : 'mf';
+    var P = HK.Pos, fem = P && P.isF, mode = fem && fem(a, b) && fem(b, a) ? 'ff' : fem && fem(a, b) && !fem(b, a) ? 'fm' : 'mf';
     /* 女性が {b} で男性が {a} のときは mf（男性が繋がる側）。女性 {a}×男性 {b} は必ず fm（跨る書き方） */
     var hard = mode === 'mf' && T.hard(opt.rng, a, b), jl = hard && !!opt.jealous, g = fmG(st), out = [];
     /* 攻めの台詞（ero-top-lines-r18.js の HK.EroTop）：始まり・途中・山場か事後に一言ずつ。関係（恋人どうし・体だけ）は opt.rel か、いまの回の二人から */

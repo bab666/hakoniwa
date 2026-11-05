@@ -21,7 +21,7 @@
   };
   X.mode = function (a, b) {
     var P = HK.Pos, fem = P && P.isF;
-    return fem && fem(a) && fem(b) ? 'ff' : fem && fem(a) && !fem(b) ? 'fm' : 'mf';
+    return fem && fem(a, b) && fem(b, a) ? 'ff' : fem && fem(a, b) && !fem(b, a) ? 'fm' : 'mf';
   };
 
   /* ---------- 始まり（呼ぶ側が場所の文を渡さないとき） ---------- */

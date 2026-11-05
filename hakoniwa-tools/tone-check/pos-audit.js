@@ -26,6 +26,8 @@
    RANDPOS=1（2026-10-26 担当AW）：回ごとに乱数で、相手ごとの受け攻め（お互いに食い違う指定も）・攻め度・モブ相手の受け攻め・夜の主導・夜の性格（相手に合わせるも）を振る。
      V12: モブ相手の受け攻めを「攻め」にした住人（住人どうしでは攻めでない人）が、住人の名前がほかに出ない文（モブ・魔物・罠が相手）で受ける側の文になった
      V13: 夜の主導の文（pos-lead-r18.js の HK.PosLead.log）の受け持ちが向きと食い違う（主導の文の「受け」が、二人の向き HK.Pos.order で攻めになる・自分で攻めを選んでいる）
+     V15: フタナリ（性器「両方」）の住人が二人の向き（HK.Pos.order）で攻めなのに、男性器のある相手に跨って自分の中へ呑みこむ文になった（二人だけが出る文。
+          受け攻めの欄がおまかせでも攻めの側なら {男性器} で挿れる。2026-11-05。配役の最後の型におまかせのフタナリ×男性の受け・女性の受けを足した）
      V14: 相手ごとの受け・攻め度で向きが決まる組（HK.Pos.prefer。リバどうしは除く）で、決まった攻めが受ける側の文になった（二人だけが出る文）
    クラスメイトの奇数回（2026-10-28 担当KC）：住人0を担任の先生にして、環境値「先生との恋愛」をあり（隠れて付き合う／公にすることもある）にし、
      住人0と1を関係の設定で恋人にして回す（R18版の先生と生徒の夜 classroom-teacher-love.js の受け攻め・体の語を V1〜V14 で見る）
@@ -56,7 +58,11 @@ const PASS = function* (HK, opt) {
       { g: ['f', 'm', 'f', 'm', 'f', 'm'], p: ['top', 'bottom', 'top', '', 'top', 'bottom'], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'fwb' }], gn: ['none', '', 'm', 'none', '', 'f'] },
       { g: ['m', 'f', 'm', 'f', 'm', 'f'], p: ['bottom', 'top', '', 'top', 'bottom', 'top'], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 4, b: 5, type: 'lover' }], gn: ['none', 'none', '', 'm', 'f', ''] },
       /* 性器なしどうし・性器なしと男性器のみの女性 */
-      { g: ['m', 'f', 'f', 'm', 'f', 'm'], p: ['top', 'bottom', 'top', 'bottom', 'riba', ''], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'lover' }], gn: ['none', 'none', 'm', 'none', 'none', 'f'] }
+      { g: ['m', 'f', 'f', 'm', 'f', 'm'], p: ['top', 'bottom', 'top', 'bottom', 'riba', ''], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'lover' }], gn: ['none', 'none', 'm', 'none', 'none', 'f'] },
+      /* V15：受け攻めがおまかせのフタナリ（性器「両方」）×男性の受け・女性の受け（2026-11-05） */
+      { g: ['f', 'm', 'f', 'f', 'm', 'm'], p: ['', 'bottom', '', 'bottom', '', 'top'], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 2, b: 3, type: 'lover' }], gn: ['mf', '', 'mf', '', '', ''] },
+      /* 型の数を 5 と互いに素（11）にして、どの型も人数 2〜6 を通す */
+      { g: ['f', 'f', 'm', 'f', 'm', 'f'], p: ['', 'bottom', 'bottom', 'riba', '', ''], l: [], ties: [{ a: 0, b: 1, type: 'lover' }, { a: 3, b: 2, type: 'fwb' }], gn: ['mf', '', '', 'mf', '', 'mf'] }
     ];
     /* --ff：女性だけの配役（受け攻めの指定いろいろ・恋人や片想いで結ぶ） */
     const FFC = [
@@ -153,12 +159,12 @@ const JUDGE = function (HK, opt) {
     try { const SH = HK.SHIP; if (SH && SH.LIFE) SH.LIFE.forEach(x => x && x.name && MOBM.push(x.name)); } catch (e) { }
     const hasMobM = t => MOBM.some(nm => t.indexOf(nm) >= 0) || /夢の中|(?:風|氷|闇|影|水|炎|光|霧)の(?:腕|手|指|舌)|の民の住人|の若者たち|民(?=[をはがのに])|巨体|異星の|壁の向こう|向こう側の誰か|向こうの誰か|正体の分からない何か|若いスタッフ|二人のスタッフ|無口な職人|精液検査センター/.test(t);
     const skip = []; const sk = (why, sc, t, i) => { if (WHY && skip.length < 300) skip.push(why + ' | ' + sc + ' | …' + t.slice(Math.max(0, i - 30), i + 60) + '…'); };
-    const out = { skip, V1: [], V2: [], V3: [], V4: [], V5: [], V6: [], V7: [], V8: [], V10: [], V11: [], V12: [], V13: [], V14: [], n: { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V10: 0, V11: 0, V12: 0, V13: 0, V14: 0 }, err: [], runs: 0, bySc: {}, v5n: 0, lead: 0, npcTop: 0, pref: 0 };
+    const out = { skip, V1: [], V2: [], V3: [], V4: [], V5: [], V6: [], V7: [], V8: [], V10: [], V11: [], V12: [], V13: [], V14: [], V15: [], n: { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V10: 0, V11: 0, V12: 0, V13: 0, V14: 0, V15: 0 }, err: [], runs: 0, bySc: {}, v5n: 0, lead: 0, npcTop: 0, pref: 0 };
     return {
       /* R18版だけ（全年齢モード・全年齢版では回さない） */
       accept() { return !HK.SAFE_ON; },
       begin(run) {
-        if (!out.bySc[run.sc]) out.bySc[run.sc] = { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V10: 0, V11: 0, V12: 0, V13: 0, V14: 0, runs: 0 };
+        if (!out.bySc[run.sc]) out.bySc[run.sc] = { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V10: 0, V11: 0, V12: 0, V13: 0, V14: 0, V15: 0, runs: 0 };
         if (HK.Attr) HK.Attr.log = [];
         if (HK.PosLead) HK.PosLead.log = [];
         if (HK.LewdWords) HK.LewdWords.V10.length = 0;
@@ -297,6 +303,15 @@ const JUDGE = function (HK, opt) {
             if (named.length !== 2 || named.indexOf(pr[0]) < 0 || named.indexOf(pr[1]) < 0 || pr[0].name.indexOf(pr[1].name) >= 0 || pr[1].name.indexOf(pr[0].name) >= 0) continue;
             const m = recvHit(pr[0]);
             if (m && !new RegExp('、' + pr[1].name + '(?:は|が)').test(m[0])) { out.n.V14++; out.bySc[sc].V14++; if (out.V14.length < 200) out.V14.push(sc + '#' + s + ' | 決まった攻め=' + pr[0].name + '(' + (pr[0].pos || '-') + pr[0].gender + ' 攻め度' + P.lv(pr[0]) + ') 受け=' + pr[1].name + '(' + (pr[1].pos || '-') + ' 攻め度' + P.lv(pr[1]) + ') | …' + t.slice(Math.max(0, m.index - 20), m.index + m[0].length + 20).replace(/\n/g, ' ') + '…'); }
+          }
+          /* V15（2026-11-05）：フタナリ（性器「両方」）が二人の向きで攻めなのに、男性器のある相手に跨って自分の中へ呑みこむ（二人だけが出る文） */
+          if (named.length === 2) for (const T of named) {
+            if (P.genSet(T) !== 'mf') continue;
+            const U = named[0] === T ? named[1] : named[0];
+            if (!P.hasM(U) || T.name.indexOf(U.name) >= 0 || U.name.indexOf(T.name) >= 0 || !P.okSex(T, U) || P.order(T, U)[0] !== T) continue;
+            const hit = t.split(/(?<=[。！？\n])/).filter(x => new RegExp(T.name + '(?:は|が|も)').test(x) && /跨/.test(x) && /呑み込|飲み込|咥え込|迎え入れ|腰を落と|腰を沈め|自分の中|のナカへ|の中へ導|受け入れ/.test(x)
+              && !new RegExp(U.name + '(?:は|が|も)[^。]{0,30}跨').test(x) && !/指|舌|張り型|ペニバン|ディルド|バイブ|玩具/.test(x))[0];
+            if (hit) { out.n.V15++; out.bySc[sc].V15++; if (out.V15.length < 200) out.V15.push(sc + '#' + s + ' | フタナリの攻め=' + T.name + '(' + (T.pos || 'おまかせ') + ') 受け=' + U.name + '(' + U.gender + ') | ' + hit.slice(0, 160).replace(/\n/g, ' ')); }
           }
           /* V4：女性の攻めが、男性の体で描かれた */
           for (const T of PC.filter(c => !P.hasM(c))) {
@@ -443,19 +458,19 @@ function print(r, errors, o) {
   const SAMPLES = !!o.samples, WHY = !!o.why;
   if (r.dump) console.log('##### DUMP\n' + JSON.stringify(r.dump.chars.map(c => ({ name: c.name, g: c.gender, pos: c.pos, posFor: c.posFor, posLike: c.posLike, genital: c.genital }))) + '\n' + r.dump.texts.join('\n----\n'));
   console.log('runs', r.runs, 'counts', JSON.stringify(r.n), 'V5で見た夜の性格の文', r.v5n, 'V13で見た主導の文', r.lead, 'V12の人', r.npcTop, 'V14の組', r.pref);
-  console.log('by scenario', JSON.stringify(Object.fromEntries(Object.entries(r.bySc).filter(([k, v]) => v.V1 || v.V2 || v.V3 || v.V4 || v.V5 || v.V6 || v.V7 || v.V8 || v.V10 || v.V11 || v.V12 || v.V13 || v.V14))));
+  console.log('by scenario', JSON.stringify(Object.fromEntries(Object.entries(r.bySc).filter(([k, v]) => v.V1 || v.V2 || v.V3 || v.V4 || v.V5 || v.V6 || v.V7 || v.V8 || v.V10 || v.V11 || v.V12 || v.V13 || v.V14 || v.V15))));
   if (r.err.length) console.log('ERRORS', r.err.slice(0, 8));
-  if (SAMPLES) for (const k of ['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V10', 'V11', 'V12', 'V13', 'V14']) { console.log('##### ' + k); (r[k] || []).forEach(x => console.log(x)); }
+  if (SAMPLES) for (const k of ['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V10', 'V11', 'V12', 'V13', 'V14', 'V15']) { console.log('##### ' + k); (r[k] || []).forEach(x => console.log(x)); }
   if (WHY) { console.log('##### 除外したもの'); r.skip.forEach(x => console.log(x.replace(/\n/g, ' '))); }
   console.log('pageerr', errors.slice(0, 5));
 }
-const KEYS = ['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V10', 'V11', 'V12', 'V13', 'V14'];
+const KEYS = ['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V10', 'V11', 'V12', 'V13', 'V14', 'V15'];
 function summarize(r) {
   const items = {}, ex = {};
   KEYS.forEach(k => { items[k] = (r.n && r.n[k]) || 0; ex[k] = (r[k] || []).slice(0, 3); });
   return { items, ex, info: { 回: r.runs, 夜の性格の文: r.v5n, 主導の文: r.lead }, err: r.err.length, errEx: r.err.slice(0, 3) };
 }
-const LABEL = { V1: '女性どうしに男性の体の語', V2: '攻めを選んだ人が受ける文', V3: '向きの決まらない二人の性的な場面', V4: '女性の攻めが男性の体', V5: '夜の性格の文の受け持ちが逆', V6: '女性の体が男性の体で描かれた', V7: '性器なしの人に挿入・性器の語', V8: '選んだ性器と食い違う体の語', V10: '体の語の印の持ち主がその場にいない', V11: '受けを選んだ人が挿れる文', V12: 'モブには攻めの人が受ける文', V13: '夜の主導の文の受け持ちが逆', V14: '相手ごとの受け攻めで決まった攻めが受ける文' };
+const LABEL = { V1: '女性どうしに男性の体の語', V2: '攻めを選んだ人が受ける文', V3: '向きの決まらない二人の性的な場面', V4: '女性の攻めが男性の体', V5: '夜の性格の文の受け持ちが逆', V6: '女性の体が男性の体で描かれた', V7: '性器なしの人に挿入・性器の語', V8: '選んだ性器と食い違う体の語', V10: '体の語の印の持ち主がその場にいない', V11: '受けを選んだ人が挿れる文', V12: 'モブには攻めの人が受ける文', V13: '夜の主導の文の受け持ちが逆', V14: '相手ごとの受け攻めで決まった攻めが受ける文', V15: 'フタナリの攻めが跨って呑みこむ文' };
 module.exports = { passes: { pos: PASS }, judges: { pos: JUDGE }, print, summarize, LABEL, KEYS };
 
 if (require.main === module) (async () => {
