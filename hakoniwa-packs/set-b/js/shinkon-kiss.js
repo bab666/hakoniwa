@@ -36,6 +36,13 @@
     var S = S0(ctx), st = stat(ctx);
     var r = KS.scene(ctx, a, b, Object.assign({ whyPre: '新婚部屋：', fx: function () { ctx.mod2(a, b, { aff: 2, att: 2 }, { aff: 2, att: 2 }); } }, opt));
     if (!r) return null;
+    /* 平屋の家：階段・二階の文を外す（本体のキスの文。2026-11-05 報告「平屋で階段を下りて」） */
+    if (S && S.hira && r.e && typeof r.e.text === 'string' && /階段|二階/.test(r.e.text)) {
+      var ps = r.e.text.split(/(?<=[。」])/), kept = ps.filter(function (x) { return !/階段|二階/.test(x.replace(/「[^」]*」/g, '')); });
+      if (kept.length) r.e.text = kept.join('');
+    }
+    /* 攻めの決め台詞（HK.KissText.A_LINE）は、一回の遊びで同じものを一度まで（2026-11-05 報告「挨拶代わりだ」が 7 回） */
+    capLines(ctx, r.e && r.e.text);
     st[k] = (st[k] || 0) + 1;
     var p = r.plan;
     if (p.night === 'sadist' || p.night === 'mean') { st.sadKiss++; if (p.end === 'oazuke' || p.end === 'promise') st.oazukeSad++; }
@@ -43,6 +50,20 @@
     if (S) S.kissN = (S.kissN || 0) + 1;
     return r;
   }
+  /* 決め台詞の上限：A_LINE の台詞が本文に出たら、その台詞は使い切り（HK.Kiss の Q_CAP に届かせる）。all なら全部を使い切りにする（最後の幸せなキス） */
+  function aLines() {
+    var A = (HK.KissText || {}).A_LINE || {}, out = [];
+    Object.keys(A).forEach(function (p) { Object.keys(A[p] || {}).forEach(function (n) { (A[p][n] || []).forEach(function (t) { (String(t).match(/「[^」]*」/g) || []).forEach(function (q) { out.push(q); }); }); }); });
+    return out;
+  }
+  function capLines(ctx, text, all) {
+    var Q = ctx._kissQ = ctx._kissQ || {}, cap = HK.Kiss && HK.Kiss.Q_CAP || 2;
+    aLines().forEach(function (q) {
+      if (all) { if ((Q[q] || 0) < cap) { (ctx._kissQhold = ctx._kissQhold || {})[q] = Q[q] || 0; Q[q] = cap; } return; }
+      if ((Q[q] || 0) >= 1) Q[q] = cap;
+    });
+  }
+  function uncap(ctx) { var H = ctx._kissQhold; if (!H) return; Object.keys(H).forEach(function (q) { ctx._kissQ[q] = H[q]; }); ctx._kissQhold = null; }
   /* 家にいる二人（三人婚なら、出かけない人のうちの二人）から一組 */
   function pairAt(ctx, S, d, part) {
     var P = spouses(S).filter(function (c) { var p = lifeDay(c, d); return !p || (!p.trip && (!p.home || p.home[part] !== false)); });
@@ -133,9 +154,26 @@
       else if (t === 1) daytime(ctx, S, S.day);
     };
   });
+  /* 付け足しの文の上限（2026-11-05 報告「ふんと鼻を鳴らして…」「口の端が上がりっぱなし」「妙に機嫌がよく」が一回に何度も）：
+     受け止め方・キスの反応・気分の一句など、飾りの付け足し（下の型）は、一回の遊びで同じ型を 2 回まで。3 回目からは、その一文を本文から外す（本文が空になるときは残す） */
+  var DECO = [/鼻を鳴らし/, /そっけなく言/, /拳を握っ/, /口の端が/, /機嫌がよく/, /そっぽを向/, /頬の赤さま/, /上機嫌/];
+  function capDeco(ctx) {
+    var n = {};
+    (ctx.log || []).forEach(function (e) {
+      if (!e || e.kind !== 'event' || typeof e.text !== 'string' || e.lewd) return;
+      var out = [], cut = false;
+      e.text.split(/(?<=。)(?![」』])/).forEach(function (x) {
+        var nar = x.replace(/「[^」]*」/g, ''), k = -1;
+        for (var i = 0; i < DECO.length; i++) if (DECO[i].test(nar)) { k = i; break; }
+        if (k >= 0) { n[k] = (n[k] || 0) + 1; if (n[k] > 2 && !/「/.test(x)) { cut = true; return; } }
+        out.push(x);
+      });
+      if (cut && out.join('').replace(/\s/g, '').length >= 10) e.text = out.join('');
+    });
+  }
   /* 結果の記録（ctx.flags.shinkon）に、キスの回数を足す（計測用。表示はしない） */
   HK.wrap(scen, 'finish', function (f0) {
-    return function (ctx) { var r = f0.apply(this, arguments); if (ctx.flags && ctx.flags.shinkon && ctx.flags.shinkonKiss) ctx.flags.shinkon.kiss = ctx.flags.shinkonKiss; return r; };
+    return function (ctx) { capDeco(ctx); var r = f0.apply(this, arguments); if (ctx.flags && ctx.flags.shinkon && ctx.flags.shinkonKiss) ctx.flags.shinkon.kiss = ctx.flags.shinkonKiss; return r; };
   });
   /* 夜の段：願望の高まり（HK.Journal.add）を最初に数える場所＝仲直りのあと・願望の行動とエッチの前 */
   HK.wrap(HK.Journal, 'add', function (add0) {
@@ -164,7 +202,10 @@
     var lead = Array.isArray(row) ? row[Math.floor(ctx.rng() * row.length)] : String(row || '');
     lead = String(lead).replace(/二人は幸せなキスをした。$/, '');
     if (!lead) return null;
-    var r = KS.text(ctx, A, B, { trig: 'fui', len: 'l', end: ctx.rng() < 0.5 ? 'hold' : 'nagori', lead: lead, tail: HAPPY });
+    /* 最後の幸せなキスには決め台詞を出さない */
+    capLines(ctx, '', true);
+    var r;
+    try { r = KS.text(ctx, A, B, { trig: 'fui', len: 'l', end: ctx.rng() < 0.5 ? 'hold' : 'nagori', lead: lead, tail: HAPPY }); } finally { uncap(ctx); }
     if (!r || !r.text) return null;
     var k1 = TX.KISS;
     TX.KISS = k1.map(function () { return [r.text]; });

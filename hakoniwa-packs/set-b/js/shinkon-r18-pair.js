@@ -71,16 +71,21 @@
     if (pkl && P0 && P0.hasM && ((sh === 'mf' && !P0.hasM(a)) || (sh === 'fm' && !P0.hasM(b)))) pkl = pkl.filter(function (x) { return !/\{(?:男性器|精液)\}/.test(x); });
     if (pkl && !pkl.length) pkl = null;
     var TP = (HK.ShinkonR18Text || {}).PEAK, tp0 = TP && TP[0] ? (Array.isArray(TP[0]) ? TP[0] : TP[0][sh] || TP[0].all) : null;
-    var peak = fresh(ctx, pkl || (Array.isArray(tp0) && tp0.length ? tp0 : PR.FB.peak[sh]), a, b);
+    /* 山場は新婚部屋専用の段（shinkon-r18-more.js の HK.PairR18.addRoom）を先に。無ければ今までの文 */
+    var rp = PR.part && PR.bodyFits && PR.bodyFits(sh, a, b) ? PR.part(ctx, 'set-b-shinkon', ero ? 'peakE' : 'peak', sh, a, b) : '';
+    var peak = rp || fresh(ctx, pkl || (Array.isArray(tp0) && tp0.length ? tp0 : PR.FB.peak[sh]), a, b);
     if (!peak) return null;
     peak = peak.replace('{m}', mo ? '{b}「' + String(mo).replace(/^「|」$/g, '') + '」' : '');
     var er = ctx.rng() < 0.6 ? fresh(ctx, (X.ENDR || {})[pb] || (X.ENDR || {}).gentle, a, b) : '';
     var body = op + '\n\n' + br + md + mr + '\n\n' + peak;
     /* 夜の性格の一文・夜の主導の段（共通の部品と同じ差し方） */
     body = PR.insert1(body, PR.nightAdd(ctx, a, b, sh, ero, o.entry, { jealous: !!o.jealTop, leadB: !!o.leadB }));
-    if (o.high && HK.ThickEro) body += '\n\n' + HK.ThickEro.again(ctx, pk, a, b, ero && form === 'mid', form === 'short' && sh !== 'ff');
-    if (PR.flowFix) body = PR.flowFix(body, a, b, sh, en + er);
+    /* 描写の長さ「数行で短く」：もう一度の段は付けず、一つの段落にまとめる（2026-11-05 報告「数行で短くなのに 5 段落」） */
+    var oneP = env.lewdLen === 'short';
+    if (o.high && !oneP && HK.ThickEro) body += '\n\n' + HK.ThickEro.again(ctx, pk, a, b, ero && form === 'mid', form === 'short' && sh !== 'ff');
+    if (PR.flowFix) body = PR.flowFix(body, a, b, sh, en + er, { ctx: ctx, short: form === 'short' });
     body += '\n\n' + en + er;
+    if (oneP) body = body.replace(/\n\n+/g, '');
     S.pairN = (S.pairN || 0) + 1;
     return { text: PR.mk(ctx, body, a, b), form: form, why: '新婚の型：' + X.OPEN_NAME[ok] + '／' + X.MID_NAME[mk] + '／' + X.END_NAME[ek] };
   };
