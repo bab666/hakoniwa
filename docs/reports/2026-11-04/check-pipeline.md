@@ -25,7 +25,7 @@
 | `tone-check/base-lint.js` | 3 本の台詞の約束（ソースを読むだけ） | js の文字列 | 1 秒 | — | 台詞を足したら |
 | `tone-check/moan-tone-audit.js` | 喘ぎの口調（49 口調×性別×夜の性格。moan-audit.js を夜の性格ごとに 6 回） | 組み立て済みの R18版 | 415 秒 | — | 喘ぎを変えたら |
 | `tone-check/sex-flow-audit.js` | 長い場面の流れ (a)〜(h) | 〃 | 8 秒 | — | 長い場面・型の部品を変えたら（audit-all の sexflow と同じ関数） |
-| `tone-check/trio-shape-audit.js` | 三人の場面の形・設定に合わない形・場面の状態 | 〃 | 8 秒 | — | 三人の場面を変えたら |
+| `tone-check/trio-shape-audit.js` | 三人の場面の形・設定に合わない形・場面の状態（2026-11-05：女性の攻めが男性の受けに跨って受け入れる文・後ろが埋まった受けへの前立腺・結腸の段も 0 件が合格） | 〃 | 8 秒 | — | 三人の場面を変えたら |
 | `tone-check/force-repeat-audit.js` | 無理やりの二回目・三回目の文・同じ台詞の二度出し | 〃 | 7 秒 | — | 無理やりの部品を変えたら（2026-11-04 から） |
 | `tone-check/relcons-audit.js`（単独） | 展開の不整合 | 〃 | 47 秒（R18版だけ） | — | `--extra=relcons` と同じ関数 |
 | `tone-check/dict-regress.js` | 口調の辞書の成績（書き下ろしを正解に） | js の辞書（node で読む） | 1 秒 | — | 参考（辞書を変えたとき） |
@@ -200,7 +200,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | 口調の違和感（tone-feel）（`tone-feel`） | heavy | `serifu` `tone` | build | 1 | 155 秒 | 変えた箱庭だけ（--scen=）。本体の共通の文なら既定の 3 箱庭 |
 | 喘ぎの口調（moan-tone-audit）（`moan-tone`） | heavy | `moan` | build | 1 | 420 秒 | 箱庭のかたまりだけ変えたときは --scen= |
 | 長い場面の流れ（sex-flow-audit）（`sex-flow`） | heavy | `thick` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=sexflow に入れる（同じ関数。ページを開き直さない） |
-| 三人の場面の形（trio-shape-audit）（`trio-shape`） | heavy | `trio` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=trio に入れる |
+| 三人の場面の形（trio-shape-audit）（`trio-shape`） | heavy | `trio` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=trio に入れる。2026-11-05 から fmRide（女性の攻めが跨る）・backDbl（後ろの二重）も数える |
 | 無理やりの二回目・三回目（force-repeat-audit）（`force-repeat`） | heavy | `force` | build | 1 | 10 秒 |  |
 | 女性の受けのお尻の語（butt-word-audit）（`butt-word`） | heavy | `butt` | build | 1 | 60 秒 | 受けが女性の体の組（男×女・女×女）の記録に「ケツ」が 0 件（男性の受けの件数は参考）。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN） |
 | 自分の口調に言及する台詞（meta-tone-audit）（`meta-tone`） | heavy | `moan` `serifu` `tone` | build | 1 | 25 秒 | 台詞・喘ぎで本人が自分の話し方（敬語・言葉遣い・口調・タメ口…）に触れるもの 0 件。R18版・全年齢版の記録と、喘ぎの表・書き下ろし・「」の中のソース（静的。本体の両ビルドと全パック）。箱庭のかたまりだけ変えたときは記録はその箱庭だけ |
@@ -288,3 +288,5 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | pos-audit V2 | 受け身の文で、攻めの名前のあとが「の（指・舌・手・唇…）に／で」（動作主の印）なら、その文の受け身の主語（攻めの名前より前の「〇〇は／が」）が攻め本人のときだけ数える。あわせて「（気持ち）が、〇〇の中で一つになっていた」（心の中）と、モブの名前の「指輪」を指と読まないように | 「カオルはハルカの指と舌に代わる代わる責められ」を戻したビルドで、--ff --hot 120 回：V2 1 → 0（誤判定）。本物の V2「アキラはミナトの指と舌に責められ」は数える（手で確かめた）。素・--hot・--ff --hot（4 箱庭×120 回）でほかの件数は同じ |
 | call-audit short | 名前を除いた残りの字数を、呼びかけの名前を全部（二度出る名前・ほかの住人の名前も）除いて数える（今までは一つ目だけ） | 名前が二度出る短い台詞が数えられるようになる（増える向き）。同居生活・人狼・出られない部屋・電車 ×16 回（R18版）で short 0 → 0。攻めの名前を呼ぶ喘ぎ（moan-top-said.js）の、名前を除くと 8 字以下の 7 本を書き直した |
 | sex-flow (j) | 目隠し中の台詞に「目を見て」「顔を見せて」「見つめて」などを足し、受けの台詞も数える | `--raw` N=48 既定の 6 箱庭・N=96 電車と同居生活で 0 → 0 |
+| pos-audit V16（足した） | 女性の攻め（男性器なし・フタナリでない）が、二人の向きで受けになる男性器のある相手に跨って自分の中へ受け入れる文（三人以上の文も。指・舌・張り型の文は除く）。V2 は女性の攻めが跨って迎える文を攻めのままとして数えないので別に数える | 素・--hot：直す前のビルドでも 0 件（pos のパスは三人の夜が少なく、仕上がった記録では HK.FM.fix が跨る文を直していた）。直したあとも 0 件 |
+| trio-shape fmRide・backDbl（足した） | 仕上がった記録の文で、女性の攻め × 男性の受けの組の攻めが跨る・受け入れる文（fmRide）／後ろが埋まる受け（twoOne でもう一人も同じ受けを抱く）に ero-play の前立腺・結腸の段を差した（backDbl。HK.EroPlay.log で見る） | 直す前 fmRide 1・backDbl 13 → 直したあと 0・0（既定の 4 箱庭・N=4、672 回） |
