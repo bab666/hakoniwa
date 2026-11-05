@@ -500,7 +500,7 @@
       x = pr[i][0]; y = pr[i][1];
       if (!(x.ng && x.ng.indexOf(y.i) >= 0)) continue;
       var tn = tieNo(x, y);
-      if (tn) return { k: 'noLove', t: a.name + 'と' + b.name + 'は' + (tn.type === 'apathy' ? '関係「無関心」' : tn.type === 'fear' ? '関係「恐怖」' : '「恋愛：なし」の家族（' + ((HK.TIES && HK.TIES[tn.type] && HK.TIES[tn.type].label) || tn.type) + '）') + 'の二人', fix: '二人の関係を変える（家族なら関係の「恋愛」を「あり」にする）' };
+      if (tn) return { k: 'noLove', t: a.name + 'と' + b.name + 'は' + (tn.type === 'apathy' ? '関係「無関心」' : tn.type === 'fear' ? '関係「恐怖」' : '「恋愛：なし」の家族（' + ((HK.TIES && HK.TIES[tn.type] && HK.TIES[tn.type].label) || tn.type) + '）') + 'の二人', fix: '二人の関係を変える（恋愛と夜は住人の設定「恋愛にしない相手」「R18にしない相手」で決まる）' };
       return { k: 'ng', t: x.name + 'が' + y.name + 'を「恋愛・R18にしない相手」にしている', fix: x.name + 'の「恋愛・R18にしない相手」から' + y.name + 'を外す' };
     }
     if ((a.coNG && a.coNG.indexOf(b.i) >= 0) || (b.coNG && b.coNG.indexOf(a.i) >= 0)) return { k: 'coNG', t: a.name + 'と' + b.name + 'は同じ人の恋人どうし（恋人が複数いる人の恋人どうしは、体の関係にしない）', fix: a.name + 'と' + b.name + 'のあいだに恋愛の関係（恋人・セフレ など）を足すか、恋人の関係を見直す' };
@@ -523,9 +523,9 @@
     }
     if (HK.noLovePair && HK.noLovePair(a, b)) {
       var T0 = HK.Ties, kind = ctx && T0 && T0.has ? (T0.has(ctx, a, b, 'apathy') ? '関係「無関心」' : T0.has(ctx, a, b, 'fear') ? '関係「恐怖」' : '「恋愛：なし」の家族') : '関係「無関心」「恐怖」か「恋愛：なし」の家族';
-      return { k: 'noLove', t: a.name + 'と' + b.name + 'は' + kind + 'の二人', fix: '二人の関係を変える（家族なら関係の「恋愛」を「あり」にする）' };
+      return { k: 'noLove', t: a.name + 'と' + b.name + 'は' + kind + 'の二人', fix: '二人の関係を変える（恋愛と夜は住人の設定「恋愛にしない相手」「R18にしない相手」で決まる）' };
     }
-    if (opt.room !== false && HK.roomWsNoSex && HK.roomWsNoSex(ctx, a, b)) return { k: 'room', t: a.name + 'と' + b.name + 'は恋愛にしない関係（「恋愛：なし」の家族・信仰）', fix: '二人の関係の「恋愛」を「あり」にする' };
+    if (opt.room !== false && HK.roomWsNoSex && HK.roomWsNoSex(ctx, a, b)) return { k: 'room', t: a.name + 'と' + b.name + 'は恋愛にしない関係（「恋愛：なし」の家族・信仰）', fix: '住人の設定の「恋愛にしない相手」「R18にしない相手」から相手を外す' };
     if (!P.okSex(a, b)) {
       var lab = function (c, o) { return explicit(c, o) ? POS_JA[P.of(c, o)] || 'おまかせ' : 'おまかせ'; };
       return { k: 'pos', t: '受け攻めが合わない（' + a.name + '：' + lab(a, b) + '・' + b.name + '：' + lab(b, a) + '）', fix: '受け攻め（相手ごとの指定・「相手の受け攻め」）を、どちらかが受けかリバに回れるようにする' };

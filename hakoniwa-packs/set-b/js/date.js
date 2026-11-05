@@ -116,7 +116,16 @@
       if (k === 'spouse' && t.married === 'divorced') k = 'ex';
       if (best === 'none' || RK_ORD.indexOf(k) < RK_ORD.indexOf(best)) best = k;
     });
+    /* 住人の設定で恋愛相手を互いに固定し合った輪（二人のどちらかが、互いに固定し合った相手を二人以上持つ。三人・四人のとき）は、恋人として扱う
+       （2026-11-05 同居生活と同じ決まり。通し読み：四人の夜のあとの最後の日に告白していた） */
+    if (best !== 'spouse' && best !== 'lover' && ringLock(ctx, A, B)) best = 'lover';
     return best;
+  }
+  function ringLock(ctx, A, B) {
+    var mu = function (x, y) { return !!(HK.lockTo && HK.lockTo(x, y) && HK.lockTo(y, x)); };
+    if (!A || !B || !mu(A, B)) return false;
+    var hub = function (h) { return ctx.chars.filter(function (o) { return o !== h && mu(h, o); }).length >= 2; };
+    return hub(A) || hub(B);
   }
   /* 向きのある関係（片想い：想う側、先輩後輩：先輩、師弟：師）が A なら 'A'、B なら 'B' を付けた鍵 */
   function relDir(ctx, A, B, rk) {
@@ -555,8 +564,16 @@
   }
   /* 三人デートの三人目と二人の関係：poly 三人とも恋人どうし／tri 三人目が二人のどちらかに想いを寄せる（三角）／friend 友人・家族などが混ざる */
   function trioKind(ctx, A, B, C) {
-    var lc = function (x, y) { return /^(spouse|lover)$/.test(relKind(ctx, x, y)) && loveOk(ctx, x, y); };
+    /* 恋人（関係）か、互いに恋愛相手を固定し合った二人（住人の設定。2026-11-05 同居・新婚部屋と同じ輪の判定） */
+    var lc = function (x, y) { return (/^(spouse|lover)$/.test(relKind(ctx, x, y)) || !!(HK.lockTo && HK.lockTo(x, y) && HK.lockTo(y, x))) && loveOk(ctx, x, y); };
     if (lc(A, B) && lc(C, A) && lc(C, B)) return { k: 'poly', C: C, t: ctx.rng() < 0.5 ? A : B };
+    /* 受けを中心にした輪（2026-11-05 利用者の報告「デートでも 3P を」）：恋人の組が二つ以上あり、残りの組が性的に対象にならない（攻めどうし・受けどうしなど）か
+       輪の外側の組なら、三人の恋人として扱う。判定は本体の HK.Quad.ringOk（同居・新婚部屋と同じ。R18版）。全年齢では、残りの組が恋愛にならない組のとき */
+    var L3 = [[A, B], [C, A], [C, B]], nL = L3.filter(function (q) { return lc(q[0], q[1]); }).length;
+    if (nL >= 2 && (HK.Quad && HK.Quad.ringOk && !HK.SAFE_ON ? HK.Quad.ringOk(ctx, [A, B, C]) : L3.every(function (q) { return lc(q[0], q[1]) || !loveOk(ctx, q[0], q[1]); }))) {
+      var hub = [A, B, C].filter(function (x) { return [A, B, C].every(function (y) { return y === x || lc(x, y); }); })[0];
+      return { k: 'poly', C: C, t: lc(C, A) && lc(C, B) ? (ctx.rng() < 0.5 ? A : B) : lc(C, A) ? A : B, hub: hub || null };
+    }
     var lt = function (x, y) { return /^(spouse|lover|almost|crush|ex|lovehate)$/.test(relKind(ctx, x, y)) && loveOk(ctx, x, y); };
     var tA = lt(C, A), tB = lt(C, B);
     if (tA || tB) return { k: 'tri', C: C, t: tA && tB ? (ctx.rng() < 0.5 ? A : B) : tA ? A : B };
@@ -762,14 +779,19 @@
     /* 山場：最後のデートの行き先の山場（大型の遠出ほど選ばれやすい）か、帰り道の山場 */
     /* 一回・二回だけのデート：最後の日の帰り道の分かれ道（手をつなぐ・キス・次の約束・言いそびれる） */
     if (day.last && S.n <= 2 && !S.p2) oneDrama(ctx, day);
-    if (S.p2) dblSplit(ctx, day);
+    /* ダブルデートの四人の夜にする日は、夜の別行動の段を出さない（四人で帰り道へ。R18版。date-r18.js の HK.DateR18.quadRoll） */
+    var quadGo = !!(S.p2 && !HK.SAFE_ON && HK.DateR18 && HK.DateR18.quadRoll && HK.DateR18.quadRoll(ctx, day));
+    if (S.p2 && !quadGo) dblSplit(ctx, day);
     var cp = day.last ? climaxPick(ctx, day) : null;
     if (cp && cp.at === 'dest') climax(ctx, day, cp);
     /* その日の終わりぎわ（帰り際の靴の故障など） */
     more(ctx, day, 'end');
     if (!P.trip && !P.home) move(ctx, day, 'back');
     if (cp && cp.at !== 'dest') climax(ctx, day, cp);
-    var skip = S.trio ? trioPart(ctx, day) : false;
+    /* ダブルデートの四人の夜（R18版。四人の輪がそろっていれば、夜の分かれ道の代わりに。date-r18.js の HK.DateR18.quad） */
+    var quad = !!(quadGo && HK.DateR18.quad && HK.DateR18.quad(ctx, day));
+    if (quad) { day.br = 'quad'; S.branches.quad = (S.branches.quad || 0) + 1; }
+    var skip = quad || (S.trio ? trioPart(ctx, day) : false);
     if (!skip) nightBranch(ctx, day);
     if (day.last && !S.p2 && HK.DateR18 && HK.DateR18.noneWhy) HK.DateR18.noneWhy(ctx, day);
     if (day.last) ending(ctx);
@@ -778,7 +800,7 @@
     if (S.p2) withPair(ctx, S.p2, function () {
       var S2 = S.p2, d2 = S2.day;
       if (d2.last) climax(ctx, d2, cp);
-      nightBranch(ctx, d2);
+      if (!quad) nightBranch(ctx, d2);
       if (d2.last) ending(ctx);
       goalDayEnd(ctx, S2, d2);
     });
@@ -1914,5 +1936,7 @@
   };
   HK.Date = { okText: okText, pickT: pickT, relPick: relPick, attPick: attPick, per: per, fill: fill, RK_NAME: RK_NAME, BR_NAME: BR_NAME, has: has, yen: yen, rcat: rcat, withPair: withPair, loveOk: loveOk };
   HK.SCENARIOS[ID] = scen;
+  /* 開始前の注意：三人・四人の夜が起きない配役（本体の HK.Quad.groupWarn。同居生活・新婚部屋・デートの日々で同じ文言。R18版だけ。2026-11-05 利用者の報告「同居で 3P・4P をしない」） */
+  if (HK.SoloWarn && HK.SoloWarn.add) HK.SoloWarn.add(ID, function (input) { return HK.Quad && HK.Quad.groupWarn ? HK.Quad.groupWarn(input, { body: false }) : []; });
   if (HK.Lewd && HK.Lewd.install) HK.Lewd.install(ID, { lenDef: 'mix', desc: HK.SAFE_BUILD ? '' : '夜の場面の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();

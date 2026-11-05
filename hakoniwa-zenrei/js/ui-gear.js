@@ -167,13 +167,13 @@
   /* 関係1本を1枠に描く（2026-10-28 担当MA）：1行目「関係の種類・向き・外す」、2行目「恋愛・仲・過去・出来事」などの小さな欄（狭い幅では折り返す）、
      その下に続柄（きょうだい）と説明（1行で省略。押すと全文）。恋愛の欄はどの関係にもある（ui-ties.js の HK.TiesUI.love） */
   function tieRow(c, o, t, k) {
-    var D = HK.TIES[t.type], L = HK.TiesUI && HK.TiesUI.love, CO = HK.coldOpts ? HK.coldOpts(t.type) : null;
+    var D = HK.TIES[t.type], CO = HK.coldOpts ? HK.coldOpts(t.type) : null;
     var h = '<div class="gtc" data-k="' + k + '"><div class="gth">' +
       '<select data-gf="ttype" data-k="' + k + '" aria-label="' + esc(o.name) + 'との関係の種類">' + typeOpts(t.type) + '</select>';
     if (D.dir) h += '<select data-gf="tdir" data-k="' + k + '" aria-label="関係の向き">' + opt('a', c.name + 'が' + D.roleA, t.a === c.id ? 'a' : 'b') + opt('b', c.name + 'が' + D.roleB, t.a === c.id ? 'a' : 'b') + '</select>';
     h += '<button type="button" class="btn ghost small gtx" data-gact="tdel" data-k="' + k + '" aria-label="' + esc(o.name) + 'との「' + esc(D.label) + '」を外す">外す</button></div><div class="gtf">';
-    if (L) h += L.sel(t, 'class="gtlove" data-gf="tlove" data-k="' + k + '"');
-    else if ((D.family && !D.loveOK) || D.loveOpt) h += '<select data-gf="tlove" data-k="' + k + '" aria-label="恋愛">' + opt('', '恋愛：なし', t.love || '') + opt('ok', '恋愛：あり', t.love || '') + '</select>';
+    /* 関係ごとの「恋愛：自動／あり／なし」の欄は出さない（2026-11-05 利用者の指示「関係性ごとの指定を廃止。影響するのは『しない相手』に指定した人だけ」。
+       恋愛と夜の可否は、この窓の「恋愛と夜」の節の 恋愛相手を固定・性行為の相手・恋愛にしない相手・R18にしない相手 だけで決める。保存済みの t.love は読み込み時に住人の設定へ写す（ui-norm.js）） */
     if (CO) h += '<select data-gf="tcold" data-k="' + k + '" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return opt(id, CO.map[id].label, t.cold || ''); }).join('') + '</select>';
     h += extraSels(t, k, 'data-gf="textra"') + '</div>';
     /* 過去に向きの無い札（昔は仲が良かった・昔は敵だった）を選んだときだけ、片方で足りることを添える */
@@ -184,7 +184,7 @@
     /* 続柄：上下の欄（elder）で決めたときは「姉（上下の設定）」、上下なしは「上下なし（姉妹）」、ほかは「自動（姉）」 */
     if (sb) h += '<p class="gearhint gsib">続柄：' + esc(sb.src === 'none' ? '上下なし（' + sb.pair + '）' : sb.src === 'set' && sb.rel ? sb.rel + '（上下の設定）' : sb.rel ? '自動（' + sb.rel + '）' : '自動（決まっていません）') + '　呼び方：' + esc(sb.auto ? '自動（' + sb.call + '）' : sb.call ? sb.call : '名前（' + o.name + '）') +
       (sb.notes.length ? '<br>' + esc(sb.notes.join('。')) + '。' : '') + '</p>';
-    var ln = L ? L.note(t) : '', d = (D.effect || '') + (ln ? '。' + ln : '');
+    var d = D.effect || '';
     return h + (d ? '<p class="gearhint gtd" title="' + esc(d) + '">' + esc(d) + '</p>' : '') + '</div>';
   }
   /* 関係を付けずに出した相手ごとの行（窓を開いているあいだだけ。何か決めれば、関係がなくても行は残る） */
@@ -204,8 +204,10 @@
     var sumOf = function (ids, none) { var n = namesOf(ids); return n.length ? n.join('・') + (n.length > 1 ? '（' + n.length + '人）' : '') : none; };
     /* 恋愛にしない相手（恋愛だけを止める）・R18にしない相手（夜・体の関係だけを止める。R18版）。2026-11-05：恋愛と夜の可否は住人の側で決める（関係ごとの欄は使わない）。
        恋愛にしない相手でも、R18にしない相手に入れていなければ、夜の起こりやすさに応じて体だけの夜が起きる（体の相手に固定すれば、夜 100 で必ず） */
-    var ngRow = others.length ? det('ngl', '恋愛にしない相手', sumOf(c.loveNo, 'なし'), cbs('ngl', c.loveNo)) : '';
-    if (others.length && !HK.SAFE_ON) ngRow += det('ngr', 'R18にしない相手', sumOf(c.r18No, 'なし'), cbs('ngr', c.r18No));
+    /* 「全員」「全員解除」（2026-11-05 利用者の指示「全員一括指定とかできてほしい」）：ほかの住人全員を、この人の（と相手の側の）しない相手に入れる・外す */
+    var allBtn = function (f) { return '<span class="gall"><button type="button" class="btn small" data-gact="ngall" data-f="' + f + '" data-v="on">全員</button><button type="button" class="btn small ghost" data-gact="ngall" data-f="' + f + '" data-v="off">全員解除</button></span>'; };
+    var ngRow = others.length ? det('ngl', '恋愛にしない相手', sumOf(c.loveNo, 'なし'), allBtn('ngl') + cbs('ngl', c.loveNo)) : '';
+    if (others.length && !HK.SAFE_ON) ngRow += det('ngr', 'R18にしない相手', sumOf(c.r18No, 'なし'), allBtn('ngr') + cbs('ngr', c.r18No));
     var lockBox = others.length ? det('lock', '恋愛相手を固定', sumOf(c.loveLock, '固定しない'), cbs('lockc', c.loveLock)) : '';
     var sexSel = '', sexBox = '';
     /* r18:begin */
@@ -449,6 +451,24 @@
     else if (act === 'tovoice') { var vid = c.id; close(); if (HK.VoiceSet) HK.VoiceSet.open(vid); }
     /* 「話題の節へ」：窓を閉じて、住人タブの「話題」の節へ（追加の行をこの住人にしておく。ui-topics.js） */
     else if (act === 'totopic') { var tid = c.id; close(); if (HK.TopicsUI) HK.TopicsUI.open(tid); }
+    /* 恋愛にしない相手・R18にしない相手の「全員」「全員解除」：一人ずつの印と同じ決まり（双方向。入れた相手は恋愛相手の固定・体の相手から外す） */
+    else if (act === 'ngall') {
+      var fN = b.dataset.f === 'ngr' ? 'r18No' : 'loveNo', onN = b.dataset.v === 'on', nN = 0;
+      s.chars.forEach(function (o) {
+        if (o === c) return;
+        var had = (c[fN] || []).indexOf(o.id) >= 0 && (o[fN] || []).indexOf(c.id) >= 0;
+        c[fN] = (c[fN] || []).filter(function (k) { return k !== o.id; }); o[fN] = (o[fN] || []).filter(function (k) { return k !== c.id; });
+        if (onN) {
+          c[fN].push(o.id); o[fN].push(c.id);
+          if (fN === 'loveNo') { c.loveLock = (c.loveLock || []).filter(function (k) { return k !== o.id; }); o.loveLock = (o.loveLock || []).filter(function (k) { return k !== c.id; }); }
+          else [[c, o], [o, c]].forEach(function (q) { q[0].sexLocks = (q[0].sexLocks || []).filter(function (k) { return k !== q[1].id; }); if ((q[0].sexLock === 'pick' || q[0].sexLock === 'pickMob') && !q[0].sexLocks.length) q[0].sexLock = ''; });
+        }
+        if (onN !== had) nN++;
+      });
+      openMap[b.dataset.f] = true;
+      changed(true);
+      UI.toast(c.name + 'の「' + (fN === 'loveNo' ? '恋愛にしない相手' : 'R18にしない相手') + '」' + (onN ? 'に全員を入れました' : 'を全員外しました') + '（' + nN + '人が変わりました）');
+    }
     else if (act === 'tdel') { if (HK.tiePastMoveOut) HK.tiePastMoveOut(s.ties, s.ties[+b.dataset.k]); /* 組の過去は残る関係へ移す */ s.ties.splice(+b.dataset.k, 1); changed(true); }
     else if (act === 'tadd' || act === 'tnew') {
       var oid = act === 'tadd' ? b.dataset.o : (ov.querySelector('[data-gf="newo"]') || {}).value;

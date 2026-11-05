@@ -1,10 +1,10 @@
 {
  "cur": {
-  "core": "core.02d20a028e.js",
-  "late": "late.e2fc8c6dba.js",
+  "core": "core.c6a911604e.js",
+  "late": "late.c64e1f593b.js",
   "pack-sim": "pack-sim.fb095ac016.js",
   "pack-rel": "pack-rel.0edf020d99.js",
-  "pack-lewd": "pack-lewd.07af5aec9f.js",
+  "pack-lewd": "pack-lewd.96d92ae671.js",
   "scen-goukon": "scen-goukon.4e403a91af.js",
   "scen-classroom": "scen-classroom.0a19ef11a5.js",
   "scen-island": "scen-island.98b8038a87.js",
@@ -16,7 +16,7 @@
   "scen-dungeon": "scen-dungeon.6318b5e38a.js",
   "scen-massage": "scen-massage.8d0fbdcf3f.js",
   "scen-hole": "scen-hole.46fcceb3f8.js",
-  "scen-futari": "scen-futari.a33a793441.js",
+  "scen-futari": "scen-futari.4686f1a48e.js",
   "scen-zombie": "scen-zombie.63e6abc965.js",
   "scen-rpg": "scen-rpg.b4e34a326f.js",
   "scen-kaihen": "scen-kaihen.401c99f524.js",
@@ -75,23 +75,23 @@
   "tone-yankee": "tone-yankee.8a4985f36c.js"
  },
  "prev": {
-  "core": "core.49d99665a0.js",
-  "late": "late.e2fc8c6dba.js",
+  "core": "core.c6a911604e.js",
+  "late": "late.c64e1f593b.js",
   "pack-sim": "pack-sim.fb095ac016.js",
-  "pack-rel": "pack-rel.b70857cf00.js",
-  "pack-lewd": "pack-lewd.b548fbf1e2.js",
+  "pack-rel": "pack-rel.0edf020d99.js",
+  "pack-lewd": "pack-lewd.96d92ae671.js",
   "scen-goukon": "scen-goukon.4e403a91af.js",
   "scen-classroom": "scen-classroom.0a19ef11a5.js",
   "scen-island": "scen-island.98b8038a87.js",
   "pack-trap": "pack-trap.eafab830e7.js",
   "scen-whiteroom": "scen-whiteroom.a51e0aa506.js",
-  "scen-omega": "scen-omega.d9135e8153.js",
+  "scen-omega": "scen-omega.84dfa1f6b7.js",
   "scen-br": "scen-br.436e0e8d7c.js",
   "scen-trial": "scen-trial.795e333267.js",
   "scen-dungeon": "scen-dungeon.6318b5e38a.js",
   "scen-massage": "scen-massage.8d0fbdcf3f.js",
   "scen-hole": "scen-hole.46fcceb3f8.js",
-  "scen-futari": "scen-futari.11634667a3.js",
+  "scen-futari": "scen-futari.67eb40de9a.js",
   "scen-zombie": "scen-zombie.63e6abc965.js",
   "scen-rpg": "scen-rpg.b4e34a326f.js",
   "scen-kaihen": "scen-kaihen.401c99f524.js",
@@ -99,8 +99,8 @@
   "scen-saimin": "scen-saimin.c6a49d4fbd.js",
   "scen-variety": "scen-variety.31347beb12.js",
   "scen-locker": "scen-locker.a7a06ac64b.js",
-  "scen-jashin": "scen-jashin.16eebcb2de.js",
-  "scen-yakata": "scen-yakata.7ee3a435df.js",
+  "scen-jashin": "scen-jashin.cf016f20d9.js",
+  "scen-yakata": "scen-yakata.860d33328e.js",
   "scen-ship": "scen-ship.4729dc446c.js",
   "pack-story": "pack-story.e70e6579a7.js",
   "scen-jinro": "scen-jinro.0ca5d506fc.js",
@@ -108,7 +108,7 @@
   "pack-roomkit": "pack-roomkit.98ba1c5d9a.js",
   "pack-solo": "pack-solo.f6162b9885.js",
   "scen-train": "scen-train.f93ae0b7c2.js",
-  "tone-base": "tone-base.953473f1a0.js",
+  "tone-base": "tone-base.1fc43f6a8e.js",
   "tone-ane": "tone-ane.29e9d5268f.js",
   "tone-boku-n": "tone-boku-n.920eeded67.js",
   "tone-calm": "tone-calm.dd4e56ee73.js",
@@ -135,7 +135,7 @@
   "tone-keigo-twist": "tone-keigo-twist.4fc2731510.js",
   "tone-kohai": "tone-kohai.3bf79dbbb7.js",
   "tone-mixed": "tone-mixed.65dd5231ad.js",
-  "tone-mukuchi": "tone-mukuchi.960793240b.js",
+  "tone-mukuchi": "tone-mukuchi.93dfb9cc43.js",
   "tone-mukuchi-ne": "tone-mukuchi-ne.4c8de8af1f.js",
   "tone-mystic": "tone-mystic.e36dfc93c5.js",
   "tone-noja": "tone-noja.aab7b8e5ec.js",
@@ -147,7 +147,7 @@
   "tone-tsun-n": "tone-tsun-n.4653a55af3.js",
   "tone-tsun-soft": "tone-tsun-soft.aab902bfde.js",
   "tone-usan": "tone-usan.6c22a5ab6b.js",
-  "tone-yankee": "tone-yankee.b686f34a8f.js"
+  "tone-yankee": "tone-yankee.8a4985f36c.js"
  },
  "core": {
   "js/load.js": [
@@ -175,8 +175,8 @@
    2776
   ],
   "js/ties.js": [
-   82040,
-   24064
+   82150,
+   24097
   ],
   "js/poly.js": [
    35559,
@@ -303,8 +303,8 @@
    4092
   ],
   "js/engine.js": [
-   57583,
-   20087
+   57611,
+   20091
   ],
   "js/sib-word.js": [
    12833,
@@ -363,8 +363,8 @@
    266
   ],
   "js/pos.js": [
-   27462,
-   8737
+   27588,
+   8755
   ],
   "js/attr.js": [
    61806,
@@ -487,12 +487,12 @@
    8073
   ],
   "js/ui-ties.js": [
-   40523,
-   12556
+   41258,
+   12703
   ],
   "js/ui-env.js": [
-   14879,
-   5039
+   14963,
+   5282
   ],
   "js/ui-cast-tools.js": [
    27915,
@@ -543,8 +543,8 @@
    796
   ],
   "js/ui-gear.js": [
-   47152,
-   14230
+   48128,
+   14368
   ],
   "js/ui-adv.js": [
    7034,
