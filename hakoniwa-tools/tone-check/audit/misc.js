@@ -180,6 +180,8 @@ const JUDGE = function (HK, opt) {
           for (let i = 0; i < paras.length; i++) {
             const pi = strip(paras[i]);
             if (!FINGER.test(pi.replace(/髪に指[^。]*/g, '')) || OUT.test(pi) || INS.test(pi)) continue;   /* 「髪に指を差し入れた」は髪（2026-10-29） */
+            /* 繋がったまま（跨ったまま・ナカに包まれたまま）指でも責める段落は、指でほぐしてから挿れる流れではない（2026-11-05。オメガバースの前立腺を撫でる段） */
+            if (/(?:包まれた|繋がった|跨った|咥え込んだ|呑み込んだ)まま/.test(pi) && /\{?ナカ\}?|中|奥/.test(pi)) continue;
             let j = i + 1; while (j < paras.length && !strip(paras[j]).replace(/[\s―…・、。]/g, '').replace(new RegExp(NAMES.join('|'), 'g'), '')) j++;
             if (j >= paras.length) continue;
             const pj = strip(paras[j]);
@@ -187,7 +189,9 @@ const JUDGE = function (HK, opt) {
             if (MOBFI.test(paras[i] + paras[j])) continue;
             /* 次の段落が玩具を当てる・挿れる場面（「震える先端を花芯に押し当てた」）は、指のあとの挿入ではない（2026-10-29 担当MQ） */
             if (/玩具|ローター|バイブ|張り型|張形|ディルド/.test(paras[j])) continue;
-            if (INS.test(pj) && !OUT.test(pj) && !FINGER.test(pj)) {
+            /* 「繋がったまま」は繋がっている状態の言い回しで、新しい挿入ではない。指の段落がもう奥を突いている（繋がっている）ときも数えない（2026-11-05） */
+            if (/奥を[^。]{0,8}(?:突|穿|抉)/.test(pi)) continue;
+            if (INS.test(pj.replace(/繋がったまま/g, '')) && !OUT.test(pj) && !FINGER.test(pj)) {
               o.FI++;
               if (outS.samples['F>I'].length < SHOW) outS.samples['F>I'].push(id + '#' + s + '：' + paras[i].slice(0, 70) + ' ／→ ' + paras[j].slice(0, 70));
             }

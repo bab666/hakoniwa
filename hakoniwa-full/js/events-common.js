@@ -298,7 +298,7 @@
       }
     },
     {
-      id: 'touch', cat: 'romance', scope: 'pair',
+      id: 'touch', cat: 'romance', scope: 'pair', tie: '-',
       /* 指先が触れる（恋の始まりの段）：恋人・夫婦・体の関係のある二人（夜を過ごした・体だけの場面のあと）には出さない。同じ二人には一回の遊びで一度だけ（2026-11-05。夫婦・事後の二人に出て、向きを変えて二度続いた） */
       when: function (ctx, a, b) {
         if (R(ctx, a, b).att <= 30) return false;

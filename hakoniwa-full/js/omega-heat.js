@@ -16,7 +16,8 @@
   OM.bodyKind = function (T, U) {
     var P = HK.Pos, fb = function (c) { return P && P.isFBody ? P.isFBody(c) : !!(c && c.gender === 'f'); };
     /* 性器を決めた人（attr.js の genital）は性器から：男性器のないαは挿れる側にしない */
-    var aT = OM.alphaTop(T, U) && !(P && P.genSet && P.genSet(T) && !P.hasM(T)), fT = fb(T) && !aT, fU = fb(U);
+    var aT = OM.alphaTop(T, U) && !(P && P.genSet && P.genSet(T) && !P.hasM(T)), fT = fb(T) && !aT && !(P && P.hasM && P.hasM(T)), fU = fb(U);
+    /* 男性器のある女性の攻め（ふたなり・性器を決めた人）は跨って受け入れる書き方（ride）にせず、挿れる側の体で書く（2026-11-05。pos V15） */
     /* 女性のαを挿れる側で書いた組を覚えておく（pos-ff.js・pos-fm.js の見直しで直さないように） */
     if (aT && fb(T) && P && P.maleTop && T.name && U.name) P.maleTop[T.name + '\u0001' + U.name] = 1;
     return fT && fU ? 'ff' : fT ? 'ride' : fU ? 'mf' : 'mm';
