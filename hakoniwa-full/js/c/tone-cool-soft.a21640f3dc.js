@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-cool-soft.aaabe18023.js
+HK.Load.def(713,'tone:cool_soft',function(){
+========
 HK.Load.def(724,'tone:cool_soft',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-cool-soft.a21640f3dc.js
 HK.Load.toneData("cool_soft",{"F":[
 ["なんでこうなったんだっけ","なんでこうなったんだっけ。……まあ、いいけど"],
 ["みんな、下がってて","みんな、少し下がってて"],
@@ -392,4 +396,8 @@ HK.Load.toneData("cool_soft",{"F":[
 "このままでは、また誰かがやられる。こちらから毒グモを仕留めに行こう",
 "このままでは、また誰かがやられる。こちらから気の荒いイノシシを仕留めに行こう"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-cool-soft.aaabe18023.js
+HK.Load.done('tone-cool-soft', 'aaabe18023', 1);
+========
 HK.Load.done('tone-cool-soft', 'a21640f3dc', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-cool-soft.a21640f3dc.js

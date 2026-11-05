@@ -2205,7 +2205,11 @@ T:{LEAD_R:LEAD_R,REL_R:REL_R,DOER:DOER,PERS_R:PERS_R,VAL_R:VAL_R,LEAD_C:LEAD_C,R
 });
 ;
 /* ==== js/hole-ero3-r18.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-hole.853ab1258a.js
+HK.Load.def(545,'js/hole-ero3-r18.js',function(){
+========
 HK.Load.def(556,'js/hole-ero3-r18.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-hole.e6911f65ac.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2241,7 +2245,11 @@ e:L('戻ってきた快感が、{前立腺}にずんっと集まった。{s:wet}
 })();
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-hole.853ab1258a.js
+HK.Load.def(545.5,'tone:scen-hole',function(){
+========
 HK.Load.def(556.5,'tone:scen-hole',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-hole.e6911f65ac.js
 HK.Load.toneData("stern",{"F":[
 ["いや、こっちのほうが――ほら","いや、こちらのほうが――ほら"],
 ["次の人、まだ？","次の者は……まだ、か……っ"],
@@ -2699,4 +2707,8 @@ HK.Load.toneData("chara_down",{"F":[
 ["それを使うなら、遮断が解けたあと、同じものを先生の分も用意しておけ","それ使うなら、遮断解けたあと、先生の分も同じの用意しといてくださいねー"],
 ["聞こえてるんでしょ！？","聞こえてるんですよねー？"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-hole.853ab1258a.js
+HK.Load.done('scen-hole', '853ab1258a', 1);
+========
 HK.Load.done('scen-hole', 'e6911f65ac', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-hole.e6911f65ac.js

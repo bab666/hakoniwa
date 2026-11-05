@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-mystic.876d435837.js
+HK.Load.def(713,'tone:mystic',function(){
+========
 HK.Load.def(724,'tone:mystic',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-mystic.48195d2154.js
 HK.Load.toneData("mystic",{"F":[
 ["…やってらんない","…やれやれ、やってられないね"],
 ["…今日だけ、ですから","…今日だけ、だからね"],
@@ -352,4 +356,8 @@ HK.Load.toneData("mystic",{"F":[
 "S":[
 "は……ぁ、っ……くそ……"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-mystic.876d435837.js
+HK.Load.done('tone-mystic', '876d435837', 1);
+========
 HK.Load.done('tone-mystic', '48195d2154', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-mystic.48195d2154.js

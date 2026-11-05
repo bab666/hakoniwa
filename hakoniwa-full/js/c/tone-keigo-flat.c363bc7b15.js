@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-keigo-flat.f0f27d0524.js
+HK.Load.def(713,'tone:keigo_flat',function(){
+========
 HK.Load.def(724,'tone:keigo_flat',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-keigo-flat.c363bc7b15.js
 HK.Load.toneData("keigo_flat",{"F":[
 ["私は〈〉。よろしくね","〈〉です。よろしくお願いします"],
 ["え、それ聞いてない","聞いていません"],
@@ -72,4 +76,8 @@ HK.Load.toneData("keigo_flat",{"F":[
 ["ここがいいんだろ。顔に出てる","ここがいいんですね。顔に出ています"],
 ["今、自分から追いかけたね","今、自分から追いかけました"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-keigo-flat.f0f27d0524.js
+HK.Load.done('tone-keigo-flat', 'f0f27d0524', 1);
+========
 HK.Load.done('tone-keigo-flat', 'c363bc7b15', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-keigo-flat.c363bc7b15.js

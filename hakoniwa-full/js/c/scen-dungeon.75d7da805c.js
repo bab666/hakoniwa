@@ -3325,7 +3325,11 @@ return'\n\n'+fl(pick(S,MT.act[k]))+'\n\n'+tail+' '+a.name+'「'+am+'」――'+f
 });
 ;
 /* ==== js/dungeon-ero3-r18.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-dungeon.99f887c351.js
+HK.Load.def(546,'js/dungeon-ero3-r18.js',function(){
+========
 HK.Load.def(557,'js/dungeon-ero3-r18.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-dungeon.75d7da805c.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -3362,7 +3366,11 @@ e:L('淫紋がどくんと脈打った瞬間、{b}の{乳首}がつんと尖っ�
 })();
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-dungeon.99f887c351.js
+HK.Load.def(546.5,'tone:scen-dungeon',function(){
+========
 HK.Load.def(557.5,'tone:scen-dungeon',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-dungeon.75d7da805c.js
 HK.Load.toneData("stern",{"F":[
 ["すぐ終わる、すぐ終わるから","すぐ終わる。すぐに終わらせる",1]]});
 HK.Load.toneData("tsun_n",{"F":[
@@ -3670,4 +3678,8 @@ HK.Load.toneData("chara_down",{"F":[
 HK.Load.toneData("gentle_m",{"F":[
 ["放っておけるわけないでしょ！","放っておけるわけ、ないじゃないか！"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-dungeon.99f887c351.js
+HK.Load.done('scen-dungeon', '99f887c351', 1);
+========
 HK.Load.done('scen-dungeon', '75d7da805c', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-dungeon.75d7da805c.js

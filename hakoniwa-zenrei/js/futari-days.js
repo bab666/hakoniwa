@@ -213,7 +213,7 @@
     '[en]{a}と{b}は、言い合いをした日でも、夕飯だけは一緒に食べることにしていた。今夜も黙って向かい合って座り、食べ終わるころには普通に話していた。|' +
     '[de]{a}と{b}は、近所の公園のベンチで、季節の変わり目の空を眺めた。来年の今ごろの話を、どちらからともなく始めた。|' +
     '{a}は、仕事で落ち込んだ日でも、{b}の前でだけは無理に笑わなくていいことに気づいた。{b}は何も訊かずに、温かいお茶を淹れた。|' +
-    '{a}と{b}の家の壁に、二人で撮った写真が一枚ずつ増えていった。{a}は、最初の一枚の自分がまだぎこちない顔をしているのを見て、苦笑いした。|' +
+    '{a}と{b}の部屋の壁に、二人で撮った写真が一枚ずつ増えていった。{a}は、最初の一枚の自分がまだぎこちない顔をしているのを見て、苦笑いした。|' +
     '[n]{a}と{b}は、寝る前に明日の天気を確かめ合うのが習慣になった。雨の予報の日は、どちらかが黙って玄関に傘を二本出しておいた。|' +
     '{a}は、{b}の好きな歌を、いつの間にか口ずさめるようになっていた。{b}に指摘されて、{a}は耳まで赤くなった。|' +
     '{a}と{b}は、同居を始めた日に決めた約束ごとの紙を、冷蔵庫から外して読み返した。守れていないものが一つあって、二人で顔を見合わせて笑った。');
@@ -258,9 +258,19 @@
     '居間の電球が切れかけていたことを思い出して、買い物のメモに足した|ため込んでいた家計簿のアプリを、ようやく開いた|明日の朝のゴミの日を、スマホの予定に入れた|' +
     '今朝すれ違った同居人の寝ぼけた顔を思い出して、少しだけ笑った|部屋の鉢植えに水をやり忘れたことに気づいた|家に置いてきた読みかけの本の続きが、少しだけ気になった|' +
     '玄関の靴箱の上に置いた郵便物のことを思い出した|同僚に引っ越し先の住み心地を訊かれて、思ったより長く話してしまった');
+  /* 平日の昼の一文の中身の重なり（決まった一文 NOON と組み立ての NOON_W。銭湯・家計簿・付箋など）：どちらかで出した中身は、もう一方でも出さない */
+  function core(x) { return String(x).replace(/^\{a\}は[^、]{0,14}、/, '').replace(/^[^「」。]{1,12}は[^、]{0,14}、/, '').replace(/。$/, '').replace(/[、，]/g, ''); }
+  function wKey(w) { return w.replace(/[、，]/g, '').slice(0, 10); }
+  function noonUsed(ctx, x) { var U = ctx.ft && ctx.ft.used; if (!U) return false; var c = core(x); return NOON_W.some(function (w) { return U['noonw:' + w] && c.indexOf(wKey(w)) >= 0; }); }
   function noonT(ctx) {
     var U = ctx.ft.used, ws = NOON_W.filter(function (w) { return !U['noonw:' + w]; });
-    if (!ws.length || ctx.rng() < 0.35) { var t = FC.fresh(ctx, refill(ctx, NOON)); if (t) return t; }
+    /* 組み立ての「何を思った」と、決まった一文（NOON）は中身が重なる（銭湯・家計簿・付箋など）。どちらで出しても、一回の遊びで同じ中身は一度だけ（通し読み 1105） */
+    var used = function (x) { return noonUsed(ctx, x); };
+    ws = ws.filter(function (w) { var kw = wKey(w); return !NOON.some(function (x) { return U[x] && core(x).indexOf(kw) >= 0; }); });
+    if (!ws.length || ctx.rng() < 0.35) {
+      var t = FC.fresh(ctx, refill(ctx, NOON).filter(function (x) { return !used(x); }));
+      if (t) { var ct = core(t); NOON_W.forEach(function (w) { if (ct.indexOf(wKey(w)) >= 0) U['noonw:' + w] = 1; }); return t; }
+    }
     if (!ws.length) return '';
     var w = ws[Math.floor(ctx.rng() * ws.length)]; U['noonw:' + w] = 1;
     return '{a}は' + NOON_T[Math.floor(ctx.rng() * NOON_T.length)] + '、' + w + '。';
@@ -315,7 +325,7 @@
   function traits(ctx, a) { var p = prof(ctx, a), o = []; if (PROF[p.chore]) o.push(p.chore); if (PROF[p.clock]) o.push(p.clock); if (PROF[p.tidy]) o.push(p.tidy); return o; }
   function profPool(ctx, a, b) {
     var out = [];
-    traits(ctx, a).forEach(function (k) { (PROF[k] || []).forEach(function (t) { if (!canChore(ctx, b) && B_CHORE.test(t)) return; if (FC.st(ctx, a, b) >= 4 && /\{[ab]\}の部屋/.test(t)) return; out.push(t); }); });
+    traits(ctx, a).forEach(function (k) { (PROF[k] || []).forEach(function (t) { if (!canChore(ctx, b) && B_CHORE.test(t)) return; if (FC.st(ctx, a, b) >= 4 && /\{[ab]\}の部屋/.test(t)) return; /* 今夜同じ布団で眠る（眠った）二人に、廊下から相手の部屋の明かりを見る文を出さない（通し読み 1105） */ if (/\{[ab]\}の部屋|廊下で/.test(t) && (ctx.ft.bedDay || {})[FC.K(a, b)] === ctx.ft.day) return; out.push(t); }); });
     return out;
   }
   function profWhy(ctx, a, t) { var p = prof(ctx, a), k = ['chore', 'clock', 'tidy'].map(function (x) { return p[x]; }).filter(function (v) { return PROF[v] && PROF[v].indexOf(t) >= 0; })[0]; return k; }
@@ -448,6 +458,7 @@
     if (c && !c.gone) emitPool(ctx, c, null, refill(ctx, FILL.s.filter(function (t) { return !/昼休み|職場|仕事|打ち合わせ/.test(t); })), FC.W(ctx, f.t === 1 && !f.hol ? '職場' : homeN(ctx)) + '暮らしの一幕（' + c.name + '）', { cat: 'solo' });
   }
   HK.FutariDays = {
+    noonUsed: noonUsed,
     phase: function (ctx) { },
     after: function (ctx) {
       var f = ctx.ft; if (!f) return;
@@ -545,9 +556,11 @@
     w.run = function (ctx, a, b) {
       var r = r0.apply(this, arguments);
       if (r && ctx.ft && typeof r.text === 'string' && FC.textOk && !FC.textOk(ctx, r.text)) return null;
+      /* 同じ家の住人どうしを「〇〇の家に遊びに来た」「来客の〇〇」と書かない（本体の daily-kit.js の三人の文。通し読み 1105） */
+      if (r && ctx.ft && b && typeof r.text === 'string' && /の家に、[^。]*遊びに来|来客の/.test(r.text) && FC.sameHome && FC.sameHome(ctx, a, b)) return null;
       /* 同じ布団で眠った翌朝でない二人に「布団は、片側だけ」「隣で眠る」を出さない（部屋を一つにした二人は別）。熱を出した人を覚えておく（その日はその人を家事の主語にしない。scenario-futari.js の記録の門） */
       if (r && ctx.ft && b && typeof r.text === 'string' && /片側だけ|隣で眠って|同じ布団で/.test(r.text) && FC.st(ctx, a, b) < 4 && (ctx.ft.bedDay || {})[FC.K(a, b)] !== ctx.ft.day - 1 && ctx.ft.t === 0) return null;
-      if (r && ctx.ft && b && typeof r.text === 'string') [a, b].forEach(function (c) { if (r.text.indexOf('熱を出した' + c.name) >= 0 || r.text.indexOf('具合の悪そうな' + c.name) >= 0) (ctx.ft.sick = ctx.ft.sick || {})[c.i] = ctx.ft.day; });
+      if (r && ctx.ft && b && typeof r.text === 'string') [a, b].forEach(function (c) { if (r.text.indexOf('熱を出した' + c.name) >= 0 || r.text.indexOf('具合の悪そうな' + c.name) >= 0 || r.text.indexOf('熱でぼんやりしている' + c.name) >= 0 || r.text.indexOf('寝込んだ' + c.name) >= 0 || new RegExp(c.name + '(?:が|は)(?:熱を出|風邪で|寝込)').test(r.text)) (ctx.ft.sick = ctx.ft.sick || {})[c.i] = ctx.ft.day; });
       /* 関係の段階に合わない文（恋人・一夜のあとの二人に友人・片想いの頃の文）を出さない */
       /* 義理のきょうだいの過去の前提（親の再婚で家族になって何年も）に合わない「遠い親族だった」を出さない（A9） */
       if (r && ctx.ft && b && typeof r.text === 'string' && /遠い親族|遠い親戚/.test(r.text) && FC.kinOf(ctx, a, b) && FC.kinOf(ctx, a, b).step) return null;

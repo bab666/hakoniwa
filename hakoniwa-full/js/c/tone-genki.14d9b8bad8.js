@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-genki.f0edd8cbd2.js
+HK.Load.def(713,'tone:genki',function(){
+========
 HK.Load.def(724,'tone:genki',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-genki.14d9b8bad8.js
 HK.Load.toneData("genki",{"F":[
 ["……かしこまり、ました……","……わ、わかり、ました……"],
 ["……っ、失礼ながら……もう……","……っ、ごめんなさい……もう……"],
@@ -252,4 +256,8 @@ HK.Load.toneData("genki",{"F":[
 ["声、我慢しなくていい。……聞かせて","声、我慢しなくていいですよ。……聞かせてください"],
 ["……抑えられなくて、すみません","……抑えられなくて、すみません……っ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-genki.f0edd8cbd2.js
+HK.Load.done('tone-genki', 'f0edd8cbd2', 1);
+========
 HK.Load.done('tone-genki', '14d9b8bad8', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-genki.14d9b8bad8.js

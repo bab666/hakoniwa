@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-sondai.bad72ffc77.js
+HK.Load.def(713,'tone:sondai',function(){
+========
 HK.Load.def(724,'tone:sondai',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-sondai.de27a21e40.js
 HK.Load.toneData("sondai",{"F":[
 ["触んないで","気安く触れないでくれたまえ"],
 ["結論から言うと、〈〉は「誰でもいい」って言ったのに、急に一人に絞った。理由が見えない。少なくとも、今日の候補に入れておきたい。","結論から言おう。〈〉は「誰でもいい」と言っておいて、急に一人に絞った。ほう、その理由は何かね？　今日の候補に入れておくべきだろう。",1],
@@ -284,4 +288,8 @@ HK.Load.toneData("sondai",{"F":[
 ["今度は私の番だ。逃げるなよ","今度はこちらの番だ。逃げるのは許さん"],
 ["……誰にも言うなよ","……誰にも言ってはならんぞ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-sondai.bad72ffc77.js
+HK.Load.done('tone-sondai', 'bad72ffc77', 1);
+========
 HK.Load.done('tone-sondai', 'de27a21e40', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-sondai.de27a21e40.js

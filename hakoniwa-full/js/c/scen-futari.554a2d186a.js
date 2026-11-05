@@ -290,6 +290,10 @@ if(f.t<=1&& /夕飯を作り|夕飯の支度|晩ごはんを作|夕飯のあと|
 if(f.t!==3&& /寝る前|眠る前|おやすみ/.test(t)&& !/昨夜|ゆうべ|今夜|夜に/.test(t)&&f.t!==2)return false;
 if(f.day===0&&f.t<=2&& /夜中|昨夜|ゆうべ|夜更かし|夜遅く|夜の長電話/.test(t))return false;
 if(f.day===0&& /色あせ|すっかり慣れ|何度目/.test(t))return false;
+if(f.day===0&& /いつもの朝|いつもの夜|いつの間にか/.test(t))return false;
+if(HK.FutariDays&&HK.FutariDays.noonUsed&& /昼|仕事|会議|外回り|エレベーター/.test(t)&&HK.FutariDays.noonUsed(ctx,t))return false;
+if(ctx.env&&ctx.env.season==='summer'&& /温かい缶|温めた牛乳|「寒い|寒い。早く/.test(t))return false;
+if(/というだけの約束で始まった|今日が二度目/.test(t)&&pairs(ctx).some(function(q){return stOf(ctx,q[0],q[1]).preset;}))return false;
 if(f.liv!=='apart'&&T_APART.test(t))return false;
 var tw=dateOf(ctx.env,f.day+1).w;
 if(tw!==0&&tw!==6&& /明日(?:は|、)?休み|休日の前|明日、?お休み|明日休み/.test(t))return false;
@@ -317,7 +321,7 @@ cohab:L('今日から、{a}と{b}の同居が始まる。段ボールの山を�
 share:L('シェアハウスの入居日。共用の居間で、{a}と{b}は初めて顔を合わせた。|{a}がシェアハウスの玄関を開けると、{b}がお茶を淹れていた。{b}「ちょうどよかった。一杯、飲む？｜ちょうどよかった。一杯、飲むか？｜ちょうどよかったです。一杯、飲みますか？」|シェアハウスの共用の台所で、{a}と{b}は同じ棚を使うことになった。最初の会話は、調味料の置き場所だった。'),
 share3:L('シェアハウスの入居日。共用の居間に、{a}と{b}と{c}の三人がそろった。誰からともなく、自己紹介が始まった。|{a}と{b}と{c}は、同じ日にこの家に越してきた。廊下で段ボールがぶつかって、三人とも笑った。|新しい家の最初の朝、三人は共用の台所でトーストを焼いた。{c}が「今日から、よろしく｜今日から、よろしく頼む｜今日から、よろしくお願いします」と言って、{a}と{b}も頭を下げた。'),
 third:L('{c}は、{a}の古くからの友人だった。{a}の話によく出てくる{b}のことが、少しだけ気になっていた。|{c}は、{a}と{b}がよく行くカフェの常連だった。三人が話すようになるまで、時間はかからなかった。|{c}は、{b}の昔なじみだった。久しぶりに会った{c}は、{b}の隣にいる{a}を、興味深そうに眺めた。'),
-tie:L('{a}と{b}は、{rel}だ。今日からの毎日も、たぶんいつもどおりに始まる。|{a}と{b}は{rel}として、もうしばらくの時間を一緒に過ごしてきた。|{rel}の{a}と{b}の、いつもの朝が始まった。'),
+tie:L('{a}と{b}は、{rel}だ。今日からの毎日も、たぶんいつもどおりに始まる。|{a}と{b}は{rel}として、もうしばらくの時間を一緒に過ごしてきた。|{rel}の{a}と{b}の、同じ家での最初の朝が始まった。'),
 lovers:L('{a}と{b}は、付き合ってもうしばらくになる恋人どうしだ。今日から、同じ家に帰る毎日が始まる。|恋人の{a}と{b}は、今日から同じ家で暮らす。玄関に並んだ二足の靴を見て、二人は少し照れくさそうに笑った。|{a}と{b}は、付き合い始めた頃から「いつか一緒に住もう」と話していた。その「いつか」が、今日だった。')
 };
 var FRIEND={
@@ -435,15 +439,15 @@ shy:'{a}は小さな付箋に「ごめんなさい」と書いて、{b}のマグ
 polite:'{a}は{b}の前で深く頭を下げた。{a}「さっきは、ごめん｜先ほどは、すまなかった｜先ほどは、すみませんでした」――{b}は、つい笑ってしまった。|{a}「改めて、ちゃんと話させて｜改めて、話をさせてくれ｜改めて、お話しさせてください」――{a}の丁寧な謝罪に、{b}の怒りもほどけていった。|{a}は仲直りの印に、{b}の好きな店の菓子を用意していた。'
 });
 var JEAL2=P9({
-proud:'{a}は、{b}のスマホに届いた{who}からの連絡を横目で見た。{a}「……ずいぶん仲がいいんだな」|{a}「{who}の話、今日で三回目だ」――{a}は不機嫌そうに腕を組んだ。やきもちだった。|{a}は{b}を自分のほうへ引き寄せた。{a}「{who}のことは、もういいだろ」',
+proud:'{a}は、{b}のスマホに届いた{who}からの連絡を横目で見た。{a}「……ずいぶん仲がいいんだな」|{a}「{who}の話、今日で三回目だ」――{a}は不機嫌そうに腕を組んだ。やきもちだった。|{b}が{who}の話を始めると、{a}は{b}を自分のほうへ引き寄せた。{a}「{who}のことは、もういいだろ」',
 stern:'{a}「{who}とは、どういう知り合いなんだ」――{a}の声は静かだったが、眉間にしわが寄っていた。|{a}は{b}が{who}と話していた件について、事細かに確かめた。それが嫉妬だと、{a}自身も気づいていた。|{a}は黙って{b}の隣に座り直した。{who}の話が終わるまで、口をきかなかった。',
 tsun:'{a}「べつに{who}のことなんか気にしてないし！」――気にしているのは、誰の目にも明らかだった。|{a}は{who}の話を聞くたびに、むくれて頬をふくらませた。|{a}「{who}と私、どっちが大事なの」――言ったあとで、{a}は自分のやきもちに真っ赤になった。',
-gentle:'{a}は{who}の話を笑って聞いていたが、少しだけ寂しそうだった。|{a}「{who}と仲がいいんだね。……ちょっとだけ、妬けちゃう」|{a}は{b}の手をそっと握って、{who}の話題を変えた。',
+gentle:'{a}は{who}の話を笑って聞いていたが、少しだけ寂しそうだった。|{a}「{who}と仲がいいんだね。……ちょっとだけ、妬けちゃう」|{b}の口から{who}の名前が三度出たところで、{a}は{b}の手をそっと握って、話題を変えた。',
 devoted:'{a}は{b}が{who}と出かけた日、一日中そわそわしていた。|{a}「私より、{who}のほうがいいのかな……」――{a}は小さな声で呟いた。|{a}は{b}の顔を見るなり、袖をつかんだ。{a}「{who}とばっかり、ずるい」',
 cool:'{a}は{who}の話に相槌を打ちながら、ほんの少しだけ口数が減った。|{a}「そう。……覚えておく｜そうか。……覚えておく｜そうですか。……覚えておきます」――{who}の話を聞いた{a}の声は平坦だったが、それが嫉妬だと{b}は気づいた。|{a}は興味のないふりをして、{who}のことを根掘り葉掘り訊いた。',
 free:'{a}「えー、{who}とご飯？　ずるい、私も行く！」|{a}は{who}の話を聞いて、わざと大げさに拗ねてみせた。半分は本気だった。|{who}の話が続いたところで、{a}は{b}の頬をつまんだ。{a}「その話、しすぎ。今は私の番｜その話はしすぎだ。今は私の番だ｜そのお話、しすぎです。今は私の番です」',
 shy:'{a}は{who}の話を聞くたびに、うつむいて黙りこんだ。|{a}は{b}の服の裾をそっとつまんだ。{a}「……{who}より、私と、いて」|{a}は{who}への小さなやきもちを、どうしても口にできなかった。',
-polite:'{a}「{who}さんとは、ずいぶん親しくなさっているのですね」――丁寧な言葉に、棘が混ざっていた。|{a}は微笑んだまま、{who}の話題を上手に切り上げた。|{a}「失礼。少し、妬いてしまいました」――{a}は素直に打ち明けた。'
+polite:'{a}「{who}さんとは、ずいぶん親しくなさっているのですね」――丁寧な言葉に、棘が混ざっていた。|{b}の{who}の話が長くなると、{a}は微笑んだまま、その話題を上手に切り上げた。|{a}「失礼。少し、妬いてしまいました」――{a}は素直に打ち明けた。'
 });
 var WHO=['職場の後輩','昔の同級生','行きつけの店の店員','学生時代の友達','取引先の人','ジムの知り合い'];
 var HAND=L('人混みの中で、{a}の指先が{b}の手に触れた。どちらからともなく、そのまま手をつないだ。|{b}「手、冷たいね｜手が、冷たい｜手、冷たいですね」――そう言って、{b}は{a}の手を自分の上着のポケットに入れた。|{a}は、つないだ手をどのくらいの強さで握ればいいのか分からなくて、ずっと同じ力のままだった。|信号待ちのあいだ、{a}と{b}の手の甲が何度もぶつかった。三回目で、{b}が{a}の手をつかんだ。');
@@ -572,6 +576,7 @@ function homeLovers(ctx,a,b){return couple(ctx,a,b)&&sameHome(ctx,a,b);}
 function emit(ctx,o){
 var e;
 if((o.actors||[]).some(function(c){return c&&c.gone;}))return null;
+if(ctx.ft&&ctx.ft.sick&&typeof o.why==='string'&& /（[^）]*職場/.test(o.why)&&(o.actors||[]).some(function(c){return c&&ctx.ft.sick[c.i]===ctx.ft.day;}))return null;
 if(ctx.ft&&ctx.ft.trip&&typeof o.why==='string'&& /（[^）]*(?:自宅|シェアハウス|古い家)/.test(o.why)&&(o.actors||[]).some(function(c){return c&&onTrip(ctx,c);}))return null;
 if(o.free||(o.trioPairs&&o.trioPairs.length)){
 var ev={sex: !!o.sex,free: !!o.free,trioPairs:o.trioPairs||null};
@@ -640,9 +645,9 @@ ev({id:'ft_gift',label:'何でもない日の小さな贈り物',tie:'lover',cat
 need:function(ctx,a,b){return st(ctx,a,b)>=3&&couple(ctx,a,b);},
 fx:function(ctx,a,b){ctx.mod2(a,b,{aff:3},{aff:5,att:3});},why:function(ctx,a){return'何でもない日の小さな贈り物（'+a.name+'の優しさ）';}});
 ev({id:'ft_tired',label:'疲れて帰った同居人を労う',cat:'help',tm:'en',w:0.9,pool:function(){return TIRED;},
-need:function(ctx,a,b){return sameHome(ctx,a,b)&&st(ctx,a,b)>=1&& !ctx.ft.hol;},
+need:function(ctx,a,b){return sameHome(ctx,a,b)&&st(ctx,a,b)>=1&& !ctx.ft.hol&&ctx.ft.homeDay!==ctx.ft.day;},
 spot:function(){return'自宅の居間';},
-fx:function(ctx,a,b){ctx.mod(b,a,{aff:4,trust:4});ctx.stress(b,-8);},why:function(ctx,a,b){return b.name+'の一日の疲れを、'+a.name+'が労った';}});
+fx:function(ctx,a,b){ctx.ft.homeDay=ctx.ft.day;ctx.mod(b,a,{aff:4,trust:4});ctx.stress(b,-8);},why:function(ctx,a,b){return b.name+'の一日の疲れを、'+a.name+'が労った';}});
 ev({id:'ft_season',label:'季節の小さな場面を二人で',cat:'bond',tm:'mden',w:1.0,pool:function(ctx){return SEASONT[seasonNow(ctx)];},
 need:function(ctx,a,b){return st(ctx,a,b)>=1&&(ctx.ft.hol||ctx.ft.t!==1);},
 fx:function(ctx,a,b){ctx.mod2(a,b,{aff:3,att:loveOk(ctx,a,b)?2:0},{aff:3,att:loveOk(ctx,a,b)?2:0});},why:function(ctx){return{spring:'春',summer:'夏',autumn:'秋',winter:'冬'}[seasonNow(ctx)]+'の日（'+dayLabel(ctx.env,ctx.ft.day)+'）';}});
@@ -974,11 +979,12 @@ var T=HK.Ties?HK.Ties.get(ctx,a,b):null,lab=T?(HK.tieLabel?HK.tieLabel(T):(HK.TI
 var t2=fresh(ctx,MEET.tie);
 if(t2)emit(ctx,{actors:[a,b],cat:'bond',text:fill(ctx,t2,a,b,null,{rel:lab||'知り合い'}),why:W(ctx,'')+'関係の設定：'+(lab||'知り合い')});
 }
-function trioPairOk(ctx,x,y){
+function trioPairOk(ctx,x,y,hubRing){
 if(!together(ctx,x,y)|| !apOk(ctx,x,y))return false;
 if(ctx.R(x,y).ten>=50||ctx.R(y,x).ten>=50||ctx.R(x,y).aff<0||ctx.R(y,x).aff<0)return false;
 var Q=HK.Quad&& !HK.SAFE_ON?HK.Quad:null;
 if(Q&&Q.hardOk&& !Q.hardOk(ctx,x,y))return false;
+if(hubRing)return true;
 var want=Q&&Q.wantOk?Q.wantOk(ctx,x,y):loveOk(ctx,x,y)&&(!HK.Pos|| !HK.Pos.okSex||HK.Pos.okSex(x,y));
 return want?couple(ctx,x,y)&&loveOk(ctx,x,y):true;
 }
@@ -987,8 +993,9 @@ var P=ctx.present(),out=[];
 if(P.length<3)return null;
 for(var i=0;i<P.length;i++)for(var j=i+1;j<P.length;j++)for(var k=j+1;k<P.length;k++){
 var M=[P[i],P[j],P[k]],Q3=[[M[0],M[1]],[M[0],M[2]],[M[1],M[2]]];
-if(!Q3.every(function(q){return trioPairOk(ctx,q[0],q[1]);}))continue;
-if(Q3.filter(function(q){return couple(ctx,q[0],q[1]);}).length<2)continue;
+var nc=Q3.filter(function(q){return couple(ctx,q[0],q[1]);}).length;
+if(nc<2)continue;
+if(!Q3.every(function(q){return trioPairOk(ctx,q[0],q[1],nc===2&& !couple(ctx,q[0],q[1]));}))continue;
 out.push(M);
 }
 if(!out.length)return null;
@@ -1021,7 +1028,7 @@ return;
 }
 }
 var tg=trioOf(ctx);
-if(tg&&rng()<(R?Math.min(0.6,(ctx.present().length>=4?0.15:0.22)*nk):0.15)){
+if(tg&&rng()<(R?Math.min(0.5,(ctx.present().length>=4?0.15:0.24)*nk):0.15)){
 var g=tg.g,did=false;
 if(R&&R.trio)did=trioNight(ctx,g,tg.left);
 if(!did){
@@ -1043,11 +1050,11 @@ if(f.slept[k]===f.day)return;
 if(!f.sexTonight&& !couple(ctx,a,b)&&HK.State.freeSex&&HK.State.freeSex(ctx,a,b)&&onTrip(ctx,a)===onTrip(ctx,b)&&rng()<(together(ctx,a,b)?0.2:0.1)*HK.FreeSex.factor(ctx,a,b)&&freeNight(ctx,a,b))return;
 if(!together(ctx,a,b)){if(f.liv==='apart'&&x.s>=2&&rng()<0.28)msg(ctx,a,b,'n');return;}
 if(R&& !f.sexTonight&& !couple(ctx,a,b)&&loveOk(ctx,a,b)&&HK.FreeSex&&HK.FreeSex.chance&& !(HK.State.freeSex&&HK.State.freeSex(ctx,a,b))&&
-!(HK.Poly&&(HK.Poly.lovers(ctx,a).length||HK.Poly.lovers(ctx,b).length))&&impulseReady(ctx,a,b)&&rng()<HK.FreeSex.chance(ctx,a,b,0.45)&&impulseNight(ctx,a,b))return;
+!(HK.Poly&&(HK.Poly.lovers(ctx,a).length||HK.Poly.lovers(ctx,b).length))&&impulseReady(ctx,a,b)&&rng()<HK.FreeSex.chance(ctx,a,b,0.45*fkOf(a,b)*(stOf(ctx,a,b).impulse?1.6:1))&&impulseNight(ctx,a,b))return;
 if(!couple(ctx,a,b)|| !loveOk(ctx,a,b))return;
 var pl=f.plan[k]||{},trip=onTrip(ctx,a),first= !f.beds[k];
 var ch=(trip?0.95:pl.visit?0.9:first?0.6:0.32)*(HK.Lewd&&HK.Lewd.high&&HK.Lewd.high(ctx.env)?1.6:1);
-ch=nk>=1.69?1:Math.min(1,ch*nk);
+ch=nk>=1.69?1:Math.min(1,ch*nk*fkOf(a,b));
 if(rng()>ch){f.slept[k]=f.day;return;}
 night(ctx,a,b,trip?'trip':'home',first);
 });
@@ -1063,6 +1070,7 @@ f.sexTonight=true;f.trioN=(f.trioN||0)+1;
 if(left){var pt=g.filter(function(c){return couple(ctx,left,c)&&R.sexOk(ctx,left,c);})[0];if(pt)f.wanted={i:left.i,p:pt.i,day:f.day,g:g.map(function(c){return c.i;})};}
 return true;
 }
+function fkOf(a,b){return HK.Pos&&HK.Pos.feelK?Math.min(1.6,HK.Pos.feelK(a,b)):1;}
 function impulseReady(ctx,a,b){
 var f=ctx.ft,x=stOf(ctx,a,b),H=HK.FutariHouse,aw=H&&H.awk?H.awk(ctx,a,b):0,pace=ctx.env&&ctx.env.pace;
 if(pace==='slow')return x.s>=2&&f.day>=Math.round(f.days*0.45)&&aw<=32;
@@ -1075,7 +1083,7 @@ var f=ctx.ft,k=K(a,b),x=stOf(ctx,a,b),pf=ctx.pair(a,b);
 var r=HK.FutariR18.night(ctx,a,b,{stage:x.s,where:'home',impulse:true,nth:f.r18[k]||0,fwb:fwbTie(ctx,a,b)});
 if(!r|| !r.text)return false;
 var le=sayLead(ctx,[r.a||a,r.b||b],r.lead);
-var e=emit(ctx,{actors:[r.a||a,r.b||b],cat:'romance',sex:true,text:r.text,why:W(ctx,'')+r.why,mag:10,tag:'impulse',fx:relFx(ctx,a,b,{att:4,ten:2},{att:4,ten:2})});
+var e=emit(ctx,{actors:[r.a||a,r.b||b],cat:'romance',sex:true,lewd:r.lewd,text:r.text,why:W(ctx,'')+r.why,mag:10,tag:'impulse',fx:relFx(ctx,a,b,{att:4,ten:2},{att:4,ten:2})});
 if(!e){unLead(ctx,le);return false;}
 f.sexTonight=true;x.impulse=(x.impulse||0)+1;
 pf.nights=(pf.nights||0)+1;f.r18[k]=(f.r18[k]||0)+1;
@@ -1086,7 +1094,7 @@ var f=ctx.ft,k=K(a,b),x=stOf(ctx,a,b),pf=ctx.pair(a,b);
 var r=HK.FutariR18&& !HK.SAFE_ON?HK.FutariR18.night(ctx,a,b,{stage:x.s,where:'home',free:true,nth:f.r18[k]||0,fwb:fwbTie(ctx,a,b)}):null;
 if(!r|| !r.text)return false;
 var le=sayLead(ctx,[r.a||a,r.b||b],r.lead);
-var e=emit(ctx,{actors:[r.a||a,r.b||b],cat:'romance',sex:true,free:true,text:r.text,why:W(ctx,'')+HK.FreeSex.why(a,b)+'／'+r.why,mag:10,tag:'free',fx:relFx(ctx,a,b,{aff:2},{aff:2})});
+var e=emit(ctx,{actors:[r.a||a,r.b||b],cat:'romance',sex:true,free:true,lewd:r.lewd,text:r.text,why:W(ctx,'')+HK.FreeSex.why(a,b)+'／'+r.why,mag:10,tag:'free',fx:relFx(ctx,a,b,{aff:2},{aff:2})});
 if(!e){unLead(ctx,le);return false;}
 f.sexTonight=true;
 pf.nights=(pf.nights||0)+1;f.r18[k]=(f.r18[k]||0)+1;
@@ -1102,7 +1110,7 @@ var sp=where==='trip'?'温泉宿':'自宅の寝室';
 var done=false;
 if(r&&r.text){
 var le=sayLead(ctx,[r.a||a,r.b||b],r.lead);
-var e=emit(ctx,{actors:[r.a||a,r.b||b],cat:'romance',sex:true,text:r.text,why:W(ctx,where==='trip'?sp:r.spot||sp)+r.why,mag:12,tag:'night',fx:relFx(ctx,a,b,{aff:3,att:3,trust:2},{aff:3,att:3,trust:2})});
+var e=emit(ctx,{actors:[r.a||a,r.b||b],cat:'romance',sex:true,lewd:r.lewd,text:r.text,why:W(ctx,where==='trip'?sp:r.spot||sp)+r.why,mag:12,tag:'night',fx:relFx(ctx,a,b,{aff:3,att:3,trust:2},{aff:3,att:3,trust:2})});
 if(e){done=true;f.sexTonight=true;pf.night=true;pf.nights=(pf.nights||0)+1;f.r18[k]=(f.r18[k]||0)+1;f.beds[k]=(f.beds[k]||0)+1;(f.bedDay=f.bedDay||{})[k]=f.day;}
 else unLead(ctx,le);
 }
@@ -1845,7 +1853,14 @@ case'money':return 0.6;
 default:return 1;
 }
 }
-function sitOk(ctx,t,a){return!/作り置き/.test(t)||H.cookGood(ctx,a);}
+function sitTime(ctx,t){
+var tt=ctx.ft?ctx.ft.t: -1;
+if(/昼寝/.test(t)&&tt!==1&&tt!==2)return false;
+if(/夕方になっても/.test(t)&&tt<2)return false;
+if(/夜中|夜遅く|夜の長電話/.test(t)&&tt===1)return false;
+return true;
+}
+function sitOk(ctx,t,a){return(!/作り置き/.test(t)||H.cookGood(ctx,a))&&sitTime(ctx,t);}
 function resPick(ctx,a,b,p,x){
 var w={gaman:1,memo:1,talk:1.2,laugh:0.8,spat:0.6},v=x.awk||0;
 if(/^(shy|devoted)$/.test(p)){w.gaman*=3;w.memo*=2;w.spat*=0.3;}
@@ -2073,7 +2088,8 @@ addEv({id:id,cat:'romance',scope:'pair',label:label,tie:'lover',
 when:function(ctx,a,b){var f=ctx.ft;if(!b|| !HK.Kiss||tm.indexOf(FC.TC.charAt(f.t))<0)return false;var x=FC.stOf(ctx,a,b);return FC.couple(ctx,a,b)&&FC.loveOk(ctx,a,b)&&FC.together(ctx,a,b)&&x.s>=3&&f.day-(x.kissDay==null? -9:x.kissDay)>=2&&(!need||need(ctx,a,b,x));},
 w:function(){return w;},
 run:function(ctx,a,b){
-var x=FC.stOf(ctx,a,b),r=HK.Kiss.text(ctx,a,b,{trig:trig,x:a,y:b,len:ctx.rng()<0.6?'s':'m'});
+var len=ctx.rng()<0.6?'s':'m',x=FC.stOf(ctx,a,b),r=HK.Kiss.text(ctx,a,b,{trig:trig,x:a,y:b,len:len});
+if(r&&r.text&&FC.TC.charAt(ctx.ft.t)==='n'&& /続きは、?夜|夜まで(?:我慢|お預け)/.test(r.text))r=HK.Kiss.text(ctx,a,b,{trig:trig,x:a,y:b,len:len,end:'hold'});
 if(!r|| !r.text)return null;
 x.kissDay=ctx.ft.day;if(once)x[once]=true;
 return{text:r.text,why:FC.W(ctx,FC.spotHere(ctx,a,b))+(r.why||'キスだけの触れ合い')};
@@ -2146,9 +2162,9 @@ need:function(ctx){return ctx.ft.hol;},
 lines:L('休日の朝、{a}が起きてくると、{b}はもう居間で新聞を広げていた。{b}「コーヒー、まだ温かいよ｜コーヒーは、まだ温かい｜コーヒー、まだ温かいですよ」|休みの日の朝は、家じゅうがのんびりしていた。{a}と{b}は、どちらも寝間着のまま、昼近くまで居間でごろごろしていた。|{a}は休日の朝に掃除機をかける派で、{b}は昼まで寝ていたい派だった。二人は、掃除機は十時から、という決まりをその場で作った。|休日の朝、{a}と{b}は同じ時間に台所に立って、なんとなく二人分のトーストを焼いた。'),
 fx:function(ctx,a,b){ctx.mod2(a,b,{aff:1},{aff:1});ctx.stress(a,-3);ctx.stress(b,-3);},why:'休日の朝'});
 add({id:'ft_l_home',label:'仕事帰りの同居人を迎える',cat:'help',tm:'e',w:0.9,spot:function(){return'自宅の玄関';},
-need:function(ctx){return!ctx.ft.hol;},
+need:function(ctx){return!ctx.ft.hol&&ctx.ft.homeDay!==ctx.ft.day;},
 lines:L('{b}が仕事から帰ると、玄関の明かりがついていた。{a}「おかえり。風呂、沸いてるよ｜おかえり。風呂は沸いている｜おかえりなさい。お風呂、沸いてますよ」|疲れた顔で帰ってきた{b}に、{a}は何も訊かずに温かいお茶を出した。{b}は湯呑みを両手で包んで、長い息を吐いた。|{a}は、{b}の帰りが遅い日は、居間の明かりを一つ残しておくようになっていた。{b}は、それに気づいていた。|{b}は玄関で靴を脱ぎながら、「ただいま｜ただいま｜ただいま帰りました」と言った。返ってくる声があるのに、まだ少し慣れなかった。'),
-fx:function(ctx,a,b){ctx.mod(b,a,{aff:1,trust:3});ctx.stress(b,-5);},why:function(ctx,a,b){return b.name+'の仕事帰りを、'+a.name+'が迎えた';}});
+fx:function(ctx,a,b){ctx.ft.homeDay=ctx.ft.day;ctx.mod(b,a,{aff:1,trust:3});ctx.stress(b,-5);},why:function(ctx,a,b){return b.name+'の仕事帰りを、'+a.name+'が迎えた';}});
 add({id:'ft_l_shop',label:'二人で日用品の買い出しに行く',cat:'bond',tm:'d',w:0.9,spot:function(){return'近所のスーパー';},
 need:function(ctx){return ctx.ft.hol;},
 lines:L('{a}と{b}は、近所のスーパーで日用品をまとめ買いした。洗剤の銘柄で少しもめて、結局二種類買った。|買い出しのメモを持ってきたのは{a}だったが、メモにない菓子をかごに入れたのも{a}だった。{b}は、黙って同じ菓子をもう一つ入れた。|{a}と{b}は、重い米の袋を交代で持って帰った。家に着くころには、どちらも腕が棒のようになっていた。|スーパーのレジで、{a}と{b}は割り勘の計算をした。端数の十円は、じゃんけんで{b}が払った。'),
@@ -2165,9 +2181,9 @@ fx:function(ctx,a,b){ctx.mod(b,a,{trust:3});},why:function(ctx,a,b){return b.nam
 add({id:'ft_l_sick',label:'熱を出した同居人の世話をする',cat:'help',tm:'me',w:0.5,spot:function(){return'自宅の寝室';},
 need:function(ctx,a){return ctx.ft.day>=2&&chore(ctx,a);},
 lines:L('{b}が熱を出して寝込んだ。{a}は枕元に水とゼリーを置いて、「何かあったら呼んで｜何かあったら呼べ｜何かあったら呼んでください」とだけ言った。|{a}は、寝込んだ{b}の部屋の前を、一時間おきに通った。扉は開けなかったが、足音だけで{b}には分かった。|{b}は風邪で一日寝込んだ。{a}が何度か様子を見に行くと、そのたびに{b}は布団の中から小さく手を振った。翌朝、{a}の机の上に、{b}の字で「ありがとう」と書いた付箋が貼ってあった。|{a}は、熱でぼんやりしている{b}のために、薬局で薬と冷却シートを買ってきた。'),
-fx:function(ctx,a,b){ctx.mod(b,a,{aff:1,trust:5});ctx.stress(b,-4);},why:function(ctx,a,b){return b.name+'の看病（'+a.name+'の世話焼き）';}});
+fx:function(ctx,a,b){(ctx.ft.sick=ctx.ft.sick||{})[b.i]=ctx.ft.day;ctx.mod(b,a,{aff:1,trust:5});ctx.stress(b,-4);},why:function(ctx,a,b){return b.name+'の看病（'+a.name+'の世話焼き）';}});
 add({id:'ft_l_tv',label:'居間のテレビを一緒に眺める',cat:'bond',tm:'en',w:0.8,spot:function(){return'自宅の居間';},
-lines:L('{a}が見ていた料理番組を、{b}もいつの間にか隣で見ていた。番組が終わると、二人とも無性にお腹がすいていた。|居間のテレビのチャンネルは、いつの間にか曜日ごとに{a}と{b}で交代することになっていた。|{a}と{b}は、クイズ番組の答えを先に言い合った。勝ったのは{b}だったが、{a}は最後まで認めなかった。|夜のニュースを、{a}と{b}は黙って眺めていた。天気予報だけ、二人とも少し身を乗り出した。'),
+lines:L('{a}が見ていた料理番組を、{b}もいつの間にか隣で見ていた。番組が終わると、二人とも無性にお腹がすいていた。|居間のテレビのチャンネルは、いつの間にか曜日ごとに{a}と{b}で交代することになっていた。|{a}と{b}は、クイズ番組の答えを先に言い合った。勝ったのは{b}だったが、{a}は最後まで認めなかった。|[n]夜のニュースを、{a}と{b}は黙って眺めていた。天気予報だけ、二人とも少し身を乗り出した。'),
 fx:function(ctx,a,b){ctx.mod2(a,b,{aff:1},{aff:1});},why:'居間のテレビ'});
 add({id:'ft_l_rain',label:'急な雨で洗濯物を取り込む',cat:'help',tm:'de',w:0.6,spot:function(){return'自宅のベランダ';},
 need:function(ctx,a){return chore(ctx,a);},
@@ -2364,7 +2380,7 @@ var LOVERS2=L('{a}と{b}が恋人になってから、もうすぐ一月にな�
 '[en]{a}と{b}は、言い合いをした日でも、夕飯だけは一緒に食べることにしていた。今夜も黙って向かい合って座り、食べ終わるころには普通に話していた。|'+
 '[de]{a}と{b}は、近所の公園のベンチで、季節の変わり目の空を眺めた。来年の今ごろの話を、どちらからともなく始めた。|'+
 '{a}は、仕事で落ち込んだ日でも、{b}の前でだけは無理に笑わなくていいことに気づいた。{b}は何も訊かずに、温かいお茶を淹れた。|'+
-'{a}と{b}の家の壁に、二人で撮った写真が一枚ずつ増えていった。{a}は、最初の一枚の自分がまだぎこちない顔をしているのを見て、苦笑いした。|'+
+'{a}と{b}の部屋の壁に、二人で撮った写真が一枚ずつ増えていった。{a}は、最初の一枚の自分がまだぎこちない顔をしているのを見て、苦笑いした。|'+
 '[n]{a}と{b}は、寝る前に明日の天気を確かめ合うのが習慣になった。雨の予報の日は、どちらかが黙って玄関に傘を二本出しておいた。|'+
 '{a}は、{b}の好きな歌を、いつの間にか口ずさめるようになっていた。{b}に指摘されて、{a}は耳まで赤くなった。|'+
 '{a}と{b}は、同居を始めた日に決めた約束ごとの紙を、冷蔵庫から外して読み返した。守れていないものが一つあって、二人で顔を見合わせて笑った。');
@@ -2402,9 +2418,17 @@ var NOON_W=L('今朝、家の鍵を閉めたかどうかを急に思い出せな
 '居間の電球が切れかけていたことを思い出して、買い物のメモに足した|ため込んでいた家計簿のアプリを、ようやく開いた|明日の朝のゴミの日を、スマホの予定に入れた|'+
 '今朝すれ違った同居人の寝ぼけた顔を思い出して、少しだけ笑った|部屋の鉢植えに水をやり忘れたことに気づいた|家に置いてきた読みかけの本の続きが、少しだけ気になった|'+
 '玄関の靴箱の上に置いた郵便物のことを思い出した|同僚に引っ越し先の住み心地を訊かれて、思ったより長く話してしまった');
+function core(x){return String(x).replace(/^\{a\}は[^、]{0,14}、/,'').replace(/^[^「」。]{1,12}は[^、]{0,14}、/,'').replace(/。$/,'').replace(/[、，]/g,'');}
+function wKey(w){return w.replace(/[、，]/g,'').slice(0,10);}
+function noonUsed(ctx,x){var U=ctx.ft&&ctx.ft.used;if(!U)return false;var c=core(x);return NOON_W.some(function(w){return U['noonw:'+w]&&c.indexOf(wKey(w))>=0;});}
 function noonT(ctx){
 var U=ctx.ft.used,ws=NOON_W.filter(function(w){return!U['noonw:'+w];});
-if(!ws.length||ctx.rng()<0.35){var t=FC.fresh(ctx,refill(ctx,NOON));if(t)return t;}
+var used=function(x){return noonUsed(ctx,x);};
+ws=ws.filter(function(w){var kw=wKey(w);return!NOON.some(function(x){return U[x]&&core(x).indexOf(kw)>=0;});});
+if(!ws.length||ctx.rng()<0.35){
+var t=FC.fresh(ctx,refill(ctx,NOON).filter(function(x){return!used(x);}));
+if(t){var ct=core(t);NOON_W.forEach(function(w){if(ct.indexOf(wKey(w))>=0)U['noonw:'+w]=1;});return t;}
+}
 if(!ws.length)return'';
 var w=ws[Math.floor(ctx.rng()*ws.length)];U['noonw:'+w]=1;
 return'{a}は'+NOON_T[Math.floor(ctx.rng()*NOON_T.length)]+'、'+w+'。';
@@ -2452,7 +2476,7 @@ why:function(ctx){return'暮らし方の種（'+LIV_N[livKey(ctx)]+'）';}});
 function traits(ctx,a){var p=prof(ctx,a),o=[];if(PROF[p.chore])o.push(p.chore);if(PROF[p.clock])o.push(p.clock);if(PROF[p.tidy])o.push(p.tidy);return o;}
 function profPool(ctx,a,b){
 var out=[];
-traits(ctx,a).forEach(function(k){(PROF[k]||[]).forEach(function(t){if(!canChore(ctx,b)&&B_CHORE.test(t))return;if(FC.st(ctx,a,b)>=4&& /\{[ab]\}の部屋/.test(t))return;out.push(t);});});
+traits(ctx,a).forEach(function(k){(PROF[k]||[]).forEach(function(t){if(!canChore(ctx,b)&&B_CHORE.test(t))return;if(FC.st(ctx,a,b)>=4&& /\{[ab]\}の部屋/.test(t))return;if(/\{[ab]\}の部屋|廊下で/.test(t)&&(ctx.ft.bedDay||{})[FC.K(a,b)]===ctx.ft.day)return;out.push(t);});});
 return out;
 }
 function profWhy(ctx,a,t){var p=prof(ctx,a),k=['chore','clock','tidy'].map(function(x){return p[x];}).filter(function(v){return PROF[v]&&PROF[v].indexOf(t)>=0;})[0];return k;}
@@ -2575,6 +2599,7 @@ if(c&& !c.gone&&f.t===1&& !f.hol){var nt=noonT(ctx);if(nt)FC.emit(ctx,{actors:[c
 if(c&& !c.gone)emitPool(ctx,c,null,refill(ctx,FILL.s.filter(function(t){return!/昼休み|職場|仕事|打ち合わせ/.test(t);})),FC.W(ctx,f.t===1&& !f.hol?'職場':homeN(ctx))+'暮らしの一幕（'+c.name+'）',{cat:'solo'});
 }
 HK.FutariDays={
+noonUsed:noonUsed,
 phase:function(ctx){},
 after:function(ctx){
 var f=ctx.ft;if(!f)return;
@@ -2653,8 +2678,9 @@ return w0?w0.apply(this,arguments):true;
 w.run=function(ctx,a,b){
 var r=r0.apply(this,arguments);
 if(r&&ctx.ft&&typeof r.text==='string'&&FC.textOk&& !FC.textOk(ctx,r.text))return null;
+if(r&&ctx.ft&&b&&typeof r.text==='string'&& /の家に、[^。]*遊びに来|来客の/.test(r.text)&&FC.sameHome&&FC.sameHome(ctx,a,b))return null;
 if(r&&ctx.ft&&b&&typeof r.text==='string'&& /片側だけ|隣で眠って|同じ布団で/.test(r.text)&&FC.st(ctx,a,b)<4&&(ctx.ft.bedDay||{})[FC.K(a,b)]!==ctx.ft.day-1&&ctx.ft.t===0)return null;
-if(r&&ctx.ft&&b&&typeof r.text==='string')[a,b].forEach(function(c){if(r.text.indexOf('熱を出した'+c.name)>=0||r.text.indexOf('具合の悪そうな'+c.name)>=0)(ctx.ft.sick=ctx.ft.sick||{})[c.i]=ctx.ft.day;});
+if(r&&ctx.ft&&b&&typeof r.text==='string')[a,b].forEach(function(c){if(r.text.indexOf('熱を出した'+c.name)>=0||r.text.indexOf('具合の悪そうな'+c.name)>=0||r.text.indexOf('熱でぼんやりしている'+c.name)>=0||r.text.indexOf('寝込んだ'+c.name)>=0||new RegExp(c.name+'(?:が|は)(?:熱を出|風邪で|寝込)').test(r.text))(ctx.ft.sick=ctx.ft.sick||{})[c.i]=ctx.ft.day;});
 if(r&&ctx.ft&&b&&typeof r.text==='string'&& /遠い親族|遠い親戚/.test(r.text)&&FC.kinOf(ctx,a,b)&&FC.kinOf(ctx,a,b).step)return null;
 if(r&&ctx.ft&&b&&FC.stageOk&& !FC.stageOk(ctx,a,b,typeof r.text==='string'?r.text:'',typeof r.why==='string'?r.why:''))return null;
 return r;
@@ -2904,7 +2930,8 @@ if(info.made)return'naka';
 if(info.jeal)return'jeal';
 if(info.engaged&&ctx.rng()<0.5)return'engaged';
 var lead=HK.Pos&&HK.Pos.leadOf?HK.Pos.leadOf(B):'';
-var W0={lover:1,home:info.stage>=4?1.4:0,bath:1,sofa:1,late:ctx.ft.hol?0:0.8,rain:0.6,oyasumi:HK.Kiss?1:0,ini: /sasoi|osoi/.test(lead||'')?1.6:0.4};
+var kissedToday=function(c,x,y){var st=HK.FutariCore&&HK.FutariCore.stOf?HK.FutariCore.stOf(c,x,y):null;return!!(st&&st.kissDay===c.ft.day);};
+var W0={lover:1,home:info.stage>=4?1.4:0,bath:1,sofa:1,late:ctx.ft.hol?0:0.8,rain:0.6,oyasumi:HK.Kiss&& !kissedToday(ctx,A,B)?1:0,ini: /sasoi|osoi/.test(lead||'')?1.6:0.4};
 var XW=HK.FutariR18&&HK.FutariR18.KIND_W||{};
 Object.keys(XW).forEach(function(k){if(LEAD[k]&&LEAD[k].length)W0[k]= +XW[k](ctx,A,B,info)||0;});
 var ks=Object.keys(W0).filter(function(k){return W0[k]>0;}),tot=0;ks.forEach(function(k){tot+=W0[k];});
@@ -2980,7 +3007,7 @@ var nt=HK.Attr?HK.Attr.nightOf(A,B):'',nb=HK.Attr?HK.Attr.nightOf(B,A):'';
 var why=(info.free?'体だけの夜（':info.impulse?'勢いの一夜（':'恋人どうしの夜（')+A.name+'と'+B.name+'・'+LEAD_N[kind]+(nt?'・'+A.name+'の夜の性格：'+(NIGHT_N[nt]||nt):'')+(nb?'・'+B.name+'の夜の性格：'+(NIGHT_N[nb]||nb):'')+'）';
 var lead=leadOf(ctx,A,B,kind,info);
 var rk=ROOMK[kind]&&HK.FutariR18.LONG&&HK.FutariR18.LONG[ROOMK[kind]]?ROOMK[kind]:null;
-function out(t){return{lead:lead,text:t,why:why,a:A,b:B,spot:rk?SPOT_K[rk]:null};}
+function out(t){t=callStrip(t,[A,B]);return{lead:lead,text:t,why:why,a:A,b:B,spot:rk?SPOT_K[rk]:null,lewd:lv!=='low'};}
 if(rk&& !/^(kabe|rusu)$/.test(rk)){var okT1=okT;okT=function(t){return okT1(t)&& !BED_W.test(t);};}
 var rel=kind==='first'?'first':kind==='free'||kind==='impulse'?'casual':'lover';
 var tb={start:kind==='first'?TOP_FIRST:kind==='free'||kind==='impulse'?TOP_FREE.filter(okT):fP9(TOP.start),after:kind==='free'||kind==='impulse'?TOP_AFTER_FREE.filter(okT):fP9(TOP.after)};
@@ -3082,6 +3109,11 @@ if(!text)return null;
 return{lead:lead,text:text,why:'三人の夜（'+why+'）',pairs:pl?pl.pairs:[],touch: !!touch,lewd:lv!=='low'};
 }
 };
+function callStrip(t,cs){
+if(typeof t!=='string'||t.indexOf('……！')<0)return t;
+(cs||[]).forEach(function(c){if(c&&c.name)t=t.replace(new RegExp('([「｜][\\u2060]?(?:＠[^＠「」｜]{0,16}＠)?)'+c.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'……！　','g'),'$1');});
+return t;
+}
 if(HK.Play){
 if(HK.Play.addRoom)HK.Play.addRoom('futari',{entry:{bath:2,amae:1,kiss:1},prop:{chakui:1}});
 HK.Play.SHORT.futari=true;
@@ -3830,4 +3862,8 @@ HK.Load.toneData("chara_down",{"F":[
 ["そっちだって、人のこと言えないでしょ","そっちだって、人のこと言えないっすよー"],
 ["おやすみの前に、もうひとつ","おやすみの前に、もうひとつだけ、いいですかー"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-futari.38dc7251a9.js
+HK.Load.done('scen-futari', '38dc7251a9', 1);
+========
 HK.Load.done('scen-futari', '554a2d186a', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-futari.554a2d186a.js

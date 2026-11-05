@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-keigo-twist.d1ee813960.js
+HK.Load.def(713,'tone:keigo_twist',function(){
+========
 HK.Load.def(724,'tone:keigo_twist',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-keigo-twist.b0b526e09e.js
 HK.Load.toneData("keigo_twist",{"F":[
 ["〈〉さん、〈〉さんが話したいことがあるそうです","〈〉さん、〈〉さんが話したいことがあるそうですけどね"],
 ["私は〈〉。よろしくね","私は〈〉です。よろしくお願いしますね。……まあ、一応"],
@@ -19,4 +23,8 @@ HK.Load.toneData("keigo_twist",{"F":[
 "S":[
 "…実は、ですね"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-keigo-twist.d1ee813960.js
+HK.Load.done('tone-keigo-twist', 'd1ee813960', 1);
+========
 HK.Load.done('tone-keigo-twist', 'b0b526e09e', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-keigo-twist.b0b526e09e.js

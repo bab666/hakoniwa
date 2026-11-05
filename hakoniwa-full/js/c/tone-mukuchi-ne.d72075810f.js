@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-mukuchi-ne.c0d0da064d.js
+HK.Load.def(713,'tone:mukuchi_ne',function(){
+========
 HK.Load.def(724,'tone:mukuchi_ne',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-mukuchi-ne.d72075810f.js
 HK.Load.toneData("mukuchi_ne",{"F":[
 ["あ、ぁ……っ、イきます……っ","……ぁ、っ……イく……っ",1],
 ["私は〈〉。よろしくね","私は〈〉。……よろしくね"],
@@ -112,4 +116,8 @@ HK.Load.toneData("mukuchi_ne",{"F":[
 ["何か、私にできることがあれば言ってくれ","……何かあれば、言ってね"],
 ["何か、私にできることがあったら言ってください","……何かあれば、言ってね"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-mukuchi-ne.c0d0da064d.js
+HK.Load.done('tone-mukuchi-ne', 'c0d0da064d', 1);
+========
 HK.Load.done('tone-mukuchi-ne', 'd72075810f', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-mukuchi-ne.d72075810f.js

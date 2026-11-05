@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-tsun-soft.f8444ef5ae.js
+HK.Load.def(713,'tone:tsun_soft',function(){
+========
 HK.Load.def(724,'tone:tsun_soft',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-tsun-soft.569d0c0c28.js
 HK.Load.toneData("tsun_soft",{"F":[
 ["何のポイントだよ","何のポイント、それ……"],
 ["〈〉ってさ、自分がどう見えてるか分かってないでしょ","〈〉ってさ、自分がどう見えてるか、分かってないよね……"],
@@ -15,4 +19,8 @@ HK.Load.toneData("tsun_soft",{"F":[
 ["は……っ、まだ締めるのか","は……っ、まだ締めるの……？"],
 ["く……っ、いい顔だ","く……っ、いい顔、してる……"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-tsun-soft.f8444ef5ae.js
+HK.Load.done('tone-tsun-soft', 'f8444ef5ae', 1);
+========
 HK.Load.done('tone-tsun-soft', '569d0c0c28', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-tsun-soft.569d0c0c28.js

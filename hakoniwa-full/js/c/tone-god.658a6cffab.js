@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-god.12376f4825.js
+HK.Load.def(713,'tone:god',function(){
+========
 HK.Load.def(724,'tone:god',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-god.658a6cffab.js
 HK.Load.toneData("god",{"F":[
 ["なんでこうなったんだっけ","なぜこうなったのであったか"],
 ["みんな、下がってて","皆、下がっておれ"],
@@ -459,4 +463,8 @@ HK.Load.toneData("god",{"F":[
 "S":[
 "事件の匂いがする"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-god.12376f4825.js
+HK.Load.done('tone-god', '12376f4825', 1);
+========
 HK.Load.done('tone-god', '658a6cffab', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-god.658a6cffab.js

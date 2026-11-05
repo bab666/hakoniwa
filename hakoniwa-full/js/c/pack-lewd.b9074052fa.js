@@ -6616,21 +6616,27 @@ if(NO_SCEN[scenOf(ctx)]|| !HK.sexEv|| !HK.sexEv(ctx,o).sex)return;
 var P=HK.Pos,acts=(o.actors||[]).filter(function(c){return c&&c.i!=null&&ctx.chars[c.i]===c;});
 if(!P||acts.length!==2)return;
 var ord=P.order(acts[0],acts[1],[acts[0],acts[1]]),Tp=ord[0],B=ord[1];
-if(B._ctPreg|| !P.okSex(Tp,B)|| !P.hasM(Tp)||(ctx._ct&&ctx._ct.preg.length>=2))return;
+if(B._ctPreg|| !P.okSex(Tp,B)|| !P.hasM(Tp))return;
+if(scenOf(ctx)==='omega'&&ctx._ct&&ctx._ct.preg.length>=2)return;
 var om=scenOf(ctx)==='omega'&&Tp.om&&B.om,ao=om&&Tp.om.sex==='a'&&B.om.sex==='o';
 var g=P.gen(B);
 if(ao?g==='none':g!=='f')return;
 var mb= !!ao&& !P.isFBody(B);
+var sp=book(ctx).sexP=ctx._ct.sexP||{},key=Tp.i+'-'+B.i;
+if(!sp[key])sp[key]={t:Tp.i,b:B.i,e:e,why:e.why,n:Object.keys(sp).length,om: !!om};
 var heat=ao&&(B.om.heat>0||Tp.om.rut>0);
 var bond=ao&&HK.OMEGA&&HK.OMEGA.B&&HK.OMEGA.B.mateOf&&HK.OMEGA.B.mateOf(ctx,B)===Tp;
 var p=om?0.03+(heat?0.04:0)+(bond?0.06:0):0.22+(scenOf(ctx)==='goukon'?0.06:0);
 if(ctx.rng()>=p)return;
+pregAdd(ctx,Tp,B,e.why,ao,mb,heat,bond,om);
+}
+function pregAdd(ctx,Tp,B,why0,ao,mb,heat,bond,om){
 var lw=HK.Lewd,low=lw&&lw.lv(ctx.env)==='low';
 var list=mb?T.PREG_OMM[bond?'bond':heat?'heat':'hint']:bond?T.PREG_BOND:heat?T.PREG_HEAT: !low&&lw&&lw.ero(ctx.env)?T.PREG_HINT_ERO:T.PREG_HINT;
-var kind=relKind(ctx,Tp,B,e.why);
+var kind=relKind(ctx,Tp,B,why0);
 B._ctPreg={by:Tp.i,at:ctx.stepIndex,kind:kind,mb:mb,omega: !!om,known:false};
 book(ctx).preg.push(B.i);
-ctx.say({kind:'event',cat:'solo',actors:[B,Tp],sex:true,mag:14,text:ctx.t(pk(ctx,list),Tp,B),
+return ctx.say({kind:'event',cat:'solo',actors:[B,Tp],sex:true,mag:14,text:ctx.t(pk(ctx,list),Tp,B),
 why:'〔妊娠〕'+B.name+'は'+Tp.name+'の子を孕んだかもしれない'+(heat?'（発情期のα×Ω）':bond?'（番）':'')+(mb?'（男性の体のΩ）':'')+'／内容のスイッチ「妊娠・孕む描写」・展開：重い'});
 }
 HK.wrap(HK.Ctx.prototype,'say',function(say0){
@@ -6732,6 +6738,13 @@ if(badT)notes.push(badT);
 return{ev:'発情期のΩが街のαに襲われる（襲われうるΩ：'+few(ok.map(nm))+'。'+notes.join('・')+'）',ng:''};
 }
 function tiesOfType(B,re){return B.ties.filter(function(t){return re.test(t.type);});}
+function allPairs(B,fn){
+var out=[],seen={},LOVE= /^(lover|spouse|fiance|mate|fated|fwb)$/;
+var add=function(A,C){var k=[A.name,C.name].sort().join('\u0000');if(seen[k]|| !fn(A,C))return;seen[k]=1;out.push([A,C]);};
+B.ties.forEach(function(t){if(LOVE.test(t.type)&&B.r18.indexOf(t.a)>=0&&B.r18.indexOf(t.b)>=0){add(t.a,t.b);add(t.b,t.a);}});
+for(var i=0;i<B.r18.length;i++)for(var j=0;j<B.r18.length;j++)if(i!==j)add(B.r18[i],B.r18[j]);
+return out;
+}
 function anyPair(B,fn){for(var i=0;i<B.r18.length;i++)for(var j=0;j<B.r18.length;j++)if(i!==j&&fn(B.r18[i],B.r18[j]))return[B.r18[i],B.r18[j]];return null;}
 function jPreg(o,B){
 var id=B.id,P=B.P,st=PREG_STORY[id];
@@ -6747,10 +6760,10 @@ ev='催眠をかけられた'+few(hit.map(nm))+'（女性器だけの人）';
 var om=id==='omega',pk=function(c){return(o.pickOf&&o.pickOf(c))||c.pick||{};};
 var canA=function(c){var x=pk(c);return!x.sex||x.sex==='a'||(x.sex==='o'&&x.sw!=='no');};
 var canO=function(c){var x=pk(c);return!x.sex||x.sex==='o'||(x.sex==='a'&&x.sw!=='no')||(x.sex==='b'&&x.sw==='yes');};
-var gp=anyPair(B,function(A,C){return P.hasM(A)&&P.gen(C)==='f'&&B.sexTB(A,C);});
+var gpl=allPairs(B,function(A,C){return P.hasM(A)&&P.gen(C)==='f'&&B.sexTB(A,C);}),gp=gpl[0]||null;
 var ap=om?anyPair(B,function(A,C){var g=P.gen(C);return P.hasM(A)&&g!=='none'&&canA(A)&&canO(C)&&B.sexTB(A,C);}):null;
 if(!gp&& !ap)return J('no',om?'恋愛対象と受け攻めの合う「α（男性器のある人）×Ω」の組も、「男性器のある人×女性器だけの人」の組もありません':'恋愛対象と受け攻めの合う「男性器のある人×女性器だけの人」の組がありません');
-ev=ap&& !gp?'α×Ωの組（'+nm(ap[0])+'×'+nm(ap[1])+'）':'男性器×女性器の組（'+nm(gp[0])+'×'+nm(gp[1])+'）'+(ap&&ap!==gp?'・α×Ωの組':'');
+ev=ap&& !gp?'α×Ωの組（'+nm(ap[0])+'×'+nm(ap[1])+'）':'男性器×女性器の組（'+gpl.map(function(q){return nm(q[0])+'×'+nm(q[1]);}).join('・')+'）'+(ap&&ap!==gp?'・α×Ωの組':'');
 }
 if(B.heavy!=='dark')return J('no','展開の重さが「重い」のときだけ起きます');
 return J('yes',ev);
@@ -7009,6 +7022,23 @@ var back=HK.ABUSE_BACK&&HK.ABUSE_BACK[st]?HK.ABUSE_BACK[st].short:'';
 return{cat:'conflict',sex:true,force:true,text:nt.text,why:a.name+'（支配する側）と'+b.name+'（支配される側'+(back?'・'+back:'')+'）の歪んだ関係：拒めない夜（内容のスイッチ「合意のない展開」）'+nt.extra,mag:16};
 }
 });
+function pregFill(ctx){
+var cs=ctx._ct,sp=cs&&cs.sexP,P=HK.Pos;
+if(!sp|| !P|| !on(ctx,'preg'))return;
+Object.keys(sp).map(function(k){return sp[k];}).sort(function(x,y){return x.n-y.n;}).forEach(function(q){
+var Tp=ctx.chars[q.t],B=ctx.chars[q.b];
+if(q.om|| !Tp|| !B||B._ctPreg||B.alive===false)return;
+var e2=pregAdd(ctx,Tp,B,q.why,false,false,false,false,false);
+if(!e2||e2.skipped|| !ctx.log)return;
+var at=ctx.log.indexOf(e2),k0=ctx.log.indexOf(q.e);
+if(at<0||k0<0||at===k0+1)return;
+ctx.log.splice(at,1);ctx.log.splice(k0+1,0,e2);
+for(var j=k0+1;j<ctx.log.length;j++)if(ctx.log[j])ctx.log[j].n=j;
+B._ctPreg.at=q.e&&q.e.step!=null?q.e.step:B._ctPreg.at;
+});
+var ord={};Object.keys(sp).forEach(function(k){ord[sp[k].b]=sp[k].n;});
+cs.preg.sort(function(x,y){return(ord[x]!=null?ord[x]:99)-(ord[y]!=null?ord[y]:99);});
+}
 function endNotes(ctx,r){
 var cs=ctx._ct,notes=r.end.notes=r.end.notes||[];
 cs.preg.forEach(function(i){
@@ -7064,7 +7094,7 @@ var f=function(input){
 hookStory();
 CUR=null;
 var r=sim0.apply(this,arguments);
-if(CUR&&CUR._ct&&r&&r.end&&typeof r.end==='object')endNotes(CUR,r);
+if(CUR&&CUR._ct&&r&&r.end&&typeof r.end==='object'){pregFill(CUR);endNotes(CUR,r);}
 CUR=null;
 return r;
 };
@@ -15053,4 +15083,8 @@ HK.Load.toneData("boku_n",{"F":[
 HK.Load.toneData("god",{"F":[
 ["……ふん。癖になりそうよ","……ふん。癖になりそうだ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/pack-lewd.b63cb40de8.js
+HK.Load.done('pack-lewd', 'b63cb40de8', 1);
+========
 HK.Load.done('pack-lewd', 'b9074052fa', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/pack-lewd.b9074052fa.js

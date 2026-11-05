@@ -14,6 +14,8 @@
 /* @event scen=train id=tr_esc cat=夜 tie=- tags=mob label=触れ合いが深まっていく（体が応え始める） */
 /* @event scen=train id=tr_moya cat=solo tie=- tags=mob label=これってえっちなお触り？（言い訳に騙される） */
 /* @event scen=train id=tr_notice cat=solo tie=- label=ふとした違和感に戸惑う・口に出す */
+/* @event scen=train id=tr_argue cat=conflict tie=- label=覚めた連れとの押し問答（この電車はおかしいか） */
+/* @event scen=train id=tr_link_off cat=bond tie=- label=連れが降りるなら一緒に降りる・路線も一緒に変える */
 /* @event scen=train id=tr_getoff cat=solo tie=- label=途中の駅で降りてしまう */
 /* @event scen=train id=tr_wake cat=solo tie=- label=違和感に気づいて、常識の催眠が覚める */
 /* @event scen=train id=tr_report cat=solo tie=- label=覚めて通報する（常識の強さで結果が変わる） */
@@ -104,7 +106,7 @@
     perFields: [
       { id: 'touch', label: '触れ合い', auto: 'おまかせ（受け攻めから）', offWhen: function () { return ''; }, options: [{ id: 'give', label: '触る（攻めのとき）' }, { id: 'take', label: '触られる' }, { id: 'both', label: '両方（リバ・おまかせのとき）' }, { id: 'pick', label: '迎えに行く（2人のとき）' }] }
     ],
-    check: function (input) { var w = touchConflict((input.chars || []).length, (input.perChar || []).map(function (x) { return x && x.pick ? x.pick.touch : ''; }), input.env && input.env.partner); return w; },
+    check: function (input) { var w = touchConflict((input.chars || []).length, (input.perChar || []).map(function (x) { return x && x.pick ? x.pick.touch : ''; }), input.env && input.env.partner, input.chars || []); return w; },
     stats: [{ id: 'sens', label: '感じやすさ', desc: '高いほど触れ合いで快楽が溜まり、終点前の山場に届きやすい（快楽が高いと、覚めても翌朝また常識に引き戻されやすい）' }],
     actions: [
       { id: 'accept', label: '常識どおりに受け入れる', fit: function (t) { return t.ac * 0.6 + t.np * 0.3; } },
@@ -131,11 +133,23 @@
   /* 一覧のカードの文（短い説明・キャッチコピー・R18 だけの印）は scen-meta.js の登録の表に書いた（箱庭を読む前から要るため） */
   /* 箱庭タブの参加者の欄の下の案内（ui.js の HK.ScenUI） */
   /* 始める前に止める組み合わせ（scen.check と参加者の欄の下の注意で同じ判定） */
-  function touchConflict(n, picks, partner) {
+  function touchConflict(n, picks, partner, chars) {
     var np = picks.filter(function (x) { return x === 'pick'; }).length;
+    /* 攻め二人（2026-11-05 の利用者の指示）：二人とも乗客に「触る側」になる組（受け攻めの指定・モブ相手の受け攻め・住人ごとの「触れ合い」を直したあと）は始めない */
+    if (n === 2 && chars && chars.length === 2 && chars.every(function (c, i) { return effTop(c, picks[i], n, chars[1 - i]); })) return 'この電車には攻めしか乗っていません。二人とも乗客に触る側（攻め）なので、触られる側がいません。どちらかの受け攻めを「受け」「リバ」にするか、住人ごとの「触れ合い」を「触られる」「両方」にしてください';
     if (n === 2 && np === 2) return '「迎えに行く」は2人のうち1人だけにしてください（住人ごとの「触れ合い」）';
     if (n === 2 && np === 1 && partner === 'pair') return '片方が「迎えに行く」ときは、二人は同じ車両に乗らないので、場の設定「触れ合う相手」を「連れの住人」以外にしてください（住人どうしで触れ合うなら、住人ごとの「触れ合い」の「迎えに行く」を外してください）';
     return '';
+  }
+  /* 乗客に触る側（攻め）として動く人か：「触れ合い」を直したあとが「触る」、またはおまかせ・迎えに行くで受け攻めの指定が攻め（モブ相手の受け攻めがあればそれ。相手ごとの指定で連れに攻めでも同じ） */
+  function effTop(c, v, n, other) {
+    var Q = HK.Pos; if (!Q) return false;
+    var f = touchFix(c, v, n), tv = f ? (f === 'auto' ? '' : f) : (v && v !== 'auto' ? v : '');
+    if (tv === 'give') return true;
+    if (tv === 'take' || tv === 'both') return false;
+    var npc = Q.npc ? Q.npc(c) : '';
+    if (npc) return npc === 'top';
+    return !!((Q.hardTop && Q.hardTop(c)) || (Q.hardTop && other && Q.hardTop(c, other) && Q.forOf && Q.forOf(c, other)));
   }
   /* 受け攻めと合わない選び方を、動かすときにどう直すか（'' は直さない） */
   function touchFix(c, v, n) {
@@ -155,7 +169,7 @@
     var picks = J.map(function (c) { var p = S0.per && S0.per[c.id] && S0.per[c.id][id]; return p && p.pick ? p.pick.touch || '' : ''; });
     var partner = env ? env.partner : (S0.env && S0.env[id] || {}).partner;
     var h = '<p class="hint" style="margin-top:8px">住人ごとの「触れ合い」で、触る・触られる・両方・迎えに行く（2人のとき、途中の駅で乗ってきて連れを引き寄せる役）を選べます。おまかせなら受け攻めから決まり、2人で片方だけが「攻め」なら、その人が迎えに行く役になります（場の設定「触れ合う相手」が「連れの住人」のときは同じ車両に乗ります）。</p>';
-    var stop = touchConflict(J.length, picks, partner), fixes = [];
+    var stop = touchConflict(J.length, picks, partner, J), fixes = [];
     J.forEach(function (c, i) { var f = touchFix(c, picks[i], J.length); if (f) fixes.push(c.name + 'の「' + { give: '触る', take: '触られる', both: '両方', pick: '迎えに行く' }[picks[i]] + '」は、' + (picks[i] === 'pick' ? '1人のときは使えないので' : '受け攻めの設定に合わないので') + '「' + FIX_JA[f] + '」として動きます'); });
     var al = stop ? '<p class="hint" role="alert" style="margin-top:6px;color:var(--warn,#b45309);font-weight:600">※このままでは始められません：' + stop + '</p>' : '';
     if (head) return '<div id="trnote2">' + al + '</div>';
@@ -227,6 +241,8 @@
   var GUIDE_RE = /\{a\}の手を取[^。]*自分の/, GUIDE_RE_B = /\{b\}の手を取[^。]*自分の/;
   var TOP_FIRST_RE = /\{a\}は不意を突かれて先に/;
   function noGuide(list, re) { if (!list || !list.length) return list; var l = list.filter(function (x) { return !re.test(x); }); return l.length ? l : list; }
+  /* 乗客の性格の表：女性の乗客に女性向けの表があればそれ（通し読み 1105：陽気な女の乗客が「いこうぜ」「最高だったな」） */
+  function mobTab(tab, m) { var k = m && m.prof && m.prof.k; if (!k || !D[tab]) return null; var F = D[tab + '_F']; return (m.gender === 'f' && F && F[k]) || D[tab][k] || null; }
   function isF(c) { return !!(HK.Pos && HK.Pos.isF ? HK.Pos.isF(c) : c.gender === 'f'); }
   function hasM(c) { return !!(HK.Pos && HK.Pos.hasM ? HK.Pos.hasM(c) : c.gender !== 'f'); }
   function modeOf(top, bot) { return isF(top) && isF(bot) ? 'ff' : isF(top) ? 'fm' : 'mf'; }
@@ -341,21 +357,23 @@
       var o = X[k]; if (!o) return;
       Object.keys(o).forEach(function (m) { var l = o[m]; if (!Array.isArray(l)) return; var f = noGuide(l, GUIDE_RE_B); if (f !== l && f.length !== l.length) { kept.push([l, l.slice()]); l.length = 0; Array.prototype.push.apply(l, f); } });
     });
-    try { r = S.ero && HK.ThickEro ? HK.ThickEro.scene(opt) : HK.ThickSex.scene(opt); } finally { S._trainScene = ''; for (var ki = kept.length - 1; ki >= 0; ki--) { kept[ki][0].length = 0; Array.prototype.push.apply(kept[ki][0], kept[ki][1]); } }
+    /* 女性の攻め（男性器のない体）× 男性の受けの車内：攻めは指と手・口・まれに玩具。本体の組み立ては使わず、部屋の段だけで組む（2026-11-05 の利用者の指示「攻めに挿入はしない」） */
+    var fmOwn = o.car && modeOf(a, b) === 'fm' && hasM(b) && X.FM_ACT && !(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b));
+    try { r = fmOwn ? fmCar(S, a, b, o) : S.ero && HK.ThickEro ? HK.ThickEro.scene(opt) : HK.ThickSex.scene(opt); } finally { S._trainScene = ''; for (var ki = kept.length - 1; ki >= 0; ki--) { kept[ki][0].length = 0; Array.prototype.push.apply(kept[ki][0], kept[ki][1]); } }
     var t = String(r && r.text || '');
     /* 女性の攻め×男性で、受けの熱を受け止める書き方（「注がれる熱を受け止め」）は、攻めが受ける文に読まれるので言い換える */
     if (r && r.mode === 'fm') t = t.replace(/注がれる熱/g, '{b}の放つ熱');
     if (X.swap) t = X.swap(t);
     var md = (r && r.mode) || modeOf(a, b);
     /* 車内：本体の共通部品だけでできた段を車内の段に差し替える（部屋のルール 2026-11-05。もう一度の段も終点に着く前に車内の文で） */
-    if (o.car) t = carOwn(S, t, a, b, md);
+    if (o.car) { if (!fmOwn) t = carOwn(S, t, a, b, md); }
     else if (S.lv === 'high' && HK.ThickEro && HK.ThickEro.again) { var ag = HK.ThickEro.again(S, pick, a, b, !!S.ero, false); if (ag) t += '\n\n' + ag; }
     /* 乗客の台詞を乗客の性格の表に（報告 1）・見知らぬ乗客への「大好き」を言わない（報告 8） */
     var mob = a.mob ? a : b.mob ? b : null;
     if (mob && mob.prof) t = mobVoice(S, t, mob, mob === a);
     if (mob) t = loveFix(S, t, mob === a ? b : a, mob === a ? '{b}' : '{a}');
     /* 車内の段の逆戻り（直に触れたあとの「服の上から」、後ろからのまま顔を合わせる、終点に着いたあとの「朝まで」。報告 4） */
-    if (o.car) t = carFlow(t);
+    if (o.car) t = carFlow(t, o.direct);
     /* 体の弱い・控えめな性格の乗客の力強い動きを柔らかく */
     if (mob && mob === a && mob.prof && D.SC_SOFTK && D.SC_SOFTK[mob.prof.k]) t = t.replace(/抱え上げ/g, '抱き寄せ').replace(/ぐいと/g, 'そっと').replace(/乱暴に/g, '性急に');
     if (o.car) srcStat(S, t);
@@ -367,6 +385,22 @@
     if (o.car) t = carFix(t, o.flavor === 'sweet');
     if (!a.mob !== !b.mob && HK.SexFlow && HK.SexFlow.mobName) t = HK.SexFlow.mobName(t, a.mob ? b.name : a.name);
     return t;
+  }
+  /* 女性の攻め×男性の受けの車内の場面（部屋の文だけ）：始まり → 人の壁 → 前戯 → 責めの一続き（始まり／続き）→ 熱 → 果てる →（濃いならもう一度）→ 終わり方 */
+  function fmCar(S, a, b, o) {
+    var vv = S.v || {}, sp = vv.crowd === 'sparse', rng = S.rng;
+    var noWall = function (l) { return sp ? keep(l, function (x) { return !/人の(?:陰|波|壁)|周りの乗客|背中を貸/.test(x); }) : l; };
+    var lv = X.SC_LEAD_V && (sp ? X.SC_LEAD_V.sparse : X.SC_LEAD_V[vv.line]);
+    var leadL = sp && lv && lv.fm ? lv.fm : X.SC_LEAD.fm.concat(lv && lv.fm ? lv.fm : []);
+    var peg = X.FM_PEG && S.lv !== 'low' && rng() < 0.15;
+    var act = pk(S, noWall(peg ? X.FM_PEG : X.FM_ACT)).split('\n\n');
+    var fv = X.SC_FEEL_V && X.SC_FEEL_V[vv.line], feel = pk(S, noWall(fv ? X.SC_FEEL.concat(fv) : X.SC_FEEL));
+    var mb = b.mob ? (HK.Moan && HK.Moan.mob ? HK.Moan.mob(S, b, 2, { side: false, gross: !!S.ero }) : '') : (HK.Moan && HK.Moan.say ? HK.Moan.say(S, b, 'climax', { novel: true }, null) : '');
+    var out = [o.open, pk(S, noWall(leadL)), pk(S, noWall(X.SC_FORE.fm))].concat(act.slice(0, -1), [feel, act[act.length - 1]]);
+    if (S.lv === 'high' && X.FM_AGAIN) out.push(pk(S, X.FM_AGAIN));
+    out.push(pk(S, noWall(X.SC_AFTER.concat((X.SC_AFTER_V && X.SC_AFTER_V[vv.line]) || []))));
+    if (o.after) out.push(o.after);
+    return { text: out.filter(function (x) { return x && /\S/.test(x); }).join('\n\n').replace(/\{mb\}/g, mb || '……っ'), mode: 'fm' };
   }
   function tmpL(kept, l, f) { kept.push([l, l.slice()]); l.length = 0; Array.prototype.push.apply(l, f); }
   /* ---------- 車内の場面を部屋の文に（部屋のルール 2026-11-05：場面の文の 8 割以上を部屋のオリジナルに） ----------
@@ -478,7 +512,7 @@
      乗客の台詞＝話し手の印（{a}「…」）・乗客が主語の文の「…」・「…」と乗客が。問いは問いの表、果てる段より前は最中、果てる段は果てる前後、
      あとは果てたあと（住人が攻めのときは受けるときの声）。果てたあとの段の乗客の喘ぎは消す（労いの段で攻めの喘ぎがもう一度、を出さない。報告 4） */
   function mobVoice(S, t, mob, isTop) {
-    var k = mob.prof && mob.prof.k, V = k && D.SC_MOB && D.SC_MOB[k];
+    var k = mob.prof && mob.prof.k, V = k && mobTab('SC_MOB', mob);
     if (!V) return t;
     var tg = isTop ? '\\{a\\}' : '\\{b\\}';
     var ps0 = t.split('\n\n'), ci = -1;
@@ -523,18 +557,22 @@
   }
   /* 車内の段の逆戻りを外す（文ごとに状態を進める） */
   var DIRECT_RE = /\{ナカ\}|ナカへ|下着の(?:内側|中)|直に|じかに|舌先|口に含|奥まで沈め|奥へ沈|繋が|突き上げ|腰を打ちつけ|指を[^。]{0,8}沈め|迎え入れ/;
-  var CLOTH_RE = /服の上から|布越しに|服越しに[^。]{0,10}(?:撫で|なぞ|揉|包)|着たままの服の上から/;
+  var CLOTH_RE = /服の上から|布越しに|服越しに[^。]{0,10}(?:撫で|なぞ|揉|包)|着たままの服の上から|一枚も乱さない|ボタンを一つも外さず|生地越しに/;
+  /* 同じ段で、裾から手を差し入れた直後に「手が服の内側へ滑り込んだ」をもう一度書かない（通し読み 1105：着衣の型の入り方と車内の前戯の二重） */
+  var INNER_RE = /裾から(?:手|指)を(?:差し入れ|滑り込ませ|忍ばせ)|服の内側へ滑り込/;
   var BACK_RE = /後ろから|背後から|背中から覆|扉へ両手|扉に両手/;
   var FRONT_RE = /正面から|向き直|向かい合|振り向かせ|こちらを向/;
   var FACE_RE = /見上げると|見上げた先|目を合わせ|見つめ合|上で揺れ|跨|脚を[^。]{0,8}絡め|首に腕を(?:回|絡)/;
   var ARRIVE_RE = /終点を告げる|終点のホームに滑り込|終点に着|ホームの明かりが見え|運転は、この電車で終了/;
   var LATE_RE = /朝まで|夜通し|夜が明けるまで|寝床|ベッド/;
-  function carFlow(t) {
-    var direct = false, back = false, arrived = false;
+  function carFlow(t, direct0) {
+    var direct = !!direct0, back = false, arrived = false;
     return t.split('\n\n').map(function (p) {
+      var inner = false;
       return sents(p).filter(function (x) {
         if (!/\S/.test(x)) return true;
-        var drop = (direct && CLOTH_RE.test(x) && !DIRECT_RE.test(x)) || (back && FACE_RE.test(x) && !FRONT_RE.test(x) && !CLIMAX_RE.test(x)) || (arrived && LATE_RE.test(x));
+        var drop = (direct && CLOTH_RE.test(x) && !DIRECT_RE.test(x)) || (back && FACE_RE.test(x) && !FRONT_RE.test(x) && !CLIMAX_RE.test(x)) || (arrived && LATE_RE.test(x)) || (inner && INNER_RE.test(x) && /服の内側へ滑り込/.test(x));
+        if (!drop && INNER_RE.test(x)) inner = true;
         if (drop) return false;
         if (DIRECT_RE.test(x)) direct = true;
         if (BACK_RE.test(x)) back = true; else if (FRONT_RE.test(x)) back = false;
@@ -692,6 +730,9 @@
           if (rng() < sw) {
             p.gone = true; p.switched = d;
             say(S, { actors: [p], tag: '別の路線へ', text: fm(pk(S, v.line === 'night' && D.SWITCH_NIGHT ? D.SWITCH_NIGHT : D.SWITCH_DAY), V), why: p.name + 'は路線を変えることにした（CP ' + Math.round(p.eg.CP) + '・慎重さ ' + Math.round(p.tr.caution * 100) + '）', mag: 20 });
+            /* 連れの住人と乗っていたなら、もう一人も一緒に（片方だけが乗り続けない） */
+            var oq = linked(S) ? S.P.filter(function (x) { return x !== p && !x.gone; })[0] : null;
+            if (oq && D.LINK_SWITCH) { oq.gone = true; oq.switched = d; if (oq.state !== 'awake') oq.followed = (oq.followed || 0) + 1; S.linkOff = S.linkOff || d; say(S, { actors: [oq], tag: '一緒に', text: fm(pk(S, v.line === 'night' && D.LINK_SWITCH_NIGHT ? D.LINK_SWITCH_NIGHT : D.LINK_SWITCH), { a: p.name, c: oq.name }), why: p.name + 'が路線を変えるので、' + oq.name + 'も一緒に変えた' }); }
             return;
           }
         }
@@ -727,7 +768,7 @@
     var whyOf = function (p) { if (v.trip && D.WHY_TRIP && D.WHY_TRIP[p.goal.id]) return fm(pk(S, D.WHY_TRIP[p.goal.id]), { a: p.name }); var w = D.WHY2 && D.WHY2[v.line] && D.WHY2[v.line][p.goal.id]; return fm(pk(S, w || D.WHY[p.goal.id]), { a: p.name }); };
     if (riders.length === 2) {
       /* 初対面の二人は「並んでホームに」立たない。二日目からは「昨日の相手」として */
-      var dl = S.rel && S.rel !== 'stranger' ? D.DUO_BOARD : d > 1 && D.DUO_BOARD_AGAIN ? D.DUO_BOARD_AGAIN : D.DUO_BOARD_STR || D.DUO_BOARD;
+      var dl = S.rel === 'foe' && D.DUO_BOARD_FOE ? D.DUO_BOARD_FOE : S.rel && S.rel !== 'stranger' ? D.DUO_BOARD : d > 1 && D.DUO_BOARD_AGAIN ? D.DUO_BOARD_AGAIN : D.DUO_BOARD_STR || D.DUO_BOARD;
       if (tripOn && D.DUO_BOARD_TRIP) dl = D.DUO_BOARD_TRIP;
       t = fm(pk(S, keep(bl, function (x) { return x.split('。')[0].indexOf('{a}') < 0; })), Object.assign({ a: riders[0].name }, V0)).split('。')[0] + '。' + fm(pk(S, dl), { a: riders[0].name, c: riders[1].name, line: LN.name });
     }
@@ -751,13 +792,18 @@
       var on = riders.filter(function (p) { return !p.offToday && !p.gone; });
       if (!on.length) break;
       if (seg === Tseg && on.indexOf(S.R) >= 0) { rescue(S, nx); break; }
+      /* 連れの住人と乗る日：前の日から片方だけ覚めているなら、乗ってすぐに押し問答（翌日も二人の扱いは同じ） */
+      if (seg === 0 && on.length === 2 && linked(S)) {
+        var awS = on.filter(function (p) { return p.state === 'awake' && p.branch !== 'thrill'; }), dnS = on.filter(function (p) { return p.state !== 'awake'; });
+        if (awS.length === 1 && dnS.length === 1) { argue(S, awS[0], dnS[0], nx, false); on = on.filter(function (p) { return !p.offToday; }); if (!on.length) break; }
+      }
       if (last) { peak(S, on, nx); break; }
       /* 二人とも乗っていて、連れどうしの触れ合い */
       /* 連れの住人と触れ合う（NO 16）：場の設定「連れの住人」なら最初の駅から毎駅、ほかは二駅目から時々。片方が乗り気でなくなったら、その日は止まる */
       var pairable = on.length === 2 && S.mode === 'same' && !S.noDuo && (S.pairOk || S.pairSoft) && S.pairStopDay !== S.day && on.every(function (p) { return p.state !== 'awake' || p.branch === 'thrill'; });
       var pairNow = pairable && (v.partner === 'pair' ? true : seg > 0 && rng() < (S.rel === 'lover' || S.rel === 'fwb' ? 0.35 : 0.15));
       if (v.partner === 'pair' && S.pairDay === S.day && !pairNow) { /* 連れどうしで止まった日は、乗客とも触れ合わない */ }
-      else if (pairNow) pairTouch(S, on, seg);
+      else if (pairNow) pairTouch(S, on, seg, nx);
       else on.forEach(function (p) { touch(S, p, seg, nx); });
       /* リバ・両方（報告 13）：その日に一度、触りながら触られる段 */
       if (!pairNow) on.forEach(function (p) { if (p.both && p.bothDay !== S.day && seg === Math.min(1, nSt - 2) && !p.offToday && p.canMob && p.lib !== 'none' && !p.touchStop && (p.state !== 'awake' || p.branch === 'thrill') && p.pax) bothAt(S, p, nx); });
@@ -801,11 +847,53 @@
   }
   /* 連れが先に降りたとき、車内に残った人の段（報告 7） */
   function leftNote(S, p, kind) {
-    if (S.mode !== 'same' || !D.COMP_LEFT) return;
+    if (S.mode !== 'same') return;
     var o = S.P.filter(function (x) { return x !== p; })[0];
     if (!o || o.gone || o.offToday) return;
+    /* 連れの住人と乗る日：片方が降りたら、もう一人も一緒に降りる（2026-11-05 の利用者の指示） */
+    if (linked(S)) return linkOff(S, p, o);
+    if (!D.COMP_LEFT) return;
     o.m.doubt = clamp(o.m.doubt + 4, 0, 100);
     say(S, { actors: [o, p], tag: '見送る', text: fm(pk(S, D.COMP_LEFT[kind]), { a: o.name, c: p.name }), why: p.name + 'が先に降りた（' + o.name + 'は車内に残った）' });
+  }
+  /* ---------- 連れの住人と乗る日（場の設定「触れ合う相手」が「連れの住人」で、住人どうしで触れ合える二人）：降りるときはいつも二人一緒 ---------- */
+  function linked(S) { return S.mode === 'same' && S.P.length === 2 && S.v && S.v.partner === 'pair' && !S.noDuo && !!(S.pairOk || S.pairSoft); }
+  function linkOff(S, p, o) {
+    if (!o || o.gone || o.offToday || !D.LINK_OFF) return;
+    o.offToday = true; o.cnt.off++;
+    if (o.state !== 'awake') o.followed = (o.followed || 0) + 1;
+    S.linkOff = S.day;
+    say(S, { actors: [p, o], tag: '一緒に降りる', text: fm(pk(S, D.LINK_OFF), { a: p.name, c: o.name }), why: p.name + 'が降りたので、' + o.name + 'も一緒に降りた（連れの住人と乗る日は、片方だけが乗り続けない）' });
+  }
+  /* 片方が覚めて、もう一人はまだ常識の中：押し問答（{a}＝気づいた人 w の「おかしい」と、{c}＝もう一人 o の「おかしくない」）。
+     結果は、o も覚める（二人で降りる）／押し問答のあと o が折れて二人で降りる／w がその日は流される。mid＝触れ合いの最中に気づいた */
+  function argue(S, w, o, nx, mid) {
+    var rng = S.rng, V = { a: w.name, c: o.name, nx: nx };
+    w.cnt.argue = (w.cnt.argue || 0) + 1; S.argued = (S.argued || 0) + 1; w.told = S.day;
+    var t = fm(pk(S, mid ? D.ARGUE_MID : D.ARGUE_OPEN), V) + fm(pk(S, D.ARGUE_SAY[ps(w)]), V);
+    var pw = clamp(0.15 + o.m.doubt / 120 + o.tr.a * 0.2 + o.m.reason / 400 - o.m.imm / 250 - o.m.plea / 300 + (w.cnt.argue - 1) * 0.1, 0.05, 0.8);
+    var why0 = (mid ? '触れ合いの最中に' : '') + w.name + 'が覚めて「おかしい」と言った';
+    if (rng() < pw) {
+      t += '\n\n' + fm(pk(S, D.ARGUE_WAKE), V);
+      o.m.doubt = clamp(o.m.doubt + 30, 0, 100); o.state = 'awake'; o.cnt.wake++; o.branch = 'off'; o.wakeDay = S.day; w.branch = 'off';
+      var o1 = say(S, { actors: [w, o], tag: '押し問答', text: t, why: why0 + '→' + o.name + 'も覚めた（覚めやすさ ' + Math.round(pw * 100) + '%）', mag: 24 });
+      ST.key(S, o1, o.name + 'も' + w.name + 'の言葉で覚めた');
+      bothOff(S, [w, o], nx);
+      return 'wake';
+    }
+    t += '\n\n' + fm(pk(S, D.ARGUE_NO[ps(o)]), V);
+    var push = clamp(0.35 + w.tr.cp * 0.3 + w.m.reason / 300 - w.m.plea / 200 - w.tr.ac * 0.2 + (bondRel(S) ? 0.1 : 0) + (w.cnt.argue - 1) * 0.1, 0.15, 0.85);
+    if (rng() < push) {
+      t += '\n\n' + fm(pk(S, D.ARGUE_PUSH), V);
+      w.branch = 'off'; w.offToday = o.offToday = true; w.cnt.off++; o.cnt.off++; o.followed = (o.followed || 0) + 1; S.linkOff = S.day;
+      var o2 = say(S, { actors: [w, o], tag: '押し問答', text: t, why: why0 + '→' + o.name + 'は「おかしくない」と言い張ったが、押し問答のあと、二人で' + nx + 'で降りた（押し切る強さ ' + Math.round(push * 100) + '%）', mag: 24 });
+      ST.key(S, o2, w.name + 'と' + o.name + 'が押し問答のあと二人で降りた');
+      return 'push';
+    }
+    t += '\n\n' + fm(pk(S, D.ARGUE_FLOW), V);
+    w.state = 'doubt'; w.branch = ''; w.m.doubt = clamp(Math.min(w.m.doubt, 48), 0, 100); w.m.imm = clamp(w.m.imm + 12, 0, 95); w.cnt.flowed = (w.cnt.flowed || 0) + 1;
+    say(S, { actors: [w, o], tag: '押し問答', text: t, why: why0 + '→' + o.name + 'に「おかしくない」と言われ、' + w.name + 'はその日は流された', mag: 20 });
+    return 'flow';
   }
   /* リバ・両方：触りながら触られる（報告 13。{m}＝住人に触れる乗客 {m2}＝住人が触れる乗客） */
   function bothAt(S, p, nx) {
@@ -843,7 +931,8 @@
       tag = esc ? '深まる' : '触れ合い';
       if (S.day >= 3 && seg === 1) { t = mobFmt(fm(pk(S, D.HABIT_GIVE), V), m); tag = 'いつもの車両'; }
       /* 複数の乗客（報告 12）：触る側の人にも、駅ごとに相手が入れ替わることを一度書く */
-      if (v.partner === 'many' && p.manyDay !== S.day && D.MANY_TOP) { p.manyDay = S.day; t += '\n\n' + mobFmt(fm(pk(S, D.MANY_TOP), V), m); }
+      /* 「相手が入れ替わった」と書いたら、次の段からは本当に次の乗客にする（通し読み 1105：降りたはずの乗客と山場まで続いた） */
+      if (v.partner === 'many' && p.manyDay !== S.day && D.MANY_TOP) { p.manyDay = S.day; t += '\n\n' + mobFmt(fm(pk(S, D.MANY_TOP), V), m); var mN = newMob(S, p, true); if (mN) p.pax = mN; }
     }
     if (esc) p.escLog = (p.escLog || 0) + 1;
     var gain = (esc ? 20 : 10) * p.sens * p.libK * rng.range(0.8, 1.2) * (v.crowd === 'packed' ? 1.25 : v.crowd === 'sparse' ? 0.8 : 1);
@@ -1014,14 +1103,14 @@
     return D.NOTICE[ps(p)];
   }
   /* ---------- 覚める ---------- */
-  function wake(S, p, nx, pw, quiet) {
+  function wake(S, p, nx, pw, quiet, bk0) {
     var rng = S.rng, v = S.v, V = { a: p.name, nx: nx }, m = p.pax || newMob(S, p);
     p.state = 'awake'; p.cnt.wake++; p.wakeDay = S.day;
     p.m.imm = clamp(p.m.imm - 35, 0, 100); p.m.reason = clamp(p.m.reason + 15, 0, 100);
     /* 覚めたあとの動きを先に決め、覚める文はその動きと矛盾しないものだけから選ぶ（NO 13。対応表は train-design.md） */
-    var bk = pickBranch(S, p), wp = wakeLines(p, bk);
+    var bk = bk0 || pickBranch(S, p), wp = wakeLines(p, bk);
     var t = quiet ? '' : mobFmt(fm(pk(S, D.WAKE_TRIG), V), m) + '\n\n';
-    t += fm(pk(S, p.top ? keep(D.WAKE_SEE, function (x) { return !/自分の体の上にある手/.test(x); }) : D.WAKE_SEE), V) + (wp.length ? '\n\n' + fm(pk(S, wp), V) : '') + '\n\n' + mobFmt(fm(pk(S, D.WAKE_WORLD), V), m);
+    t += fm(pk(S, p.top || p.touchStop || S.pairStopDay === S.day ? keep(D.WAKE_SEE, function (x) { return !/自分の体の上にある手/.test(x); }) : D.WAKE_SEE), V) + (wp.length ? '\n\n' + fm(pk(S, wp), V) : '') + '\n\n' + mobFmt(fm(pk(S, D.WAKE_WORLD), V), m);
     var o = say(S, { actors: [p], tag: '覚める', text: t, why: p.name + 'の常識が覚めた（覚めやすさ ' + Math.round(pw * 100) + '%：違和感 ' + Math.round(p.m.doubt) + '・理性 ' + Math.round(p.m.reason) + '・かかり具合 ' + Math.round(p.m.imm) + '・快楽 ' + Math.round(p.m.plea) + '）', mag: 32 });
     ST.key(S, o, p.name + 'が覚めた' + (p.cnt.wake > 1 ? '（' + p.cnt.wake + '度目）' : ''));
     branch(S, p, nx, bk);
@@ -1059,6 +1148,7 @@
     p.branch = k;
     var why = '（' + PS_JA[P0] + '・CP ' + Math.round(p.eg.CP) + '・FC ' + Math.round(p.eg.FC) + '・AC ' + Math.round(p.eg.AC) + '・快楽 ' + Math.round(p.m.plea) + (c ? '・連れがいる' : '') + '）';
     if (k === 'report') return report(S, p, nx, why);
+    if (k === 'off' && linked(S) && c && c.state !== 'awake') { p.branch = 'off'; return argue(S, p, c, nx, p.pairToday === S.day); }
     if (k === 'off') {
       p.offToday = true; p.cnt.off++;
       say(S, { actors: [p], tag: '途中下車', text: fm(pk(S, D.WAKE_OFF), { a: p.name, nx: nx }), why: p.name + 'は覚めて、次の駅で降りることを選んだ' + why, mag: 18 });
@@ -1093,6 +1183,7 @@
     if (a.offToday || b.offToday) return;
     var aw = on.filter(function (p) { return p.state === 'awake' && p.branch !== 'thrill'; }), dn = on.filter(function (p) { return p.state !== 'awake'; });
     /* 一人だけ覚めて、連れに気づかせようとする */
+    if (aw.length === 1 && dn.length === 1 && !aw[0].told && linked(S)) { argue(S, aw[0], dn[0], nx, dn[0].pairToday === S.day); return; }
     if (aw.length === 1 && dn.length === 1 && !aw[0].told) {
       var w = aw[0], o = dn[0], V = { a: w.name, c: o.name, nx: nx };
       w.told = S.day;
@@ -1121,7 +1212,7 @@
   }
   function bothOff(S, on, nx) {
     var a = on[0], b = on[1];
-    S.bothOffDay = S.day; S.bothOff = true;
+    S.bothOffDay = S.day; S.bothOff = true; if (linked(S)) S.linkOff = S.linkOff || S.day;
     a.offToday = b.offToday = true; a.cnt.off++; b.cnt.off++;
     a.duoOff = b.duoOff = true;
     if (a.branch === 'thrill') a.branch = 'off'; if (b.branch === 'thrill') b.branch = 'off';
@@ -1149,7 +1240,7 @@
     return S.pairAB;
   }
   function softKind(a, b) { var fa = isF(a), fb = isF(b); return fa && fb ? 'ff' : !fa && !fb ? 'mm' : 'mx'; }
-  function pairTouch(S, on, seg) {
+  function pairTouch(S, on, seg, nx) {
     var ord = pairOrder(S, on), T = ord[0], U = ord[1], soft = !S.pairOk, mode = soft ? softKind(T, U) : modeOf(T, U), rel = S.rel || 'stranger';
     if (S.pairDay !== S.day) {
       S.pairDay = S.day; S.pairStg = (S.pairBest || 0) >= 2 ? 1 : 0;
@@ -1168,6 +1259,11 @@
     if (r === 'cool') { var who = rs[1] === 'cool' ? U : T; t += '\n\n' + (who === T && !soft && D.PAIR_STOP_T ? fm(pk(S, D.PAIR_STOP_T), { r: T.name, o: U.name }) : fm(pk(S, D.PAIR_STOP), { r: who === U ? T.name : U.name, o: who.name })); S.pairStopDay = S.day; }
     else if (r === 'yes') { S.pairStg = Math.min(2, stg + 1); S.pairBest = Math.max(S.pairBest || 0, S.pairStg); }
     say(S, { actors: [T, U], tag: r === 'cool' ? '手を引く' : '連れと', lewd: true, text: t, why: '連れどうしで、常識どおりに（' + relJa(S, rel) + '・' + (soft ? '受け攻めの向きが決まらない二人：手と口まで' : T.name + 'が攻め') + '・段「' + ['服の上から', '手で', '口で'][stg] + '」・反応「' + { yes: '二人とも乗り気→次の段へ', moya: 'もやもや→同じ段', cool: '覚めかけ→止まる' }[r] + '」）' });
+    /* 触れ合いの最中に受け（受け攻めの向きが決まらない二人はどちらか）が気づく（2026-11-05 の利用者の指示）。違和感が大きいほど */
+    if (nx && linked(S) && r !== 'yes') {
+      var mw = [U, T].filter(function (p) { return p.state === 'doubt' && p.m.doubt >= 42; })[0];
+      if (mw && S.rng() < clamp(0.2 + (mw.m.doubt - 42) / 60, 0.2, 0.6)) { S.pairStopDay = S.day; return wake(S, mw, nx, clamp(mw.m.doubt / 100, 0.1, 0.9), true, 'off'); }
+    }
   }
   /* 受け同士・攻め同士の終点前（手と口まで。挿入しない） */
   function pairPeakSoft(S, on, nx) {
@@ -1208,7 +1304,7 @@
     /* 自分から触る側の人には、受ける側の熱の文（膝に力が入らない など）を付けない（報告 6） */
     var lt = fm(pk(S, p.cnt.peak ? againLead(S, p) : X.LEAD_SIT), V) + '\n\n' + fm(pk(S, top && X.LEAD_HEAT_TOP ? X.LEAD_HEAT_TOP : X.LEAD_HEAT), V);
     /* 乗客の性格を山場まで（報告 2・16）：受ける人には、乗客がその性格のまま終点前を言い出す */
-    var mpk = m.prof && D.MOB_PEAK ? D.MOB_PEAK[m.prof.k] : null, fl = m.prof && D.FLAVOR ? D.FLAVOR[m.prof.k] : '';
+    var mpk = m.prof && D.MOB_PEAK ? mobTab('MOB_PEAK', m) : null, fl = m.prof && D.FLAVOR ? D.FLAVOR[m.prof.k] : '';
     if (p.branch === 'thrill') lt += '\n\n' + fm(pk(S, D.THRILL_PEAK || D.THRILL[ps(p)]), { a: p.name });
     else if (p.m.doubt >= 40) lt += '\n\n' + fm(pk(S, X.LEAD_DOUBT), V);
     lt += '\n\n' + mobFmt(top ? fm(pk(S, X.LEAD_SELF), { r: p.name, o: '{m}' }) : fm(mpk ? fresh(S, mpk.l, X.LEAD_MOB) : pk(S, X.LEAD_MOB), { r: '{m}', o: p.name }), m) + (top ? '' : fm(rx(S, X.LEAD_YES[ps(p)]), V));
@@ -1228,7 +1324,8 @@
       text = carFix(HK.SexFlow && HK.SexFlow.mobName ? HK.SexFlow.mobName(text, p.name) : text);
     }
     else {
-      text = longScene(S, A, B, { car: true, flavor: fl, open: openFor(S, mode, top ? null : m), after: pk(S, after2Pool(S)) });
+      /* その日の触れ合いで直に触れる段まで進んでいたら、山場の始まりで「服を一枚も乱さないまま」「布の上から」に戻さない（通し読み 1105） */
+      text = longScene(S, A, B, { car: true, flavor: fl, open: openFor(S, mode, top ? null : m), after: pk(S, after2Pool(S)), direct: (p.stg || 0) >= 2 || (p.escLog || 0) >= 2 });
       text = mobFmt(text, m);
       /* 労いの輪（混み具合・路線ごと）。果てたあとに乗客の喘ぎをもう一度は付けない（報告 4） */
       text += '\n\n' + fm(pk(S, keep(crowdPool(S), function (x) { return !(/髪/.test(x) && /髪を/.test(text)); })), V) + fm(rx(S, (top ? X.PEAK_A : X.PEAK_B)[ps(p)]), V);
@@ -1266,7 +1363,7 @@
   }
   /* 山場の始まりの段：乗客が攻めなら、その乗客の性格の動き（D.SC_MOB の o）。空いている車内では人の陰・人の壁の文を使わない */
   function openFor(S, mode, m) {
-    var V = m && m.prof && D.SC_MOB ? D.SC_MOB[m.prof.k] : null, l = V && V.o ? V.o : X.OPEN[mode];
+    var V = m && m.prof && D.SC_MOB ? mobTab('SC_MOB', m) : null, l = V && V.o ? V.o : X.OPEN[mode];
     if (S.v.crowd === 'sparse') l = keep(l, function (x) { return !/人の(?:陰|波|壁)|周りの乗客が|肩を寄せ合/.test(x); });
     return pk(S, l);
   }
@@ -1294,6 +1391,13 @@
   /* 4回目からの終点前：毎日の習慣として短く（場面は描かない） */
   function shortPeak(S, p) {
     p.cnt.peak++; p.peakToday = true; (p.peakDays = p.peakDays || {})[S.day] = 1; p.m.plea = 20; p.m.imm = clamp(p.m.imm + (p.branch === 'thrill' ? 0 : 6), 0, 98);
+    /* 住人が攻め：攻めが乗客を責める一幕を 1 段で（2026-11-05 の利用者の指示「ほとんどの日で出る」） */
+    if (p.top && X.PEAK_SHORT_TOP && S.lv !== 'low') {
+      var m = p.pax || newMob(S, p), md = modeOf(p, m), l = X.PEAK_SHORT_TOP[md] || X.PEAK_SHORT_TOP.mf;
+      if (md === 'fm' && !hasM(m)) l = X.PEAK_SHORT_TOP.ff;
+      if (S.v.crowd === 'sparse') l = keep(l, function (x) { return !/人の(?:陰|波|壁)/.test(x); });
+      return say(S, { actors: [p], tag: '終点前', lewd: true, text: mobFmt(fm(pk(S, l), { a: p.name, d: S.day, end: S.v.LN.end, m: '{m}' }), m), why: p.name + 'の終点前（' + p.cnt.peak + '回目。4回目からは短く・' + p.name + 'から' + m.name + 'に）' });
+    }
     say(S, { actors: [p], tag: '終点前', text: fm(pk(S, D.PEAK_SHORT), { a: p.name, d: S.day, end: S.v.LN.end }), why: p.name + 'の終点前（' + p.cnt.peak + '回目。4回目からは短く）' });
   }
   /* 中くらいの場面の体の前提（mf＝攻めに男性器、fm＝攻めに女性器・受けに男性器、ff＝受けに女性器。性器なしの人がいれば長い場面に任せる） */
@@ -1309,7 +1413,7 @@
     var lt = fm(pk(S, X.LEAD_SIT), V) + '\n\n' + fm(pk(S, X.LEAD_PAIR), V) + '\n\n' + fm(pk(S, X.LEAD_PAIR_WHO), { r: T.name, o: U.name });
     if (on.some(function (p) { return p.branch === 'thrill'; })) lt += '\n\n' + fm(pk(S, D.THRILL_C), { a: T.name, c: U.name });
     lead(S, [T, U], lt, '終点前のマナー（連れどうし・' + relJa(S, S.rel) + '）・言い出したのは' + T.name);
-    var text = S.lv === 'low' ? fm(pk(S, X.FADE), V) : longScene(S, T, U, { car: true, open: openFor(S, mode, null), after: pk(S, after2Pool(S)) }) + '\n\n' + fm(rx(S, X.PEAK_B[ps(U)]), V);
+    var text = S.lv === 'low' ? fm(pk(S, X.FADE), V) : longScene(S, T, U, { car: true, open: openFor(S, mode, null), after: pk(S, after2Pool(S)), direct: (S.pairStg || 0) >= 1 }) + '\n\n' + fm(rx(S, X.PEAK_B[ps(U)]), V);
     text = dedupQuote(text);
     [T, U].forEach(function (p) { p.cnt.peak++; p.peakToday = true; (p.peakDays = p.peakDays || {})[S.day] = 1; p.m.plea = 20; p.m.reason = clamp(p.m.reason - 5, 0, 100); });
     S.pairPeak = (S.pairPeak || 0) + 1; S.bonded = S.bonded || (loveOk(S, T, U) && bondRel(S)); S.bodied = true;
@@ -1364,9 +1468,12 @@
   }
 
   /* ---------- 結末 ---------- */
-  var FATE_JA = { melt: '常識にすっかり馴染んだ（毎朝その車両を選ぶ）', sink: '常識に馴染んだ', resunk: '一度覚めて、また常識に戻った', unease: '違和感を抱えたまま', between: '気づいたまま乗り続ける', switch: '別の路線に変えた', report: '通報した', reportFlow: '通報して、流された', thrill: '気づいたうえでスリルを選んだ', silent: '言い出せないまま', offday: '途中で降りた', pick: '連れを迎えに行く人', pickMiss: '迎えに行ったが、会えなかった' };
+  var FATE_JA = { melt: '常識にすっかり馴染んだ（毎朝その車両を選ぶ）', sink: '常識に馴染んだ', resunk: '一度覚めて、また常識に戻った', unease: '違和感を抱えたまま', between: '気づいたまま乗り続ける', switch: '別の路線に変えた', report: '通報した', reportFlow: '通報して、流された', thrill: '気づいたうえでスリルを選んだ', silent: '言い出せないまま', offday: '途中で降りた', follow: '覚めた連れと一緒に降りる（常識の中のまま）', pick: '連れを迎えに行く人', pickMiss: '迎えに行ったが、会えなかった' };
   function fateOf(S, p) {
     if (p.switched) return 'switch';
+    /* 連れの住人と乗る日に、覚めた連れと一緒に降りた人（まだ常識の中） */
+    var oth = S.P.filter(function (x) { return x !== p; })[0];
+    if (linked(S) && p.followed && p.state !== 'awake' && oth && oth.state === 'awake') return 'follow';
     /* 迎えに行く人の結末は、迎えの場面が本文に出たとき（cnt.pick）だけ（NO 15）。一度も出なければ「会えなかった」 */
     if (S.mode === 'rescue' && p === S.T && !(p.cnt.pick > 0)) return 'pickMiss';
     if (S.mode === 'rescue' && p === S.T && p.state !== 'awake') return 'pick';
@@ -1385,7 +1492,10 @@
   function finish(S, input) {
     var P = S.P, v = S.v, LN = v.LN;
     P.forEach(function (p) {
-      p.fk = fateOf(S, p); p.fate = FATE_JA[p.fk];
+      p.fk = fateOf(S, p);
+      /* 連れの住人と乗る日に二人で降りたことがあるなら、覚めた人の結末を「乗り続ける」にしない（もう一人と食い違わないように） */
+      if (p.fk === 'between' && linked(S) && S.linkOff) p.fk = 'offday';
+      p.fate = FATE_JA[p.fk];
       p.notes.push('乗った日 ' + p.cnt.rides + '日・触れ合い ' + p.cnt.touch + '回・終点前の山場 ' + p.cnt.peak + '回' + (p.cnt.night ? '・二人の夜 ' + p.cnt.night + '回' : ''));
       p.notes.push('違和感 ' + Math.round(p.m.doubt) + '／かかり具合 ' + Math.round(p.m.imm) + (p.cnt.wake ? '・覚めた ' + p.cnt.wake + '回' : '') + (p.cnt.resink ? '・かかり直し ' + p.cnt.resink + '回' : '') + (p.cnt.report ? '・通報 ' + p.cnt.report + '回' : ''));
       p.notes.push('行動「' + p.action.label + '」・乗る理由「' + p.goal.label + '」・' + (p.top ? '乗客には自分からする側' : '乗客には受け入れる側'));
@@ -1398,20 +1508,21 @@
       if (p.fk === 'pickMiss') pool = D.FATE2.pickMiss;
       var t = fm(pk(S, pool), { a: p.name, c: duo ? (p === a ? b.name : a.name) : '' });
       if (p.fk === 'switch') t = fm(pk(S, v.line === 'night' && D.GONE_NIGHT ? D.GONE_NIGHT : D.GONE), { a: p.name });
+      if (p.fk === 'switch' && p.followed && p.state !== 'awake' && D.FATE_FOLLOW_SW) t = fm(pk(S, D.FATE_FOLLOW_SW), { a: p.name, c: duo ? (p === a ? b.name : a.name) : '' });
       say(S, { actors: [p], tag: 'その後', text: t, why: p.name + 'の結末：' + p.fate });
       lines.push(p.name + '（' + p.roleLabel + '）：' + p.fate);
     });
     if (duo) {
       /* どちらかが路線を変えた（もう乗らない）なら、二人で並んで乗る結び（結ばれた・体を重ねた・二人で降りた）は出さない */
       var away = P.some(function (p) { return p.gone; });
-      var k2 = S.bonded && !away ? 'bond' : S.bodied && !away && D.FATE2_BODY ? 'body' : S.bothOff && !away ? 'bothOff' : P.some(function (p) { return p.triedDuo; }) ? 'tried' : '';
+      var k2 = S.bonded && !away ? 'bond' : S.bodied && !away && D.FATE2_BODY ? 'body' : S.bothOff && !away ? 'bothOff' : S.linkOff && D.FATE2.linkOff && P.some(function (p) { return p.state === 'awake'; }) ? 'linkOff' : P.some(function (p) { return p.triedDuo; }) ? 'tried' : '';
       if (S.mode === 'rescue' && S.rescueNight && S.bonded && !away) k2 = 'bond';
       if (away) k2 = '';
       if (k2) {
-        var w = k2 === 'tried' ? P.filter(function (p) { return p.triedDuo; })[0] : a, c = w === a ? b : a;
+        var w = k2 === 'tried' ? P.filter(function (p) { return p.triedDuo; })[0] : k2 === 'linkOff' ? P.filter(function (p) { return p.state === 'awake'; })[0] : a, c = w === a ? b : a;
         var f2 = k2 === 'body' ? D.FATE2_BODY : v.line === 'night' && D.FATE2_NIGHT && D.FATE2_NIGHT[k2] ? D.FATE2_NIGHT[k2] : D.FATE2[k2];
-        say(S, { actors: [a, b], tag: 'ふたり', text: fm(pk(S, f2), { a: w.name, c: c.name }), why: { bond: '連れと結ばれた', body: '連れと体を重ねた（' + relJa(S, S.rel) + 'のまま）', bothOff: '二人で気づいて降りた', tried: '一人だけ覚めて、連れに気づかせようとした' }[k2] });
-        lines.push({ bond: a.name + 'と' + b.name + '：連れと結ばれた', body: a.name + 'と' + b.name + '：連れと体を重ねた（' + relJa(S, S.rel) + 'のまま）', bothOff: a.name + 'と' + b.name + '：二人で気づいて降りた', tried: w.name + '：一人だけ覚めて、' + c.name + 'に気づかせようとした' }[k2]);
+        say(S, { actors: [a, b], tag: 'ふたり', text: fm(pk(S, f2), { a: w.name, c: c.name }), why: { bond: '連れと結ばれた', body: '連れと体を重ねた（' + relJa(S, S.rel) + 'のまま）', bothOff: '二人で気づいて降りた', tried: '一人だけ覚めて、連れに気づかせようとした', linkOff: '気づいた連れと、もう一人も一緒に降りた' }[k2] });
+        lines.push({ bond: a.name + 'と' + b.name + '：連れと結ばれた', body: a.name + 'と' + b.name + '：連れと体を重ねた（' + relJa(S, S.rel) + 'のまま）', bothOff: a.name + 'と' + b.name + '：二人で気づいて降りた', tried: w.name + '：一人だけ覚めて、' + c.name + 'に気づかせようとした', linkOff: w.name + 'と' + c.name + '：' + w.name + 'が気づき、' + c.name + 'も一緒に降りた' }[k2]);
       }
       if (!S.pairOk && (S.mode === 'rescue' || v.partner === 'pair')) {
         var dd = HK.Pos && HK.Pos.noSexInfo ? HK.Pos.noSexInfo(a, b, { room: false, lib: true, ties: input.ties }) : null;
@@ -1422,6 +1533,7 @@
     if (duo && S.bonded) title = a.name + 'と' + b.name + 'は、満員電車の常識の中で結ばれた。';
     else if (duo && S.bodied && !P.some(function (p) { return p.gone; })) title = a.name + 'と' + b.name + 'は、満員電車の常識の中で体を重ねた。';
     else if (duo && S.bothOff) title = a.name + 'と' + b.name + 'は、二人で気づいて電車を降りた。';
+    else if (duo && S.linkOff && woke.length === 1) title = woke[0].name + 'が気づき、' + P.filter(function (p) { return woke.indexOf(p) < 0; })[0].name + 'も一緒に電車を降りた。';
     else if (woke.length === P.length) title = names(woke) + (P.length > 1 ? 'は二人とも' : 'は') + '、違和感に気づいて覚めた。';
     else if (woke.length) title = names(woke) + 'だけが覚めた。' + names(P.filter(function (p) { return woke.indexOf(p) < 0; })) + 'は、今日も同じ車両に乗っている。';
     else if (melt.length === P.length) title = '「' + LN.name + '」は今日も満員。' + names(P) + 'は、常識にすっかり馴染んだ ― 「次の駅まで、もう一度」';

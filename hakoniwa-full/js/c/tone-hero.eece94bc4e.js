@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-hero.7dd46ff9ff.js
+HK.Load.def(713,'tone:hero',function(){
+========
 HK.Load.def(724,'tone:hero',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-hero.eece94bc4e.js
 HK.Load.toneData("hero",{"F":[
 ["えへへ……いいよ、しよ？","へへっ……いいぜ、しようか？"],
 ["えへへ……もう一回しよ？","へへっ……もう一回、するか？"],
@@ -454,4 +458,8 @@ HK.Load.toneData("hero",{"F":[
 ["怖いのに……何をやっているんだ、私は","怖いのに……何やってるんだ、私は！　くそっ"],
 ["怖いのに……何をやっているんでしょう、私","怖いのに……何やってるんだ、私は！　くそっ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-hero.7dd46ff9ff.js
+HK.Load.done('tone-hero', '7dd46ff9ff', 1);
+========
 HK.Load.done('tone-hero', 'eece94bc4e', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-hero.eece94bc4e.js

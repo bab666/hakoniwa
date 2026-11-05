@@ -1774,7 +1774,11 @@ if(document.body)start();else document.addEventListener('DOMContentLoaded',start
 });
 ;
 /* ==== js/solo-saimin-ero.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-saimin.4a35e9a51e.js
+HK.Load.def(535,'js/solo-saimin-ero.js',function(){
+========
 HK.Load.def(546,'js/solo-saimin-ero.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-saimin.dfa82dc03e.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2240,7 +2244,11 @@ HK.Ero.add('saimin',{
 });
 ;
 /* ==== js/solo-saimin-thick.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-saimin.4a35e9a51e.js
+HK.Load.def(536,'js/solo-saimin-thick.js',function(){
+========
 HK.Load.def(547,'js/solo-saimin-thick.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-saimin.dfa82dc03e.js
 (function(){
 'use strict';
 var HK=window.HK,SM=HK&&HK.SAIMIN;
@@ -2511,7 +2519,11 @@ return'\n\n'+fin(S,R,p,paras.join('\n\n'),ro);
 });
 ;
 /* ==== js/saimin-ero3-r18.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-saimin.4a35e9a51e.js
+HK.Load.def(537,'js/saimin-ero3-r18.js',function(){
+========
 HK.Load.def(548,'js/saimin-ero3-r18.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-saimin.dfa82dc03e.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2561,7 +2573,11 @@ e:L('指が鳴った瞬間、{b}の{乳首}がつんと尖った。{s:wet}。{a}
 });
 ;
 /* ==== js/solo-erotic-more-b.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-saimin.4a35e9a51e.js
+HK.Load.def(541,'js/solo-erotic-more-b.js',function(){
+========
 HK.Load.def(552,'js/solo-erotic-more-b.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-saimin.dfa82dc03e.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2670,7 +2686,11 @@ Object.keys(C).forEach(function(k){var g=SM.SUG[k];if(g&&g.cmd)add(g.cmd,C[k]);}
 })();
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-saimin.4a35e9a51e.js
+HK.Load.def(541.5,'tone:scen-saimin',function(){
+========
 HK.Load.def(552.5,'tone:scen-saimin',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-saimin.dfa82dc03e.js
 HK.Load.toneData("stern",{"F":[
 ["じゃあ、いつものね","では、いつものだ"],
 ["欲しいものは、自分の口で言いなさい。言えたら、ご褒美をあげる","欲しいものは、自分の口で言え。言えたら、褒美をやる"],
@@ -5223,4 +5243,8 @@ HK.Load.toneData("darui_talk",{"F":[
 ["陛下。本日のお茶をお持ちいたしました","陛下。今日のお茶、持ってきた。……まあ、一応"],
 ["……ちゃんと、覚えていられる。それがいちばん嬉しい","……ちゃんと、覚えてられる。それがいちばん嬉しいかな"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-saimin.4a35e9a51e.js
+HK.Load.done('scen-saimin', '4a35e9a51e', 1);
+========
 HK.Load.done('scen-saimin', 'dfa82dc03e', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-saimin.dfa82dc03e.js

@@ -5039,7 +5039,11 @@ if(opt.extra)HK.addTo(scen.events,opt.extra.slice());
 });
 ;
 /* ==== js/rel-bad-story.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/pack-sim.47849b5384.js
+HK.Load.def(560,'js/rel-bad-story.js',function(){
+========
 HK.Load.def(571,'js/rel-bad-story.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/pack-sim.79c8d1db88.js
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story;
@@ -5225,4 +5229,8 @@ bdBlowup:'{a}と{b}の言い合いは、とうとう怒鳴り合いになった�
 };
 })();
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/pack-sim.47849b5384.js
+HK.Load.done('pack-sim', '47849b5384', 1);
+========
 HK.Load.done('pack-sim', '79c8d1db88', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/pack-sim.79c8d1db88.js

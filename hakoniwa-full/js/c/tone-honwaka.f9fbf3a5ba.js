@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-honwaka.d34e141d45.js
+HK.Load.def(713,'tone:honwaka',function(){
+========
 HK.Load.def(724,'tone:honwaka',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-honwaka.f9fbf3a5ba.js
 HK.Load.toneData("honwaka",{"F":[
 ["あの、その…私、今日、楽しかった","今日は、とっても楽しかったよぉ"],
 ["みんな、無事？　まずは落ち着こう","みんな、無事？　まずは、落ち着こうねえ"],
@@ -24,4 +28,8 @@ HK.Load.toneData("honwaka",{"F":[
 ["いいじゃん、たまには！　またやるかもね","いいじゃない、たまには。またやるかもねえ"],
 ["みんな、無事？　まずは状況を確かめる","みんな、無事？　まずは、ゆっくり様子を見ようねえ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-honwaka.d34e141d45.js
+HK.Load.done('tone-honwaka', 'd34e141d45', 1);
+========
 HK.Load.done('tone-honwaka', 'f9fbf3a5ba', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-honwaka.f9fbf3a5ba.js

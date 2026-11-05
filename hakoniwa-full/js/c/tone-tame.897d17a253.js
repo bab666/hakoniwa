@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-tame.01e78e4e57.js
+HK.Load.def(713,'tone:tame',function(){
+========
 HK.Load.def(724,'tone:tame',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-tame.897d17a253.js
 HK.Load.toneData("tame",{"F":[
 ["何かあったら、私に言って。黙ってるのが一番困る","黙ってられるのが、一番困るから。何かあったら、私に言って",1],
 ["さっきはありがとう。私、言いそびれてた","さっきは、ありがとう。……ずっと言いそびれてた",1],
@@ -15,4 +19,8 @@ HK.Load.toneData("tame",{"F":[
 ["ひとまず、全員で力を合わせよう","ひとまず、みんなで協力しよう"],
 ["あのとき、私が代わっていれば","あのとき、私が代わってれば"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-tame.01e78e4e57.js
+HK.Load.done('tone-tame', '01e78e4e57', 1);
+========
 HK.Load.done('tone-tame', '897d17a253', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-tame.897d17a253.js

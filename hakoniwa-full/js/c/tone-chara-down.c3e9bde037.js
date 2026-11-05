@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-chara-down.9a5a6a6722.js
+HK.Load.def(713,'tone:chara_down',function(){
+========
 HK.Load.def(724,'tone:chara_down',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-chara-down.c3e9bde037.js
 HK.Load.toneData("chara_down",{"F":[
 ["さっきは、ごめん","さっきは、すいませんでしたよー"],
 ["そっちこそ、電気つけっぱなし","そっちこそ、電気つけっぱなしですよー"],
@@ -295,4 +299,8 @@ HK.Load.toneData("chara_down",{"F":[
 ["残りは、帰ってきたらね","残りは、帰ってきたらにしましょうねー"],
 ["ここから先は、帰ってきてから","ここから先は、帰ってきてからですよー"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-chara-down.9a5a6a6722.js
+HK.Load.done('tone-chara-down', '9a5a6a6722', 1);
+========
 HK.Load.done('tone-chara-down', 'c3e9bde037', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-chara-down.c3e9bde037.js

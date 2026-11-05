@@ -6527,7 +6527,11 @@ JS.R18.spendLog(S,n0);
 });
 ;
 /* ==== js/jashin-fx-b.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jashin.167226c59d.js
+HK.Load.def(550,'js/jashin-fx-b.js',function(){
+========
 HK.Load.def(561,'js/jashin-fx-b.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jashin.e97f7ef7d9.js
 (function(){
 'use strict';
 var HK=window.HK,JS=HK.JASHIN;
@@ -6663,7 +6667,11 @@ F('sekai',
 });
 ;
 /* ==== js/jashin-place.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jashin.167226c59d.js
+HK.Load.def(551,'js/jashin-place.js',function(){
+========
 HK.Load.def(562,'js/jashin-place.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jashin.e97f7ef7d9.js
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,JS=HK.JASHIN,clamp=HK.clamp;
@@ -7219,7 +7227,11 @@ JS.PLACE={GEN:GEN,UNIQ:UNIQ,FAC:FAC,FAC_OF:FAC_OF,pick:pick,begin:begin,end:end,
 });
 ;
 /* ==== js/solo-jashin-r18-god.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jashin.167226c59d.js
+HK.Load.def(555,'js/solo-jashin-r18-god.js',function(){
+========
 HK.Load.def(566,'js/solo-jashin-r18-god.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jashin.e97f7ef7d9.js
 (function(){
 'use strict';
 var HK=window.HK,JS=HK.JASHIN,ST=HK.Story;
@@ -8019,7 +8031,11 @@ return Math.round(Math.max(0,Math.min(100,v))*Math.max(0,Math.min(100,y))/100);
 });
 ;
 /* ==== js/solo-jashin-r18-godnight.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jashin.167226c59d.js
+HK.Load.def(556,'js/solo-jashin-r18-godnight.js',function(){
+========
 HK.Load.def(567,'js/solo-jashin-r18-godnight.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jashin.e97f7ef7d9.js
 (function(){
 'use strict';
 var JS=window.HK&&window.HK.JASHIN;
@@ -8320,7 +8336,11 @@ T('sekai','kei','kei','見えない指が、人形の脚を開くように、{a}
 });
 ;
 /* ==== js/jashin-ero3-r18.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jashin.167226c59d.js
+HK.Load.def(561,'js/jashin-ero3-r18.js',function(){
+========
 HK.Load.def(572,'js/jashin-ero3-r18.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jashin.e97f7ef7d9.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -8388,7 +8408,11 @@ fm:L('{a}は障子の外の足音に耳を澄ませながら、{b}の上でぐ�
 })();
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jashin.167226c59d.js
+HK.Load.def(561.5,'tone:scen-jashin',function(){
+========
 HK.Load.def(572.5,'tone:scen-jashin',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jashin.e97f7ef7d9.js
 HK.Load.toneData("stern",{"F":[
 ["その目で私の嘘も見える？","その目で私の嘘も見えるのか？"],
 ["あんた、前にも来たね","お前、前にも来たな"],
@@ -9512,4 +9536,8 @@ HK.Load.toneData("gentle_m",{"F":[
 ["ねえ、ここで種明かしでしょ？　誰か出てくるんでしょ？","ねえ、ここで種明かしだよね？　誰か出てくるんだよね？"],
 ["一人で行かせるわけないでしょ","一人で行かせるわけないよ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jashin.167226c59d.js
+HK.Load.done('scen-jashin', '167226c59d', 1);
+========
 HK.Load.done('scen-jashin', 'e97f7ef7d9', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jashin.e97f7ef7d9.js

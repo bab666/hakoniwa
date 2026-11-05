@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-darui-talk.bb2cb3db8f.js
+HK.Load.def(713,'tone:darui_talk',function(){
+========
 HK.Load.def(724,'tone:darui_talk',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-darui-talk.80dec72774.js
 HK.Load.toneData("darui_talk",{"F":[
 ["大丈夫？　……うん、すごくきれいだよ","大丈夫？　……うん、すごくきれいだよ。……いや、ほんとに"],
 ["また来てくださいね","また来なよ。……まあ、気が向いたらでいいけど"],
@@ -16,4 +20,8 @@ HK.Load.toneData("darui_talk",{"F":[
 ["こういうときこそ、家族で力を合わせよう","こういうときこそ、家族で協力しよう。まあ、たぶんね"],
 ["さっき、無茶したよね","さっき、無茶したよね。まあ、見てたけど"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-darui-talk.bb2cb3db8f.js
+HK.Load.done('tone-darui-talk', 'bb2cb3db8f', 1);
+========
 HK.Load.done('tone-darui-talk', '80dec72774', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-darui-talk.80dec72774.js

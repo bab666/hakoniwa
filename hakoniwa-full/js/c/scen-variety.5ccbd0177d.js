@@ -1421,7 +1421,11 @@ return out;
 });
 ;
 /* ==== js/solo-variety-extra.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-variety.5b7ebbc7dd.js
+HK.Load.def(538,'js/solo-variety-extra.js',function(){
+========
 HK.Load.def(549,'js/solo-variety-extra.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-variety.5ccbd0177d.js
 (function(){
 'use strict';
 var HK=window.HK,VA=HK.VARIETY;
@@ -1609,7 +1613,11 @@ VA.FINAL_SAFE=L('同点で最下位に並んだ{n}には、最終罰ゲームと
 });
 ;
 /* ==== js/solo-erotic-more-b-variety.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-variety.5b7ebbc7dd.js
+HK.Load.def(542,'js/solo-erotic-more-b-variety.js',function(){
+========
 HK.Load.def(553,'js/solo-erotic-more-b-variety.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-variety.5ccbd0177d.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -1661,7 +1669,11 @@ add(VA.ASSIST,'番組専属のセクシー担当アシスタント|スタジオ�
 });
 ;
 /* ==== js/solo-variety-thick.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-variety.5b7ebbc7dd.js
+HK.Load.def(543,'js/solo-variety-thick.js',function(){
+========
 HK.Load.def(554,'js/solo-variety-thick.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-variety.5ccbd0177d.js
 (function(){
 'use strict';
 var HK=window.HK,VA=HK.VARIETY=HK.VARIETY||{};
@@ -1772,7 +1784,11 @@ return String(text).replace(/\{vb1\}/g,function(){return vb(0);}).replace(/\{vb2
 });
 ;
 /* ==== js/variety-ero3-r18.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-variety.5b7ebbc7dd.js
+HK.Load.def(549,'js/variety-ero3-r18.js',function(){
+========
 HK.Load.def(560,'js/variety-ero3-r18.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-variety.5ccbd0177d.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -1820,7 +1836,11 @@ e:L('{a}は{b}の上で腰を沈めたまま、{乳首}をかりかりと引っ�
 })();
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-variety.5b7ebbc7dd.js
+HK.Load.def(549.5,'tone:scen-variety',function(){
+========
 HK.Load.def(560.5,'tone:scen-variety',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-variety.5ccbd0177d.js
 HK.Load.toneData("stern",{"F":[
 ["……準備不足だった、みたいだ……っ","……準備不足だった、ようだ……っ"],
 ["……リハーサル通りにいかなかった。……悔しい","……予行通りにはいかなかった。……無念だ",1],
@@ -3364,4 +3384,8 @@ HK.Load.toneData("chara_down",{"F":[
 HK.Load.toneData("keigo_twist",{"F":[
 ["まだ食べられる。食べられるけど……","まだ食べられます。食べられますけど……"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-variety.5b7ebbc7dd.js
+HK.Load.done('scen-variety', '5b7ebbc7dd', 1);
+========
 HK.Load.done('scen-variety', '5ccbd0177d', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-variety.5ccbd0177d.js

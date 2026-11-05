@@ -2012,7 +2012,11 @@ return K.fmt(S,K.pick(S,G[grp]||G.recv))+' '+K.fmt(S,K.pick(S,P[h.persona]||P.ge
 });
 ;
 /* ==== js/massage-ero3-r18.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-massage.6f410be629.js
+HK.Load.def(544,'js/massage-ero3-r18.js',function(){
+========
 HK.Load.def(555,'js/massage-ero3-r18.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-massage.690a4353c8.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2065,7 +2069,11 @@ e:L('{a}に導かれて上になった{b}は、{a}の{ナカ}へ{男性器}を�
 })();
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-massage.6f410be629.js
+HK.Load.def(544.5,'tone:scen-massage',function(){
+========
 HK.Load.def(555.5,'tone:scen-massage',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-massage.690a4353c8.js
 HK.Load.toneData("stern",{"F":[
 ["……そこは、施術範囲ですか","……そこは、施術範囲なのか"],
 ["…続けてください。ただし、余計なことはしないで","……続けろ。ただし、余計なことはするな",1]]});
@@ -3295,4 +3303,8 @@ HK.Load.toneData("honwaka",{"F":[
 HK.Load.toneData("darui_talk",{"F":[
 ["ええと…ごめんなさい、ちょっと確認なんですけど…今のは？","ええと…ごめん、ちょっと確認なんだけど…今のって、何？"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-massage.6f410be629.js
+HK.Load.done('scen-massage', '6f410be629', 1);
+========
 HK.Load.done('scen-massage', '690a4353c8', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-massage.690a4353c8.js

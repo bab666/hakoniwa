@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-noja.c5a90cffc0.js
+HK.Load.def(713,'tone:noja',function(){
+========
 HK.Load.def(724,'tone:noja',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-noja.041d192ffb.js
 HK.Load.toneData("noja",{"F":[
 ["……ありがと。い、一回しか言わないからね","……ありがとう。い、一度しか言わぬからな"],
 ["……ここ、どこ？","……ここは、どこじゃ？"],
@@ -465,6 +469,7 @@ HK.Load.toneData("noja",{"F":[
 ["俺に指図するな。……まあ、聞いてやらなくもない","私に指図するでない。……まあ、聞いてやらぬでもないぞ"],
 ["いいだろう、たまには！　またやるかもしれない","よかろう、たまには！　またやるかもしれぬぞ"],
 ["……今のは、少し可愛かった","……今のは、少々可愛かったぞ"],
+["……〈〉がそこまで言うなら","……〈〉がそこまで申すなら、よいぞ"],
 ["……し、心臓が、うるさい……","……し、心の臓が、やかましいのう……"],
 ["〈〉は耳、〈〉は首筋。弱いところが、少しずつ違う","〈〉は耳、〈〉は首筋。弱いところが、少しずつ違うのう"],
 ["お、お願いです……やめないで……","た、頼む……やめるでない……"],
@@ -1538,4 +1543,8 @@ HK.Load.toneData("noja",{"F":[
 "yay":"うまくいったのう",
 "go":"ゆくぞ"}});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-noja.c5a90cffc0.js
+HK.Load.done('tone-noja', 'c5a90cffc0', 1);
+========
 HK.Load.done('tone-noja', '041d192ffb', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-noja.041d192ffb.js

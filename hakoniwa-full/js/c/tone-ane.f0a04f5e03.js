@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-ane.4f3fec4620.js
+HK.Load.def(713,'tone:ane',function(){
+========
 HK.Load.def(724,'tone:ane',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-ane.f0a04f5e03.js
 HK.Load.toneData("ane",{"F":[
 ["……〈〉さん。あなた、なんですね","……〈〉さん。あなた、なのね"],
 ["……〈〉？　分かるか、私だよ","……〈〉？　分かる？　私よ"],
@@ -480,4 +484,8 @@ HK.Load.toneData("ane",{"F":[
 "S":[
 "わざと負けてくれてるでしょ"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-ane.4f3fec4620.js
+HK.Load.done('tone-ane', '4f3fec4620', 1);
+========
 HK.Load.done('tone-ane', 'f0a04f5e03', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-ane.f0a04f5e03.js

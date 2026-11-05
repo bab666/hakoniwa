@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-ronkyaku.b27df1cfe8.js
+HK.Load.def(713,'tone:ronkyaku',function(){
+========
 HK.Load.def(724,'tone:ronkyaku',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-ronkyaku.64c4c5bc15.js
 HK.Load.toneData("ronkyaku",{"F":[
 ["揉めたくない。だから、相手は〈〉だけと決めていいか？","揉め事は非効率だ。だから、相手は〈〉だけと決めていいかね？",1],
 ["犯人は外から来たんじゃないか","犯人は外から来た――そう考えるのが妥当ではないかね",1],
@@ -92,4 +96,8 @@ HK.Load.toneData("ronkyaku",{"F":[
 ["ほら、自分から腰振ってる","ほら、自分から腰を振っているのだよ"],
 ["さて――みんな。殺された村人を殺した犯人が分かった","さて――皆。殺された村人を殺した犯人が分かったのだ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-ronkyaku.b27df1cfe8.js
+HK.Load.done('tone-ronkyaku', 'b27df1cfe8', 1);
+========
 HK.Load.done('tone-ronkyaku', '64c4c5bc15', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-ronkyaku.64c4c5bc15.js

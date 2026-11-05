@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-kohai.53314beafe.js
+HK.Load.def(713,'tone:kohai',function(){
+========
 HK.Load.def(724,'tone:kohai',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-kohai.99e45f78a1.js
 HK.Load.toneData("kohai",{"F":[
 ["……あなただったの","……あなただったんすか"],
 ["……いけません、そこは……","……だ、ダメっす、そこは……"],
@@ -265,6 +269,7 @@ HK.Load.toneData("kohai",{"F":[
 ["最近、いちばん笑ったことは？　答えろよ、暇なんだから","最近、いちばん笑ったことは何っすか？　教えてくださいよ、暇なんすから",1],
 ["動物で例えたら、自分は何だと思う？　答えろよ、暇なんだから","動物にたとえたら、自分は何だと思うっすか？　答えてくださいよ、暇なんすから",1],
 ["お前が飲め","そっちが飲んでくださいっす",1],
+["……〈〉がそこまで言うなら","……〈〉さんがそこまで言うなら、いいっすけど",1],
 ["……っ、よろしいの、ですか……？","……っ、いいん、っすか……？",1],
 ["私、〈〉がいてよかった","私、〈〉さんがいてよかったっす",1],
 ["恨むなよ","恨まないでくださいっすよ",1],
@@ -621,4 +626,8 @@ HK.Load.toneData("kohai",{"F":[
 "じゃあ、下の名前で",
 "連れなんで"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-kohai.53314beafe.js
+HK.Load.done('tone-kohai', '53314beafe', 1);
+========
 HK.Load.done('tone-kohai', '99e45f78a1', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-kohai.99e45f78a1.js

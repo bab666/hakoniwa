@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-yankee.5032d82e59.js
+HK.Load.def(713,'tone:yankee',function(){
+========
 HK.Load.def(724,'tone:yankee',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-yankee.ebf25f8eb3.js
 HK.Load.toneData("yankee",{"F":[
 ["Ωなのに店主なんてできたの？","Ωなのに店主なんてできたのかよ？"],
 ["βなのに気が利くね","βなのに気が利くじゃん"],
@@ -390,6 +394,7 @@ HK.Load.toneData("yankee",{"F":[
 ["揉めたくない。だから、相手は〈〉だけって決めていい？","揉めたくねえ。だから、相手は〈〉だけって決めていいか？",1],
 ["あ、あの……子どもの頃の夢って何だった？","な、なあ……ガキの頃の夢って何だった？",1],
 ["みんな、下がって！","お前ら、下がってろ！",1],
+["考えすぎだよ","考えすぎだっつの",1],
 ["お互いの「思い出の味」を食べに行く","お互いの思い出の味を食いに行く",1],
 ["起きて","起きろ",1],
 ["返してほしくば、地下9階まで来い","返してほしけりゃ、地下9階まで来い",1],
@@ -891,4 +896,8 @@ HK.Load.toneData("yankee",{"F":[
 ["怖いのに……何をやっているんでしょう、私","怖えのに……何やってんだよ、私は"],
 ["欲しかったら、あとで言いに来て","欲しけりゃ、あとで言いに来いよ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-yankee.5032d82e59.js
+HK.Load.done('tone-yankee', '5032d82e59', 1);
+========
 HK.Load.done('tone-yankee', 'ebf25f8eb3', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-yankee.ebf25f8eb3.js

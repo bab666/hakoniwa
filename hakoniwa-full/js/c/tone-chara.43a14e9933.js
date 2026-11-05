@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-chara.dacceb39e1.js
+HK.Load.def(713,'tone:chara',function(){
+========
 HK.Load.def(724,'tone:chara',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-chara.43a14e9933.js
 HK.Load.toneData("chara",{"F":[
 ["〈〉が隣にいてくれて、私、助かってる","〈〉が隣にいてくれて、マジ助かってるわ。サンキュ",1],
 ["この状況、十年後に笑い話にしような","この状況さ、十年後にネタにしよ。ぜってーウケるって",1],
@@ -910,4 +914,8 @@ HK.Load.toneData("chara",{"F":[
 ["怖いのに……何をやっているんだ、私は","怖いのに……マジ何やってんだろ、私。ウケるっしょ"],
 ["怖いのに……何をやっているんでしょう、私","怖いのに……マジ何やってんだろ、私。ウケるっしょ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-chara.dacceb39e1.js
+HK.Load.done('tone-chara', 'dacceb39e1', 1);
+========
 HK.Load.done('tone-chara', '43a14e9933', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-chara.43a14e9933.js

@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-mukuchi.2703922cf0.js
+HK.Load.def(713,'tone:mukuchi',function(){
+========
 HK.Load.def(724,'tone:mukuchi',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-mukuchi.6eb5aeaedf.js
 HK.Load.toneData("mukuchi",{"F":[
 ["αなのに","……αなのに"],
 ["……あなたは思ったよりやるな","……思ったより、やる"],
@@ -1267,4 +1271,8 @@ HK.Load.toneData("mukuchi",{"F":[
 "yay":"……やった",
 "go":"……行く"}});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-mukuchi.2703922cf0.js
+HK.Load.done('tone-mukuchi', '2703922cf0', 1);
+========
 HK.Load.done('tone-mukuchi', '6eb5aeaedf', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-mukuchi.6eb5aeaedf.js

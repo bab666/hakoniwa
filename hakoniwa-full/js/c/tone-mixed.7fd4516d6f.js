@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-mixed.8ccdffa479.js
+HK.Load.def(713,'tone:mixed',function(){
+========
 HK.Load.def(724,'tone:mixed',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-mixed.7fd4516d6f.js
 HK.Load.toneData("mixed",{"F":[
 ["…行くよ","…行くよ。ほら、置いてっちゃいますよ"],
 ["あら……わたし、こんな声……っ","あ……私、こんな声出るんだ……っ　恥ずかしいです……っ"],
@@ -465,6 +469,7 @@ HK.Load.toneData("mixed",{"F":[
 "貸して":"貸してください。すぐ返すから",
 "ねえ、これ帰ってからも作って":"ねえ、これ帰ってからも作ってくれます？　毎日食べたい",
 "おかわり！":"おかわり！　大盛りでお願いします！",
+"考えすぎだよ":"考えすぎですよ。もっと気楽にいこ",
 "安いな":"安っ。得しちゃいましたね",
 "今の、ずるい":"今の、ずるい。反則ですよ",
 "私、〈〉といると、なんか落ち着く":"私、〈〉さんといると、なんか落ち着きます。不思議だよね",
@@ -1764,4 +1769,8 @@ HK.Load.toneData("mixed",{"F":[
 "ok":"はい、わかりましたって",
 "fine":"平気平気。大丈夫ですって"}});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-mixed.8ccdffa479.js
+HK.Load.done('tone-mixed', '8ccdffa479', 1);
+========
 HK.Load.done('tone-mixed', '7fd4516d6f', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-mixed.7fd4516d6f.js

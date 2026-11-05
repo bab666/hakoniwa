@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-darui.1255c90836.js
+HK.Load.def(713,'tone:darui',function(){
+========
 HK.Load.def(724,'tone:darui',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-darui.cddca27f10.js
 HK.Load.toneData("darui",{"F":[
 ["βは気楽でいいよね","……βは気楽でいいよね"],
 ["……ありがと。い、一回しか言わないからね","……ありがと。……一回しか言わないから"],
@@ -410,4 +414,8 @@ HK.Load.toneData("darui",{"F":[
 ["何か、私にできることがあれば言ってくれ","……なんかあったら、言って"],
 ["何か、私にできることがあったら言ってください","……なんかあったら、言って"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-darui.1255c90836.js
+HK.Load.done('tone-darui', '1255c90836', 1);
+========
 HK.Load.done('tone-darui', 'cddca27f10', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-darui.cddca27f10.js

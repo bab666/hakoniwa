@@ -705,7 +705,11 @@ return back&&back.lv>=60?'共依存':'執着（'+a.name+'→'+b.name+'）';
 });
 ;
 /* ==== js/r18-thick.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/pack-story.3f2ec9c42d.js
+HK.Load.def(553,'js/r18-thick.js',function(){
+========
 HK.Load.def(564,'js/r18-thick.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/pack-story.00c7e7ec00.js
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,R=HK.R18M,D=HK.R18M_DATA;
@@ -1052,4 +1056,8 @@ HK.R18Thick={on:on,log:null,ff:function(S,x,y,opt){count(S,x,y);if(HK.R18Thick.l
 POOLS:{ENTER:ENTER,MID_STRONG:MID_STRONG,MID_SOFT:MID_SOFT,PEAK:PEAK,AFTER:AFTER,PLEASE:PLEASE,SOFT_MID:SOFT_MID,SOFT_AFTER:SOFT_AFTER,SOFT_PLEASE:SOFT_PLEASE,SOFT_ENTER:SOFT_ENTER,SOFT_STRONG:SOFT_STRONG,SOFT_WEAK:SOFT_WEAK,SOFT_PLEASE_M:SOFT_PLEASE_M,SOFT_AFTER_M:SOFT_AFTER_M,ROUGH_SADIST:ROUGH_SADIST,JEALOUS_CHOKE:JEALOUS_CHOKE,ROUGH_SOFT:ROUGH_SOFT,JEALOUS_SOFT:JEALOUS_SOFT}};
 })();
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/pack-story.3f2ec9c42d.js
+HK.Load.done('pack-story', '3f2ec9c42d', 1);
+========
 HK.Load.done('pack-story', '00c7e7ec00', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/pack-story.00c7e7ec00.js

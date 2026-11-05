@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-devoted-p.9eab2a44cb.js
+HK.Load.def(713,'tone:devoted_p',function(){
+========
 HK.Load.def(724,'tone:devoted_p',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-devoted-p.0fd370effa.js
 HK.Load.toneData("devoted_p",{"F":[
 ["……〈〉？　分かるか、私だよ","……〈〉？　分かる？　私だよ"],
 ["いや……です……","いや……やだ……"],
@@ -256,4 +260,8 @@ HK.Load.toneData("devoted_p",{"F":[
 "S":[
 "私は〈〉。よろしくね"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-devoted-p.9eab2a44cb.js
+HK.Load.done('tone-devoted-p', '9eab2a44cb', 1);
+========
 HK.Load.done('tone-devoted-p', '0fd370effa', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-devoted-p.0fd370effa.js

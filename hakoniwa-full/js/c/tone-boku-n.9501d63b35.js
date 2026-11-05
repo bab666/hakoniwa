@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-boku-n.370626266e.js
+HK.Load.def(713,'tone:boku_n',function(){
+========
 HK.Load.def(724,'tone:boku_n',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-boku-n.9501d63b35.js
 HK.Load.toneData("boku_n",{"F":[
 ["なんでこうなったんだっけ","なんでこうなったんだったかな"],
 ["みんな、下がってて","みんな、下がっててくれるかな"],
@@ -351,4 +355,8 @@ HK.Load.toneData("boku_n",{"F":[
 "私は〈〉。よろしくね",
 "〈〉、無理しないで。ほら、座って"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-boku-n.370626266e.js
+HK.Load.done('tone-boku-n', '370626266e', 1);
+========
 HK.Load.done('tone-boku-n', '9501d63b35', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-boku-n.9501d63b35.js

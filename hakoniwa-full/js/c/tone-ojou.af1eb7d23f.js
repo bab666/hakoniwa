@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-ojou.9ff6494b10.js
+HK.Load.def(713,'tone:ojou',function(){
+========
 HK.Load.def(724,'tone:ojou',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-ojou.af1eb7d23f.js
 HK.Load.toneData("ojou",{"F":[
 ["……そっちこそ、忘れるなよ","……そちらこそ、忘れないでくださいまし"],
 ["……助かった","……助かりましたわ"],
@@ -87,6 +91,7 @@ HK.Load.toneData("ojou",{"F":[
 ["料理とかします？得意料理は？","お料理はなさいますの？　得意料理は何ですの？",1],
 ["出身どこですか？","ご出身は、どちらですの？",1],
 ["下手そう","お下手そうですわね",1],
+["……〈〉がそこまで言うなら","……〈〉さんがそこまでおっしゃるなら",1],
 ["へえ","まあ",1],
 ["パスで","パスいたしますわ",1],
 ["数えてるんだぞ","数えていますのよ",1],
@@ -253,4 +258,8 @@ HK.Load.toneData("ojou",{"F":[
 ["……ほら、こんなにどきどきしてる","……ほら、こんなにどきどきしていますのよ"],
 ["今日もお疲れさま。……ご褒美、ちょうだい","今日もお疲れさまでしたわ。……ご褒美、くださいませ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-ojou.9ff6494b10.js
+HK.Load.done('tone-ojou', '9ff6494b10', 1);
+========
 HK.Load.done('tone-ojou', 'af1eb7d23f', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-ojou.af1eb7d23f.js

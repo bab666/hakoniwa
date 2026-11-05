@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-otaku.bc7544f633.js
+HK.Load.def(713,'tone:otaku',function(){
+========
 HK.Load.def(724,'tone:otaku',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-otaku.6a88a10d46.js
 HK.Load.toneData("otaku",{"F":[
 ["もう少しだけ、このままで","もう少しだけ、このままでいたいですぞ"],
 ["ハンカチ持った？","ハンカチは持ちましたかな？　忘れ物の確認ですぞ"],
@@ -178,4 +182,8 @@ HK.Load.toneData("otaku",{"F":[
 "S":[
 "どうぞ。……私も、ご一緒いたします"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-otaku.bc7544f633.js
+HK.Load.done('tone-otaku', 'bc7544f633', 1);
+========
 HK.Load.done('tone-otaku', '6a88a10d46', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-otaku.6a88a10d46.js

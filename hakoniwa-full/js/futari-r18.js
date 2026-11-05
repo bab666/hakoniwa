@@ -301,7 +301,9 @@
     if (info.jeal) return 'jeal';
     if (info.engaged && ctx.rng() < 0.5) return 'engaged';
     var lead = HK.Pos && HK.Pos.leadOf ? HK.Pos.leadOf(B) : '';
-    var W0 = { lover: 1, home: info.stage >= 4 ? 1.4 : 0, bath: 1, sofa: 1, late: ctx.ft.hol ? 0 : 0.8, rain: 0.6, oyasumi: HK.Kiss ? 1 : 0, ini: /sasoi|osoi/.test(lead || '') ? 1.6 : 0.4 };
+    /* 同じ夜にもうキスだけの場面（おやすみ前のキスなど）があったら、きっかけの段をまたキスで始めない（通し読み 1105：導入の二重） */
+    var kissedToday = function (c, x, y) { var st = HK.FutariCore && HK.FutariCore.stOf ? HK.FutariCore.stOf(c, x, y) : null; return !!(st && st.kissDay === c.ft.day); };
+    var W0 = { lover: 1, home: info.stage >= 4 ? 1.4 : 0, bath: 1, sofa: 1, late: ctx.ft.hol ? 0 : 0.8, rain: 0.6, oyasumi: HK.Kiss && !kissedToday(ctx, A, B) ? 1 : 0, ini: /sasoi|osoi/.test(lead || '') ? 1.6 : 0.4 };
     /* 同居ならではの夜の種（futari-r18-more.js：壁の薄さ・同居人が留守・台所 など。HK.FutariR18.KIND_W） */
     var XW = HK.FutariR18 && HK.FutariR18.KIND_W || {};
     Object.keys(XW).forEach(function (k) { if (LEAD[k] && LEAD[k].length) W0[k] = +XW[k](ctx, A, B, info) || 0; });
@@ -395,7 +397,8 @@
       var lead = leadOf(ctx, A, B, kind, info);
       /* 場所は入り方（今夜のきっかけの種）で決めて、場面の中で動かさない（A8：「ベッドに押し倒した」→「湯上がりの…」→「壁と」） */
       var rk = ROOMK[kind] && HK.FutariR18.LONG && HK.FutariR18.LONG[ROOMK[kind]] ? ROOMK[kind] : null;
-      function out(t) { return { lead: lead, text: t, why: why, a: A, b: B, spot: rk ? SPOT_K[rk] : null }; }
+      /* lewd：性的な場面の記録の印（体の語の印が先に語へ置き換わった文でも、ほのめかす以外は性的な記録にする。通し読み 1105：印のない夜の記録があった） */
+      function out(t) { t = callStrip(t, [A, B]); return { lead: lead, text: t, why: why, a: A, b: B, spot: rk ? SPOT_K[rk] : null, lewd: lv !== 'low' }; }
       /* 寝室でない場所の夜は、事後・余韻の文も寝床の語（布団・ベッド・シーツ）を使わない */
       if (rk && !/^(kabe|rusu)$/.test(rk)) { var okT1 = okT; okT = function (t) { return okT1(t) && !BED_W.test(t); }; }
       /* 攻めの台詞（場面の表＋共通の表 HK.EroTop）：始まりと事後に一言ずつ。空なら何も足さない（名前だけ残さない） */
@@ -516,6 +519,13 @@
     }
   };
 
+  /* 夜の場面の台詞の頭の「〇〇……！」だけの呼びかけ（本体の moan-top-said.js の u3「{名}……！　あなたは、私のものだよ」など）は、
+     短い台詞に名前だけが付いた形になるので、同居の夜では名前の呼びかけを外す（3 本の台詞のどの本も。2026-11-05 の点検 call short） */
+  function callStrip(t, cs) {
+    if (typeof t !== 'string' || t.indexOf('……！') < 0) return t;
+    (cs || []).forEach(function (c) { if (c && c.name) t = t.replace(new RegExp('([\\u300c\\uff5c][\\u2060]?(?:\\uff20[^\\uff20\\u300c\\u300d\\uff5c]{0,16}\\uff20)?)' + c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\u2026\\u2026\\uff01\\u3000', 'g'), '$1'); });
+    return t;
+  }
   /* エッチの型（play-r18.js の HK.Play）：同居の部屋の小道具の選ばれやすさ（風呂上がり・甘えて・着衣のまま）と、短い場面の主な責めと体位の一文の受け口 */
   if (HK.Play) {
     if (HK.Play.addRoom) HK.Play.addRoom('futari', { entry: { bath: 2, amae: 1, kiss: 1 }, prop: { chakui: 1 } });

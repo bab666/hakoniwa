@@ -838,7 +838,11 @@ HK.JinroLove={setup:setup,appeal:appeal,vote:vote,flush:flush};
 });
 ;
 /* ==== js/jinro-data.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jinro.c9587311f9.js
+HK.Load.def(557,'js/jinro-data.js',function(){
+========
 HK.Load.def(568,'js/jinro-data.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jinro.312e8e359b.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -963,7 +967,11 @@ J.prizeHot=L('{a}の目の色が変わった。「{p}……絶対に勝つ｜＝
 });
 ;
 /* ==== js/jinro-after.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jinro.c9587311f9.js
+HK.Load.def(558,'js/jinro-after.js',function(){
+========
 HK.Load.def(569,'js/jinro-after.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jinro.312e8e359b.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -1145,7 +1153,11 @@ if(isPun)punish(c);
 });
 ;
 /* ==== js/jinro-wolfnight.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jinro.c9587311f9.js
+HK.Load.def(559,'js/jinro-wolfnight.js',function(){
+========
 HK.Load.def(570,'js/jinro-wolfnight.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jinro.312e8e359b.js
 (function(){
 'use strict';
 var HK=window.HK,scen=HK.SCENARIOS&&HK.SCENARIOS.jinro,JA=HK.JinroAfter;
@@ -1336,7 +1348,11 @@ return t;
 });
 ;
 /* ==== js/jinro-ero3-r18.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jinro.c9587311f9.js
+HK.Load.def(564,'js/jinro-ero3-r18.js',function(){
+========
 HK.Load.def(575,'js/jinro-ero3-r18.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jinro.312e8e359b.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -1400,7 +1416,11 @@ mm:L('{a}は{b}の顎をすくい上げ、最後の村人は狼の餌だと笑�
 })();
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jinro.c9587311f9.js
+HK.Load.def(564.5,'tone:scen-jinro',function(){
+========
 HK.Load.def(575.5,'tone:scen-jinro',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jinro.312e8e359b.js
 HK.Load.toneData("stern",{"F":[
 ["〈〉、正直に言いなよ。狼でしょ？","〈〉、正直に言え。狼だろ？"],
 ["いいよ、私を吊っても。でも次は〈〉を吊ってね","構わない、私を吊れ。だが次は〈〉を吊ってくれ"],
@@ -3851,4 +3871,8 @@ HK.Load.toneData("honwaka",{"F":[
 HK.Load.toneData("darui_talk",{"F":[
 ["最初から、なんとなく引っかかってたんだよね","最初から、なんとなーく引っかかってたんだよねえ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-jinro.c9587311f9.js
+HK.Load.done('scen-jinro', 'c9587311f9', 1);
+========
 HK.Load.done('scen-jinro', '312e8e359b', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-jinro.312e8e359b.js

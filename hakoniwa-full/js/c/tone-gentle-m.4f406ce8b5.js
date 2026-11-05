@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-gentle-m.eba438762a.js
+HK.Load.def(713,'tone:gentle_m',function(){
+========
 HK.Load.def(724,'tone:gentle_m',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-gentle-m.4f406ce8b5.js
 HK.Load.toneData("gentle_m",{"F":[
 ["あの、その…私、今日、楽しかった","その……今日は、楽しかったよ。ありがとう"],
 ["私、目、見て話すの苦手で…ごめん","ごめんね。目を見て話すの、少し苦手で"],
@@ -26,4 +30,8 @@ HK.Load.toneData("gentle_m",{"F":[
 ["そのまま立ってろ","そのまま立ってて"],
 ["わ、私も……〈〉に入れる……","わ、私も……〈〉に入れるよ……"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-gentle-m.eba438762a.js
+HK.Load.done('tone-gentle-m', 'eba438762a', 1);
+========
 HK.Load.done('tone-gentle-m', '4f406ce8b5', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-gentle-m.4f406ce8b5.js

@@ -1127,8 +1127,94 @@ D.MELT_MORNING_NIGHT=L('夜明けの停車駅で、{a}は寝台から起き出�
 })();
 });
 ;
+/* ==== js/solo-train-text5.js ==== */
+HK.Load.def(531,'js/solo-train-text5.js',function(){
+(function(){
+'use strict';
+var HK=window.HK;
+if(!HK)return;
+function L(s){return s.split('|');}
+var D=HK.TRAIN=HK.TRAIN||{};
+var X=D.X=D.X||{};
+X.FM_ACT=[
+'{a}は{b}の正面から体を押しつけ、くつろげた下着の中で{b}の{男性器}を握り込んだ。揺れが来るたびに、根元から先まで、ゆっくりと手のひらでしごき上げる。{b}は扉に後頭部を預けて、息を詰めた。{a}「＠{a}＠声、我慢しなくていいよ｜声は我慢しなくていい｜声、我慢しなくていいですよ」\n\nそのまま、{a}はレールの継ぎ目の音に合わせて手の速さを変えた。速くしては緩め、{b}の腰が浮きかけるたびに、親指で{亀頭}をそっと撫でて止める。{b}の指が、{a}の肩に食い込んだ。\n\n次のカーブで電車が大きく傾いた瞬間、{a}は手の動きを一気に速めた。{b}「{mb}」――{b}は{a}の手の中で背中を震わせ、こらえきれずに果てた。{a}は最後まで搾り出すように、ゆっくりと手を動かし続けた。',
+'{a}は{b}に扉へ両手をつかせ、その背中にぴたりと体を重ねた。後ろから回した片手で{b}の{男性器}を握り、もう片方の指を、下着の奥の{後ろ}へそっと這わせる。{b}の肩がびくりと跳ねた。{a}「＠{a}＠力、抜いて。痛いことはしないから｜力を抜け。痛いことはしない｜力を抜いてください。痛いことはしませんから」\n\n指先が、揺れに紛れてゆっくりと{後ろ}へ沈んでいった。{a}は中を探るように指を曲げ、{前立腺}を見つけると、そこを電車の揺れに合わせて押し上げた。前を握る手も止めない。{b}は扉のガラスに額を押し当てて、声を殺した。\n\n駅に近づいて揺れが小さくなった一瞬、{a}は指と手を同時に深く動かした。{b}「{mb}」――{b}の膝ががくりと折れ、{a}の手の中で熱が弾けた。{a}は崩れかけた{b}の腰を、片腕で抱きとめた。',
+'{a}は{b}のシャツの裾をたくし上げ、{乳首}に唇を寄せた。舌先で転がしながら、ベルトの下に差し入れた手で{b}の{男性器}をじかに包む。{b}の喉が、ごくりと鳴った。{a}「＠{a}＠ここ、弱いんだ｜ここが弱いのか｜ここ、お弱いんですね」\n\nそのまま、{a}は胸の先を甘く噛んでは離し、手のひらで{亀頭}を包むようにして撫で回した。揺れのたびに、{b}の腰が{a}の手を追いかけて揺れる。主導しているのは、最初から最後まで{a}だった。\n\n終点の手前のカーブで、{a}は握る手に力を込めた。{b}「{mb}」――{b}は{a}の手のひらに押しつけるようにして果てた。{a}は顔を上げ、上気した{b}の顔を満足そうに見上げた。',
+'{a}は{b}の前に身を沈め、ベルトをくつろげた。取り出した{男性器}に唇を寄せ、{亀頭}をゆっくりと口に含む。{b}は吊り革を握りしめ、天井を仰いだ。\n\nそのまま、{a}は電車の揺れに合わせて頭を前後させた。根元を握った手でしごきながら、舌の腹で裏側をなぞり上げる。車内の誰も、それを咎めはしなかった。\n\nカーブで車両が傾いた瞬間、{a}は喉の奥まで深く呑み込んだ。{b}「{mb}」――{b}は{a}の口の中で果てた。{a}はすべてを受け止めてから、ゆっくりと顔を離し、指先で唇を拭った。',
+'{a}は{b}を扉の脇の手すりにもたれさせ、その脚のあいだに自分の膝を割り込ませた。逃げ場をなくしておいてから、下着の中の{男性器}を指先だけでなぞる。触れるか触れないかの指に、{b}の腰がもどかしげに揺れた。{a}「＠{a}＠まだだよ。私がいいって言うまで｜まだだ。私がいいと言うまで｜まだですよ。私がいいと言うまで」\n\nそのまま、{a}は駅に近づくたびに指を止め、揺れが戻ると同時に、根元から強く握り直した。焦らされるたびに、{b}の{男性器}が{a}の手の中で脈打つ。{b}は唇を噛んで、{a}の肩に額を押しつけた。\n\n{a}「＠{a}＠いいよ｜いいぞ｜いいですよ」――終点の放送が流れる直前、{a}はようやく許した。{b}「{mb}」――ひと息にしごき上げられて、{b}は{a}の手の中で果てた。'
+];
+X.FM_PEG=[
+'{a}は鞄の奥から、細い革のベルトのついた玩具を取り出した。{b}が目を見開くと、{a}は「＠{a}＠これもマナーの範囲だよ｜これもマナーの範囲だ｜これもマナーの範囲ですよ」と微笑み、スカートの下に手早く着けた。\n\n{a}は{b}に扉の手すりを握らせ、指で{後ろ}をほぐしてから、立ったまま後ろから玩具の先をあてがった。電車の揺れに合わせて、少しずつ奥まで沈めていく。{b}は手すりにしがみつき、背中を反らせた。\n\nそのまま、{a}は{b}の腰を両手で引き寄せ、レールの継ぎ目の音に合わせて玩具を深く押し込んでは引いた。前に回した手で{b}の{男性器}をしごくと、{b}の膝が震え始める。\n\n終点の手前のカーブで、{a}は玩具をひときわ深く押し込んだ。{b}「{mb}」――{b}は{a}に後ろから貫かれたまま果てた。{a}は{b}の背中に頬を寄せ、玩具を抜くまでじっと抱きとめていた。'
+];
+X.FM_AGAIN=L('終点のひとつ手前の駅を過ぎても、{a}は{b}を離さなかった。果てたばかりの{男性器}を手のひらで包み直し、もう一度ゆっくりと撫で上げる。{b}の腰が、また小さく跳ねた。|{b}が息を整える間もなく、{a}の指がまた動き始めた。終点に着くまでの短いあいだに、{b}はもう一度、{a}の手で果てさせられた。');
+var paras=function(i){return X.FM_ACT.map(function(s){return s.split('\n\n')[i];});};
+if(X.SC_IN)X.SC_IN.fm=paras(0);
+if(X.SC_PLAY)X.SC_PLAY.fm=paras(1);
+if(X.SC_IN_V)Object.keys(X.SC_IN_V).forEach(function(k){if(X.SC_IN_V[k]&&X.SC_IN_V[k].fm)X.SC_IN_V[k].fm=paras(0).slice(0,3);});
+if(X.SC_CLIMAX)X.SC_CLIMAX.fm=L('次のカーブで電車が大きく傾いた瞬間、{a}は手の動きを一気に速めた。{b}は奥歯を噛みしめ、{a}の手の中で果てた。|車内放送が次の駅の名前を告げる声に紛れて、{b}は{a}の手のひらに熱を放った。{a}は{b}が落ち着くまで、手を止めずに寄り添った。');
+if(X.SC_AGAIN)X.SC_AGAIN.fm=X.FM_AGAIN.slice();
+if(X.CAR_BUILD)X.CAR_BUILD.fm=L('{a}は{b}の{男性器}を握る手の速さを、少しずつ上げていった。{b}の喉から低い声が漏れる。{a}の頬も、すっかり上気していた。|{a}は{b}の耳元に唇を寄せながら、手の中のものをゆっくりと締めつけた。揺れのたびに、{b}の腰が逃げ場を探すように揺れた。');
+if(X.MID)X.MID.fm=X.FM_ACT.slice(0,4).map(function(s,i){return['終点前の放送が流れると、{a}は{b}を扉の脇へ押しやり、正面から体を寄せた。','終点前の放送を合図に、{a}は{b}の手を引いて扉の脇の隅へ入った。','終点が近づくと、{a}は{b}を手すりの前に立たせ、その胸に手を置いた。','終点前の放送が流れると、{a}は{b}を座席の端の仕切りの陰へ導いた。'][i]+'\n\n'+s;});
+if(X.OPEN_ROOM)X.OPEN_ROOM.fm=L('扉が閉まると、{a}は{b}をベッドの端に座らせ、その前に立ったまま見下ろした。車内で火照った{b}の頬を、{a}は両手で包み込んだ。|部屋に入るなり、{a}は{b}の胸を押してベッドに倒し、その上に覆いかぶさった。「＠{a}＠車内の続き、私がする｜車内の続きは、私がする｜車内の続きは、私がします」');
+X.PEAK_SHORT_TOP={
+mf:L('{d}日目の終点前。{a}は慣れた手つきで{m}を扉の脇へ導き、立ったまま後ろから体を重ねた。揺れに合わせて短く深く腰を打ちつけ、{m}が声を殺して達するのを見届けてから、{a}も奥で果てた。|今日も{a}は、終点の手前で{m}を手すりの前に立たせた。後ろから繋がり、カーブのたびに深く沈める。{end}に着くころには、{m}は{a}の腕の中でぐったりしていた。|{d}日目。終点前の放送を合図に、{a}は{m}を扉に預けさせ、正面から奥まで沈めた。{m}の吐息が{a}の首筋にかかる。{a}は最後まで、{m}の顔から目を離さなかった。'),
+ff:L('{d}日目の終点前。{a}は{m}を窓に預けさせ、スカートの中へ指を滑り込ませた。{ナカ}の弱いところを揺れに合わせて押し上げると、{m}は{a}の肩に顔を埋めて達した。|今日も{a}は、終点の手前で{m}を正面から抱き寄せた。下着の中で指を動かし、{陰核}を親指で転がす。{end}の放送が流れるころ、{m}は{a}の腕の中で小さく震えていた。|{d}日目。{a}は{m}の背後に立ち、腕を回して服の裾から指を沈めた。{m}が声を殺して果てるまで、{a}は一度も手を止めなかった。'),
+fm:L('{d}日目の終点前。{a}は{m}の正面に立ち、ベルトの下へ手を差し入れた。{男性器}を握り込んで揺れに合わせてしごき上げると、{m}は扉に背中を預けたまま、{a}の手の中で果てた。|今日も{a}は、終点の手前で{m}の前に身を沈めた。{男性器}を口に含み、電車の揺れに任せて頭を動かす。{end}の放送が流れる前に、{m}は{a}の口の中で達した。|{d}日目。{a}は{m}に扉へ手をつかせ、後ろから回した手で{男性器}を、もう片方の指で{後ろ}を責めた。{m}は膝を震わせ、{a}の腕にすがったまま果てた。')
+};
+D.ARGUE_MID=L('揺れに合わせて重ねていた体を、{a}は不意に引き剥がした。{c}が戸惑った顔で{a}を見る。|触れ合ったままの手を、{a}は途中で止めた。熱は体に残っているのに、頭だけが冷たく澄んでいく。|{c}と肌を寄せたまま、{a}はふと動きを止めた。窓に映った二人の姿が、急に知らない誰かのように見えた。');
+D.ARGUE_OPEN=L('{a}は{c}の袖を引いて、扉の脇へ寄せた。|{a}は人の隙間を縫って{c}の正面に立ち、その腕を掴んだ。|{a}は{c}の耳元に顔を寄せ、周りに聞こえないように声を落とした。');
+D.ARGUE_SAY={
+proud:L('{a}「＠{a}＠ねえ、手、止めて。この電車、絶対おかしいって｜おい、手を止めろ。この電車は、絶対におかしい｜手を止めてください。この電車、絶対におかしいです」|{a}「＠{a}＠なんで誰も変だと思わないの。私たち、降りるよ｜なぜ誰も変だと思わない。私たちは降りるぞ｜どうして誰も変だと思わないんですか。私たち、降りましょう」|{a}「＠{a}＠しっかりしてよ。これ、マナーなんかじゃない｜しっかりしろ。これはマナーなんかじゃない｜しっかりしてください。これはマナーなんかじゃありません」'),
+stern:L('{a}「＠{a}＠やめよう。公共の場で、こんなことが許されるはずがない｜やめろ。公共の場で、こんなことが許されるはずがない｜やめましょう。公共の場で、こんなことが許されるはずがありません」|{a}「＠{a}＠冷静に考えて。これは、どう見ても普通じゃない｜冷静に考えろ。これは、どう見ても普通ではない｜冷静に考えてください。これは、どう見ても普通ではありません」|{a}「＠{a}＠次の駅で降りる。話はそれから｜次の駅で降りる。話はそれからだ｜次の駅で降ります。話はそれからです」'),
+tsun:L('{a}「＠{a}＠ちょ、ちょっと待って。……これ、おかしいってば｜ちょ、ちょっと待て。……これは、おかしいだろう｜ちょ、ちょっと待ってください。……これ、おかしいですってば」|{a}「＠{a}＠べ、別に嫌とかじゃなくて……ここ、電車でしょ。変だよ｜べ、別に嫌だというわけではない……ここは電車だろう。変だ｜べ、別に嫌とかじゃなくて……ここ、電車ですよ。変です」|{a}「＠{a}＠も、もう降りるから。……一緒に来て｜も、もう降りる。……一緒に来い｜も、もう降ります。……一緒に来てください」'),
+gentle:L('{a}「＠{a}＠ごめんね、手を止めて。……この電車、やっぱり変だよ｜すまない、手を止めてくれ。……この電車は、やはり変だ｜ごめんなさい、手を止めてください。……この電車、やっぱり変です」|{a}「＠{a}＠ねえ、周りを見て。触ってるの、知らない人どうしなんだよ｜周りを見てくれ。触っているのは、知らない者どうしなんだ｜周りを見てください。触っているの、知らない人どうしなんですよ」|{a}「＠{a}＠次で、一緒に降りよう。少し、外の空気が吸いたい｜次で、一緒に降りよう。少し、外の空気が吸いたい｜次で、一緒に降りましょう。少し、外の空気が吸いたいんです」'),
+devoted:L('{a}「＠{a}＠お願い、聞いて。……これ、ほんとはおかしいことなんだよ｜頼む、聞いてくれ。……これは、本当はおかしいことなんだ｜お願いです、聞いてください。……これ、本当はおかしいことなんです」|{a}「＠{a}＠あなたに、こんなことを人前でさせたくない｜あなたに、こんなことを人前でさせたくない｜あなたに、こんなことを人前でさせたくないんです」|{a}「＠{a}＠私と一緒に、降りてくれる……？｜私と一緒に、降りてくれるか……？｜私と一緒に、降りてくれますか……？」'),
+cool:L('{a}「＠{a}＠止めて。このマナー、誰が決めたのか説明できる？｜止めろ。このマナーは誰が決めた。説明できるか｜止めてください。このマナー、誰が決めたのか説明できますか」|{a}「＠{a}＠落ち着いて見て。私たち、他人の前でこんなことしてる｜落ち着いて見ろ。私たちは、他人の前でこんなことをしている｜落ち着いて見てください。私たち、他人の前でこんなことをしています」|{a}「＠{a}＠結論から言う。これは異常。次で降りる｜結論から言う。これは異常だ。次で降りる｜結論から言います。これは異常です。次で降ります」'),
+free:L('{a}「＠{a}＠待って待って。これ、冷静に考えたらまずくない？｜待て待て。これは、冷静に考えるとまずくないか｜待ってください。これ、冷静に考えたらまずくないですか」|{a}「＠{a}＠ねえ、なんか急に目が覚めた。ここ、おかしいよ｜なあ、急に目が覚めた。ここは、おかしい｜あの、急に目が覚めました。ここ、おかしいです」|{a}「＠{a}＠続きは外でいいじゃん。とりあえず降りよ｜続きは外でいいだろう。とりあえず降りるぞ｜続きは外でいいじゃないですか。とりあえず降りましょう」'),
+shy:L('{a}「＠{a}＠あ、あの……やっぱり、これ、変だよ……｜あ、あの……やはり、これは変だ……｜あ、あの……やっぱり、これ、変です……」|{a}「＠{a}＠ひ、人に、見られてる……おかしいよ、こんなの……｜ひ、人に、見られている……おかしい、こんなのは……｜ひ、人に、見られてます……おかしいです、こんなの……」|{a}「＠{a}＠お、降りたい……一緒に、降りて……｜お、降りたい……一緒に、降りてくれ……｜お、降りたいです……一緒に、降りてください……」'),
+polite:L('{a}「＠{a}＠申し訳ないけど、手を止めて。これは、礼儀でも何でもない｜申し訳ないが、手を止めてくれ。これは、礼儀でも何でもない｜申し訳ありませんが、手を止めてください。これは、礼儀でも何でもありません」|{a}「＠{a}＠落ち着いて聞いて。この電車の決まりは、どこかおかしい｜落ち着いて聞いてくれ。この電車の決まりは、どこかおかしい｜落ち着いて聞いてください。この電車の決まりは、どこかおかしいです」|{a}「＠{a}＠次の駅で、一緒に降りてほしい｜次の駅で、一緒に降りてほしい｜次の駅で、ご一緒に降りていただけますか」')
+};
+D.ARGUE_NO={
+proud:L('{c}「＠{c}＠何言ってんの。マナーだよ、これ｜何を言っている。マナーだ、これは｜何を言ってるんですか。マナーですよ、これは」|{c}「＠{c}＠おかしくないって。ほら、周りもやってる｜おかしくない。ほら、周りもやっている｜おかしくないですよ。ほら、周りもやってます」|{c}「＠{c}＠今さら降りるとか、ありえない。最後までいるよ｜今さら降りるなど、ありえない。最後までいる｜今さら降りるなんて、ありえません。最後までいます」'),
+stern:L('{c}「＠{c}＠決まりは決まりだよ。ポスターにも書いてある｜決まりは決まりだ。ポスターにも書いてある｜決まりは決まりです。ポスターにも書いてあります」|{c}「＠{c}＠途中で降りるほうが、よっぽどマナー違反だよ｜途中で降りるほうが、よほどマナー違反だ｜途中で降りるほうが、よほどマナー違反です」|{c}「＠{c}＠落ち着いて。疲れてるだけだよ｜落ち着け。疲れているだけだ｜落ち着いてください。疲れているだけですよ」'),
+tsun:L('{c}「＠{c}＠べ、別におかしくないでしょ。周りもしてるし｜べ、別におかしくないだろう。周りもしている｜べ、別におかしくないですよ。周りもしてますし」|{c}「＠{c}＠な、何、急に。……マナーなんだから、普通だってば｜な、何だ、急に。……マナーなんだから、普通だ｜な、何ですか、急に。……マナーなんですから、普通ですってば」|{c}「＠{c}＠降りるとか言わないで。……まだ、途中なのに｜降りるなどと言うな。……まだ、途中なのに｜降りるなんて言わないでください。……まだ、途中なのに」'),
+gentle:L('{c}「＠{c}＠怖くないよ。周りの人も、同じことしてるでしょう？｜怖くない。周りの人も、同じことをしているだろう？｜怖くないですよ。周りの人も、同じことをしてるでしょう？」|{c}「＠{c}＠少し疲れたのかな。もたれていいから｜少し疲れたんだろう。もたれていいぞ｜少しお疲れなんですね。もたれていいですから」|{c}「＠{c}＠どうしたの、急に。いつもの電車だよ｜どうした、急に。いつもの電車だ｜どうしたんですか、急に。いつもの電車ですよ」'),
+devoted:L('{c}「＠{c}＠おかしくないよ。私、ちゃんとマナー守ってるよ？｜おかしくない。私は、ちゃんとマナーを守っている｜おかしくないですよ。私、ちゃんとマナーを守ってますよ？」|{c}「＠{c}＠嫌だった……？　でも、これが普通なんだよ｜嫌だったか……？　だが、これが普通なんだ｜嫌でしたか……？　でも、これが普通なんですよ」|{c}「＠{c}＠置いていかないで。降りなくても、いいでしょ……？｜置いていくな。降りなくても、いいだろう……？｜置いていかないでください。降りなくても、いいでしょう……？」'),
+cool:L('{c}「＠{c}＠変じゃないよ。見たところ、全員やってる｜変ではない。見たところ、全員がやっている｜変じゃありません。見たところ、全員やってます」|{c}「＠{c}＠根拠は？　ポスターにも、放送にも出てるよ｜根拠は？　ポスターにも、放送にも出ている｜根拠は何ですか。ポスターにも、放送にも出ていますよ」|{c}「＠{c}＠途中で降りるのは非効率だよ。終点まで乗ろう｜途中で降りるのは非効率だ。終点まで乗る｜途中で降りるのは非効率です。終点まで乗りましょう」'),
+free:L('{c}「＠{c}＠えー、今いいとこなのに。おかしくないって｜今いいところなのに。おかしくはない｜今いいところなのに。おかしくないですよ」|{c}「＠{c}＠考えすぎだよ。楽しんだもん勝ちだって｜考えすぎだ。楽しんだ者の勝ちだ｜考えすぎですよ。楽しんだもの勝ちですって」|{c}「＠{c}＠降りるの？　もったいないよ、ここまで来て｜降りるのか？　もったいない、ここまで来て｜降りるんですか？　もったいないですよ、ここまで来て」'),
+shy:L('{c}「＠{c}＠え、えっと……でも、周りも、してるし……｜え、えっと……だが、周りも、しているし……｜え、えっと……でも、周りも、してますし……」|{c}「＠{c}＠お、おかしくない、と思う……マナー、だから……｜お、おかしくない、と思う……マナー、だから……｜お、おかしくない、と思います……マナー、ですから……」|{c}「＠{c}＠こ、ここで降りたら、目立っちゃう……｜こ、ここで降りたら、目立ってしまう……｜こ、ここで降りたら、目立っちゃいます……」'),
+polite:L('{c}「＠{c}＠失礼だよ、途中でやめるなんて。周りの人にも悪い｜失礼だ、途中でやめるなど。周りの人にも悪い｜失礼ですよ、途中でやめるなんて。周りの方にも悪いです」|{c}「＠{c}＠これは、きちんとしたマナーだよ。何もおかしくない｜これは、きちんとしたマナーだ。何もおかしくない｜これは、きちんとしたマナーです。何もおかしくありません」|{c}「＠{c}＠疲れてるんだね。少し、深呼吸しよう｜疲れているんだな。少し、深呼吸しよう｜お疲れなんですね。少し、深呼吸しましょう」')
+};
+D.ARGUE_WAKE=L('{c}は言い返そうとして、周りを見回した。その目の色が、ゆっくりと変わっていく。「＠{c}＠……ほんとだ｜……本当だ｜……本当ですね」|{c}はしばらく黙って{a}を見つめていた。やがて、周りの乗客たちの顔を、一人ずつ確かめるように見回した。「＠{c}＠……降りよう｜……降りよう｜……降りましょう」|{a}の真剣な顔を見て、{c}の顔から熱が引いた。周りの乗客の当たり前の顔が、{c}の目にも急に奇妙に映ったらしかった。');
+D.ARGUE_PUSH=L('{a}は引かなかった。「＠{a}＠おかしくても、おかしくなくても、いい。今は一緒に降りて｜おかしくても、おかしくなくてもいい。今は一緒に降りてくれ｜おかしくても、おかしくなくても、いいです。今は一緒に降りてください」――{c}は困った顔のまま、それでも{a}の手を握り返した。|二人の押し問答は、次の駅の放送が流れるまで続いた。最後に折れたのは{c}だった。「＠{c}＠……分かった。あなたがそこまで言うなら｜……分かった。あなたがそこまで言うなら｜……分かりました。あなたがそこまで言うなら」|{a}が手を離さずにいると、{c}は小さくため息をついた。わけは分からない。それでも、こんな顔の連れを一人で降ろすわけにはいかなかった。');
+D.ARGUE_FLOW=L('{c}の穏やかな声を聞いているうちに、{a}の中の冷たいものが、少しずつ溶けていった。――疲れていただけかもしれない。{a}はもう一度、{c}の胸に体を預けた。|「＠{a}＠……そう、なのかな｜……そう、なのか｜……そう、なんでしょうか」――{a}は言いかけた言葉を飲み込んだ。{c}の手がまた背中に回っても、もう振りほどけなかった。|周りの誰もが当たり前の顔をしている。{c}も、同じ顔で{a}を見ていた。{a}は、おかしいのは自分のほうだと思うことにした。');
+D.LINK_OFF=L('{a}が降りるのを見て、{c}もすぐに後を追った。わけが分からないまま、それでも連れを一人にはしなかった。|扉が閉まる寸前、{c}も{a}に続いてホームへ降りた。「＠{c}＠待って。一人で行かないで｜待て。一人で行くな｜待ってください。一人で行かないでください」|{c}は人の波をかき分け、{a}と同じ駅で降りた。理由は訊かなかった。{a}の横顔を見れば、それで十分だった。');
+D.LINK_SWITCH=L('{c}も、{a}と同じ路線の定期券に買い替えた。「＠{c}＠連れなんだから、一緒に乗るよ｜連れなんだから、一緒に乗る｜連れなんですから、一緒に乗ります」|{a}が路線を変えると言うと、{c}は少し考えてから頷いた。明日からは、二人で遠回りの電車に乗る。');
+D.LINK_SWITCH_NIGHT=L('{c}も、{a}と一緒に次の町で列車を降りることにした。「＠{c}＠連れなんだから、一緒に行くよ｜連れなんだから、一緒に行く｜連れなんですから、一緒に行きます」|{a}が夜行を降りると言うと、{c}は少し考えてから頷いた。旅の残りは、二人で昼の列車に乗る。');
+D.SC_MOB_F={
+'陽気':{o:L('{a}は白い歯を見せて笑い、{b}の手を引いて扉の脇の隙間へ連れていった。「＠ここなら揺れても平気でしょ」と、からりと言った。|{a}は弾むような足取りで{b}を引き寄せ、楽しそうに扉の脇へ体をずらした。'),
+s:L('いいね、いい顔してる！|この揺れ、最高だね|ふふ、すっごく熱い'),
+p:L('やだ、もうすぐ……っ|一緒にいこ……っ|……っ、もう、気持ちいい……'),
+q:L('気持ちいい？|このまま続けて、平気？|もっと揺れても大丈夫？'),
+a:L('はあ、最高だった……|まだ熱いね。もうちょっと、このままでいよ'),
+u:L('あっ、それ、いい……っ|ふふ、やられちゃった……っ|……っ、すっごい……')}
+};
+D.MOB_PEAK_F={
+'陽気':{l:L('{m}は白い歯を見せて、「＠ね、終点まで最後までいこ。いいでしょ？」と、まっすぐに誘った。'),a:L('{m}は「＠最高だった！　またこの車両でね」と、屈託なく笑った。')}
+};
+D.DUO_BOARD_FOE=L('{a}と{c}は、よりによって同じ扉の前に並んでいた。目が合うと、どちらからともなく顔を背けた。それでも人の波は、二人を同じ車両へ押し込んだ。|{line}のホームで、{a}は{c}の姿を見つけて舌打ちしそうになった。{c}のほうも、露骨に一歩横へずれた。扉が開くと、二人は互いに背を向けたまま乗り込んだ。|{a}が乗り込んだ車両に、少し遅れて{c}も入ってきた。車両を替えるには、もう混みすぎていた。二人は人の肩越しに、短く睨み合った。');
+if(D.FATE)D.FATE.follow=L('{a}はまだ、あれがマナーだと思っている。それでも{c}が降りると言えば、{a}は黙って一緒に降りる。|{a}には、{c}が何を恐れているのか分からない。分からないまま、{a}は今日も{c}と同じ駅で降りる。');
+D.FATE_FOLLOW_SW=L('{a}には、あの電車の何がおかしかったのか、まだ分からない。それでも{c}と同じ路線に変えて、今日も並んで乗っている。|{a}は定期券を買い替えた理由を、うまく説明できない。ただ、{c}が隣にいない電車に乗る気には、なれなかった。');
+if(D.FATE2)D.FATE2.linkOff=L('{a}と{c}は、あの日から同じ駅で降りるようになった。一人だけが乗り続けることは、一度もなかった。|満員の車内で何が普通なのか、二人の答えはまだ同じではない。それでも、降りるときはいつも二人一緒だった。');
+})();
+});
+;
 /* ==== js/solo-train.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-train.9bc377215e.js
+HK.Load.def(532,'js/solo-train.js',function(){
+========
 HK.Load.def(543,'js/solo-train.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-train.7a60590ef1.js
 (function(){
 'use strict';
 var HK=window.HK,ST=HK.Story,D=HK.TRAIN,clamp=HK.clamp;
@@ -1188,7 +1274,7 @@ env:[
 perFields:[
 {id:'touch',label:'触れ合い',auto:'おまかせ（受け攻めから）',offWhen:function(){return'';},options:[{id:'give',label:'触る（攻めのとき）'},{id:'take',label:'触られる'},{id:'both',label:'両方（リバ・おまかせのとき）'},{id:'pick',label:'迎えに行く（2人のとき）'}]}
 ],
-check:function(input){var w=touchConflict((input.chars||[]).length,(input.perChar||[]).map(function(x){return x&&x.pick?x.pick.touch:'';}),input.env&&input.env.partner);return w;},
+check:function(input){var w=touchConflict((input.chars||[]).length,(input.perChar||[]).map(function(x){return x&&x.pick?x.pick.touch:'';}),input.env&&input.env.partner,input.chars||[]);return w;},
 stats:[{id:'sens',label:'感じやすさ',desc:'高いほど触れ合いで快楽が溜まり、終点前の山場に届きやすい（快楽が高いと、覚めても翌朝また常識に引き戻されやすい）'}],
 actions:[
 {id:'accept',label:'常識どおりに受け入れる',fit:function(t){return t.ac*0.6+t.np*0.3;}},
@@ -1211,11 +1297,21 @@ var at=HK.SCEN_ORDER.indexOf('kaihen');
 if(at>=0)HK.SCEN_ORDER.splice(at+1,0,'train');else HK.SCEN_ORDER.push('train');
 }
 if(HK.Lewd&&HK.Lewd.install)HK.Lewd.install('train',{len:false,def:'mid',desc:'終点前の山場と二人の夜の描き方。ほのめかす＝上気した頬だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで'});
-function touchConflict(n,picks,partner){
+function touchConflict(n,picks,partner,chars){
 var np=picks.filter(function(x){return x==='pick';}).length;
+if(n===2&&chars&&chars.length===2&&chars.every(function(c,i){return effTop(c,picks[i],n,chars[1-i]);}))return'この電車には攻めしか乗っていません。二人とも乗客に触る側（攻め）なので、触られる側がいません。どちらかの受け攻めを「受け」「リバ」にするか、住人ごとの「触れ合い」を「触られる」「両方」にしてください';
 if(n===2&&np===2)return'「迎えに行く」は2人のうち1人だけにしてください（住人ごとの「触れ合い」）';
 if(n===2&&np===1&&partner==='pair')return'片方が「迎えに行く」ときは、二人は同じ車両に乗らないので、場の設定「触れ合う相手」を「連れの住人」以外にしてください（住人どうしで触れ合うなら、住人ごとの「触れ合い」の「迎えに行く」を外してください）';
 return'';
+}
+function effTop(c,v,n,other){
+var Q=HK.Pos;if(!Q)return false;
+var f=touchFix(c,v,n),tv=f?(f==='auto'?'':f):(v&&v!=='auto'?v:'');
+if(tv==='give')return true;
+if(tv==='take'||tv==='both')return false;
+var npc=Q.npc?Q.npc(c):'';
+if(npc)return npc==='top';
+return!!((Q.hardTop&&Q.hardTop(c))||(Q.hardTop&&other&&Q.hardTop(c,other)&&Q.forOf&&Q.forOf(c,other)));
 }
 function touchFix(c,v,n){
 if(!v||v==='auto')return'';
@@ -1233,7 +1329,7 @@ J=J.slice(0,2);
 var picks=J.map(function(c){var p=S0.per&&S0.per[c.id]&&S0.per[c.id][id];return p&&p.pick?p.pick.touch||'':'';});
 var partner=env?env.partner:(S0.env&&S0.env[id]||{}).partner;
 var h='<p class="hint" style="margin-top:8px">住人ごとの「触れ合い」で、触る・触られる・両方・迎えに行く（2人のとき、途中の駅で乗ってきて連れを引き寄せる役）を選べます。おまかせなら受け攻めから決まり、2人で片方だけが「攻め」なら、その人が迎えに行く役になります（場の設定「触れ合う相手」が「連れの住人」のときは同じ車両に乗ります）。</p>';
-var stop=touchConflict(J.length,picks,partner),fixes=[];
+var stop=touchConflict(J.length,picks,partner,J),fixes=[];
 J.forEach(function(c,i){var f=touchFix(c,picks[i],J.length);if(f)fixes.push(c.name+'の「'+{give:'触る',take:'触られる',both:'両方',pick:'迎えに行く'}[picks[i]]+'」は、'+(picks[i]==='pick'?'1人のときは使えないので':'受け攻めの設定に合わないので')+'「'+FIX_JA[f]+'」として動きます');});
 var al=stop?'<p class="hint" role="alert" style="margin-top:6px;color:var(--warn,#b45309);font-weight:600">※このままでは始められません：'+stop+'</p>':'';
 if(head)return'<div id="trnote2">'+al+'</div>';
@@ -1292,6 +1388,7 @@ function mobAddr(m){return HK.Mob.addr({name:m.name,short:''});}
 var GUIDE_RE= /\{a\}の手を取[^。]*自分の/,GUIDE_RE_B= /\{b\}の手を取[^。]*自分の/;
 var TOP_FIRST_RE= /\{a\}は不意を突かれて先に/;
 function noGuide(list,re){if(!list|| !list.length)return list;var l=list.filter(function(x){return!re.test(x);});return l.length?l:list;}
+function mobTab(tab,m){var k=m&&m.prof&&m.prof.k;if(!k|| !D[tab])return null;var F=D[tab+'_F'];return(m.gender==='f'&&F&&F[k])||D[tab][k]||null;}
 function isF(c){return!!(HK.Pos&&HK.Pos.isF?HK.Pos.isF(c):c.gender==='f');}
 function hasM(c){return!!(HK.Pos&&HK.Pos.hasM?HK.Pos.hasM(c):c.gender!=='f');}
 function modeOf(top,bot){return isF(top)&&isF(bot)?'ff':isF(top)?'fm':'mf';}
@@ -1385,17 +1482,18 @@ if(gb)['SC_LEAD','SC_FORE','SC_IN','SC_PLAY','OPEN'].forEach(function(k){
 var o=X[k];if(!o)return;
 Object.keys(o).forEach(function(m){var l=o[m];if(!Array.isArray(l))return;var f=noGuide(l,GUIDE_RE_B);if(f!==l&&f.length!==l.length){kept.push([l,l.slice()]);l.length=0;Array.prototype.push.apply(l,f);}});
 });
-try{r=S.ero&&HK.ThickEro?HK.ThickEro.scene(opt):HK.ThickSex.scene(opt);}finally{S._trainScene='';for(var ki=kept.length-1;ki>=0;ki--){kept[ki][0].length=0;Array.prototype.push.apply(kept[ki][0],kept[ki][1]);}}
+var fmOwn=o.car&&modeOf(a,b)==='fm'&&hasM(b)&&X.FM_ACT&& !(HK.NoGen&&HK.NoGen.on&&HK.NoGen.on(a,b));
+try{r=fmOwn?fmCar(S,a,b,o):S.ero&&HK.ThickEro?HK.ThickEro.scene(opt):HK.ThickSex.scene(opt);}finally{S._trainScene='';for(var ki=kept.length-1;ki>=0;ki--){kept[ki][0].length=0;Array.prototype.push.apply(kept[ki][0],kept[ki][1]);}}
 var t=String(r&&r.text||'');
 if(r&&r.mode==='fm')t=t.replace(/注がれる熱/g,'{b}の放つ熱');
 if(X.swap)t=X.swap(t);
 var md=(r&&r.mode)||modeOf(a,b);
-if(o.car)t=carOwn(S,t,a,b,md);
+if(o.car){if(!fmOwn)t=carOwn(S,t,a,b,md);}
 else if(S.lv==='high'&&HK.ThickEro&&HK.ThickEro.again){var ag=HK.ThickEro.again(S,pick,a,b,!!S.ero,false);if(ag)t+='\n\n'+ag;}
 var mob=a.mob?a:b.mob?b:null;
 if(mob&&mob.prof)t=mobVoice(S,t,mob,mob===a);
 if(mob)t=loveFix(S,t,mob===a?b:a,mob===a?'{b}':'{a}');
-if(o.car)t=carFlow(t);
+if(o.car)t=carFlow(t,o.direct);
 if(mob&&mob===a&&mob.prof&&D.SC_SOFTK&&D.SC_SOFTK[mob.prof.k])t=t.replace(/抱え上げ/g,'抱き寄せ').replace(/ぐいと/g,'そっと').replace(/乱暴に/g,'性急に');
 if(o.car)srcStat(S,t);
 if(o.car&&D.DEBUG&&HK.SexFlow&&HK.SexFlow.analyze){try{var afT=o.after&&t.indexOf(o.after)>=0?o.after:'',ck=HK.SexFlow.analyze(afT?t.replace(afT,''):t,a,b,md,afT).check||[];(ck.v||ck).forEach(function(x){var q=S._sfv=S._sfv||{};q[x.k]=(q[x.k]||0)+1;(S._sfx=S._sfx||[]).length<40&&S._sfx.push(x.k+'：'+(x.why||'')+(x.k==='e'?' '+JSON.stringify(ck.stages)+' '+JSON.stringify(t.split('\n\n').map(function(q){return q.slice(0,40);})):''));});}catch(e){(S._sfx=S._sfx||[]).push('err '+e.message);}}
@@ -1404,6 +1502,21 @@ t=t.replace(/\{a\}/g,an).replace(/\{b\}/g,bn);
 if(o.car)t=carFix(t,o.flavor==='sweet');
 if(!a.mob!== !b.mob&&HK.SexFlow&&HK.SexFlow.mobName)t=HK.SexFlow.mobName(t,a.mob?b.name:a.name);
 return t;
+}
+function fmCar(S,a,b,o){
+var vv=S.v||{},sp=vv.crowd==='sparse',rng=S.rng;
+var noWall=function(l){return sp?keep(l,function(x){return!/人の(?:陰|波|壁)|周りの乗客|背中を貸/.test(x);}):l;};
+var lv=X.SC_LEAD_V&&(sp?X.SC_LEAD_V.sparse:X.SC_LEAD_V[vv.line]);
+var leadL=sp&&lv&&lv.fm?lv.fm:X.SC_LEAD.fm.concat(lv&&lv.fm?lv.fm:[]);
+var peg=X.FM_PEG&&S.lv!=='low'&&rng()<0.15;
+var act=pk(S,noWall(peg?X.FM_PEG:X.FM_ACT)).split('\n\n');
+var fv=X.SC_FEEL_V&&X.SC_FEEL_V[vv.line],feel=pk(S,noWall(fv?X.SC_FEEL.concat(fv):X.SC_FEEL));
+var mb=b.mob?(HK.Moan&&HK.Moan.mob?HK.Moan.mob(S,b,2,{side:false,gross: !!S.ero}):''):(HK.Moan&&HK.Moan.say?HK.Moan.say(S,b,'climax',{novel:true},null):'');
+var out=[o.open,pk(S,noWall(leadL)),pk(S,noWall(X.SC_FORE.fm))].concat(act.slice(0,-1),[feel,act[act.length-1]]);
+if(S.lv==='high'&&X.FM_AGAIN)out.push(pk(S,X.FM_AGAIN));
+out.push(pk(S,noWall(X.SC_AFTER.concat((X.SC_AFTER_V&&X.SC_AFTER_V[vv.line])||[]))));
+if(o.after)out.push(o.after);
+return{text:out.filter(function(x){return x&& /\S/.test(x);}).join('\n\n').replace(/\{mb\}/g,mb||'……っ'),mode:'fm'};
 }
 function tmpL(kept,l,f){kept.push([l,l.slice()]);l.length=0;Array.prototype.push.apply(l,f);}
 var CLIMAX_RE= /果て|達し|熱を放|注ぎ込|奥に熱|弾け|絶頂|イっ|イく|昇りつめ|上り詰め|迸/;
@@ -1496,7 +1609,7 @@ if(k===1&&t.replace(/[…、。！？!?♡っ\s〜]/g,'').length>=6)return false
 return true;
 }
 function mobVoice(S,t,mob,isTop){
-var k=mob.prof&&mob.prof.k,V=k&&D.SC_MOB&&D.SC_MOB[k];
+var k=mob.prof&&mob.prof.k,V=k&&mobTab('SC_MOB',mob);
 if(!V)return t;
 var tg=isTop?'\\{a\\}':'\\{b\\}';
 var ps0=t.split('\n\n'),ci= -1;
@@ -1538,18 +1651,21 @@ return v0?tag+'「'+v0+'」':'';
 });
 }
 var DIRECT_RE= /\{ナカ\}|ナカへ|下着の(?:内側|中)|直に|じかに|舌先|口に含|奥まで沈め|奥へ沈|繋が|突き上げ|腰を打ちつけ|指を[^。]{0,8}沈め|迎え入れ/;
-var CLOTH_RE= /服の上から|布越しに|服越しに[^。]{0,10}(?:撫で|なぞ|揉|包)|着たままの服の上から/;
+var CLOTH_RE= /服の上から|布越しに|服越しに[^。]{0,10}(?:撫で|なぞ|揉|包)|着たままの服の上から|一枚も乱さない|ボタンを一つも外さず|生地越しに/;
+var INNER_RE= /裾から(?:手|指)を(?:差し入れ|滑り込ませ|忍ばせ)|服の内側へ滑り込/;
 var BACK_RE= /後ろから|背後から|背中から覆|扉へ両手|扉に両手/;
 var FRONT_RE= /正面から|向き直|向かい合|振り向かせ|こちらを向/;
 var FACE_RE= /見上げると|見上げた先|目を合わせ|見つめ合|上で揺れ|跨|脚を[^。]{0,8}絡め|首に腕を(?:回|絡)/;
 var ARRIVE_RE= /終点を告げる|終点のホームに滑り込|終点に着|ホームの明かりが見え|運転は、この電車で終了/;
 var LATE_RE= /朝まで|夜通し|夜が明けるまで|寝床|ベッド/;
-function carFlow(t){
-var direct=false,back=false,arrived=false;
+function carFlow(t,direct0){
+var direct= !!direct0,back=false,arrived=false;
 return t.split('\n\n').map(function(p){
+var inner=false;
 return sents(p).filter(function(x){
 if(!/\S/.test(x))return true;
-var drop=(direct&&CLOTH_RE.test(x)&& !DIRECT_RE.test(x))||(back&&FACE_RE.test(x)&& !FRONT_RE.test(x)&& !CLIMAX_RE.test(x))||(arrived&&LATE_RE.test(x));
+var drop=(direct&&CLOTH_RE.test(x)&& !DIRECT_RE.test(x))||(back&&FACE_RE.test(x)&& !FRONT_RE.test(x)&& !CLIMAX_RE.test(x))||(arrived&&LATE_RE.test(x))||(inner&&INNER_RE.test(x)&& /服の内側へ滑り込/.test(x));
+if(!drop&&INNER_RE.test(x))inner=true;
 if(drop)return false;
 if(DIRECT_RE.test(x))direct=true;
 if(BACK_RE.test(x))back=true;else if(FRONT_RE.test(x))back=false;
@@ -1685,6 +1801,8 @@ var sw=clamp(0.25+p.tr.cp*0.35+p.tr.caution*0.3-p.tr.fc*0.2,0.05,0.85);
 if(rng()<sw){
 p.gone=true;p.switched=d;
 say(S,{actors:[p],tag:'別の路線へ',text:fm(pk(S,v.line==='night'&&D.SWITCH_NIGHT?D.SWITCH_NIGHT:D.SWITCH_DAY),V),why:p.name+'は路線を変えることにした（CP '+Math.round(p.eg.CP)+'・慎重さ '+Math.round(p.tr.caution*100)+'）',mag:20});
+var oq=linked(S)?S.P.filter(function(x){return x!==p&& !x.gone;})[0]:null;
+if(oq&&D.LINK_SWITCH){oq.gone=true;oq.switched=d;if(oq.state!=='awake')oq.followed=(oq.followed||0)+1;S.linkOff=S.linkOff||d;say(S,{actors:[oq],tag:'一緒に',text:fm(pk(S,v.line==='night'&&D.LINK_SWITCH_NIGHT?D.LINK_SWITCH_NIGHT:D.LINK_SWITCH),{a:p.name,c:oq.name}),why:p.name+'が路線を変えるので、'+oq.name+'も一緒に変えた'});}
 return;
 }
 }
@@ -1714,7 +1832,7 @@ else if(v.crowd==='sparse'&&D.BOARD_SPARSE&&D.BOARD_SPARSE[v.line])bl=D.BOARD_SP
 else if(v.crowd==='busy')bl=keep(bl,function(x){return!DENSE_RE.test(x);});
 var whyOf=function(p){if(v.trip&&D.WHY_TRIP&&D.WHY_TRIP[p.goal.id])return fm(pk(S,D.WHY_TRIP[p.goal.id]),{a:p.name});var w=D.WHY2&&D.WHY2[v.line]&&D.WHY2[v.line][p.goal.id];return fm(pk(S,w||D.WHY[p.goal.id]),{a:p.name});};
 if(riders.length===2){
-var dl=S.rel&&S.rel!=='stranger'?D.DUO_BOARD:d>1&&D.DUO_BOARD_AGAIN?D.DUO_BOARD_AGAIN:D.DUO_BOARD_STR||D.DUO_BOARD;
+var dl=S.rel==='foe'&&D.DUO_BOARD_FOE?D.DUO_BOARD_FOE:S.rel&&S.rel!=='stranger'?D.DUO_BOARD:d>1&&D.DUO_BOARD_AGAIN?D.DUO_BOARD_AGAIN:D.DUO_BOARD_STR||D.DUO_BOARD;
 if(tripOn&&D.DUO_BOARD_TRIP)dl=D.DUO_BOARD_TRIP;
 t=fm(pk(S,keep(bl,function(x){return x.split('。')[0].indexOf('{a}')<0;})),Object.assign({a:riders[0].name},V0)).split('。')[0]+'。'+fm(pk(S,dl),{a:riders[0].name,c:riders[1].name,line:LN.name});
 }
@@ -1735,11 +1853,15 @@ var nx=stations[Math.min(seg+1,stations.length-1)],last=seg===nSt-1;
 var on=riders.filter(function(p){return!p.offToday&& !p.gone;});
 if(!on.length)break;
 if(seg===Tseg&&on.indexOf(S.R)>=0){rescue(S,nx);break;}
+if(seg===0&&on.length===2&&linked(S)){
+var awS=on.filter(function(p){return p.state==='awake'&&p.branch!=='thrill';}),dnS=on.filter(function(p){return p.state!=='awake';});
+if(awS.length===1&&dnS.length===1){argue(S,awS[0],dnS[0],nx,false);on=on.filter(function(p){return!p.offToday;});if(!on.length)break;}
+}
 if(last){peak(S,on,nx);break;}
 var pairable=on.length===2&&S.mode==='same'&& !S.noDuo&&(S.pairOk||S.pairSoft)&&S.pairStopDay!==S.day&&on.every(function(p){return p.state!=='awake'||p.branch==='thrill';});
 var pairNow=pairable&&(v.partner==='pair'?true:seg>0&&rng()<(S.rel==='lover'||S.rel==='fwb'?0.35:0.15));
 if(v.partner==='pair'&&S.pairDay===S.day&& !pairNow){}
-else if(pairNow)pairTouch(S,on,seg);
+else if(pairNow)pairTouch(S,on,seg,nx);
 else on.forEach(function(p){touch(S,p,seg,nx);});
 if(!pairNow)on.forEach(function(p){if(p.both&&p.bothDay!==S.day&&seg===Math.min(1,nSt-2)&& !p.offToday&&p.canMob&&p.lib!=='none'&& !p.touchStop&&(p.state!=='awake'||p.branch==='thrill')&&p.pax)bothAt(S,p,nx);});
 on.forEach(function(p){if(!p.offToday)check(S,p,seg,nx,normK);});
@@ -1777,11 +1899,49 @@ V={a:who.name,c:(who===a?b:a).name,end:v.LN.end};act=[who,who===a?b:a];
 say(S,{actors:act,tag:{msg:'連絡',jeal:'嫉妬',wait:'迎え',jealSame:'嫉妬',talk:'帰り道',eye:'連れ'}[k],text:fm(pk(S,D.COMP[k]),V),why:'連れのいる日（'+relJa(S,S.rel)+'）：'+{msg:'会えない日の連絡',jeal:'ほかの乗客に触れられたことへの嫉妬',wait:'改札で待つ',jealSame:'同じ車両で見ていた嫉妬',talk:'帰り道の会話',eye:'同じ車両で目が合う'}[k]});
 }
 function leftNote(S,p,kind){
-if(S.mode!=='same'|| !D.COMP_LEFT)return;
+if(S.mode!=='same')return;
 var o=S.P.filter(function(x){return x!==p;})[0];
 if(!o||o.gone||o.offToday)return;
+if(linked(S))return linkOff(S,p,o);
+if(!D.COMP_LEFT)return;
 o.m.doubt=clamp(o.m.doubt+4,0,100);
 say(S,{actors:[o,p],tag:'見送る',text:fm(pk(S,D.COMP_LEFT[kind]),{a:o.name,c:p.name}),why:p.name+'が先に降りた（'+o.name+'は車内に残った）'});
+}
+function linked(S){return S.mode==='same'&&S.P.length===2&&S.v&&S.v.partner==='pair'&& !S.noDuo&& !!(S.pairOk||S.pairSoft);}
+function linkOff(S,p,o){
+if(!o||o.gone||o.offToday|| !D.LINK_OFF)return;
+o.offToday=true;o.cnt.off++;
+if(o.state!=='awake')o.followed=(o.followed||0)+1;
+S.linkOff=S.day;
+say(S,{actors:[p,o],tag:'一緒に降りる',text:fm(pk(S,D.LINK_OFF),{a:p.name,c:o.name}),why:p.name+'が降りたので、'+o.name+'も一緒に降りた（連れの住人と乗る日は、片方だけが乗り続けない）'});
+}
+function argue(S,w,o,nx,mid){
+var rng=S.rng,V={a:w.name,c:o.name,nx:nx};
+w.cnt.argue=(w.cnt.argue||0)+1;S.argued=(S.argued||0)+1;w.told=S.day;
+var t=fm(pk(S,mid?D.ARGUE_MID:D.ARGUE_OPEN),V)+fm(pk(S,D.ARGUE_SAY[ps(w)]),V);
+var pw=clamp(0.15+o.m.doubt/120+o.tr.a*0.2+o.m.reason/400-o.m.imm/250-o.m.plea/300+(w.cnt.argue-1)*0.1,0.05,0.8);
+var why0=(mid?'触れ合いの最中に':'')+w.name+'が覚めて「おかしい」と言った';
+if(rng()<pw){
+t+='\n\n'+fm(pk(S,D.ARGUE_WAKE),V);
+o.m.doubt=clamp(o.m.doubt+30,0,100);o.state='awake';o.cnt.wake++;o.branch='off';o.wakeDay=S.day;w.branch='off';
+var o1=say(S,{actors:[w,o],tag:'押し問答',text:t,why:why0+'→'+o.name+'も覚めた（覚めやすさ '+Math.round(pw*100)+'%）',mag:24});
+ST.key(S,o1,o.name+'も'+w.name+'の言葉で覚めた');
+bothOff(S,[w,o],nx);
+return'wake';
+}
+t+='\n\n'+fm(pk(S,D.ARGUE_NO[ps(o)]),V);
+var push=clamp(0.35+w.tr.cp*0.3+w.m.reason/300-w.m.plea/200-w.tr.ac*0.2+(bondRel(S)?0.1:0)+(w.cnt.argue-1)*0.1,0.15,0.85);
+if(rng()<push){
+t+='\n\n'+fm(pk(S,D.ARGUE_PUSH),V);
+w.branch='off';w.offToday=o.offToday=true;w.cnt.off++;o.cnt.off++;o.followed=(o.followed||0)+1;S.linkOff=S.day;
+var o2=say(S,{actors:[w,o],tag:'押し問答',text:t,why:why0+'→'+o.name+'は「おかしくない」と言い張ったが、押し問答のあと、二人で'+nx+'で降りた（押し切る強さ '+Math.round(push*100)+'%）',mag:24});
+ST.key(S,o2,w.name+'と'+o.name+'が押し問答のあと二人で降りた');
+return'push';
+}
+t+='\n\n'+fm(pk(S,D.ARGUE_FLOW),V);
+w.state='doubt';w.branch='';w.m.doubt=clamp(Math.min(w.m.doubt,48),0,100);w.m.imm=clamp(w.m.imm+12,0,95);w.cnt.flowed=(w.cnt.flowed||0)+1;
+say(S,{actors:[w,o],tag:'押し問答',text:t,why:why0+'→'+o.name+'に「おかしくない」と言われ、'+w.name+'はその日は流された',mag:20});
+return'flow';
 }
 function bothAt(S,p,nx){
 var mo=p.pax,mn=newMob(S,p,true)||{name:'別の乗客',short:'別の乗客',gender:mo.gender};
@@ -1812,7 +1972,7 @@ t=mobFmt(fm(pk(S,gl),V),m)+(esc?mv(S,m,1):'');
 if(esc)t+='\n\n'+fm(fresh(S,D.ASK_TOP[ps(p)]),V)+mobFmt(fm(fresh(S,prof(m,'r'),D.MOB_OK),V),m);
 tag=esc?'深まる':'触れ合い';
 if(S.day>=3&&seg===1){t=mobFmt(fm(pk(S,D.HABIT_GIVE),V),m);tag='いつもの車両';}
-if(v.partner==='many'&&p.manyDay!==S.day&&D.MANY_TOP){p.manyDay=S.day;t+='\n\n'+mobFmt(fm(pk(S,D.MANY_TOP),V),m);}
+if(v.partner==='many'&&p.manyDay!==S.day&&D.MANY_TOP){p.manyDay=S.day;t+='\n\n'+mobFmt(fm(pk(S,D.MANY_TOP),V),m);var mN=newMob(S,p,true);if(mN)p.pax=mN;}
 }
 if(esc)p.escLog=(p.escLog||0)+1;
 var gain=(esc?20:10)*p.sens*p.libK*rng.range(0.8,1.2)*(v.crowd==='packed'?1.25:v.crowd==='sparse'?0.8:1);
@@ -1958,13 +2118,13 @@ if(p.pairToday===S.day&&p.mobToday!==S.day&&D.NOTICE_PAIR)return D.NOTICE_PAIR;
 if(p.top&&D.NOTICE_TOP&&D.NOTICE_TOP[ps(p)])return D.NOTICE_TOP[ps(p)];
 return D.NOTICE[ps(p)];
 }
-function wake(S,p,nx,pw,quiet){
+function wake(S,p,nx,pw,quiet,bk0){
 var rng=S.rng,v=S.v,V={a:p.name,nx:nx},m=p.pax||newMob(S,p);
 p.state='awake';p.cnt.wake++;p.wakeDay=S.day;
 p.m.imm=clamp(p.m.imm-35,0,100);p.m.reason=clamp(p.m.reason+15,0,100);
-var bk=pickBranch(S,p),wp=wakeLines(p,bk);
+var bk=bk0||pickBranch(S,p),wp=wakeLines(p,bk);
 var t=quiet?'':mobFmt(fm(pk(S,D.WAKE_TRIG),V),m)+'\n\n';
-t+=fm(pk(S,p.top?keep(D.WAKE_SEE,function(x){return!/自分の体の上にある手/.test(x);}):D.WAKE_SEE),V)+(wp.length?'\n\n'+fm(pk(S,wp),V):'')+'\n\n'+mobFmt(fm(pk(S,D.WAKE_WORLD),V),m);
+t+=fm(pk(S,p.top||p.touchStop||S.pairStopDay===S.day?keep(D.WAKE_SEE,function(x){return!/自分の体の上にある手/.test(x);}):D.WAKE_SEE),V)+(wp.length?'\n\n'+fm(pk(S,wp),V):'')+'\n\n'+mobFmt(fm(pk(S,D.WAKE_WORLD),V),m);
 var o=say(S,{actors:[p],tag:'覚める',text:t,why:p.name+'の常識が覚めた（覚めやすさ '+Math.round(pw*100)+'%：違和感 '+Math.round(p.m.doubt)+'・理性 '+Math.round(p.m.reason)+'・かかり具合 '+Math.round(p.m.imm)+'・快楽 '+Math.round(p.m.plea)+'）',mag:32});
 ST.key(S,o,p.name+'が覚めた'+(p.cnt.wake>1?'（'+p.cnt.wake+'度目）':''));
 branch(S,p,nx,bk);
@@ -1995,6 +2155,7 @@ if(!k)k=pickBranch(S,p);
 p.branch=k;
 var why='（'+PS_JA[P0]+'・CP '+Math.round(p.eg.CP)+'・FC '+Math.round(p.eg.FC)+'・AC '+Math.round(p.eg.AC)+'・快楽 '+Math.round(p.m.plea)+(c?'・連れがいる':'')+'）';
 if(k==='report')return report(S,p,nx,why);
+if(k==='off'&&linked(S)&&c&&c.state!=='awake'){p.branch='off';return argue(S,p,c,nx,p.pairToday===S.day);}
 if(k==='off'){
 p.offToday=true;p.cnt.off++;
 say(S,{actors:[p],tag:'途中下車',text:fm(pk(S,D.WAKE_OFF),{a:p.name,nx:nx}),why:p.name+'は覚めて、次の駅で降りることを選んだ'+why,mag:18});
@@ -2025,6 +2186,7 @@ function duoMoment(S,on,seg,nx){
 var rng=S.rng,a=on[0],b=on[1];
 if(a.offToday||b.offToday)return;
 var aw=on.filter(function(p){return p.state==='awake'&&p.branch!=='thrill';}),dn=on.filter(function(p){return p.state!=='awake';});
+if(aw.length===1&&dn.length===1&& !aw[0].told&&linked(S)){argue(S,aw[0],dn[0],nx,dn[0].pairToday===S.day);return;}
 if(aw.length===1&&dn.length===1&& !aw[0].told){
 var w=aw[0],o=dn[0],V={a:w.name,c:o.name,nx:nx};
 w.told=S.day;
@@ -2050,7 +2212,7 @@ say(S,{actors:[seer,other],tag:'見てしまう',text:fm(pk(S,D.SEE_C),{a:seer.n
 }
 function bothOff(S,on,nx){
 var a=on[0],b=on[1];
-S.bothOffDay=S.day;S.bothOff=true;
+S.bothOffDay=S.day;S.bothOff=true;if(linked(S))S.linkOff=S.linkOff||S.day;
 a.offToday=b.offToday=true;a.cnt.off++;b.cnt.off++;
 a.duoOff=b.duoOff=true;
 if(a.branch==='thrill')a.branch='off';if(b.branch==='thrill')b.branch='off';
@@ -2075,7 +2237,7 @@ if(!S.pairAB)S.pairAB=S.rng()<0.5?[on[0],on[1]]:[on[1],on[0]];
 return S.pairAB;
 }
 function softKind(a,b){var fa=isF(a),fb=isF(b);return fa&&fb?'ff': !fa&& !fb?'mm':'mx';}
-function pairTouch(S,on,seg){
+function pairTouch(S,on,seg,nx){
 var ord=pairOrder(S,on),T=ord[0],U=ord[1],soft= !S.pairOk,mode=soft?softKind(T,U):modeOf(T,U),rel=S.rel||'stranger';
 if(S.pairDay!==S.day){
 S.pairDay=S.day;S.pairStg=(S.pairBest||0)>=2?1:0;
@@ -2092,6 +2254,10 @@ t=fm(t,V)+fm(rx(S,D.PAIR_RESP[ps(U)]),{o:U.name})+(soft||stg<1||(HK.NoGen&&HK.No
 if(r==='cool'){var who=rs[1]==='cool'?U:T;t+='\n\n'+(who===T&& !soft&&D.PAIR_STOP_T?fm(pk(S,D.PAIR_STOP_T),{r:T.name,o:U.name}):fm(pk(S,D.PAIR_STOP),{r:who===U?T.name:U.name,o:who.name}));S.pairStopDay=S.day;}
 else if(r==='yes'){S.pairStg=Math.min(2,stg+1);S.pairBest=Math.max(S.pairBest||0,S.pairStg);}
 say(S,{actors:[T,U],tag:r==='cool'?'手を引く':'連れと',lewd:true,text:t,why:'連れどうしで、常識どおりに（'+relJa(S,rel)+'・'+(soft?'受け攻めの向きが決まらない二人：手と口まで':T.name+'が攻め')+'・段「'+['服の上から','手で','口で'][stg]+'」・反応「'+{yes:'二人とも乗り気→次の段へ',moya:'もやもや→同じ段',cool:'覚めかけ→止まる'}[r]+'」）'});
+if(nx&&linked(S)&&r!=='yes'){
+var mw=[U,T].filter(function(p){return p.state==='doubt'&&p.m.doubt>=42;})[0];
+if(mw&&S.rng()<clamp(0.2+(mw.m.doubt-42)/60,0.2,0.6)){S.pairStopDay=S.day;return wake(S,mw,nx,clamp(mw.m.doubt/100,0.1,0.9),true,'off');}
+}
 }
 function pairPeakSoft(S,on,nx){
 var v=S.v,LN=v.LN,ord=pairOrder(S,on),T=ord[0],U=ord[1],kind=softKind(T,U),V={o:U.name,end:LN.end,nx:nx,d:S.day};
@@ -2123,7 +2289,7 @@ function soloPeak(S,p,nx){
 var rng=S.rng,v=S.v,LN=v.LN,m=p.pax||newMob(S,p),V={o:p.name,end:LN.end,nx:nx,d:S.day};
 var top=p.top,A=top?p:m,B=top?m:p,mode=modeOf(A,B);
 var lt=fm(pk(S,p.cnt.peak?againLead(S,p):X.LEAD_SIT),V)+'\n\n'+fm(pk(S,top&&X.LEAD_HEAT_TOP?X.LEAD_HEAT_TOP:X.LEAD_HEAT),V);
-var mpk=m.prof&&D.MOB_PEAK?D.MOB_PEAK[m.prof.k]:null,fl=m.prof&&D.FLAVOR?D.FLAVOR[m.prof.k]:'';
+var mpk=m.prof&&D.MOB_PEAK?mobTab('MOB_PEAK',m):null,fl=m.prof&&D.FLAVOR?D.FLAVOR[m.prof.k]:'';
 if(p.branch==='thrill')lt+='\n\n'+fm(pk(S,D.THRILL_PEAK||D.THRILL[ps(p)]),{a:p.name});
 else if(p.m.doubt>=40)lt+='\n\n'+fm(pk(S,X.LEAD_DOUBT),V);
 lt+='\n\n'+mobFmt(top?fm(pk(S,X.LEAD_SELF),{r:p.name,o:'{m}'}):fm(mpk?fresh(S,mpk.l,X.LEAD_MOB):pk(S,X.LEAD_MOB),{r:'{m}',o:p.name}),m)+(top?'':fm(rx(S,X.LEAD_YES[ps(p)]),V));
@@ -2142,7 +2308,7 @@ text+='\n\n'+fm(pk(S,crowdPool(S)),V)+fm(rx(S,(top?X.PEAK_A:X.PEAK_B)[ps(p)]),V)
 text=carFix(HK.SexFlow&&HK.SexFlow.mobName?HK.SexFlow.mobName(text,p.name):text);
 }
 else{
-text=longScene(S,A,B,{car:true,flavor:fl,open:openFor(S,mode,top?null:m),after:pk(S,after2Pool(S))});
+text=longScene(S,A,B,{car:true,flavor:fl,open:openFor(S,mode,top?null:m),after:pk(S,after2Pool(S)),direct:(p.stg||0)>=2||(p.escLog||0)>=2});
 text=mobFmt(text,m);
 text+='\n\n'+fm(pk(S,keep(crowdPool(S),function(x){return!(/髪/.test(x)&& /髪を/.test(text));})),V)+fm(rx(S,(top?X.PEAK_A:X.PEAK_B)[ps(p)]),V);
 }
@@ -2174,7 +2340,7 @@ var l=(X.LEAD_AGAIN||[]).filter(function(x){return(y|| !/昨日/.test(x))&&(y2||
 return l.concat(X.LEAD_AGAIN_GAP||[]);
 }
 function openFor(S,mode,m){
-var V=m&&m.prof&&D.SC_MOB?D.SC_MOB[m.prof.k]:null,l=V&&V.o?V.o:X.OPEN[mode];
+var V=m&&m.prof&&D.SC_MOB?mobTab('SC_MOB',m):null,l=V&&V.o?V.o:X.OPEN[mode];
 if(S.v.crowd==='sparse')l=keep(l,function(x){return!/人の(?:陰|波|壁)|周りの乗客が|肩を寄せ合/.test(x);});
 return pk(S,l);
 }
@@ -2197,6 +2363,12 @@ ST.key(S,o,p.name+'が常識にすっかり馴染んだ');
 }
 function shortPeak(S,p){
 p.cnt.peak++;p.peakToday=true;(p.peakDays=p.peakDays||{})[S.day]=1;p.m.plea=20;p.m.imm=clamp(p.m.imm+(p.branch==='thrill'?0:6),0,98);
+if(p.top&&X.PEAK_SHORT_TOP&&S.lv!=='low'){
+var m=p.pax||newMob(S,p),md=modeOf(p,m),l=X.PEAK_SHORT_TOP[md]||X.PEAK_SHORT_TOP.mf;
+if(md==='fm'&& !hasM(m))l=X.PEAK_SHORT_TOP.ff;
+if(S.v.crowd==='sparse')l=keep(l,function(x){return!/人の(?:陰|波|壁)/.test(x);});
+return say(S,{actors:[p],tag:'終点前',lewd:true,text:mobFmt(fm(pk(S,l),{a:p.name,d:S.day,end:S.v.LN.end,m:'{m}'}),m),why:p.name+'の終点前（'+p.cnt.peak+'回目。4回目からは短く・'+p.name+'から'+m.name+'に）'});
+}
 say(S,{actors:[p],tag:'終点前',text:fm(pk(S,D.PEAK_SHORT),{a:p.name,d:S.day,end:S.v.LN.end}),why:p.name+'の終点前（'+p.cnt.peak+'回目。4回目からは短く）'});
 }
 function midOk(a,b,mode){
@@ -2211,7 +2383,7 @@ var v=S.v,LN=v.LN,ord=HK.Pos.order(on[0],on[1]),T=ord[0],U=ord[1],mode=modeOf(T,
 var lt=fm(pk(S,X.LEAD_SIT),V)+'\n\n'+fm(pk(S,X.LEAD_PAIR),V)+'\n\n'+fm(pk(S,X.LEAD_PAIR_WHO),{r:T.name,o:U.name});
 if(on.some(function(p){return p.branch==='thrill';}))lt+='\n\n'+fm(pk(S,D.THRILL_C),{a:T.name,c:U.name});
 lead(S,[T,U],lt,'終点前のマナー（連れどうし・'+relJa(S,S.rel)+'）・言い出したのは'+T.name);
-var text=S.lv==='low'?fm(pk(S,X.FADE),V):longScene(S,T,U,{car:true,open:openFor(S,mode,null),after:pk(S,after2Pool(S))})+'\n\n'+fm(rx(S,X.PEAK_B[ps(U)]),V);
+var text=S.lv==='low'?fm(pk(S,X.FADE),V):longScene(S,T,U,{car:true,open:openFor(S,mode,null),after:pk(S,after2Pool(S)),direct:(S.pairStg||0)>=1})+'\n\n'+fm(rx(S,X.PEAK_B[ps(U)]),V);
 text=dedupQuote(text);
 [T,U].forEach(function(p){p.cnt.peak++;p.peakToday=true;(p.peakDays=p.peakDays||{})[S.day]=1;p.m.plea=20;p.m.reason=clamp(p.m.reason-5,0,100);});
 S.pairPeak=(S.pairPeak||0)+1;S.bonded=S.bonded||(loveOk(S,T,U)&&bondRel(S));S.bodied=true;
@@ -2258,9 +2430,11 @@ if(loveOk(S,T,R)&&bondRel(S))S.bonded=true;S.bodied=true;
 var o=say(S,{actors:[T,R],tag:'夜',lewd:true,text:text,why:T.name+'が攻め（攻めの指定）・'+R.name+'は車内の熱のまま',mag:30});
 if(S.rescueNight===1)ST.key(S,o,T.name+'と'+R.name+'の夜');
 }
-var FATE_JA={melt:'常識にすっかり馴染んだ（毎朝その車両を選ぶ）',sink:'常識に馴染んだ',resunk:'一度覚めて、また常識に戻った',unease:'違和感を抱えたまま',between:'気づいたまま乗り続ける',switch:'別の路線に変えた',report:'通報した',reportFlow:'通報して、流された',thrill:'気づいたうえでスリルを選んだ',silent:'言い出せないまま',offday:'途中で降りた',pick:'連れを迎えに行く人',pickMiss:'迎えに行ったが、会えなかった'};
+var FATE_JA={melt:'常識にすっかり馴染んだ（毎朝その車両を選ぶ）',sink:'常識に馴染んだ',resunk:'一度覚めて、また常識に戻った',unease:'違和感を抱えたまま',between:'気づいたまま乗り続ける',switch:'別の路線に変えた',report:'通報した',reportFlow:'通報して、流された',thrill:'気づいたうえでスリルを選んだ',silent:'言い出せないまま',offday:'途中で降りた',follow:'覚めた連れと一緒に降りる（常識の中のまま）',pick:'連れを迎えに行く人',pickMiss:'迎えに行ったが、会えなかった'};
 function fateOf(S,p){
 if(p.switched)return'switch';
+var oth=S.P.filter(function(x){return x!==p;})[0];
+if(linked(S)&&p.followed&&p.state!=='awake'&&oth&&oth.state==='awake')return'follow';
 if(S.mode==='rescue'&&p===S.T&& !(p.cnt.pick>0))return'pickMiss';
 if(S.mode==='rescue'&&p===S.T&&p.state!=='awake')return'pick';
 if(p.state==='awake'){
@@ -2278,7 +2452,9 @@ return'sink';
 function finish(S,input){
 var P=S.P,v=S.v,LN=v.LN;
 P.forEach(function(p){
-p.fk=fateOf(S,p);p.fate=FATE_JA[p.fk];
+p.fk=fateOf(S,p);
+if(p.fk==='between'&&linked(S)&&S.linkOff)p.fk='offday';
+p.fate=FATE_JA[p.fk];
 p.notes.push('乗った日 '+p.cnt.rides+'日・触れ合い '+p.cnt.touch+'回・終点前の山場 '+p.cnt.peak+'回'+(p.cnt.night?'・二人の夜 '+p.cnt.night+'回':''));
 p.notes.push('違和感 '+Math.round(p.m.doubt)+'／かかり具合 '+Math.round(p.m.imm)+(p.cnt.wake?'・覚めた '+p.cnt.wake+'回':'')+(p.cnt.resink?'・かかり直し '+p.cnt.resink+'回':'')+(p.cnt.report?'・通報 '+p.cnt.report+'回':''));
 p.notes.push('行動「'+p.action.label+'」・乗る理由「'+p.goal.label+'」・'+(p.top?'乗客には自分からする側':'乗客には受け入れる側'));
@@ -2291,19 +2467,20 @@ if(p.fk==='pick')pool=v.line==='night'&&D.FATE2_NIGHT?D.FATE2_NIGHT.picker:D.FAT
 if(p.fk==='pickMiss')pool=D.FATE2.pickMiss;
 var t=fm(pk(S,pool),{a:p.name,c:duo?(p===a?b.name:a.name):''});
 if(p.fk==='switch')t=fm(pk(S,v.line==='night'&&D.GONE_NIGHT?D.GONE_NIGHT:D.GONE),{a:p.name});
+if(p.fk==='switch'&&p.followed&&p.state!=='awake'&&D.FATE_FOLLOW_SW)t=fm(pk(S,D.FATE_FOLLOW_SW),{a:p.name,c:duo?(p===a?b.name:a.name):''});
 say(S,{actors:[p],tag:'その後',text:t,why:p.name+'の結末：'+p.fate});
 lines.push(p.name+'（'+p.roleLabel+'）：'+p.fate);
 });
 if(duo){
 var away=P.some(function(p){return p.gone;});
-var k2=S.bonded&& !away?'bond':S.bodied&& !away&&D.FATE2_BODY?'body':S.bothOff&& !away?'bothOff':P.some(function(p){return p.triedDuo;})?'tried':'';
+var k2=S.bonded&& !away?'bond':S.bodied&& !away&&D.FATE2_BODY?'body':S.bothOff&& !away?'bothOff':S.linkOff&&D.FATE2.linkOff&&P.some(function(p){return p.state==='awake';})?'linkOff':P.some(function(p){return p.triedDuo;})?'tried':'';
 if(S.mode==='rescue'&&S.rescueNight&&S.bonded&& !away)k2='bond';
 if(away)k2='';
 if(k2){
-var w=k2==='tried'?P.filter(function(p){return p.triedDuo;})[0]:a,c=w===a?b:a;
+var w=k2==='tried'?P.filter(function(p){return p.triedDuo;})[0]:k2==='linkOff'?P.filter(function(p){return p.state==='awake';})[0]:a,c=w===a?b:a;
 var f2=k2==='body'?D.FATE2_BODY:v.line==='night'&&D.FATE2_NIGHT&&D.FATE2_NIGHT[k2]?D.FATE2_NIGHT[k2]:D.FATE2[k2];
-say(S,{actors:[a,b],tag:'ふたり',text:fm(pk(S,f2),{a:w.name,c:c.name}),why:{bond:'連れと結ばれた',body:'連れと体を重ねた（'+relJa(S,S.rel)+'のまま）',bothOff:'二人で気づいて降りた',tried:'一人だけ覚めて、連れに気づかせようとした'}[k2]});
-lines.push({bond:a.name+'と'+b.name+'：連れと結ばれた',body:a.name+'と'+b.name+'：連れと体を重ねた（'+relJa(S,S.rel)+'のまま）',bothOff:a.name+'と'+b.name+'：二人で気づいて降りた',tried:w.name+'：一人だけ覚めて、'+c.name+'に気づかせようとした'}[k2]);
+say(S,{actors:[a,b],tag:'ふたり',text:fm(pk(S,f2),{a:w.name,c:c.name}),why:{bond:'連れと結ばれた',body:'連れと体を重ねた（'+relJa(S,S.rel)+'のまま）',bothOff:'二人で気づいて降りた',tried:'一人だけ覚めて、連れに気づかせようとした',linkOff:'気づいた連れと、もう一人も一緒に降りた'}[k2]});
+lines.push({bond:a.name+'と'+b.name+'：連れと結ばれた',body:a.name+'と'+b.name+'：連れと体を重ねた（'+relJa(S,S.rel)+'のまま）',bothOff:a.name+'と'+b.name+'：二人で気づいて降りた',tried:w.name+'：一人だけ覚めて、'+c.name+'に気づかせようとした',linkOff:w.name+'と'+c.name+'：'+w.name+'が気づき、'+c.name+'も一緒に降りた'}[k2]);
 }
 if(!S.pairOk&&(S.mode==='rescue'||v.partner==='pair')){
 var dd=HK.Pos&&HK.Pos.noSexInfo?HK.Pos.noSexInfo(a,b,{room:false,lib:true,ties:input.ties}):null;
@@ -2314,6 +2491,7 @@ var woke=P.filter(function(p){return p.state==='awake';}),sank=P.filter(function
 if(duo&&S.bonded)title=a.name+'と'+b.name+'は、満員電車の常識の中で結ばれた。';
 else if(duo&&S.bodied&& !P.some(function(p){return p.gone;}))title=a.name+'と'+b.name+'は、満員電車の常識の中で体を重ねた。';
 else if(duo&&S.bothOff)title=a.name+'と'+b.name+'は、二人で気づいて電車を降りた。';
+else if(duo&&S.linkOff&&woke.length===1)title=woke[0].name+'が気づき、'+P.filter(function(p){return woke.indexOf(p)<0;})[0].name+'も一緒に電車を降りた。';
 else if(woke.length===P.length)title=names(woke)+(P.length>1?'は二人とも':'は')+'、違和感に気づいて覚めた。';
 else if(woke.length)title=names(woke)+'だけが覚めた。'+names(P.filter(function(p){return woke.indexOf(p)<0;}))+'は、今日も同じ車両に乗っている。';
 else if(melt.length===P.length)title='「'+LN.name+'」は今日も満員。'+names(P)+'は、常識にすっかり馴染んだ ― 「次の駅まで、もう一度」';
@@ -2345,7 +2523,11 @@ function names(l){return l.map(function(p){return p.name;}).join('・');}
 })();
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-train.9bc377215e.js
+HK.Load.def(532.5,'tone:scen-train',function(){
+========
 HK.Load.def(543.5,'tone:scen-train',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-train.7a60590ef1.js
 HK.Load.toneData("ane",{"F":[
 ["……もう少しだけ、お願いしてもいい？","……もう少しだけ、お願いしてもいいかしら"],
 ["ゆっくり飲んで。落ち着くまで、ここにいるから","ゆっくり飲みなさいな。落ち着くまで、ここにいてあげるわ"],
@@ -2467,4 +2649,8 @@ HK.Load.toneData("tsun_soft",{"F":[
 HK.Load.toneData("keigo_bossy",{"F":[
 ["ごめん、ここまでにさせて","もう結構です。ここまでになさい"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-train.9bc377215e.js
+HK.Load.done('scen-train', '9bc377215e', 1);
+========
 HK.Load.done('scen-train', '7a60590ef1', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-train.7a60590ef1.js

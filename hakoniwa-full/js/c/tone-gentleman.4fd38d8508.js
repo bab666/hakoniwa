@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-gentleman.ef0e89c22a.js
+HK.Load.def(713,'tone:gentleman',function(){
+========
 HK.Load.def(724,'tone:gentleman',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-gentleman.4fd38d8508.js
 HK.Load.toneData("gentleman",{"F":[
 ["……〈〉？　分かるか、私だよ","……〈〉かい？　分かるかね、私だよ"],
 ["……やめておけ。あとで後悔するのはお前だ","……やめておきたまえ。あとで後悔するのは君のほうだ"],
@@ -865,4 +869,8 @@ HK.Load.toneData("gentleman",{"F":[
 "想定外だ":"想定外だよ",
 "……だめ、だ……っ、これ……":"……だめ、だよ……っ、これは……"}});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-gentleman.ef0e89c22a.js
+HK.Load.done('tone-gentleman', 'ef0e89c22a', 1);
+========
 HK.Load.done('tone-gentleman', '4fd38d8508', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-gentleman.4fd38d8508.js

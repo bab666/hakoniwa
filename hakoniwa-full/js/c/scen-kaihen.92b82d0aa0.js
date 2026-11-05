@@ -2069,7 +2069,11 @@ free:{acc:0.45},shy:{daze:0.3,con:0.2},polite:{con:0.2,rej:0.2}
 });
 ;
 /* ==== js/solo-erotic-more-a.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-kaihen.96433c7f37.js
+HK.Load.def(539,'js/solo-erotic-more-a.js',function(){
+========
 HK.Load.def(550,'js/solo-erotic-more-a.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-kaihen.92b82d0aa0.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2163,7 +2167,11 @@ if(LN[k]&&S.lines)Object.keys(LN[k]).forEach(function(f){if(S.lines[f])add(S.lin
 });
 ;
 /* ==== js/kaihen-ero3-r18.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-kaihen.96433c7f37.js
+HK.Load.def(547,'js/kaihen-ero3-r18.js',function(){
+========
 HK.Load.def(558,'js/kaihen-ero3-r18.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-kaihen.92b82d0aa0.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2219,7 +2227,11 @@ e:L('{a}は{b}の上で腰を沈めたまま、{後ろ}に指をずぷりと差�
 })();
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-kaihen.96433c7f37.js
+HK.Load.def(547.5,'tone:scen-kaihen',function(){
+========
 HK.Load.def(558.5,'tone:scen-kaihen',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-kaihen.92b82d0aa0.js
 HK.Load.toneData("stern",{"F":[
 ["お客様、こちらへ。わたくしがご案内いたします","お客様、こちらへ。私が案内する"],
 ["お客様、本日の流れをご説明いたします。わたくしの指示に従ってくださいませ","お客様、本日の流れを説明する。私の指示に従ってもらう"],
@@ -6333,4 +6345,8 @@ HK.Load.toneData("darui_talk",{"F":[
 ["音が聞こえたら、手を上げてくださいね","音が聞こえたら、手、上げて"],
 ["……そっか。ここでは、これが普通なんだね","……そっか。ここじゃ、これが普通なんだ。……まあ、どうでもいいけど"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-kaihen.96433c7f37.js
+HK.Load.done('scen-kaihen', '96433c7f37', 1);
+========
 HK.Load.done('scen-kaihen', '92b82d0aa0', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-kaihen.92b82d0aa0.js

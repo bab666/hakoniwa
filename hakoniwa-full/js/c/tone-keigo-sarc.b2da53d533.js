@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-keigo-sarc.b08783e8fe.js
+HK.Load.def(713,'tone:keigo_sarc',function(){
+========
 HK.Load.def(724,'tone:keigo_sarc',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-keigo-sarc.b2da53d533.js
 HK.Load.toneData("keigo_sarc",{"F":[
 ["私は〈〉。よろしくね","〈〉です。……それが何か"],
 ["え、それ聞いてない","聞いていませんが"],
@@ -58,4 +62,8 @@ HK.Load.toneData("keigo_sarc",{"F":[
 ["ここがいいんだろ。顔に出てる","ここがいいんでしょう。顔に出ていますが"],
 ["今、自分から追いかけたね","今、自分から追いかけましたね"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-keigo-sarc.b08783e8fe.js
+HK.Load.done('tone-keigo-sarc', 'b08783e8fe', 1);
+========
 HK.Load.done('tone-keigo-sarc', 'b2da53d533', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-keigo-sarc.b2da53d533.js

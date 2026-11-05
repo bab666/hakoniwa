@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-tsun-n.8af6d36368.js
+HK.Load.def(713,'tone:tsun_n',function(){
+========
 HK.Load.def(724,'tone:tsun_n',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-tsun-n.54a46b438a.js
 HK.Load.toneData("tsun_n",{"F":[
 ["――〈〉さん。あなたです","――〈〉。あんただよ"],
 ["……ありがと。い、一回しか言わないからね","……ありがと。い、一回しか言わないから"],
@@ -199,4 +203,8 @@ HK.Load.toneData("tsun_n",{"F":[
 "だめ",
 "や、だ……っ、イっちゃう、ってば……っ"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-tsun-n.8af6d36368.js
+HK.Load.done('tone-tsun-n', '8af6d36368', 1);
+========
 HK.Load.done('tone-tsun-n', '54a46b438a', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-tsun-n.54a46b438a.js

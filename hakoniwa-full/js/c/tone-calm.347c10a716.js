@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-calm.83168d05dd.js
+HK.Load.def(713,'tone:calm',function(){
+========
 HK.Load.def(724,'tone:calm',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-calm.347c10a716.js
 HK.Load.toneData("calm",{"F":[
 ["……記録しておく。あとで説明がつくかもしれない","……覚えておく。あとで分かるかもしれない"],
 ["…平気。平気だから、そんな顔すんな","…平気。平気だから、そんな顔しなくていい"],
@@ -257,4 +261,8 @@ HK.Load.toneData("calm",{"F":[
 "S":[
 "待って。今は、出ることが先"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-calm.83168d05dd.js
+HK.Load.done('tone-calm', '83168d05dd', 1);
+========
 HK.Load.done('tone-calm', '347c10a716', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-calm.347c10a716.js

@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-kansai.9891e32836.js
+HK.Load.def(713,'tone:kansai',function(){
+========
 HK.Load.def(724,'tone:kansai',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-kansai.11042a066a.js
 HK.Load.toneData("kansai",{"F":[
 ["……ありがと。い、一回しか言わないからね","……ありがと。い、一回しか言わへんからね"],
 ["……ちっ。仕方ねえな","……ちっ。しゃあないな"],
@@ -461,6 +465,7 @@ HK.Load.toneData("kansai",{"F":[
 ["たまには、私だってわがまま言いたいの","たまには、私かてわがまま言いたいねん"],
 ["心配いらない。自分のことは自分でできる","心配いらんて。自分のことは自分でできるわ"],
 ["……別に。話したかっただけ","……別に。話したかっただけや"],
+["……〈〉がそこまで言うなら","……〈〉がそこまで言うんやったら"],
 ["うん。あなたと一緒なら、怖くない","うん。あなたと一緒やったら、怖ない"],
 ["私、〈〉といると、なんか落ち着く","なんや、〈〉とおると落ち着くわ"],
 ["……今の、ちょっとかわいかった","……なんや、かわいいとこあるやん"],
@@ -1766,4 +1771,8 @@ HK.Load.toneData("kansai",{"F":[
 "yay":"やったで！",
 "go":"行こか"}});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-kansai.9891e32836.js
+HK.Load.done('tone-kansai', '9891e32836', 1);
+========
 HK.Load.done('tone-kansai', '11042a066a', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-kansai.11042a066a.js

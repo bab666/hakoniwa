@@ -715,6 +715,7 @@ js/solo-train-mob.js @scen:train
 js/solo-train-text2.js @scen:train
 js/solo-train-text3.js @scen:train
 js/solo-train-text4.js @scen:train
+js/solo-train-text5.js @scen:train
 js/solo-train.js @scen:train
 js/solo-succubus-types.js @scen:succubus
 js/solo-succubus-ero.js @scen:succubus

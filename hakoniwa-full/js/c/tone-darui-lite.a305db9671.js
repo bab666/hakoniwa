@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-darui-lite.9480878502.js
+HK.Load.def(713,'tone:darui_lite',function(){
+========
 HK.Load.def(724,'tone:darui_lite',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-darui-lite.a305db9671.js
 HK.Load.toneData("darui_lite",{"F":[
 ["ごめんね。……私、もう、できない","ごめん。私、もう、できない"],
 ["いい顔してる。……覚えておくよ","いい顔してる。……覚えとく"],
@@ -238,4 +242,8 @@ HK.Load.toneData("darui_lite",{"F":[
 "先にいっちゃったね。……何回？",
 "〈〉、〈〉。……また、三人でいようね"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-darui-lite.9480878502.js
+HK.Load.done('tone-darui-lite', '9480878502', 1);
+========
 HK.Load.done('tone-darui-lite', 'a305db9671', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-darui-lite.a305db9671.js

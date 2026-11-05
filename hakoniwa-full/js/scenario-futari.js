@@ -88,6 +88,11 @@
     if (f.t !== 3 && /寝る前|眠る前|おやすみ/.test(t) && !/昨夜|ゆうべ|今夜|夜に/.test(t) && f.t !== 2) return false;
     if (f.day === 0 && f.t <= 2 && /夜中|昨夜|ゆうべ|夜更かし|夜遅く|夜の長電話/.test(t)) return false;
     if (f.day === 0 && /色あせ|すっかり慣れ|何度目/.test(t)) return false;
+    /* 通し読み 1105：入居の日に「いつもの朝」「いつの間にか」、夏に温かい缶のお茶・「寒い」、はじめからの恋人に「家賃を半分ずつ出す、というだけの約束」 */
+    if (f.day === 0 && /いつもの朝|いつもの夜|いつの間にか/.test(t)) return false;
+    if (HK.FutariDays && HK.FutariDays.noonUsed && /昼|仕事|会議|外回り|エレベーター/.test(t) && HK.FutariDays.noonUsed(ctx, t)) return false;
+    if (ctx.env && ctx.env.season === 'summer' && /温かい缶|温めた牛乳|「寒い|寒い。早く/.test(t)) return false;
+    if (/というだけの約束で始まった|今日が二度目/.test(t) && pairs(ctx).some(function (q) { return stOf(ctx, q[0], q[1]).preset; })) return false;
     if (f.liv !== 'apart' && T_APART.test(t)) return false;
     var tw = dateOf(ctx.env, f.day + 1).w;
     if (tw !== 0 && tw !== 6 && /明日(?:は|、)?休み|休日の前|明日、?お休み|明日休み/.test(t)) return false;
@@ -120,7 +125,7 @@
     share: L('シェアハウスの入居日。共用の居間で、{a}と{b}は初めて顔を合わせた。|{a}がシェアハウスの玄関を開けると、{b}がお茶を淹れていた。{b}「ちょうどよかった。一杯、飲む？｜ちょうどよかった。一杯、飲むか？｜ちょうどよかったです。一杯、飲みますか？」|シェアハウスの共用の台所で、{a}と{b}は同じ棚を使うことになった。最初の会話は、調味料の置き場所だった。'),
     share3: L('シェアハウスの入居日。共用の居間に、{a}と{b}と{c}の三人がそろった。誰からともなく、自己紹介が始まった。|{a}と{b}と{c}は、同じ日にこの家に越してきた。廊下で段ボールがぶつかって、三人とも笑った。|新しい家の最初の朝、三人は共用の台所でトーストを焼いた。{c}が「今日から、よろしく｜今日から、よろしく頼む｜今日から、よろしくお願いします」と言って、{a}と{b}も頭を下げた。'),
     third: L('{c}は、{a}の古くからの友人だった。{a}の話によく出てくる{b}のことが、少しだけ気になっていた。|{c}は、{a}と{b}がよく行くカフェの常連だった。三人が話すようになるまで、時間はかからなかった。|{c}は、{b}の昔なじみだった。久しぶりに会った{c}は、{b}の隣にいる{a}を、興味深そうに眺めた。'),
-    tie: L('{a}と{b}は、{rel}だ。今日からの毎日も、たぶんいつもどおりに始まる。|{a}と{b}は{rel}として、もうしばらくの時間を一緒に過ごしてきた。|{rel}の{a}と{b}の、いつもの朝が始まった。'),
+    tie: L('{a}と{b}は、{rel}だ。今日からの毎日も、たぶんいつもどおりに始まる。|{a}と{b}は{rel}として、もうしばらくの時間を一緒に過ごしてきた。|{rel}の{a}と{b}の、同じ家での最初の朝が始まった。'),
     lovers: L('{a}と{b}は、付き合ってもうしばらくになる恋人どうしだ。今日から、同じ家に帰る毎日が始まる。|恋人の{a}と{b}は、今日から同じ家で暮らす。玄関に並んだ二足の靴を見て、二人は少し照れくさそうに笑った。|{a}と{b}は、付き合い始めた頃から「いつか一緒に住もう」と話していた。その「いつか」が、今日だった。')
   };
   var FRIEND = {
@@ -240,15 +245,15 @@
     polite: '{a}は{b}の前で深く頭を下げた。{a}「さっきは、ごめん｜先ほどは、すまなかった｜先ほどは、すみませんでした」――{b}は、つい笑ってしまった。|{a}「改めて、ちゃんと話させて｜改めて、話をさせてくれ｜改めて、お話しさせてください」――{a}の丁寧な謝罪に、{b}の怒りもほどけていった。|{a}は仲直りの印に、{b}の好きな店の菓子を用意していた。'
   });
   var JEAL2 = P9({
-    proud: '{a}は、{b}のスマホに届いた{who}からの連絡を横目で見た。{a}「……ずいぶん仲がいいんだな」|{a}「{who}の話、今日で三回目だ」――{a}は不機嫌そうに腕を組んだ。やきもちだった。|{a}は{b}を自分のほうへ引き寄せた。{a}「{who}のことは、もういいだろ」',
+    proud: '{a}は、{b}のスマホに届いた{who}からの連絡を横目で見た。{a}「……ずいぶん仲がいいんだな」|{a}「{who}の話、今日で三回目だ」――{a}は不機嫌そうに腕を組んだ。やきもちだった。|{b}が{who}の話を始めると、{a}は{b}を自分のほうへ引き寄せた。{a}「{who}のことは、もういいだろ」',
     stern: '{a}「{who}とは、どういう知り合いなんだ」――{a}の声は静かだったが、眉間にしわが寄っていた。|{a}は{b}が{who}と話していた件について、事細かに確かめた。それが嫉妬だと、{a}自身も気づいていた。|{a}は黙って{b}の隣に座り直した。{who}の話が終わるまで、口をきかなかった。',
     tsun: '{a}「べつに{who}のことなんか気にしてないし！」――気にしているのは、誰の目にも明らかだった。|{a}は{who}の話を聞くたびに、むくれて頬をふくらませた。|{a}「{who}と私、どっちが大事なの」――言ったあとで、{a}は自分のやきもちに真っ赤になった。',
-    gentle: '{a}は{who}の話を笑って聞いていたが、少しだけ寂しそうだった。|{a}「{who}と仲がいいんだね。……ちょっとだけ、妬けちゃう」|{a}は{b}の手をそっと握って、{who}の話題を変えた。',
+    gentle: '{a}は{who}の話を笑って聞いていたが、少しだけ寂しそうだった。|{a}「{who}と仲がいいんだね。……ちょっとだけ、妬けちゃう」|{b}の口から{who}の名前が三度出たところで、{a}は{b}の手をそっと握って、話題を変えた。',
     devoted: '{a}は{b}が{who}と出かけた日、一日中そわそわしていた。|{a}「私より、{who}のほうがいいのかな……」――{a}は小さな声で呟いた。|{a}は{b}の顔を見るなり、袖をつかんだ。{a}「{who}とばっかり、ずるい」',
     cool: '{a}は{who}の話に相槌を打ちながら、ほんの少しだけ口数が減った。|{a}「そう。……覚えておく｜そうか。……覚えておく｜そうですか。……覚えておきます」――{who}の話を聞いた{a}の声は平坦だったが、それが嫉妬だと{b}は気づいた。|{a}は興味のないふりをして、{who}のことを根掘り葉掘り訊いた。',
     free: '{a}「えー、{who}とご飯？　ずるい、私も行く！」|{a}は{who}の話を聞いて、わざと大げさに拗ねてみせた。半分は本気だった。|{who}の話が続いたところで、{a}は{b}の頬をつまんだ。{a}「その話、しすぎ。今は私の番｜その話はしすぎだ。今は私の番だ｜そのお話、しすぎです。今は私の番です」',
     shy: '{a}は{who}の話を聞くたびに、うつむいて黙りこんだ。|{a}は{b}の服の裾をそっとつまんだ。{a}「……{who}より、私と、いて」|{a}は{who}への小さなやきもちを、どうしても口にできなかった。',
-    polite: '{a}「{who}さんとは、ずいぶん親しくなさっているのですね」――丁寧な言葉に、棘が混ざっていた。|{a}は微笑んだまま、{who}の話題を上手に切り上げた。|{a}「失礼。少し、妬いてしまいました」――{a}は素直に打ち明けた。'
+    polite: '{a}「{who}さんとは、ずいぶん親しくなさっているのですね」――丁寧な言葉に、棘が混ざっていた。|{b}の{who}の話が長くなると、{a}は微笑んだまま、その話題を上手に切り上げた。|{a}「失礼。少し、妬いてしまいました」――{a}は素直に打ち明けた。'
   });
   var WHO = ['職場の後輩', '昔の同級生', '行きつけの店の店員', '学生時代の友達', '取引先の人', 'ジムの知り合い'];
   var HAND = L('人混みの中で、{a}の指先が{b}の手に触れた。どちらからともなく、そのまま手をつないだ。|{b}「手、冷たいね｜手が、冷たい｜手、冷たいですね」――そう言って、{b}は{a}の手を自分の上着のポケットに入れた。|{a}は、つないだ手をどのくらいの強さで握ればいいのか分からなくて、ずっと同じ力のままだった。|信号待ちのあいだ、{a}と{b}の手の甲が何度もぶつかった。三回目で、{b}が{a}の手をつかんだ。');
@@ -392,6 +397,8 @@
     var e;
     /* 家を出て行っている人（gone）は、帰ってくるまでどの場面にも出さない（あとで出す場面 later も含む。不具合リスト 1104 の NO 6） */
     if ((o.actors || []).some(function (c) { return c && c.gone; })) return null;
+    /* 寝込んだ日の人は、その日は職場の場面に出さない（通し読み 1105） */
+    if (ctx.ft && ctx.ft.sick && typeof o.why === 'string' && /（[^）]*職場/.test(o.why) && (o.actors || []).some(function (c) { return c && ctx.ft.sick[c.i] === ctx.ft.day; })) return null;
     /* 旅に出ている人は、その日は家の場面に出さない（2026-11-04・遊んで確かめた報告 1104 の A7） */
     if (ctx.ft && ctx.ft.trip && typeof o.why === 'string' && /（[^）]*(?:自宅|シェアハウス|古い家)/.test(o.why) && (o.actors || []).some(function (c) { return c && onTrip(ctx, c); })) return null;
     /* 体だけの夜（free）・三人以上の場面（trioPairs）は、その印を記録の門（ctx.say の romanceOk）まで渡す（ctx.act2 は渡さない） */
@@ -467,9 +474,10 @@
     need: function (ctx, a, b) { return st(ctx, a, b) >= 3 && couple(ctx, a, b); },
     fx: function (ctx, a, b) { ctx.mod2(a, b, { aff: 3 }, { aff: 5, att: 3 }); }, why: function (ctx, a) { return '何でもない日の小さな贈り物（' + a.name + 'の優しさ）'; } });
   ev({ id: 'ft_tired', label: '疲れて帰った同居人を労う', cat: 'help', tm: 'en', w: 0.9, pool: function () { return TIRED; },
-    need: function (ctx, a, b) { return sameHome(ctx, a, b) && st(ctx, a, b) >= 1 && !ctx.ft.hol; },
+    /* 仕事帰りを迎える段（futari-life.js の ft_l_home）と同じ日に重ねない（通し読み 1105：同じ夕方に、二人がそれぞれ疲れて帰ってきて迎え合った） */
+    need: function (ctx, a, b) { return sameHome(ctx, a, b) && st(ctx, a, b) >= 1 && !ctx.ft.hol && ctx.ft.homeDay !== ctx.ft.day; },
     spot: function () { return '自宅の居間'; },
-    fx: function (ctx, a, b) { ctx.mod(b, a, { aff: 4, trust: 4 }); ctx.stress(b, -8); }, why: function (ctx, a, b) { return b.name + 'の一日の疲れを、' + a.name + 'が労った'; } });
+    fx: function (ctx, a, b) { ctx.ft.homeDay = ctx.ft.day; ctx.mod(b, a, { aff: 4, trust: 4 }); ctx.stress(b, -8); }, why: function (ctx, a, b) { return b.name + 'の一日の疲れを、' + a.name + 'が労った'; } });
   ev({ id: 'ft_season', label: '季節の小さな場面を二人で', cat: 'bond', tm: 'mden', w: 1.0, pool: function (ctx) { return SEASONT[seasonNow(ctx)]; },
     need: function (ctx, a, b) { return st(ctx, a, b) >= 1 && (ctx.ft.hol || ctx.ft.t !== 1); },
     fx: function (ctx, a, b) { ctx.mod2(a, b, { aff: 3, att: loveOk(ctx, a, b) ? 2 : 0 }, { aff: 3, att: loveOk(ctx, a, b) ? 2 : 0 }); }, why: function (ctx) { return { spring: '春', summer: '夏', autumn: '秋', winter: '冬' }[seasonNow(ctx)] + 'の日（' + dayLabel(ctx.env, ctx.ft.day) + '）'; } });
@@ -849,11 +857,14 @@
      性的に対象になる組（HK.Pos.okSex・HK.canLove の両方向・性行為の相手の固定。R18版は HK.Quad.wantOk）はすべて恋人、
      攻め同士・受け同士など対象にならない組は恋人でなくてよい（張りつめていなければ）。恋人の組が二つ以上（中心の人が二人と付き合っている）。
      四人なら、条件に合う三人の組から一つを選び、残りの一人は加わらない（left） */
-  function trioPairOk(ctx, x, y) {
+  function trioPairOk(ctx, x, y, hubRing) {
     if (!together(ctx, x, y) || !apOk(ctx, x, y)) return false;
     if (ctx.R(x, y).ten >= 50 || ctx.R(y, x).ten >= 50 || ctx.R(x, y).aff < 0 || ctx.R(y, x).aff < 0) return false;
     var Q = HK.Quad && !HK.SAFE_ON ? HK.Quad : null;
     if (Q && Q.hardOk && !Q.hardOk(ctx, x, y)) return false;
+    /* 受けを中心にした輪（残りの二組が恋人で、真ん中の人を共有している）なら、輪の外側の組は恋人でなくてよい（2026-11-05 の利用者の指摘：
+       A×B・C×B の恋人で、A と C が互いに対象になりうる組（おまかせどうし・リバと攻めなど）でも三人の夜が出なかった。A×C は三人の場面でも触れ合わない） */
+    if (hubRing) return true;
     var want = Q && Q.wantOk ? Q.wantOk(ctx, x, y) : loveOk(ctx, x, y) && (!HK.Pos || !HK.Pos.okSex || HK.Pos.okSex(x, y));
     /* 対象にならない組（攻め同士など）は、恋人でなくてよい（関係の設定に恋人と書いてあっても、恋愛対象の判定で恋人にならない組） */
     return want ? couple(ctx, x, y) && loveOk(ctx, x, y) : true;
@@ -863,8 +874,9 @@
     if (P.length < 3) return null;
     for (var i = 0; i < P.length; i++) for (var j = i + 1; j < P.length; j++) for (var k = j + 1; k < P.length; k++) {
       var M = [P[i], P[j], P[k]], Q3 = [[M[0], M[1]], [M[0], M[2]], [M[1], M[2]]];
-      if (!Q3.every(function (q) { return trioPairOk(ctx, q[0], q[1]); })) continue;
-      if (Q3.filter(function (q) { return couple(ctx, q[0], q[1]); }).length < 2) continue;
+      var nc = Q3.filter(function (q) { return couple(ctx, q[0], q[1]); }).length;
+      if (nc < 2) continue;
+      if (!Q3.every(function (q) { return trioPairOk(ctx, q[0], q[1], nc === 2 && !couple(ctx, q[0], q[1])); })) continue;
       out.push(M);
     }
     if (!out.length) return null;
@@ -901,7 +913,8 @@
     }
     /* 三人で円満な恋人たち：ときどき三人の夜（R18版）か、三人で並んで眠る（全年齢の一文） */
     var tg = trioOf(ctx);
-    if (tg && rng() < (R ? Math.min(0.6, (ctx.present().length >= 4 ? 0.15 : 0.22) * nk) : 0.15)) {
+    /* 三人の夜の割合（2026-11-05 計測：受けを中心にした三人で、夜の 3〜4 割） */
+    if (tg && rng() < (R ? Math.min(0.5, (ctx.present().length >= 4 ? 0.15 : 0.24) * nk) : 0.15)) {
       var g = tg.g, did = false;
       if (R && R.trio) did = trioNight(ctx, g, tg.left);
       if (!did) {
@@ -927,13 +940,13 @@
       if (!together(ctx, a, b)) { if (f.liv === 'apart' && x.s >= 2 && rng() < 0.28) msg(ctx, a, b, 'n'); return; }
       /* 勢いの一夜（R18版）：恋人ではないが恋愛にしてよい二人。起こりやすさは性欲と衝動性（HK.FreeSex.chance）。どちらかに恋人がいれば起こさない */
       if (R && !f.sexTonight && !couple(ctx, a, b) && loveOk(ctx, a, b) && HK.FreeSex && HK.FreeSex.chance && !(HK.State.freeSex && HK.State.freeSex(ctx, a, b)) &&
-        !(HK.Poly && (HK.Poly.lovers(ctx, a).length || HK.Poly.lovers(ctx, b).length)) && impulseReady(ctx, a, b) && rng() < HK.FreeSex.chance(ctx, a, b, 0.45) && impulseNight(ctx, a, b)) return;
+        !(HK.Poly && (HK.Poly.lovers(ctx, a).length || HK.Poly.lovers(ctx, b).length)) && impulseReady(ctx, a, b) && rng() < HK.FreeSex.chance(ctx, a, b, 0.45 * fkOf(a, b) * (stOf(ctx, a, b).impulse ? 1.6 : 1)) && impulseNight(ctx, a, b)) return;
       if (!couple(ctx, a, b) || !loveOk(ctx, a, b)) return;
       var pl = f.plan[k] || {}, trip = onTrip(ctx, a), first = !f.beds[k];
       /* 夜の起こりやすさ（HK.Pos.nightK。50 で 1・100 で 1.7）：100 なら必ず通す（不具合リスト 1104 の NO 6） */
       /* 描写の濃さ「濃い」の恋人は、夜を多めに（報告 2 回目の A9：恋人・濃いの回で 10 日に 1 回だけ） */
       var ch = (trip ? 0.95 : pl.visit ? 0.9 : first ? 0.6 : 0.32) * (HK.Lewd && HK.Lewd.high && HK.Lewd.high(ctx.env) ? 1.6 : 1);
-      ch = nk >= 1.69 ? 1 : Math.min(1, ch * nk);
+      ch = nk >= 1.69 ? 1 : Math.min(1, ch * nk * fkOf(a, b));
       if (rng() > ch) { f.slept[k] = f.day; return; }
       night(ctx, a, b, trip ? 'trip' : 'home', first);
     });
@@ -953,6 +966,9 @@
   }
   /* 勢いの一夜は、同居 4 日目以降・ぎこちなさが下がってから（「ぎこちなさ→慣れ→恋」の山を潰さない）。恋愛の進み「ゆっくり」は両片想いのあと、日数の半ばから。
      「早い」は 3 日目から（2026-11-04・遊んで確かめた報告 1104 の B16） */
+  /* 気持ちの関係（愛憎・劣等感・優越。HK.Pos.feelK）の二人は衝動が勝つ：勢いの一夜と恋人の夜の起こりやすさに掛ける。
+     恋人でない二人の二度目以降の勢いの夜は少し起きやすく（2026-11-05：性的な出来事の門の点検 sexgate の h・k） */
+  function fkOf(a, b) { return HK.Pos && HK.Pos.feelK ? Math.min(1.6, HK.Pos.feelK(a, b)) : 1; }
   function impulseReady(ctx, a, b) {
     var f = ctx.ft, x = stOf(ctx, a, b), H = HK.FutariHouse, aw = H && H.awk ? H.awk(ctx, a, b) : 0, pace = ctx.env && ctx.env.pace;
     if (pace === 'slow') return x.s >= 2 && f.day >= Math.round(f.days * 0.45) && aw <= 32;
@@ -966,7 +982,7 @@
     var r = HK.FutariR18.night(ctx, a, b, { stage: x.s, where: 'home', impulse: true, nth: f.r18[k] || 0, fwb: fwbTie(ctx, a, b) });
     if (!r || !r.text) return false;
     var le = sayLead(ctx, [r.a || a, r.b || b], r.lead);
-    var e = emit(ctx, { actors: [r.a || a, r.b || b], cat: 'romance', sex: true, text: r.text, why: W(ctx, '') + r.why, mag: 10, tag: 'impulse', fx: relFx(ctx, a, b, { att: 4, ten: 2 }, { att: 4, ten: 2 }) });
+    var e = emit(ctx, { actors: [r.a || a, r.b || b], cat: 'romance', sex: true, lewd: r.lewd, text: r.text, why: W(ctx, '') + r.why, mag: 10, tag: 'impulse', fx: relFx(ctx, a, b, { att: 4, ten: 2 }, { att: 4, ten: 2 }) });
     if (!e) { unLead(ctx, le); return false; }
     f.sexTonight = true; x.impulse = (x.impulse || 0) + 1;
     pf.nights = (pf.nights || 0) + 1; f.r18[k] = (f.r18[k] || 0) + 1;
@@ -978,7 +994,7 @@
     var r = HK.FutariR18 && !HK.SAFE_ON ? HK.FutariR18.night(ctx, a, b, { stage: x.s, where: 'home', free: true, nth: f.r18[k] || 0, fwb: fwbTie(ctx, a, b) }) : null;
     if (!r || !r.text) return false;
     var le = sayLead(ctx, [r.a || a, r.b || b], r.lead);
-    var e = emit(ctx, { actors: [r.a || a, r.b || b], cat: 'romance', sex: true, free: true, text: r.text, why: W(ctx, '') + HK.FreeSex.why(a, b) + '／' + r.why, mag: 10, tag: 'free', fx: relFx(ctx, a, b, { aff: 2 }, { aff: 2 }) });
+    var e = emit(ctx, { actors: [r.a || a, r.b || b], cat: 'romance', sex: true, free: true, lewd: r.lewd, text: r.text, why: W(ctx, '') + HK.FreeSex.why(a, b) + '／' + r.why, mag: 10, tag: 'free', fx: relFx(ctx, a, b, { aff: 2 }, { aff: 2 }) });
     if (!e) { unLead(ctx, le); return false; }
     f.sexTonight = true;
     pf.nights = (pf.nights || 0) + 1; f.r18[k] = (f.r18[k] || 0) + 1;
@@ -995,7 +1011,7 @@
     var done = false;
     if (r && r.text) {
       var le = sayLead(ctx, [r.a || a, r.b || b], r.lead);
-      var e = emit(ctx, { actors: [r.a || a, r.b || b], cat: 'romance', sex: true, text: r.text, why: W(ctx, where === 'trip' ? sp : r.spot || sp) + r.why, mag: 12, tag: 'night', fx: relFx(ctx, a, b, { aff: 3, att: 3, trust: 2 }, { aff: 3, att: 3, trust: 2 }) });
+      var e = emit(ctx, { actors: [r.a || a, r.b || b], cat: 'romance', sex: true, lewd: r.lewd, text: r.text, why: W(ctx, where === 'trip' ? sp : r.spot || sp) + r.why, mag: 12, tag: 'night', fx: relFx(ctx, a, b, { aff: 3, att: 3, trust: 2 }, { aff: 3, att: 3, trust: 2 }) });
       if (e) { done = true; f.sexTonight = true; pf.night = true; pf.nights = (pf.nights || 0) + 1; f.r18[k] = (f.r18[k] || 0) + 1; f.beds[k] = (f.beds[k] || 0) + 1; (f.bedDay = f.bedDay || {})[k] = f.day; }
       else unLead(ctx, le);
     }

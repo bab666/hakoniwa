@@ -1740,7 +1740,11 @@ SB.AGAIN=L('{spot}で、{a}は見覚えのある顔を見つけた。この前�
 });
 ;
 /* ==== js/solo-succubus-types.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-succubus.b19287f762.js
+HK.Load.def(533,'js/solo-succubus-types.js',function(){
+========
 HK.Load.def(544,'js/solo-succubus-types.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-succubus.439fe420f0.js
 (function(){
 'use strict';
 var HK=window.HK,SB=HK.SUCCUBUS;
@@ -1913,7 +1917,11 @@ return tpl.replace(/\{q\}/g,q);
 });
 ;
 /* ==== js/solo-succubus-ero.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-succubus.b19287f762.js
+HK.Load.def(534,'js/solo-succubus-ero.js',function(){
+========
 HK.Load.def(545,'js/solo-succubus-ero.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-succubus.439fe420f0.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2133,7 +2141,11 @@ HK.Ero.add('succubus',T2);
 });
 ;
 /* ==== js/solo-erotic-more-a-succubus.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-succubus.b19287f762.js
+HK.Load.def(540,'js/solo-erotic-more-a-succubus.js',function(){
+========
 HK.Load.def(551,'js/solo-erotic-more-a-succubus.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-succubus.439fe420f0.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2217,7 +2229,11 @@ Object.keys(AP).forEach(function(k){if(SB.STYLE[k])SB.STYLE[k].approach=SB.STYLE
 });
 ;
 /* ==== js/succubus-ero3-r18.js ==== */
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-succubus.b19287f762.js
+HK.Load.def(548,'js/succubus-ero3-r18.js',function(){
+========
 HK.Load.def(559,'js/succubus-ero3-r18.js',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-succubus.439fe420f0.js
 (function(){
 'use strict';
 var HK=window.HK;
@@ -2265,7 +2281,11 @@ e:L('{a}の尻尾が{b}の{男性器}の根元にきゅっと巻きつき、出�
 })();
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-succubus.b19287f762.js
+HK.Load.def(548.5,'tone:scen-succubus',function(){
+========
 HK.Load.def(559.5,'tone:scen-succubus',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-succubus.439fe420f0.js
 HK.Load.toneData("stern",{"F":[
 ["ごめんね、早い者勝ち","すまない、早い者勝ちだ"],
 ["や、約束……して、くれる……？　……い、いい子……","や、約束……してくれる、な……？　……い、いい子だ……"],
@@ -3744,4 +3764,8 @@ HK.Load.toneData("darui_talk",{"F":[
 ["まあ、そういう夜もあるよね","まあ、そういう夜もあるって。……知らないけど"],
 ["このままじゃ、獲物に逃げられるだけだね","このままじゃ、獲物に逃げられるだけだって。……知らないけど"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/scen-succubus.b19287f762.js
+HK.Load.done('scen-succubus', 'b19287f762', 1);
+========
 HK.Load.done('scen-succubus', '439fe420f0', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/scen-succubus.439fe420f0.js

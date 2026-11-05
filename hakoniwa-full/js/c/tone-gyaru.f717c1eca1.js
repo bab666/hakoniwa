@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-gyaru.ddbc46e2b5.js
+HK.Load.def(713,'tone:gyaru',function(){
+========
 HK.Load.def(724,'tone:gyaru',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-gyaru.f717c1eca1.js
 HK.Load.toneData("gyaru",{"F":[
 ["……悪くない","……悪くないかも"],
 ["…本気？","…マジ？"],
@@ -1127,4 +1131,8 @@ HK.Load.toneData("gyaru",{"F":[
 ["怖いのに……何をやっているんだ、私は","怖いのに……私、マジ何やってんだろ"],
 ["怖いのに……何をやっているんでしょう、私","怖いのに……私、マジ何やってんだろ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-gyaru.ddbc46e2b5.js
+HK.Load.done('tone-gyaru', 'ddbc46e2b5', 1);
+========
 HK.Load.done('tone-gyaru', 'f717c1eca1', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-gyaru.f717c1eca1.js

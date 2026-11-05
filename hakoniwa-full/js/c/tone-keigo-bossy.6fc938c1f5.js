@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-keigo-bossy.5068247716.js
+HK.Load.def(713,'tone:keigo_bossy',function(){
+========
 HK.Load.def(724,'tone:keigo_bossy',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-keigo-bossy.6fc938c1f5.js
 HK.Load.toneData("keigo_bossy",{"F":[
 ["私は〈〉。よろしくね","私は〈〉です。覚えておきなさい"],
 ["え、それ聞いてない","聞いていませんね。……誰の許可で"],
@@ -49,4 +53,8 @@ HK.Load.toneData("keigo_bossy",{"F":[
 ["ここがいいんだろ。顔に出てる","ここがいいんでしょう。顔に出ていますよ"],
 ["今、自分から追いかけたね","今、自分から追いかけましたね"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-keigo-bossy.5068247716.js
+HK.Load.done('tone-keigo-bossy', '5068247716', 1);
+========
 HK.Load.done('tone-keigo-bossy', '6fc938c1f5', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-keigo-bossy.6fc938c1f5.js

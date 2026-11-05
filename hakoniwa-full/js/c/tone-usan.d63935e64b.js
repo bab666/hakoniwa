@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-usan.57139bc30b.js
+HK.Load.def(713,'tone:usan',function(){
+========
 HK.Load.def(724,'tone:usan',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-usan.d63935e64b.js
 HK.Load.toneData("usan",{"F":[
 ["――〈〉さん。あなたです","――〈〉さん。あんただよ"],
 ["……〈〉さん。あなた、なんですね","……〈〉さん。あんた、だったんだねえ"],
@@ -654,4 +658,8 @@ HK.Load.toneData("usan",{"F":[
 ["したくなったから、した","したくなったから、しただけだよお"],
 ["もう、いじわる","おやおや、いじわるだねえ"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-usan.57139bc30b.js
+HK.Load.done('tone-usan', '57139bc30b', 1);
+========
 HK.Load.done('tone-usan', 'd63935e64b', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-usan.d63935e64b.js

@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-gentle-n.8ebac3a6b4.js
+HK.Load.def(713,'tone:gentle_n',function(){
+========
 HK.Load.def(724,'tone:gentle_n',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-gentle-n.9b43f8011c.js
 HK.Load.toneData("gentle_n",{"F":[
 ["……〈〉さん。あなた、なんですね","……〈〉さん。あなた、なんだね"],
 ["……ごめん、そこ、どいてくれる？　邪魔なの","……ごめん、そこ、どいてくれる？　ちょっと邪魔になってて"],
@@ -248,4 +252,8 @@ HK.Load.toneData("gentle_n",{"F":[
 "〈〉、無理しないで。ほら、座って",
 "大丈夫。何とかなるよ"]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-gentle-n.8ebac3a6b4.js
+HK.Load.done('tone-gentle-n', '8ebac3a6b4', 1);
+========
 HK.Load.done('tone-gentle-n', '9b43f8011c', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-gentle-n.9b43f8011c.js

@@ -1,5 +1,9 @@
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-base.0aec32a711.js
+HK.Load.def(713,'tone:stern',function(){
+========
 HK.Load.def(724,'tone:stern',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-base.93da6764e2.js
 HK.Load.toneData("stern",{"F":[
 ["βで良かったって、初めて思った","βで良かったと、初めて思った"],
 ["……ふうん、覚えておく","……そうか、覚えておく"],
@@ -403,7 +407,11 @@ HK.Load.toneData("stern",{"F":[
 "何が…起きて…"]});
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-base.0aec32a711.js
+HK.Load.def(713,'tone:polite',function(){
+========
 HK.Load.def(724,'tone:polite',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-base.93da6764e2.js
 HK.Load.toneData("polite",{"F":[
 ["……助かった","……助かりました"],
 ["〈〉――人間","〈〉さんは――人間です"],
@@ -1375,7 +1383,11 @@ HK.Load.toneData("polite",{"F":[
 "go":"行きましょう"}});
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-base.0aec32a711.js
+HK.Load.def(713,'tone:proud',function(){
+========
 HK.Load.def(724,'tone:proud',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-base.93da6764e2.js
 HK.Load.toneData("proud",{"F":[
 ["…いつもの？","…いつものか？"],
 ["あの、その…私、今日、楽しかった","……今日は、まあ、楽しかった。覚えとけ、一回しか言わねえからな",1],
@@ -1531,6 +1543,7 @@ HK.Load.toneData("proud",{"F":[
 ["さっきは私が悪かった。ごめん","さっきは私が悪かった。……すまん",1],
 ["ご自由に","勝手にしろ",1],
 ["真面目にやって","真面目にやれ",1],
+["考えすぎだよ","考えすぎだ",1],
 ["……何のこと？","……何のことだ？",1],
 ["恋人じゃなくて、こういう関係でいよう。お互い楽でしょ","恋人じゃなく、こういう関係でいい。お互い楽だろ",1],
 ["付き合ってほしい","……付き合え",1],
@@ -1623,7 +1636,11 @@ HK.Load.toneData("proud",{"F":[
 ["どうしてこうなったのか","なんでこうなったんだ"]]});
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-base.0aec32a711.js
+HK.Load.def(713,'tone:aniki',function(){
+========
 HK.Load.def(724,'tone:aniki',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-base.93da6764e2.js
 HK.Load.toneData("aniki",{"F":[
 ["……遅えんだよ。心配させやがって","……遅えんだよ、馬鹿。心配させやがって",1],
 ["…ごめんね","…ごめん"],
@@ -2207,7 +2224,11 @@ HK.Load.toneData("aniki",{"F":[
 "好きな食べ物って何？　答えろよ、暇なんだから"]});
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-base.0aec32a711.js
+HK.Load.def(713,'tone:tsun',function(){
+========
 HK.Load.def(724,'tone:tsun',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-base.93da6764e2.js
 HK.Load.toneData("tsun",{"F":[
 ["ありがと。じゃあ、隣で寝る","……ありがと。じゃ、じゃあ、隣で寝る"],
 ["いつもありがとう。本当は、すごく感謝してる","……いつも、ありがと。べ、別に、すっごく感謝してるとかじゃないから"],
@@ -2409,7 +2430,11 @@ HK.Load.toneData("tsun",{"F":[
 "……ありがと。い、一回しか言わないからね"]});
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-base.0aec32a711.js
+HK.Load.def(713,'tone:gentle',function(){
+========
 HK.Load.def(724,'tone:gentle',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-base.93da6764e2.js
 HK.Load.toneData("gentle",{"F":[
 ["……〈〉さん。あなた、なんですね","……〈〉さん。あなた、なんだね"],
 ["……ごめん、そこ、どいてくれる？　邪魔なの","……ごめんね、そこ、どいてもらえるかな。ちょっと邪魔なの"],
@@ -2643,7 +2668,11 @@ HK.Load.toneData("gentle",{"F":[
 ["困ったなあ","困ったね"]]});
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-base.0aec32a711.js
+HK.Load.def(713,'tone:devoted',function(){
+========
 HK.Load.def(724,'tone:devoted',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-base.93da6764e2.js
 HK.Load.toneData("devoted",{"F":[
 ["……〈〉？　分かるか、私だよ","……〈〉？　分かりますか、私ですよ"],
 ["……助かった","……助かりました"],
@@ -2959,7 +2988,11 @@ HK.Load.toneData("devoted",{"F":[
 "まあいいか"]});
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-base.0aec32a711.js
+HK.Load.def(713,'tone:cool',function(){
+========
 HK.Load.def(724,'tone:cool',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-base.93da6764e2.js
 HK.Load.toneData("cool",{"F":[
 ["βは気楽でいいよね","βは気楽でいいね"],
 ["…今日だけ、ですから","…今日だけ、だ"],
@@ -3281,7 +3314,11 @@ HK.Load.toneData("cool",{"F":[
 ["私が隣にいたりして","……私が隣にいる、という可能性もある",1]]});
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-base.0aec32a711.js
+HK.Load.def(713,'tone:free',function(){
+========
 HK.Load.def(724,'tone:free',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-base.93da6764e2.js
 HK.Load.toneData("free",{"F":[
 ["……ごめん","……ごめんね"],
 ["……悪くない","……悪くないじゃん！"],
@@ -3488,7 +3525,11 @@ HK.Load.toneData("free",{"F":[
 "…ごめんね"]});
 });
 ;
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-base.0aec32a711.js
+HK.Load.def(713,'tone:shy',function(){
+========
 HK.Load.def(724,'tone:shy',function(){
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-base.93da6764e2.js
 HK.Load.toneData("shy",{"F":[
 ["αならできて当然","α、なら……できて当然、なのかも……"],
 ["……〈〉？　分かるか、私だよ","……〈〉？　わ、分かる……？　私だよ……"],
@@ -3749,4 +3790,8 @@ HK.Load.toneData("shy",{"F":[
 ["〈〉がいてくれてよかった","〈〉が……い、いてくれて、よかった……",1],
 ["やった！　勝利は村人陣営のものだ！","や、やった……！　む、村人陣営の、勝ち……！"]]});
 });
+<<<<<<<< HEAD:hakoniwa-full/js/c/tone-base.0aec32a711.js
+HK.Load.done('tone-base', '0aec32a711', 1);
+========
 HK.Load.done('tone-base', '93da6764e2', 1);
+>>>>>>>> origin/main:hakoniwa-full/js/c/tone-base.93da6764e2.js
