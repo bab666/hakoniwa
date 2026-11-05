@@ -56,6 +56,12 @@
   function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   function choose(list, seed) { return list.length === 1 ? list[0] : list[hash(seed) % list.length]; }
   function yes(v) { return /^(はい|on|1|true|yes|○|する)$/i.test(String(v || '').trim()); }
+  /* 見本の箱の「当たった行・当たらなかった理由」（ui-tone-lab.js の HK.ToneLab）のための記録。T.trace が配列のときだけ足す（出力は変えない。2026-11-05） */
+  T.trace = null;
+  T.forceBase = null;
+  var HIT = null;
+  function trDec(s) { return HK.NameGuard && HK.NameGuard.stack && HK.NameGuard.stack.length ? HK.NameGuard.decAll(s) : s; }
+  function tr(o) { if (T.trace) T.trace.push(o); }
 
   /* ---------- 組み込みの口調がどのベースから作られるか ---------- */
   T.BASE = {
@@ -87,7 +93,8 @@
   T.pick = function (q, who, kg) {
     var s = T.split(q);
     if (!s) return { q: q, dict: null };
-    var tone = who && (HK.toneOf ? HK.toneOf(who) : who.tone), b = T.baseOf(tone, kg), q1 = s[b] || s.K;
+    /* T.forceBase：見本の箱（ui-tone-lab.js）が、3本のベースそれぞれを今の辞書で言い換えて見せるときだけ K／F／P を入れる（ふだんは null） */
+    var tone = who && (HK.toneOf ? HK.toneOf(who) : who.tone), b = T.forceBase && !kg ? T.forceBase : T.baseOf(tone, kg), q1 = s[b] || s.K;
     /* alts：選ばなかったベース（既存の書き下ろし辞書は元の文で引いてあるので、3本のどれかに一致すれば使う） */
     var alts = [s.K, s.F, s.P].filter(function (x, i, a) { return x && x !== q1 && a.indexOf(x) === i; });
     var d = kg ? null : T.dictOf(tone);
@@ -582,7 +589,7 @@
        終助詞・記号・文で終わる置き換え（ありがとう=ありがとな！・ごめん=ごめんね・すごい=すごいじゃん）は、これまでどおり重ねて当てない */
     if (core.slice(-1) === MARK) {
       var vm = core.match(VOCAB_END);
-      if (!vm || !VOCAB_TAIL.test(vm[1]) || /[。、！？!?…‥]/.test(vm[1])) return { body: body, punct: punct };
+      if (!vm || !VOCAB_TAIL.test(vm[1]) || /[。、！？!?…‥]/.test(vm[1])) { HIT = { mark: 1 }; return { body: body, punct: punct }; }
       core = core.slice(0, core.length - vm[0].length) + vm[1];
     }
     for (var j = 0; j < ends.length; j++) {
@@ -623,14 +630,15 @@
           if (ask && c !== from && (!/(?:か|の|かな|かい|かね|だい)[〜ー～ぁあ]*$/.test(c) || /[。、]/.test(c.replace(/^[…‥、]+/, '')))) return false;
           return true;
         });
-        if (!okc.length) return { body: body, punct: punct };
+        if (!okc.length) { HIT = { from: e[0], filt: 1 }; return { body: body, punct: punct }; }
         /* 一度だけ（規則）の下見：この文に「けどね」を足す候補が当てられるか（T.apply が、付けられる最後の文を探すのに使う）。
            文を足す候補（「た。……まあ、一応」「だよ。知らないけど」）は台詞の終わりに置く一言なので、下見では数えない（その口調は、これまでどおり最後の文だけ） */
         if (once && once.probe) return { canOnce: okc.some(function (c) { return !(/[。、]/.test(c.replace(/^[…‥、]+/, '')) && !/[。、]/.test(from)) && once.list.some(function (w) { return w && c.indexOf(w) >= 0 && from.indexOf(w) < 0; }); }) };
         if (avoid) { var ok2 = okc.filter(function (c) { return addedTail(from, c) !== avoid; }); if (ok2.length) okc = ok2; }
         /* 一度だけ（規則）：「けどね」を足す候補は、台詞の中でその語を付けられる最後の文（once.cur）で、まだ台詞にない（元の台詞にもない）ときだけ */
-        if (once && (once.used.length || !once.cur)) { var ok3 = okc.filter(function (c) { return !once.list.some(function (w) { return w && c.indexOf(w) >= 0 && from.indexOf(w) < 0; }); }); if (!ok3.length) return { body: body, punct: punct }; okc = ok3; }
+        if (once && (once.used.length || !once.cur)) { var ok3 = okc.filter(function (c) { return !once.list.some(function (w) { return w && c.indexOf(w) >= 0 && from.indexOf(w) < 0; }); }); if (!ok3.length) { HIT = { from: e[0], filt: 1 }; return { body: body, punct: punct }; } okc = ok3; }
         var to = okc.length === e[1].length ? choose(e[1], seed + '#e' + i) : choose(okc, seed + '#e' + i);
+        HIT = { from: e[0], to: to, n: e[1].length, same: to === from || to === e[0] };
         var added = addedTail(from, to);
         if (once) once.list.forEach(function (w) { if (w && to.indexOf(w) >= 0 && from.indexOf(w) < 0 && once.used.indexOf(w) < 0) once.used.push(w); });
         if (qm) { var tq = to.match(/[？?]+$/); to = to.replace(/[？?]+$/, ''); punct = (tq ? tq[0] : '') + punct.replace(/^[？?]+/, ''); }
@@ -655,6 +663,39 @@
       }
     }
     return { body: body, punct: punct };
+  }
+  /* ---------- 規則「文末に足す」（[文末] の「=だよ」・[規則] の 文末に足す=だよ。語尾の設定（かんたん）の「文末に足す」。2026-11-05） ----------
+     文末の項目がどれも当たらなかった文の終わりに語尾を足す（大丈夫。→大丈夫だよ。／分かった→分かったよ）。自然になるように：
+       ・問い（？）・言いよどみ（……・ー・〜・っ で終わる）・短い間投詞（うん・はい）・あいさつ（ありがとう・おはよう）には足さない
+       ・もう終助詞・敬語（よ・ね・な・さ・の・か・けど・から・です・ます・ください など）や助詞（に・を・が・は・と）で終わる文、同じ語尾で終わる文には足さない
+       ・「だ」で始まる語尾（だよ・だぜ・でござる・なのだ）は、名詞の後ろにはそのまま、動詞・形容詞の後ろには「だ」を外して付ける（分かった→分かったよ）。
+         「〜だ」で終わる文は「だ」を語尾と入れ替える（そうだ→そうだよ）。「〜んだ」「〜のだ」で終わる文には足さない */
+  var APP_COP = ['でござる', 'でござんす', 'であります', 'でやんす', 'でごわす', 'である', 'なのだ', 'なの', 'だ', 'じゃ', 'や'];
+  var APP_STOP = /(?:[よねなさのかしもぞぜわにをがはとへやゃ]|じゃん|けど|けれど|から|ので|のに|っす|です|ます|ません|ました|ましょう|でした|でしょう|でしょ|だろう|だろ|ください|ござる|ございます|って|たまえ|なさい|ナリ|ぞい)$/;
+  var APP_GREET = /(?:ただいま|おかえり|おはよう|おやすみ|ごめん|よろしく|こんにちは|こんばんは|いただきます|ごちそうさま|さようなら|じゃあね|またね|はい|うん|ええ|いいえ|お疲れさま|おつかれさま|お疲れ)$/;
+  function appendEnd(body, punct, list, seed) {
+    if (/^[？?]/.test(punct)) return null;
+    var st = splitTail(body), core = st[0].replace(new RegExp(MARK, 'g'), ''), tail = st[1];
+    if (/[…‥〜～ーっッ]/.test(tail) || !core || /[…‥、]$/.test(core)) return null;
+    var plain = core.replace(/^[…‥、\s　]+/, '');
+    if (plain.length < 2 || /^[ぁ-ゖァ-ヶー]{1,3}$/.test(plain) || GREET.test(plain) || APP_GREET.test(plain) || isQuestion(plain)) return null;
+    /* 言いさし・倒置（「似合ってるよ、その服」）には足さない */
+    if (/[よねなさわぞぜ]、/.test(plain)) return null;
+    var add = choose(list, seed);
+    if (!add || core.slice(-add.length) === add) return null;
+    var cop = '', rest = add;
+    for (var c = 0; c < APP_COP.length; c++) if (add.indexOf(APP_COP[c]) === 0) { cop = APP_COP[c]; rest = add.slice(cop.length); break; }
+    var b0 = core, to;
+    if (/[^んの]だ$/.test(core)) { if (APP_STOP.test(core.slice(0, -1))) return null; to = b0.slice(0, -1) + add; }
+    else if (/[んの]だ$/.test(core) || APP_STOP.test(core)) return null;
+    else if (/[うくぐすつぬぶむるいたてで]$/.test(core)) {
+      /* 動詞・形容詞・て形の後ろ：語尾の「だ」を外す（なのだ→のだ） */
+      var v = !cop ? add : cop === 'なのだ' ? 'のだ' + rest : cop === 'なの' ? 'の' + rest : /^で/.test(cop) ? add : rest;
+      if (!v) return null;
+      to = b0 + v;
+    }
+    else to = b0 + add;
+    return { body: to + tail, add: add };
   }
   var SET_PHRASE = /^(?:ありがとうございま(?:す|した)|よろしくお願いします|おはようございます|申し訳(?:あり|ござい)ません|おやすみなさい|お願いします|わかりました|分かりました|すみません|失礼します|了解です|大丈夫です|お疲れさまです|お疲れさまでした|ごめんなさい)$/;
   /* 敬語 → ため口（規則「短い文はため口」で使う組み込みの表。長いものから） */
@@ -739,40 +780,42 @@
     /* 重い台詞（死別・別れ・しんみりした思い出の言い切り）：勢いの「！」「よっしゃ」を足さない（熱血など） */
     var grave = GRIEF.test(q0);
     /* 規則（文の内側） */
+    var qr0 = q;
     if (r.prog) q = ruleProg(q, r.prog);
     if (r.exist) q = ruleExist(q, r.exist, r.neg);
     if (r.contract) q = ruleContract(q);
+    if (T.trace && q !== qr0) tr({ t: 'r', k: 'form' });
     /* 語彙 */
     if (d.words && d.words.length) {
       var re = d.wordsRe || (d.wordsRe = new RegExp(d.words.map(function (w) { return w[0]; }).sort(function (a, b) { return b.length - a.length; }).map(esc).join('|'), 'g'));
       var map = d.wordsMap || (d.wordsMap = d.words.reduce(function (m, w) { if (!m[w[0]]) m[w[0]] = w[1]; return m; }, {}));
-      var k = 0;
+      var k = 0, wx = function (m, why) { if (T.trace) tr({ t: 'wx', from: trDec(m), why: why }); return m; };
       /* 置き換えた語は印で包み、文末の処理（ます→っす など）が重ねて当たらないようにする */
       q = q.replace(re, function (m, at, all) {
         /* 「元=元」（同じ語）も、ほかの語と同じく印で包んで返す（文末の処理から守る）。短い語が長い語の中に当たらないようにも使える（ばかり=ばかり があれば「ばか」は「ばかり」に当たらない） */
         var nx = all.slice(at + m.length), cands = map[m];
         /* 重い台詞では、勢いを足す候補（ありがとう=ありがとな！・分かった=よっしゃ！）は使わない。残らなければ元のまま */
-        if (grave) { cands = cands.filter(function (c) { return !(/[！!]|よっしゃ/.test(c) && !/[！!]|よっしゃ/.test(m)); }); if (!cands.length) return m; }
+        if (grave) { cands = cands.filter(function (c) { return !(/[！!]|よっしゃ/.test(c) && !/[！!]|よっしゃ/.test(m)); }); if (!cands.length) return wx(m, 'grave'); }
         var to = choose(cands, seed + '#w' + (k + 1));
         /* 「ごめんだ」「御免だ」「ごめんこうむる」（断る）は謝りではない */
-        if (/^(?:ごめん|御免)/.test(m) && /^(?:だ|です|被|こうむ)/.test(nx)) return m;
+        if (/^(?:ごめん|御免)/.test(m) && /^(?:だ|です|被|こうむ)/.test(nx)) return wx(m, 'refuse');
         /* 「だ」で終わる語（だめだ=ならぬ）が「だめだった」「だめだろう」の頭に当たって「ならぬった」にならないように（言い換えが「だ」で終わるならよい） */
-        if (/だ$/.test(m) && !/だ$/.test(to) && /^[っろ]/.test(nx)) return m;
+        if (/だ$/.test(m) && !/だ$/.test(to) && /^[っろ]/.test(nx)) return wx(m, 'conj');
         /* 「！」で終わる言い換え（みんな=みんな！）の後ろにかなが続く（「みんなには」「そうだね」）なら当てない（「みんな！　には」にしない） */
-        if (/[！!？?]$/.test(to) && /^[ぁ-ゖー〜]/.test(nx.replace(new RegExp(MARK, 'g'), ''))) return m;
+        if (/[！!？?]$/.test(to) && /^[ぁ-ゖー〜]/.test(nx.replace(new RegExp(MARK, 'g'), ''))) return wx(m, 'cont');
         /* 語の続きを切らない：「食べた」の語が「食べたい」「食べたくて」に当たって「食ったい」にならないように */
-        if (/た$/.test(m) && /^(?:い|く|かっ|が[らりるれっ]|けれ)/.test(nx)) return m;
+        if (/た$/.test(m) && /^(?:い|く|かっ|が[らりるれっ]|けれ)/.test(nx)) return wx(m, 'conj');
         /* 「ごめん」「おやすみ」の語が「ごめんなさい」「おやすみなさい」に当たって「すまん！なさい」にならないように */
-        if (/^なさい/.test(nx)) return m;
+        if (/^なさい/.test(nx)) return wx(m, 'conj');
         /* 間投詞のようなかな2文字までの語（うん・はい・まあ・でも・おい・あら）は、語の中に当てない：「言うんだ」の「うん」、「おいしい」の「おい」、「それでも」の「でも」 */
-        if (/^[あいうえおはわまで][ぁ-ゖ]?$/.test(m) && (/^[ぁ-ゖ]/.test(nx) || /[ぁ-ゖ]$/.test(all.slice(0, at)))) return m;
+        if (/^[あいうえおはわまで][ぁ-ゖ]?$/.test(m) && (/^[ぁ-ゖ]/.test(nx) || /[ぁ-ゖ]$/.test(all.slice(0, at)))) return wx(m, 'inword');
         var pv = all.slice(0, at).replace(new RegExp(MARK, 'g'), '');
         /* 頭に間投詞を足す言い換え（ごめん=あー、ごめん・がんばる=まあ、がんばる）は、文の途中（「謝るの下手でごめん」）では足さない */
-        if (/^[^、。]{1,4}、/.test(to) && to.slice(to.indexOf('、') + 1).indexOf(m) === 0 && /[ぁ-ゖ一-鿿々ァ-ヶー、]$/.test(pv)) return m;
+        if (/^[^、。]{1,4}、/.test(to) && to.slice(to.indexOf('、') + 1).indexOf(m) === 0 && /[ぁ-ゖ一-鿿々ァ-ヶー、]$/.test(pv)) return wx(m, 'mid');
         /* 言いよどみの言い換え（すごい=す、すごい）は、元の文がもう同じ音で言いよどんでいれば重ねない（「す、す、すごい」にしない） */
-        if (/^[ぁ-ゖァ-ヶ][、…‥]/.test(to) && pv.slice(-2) === to.slice(0, 2)) return m;
+        if (/^[ぁ-ゖァ-ヶ][、…‥]/.test(to) && pv.slice(-2) === to.slice(0, 2)) return wx(m, 'dup');
         /* 言い換えの付け足しが、元の文の続きと重なる：「ごめん=ごめんね」が「ごめんね」に当たって「ごめんねね」にならないように */
-        if (to.length > m.length && to.indexOf(m) === 0) { var ad = to.slice(m.length).replace(/^[\s　]+/, ''); if (ad && /^[ぁ-ゖ〜ー]/.test(ad) && nx.indexOf(ad.charAt(0)) === 0) return m; }
+        if (to.length > m.length && to.indexOf(m) === 0) { var ad = to.slice(m.length).replace(/^[\s　]+/, ''); if (ad && /^[ぁ-ゖ〜ー]/.test(ad) && nx.indexOf(ad.charAt(0)) === 0) return wx(m, 'dup'); }
         /* 語彙が足した念押しの語尾（だめ=だめだよ・だめ=いけないよ・ごめん=ごめんね）は、語のすぐ後に続きがある（「ごめんねだから」「分かったよの」）・
            その文が問い（？）のときは外す：「だめだよ？」「いけないよかい？」にしない。読点・言い切りの前ではそのまま */
         var tl = to.match(/(?:だよ|なのさ|ねえ|よ|ね|ぞ|ぜ|わ|さ)[〜ー～]*$/);
@@ -781,6 +824,7 @@
           if (cont || ask) to = to.slice(0, to.length - tl[0].length).replace(/[、\s　]+$/, '');
         }
         k++;
+        if (T.trace) tr({ t: 'w', from: trDec(m), to: to });
         return MARK + to + MARK;
       });
       /* 文頭の語を消した（えっ=・うわ=）ときは、後ろの読点・感嘆符も消す（「、本当ですか」にしない） */
@@ -809,7 +853,9 @@
       if (r.neg) body = ruleNeg(body, r.neg);
       if (r.copula) body = ruleCopula(body, r.copula);
       if (r.drop) body = ruleDrop(body, r.drop, seed + i);
+      var bf0 = body;
       if (r.flat) body = ruleFlat(body, s.punct, r.flat, seed + '#' + i);
+      var flatCut = body !== bf0;
       /* 文末 */
       var punct = s.punct, core0 = splitTail(body)[0].replace(new RegExp(MARK, 'g'), '').replace(/^[…‥、\s　]+/, ''), coreLen = core0.length;
       /* 短い文はため口（敬語まじり）：決まり文句（ありがとうございます・よろしくお願いします など）、助詞のない短い一言、短い問いは、組み込みの敬語→ため口の表で崩す。それ以外は辞書の文末 */
@@ -824,7 +870,7 @@
         if (tw.body != null) { if (tw.lead) twLead = true; done = { body: tw.body.replace(new RegExp(MARK, 'g'), ''), punct: punct }; }
         else endsUse = twistEnds(d, tw.type, twNoQ);
       }
-      return { body: body, punct: punct, core0: core0, sc: sc, strong: strong, endsUse: endsUse, done: done };
+      return { body: body, punct: punct, core0: core0, sc: sc, strong: strong, endsUse: endsUse, done: done, flatCut: flatCut, raw0: T.trace ? splitTail(bf0)[0].replace(new RegExp(MARK, 'g'), '').replace(/^[…‥、\s　]+/, '') : '' };
     });
     /* 規則「一度だけ」の付け先：その語を足す候補を当てられる最後の文（2026-10-30 第5回。以前は台詞の最後の文だけで、最後の文が頼み「〜くださいまし」や「〜ますから」だと、
        前の文の「〜ですわ」がどこにも付かず素の敬語になった）。当てられる文が無ければ、これまでどおり最後の文 */
@@ -842,10 +888,15 @@
     }
     ss = ss.map(function (s, i) {
       var po = prep[i];
-      if (po.done) return po.done;
+      if (po.done) { if (T.trace) tr({ t: 'e', i: i, core: trDec(po.core0), raw: trDec(po.raw0), twist: 1 }); return po.done; }
       var body = po.body, punct = po.punct, core0 = po.core0, sc = po.sc, strong = po.strong, endsUse = po.endsUse;
       if (once) once.cur = i === onceAt;
+      HIT = null;
       var ap = applyEnds(body, punct, endsUse, seed, i, newRules(r), strong, prevTail, sc ? null : once, grave, hot || (dP && WARM.test(core0) ? 1 : 0), rests[i]);
+      var hit0 = HIT;
+      /* 規則「文末に足す」：文末の項目がどれも当たらなかった文（言い切りの規則で語尾を落とした文は除く）の終わりに足す */
+      if (r.append && !hit0 && !sc && endsUse === d.ends && !po.flatCut) { var apd = appendEnd(ap.body, ap.punct, r.append, seed + '#ap' + i); if (apd != null) { hit0 = { app: apd.add }; ap = { body: apd.body, punct: ap.punct, tail: '' }; } }
+      if (T.trace) tr({ t: 'e', i: i, core: trDec(core0), raw: trDec(po.raw0), hit: hit0, sc: !!sc, flat: !!po.flatCut, q: /^[？?]/.test(punct) });
       /* 「〜んだ」「〜なんだ」で終わった文の次の文には、「〜んだ」を足す候補を選ばない（「止まったんだ。もう止まっているんだ」にしない。2026-10-26 順151） */
       prevTail = ap.tail || (/[んの]だ$/.test(splitTail(ap.body.replace(new RegExp(MARK, 'g'), ''))[0]) ? 'んだ' : '');
       return { body: ap.body.replace(new RegExp(MARK, 'g'), ''), punct: ap.punct };
@@ -930,7 +981,7 @@
 
   /* ---------- 辞書の文字列を読む ---------- */
   var RULE_KEYS = { '否定': 'neg', '進行': 'prog', '断定': 'copula', '助詞落とし': 'drop', '縮約': 'contract', '強調語': 'emph', '強調語の割合': 'emphRate', '存在': 'exist', '短い文はため口': 'shortCasual', 'ため口を混ぜる': 'mixK', '皮肉の型': 'twistType',
-    '前置き': 'lead', '言い切りの前置き': 'leadS', '反応の前置き': 'leadR', '一度だけ': 'once', '前置きの割合': 'leadRate', '驚き': 'surprise', '笑い': 'laugh', '言い切り': 'flat', '動揺': 'shaken', '動揺の割合': 'shakenRate', '強い文の説明': 'strongExpl', '読点で切る': 'cutLen' };
+    '前置き': 'lead', '言い切りの前置き': 'leadS', '反応の前置き': 'leadR', '一度だけ': 'once', '前置きの割合': 'leadRate', '驚き': 'surprise', '笑い': 'laugh', '言い切り': 'flat', '動揺': 'shaken', '動揺の割合': 'shakenRate', '強い文の説明': 'strongExpl', '読点で切る': 'cutLen', '文末に足す': 'append' };
   var FX_KEYS = { '感嘆符を落とす': 'bangOff', '伸ばす': 'stretch', '言い切りに！': 'bangOn', '言い切りに!': 'bangOn', '短くする': 'short', '言いよどみ': 'stammer', '前に……': 'dots', '間を置く': 'pause' };
   /* 「元=先1／先2」の候補。空の候補（「です(い)=／です」の左側）は「消す」の意味で残す */
   function alts(v) { return String(v).split(/[／/]/).map(function (x) { return x.replace(/^\s+|\s+$/g, ''); }); }
@@ -967,6 +1018,9 @@
         sec = sm; return;
       }
       if (!cur) { out.errors.push((i + 1) + '行目：先に [口調] が要ります'); return; }
+      /* [文末] の「=だよ」「文末=だよ」（元が空）：規則「文末に足す」（文末の項目が当たらなかった文の終わりに足す。2026-11-05） */
+      var apm = sec === 'ends' && line.match(/^(?:文末|空欄)?[\s　]*[=＝][\s　]*(.*)$/);
+      if (apm) { var apv = alts(apm[1]).filter(Boolean); if (apv.length) cur.rules.append = (cur.rules.append || []).concat(apv).slice(0, 8); else out.errors.push((i + 1) + '行目：「=」の後ろに足す語尾を書いてください（例：=だよ）'); return; }
       /* 「元=先」の「=」は、かっこの外の最初の一つ（条件の後読み「(?<=…)」・先読み「(?=…)」の中の「=」で切らない。2026-10-30 第5回：以前は
          「だ((?<=[^…‥、]{4})…)=…」が「だ((?<」と「[^…‥、]{4})…=…」に切れて、その項目が効いていなかった） */
       var kv = (function (x) {
@@ -1012,7 +1066,7 @@
         else if (rk === 'contract') cur.rules.contract = yes(v);
         else if (rk === 'twistType') cur.rules.twistType = yes(v);
         else if (rk === 'emph') cur.rules.emph = alts(v);
-        else if (rk === 'lead' || rk === 'shaken' || rk === 'leadS' || rk === 'leadR' || rk === 'once') { var lv = alts(v).filter(Boolean); if (lv.length) cur.rules[rk] = lv; }
+        else if (rk === 'lead' || rk === 'shaken' || rk === 'leadS' || rk === 'leadR' || rk === 'once' || rk === 'append') { var lv = alts(v).filter(Boolean); if (lv.length) cur.rules[rk] = lv; }
         else if (rk === 'surprise' || rk === 'laugh') cur.rules[rk] = alts(v);   /* 空の候補は「消す」 */
         else if (rk === 'leadRate' || rk === 'shakenRate' || rk === 'flat') { var fr = parseFloat(v); if (fr >= 0) cur.rules[rk] = Math.min(1, fr); else out.errors.push((i + 1) + '行目：' + k + 'は 0〜1 の数'); }
         else if (rk === 'neg') { if (/^(ぬ|へん|ん)$/.test(v)) cur.rules.neg = v; else out.errors.push((i + 1) + '行目：否定は ぬ／へん／ん'); }
@@ -1083,7 +1137,7 @@
     var d = T.user[k] || T.dicts[k]; if (!d) return [];
     return SAMPLES.map(function (s) { var sp = T.split(s); return '「' + T.apply(sp[d.base] || sp.K, d, { name: '見本' }) + '」'; });
   };
-  T.help = function () { return '書き方：[口調] 名前=／ベース=K・F・P／一人称=／二人称=／態度=（省略可）。[文末] 元=先（／で候補）。[語彙] 元=先（「ばかり=ばかり」のように同じ語を書くと、短い語「ばか」がその長い語の中に当たらない）。[規則] 否定=ぬ・へん・ん／進行=ておる・とる／断定=や／助詞落とし=0.3／縮約=はい／ため口を混ぜる=0.15（ベース=P のとき、問い・感嘆・念押しの文を くだけた形に。言い切りの文は この割合で）／強調語=マジ／めっちゃ／前置き=フッ……。／やれやれ（前置きの割合=0.3）／言い切りの前置き=まあ、（言い切りの台詞だけ）／反応の前置き=へえ、／ほう、（〜ですね・〜ますね の台詞だけ）／一度だけ=けどね（足すのは台詞の最後の文に一度だけ）／驚き=なんと！／おお……（文頭の え・うそ・マジ などを置き換え。空なら消す）／笑い=フハハ（はは・ふふ などを置き換え。空なら消す）／言い切り=0.3（文末の よ・ね・さ・ぞ を落とす割合）／動揺=く……ッ！／バカな……！（「！」の強い文の頭に。動揺の割合=0.5）。[効果] 感嘆符を落とす・伸ばす・言い切りに！・短くする・言いよどみ=はい。\n※ 試作中：3本のベース（K｜F｜P）で書かれた台詞にだけ効きます。1本の台詞はこれまでの言い換えになります。'; };
+  T.help = function () { return '書き方：[口調] 名前=／ベース=K・F・P／一人称=／二人称=／態度=（省略可）。[文末] 元=先（／で候補。文の終わり＝「。！？」の手前だけ。長い項目が先に当たる）／=だよ（元を空にすると、どの項目も当たらなかった文の終わりに足す。大丈夫→大丈夫だよ・分かった→分かったよ。問い・敬語の文・もう語尾のある文には足さない）。[語彙] 元=先（「ばかり=ばかり」のように同じ語を書くと、短い語「ばか」がその長い語の中に当たらない）。[規則] 否定=ぬ・へん・ん／進行=ておる・とる／断定=や／助詞落とし=0.3／縮約=はい／ため口を混ぜる=0.15（ベース=P のとき、問い・感嘆・念押しの文を くだけた形に。言い切りの文は この割合で）／強調語=マジ／めっちゃ／前置き=フッ……。／やれやれ（前置きの割合=0.3）／言い切りの前置き=まあ、（言い切りの台詞だけ）／反応の前置き=へえ、／ほう、（〜ですね・〜ますね の台詞だけ）／一度だけ=けどね（足すのは台詞の最後の文に一度だけ）／驚き=なんと！／おお……（文頭の え・うそ・マジ などを置き換え。空なら消す）／笑い=フハハ（はは・ふふ などを置き換え。空なら消す）／言い切り=0.3（文末の よ・ね・さ・ぞ を落とす割合）／動揺=く……ッ！／バカな……！（「！」の強い文の頭に。動揺の割合=0.5）。[効果] 感嘆符を落とす・伸ばす・言い切りに！・短くする・言いよどみ=はい。[規則] 文末に足す=だよ も同じ。\n※ 台詞は「くだけた常体（K）・硬い常体（F）・敬語（P）」のどれかの文から作ります。どれから作るかは ベース= で決まり（書かなければ口調・語尾の設定から）、ほかの文にしかない語には当たりません（「です=でござる」は ベース=P のときだけ当たります）。下の「見本の台詞で試す」で、当たった行と当たらなかった理由を確かめられます。'; };
   T.sample = function () { return '[口調]\n名前=ですぞ侍\nベース=P\n一人称=拙者\n二人称=貴殿\n[文末]\nです=ですぞ／ですな\nですか=ですかな\nますか=ますかな\nました=ましたぞ\nません=ませぬ\nください=くだされ\n[語彙]\nありがとうございます=かたじけない\nすみません=面目ない\n[規則]\n否定=ぬ\n進行=ておる'; };
 
   /* ---------- 2026-11-04（口調の点検のやり直し。docs/reports/2026-11-04/tone-redo.md）：性別の語尾の仕上げ（V.genderEnd）の後ろに足す ----------
