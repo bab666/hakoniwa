@@ -1,3 +1,4 @@
+/* @event-ok 女性の攻め（男性器なし）×男性の受けの跨る・受け入れる文を、指と手（ペニバン）の文に直した（新しい出来事ではない。2026-11-05） */
 /* 箱庭シミュレーター（R18版のみ）― 夜の色（HK.EroFlavor）：甘々に偏った合意の夜を、性格と関係しだいで「ドライ」「大人の駆け引き」に分ける
    2026-10-28 担当KH。利用者の要望「全体的に甘々エッチが多いため、ドライだったり大人の駆け引きだったりが見られるエッチも 3P に限らず分岐・追加して。性格次第なら」
    ■ 色：'sweet' 甘め（今までどおり）／'dry' ドライ／'deal' 大人の駆け引き／'rough' 荒め（サドの夜・敵対の合意で荒い攻め。文は今までの荒い抱き方）
@@ -257,6 +258,10 @@
 
   /* ---------- 厚い山場の表の差し替え ---------- */
   function allKeys(orig, list) { var o = {}; Object.keys(orig || {}).forEach(function (k) { o[k] = list; }); return o; }
+  /* 女性の攻め（男性器なし）×男性の受けの感じる段（指と手。甘い語なし。2026-11-05） */
+  var FEEL_FM_N = '奥の膨らみを押し上げられるたびに、{b}の腰の奥から熱がせり上がった。\n\n{b}「{mb}」|前と後ろを同時に責められて、{b}は息をするのも忘れた。\n\n{b}「{mb}」|触れられてもいない{男性器}の先から、{先走り}が溢れていく。\n\n{b}「{mb}」'.split('|');
+  var FEEL_FM_E = '奥の膨らみを擦られるたびに、{b}の腰がびくびくと勝手に跳ねた。{b}「{mb1}」|前と後ろを同時に責められて、{b}の目の前がちかちかと白く瞬いた。{s:wet}。{b}「{mb1}」|触れられてもいない{男性器}の先から、{先走り}がとろとろと溢れていく。{b}「{mb1}」'.split('|');
+  var FEEL_A_FM = '{a}も、乱れていく{b}を見下ろすうちに、自分の息が熱くなっていた。|{a}の表情は変わらなかったが、首筋だけが赤かった。|{a}は{b}の反応を、ひとつも見逃さなかった。'.split('|');
   function swap(fl) {
     var D = HK.EROFLAVOR, N = D && D.NOVEL && D.NOVEL[fl], E = D && D.ERO && D.ERO[fl], T = HK.ThickSex, X = HK.ThickEro, saved = [];
     function put(obj, key, val) { if (!obj || obj[key] == null || !val) return; saved.push([obj, key, obj[key]]); obj[key] = val; }
@@ -266,8 +271,12 @@
       put(T, 'OPEN', allKeys(T.OPEN, N.open));
       put(T, 'BODY', allKeys(T.BODY, N.body.mf.concat(((T.BODY || {})[bk] || []).filter(notSweet))));
       put(T, 'CLIMAX', allKeys(T.CLIMAX, N.climax.mf));
-      put(T, 'FM_BODY', allKeys(T.FM_BODY, N.body.fm.concat(((T.FM_BODY || {}).dom || []).filter(notSweet))));
+      /* 女性の攻め（男性器なし）×男性：色の指と手の文だけ（共通の FM_BODY は跨る文なので混ぜない。2026-11-05） */
+      put(T, 'FM_BODY', allKeys(T.FM_BODY, N.body.fm));
       put(T, 'FM_CLIMAX', allKeys(T.FM_CLIMAX, N.climax.fm));
+      /* 感じる段も、指と手の文に（共通の表は跨る文。2026-11-05） */
+      put(T, 'FEEL_FM', FEEL_FM_N);
+      if (T.FEEL_A) put(T, 'FEEL_A', Object.assign({}, T.FEEL_A, { fm: FEEL_A_FM }));
       put(T, 'FF_BODY', allKeys(T.FF_BODY, N.body.ff.concat(((T.FF_BODY || {}).dom || []).filter(noMut))));
       put(T, 'FF_CLIMAX', allKeys(T.FF_CLIMAX, N.climax.ff.concat(((T.FF_CLIMAX || {}).dom || []).filter(noMut))));
     }
@@ -278,8 +287,9 @@
       var dl = fl === 'deal';
       put(X, 'BODY', allKeys(X.BODY, E.body.mf.concat(dl ? (X.BODY || {}).tease || [] : [])));
       put(X, 'CLIMAX', allKeys(X.CLIMAX, E.climax.mf.concat(dl ? (X.CLIMAX || {}).tease || [] : [])));
-      put(X, 'FM_BODY', allKeys(X.FM_BODY, E.body.fm.concat(((X.FM_BODY || {}).dom || []).filter(notSweet))));
-      put(X, 'FM_CLIMAX', allKeys(X.FM_CLIMAX, E.climax.fm.concat(dl ? ((X.FM_CLIMAX || {}).dom || []).filter(notSweet) : [])));
+      put(X, 'FM_BODY', allKeys(X.FM_BODY, E.body.fm));
+      put(X, 'FM_CLIMAX', allKeys(X.FM_CLIMAX, E.climax.fm));
+      if (X.FEEL) put(X, 'FEEL', Object.assign({}, X.FEEL, { fm: FEEL_FM_E }));
       put(X, 'FF_BODY', allKeys(X.FF_BODY, E.body.ff.concat(((X.FF_BODY || {}).dom || []).filter(noMut))));
       put(X, 'FF_CLIMAX', allKeys(X.FF_CLIMAX, E.climax.ff.concat(((X.FF_CLIMAX || {}).dom || []).filter(noMut))));
       put(X, 'SHORT', { mf: E.short.mf, fm: E.short.fm, ff: E.short.ff });
@@ -420,7 +430,7 @@
         var t = sx0.call(self, S, x, y, o2);
         if (typeof t !== 'string' || o2.short) return t;
         var od = HK.Pos && HK.Pos.order ? HK.Pos.order(x, y, [x, y]) : [x, y], P = HK.Pos;
-        var mode = P && P.isF && P.isF(od[0]) ? (P.isF(od[1]) ? 'ff' : 'fm') : 'mf', af = F.after(S, fl, mode);
+        var mode = P && P.isF && P.isF(od[0], od[1]) ? (P.isF(od[1], od[0]) ? 'ff' : 'fm') : 'mf', af = F.after(S, fl, mode);
         return af ? t + '\n\n' + af.replace(/\{a\}/g, nm(od[0])).replace(/\{b\}/g, nm(od[1])) : t;
       });
     };

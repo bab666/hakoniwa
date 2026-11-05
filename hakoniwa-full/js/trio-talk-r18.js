@@ -1,3 +1,4 @@
+/* @event-ok 女性の攻め（男性器なし）×男性の受けの跨る・受け入れる文を、指と手（ペニバン）の文に直した（新しい出来事ではない。2026-11-05） */
 /* @event-ok 三人の夜の女性の攻め×男性の受けの跨る文・後ろが埋まった受けへの指の文を、形と場面の状態で選ぶ文に直した（新しい出来事ではない。2026-11-05） */
 /* @event-ok 名前の呼びかけを減らした（2026-11-01 担当NC） */
 /* @event-ok 事後の返事を追加（2026-10-29 担当MS） */
@@ -860,12 +861,16 @@
     var memo = this.S._t3intro || (this.S._t3intro = {}), self = this, r = this.r3();
     /* 話し手の気の強さに合わない台詞は使わない（内気な人に命令・誘いの台詞、強気な人にためらいの台詞） */
     var fit = T.INTRO[sp.p].filter(function (q) { var w = r[q.r], tm = w ? temOf(w) : '', it = X.introTem(q.t); return w && !(tm && it && tm !== it); });
+    /* 一回の遊びで同じ台詞は 2 回まで（2026-11-05。数は S._t3introN に置く。使い切ったら導入の台詞を言わない） */
+    var cnt = this.S._t3introN || (this.S._t3introN = {});
+    fit = fit.filter(function (q) { return (cnt[q.t] || 0) < 2; });
     var ls = fit.filter(function (q) { var w = r[q.r]; return (memo[w.name] || []).indexOf(q.t) < 0; });
     if (!ls.length) ls = fit;
     if (!ls.length) return '';
     var q = ls[Math.floor(this.rand() * ls.length)], w = r[q.r];
     if (!w) return '';
     var mm = memo[w.name] || (memo[w.name] = []); mm.push(q.t); if (mm.length > 5) mm.shift();
+    cnt[q.t] = (cnt[q.t] || 0) + 1;
     var line = fill(q.t, r);
     return w.name + '「＠' + w.name + '＠' + line + '」';
   };

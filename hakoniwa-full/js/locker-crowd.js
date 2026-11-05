@@ -248,7 +248,15 @@
   }
   function hardTop(p) { return !!(HK.Pos && HK.Pos.hardTop(p)); }
   function isF(p) { return !!(HK.Pos && HK.Pos.isF(p)); }
-  function modeOf(t, u) { return isF(t) && isF(u) ? 'ff' : isF(t) ? 'fm' : 'ins'; }
+  /* 組の体（t＝攻め u＝受け）：ins＝男性器で挿れる（フタナリの攻めも）／fm＝女性の攻め（男性器なし）×男性の受け（指と手）／ff＝女性どうし。
+     性別だけでなく、二人の向きで見た体で決める（2026-11-05：リバ・おまかせの女性が攻めに回る組・おまかせのフタナリも。LK.fmOn） */
+  function modeOf(t, u) {
+    var P = HK.Pos;
+    if (!P) return 'ins';
+    if (P.isF(t, u) && P.isF(u, t)) return 'ff';
+    if (LK.fmOn && LK.fmOn(t, u)) return 'fm';
+    return P.isF(t, u) && !P.hasM(t) ? 'fm' : 'ins';
+  }
   /* 恋人（恋人・番・運命の番）がほかにいる人：その恋人以外とは、手を出す・応じるのを踏みとどまりやすい */
   function loyal(S, a, b) { return S.P.some(function (q) { return q !== a && q !== b && has(S, a, q, /^(lover|mate|fated)$/) && okLove(a, q); }); }
   function desperate(p) { return !!(HK.honmeiDesperate && HK.honmeiDesperate(null, p)); }
