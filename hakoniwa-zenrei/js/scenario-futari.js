@@ -317,11 +317,11 @@
   var FINAL = {
     0: L('{n}日目の夜。{a}と{b}は、まだ互いのことをよく知らないままだった。それでも、明日はもう少し話してみようと思った。|{n}日が過ぎても、{a}と{b}の距離はあまり変わらなかった。ただ、名前を呼ぶ声は、最初の日より自然になっていた。|最後の日、{a}は{b}に小さく会釈をした。{b}も、少しだけ笑って返した。'),
     1: L('{n}日目の夜。{a}と{b}は、いつものように「おやすみ｜おやすみ｜おやすみなさい」と言い合って、それぞれの部屋の扉を閉めた。それ以上でも、それ以下でもない、心地いい距離だった。|{n}日が過ぎても、{a}と{b}は友人のままだった。けれど、その友情は最初の日よりずっと深くなっていた。|最後の日、{a}と{b}は並んで夜空を眺めた。名前のない関係でも、隣にいるのが当たり前になっていた。'),
-    2: L('{n}日目の夜。{a}も{b}も、今日こそ言おうと思って、言えなかった。両片想いのまま、また明日が来る。|{a}と{b}は、最後まで想いを口にしなかった。それでも、互いの気持ちはすぐそこにあった。|{n}日目、{a}は{b}の背中を見送りながら、次こそは、と思った。{b}も同じことを思っていた。'),
+    2: L('{n}日目の夜。{a}も{b}も、今日こそ言おうと思って、言えなかった。想い合ったまま、また明日が来る。|{a}と{b}は、最後まで想いを口にしなかった。それでも、互いの気持ちはすぐそこにあった。|{n}日目、{a}は{b}の背中を見送りながら、次こそは、と思った。{b}も同じことを思っていた。'),
     3: L('{n}日目の夜。恋人になった{a}と{b}は、明日の約束をしてから、おやすみを言い合った。|{a}と{b}は、{n}日分の思い出を指折り数えた。恋人になってからの日々は、あっという間だった。|{n}日目、{b}は{a}の手を握って言った。{b}「明日も、明後日も、よろしく｜明日も、明後日も、よろしく頼む｜明日も、明後日も、よろしくお願いします」'),
     4: L('{n}日目の夜。同じ部屋の明かりを、{a}と{b}は二人で消した。|{a}と{b}の暮らす部屋には、{n}日分の暮らしの匂いがしみついていた。|{n}日目、{a}は二人分の食器を洗いながら、これが当たり前になったことを不思議に思った。'),
     5: L('{n}日目の夜。指輪をはめた手で、{a}と{b}はいつものようにおやすみを言い合った。|{a}と{b}の薬指には、おそろいの指輪が光っていた。式はなくても、二人には十分だった。|{n}日目、{b}は指輪を眺めながら言った。{b}「これからの毎日も、きっと楽しい｜これからの毎日も、きっと楽しいだろう｜これからの毎日も、きっと楽しいです」'),
-    kin: L('{n}日目の夜。{relm}の{a}と{b}は、いつものように「おやすみ｜おやすみ｜おやすみなさい」を言い合った。同じ家で暮らした{n}日は、家族の距離を少しだけ変えた。|{n}日が過ぎても、{a}と{b}は{rel}のままだった。けれど、互いの知らなかった顔をいくつも知った。|最後の日、{a}は台所に立つ{b}の背中を眺めた。{rel}として一緒に暮らすのも、悪くなかった。'),
+    kin: L('{n}日目の夜。{relm}の{a}と{b}は、いつものように「おやすみ｜おやすみ｜おやすみなさい」を言い合った。同じ家で暮らした{n}日は、家族の距離を少しだけ変えた。|{n}日が過ぎても、{a}と{b}は{rel}のままだった。けれど、互いの知らなかった顔をいくつも知った。|最後の日、{a}は台所に立つ{b}の背中を眺めた。{rels}として過ごすのも、悪くなかった。'),
     keep3: L('{n}日目の夜。付き合って長い{a}と{b}は、同じ家で暮らした{n}日を振り返って、明日の約束をしてから、おやすみを言い合った。|{a}と{b}は、恋人のまま{n}日を一緒に暮らした。知っているつもりだった相手の、知らなかった顔がいくつも増えた。|{n}日目、{b}は{a}の手を握って言った。{b}「一緒に住んでも、やっぱり好きだった｜一緒に住んでも、やっぱり好きだった｜一緒に住んでも、やっぱり好きでした」'),
     keep5: L('{n}日目の夜。許嫁の{a}と{b}は、いつか本当に夫婦になる日のことを、少しだけ話してから眠った。|{a}と{b}は、許嫁のまま{n}日を一緒に暮らした。決められた相手だったはずが、いつの間にか選んだ相手になっていた。|{n}日目、{a}は{b}の寝顔を見ながら、この人と結婚するのだと、初めて実感した。'),
     broke: L('{n}日目の夜。{a}と{b}は、もう恋人ではなかった。それでも、すれ違うときに小さく会釈をした。|{a}と{b}の{n}日間は、思っていたのとは違う形で終わった。|最後の日、{a}は{b}の背中を見送った。もう、追いかけることはなかった。')
@@ -366,6 +366,8 @@
     return tn >= 55 || af < 10 || (tn >= 40 && aw >= 45) ? 'ぎくしゃくした' : af >= 35 && tn < 30 ? '仲の良い' : '';
   }
   function kinName(ctx, a, b) { var k = kinOf(ctx, a, b); return k ? kinMood(ctx, a, b) + k.label : ''; }
+  /* 本文用（地の文の言い方。札の名前は kinName） */
+  function kinNameS(ctx, a, b) { var k = kinOf(ctx, a, b); return k ? kinMood(ctx, a, b) + (k.say || k.label) : ''; }
   function colleague(ctx, a, b) { return !!(HK.Ties && (HK.Ties.has(ctx, a, b, 'colleague') || HK.Ties.has(ctx, a, b, 'boss'))); }
   /* 旅に出ている人：旅の日と、旅先の宿で泊まった翌朝（朝の区切りだけ。2026-11-05 担当TF・申し送り F18：宿の翌朝に「当番どおりに朝のゴミ出し」） */
   function onTrip(ctx, c) { var f = ctx.ft, T = f.trip, M = f.tripMorn; return !!((T && T.day === f.day && T.m.indexOf(c.i) >= 0) || (M && M.day === f.day && f.t === 0 && M.m.indexOf(c.i) >= 0)); }
@@ -747,7 +749,9 @@
       /* 開始時の関係（結末の文を「恋人のまま／婚約者のまま／夫婦として」に合わせる。不具合リスト 1104 の NO 10） */
       if (types.indexOf('ex') >= 0) x.exStart = true;
       var ftk = HK.Daily && HK.Daily.famTie ? HK.Daily.famTie(ctx, a, b) : null;
-      if (ftk && ftk.t) { var KL = { parent: '親子', pparent: '擬似親子', sibling: 'きょうだい', sibprot: 'きょうだい', sibclose: 'きょうだい', sibbad: 'きょうだい', twin: '双子', stepsib: '義理のきょうだい', relative: '親戚' }; x.kin = { type: ftk.t.type, label: (ftk.t.type === 'relative' && ftk.t.step ? '義理のきょうだい' : KL[ftk.t.type]) || ((HK.TIES[ftk.t.type] || {}).label) || '家族', step: !!(ftk.t.step || ftk.t.type === 'stepsib') }; }
+      if (ftk && ftk.t) { var KL = { parent: '親子', pparent: '擬似親子', sibling: 'きょうだい', sibprot: 'きょうだい', sibclose: 'きょうだい', sibbad: 'きょうだい', twin: '双子', stepsib: '義理のきょうだい', relative: '親戚' }; x.kin = { type: ftk.t.type, label: (ftk.t.type === 'relative' && ftk.t.step ? '義理のきょうだい' : KL[ftk.t.type]) || ((HK.TIES[ftk.t.type] || {}).label) || '家族', step: !!(ftk.t.step || ftk.t.type === 'stepsib') };
+        /* 本文の言い方（札の名前 label は結末・関係図に残す。本文では内部の名前を出さない。2026-11-05 利用者の指示。engine.js の HK.Kin） */
+        if (HK.Kin && HK.Kin.say) { x.kin.say = HK.Kin.say(ctx, ftk.t, C[ftk.t.a] || a, C[ftk.t.b] || b) || x.kin.label; x.kin.sayS = HK.Kin.say(ctx, ftk.t, C[ftk.t.a] || a, C[ftk.t.b] || b, 'say') || x.kin.say; } }
       if (HK.Daily && HK.Daily.famTie && HK.Daily.famTie(ctx, a, b) && !famTie(ctx, a, b)) x.famLove = true;
       if (pf.couple && loveOk(ctx, a, b)) {
         x.s = 3; x.at[1] = x.at[2] = x.at[3] = 0; x.since = living === 'apart' ? -4 : 0; x.preset = true;
@@ -888,7 +892,9 @@
     if (x.s >= 3) { var t = fresh(ctx, MEET.lovers); emit(ctx, { actors: [a, b], cat: 'romance', text: fill(ctx, t, a, b), why: W(ctx, '') + (x.lockRing ? '住人の設定：互いに恋愛相手に固定（恋人として）' : '関係の設定：恋人' + (x.married ? '（夫婦）' : x.fiance ? '（許嫁）' : '')) }); return; }
     var T = HK.Ties ? HK.Ties.get(ctx, a, b) : null, lab = T ? (HK.tieLabel ? HK.tieLabel(T) : (HK.TIES[T.type] || {}).label) : '知り合い';
     var t2 = fresh(ctx, MEET.tie);
-    if (t2) emit(ctx, { actors: [a, b], cat: 'bond', text: fill(ctx, t2, a, b, null, { rel: lab || '知り合い' }), why: W(ctx, '') + '関係の設定：' + (lab || '知り合い') });
+    /* 本文では関係の内部の名前を出さない（「血の繋がらない親子」「体だけの相手」など。engine.js の HK.Kin.rel。理由の欄は札の名前のまま） */
+    var relT = T && HK.Kin && HK.Kin.rel ? HK.Kin.rel(ctx, T, ctx.chars[T.a] || a, ctx.chars[T.b] || b) : '';
+    if (t2) emit(ctx, { actors: [a, b], cat: 'bond', text: fill(ctx, t2, a, b, null, { rel: relT || lab || '知り合い' }), why: W(ctx, '') + '関係の設定：' + (lab || '知り合い') });
   }
   /* 夜 */
   /* 三人で円満な恋人たち。2026-11-04（不具合リスト 1104 の NO 9・利用者の指示）：「全員恋人」は、受けを中心にした付き合いの輪が完成していれば成立。
@@ -1394,7 +1400,7 @@
     var bh = bd != null ? H[bd] : null, ek = endKey(ctx, a, b), lv = ek === 'leave' && HK.FutariHouse ? HK.FutariHouse.leaver(ctx, a, b) : null;
     return {
       a: a.i, b: b.i, stage: x.s, broke: !!x.broke && x.s < 3, married: !!x.married, preset: !!x.preset, fiance: !!x.fiance, exStart: !!x.exStart, at: x.at,
-      kin: x.kin ? x.kin.label : null, kinName: x.kin ? kinName(ctx, a, b) : null, lost: !!x.lost, end: String(ek), leaver: lv ? lv.i : null,
+      kin: x.kin ? x.kin.label : null, kinSay: x.kin ? x.kin.say || x.kin.label : null, kinName: x.kin ? kinName(ctx, a, b) : null, lost: !!x.lost, end: String(ek), leaver: lv ? lv.i : null,
       nm: endName(ctx, a, b), cl: (endCl(ctx, a, b) || {}).id || '', tieLab: x.tieLab || '', step: !!(x.kin && x.kin.step),
       dates: Object.keys(f.dates[k] || {}).length, fights: Object.keys(f.fights[k] || {}).length, makeups: f.makeups[k] || 0,
       beds: f.beds[k] || 0, r18: f.r18[k] || 0,
@@ -1414,7 +1420,7 @@
     else if (x.fiance && key === 5) pool = FINAL.keep5;
     if (key === 'leave') { var lv0 = HK.FutariHouse.leaver(ctx, A, B); if (lv0 === B) { A1 = B; B1 = A; } }
     var t = fresh(ctx, pool);
-    if (t) emit(ctx, { actors: [A1, B1], cat: key === 'broke' || key === 'leave' ? 'solo' : x.s >= 2 && loveOk(ctx, A, B) ? 'romance' : 'bond', text: fill(ctx, t, A1, B1, null, { n: String(N), rel: x.kin ? x.kin.label : '', relm: x.kin ? kinName(ctx, A, B) : '' }), why: W(ctx, '') + N + '日の終わり（' + END_N[key] + '）' });
+    if (t) emit(ctx, { actors: [A1, B1], cat: key === 'broke' || key === 'leave' ? 'solo' : x.s >= 2 && loveOk(ctx, A, B) ? 'romance' : 'bond', text: fill(ctx, t, A1, B1, null, { n: String(N), rel: x.kin ? x.kin.say || x.kin.label : '', rels: x.kin ? (HK.Kin && HK.Kin.ofSay ? HK.Kin.ofSay(ctx, A, B, 'say') : '') || x.kin.sayS || x.kin.label : '', relm: x.kin ? kinNameS(ctx, A, B) : '' }), why: W(ctx, '') + N + '日の終わり（' + END_N[key] + '）' });
     /* 三人・四人：家ぜんたいの終わりの一文 */
     if (C.length >= 3 && HK.FutariHouse && f.liv !== 'apart') HK.FutariHouse.houseEnd(ctx);
     var third = C.filter(function (c) { return c !== A && c !== B; })[0] || null;
@@ -1531,7 +1537,7 @@
     var m = R.main, a = X.nm(m.a), b = X.nm(m.b), N = R.days, seed = String(res.seed), HS = R.house || null;
     function hp(arr, k) { var h = 2166136261, s = seed + '|' + k; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return arr[(h >>> 0) % arr.length]; }
     function nd(d) { return d == null ? '' : (d + 1) + '日目'; }
-    function sub(t, x, y, o) { o = o || m; return String(t).replace(/\{a\}/g, x).replace(/\{b\}/g, y).replace(/\{rel\}/g, o.kin || '家族').replace(/\{n\}/g, String(N)); }
+    function sub(t, x, y, o) { o = o || m; return String(t).replace(/\{a\}/g, x).replace(/\{b\}/g, y).replace(/\{rel\}/g, o.kinSay || o.kin || '家族').replace(/\{n\}/g, String(N)); }
     function afterOf(o, k) { var ek = o.broke ? 'broke' : o.end && !/^\d$/.test(o.end) ? o.end : o.stage; return AFTER[ek] || (TX.AFTER_X || {})[ek] || AFTER[1]; }
     var steps = [];
     if (m.preset) steps.push((m.married ? '夫婦' : m.fiance ? '許嫁' : '恋人') + '（はじめから）');
