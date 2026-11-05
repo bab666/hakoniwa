@@ -1,3 +1,4 @@
+/* @event-ok 戸惑いの二段目（打ち消せない）の段を足した（2026-11-05 担当TF） */
 /* 箱庭シミュレーター（R18版のみ）: 常識改変：電車
    満員電車で乗客どうしが体を触れ合わせ、慰め合うのが「当たり前のマナー」になった世界（常識改変の姉妹の部屋）。
    住人は最初その常識の中にいて、ふとした違和感（「これって、えっちなお触りかな？」）に気づくか、気づいて覚めたらどうするか
@@ -75,6 +76,8 @@
   }
   function say(S, o) {
     if (o && typeof o.text === 'string') o.text = fixT(S, o.text);
+    /* 記録した段の数（戸惑いが続けて並んだかを見る。申し送り T11） */
+    S._sayN = (S._sayN || 0) + 1;
     /* 連れと一緒に出た日（乗車の文を除く）を覚えておく（毎日の一幕 compBeat） */
     if (o && S.P && S.P.length === 2 && o.actors && o.actors.length >= 2 && o.tag !== '乗車' && S.day) (S._comp = S._comp || {})[S.day] = 1;
     return ST.say(S, o);
@@ -217,6 +220,9 @@
     m.mobRole = 'street'; m.persona = /^(gentle|polite|cool|free)$/.test(f[2]) ? f[2] : 'gentle';
     /* 乗客ごとの性格と文（solo-train-mob.js の D.MOBP：触れ方・台詞・確かめる一言・終わり方・受け方） */
     m.prof = (D.MOBP && D.MOBP[f[0]]) || null;
+    /* 乗客の性格（D.MOBP の k）を本体の態度 9 種にそろえる（solo-train-mob.js の D.MOB_PS）：山場の前から山場まで、本体の部品が選ぶ乗客の台詞・喘ぎも同じ態度で */
+    var mps = m.prof && D.MOB_PS && D.MOB_PS[m.prof.k];
+    if (mps && HK.PERSONA && HK.PERSONA[mps]) { m.persona = mps; m.tone = mps; m.night = mps; }
     if (D.DEBUG) (S._dbg = S._dbg || []).push({ k: 'mob', d: S.day, who: p.i, mob: f[0] });
     return m;
   }
@@ -233,6 +239,15 @@
     return x;
   }
   function prof(m, k) { return (m && m.prof && m.prof[k]) || [];
+  }
+  /* 乗客の台詞（D.MOBP の s）：その乗客が二度目に口を開くときは、挨拶・名乗りの台詞を使わない（申し送り T10） */
+  function saysOf(m) { var l = prof(m, 's'); if (!m || !m.spoke || !D.OPEN_SAY_RE) return l; return l.filter(function (x) { return !D.OPEN_SAY_RE.test(x); }); }
+  /* もやもやへの言い訳は、乗客の態度の表から（申し送り T10）。近くの乗客の一言（話し手が乗客でない文）は 2 割 */
+  function excuseOf(S, m) {
+    var E = D.EXCUSE_PS && m && m.persona && D.EXCUSE_PS[m.persona];
+    if (!E) return pk(S, D.EXCUSE);
+    var by = (D.EXCUSE || []).filter(function (x) { return /^近くの乗客/.test(x); });
+    return by.length && S.rng() < 0.2 ? pk(S, by) : fresh(S, E, E);
   }
   /* 住人の台詞で乗客に呼びかけるときは、名前で呼べないモブとして二人称にする（HK.Mob.addr の「呼び名だけ」の印） */
   function mobAddr(m) { return HK.Mob.addr({ name: m.name, short: '' }); }
@@ -336,6 +351,11 @@
     S._trainScene = o.car ? 'car' : '';
     var opt = { S: S, ctx: S, pick: pick, rng: S.rng, a: a, b: b, style: HK.ThickSex.style(a), open: o.open, after: o.after, again: false };
     if (o.car) opt.spot = 'car';
+    /* 相手が乗客（モブ）：乗客の態度（newMob で D.MOB_PS からそろえたもの）を本体の opt.mobPersona に渡し、山場の乗客の台詞を本体の部品がその態度で選ぶ。
+       時間帯は路線から（朝の上り＝朝、夕方の下り＝昼、終電・夜行＝夜。「今夜」「朝まで」の文を本体が外す） */
+    var mobP = a.mob ? a : b.mob ? b : null;
+    if (mobP && mobP.persona && HK.PERSONA && HK.PERSONA[mobP.persona]) opt.mobPersona = mobP.persona;
+    if (o.car && S.v) opt.time = { morning: 'morning', evening: 'day', last: 'night', night: 'night' }[S.v.line] || 'night';
     /* 乗客の性格に合う夜の色（疲れた・おどおど＝甘め、無言・事務的＝ドライ、からかう・強気＝駆け引き。報告 2） */
     if (o.flavor) opt.flavor = o.flavor;
     var r, kept = [];
@@ -368,9 +388,12 @@
     /* 車内：本体の共通部品だけでできた段を車内の段に差し替える（部屋のルール 2026-11-05。もう一度の段も終点に着く前に車内の文で） */
     if (o.car) { if (!fmOwn) t = carOwn(S, t, a, b, md); }
     else if (S.lv === 'high' && HK.ThickEro && HK.ThickEro.again) { var ag = HK.ThickEro.again(S, pick, a, b, !!S.ero, false); if (ag) t += '\n\n' + ag; }
-    /* 乗客の台詞を乗客の性格の表に（報告 1）・見知らぬ乗客への「大好き」を言わない（報告 8） */
-    var mob = a.mob ? a : b.mob ? b : null;
-    if (mob && mob.prof) t = mobVoice(S, t, mob, mob === a);
+    /* 乗客の台詞：本体の部品が乗客の態度（上の opt.mobPersona）で選んだうえで、部屋の性格の表（D.SC_MOB。28 種）に台詞のある段は部屋の台詞に（roomVoice）。
+       態度だけでは「明日の朝ごはんはあなたの当番」「お互い深入りはなし」のような、見知らぬ乗客に合わない本体の台詞が残るため（2026-11-05 担当TF の計測）。
+       果てたあとの段の乗客の喘ぎは消す（報告 4）・見知らぬ乗客への「大好き」を言わない（報告 8） */
+    var mob = mobP;
+    if (mob && mob.prof) t = roomVoice(S, t, mob, mob === a);
+    else if (mob && mob === a) t = afterMoanCut(t, '{a}');
     if (mob) t = loveFix(S, t, mob === a ? b : a, mob === a ? '{b}' : '{a}');
     /* 車内の段の逆戻り（直に触れたあとの「服の上から」、後ろからのまま顔を合わせる、終点に着いたあとの「朝まで」。報告 4） */
     if (o.car) t = carFlow(t, o.direct);
@@ -508,10 +531,22 @@
     if (k === 1 && t.replace(/[…、。！？!?♡っ\s〜]/g, '').length >= 6) return false;
     return true;
   }
-  /* ---------- 長い山場の乗客の声（報告 1）：乗客の台詞を、乗客の性格の表（D.SC_MOB）に差し替える ----------
-     乗客の台詞＝話し手の印（{a}「…」）・乗客が主語の文の「…」・「…」と乗客が。問いは問いの表、果てる段より前は最中、果てる段は果てる前後、
-     あとは果てたあと（住人が攻めのときは受けるときの声）。果てたあとの段の乗客の喘ぎは消す（労いの段で攻めの喘ぎがもう一度、を出さない。報告 4） */
-  function mobVoice(S, t, mob, isTop) {
+  /* 果てたあとの段（労いの輪など）の、攻めの乗客の喘ぎを消す（労いの段で攻めの喘ぎがもう一度、を出さない。報告 4） */
+  function afterMoanCut(t, tag) {
+    var ps0 = String(t).split('\n\n'), ci = -1;
+    ps0.forEach(function (p, i) { if (ci < 0 && CLIMAX_RE.test(p)) ci = i; });
+    if (ci < 0) return t;
+    var re = new RegExp(tag.replace(/[{}]/g, '\\$&') + '「([^「」]*)」', 'g');
+    return ps0.map(function (p, i) {
+      if (i <= ci || MOVE_RE.test(p)) return p;
+      return p.replace(re, function (all, q) { return isMoan(q.replace(/^[＠⁠][^＠「」｜。、！？\s]{0,16}＠/, '').split('｜')[0]) ? '' : all; });
+    }).filter(function (p) { return /\S/.test(p); }).join('\n\n');
+  }
+  /* ---------- 山場の乗客の声：乗客の台詞を、乗客の性格の表（D.SC_MOB）から（部屋の短い山場 X.MID と、長い山場） ----------
+     長い山場では、先に本体の部品が乗客の態度（opt.mobPersona。D.MOB_PS）で台詞を選び、ここで部屋の表のある段を部屋の台詞にする（2026-11-05 担当TF）。
+     乗客の台詞（話し手の印 {a}「…」・乗客が主語の文の「…」・「…」と乗客が）を、問いは問いの表、果てる段より前は最中、果てる段は果てる前後、
+     あとは果てたあと（住人が攻めのときは受けるときの声）から選ぶ。果てたあとの段の乗客の喘ぎは消す */
+  function roomVoice(S, t, mob, isTop) {
     var k = mob.prof && mob.prof.k, V = k && mobTab('SC_MOB', mob);
     if (!V) return t;
     var tg = isTop ? '\\{a\\}' : '\\{b\\}';
@@ -772,7 +807,15 @@
       if (tripOn && D.DUO_BOARD_TRIP) dl = D.DUO_BOARD_TRIP;
       t = fm(pk(S, keep(bl, function (x) { return x.split('。')[0].indexOf('{a}') < 0; })), Object.assign({ a: riders[0].name }, V0)).split('。')[0] + '。' + fm(pk(S, dl), { a: riders[0].name, c: riders[1].name, line: LN.name });
     }
-    else t = fm(pk(S, bl), Object.assign({ a: riders[0].name }, V0)) + (d === 1 ? whyOf(riders[0]) : '');
+    else {
+      t = fm(pk(S, bl), Object.assign({ a: riders[0].name }, V0)) + (d === 1 ? whyOf(riders[0]) : '');
+      /* 乗る理由「小旅行」（夜行の旅でない路線）：二日目は、旅から戻っていつもの電車に乗る一文。そのあとは通勤・帰宅の人として（申し送り T12） */
+      var r0 = riders[0];
+      if (!v.trip && r0.goal && r0.goal.id === 'trip' && d === 2 && D.TRIP_BACK && D.TRIP_BACK[v.line]) {
+        t += fm(pk(S, D.TRIP_BACK[v.line]), { a: r0.name });
+        r0.goalNow = (D.TRIP_GOAL && D.TRIP_GOAL[v.line]) || 'home';
+      }
+    }
     /* 駅のポスターは最初の日と、三日ごと（同じ遊びで同じ標語を繰り返さないように） */
     t += '\n\n' + (d === 1 || d % 3 === 0 ? pk(S, D.POSTER[v.norm]).replace(/\{a\}/g, riders[0].name) : '') + fm(pk(S, D.CROWD[v.crowd]), { a: riders[0].name });
     if (D.BEAT) t += '\n\n' + fm(pk(S, rng() < 0.65 || !D.BEAT_ALL ? D.BEAT[v.line] : D.BEAT_ALL), Object.assign({ a: riders[0].name }, V0));
@@ -1005,8 +1048,9 @@
       else if (handover && stg > 0) t += fm(pk(S, D.HANDOVER), V) + '\n\n';
       var body = fm(pk(S, stgText(S, p, m, mode, stg)), V);
       /* 乗客の性格（NO 12(b)）：最初の段は触れ方と挨拶の台詞、そのあとは台詞を一つ */
-      if (stg === 0) body = fm(fresh(S, prof(m, 't'), stgText(S, p, m, mode, 0)), V) + fm(fresh(S, prof(m, 's'), []), V);
-      else if (stg <= 2 && rng() < 0.6) body += fm(fresh(S, prof(m, 's'), []), V);
+      if (stg === 0) body = fm(fresh(S, prof(m, 't'), stgText(S, p, m, mode, 0)), V) + fm(fresh(S, saysOf(m), []), V);
+      else if (stg <= 2 && rng() < 0.6) body += fm(fresh(S, saysOf(m), []), V);
+      m.spoke = true;
       /* 受けでない住人が乗客の体に触れるときは、おねだり・誘い受けの雰囲気で（NO 14） */
       if (stg === 3 && !p.noGive && rng() < 0.4) body += '\n\n' + fm(pk(S, D.INVITE[mode]), V);
       /* 住人の反応は一つの段に一つだけ（報告 15。受け入れる・体が応える・返事のどれか一つ。同じ反応の文は一回の遊びで 2 回まで） */
@@ -1062,7 +1106,7 @@
     if (p.state === 'norm' && p.m.doubt >= 30 && p.cnt.moya <= p.cnt.rides - 1 && p.pax && !p.top && p.canMob) {
       p.cnt.moya++;
       var fool = clamp(0.35 + p.m.imm / 200 + p.tr.ac * 0.3 + p.tr.np * 0.1 - p.tr.a * 0.35 - p.tr.caution * 0.2, 0.08, 0.9);
-      var t = fm(pk(S, D.MOYA[ps(p)]), V) + '\n\n' + mobFmt(fm(pk(S, D.EXCUSE), V), p.pax);
+      var t = fm(pk(S, D.MOYA[ps(p)]), V) + '\n\n' + mobFmt(fm(excuseOf(S, p.pax), V), p.pax);
       if (rng() < fool) {
         t += fm(pk(S, D.FOOLED[ps(p)]), V);
         p.m.doubt = clamp(p.m.doubt - 12, 0, 100); p.m.imm = clamp(p.m.imm + 6, 0, 98);
@@ -1092,7 +1136,18 @@
       say(S, { actors: [p], tag: '途中下車', text: fm(pk(S, D.GETOFF), V), why: p.name + 'は違和感に耐えられず、降りる駅でもない駅で降りた（行動「' + p.action.label + '」）', mag: 16 });
       return leftNote(S, p, 'off');
     }
-    if (rng() < 0.3) { p.m.doubt = clamp(p.m.doubt - 4, 0, 100); say(S, { actors: [p], tag: '戸惑い', text: fm(pk(S, D.BACK), V), why: p.name + 'は引っかかりを、疲れのせいにした' }); }
+    /* 戸惑い（申し送り T11）：打ち消す（D.BACK）→ 次の駅でも続くなら、打ち消しきれない（D.BACK2）。同じ打ち消し方を続けて並べない。
+       打ち消したばかりで覚めるときは、覚める文の前に「戻ってきた」の一文（wake の D.BACK_FAIL） */
+    if (rng() < 0.3) {
+      var bk = S.day * 100 + seg, prevB = p.backDay === S.day && (bk - p.backAt <= 2 || S._sayN === p.backN);
+      if (prevB && p.backStage >= 2) return;
+      if (prevB && D.BACK2) { p.backStage = 2; p.backAt = bk; p.m.doubt = clamp(p.m.doubt + 3, 0, 100); say(S, { actors: [p], tag: '打ち消せない', text: fm(pk(S, D.BACK2), V), why: p.name + 'は引っかかりをもう一度打ち消そうとしたが、うまくいかなかった（違和感 ' + Math.round(p.m.doubt) + '）' }); p.backN = S._sayN; return; }
+      p.backStage = 1; p.backAt = bk; p.backDay = S.day;
+      p.m.doubt = clamp(p.m.doubt - 4, 0, 100);
+      var bt = pk(S, D.BACK);
+      say(S, { actors: [p], tag: '戸惑い', text: fm(bt, V), why: p.name + 'は引っかかりを、' + (/疲れ/.test(bt) ? '疲れのせいにした' : /ポスター|普通/.test(bt) ? '「これが普通」と言い聞かせて打ち消した' : '揺れと放送にまぎらせて打ち消した') });
+      p.backN = S._sayN;
+    }
   }
 
   /* 違和感の芽の文（報告 5・7）：触る側の人は触る側の文、今日は連れとだけ触れ合った人は、見ず知らずの相手の文を使わない */
@@ -1110,6 +1165,9 @@
     /* 覚めたあとの動きを先に決め、覚める文はその動きと矛盾しないものだけから選ぶ（NO 13。対応表は train-design.md） */
     var bk = bk0 || pickBranch(S, p), wp = wakeLines(p, bk);
     var t = quiet ? '' : mobFmt(fm(pk(S, D.WAKE_TRIG), V), m) + '\n\n';
+    /* 打ち消したばかりの引っかかりから覚める（申し送り T11）：戸惑いのすぐあと（同じ日の一つ前の駅）なら、戻ってきた一文を前に */
+    if (!quiet && p.backStage === 1 && p.backDay === S.day && D.BACK_FAIL) t = fm(pk(S, D.BACK_FAIL), V) + '\n\n' + t;
+    p.backStage = 0;
     t += fm(pk(S, p.top || p.touchStop || S.pairStopDay === S.day ? keep(D.WAKE_SEE, function (x) { return !/自分の体の上にある手/.test(x); }) : D.WAKE_SEE), V) + (wp.length ? '\n\n' + fm(pk(S, wp), V) : '') + '\n\n' + mobFmt(fm(pk(S, D.WAKE_WORLD), V), m);
     var o = say(S, { actors: [p], tag: '覚める', text: t, why: p.name + 'の常識が覚めた（覚めやすさ ' + Math.round(pw * 100) + '%：違和感 ' + Math.round(p.m.doubt) + '・理性 ' + Math.round(p.m.reason) + '・かかり具合 ' + Math.round(p.m.imm) + '・快楽 ' + Math.round(p.m.plea) + '）', mag: 32 });
     ST.key(S, o, p.name + 'が覚めた' + (p.cnt.wake > 1 ? '（' + p.cnt.wake + '度目）' : ''));
@@ -1317,7 +1375,7 @@
       var mb = B.mob ? (HK.Moan && HK.Moan.mob ? HK.Moan.mob(S, B, 2, { side: false, gross: false }) : '……っ') : (HK.Moan && HK.Moan.say ? HK.Moan.say(S, B, 'climax', { novel: true }, null) : '……っ');
       var an = A.mob ? A.short : A.name, bn = B.mob ? B.short : B.name;
       text = pk(S, X.MID[mode]).replace('{mb}', mb || '……っ');
-      if (m.prof) text = mobVoice(S, text, m, !top);
+      if (m.prof) text = roomVoice(S, text, m, !top);
       text = loveFix(S, text, p, top ? '{a}' : '{b}');
       text = text.replace(/\{a\}/g, an).replace(/\{b\}/g, bn);
       text += '\n\n' + fm(pk(S, crowdPool(S)), V) + fm(rx(S, (top ? X.PEAK_A : X.PEAK_B)[ps(p)]), V);
@@ -1498,7 +1556,7 @@
       p.fate = FATE_JA[p.fk];
       p.notes.push('乗った日 ' + p.cnt.rides + '日・触れ合い ' + p.cnt.touch + '回・終点前の山場 ' + p.cnt.peak + '回' + (p.cnt.night ? '・二人の夜 ' + p.cnt.night + '回' : ''));
       p.notes.push('違和感 ' + Math.round(p.m.doubt) + '／かかり具合 ' + Math.round(p.m.imm) + (p.cnt.wake ? '・覚めた ' + p.cnt.wake + '回' : '') + (p.cnt.resink ? '・かかり直し ' + p.cnt.resink + '回' : '') + (p.cnt.report ? '・通報 ' + p.cnt.report + '回' : ''));
-      p.notes.push('行動「' + p.action.label + '」・乗る理由「' + p.goal.label + '」・' + (p.top ? '乗客には自分からする側' : '乗客には受け入れる側'));
+      p.notes.push('行動「' + p.action.label + '」・乗る理由「' + p.goal.label + '」' + (p.goalNow ? '（2 日目からは「' + ({ work: '通勤', home: '帰宅' }[p.goalNow] || '') + '」）' : '') + '・' + (p.top ? '乗客には自分からする側' : '乗客には受け入れる側'));
     });
     var duo = P.length === 2, a = P[0], b = P[1], title, lines = [];
     ST.step(S, 'その後');

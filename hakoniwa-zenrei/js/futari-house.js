@@ -338,7 +338,7 @@
 
   /* ======================= 出来事（エンジンが選ぶ） ======================= */
   /* 旅に出ている人は、その日は家の出来事に出さない（2026-11-04・遊んで確かめた報告 1104 の A7） */
-  function addEv(e) { e.noOdd = true; if (!e.tie) e.tie = '-'; var w0 = e.when; e.when = function (ctx, a, b) { if (ctx.ft && ctx.ft.trip && (FC.onTrip(ctx, a) || (b && FC.onTrip(ctx, b)))) return false; return w0.apply(this, arguments); }; FC.EV.push(e); return e; }
+  function addEv(e) { e.noOdd = true; if (!e.tie) e.tie = '-'; var w0 = e.when; e.when = function (ctx, a, b) { if (ctx.ft && (FC.tripAny ? FC.tripAny(ctx) : ctx.ft.trip) && (FC.onTrip(ctx, a) || (b && FC.onTrip(ctx, b)))) return false; return w0.apply(this, arguments); }; FC.EV.push(e); return e; }
   function houseTg(ctx, a, b) { var f = ctx.ft; return !!(f && house(ctx, a, b) && FC.together(ctx, a, b) && !FC.onTrip(ctx, a) && !FC.onTrip(ctx, b) && (f.t !== 1 || f.hol)); }
 
   /* ---------- 生活のすれ違い ---------- */
