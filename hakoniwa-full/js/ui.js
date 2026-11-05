@@ -985,7 +985,7 @@
         '<div class="d' + (ci.cl !== ci.cd ? ' hasl' : '') + '">' + esc(ci.cd) + '</div>' + (ci.cl !== ci.cd ? '<div class="dl">' + esc(ci.cl) + '</div>' : '') +
         (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') + ci.minor + '<span class="bxwarn"></span></label>';
     }
-    /* 一覧の最後：全年齢版だけ、R-18版の案内のカード（URL は js/share-card.js の CONF.r18Url＝BOOTH・CONF.noteUrl＝note。押すと一文とリンクが開く。.r18link は絞りの札が「すべて」のときだけ出す＝ui-filter.js）。
+    /* 一覧の最後：全年齢版だけ、R-18版の案内のカード（URL は中核の js/safe.js の CONF.r18Url＝BOOTH・CONF.noteUrl＝note。PC の上の一覧にも同じカード＝ui-box-list.js。押すと一文とリンクが開く。.r18link は絞りの札が「すべて」のときだけ出す＝ui-filter.js）。
        データの先読みの設定は表示メニュー（ui-shell.js の prefetch-top）にある */
     if (HK.SAFE_BUILD && HK.CONF && HK.CONF.r18Url) cards += '<div class="scen r18link bxr18c"><button type="button" class="bxr18c-t" data-act="r18card" aria-expanded="false" aria-controls="bxr18c-b" title="エロトラップダンジョン・感覚遮断穴・常識改変・サキュバスの一夜・エロバラエティ番組を追加。夜の場面もぼかさずに描きます。">' +
       '<span class="k"><span class="kt">18歳以上向け</span></span><span class="n">R-18版のご案内</span><span class="bxr18c-i" aria-hidden="true"></span></button>' +
@@ -1525,7 +1525,7 @@
       case 'pickclose': pickShow(false); break;
       case 'pickgo': pickGo(t.dataset.id); break;
       case 'sheetclose': sheetShow(false); break;
-      case 'r18card': (function () { var on = t.getAttribute('aria-expanded') !== 'true', bd = document.getElementById('bxr18c-b'); t.setAttribute('aria-expanded', String(on)); if (bd) bd.hidden = !on; if (on && bd && bd.scrollIntoView) bd.scrollIntoView({ block: 'nearest' }); })(); break;
+      case 'r18card': (function () { var on = t.getAttribute('aria-expanded') !== 'true', bd = t.parentNode && t.parentNode.querySelector('.bxr18c-b'); t.setAttribute('aria-expanded', String(on)); if (bd) bd.hidden = !on; if (on && bd && bd.scrollIntoView) bd.scrollIntoView({ block: 'nearest' }); })(); break;
       case 'bxtab': bxPref.tab = t.dataset.k; bxPrefSave(); bxTabSync(); break;
       case 'envseg': (function () {
         var it = t.closest('.envitem'), sl = it && it.querySelector('select[data-f="env"]');
