@@ -204,7 +204,7 @@ const { MOAN_RULES } = require('./lint.js');
             /* (c) は HK.Moan が作った声だけで数える（台詞・地の文の喘ぎは話し手の口調で書くもの） */
             const toned = g ? g.toned : null;
             const c = chars[who];
-            out.moans.push({ tone: g && MT ? MT : tone, night: night || '', id, s, style, lewd, g: c.gender, fp: V.fpFor ? V.fpFor(Object.assign({}, c, { persona: HK.personaOf ? HK.personaOf(c) : c.persona })) : '', ps: g ? g.ps : '', key: g ? g.key : '', t: x.t, q, src: g ? g.src : (x.t === 'm' ? '地の文の喘ぎ' : '台詞'), toned: toned == null ? -1 : toned ? 1 : 0 });
+            out.moans.push({ tone: g && MT ? MT : tone, night: night || '', id, s, style, lewd, g: c.gender, fp: V.fpFor ? V.fpFor(Object.assign({}, c, { persona: HK.personaOf ? HK.personaOf(c) : c.persona })) : '', ps: g ? g.ps : '', own: M.psBase ? M.psBase(c) : (HK.personaOf ? HK.personaOf(c) : ''), key: g ? g.key : '', t: x.t, q, src: g ? g.src : (x.t === 'm' ? '地の文の喘ぎ' : '台詞'), toned: toned == null ? -1 : toned ? 1 : 0 });
             if (letters(q).length > 2) { if (seen[nq]) out.dup.push({ tone, id, s, style, g: c.gender, q, src: g ? g.src : x.t }); seen[nq] = 1; }
           });
         });

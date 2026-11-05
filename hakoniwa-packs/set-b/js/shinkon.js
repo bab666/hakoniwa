@@ -187,7 +187,7 @@
 
   /* ---------- 箱庭 ---------- */
   function opts(list, auto) { return [{ v: 'auto', label: auto || 'おまかせ' }].concat(list.map(function (t, i) { return { v: 'x' + i, label: t }; })); }
-  var REL_SHORT = ['幼なじみ', '元ライバル', '長い片想いの相手', '元同僚', '文通やネットで知り合った仲', '家族ぐるみの付き合い', '復縁した元恋人', '運命的な衝動婚', '拾った・拾われた関係', '初めて付き合った相手どうし'];
+  var REL_SHORT = ['幼なじみ', '元ライバル', '長い片想いの相手', '元同僚', '文通やネットで知り合った仲', '家族ぐるみの付き合い', '復縁した元恋人', '運命的な衝動婚', '行き場のない相手を家に迎えた縁', '初めて付き合った相手どうし'];
   function relShort(i) { return REL_SHORT[i] || String(D.REL[i] || '').split(/\s/)[0]; }
   var scen = {
     id: ID, name: '新婚部屋', kicker: 'ふたり・日常',
@@ -465,7 +465,7 @@
     var t = tl.filter(function (x) { return x && x.type !== 'noobs'; })[0];
     var cls = HK.relClass ? HK.relClass(ctx, A, B) : 'none';
     var lab = t && HK.TIES[t.type] ? HK.TIES[t.type].label : '';
-    return { t: t, cls: cls, label: lab, loveTie: !t || tl.some(function (x) { return LOVE_T.test(x.type); }) };
+    return { t: t, cls: cls, label: lab, say: t && HK.Kin && HK.Kin.rel ? HK.Kin.rel(ctx, t, ctx.chars[t.a] || A, ctx.chars[t.b] || B) || lab : lab, says: t && HK.Kin && HK.Kin.rel ? HK.Kin.rel(ctx, t, ctx.chars[t.a] || A, ctx.chars[t.b] || B, 'say') || lab : lab, loveTie: !t || tl.some(function (x) { return LOVE_T.test(x.type); }) };
   }
 
   function setup(ctx) {
@@ -552,7 +552,7 @@
         if (!S.wed) intro = pickOf(ctx, NW_SETUP);
       } else if (S.wed) intro = pickOf(ctx, KEEP_WED);
       else intro = pickOf(ctx, NW_SETUP);
-      rl = S.exLabel || (S.rel >= 0 && S.wed ? relShort(S.rel) : ri.label || '同居人');
+      rl = S.exLabel || (S.rel >= 0 && S.wed ? relShort(S.rel) : ri.say || ri.label || '同居人');
       /* 恐怖の関係のままの二人（恋愛の設定が自動など。shinkon-past.js の PS.nfSetup）：「恐怖のまま暮らし始めた」とは書かず、怖がっていた人から見た始まりの段にする */
       var nfs = !S.wed && PSX() ? PSX().nfSetup(ctx, S) : '';
       tx = nfs ? fill(ctx, nfs.t, nfs.a, nfs.b, { home: home }) : fill(ctx, intro, A, B, { home: home, rel: rl, meet: meet });
@@ -629,7 +629,7 @@
   /* ---------- 恋愛へ進む段（loveLater の二人）。日を追うごとに起こりやすく、日数の半分までには必ず ---------- */
   var STEP = {
     kawari: ['{a}は、{b}を見る自分の目が変わっていることに気づいた。{rel}として過ごしてきた年月が、いつの間にか別の気持ちに育っていた。その夜、{a}は初めて、{b}の手を自分から握った。', '{b}の何気ない笑顔に、{a}の胸が大きく跳ねた。{rel}のはずだった相手に、こんな気持ちを抱くなんて――{a}は戸惑いながらも、その気持ちから目を逸らさないことに決めた。'],
-    kokuhaku: ['寝る前の居間で、{a}は意を決して{b}に向き直った。「＠{a}＠{rel}としてじゃなくて、一人の相手として、あなたが好き｜{rel}としてではなく、一人の相手として、あなたが好きだ｜{rel}としてではなく、一人の相手として、あなたが好きです」――{b}は驚いた顔をして、それから小さくうなずいた。', '{a}は、ずっと言えずにいたことを、ようやく口にした。{rel}のままでは、もういられない――。{b}はしばらく黙っていたが、やがて{a}の袖をそっとつかんで、同じ気持ちだと答えた。'],
+    kokuhaku: ['寝る前の居間で、{a}は意を決して{b}に向き直った。「＠{a}＠{rels}としてじゃなくて、一人の相手として、あなたが好き｜{rels}としてではなく、一人の相手として、あなたが好きだ｜{rels}としてではなく、一人の相手として、あなたが好きです」――{b}は驚いた顔をして、それから小さくうなずいた。', '{a}は、ずっと言えずにいたことを、ようやく口にした。{rel}のままでは、もういられない――。{b}はしばらく黙っていたが、やがて{a}の袖をそっとつかんで、同じ気持ちだと答えた。'],
     ryokai: ['言葉にしたわけではなかった。それでも、並んで座った{a}と{b}の肩が触れ合ったまま離れなかったとき、二人とも、もう{rel}だけの間柄ではないと分かっていた。', '目が合ったまま、{a}も{b}も視線を逸らさなかった。{rel}として何度も見てきた顔なのに、今夜は少し違って見える。どちらからともなく、二人は小さく笑い合った。']
   };
   var STEP_NAME = { kawari: '気持ちの変化', kokuhaku: '告白', ryokai: '暗黙の了解' };
@@ -639,9 +639,9 @@
     if (!must && ctx.rng() > p) return;
     var A = S.A, B = S.B, hi = J.of(ctx, A).pt >= J.of(ctx, B).pt ? A : B, lo = hi === A ? B : A;
     var tA = hi.tr || {}, k = (tA.np || 0.5) + (tA.fc || 0.5) > 1.1 ? 'kokuhaku' : (tA.ac || 0.5) > 0.6 ? 'ryokai' : 'kawari';
-    var rl = (S.ri && S.ri.label) || '家族同然';
+    var rl = (S.ri && (S.ri.say || S.ri.label)) || '家族同然', rs = (S.ri && (S.ri.says || S.ri.label)) || '家族';
     S.love = true; S.stepDone = true;
-    ctx.act2({ actors: [hi, lo], cat: 'romance', text: fill(ctx, pickT(ctx, STEP[k], hi, lo) || STEP[k][0], hi, lo, { rel: rl }), why: '新婚部屋：恋愛へ進む（' + STEP_NAME[k] + '・' + rl + 'から）',
+    ctx.act2({ actors: [hi, lo], cat: 'romance', text: fill(ctx, pickT(ctx, STEP[k], hi, lo) || STEP[k][0], hi, lo, { rel: rl, rels: rs }), why: '新婚部屋：恋愛へ進む（' + STEP_NAME[k] + '・' + rl + 'から）',
       fx: function () { ctx.mod2(hi, lo, { aff: 6, att: 20, trust: 3 }, { aff: 6, att: 20, trust: 3 }); } });
   }
   var HIMO = ['{a}は昼近くまで寝て、起きてからはソファでゲームをしていた。相手が帰ってくる時間が近づくと、慌てて部屋を少しだけ片づけた。', '{a}は日当たりのいい窓辺でうたた寝をして、一日の大半を過ごした。冷蔵庫をのぞいて、今夜は何を作ってもらおうかと考えた。', '{a}はふらりと散歩に出て、商店街で買い食いをして帰ってきた。財布の中身が心もとないことに気づいたのは、帰り道のことだった。',
@@ -649,7 +649,7 @@
     '{a}は珍しく洗い物に手をつけたが、皿を二枚洗ったところで満足して、残りは水につけたままにした。', '{a}は通販の画面を眺めて、買うつもりのない家具を何時間も見比べていた。', '{a}は昼過ぎに起きて、相手が作り置きしてくれていたおかずを温めた。一口食べて、ありがたさがしみた。'];
   var NW_SETUP = [
     '{a}と{b}は、{rel}のまま、{home}で一緒に暮らし始めた。段ボールはまだいくつか残っているけれど、玄関には二人分の靴が並んでいる。',
-    '{home}の窓から、朝の光が差し込んでいる。{rel}の間柄の{a}と{b}が同じ家で暮らし始めて、まだ数日しかたっていない。',
+    '{home}の窓から、朝の光が差し込んでいる。{a}と{b}が{rel}のまま同じ家で暮らし始めて、まだ数日しかたっていない。',
     '{a}と{b}の新しい暮らしの舞台は、{home}。{rel}として過ごしてきた二人の、少し照れくさい同居の日々が始まった。'
   ];
 

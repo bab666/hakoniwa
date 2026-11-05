@@ -31,7 +31,7 @@
     pos: { seijo: '正常位', back: '後背位', kijo: '騎乗位（受けが上）', zai: '座位', tachi: '立ったまま', osae: '押さえつけ', nebak: '寝バック', kakae: '抱え上げ' },
     finish: { naka: '中で', soto: '外で', issho: '一緒に', uke: '受けだけ先に', again: '二度目へ', renzoku: '続けて何度も' }
   };
-  /* 組ごとに使える値（女性の攻め×男性の受け fm は、攻めが跨るのが基本なので「受けが上」「寝バック」「抱え上げ」は無い。女性どうし ff は中・外が無い） */
+  /* 組ごとに使える値（女性の攻め（男性器なし）×男性器のある受け fm は、指と手・ペニバンで攻めが受けの{後ろ}を責める組なので「受けが上」「寝バック」「抱え上げ」は無い。女性どうし ff は中・外が無い） */
   P.MODE = {
     pos: { mf: ['seijo', 'back', 'kijo', 'zai', 'tachi', 'osae', 'nebak', 'kakae'], ff: ['seijo', 'back', 'kijo', 'zai', 'tachi', 'osae', 'nebak'], fm: ['seijo', 'back', 'zai', 'tachi', 'osae'] },
     finish: { mf: ['naka', 'soto', 'issho', 'uke', 'again'], ff: ['issho', 'uke', 'again', 'renzoku'], fm: ['naka', 'soto', 'issho', 'uke', 'again'] }
@@ -103,6 +103,16 @@
       if (mode === 'ff' && !Q.hasF(b)) return false;
     }
     return true;
+  };
+  /* 女性の攻め（男性器なし）× 男性器のある受け（fm）：型の共通の文（play-text*-r18.js の fm）は指と手で受けの{後ろ}を責める書き方。
+     本体の場面がペニバンの回（thick-sex.js の T.strapPick。sex-flow-r18.js が info.strap で渡す。無ければ本文の「ペニバン・張り型」）なら、
+     体位・最中の頭・終わり方は fsp（腰に着けた張り型の文）を使う（同じ場面の中で指とペニバンを混ぜない。2026-11-05。それまでは HK.Play.fmNoPen で fm には型を使わなかった）。
+     フタナリの攻め（男性器のある女性）は mf の組なので当たらない */
+  P.strapOf = function (info, t, mode) {
+    var Q = HK.Pos, a = info && info.a;
+    if (mode !== 'fm' || !a || (Q && Q.hasM && Q.hasM(a))) return false;
+    if (info.strap != null) return !!info.strap;
+    return /ペニバン|張り型/.test(narrOf(String(t || '')));
   };
   /* 場所の決まり：この場所では使わない値 */
   var PLACE_NG = {
@@ -265,8 +275,8 @@
     var uniq = function (l) { var s = {}; return l.filter(function (x) { if (!x || x.length < 20 || s[x]) return false; s[x] = 1; return true; }).sort(function (p, q) { return q.length - p.length; }); };
     LISTS = {
       fore: uniq(flat([T.FORE, X.FORE], [])),
-      body: uniq(flat([T.BODY, T.ROUGH_BODY, T.JEALOUS_BODY, T.FM_BODY, T.FF_BODY, X.BODY, X.FM_BODY, X.FF_BODY], [])),
-      climax: uniq(flat([T.CLIMAX, T.ROUGH_CLIMAX, T.JEALOUS_CLIMAX, T.FM_CLIMAX, T.FF_CLIMAX, X.CLIMAX, X.FM_CLIMAX, X.FF_CLIMAX], [])),
+      body: uniq(flat([T.BODY, T.ROUGH_BODY, T.JEALOUS_BODY, T.FM_BODY, T.FM_BODY_SP, T.FF_BODY, X.BODY, X.FM_BODY, X.FM_BODY_SP, X.FF_BODY], [])),
+      climax: uniq(flat([T.CLIMAX, T.ROUGH_CLIMAX, T.JEALOUS_CLIMAX, T.FM_CLIMAX, T.FM_CLIMAX_SP, T.FF_CLIMAX, X.CLIMAX, X.FM_CLIMAX, X.FM_CLIMAX_SP, X.FF_CLIMAX], [])),
       fout: uniq(flat([T.FINGER_OUT], [])),
       /* 感じていく段（受けの快感）の地の文の段落 */
       feel: uniq(flat([T.FEEL, T.FEEL_FF, T.FEEL_FM, X.FEEL], []).map(function (x) { return String(x).split(/\n\n/)[0]; }))
@@ -293,7 +303,8 @@
   P.locate = function (t, kind) { return locate(t, lists()[kind] || []); };
 
   /* ---------- 文を選んで埋める ---------- */
-  function byMode(tbl, mode) { if (!tbl) return null; if (Array.isArray(tbl)) return tbl; return tbl[mode] || tbl.all || null; }
+  /* 組の文：fsp（女性の攻めのペニバンの回）は fsp の文、無ければ fm の文（指でもペニバンでも読める書き方の表） */
+  function byMode(tbl, mode) { if (!tbl) return null; if (Array.isArray(tbl)) return tbl; return tbl[mode] || (mode === 'fsp' ? tbl.fm : null) || tbl.all || null; }
   function fakeS() { var m = memo(); if (!m.fs) { var R = rngOf(hashOf('fs|' + ((HK.SexFlow && HK.SexFlow.seed) || 0))); m.fs = { rng: R }; } return m.fs; }
   function moanPre(b, ero) {
     var X = HK.ThickEro, T = HK.ThickSex, S = fakeS(), pick = function (l) { return pickFresh(S.rng, l); };
@@ -309,7 +320,7 @@
   function pickT(R, tbl, mode, b) {
     var l = byMode(tbl, mode);
     if (!l || !l.length) return '';
-    if (mode === 'fm' && HK.Pos && HK.Pos.hasM && !HK.Pos.hasM(b)) { var f = l.filter(function (s) { return !NOM.test(s); }); if (f.length) l = f; }
+    if ((mode === 'fm' || mode === 'fsp') && HK.Pos && HK.Pos.hasM && !HK.Pos.hasM(b)) { var f = l.filter(function (s) { return !NOM.test(s); }); if (f.length) l = f; }
     return pickL(R, l);
   }
   /* 型の段の文を選ぶ：場所（opt.spot。sex-spot-r18.js）に合わない文と、もう出た動きの文を避ける */
@@ -464,6 +475,10 @@
     var rs = roomScene({ a: a, b: b, opt: opt }, R);
     if (rs && rs.play) Object.keys(rs.play).forEach(function (k) { if (rs.play[k]) play[k] = rs.play[k]; });
     if (rs) play.scene = rs.id;
+    var gen = true;
+    /* 体位・最中の頭・終わり方の組（女性の攻めのペニバンの回は fsp） */
+    var sp = P.strapOf(info, t, mode), tm = sp ? 'fsp' : mode;
+    if (sp) play.strap = true;
     var ctx = opt.ctx || opt.S || HK._curCtx, ero = !!info.ero;
     var edits = [], keep = [];
     var put = function (s, e, s2, isKeep) { edits.push({ s: s, e: e, t: s2 }); if (isKeep && s2) s2.split(/\n\n/).forEach(function (p) { if (p && p.length >= 12) keep.push(p); }); };
@@ -486,7 +501,7 @@
     /* 入り方（部屋の場面ならそのきっかけ） */
     var entT = '';
     if (rs && rs.lead) entT = stepText(R, rs.lead, ctx, a, b, mode);
-    else if (play.entry !== 'lead') {
+    else if (gen && play.entry !== 'lead') {
       entT = pickT(R, (T0.ENTRY || {})[play.entry], mode, b);
       /* 入り方の段の最後の攻めの台詞は、同じ入り方の台詞（三つの組の分。組を問わない書き方）から選び直す */
       var ELn = entryLines(T0, play.entry), lm = /\{a\}「＠\{a\}＠[^」]*」$/.exec(entT);
@@ -501,7 +516,7 @@
       var fsx = rs.steps.filter(function (s) { return s.stage === 'undress' || s.stage === 'fore'; }).map(function (s) { return stepText(R, s, ctx, a, b, mode); }).filter(Boolean);
       if (fsx.length) foreT = fsx.join('\n\n');
     }
-    if (!foreT) foreT = pickT(R, (T0.FOCUS || {})[play.focus], mode, b);
+    if (!foreT && gen) foreT = pickT(R, (T0.FOCUS || {})[play.focus], mode, b);
     if (foreT) {
       /* 受けのこらえる声の段落は後ろへ（地の文を一つの段落にまとめ、声で終える。声が毎回違うので段の文が重なりにくい） */
       var fps = foreT.split(/\n\n/), fn = fps.filter(function (p) { return !/^\{b\}「\{mf\}」$/.test(p); }), fm0 = fps.length - fn.length;
@@ -512,17 +527,17 @@
       foreT = foreT.replace(/\{mf\}/g, function () { return moanPre(b, ero); });
       /* 着衣の型の前戯の頭（「服を一枚も乱さないまま」「ボタンを一つも外さず、布の上から」）は、場面がもう直に触れた・口や下着の中まで進んだあと
          （前戯の段より前の本文・入り方の段・呼ぶ側の opt.direct）には出さない（2026-11-05。通し読み T5 の申し送り） */
-      var pf = pr && pr.fore && !(play.prop === 'chakui' && (opt.direct || P.bareBefore(t.slice(0, fo ? fo.s : bo ? bo.s : co ? co.s : 0) + '\n\n' + entT))) ? pickT(R, pr.fore, mode, b) : '';
+      var pf = gen && pr && pr.fore && !(play.prop === 'chakui' && (opt.direct || P.bareBefore(t.slice(0, fo ? fo.s : bo ? bo.s : co ? co.s : 0) + '\n\n' + entT))) ? pickT(R, pr.fore, mode, b) : '';
       if (pf) { foreT = pf + foreT; play.pfT = pf; }
     }
     /* 体位：繋がる段と最中の段 */
     var posT = '';
     if (rs && rs.steps) { var ins = rs.steps.filter(function (s) { return s.stage === 'insert'; })[0]; if (ins) posT = stepText(R, ins, ctx, a, b, mode); }
-    if (!posT) posT = pickT(R, (T0.POS || {})[play.pos], mode, b);
+    if (!posT && gen) posT = pickT(R, (T0.POS || {})[play.pos], tm, b);
     var midT = '';
     if (rs && rs.steps) midT = rs.steps.filter(function (s) { return s.stage === 'play'; }).map(function (s) { return stepText(R, s, ctx, a, b, mode); }).filter(Boolean).join('\n\n');
-    if (!midT) {
-      var m1 = pickT(R, (T0.POS_MID || {})[play.pos], mode, b), m2 = pickT(R, (T0.FOCUS_MID || {})[play.focus], mode, b), m3 = pr && pr.mid ? pickT(R, pr.mid, mode, b) : '';
+    if (!midT && gen) {
+      var m1 = pickT(R, (T0.POS_MID || {})[play.pos], tm, b), m2 = pickT(R, (T0.FOCUS_MID || {})[play.focus], mode, b), m3 = pr && pr.mid ? pickT(R, pr.mid, mode, b) : '';
       midT = (m1 + m2 + m3).replace(/^\s+/, '');
       if (midT) midT = 'そのまま、' + midT.replace(/^そのまま、?/, '');
     }
@@ -539,9 +554,9 @@
     }
     /* 終わり方 */
     var finT = '';
-    if (co) {
+    if (co && gen) {
       var FT = ero ? (T0.FIN_E || T0.FIN) : T0.FIN;
-      finT = pickT(R, (FT || {})[play.finish], mode, b);
+      finT = pickT(R, (FT || {})[play.finish], tm, b);
       if (finT && ero) finT = fillE(finT, a, b);
       if (finT && pr && pr.after) finT += pickT(R, pr.after, mode, b);
       if (finT && rs && rs.steps) { var af = rs.steps.filter(function (s) { return s.stage === 'after'; }).map(function (s) { return stepText(R, s, ctx, a, b, mode); }).filter(Boolean).join(''); if (af) finT += '\n\n' + af; }
@@ -567,6 +582,8 @@
       /* 前戯の文のすぐあとに付いた「指を抜く」一文は外す（流れの管理が、要るときに付け直す） */
       var fe = fo.e, fx = locate(t.slice(fe, fe + 200), L.fout);
       if (fx && fx.s === 0) fe += fx.e;
+      /* 攻めの一言などを挟んで同じ段落に残った「指を抜く」一文も外す（型の前戯は指を入れない文もあるので、入れていない指を抜く文にしない。2026-11-05） */
+      else if (fx) { var pb = t.indexOf('\n\n', fe); if (pb < 0 || fe + fx.s < pb) put(fe + fx.s, fe + fx.e, '', false); }
       put(fo.s, fe, foreT, true);
     } else if (foreT && (bo || co)) {
       var at0 = bo ? bo.s : co.s, ps0 = t.lastIndexOf('\n\n', at0); ps0 = ps0 < 0 ? 0 : ps0 + 2;
@@ -587,7 +604,7 @@
     play.posT = posT ? posT.split(/\n\n/)[0] : '';
     play.lock = P.POSTURE[play.pos] || null;
     if (actT) play.act = actT.split(/\n\n/)[0];
-    if (P.log) P.log.push({ a: a.name, b: b.name, mode: mode, play: { entry: play.entry, focus: play.focus, prop: play.prop, pos: play.pos, finish: play.finish, scene: play.scene || '' }, ero: ero });
+    if (P.log) P.log.push({ a: a.name, b: b.name, mode: mode, play: { entry: play.entry, focus: play.focus, prop: play.prop, pos: play.pos, finish: play.finish, scene: play.scene || '', strap: !!play.strap }, ero: ero });
     return { text: out, play: play, keep: keep, act: actT };
   }
 

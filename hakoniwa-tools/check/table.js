@@ -24,7 +24,7 @@ const TAGS = {
   name: '言い換え（名前が壊れうる）',
   rel: '関係を前提にした文・場面や結末を足した',
   pair: '二人きりで出うる文（出られない部屋・執着・関係・共通の出来事。第三者を前提にした文）',
-  kin: '血縁の二人の札・文（親子・きょうだいを「友人」にしない。結末・関係図・共通の出来事）',
+  kin: '血縁の二人の札・文（親子・きょうだいを「友人」にしない。結末・関係図・共通の出来事）・関係の種類の名前（擬似親子・セフレなど）を本文に出さない',
   event: '出来事の印（@event・label・場面の書き方）',
   zen: 'r18 の印（全年齢版の中身が変わる）',
   order: '読み込み順・かたまりの振り分け',
@@ -94,7 +94,9 @@ const LINE_RULES = [
   /* 第三者を前提にした言い回し（どの箱庭の文でも。出られない部屋の二人で出ないかを pair で見る） */
   { re: /ほかの誰か|他の誰か|別の誰か|みんな|全員|人目|誰と話|誰に笑いかけ|周りの人|noThird|THIRD_RE/, tags: ['pair'] },
   /* 友人の語・血縁の判定（血縁の二人に出ないかを kin-label で見る） */
-  { re: /友人|友達|友だち|親友|HK\.Kin\b|KIN_FR_TXT|\.family\b/, tags: ['kin'] }
+  { re: /友人|友達|友だち|親友|HK\.Kin\b|KIN_FR_TXT|\.family\b/, tags: ['kin'] },
+  /* 関係の種類の内部の名前・関係の名前の差し込み（本文に出ないかを rel-word で見る。2026-11-05） */
+  { re: /擬似親子|疑似親子|義兄弟|義姉妹|義理のきょうだい|親代わり|元恋人|セフレ|友達以上恋人未満|宿敵|両片想い|両片思い|拾われ|\{rel\}|\{rels\}|\{myrole\}|\{r[ab]?\}|tieLabel|roleA|roleB/, tags: ['kin'] }
 ];
 /* コメントの中身の変更でも付ける印（コメントだけの変更でも、出来事の一覧・全年齢版の中身が変わる） */
 const COMMENT_RULES = [
@@ -130,6 +132,7 @@ const CHECKS = [
   { id: 'chunk-regress', name: '単独・乱順の読み込み（chunk-regress）', stage: 'heavy', tags: ['order', 'buildtool'], after: ['build'], est: 450, weight: 1, tools: [BD + 'chunk-regress.js'], why: '両ビルド' },
   { id: 'chunk-audit', name: 'かたまりの境目（chunk-audit）', stage: 'heavy', tags: ['order', 'buildtool'], after: ['build'], est: 60, weight: 1, tools: [BD + 'chunk-audit.js'], why: '両ビルド' },
   { id: 'kin-label', name: '血縁の二人の札（kin-label-audit）', stage: 'heavy', tags: ['kin'], after: ['build'], est: 45, weight: 1, tools: [TC + 'kin-label-audit.js'], why: '親子・きょうだい・親戚・双子・擬似親子の二人の結末・関係図の札（開始時・転機）・台詞・地の文に「友人・友達・親友」が 0 件（R18版・全年齢モード・全年齢版）。箱庭のかたまりだけ変えたときはその箱庭だけ' },
+  { id: 'rel-word', name: '関係の名前の語（rel-word-audit）', stage: 'heavy', tags: ['kin'], after: ['build'], est: 150, weight: 1, tools: [TC + 'rel-word-audit.js'], why: '擬似親子・義理の兄弟・セフレ・元恋人・友達以上恋人未満・敵対の二人の台詞・本人の視点の地の文に、関係の種類の内部の名前（擬似親子・義理のきょうだい・親代わり・セフレ・友達以上恋人未満・両片想い など）が 0 件（R18版・全年齢モード・全年齢版。記録の区分 seg で、名詞の引用・理由の欄・結果欄・関係図の札は数えない）。箱庭のかたまりだけ変えたときはその箱庭だけ' },
   { id: 'dict-regress', name: '口調の辞書の成績（dict-regress。参考）', stage: 'heavy', tags: ['dict'], after: [], est: 10, weight: 1, tools: [TC + 'dict-regress.js'], info: true, why: '終了コードに入れない（成績を出すだけ）' },
   /* 追加パック（変えたパック、本体の「パックが頼るかたまり」を変えたときはそのパック） */
   { id: 'date-setting', name: 'デートの舞台と段（date-setting-audit）', stage: 'pre', tags: ['pack'], est: 1, tools: [TC + 'date-setting-audit.js'], why: 'set-b のデートの日々を変えたとき。行き先 52 か所 × 汎用の出来事の舞台の矛盾・段の付いていない行（ページを開かない）' },
@@ -139,6 +142,7 @@ const CHECKS = [
   { id: 'pack-audit', name: 'パックの点検の一式（audit-all・HK_ONLY_SCEN）', stage: 'heavy', tags: ['pack'], after: ['pack-site'], est: 150, weight: 2, tools: [TC + 'audit-all.js'], why: '変えた部屋だけ（共有の部品 kit などを変えたらそのパックの全部屋）。長い場面を変えたら --extra=sexflow も' },
   { id: 'pack-feel', name: 'パックの口調の違和感（tone-feel --scen=部屋）', stage: 'heavy', tags: ['pack'], after: ['pack-site'], est: 60, weight: 1, tools: [TC + 'tone-feel.js'], why: '台詞を変えた部屋だけ' },
   { id: 'pack-moan', name: 'パックの喘ぎの口調（moan-tone-audit --scen=部屋）', stage: 'heavy', tags: ['pack'], after: ['pack-site'], est: 120, weight: 1, tools: [TC + 'moan-tone-audit.js', TC + 'moan-audit.js'], why: '喘ぎを変えた部屋だけ' },
+  { id: 'pack-relword', name: 'パックの関係の名前の語（rel-word-audit 部屋）', stage: 'heavy', tags: ['pack'], after: ['pack-site'], est: 30, weight: 1, tools: [TC + 'rel-word-audit.js'], why: '台詞・場面・関係の文を変えた部屋だけ（R18版・全年齢モード）' },
   { id: 'pack-flow', name: 'パックの三人の場面（trio-shape-audit 部屋）', stage: 'heavy', tags: ['pack'], after: ['pack-site'], est: 30, weight: 1, tools: [TC + 'trio-shape-audit.js'], why: '三人の部品を変えた部屋だけ（長い場面はパックの audit-all に --extra=sexflow で入れる）' }
 ];
 

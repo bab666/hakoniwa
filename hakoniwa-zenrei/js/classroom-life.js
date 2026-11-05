@@ -310,7 +310,7 @@
       } else if (b.tr.cold > 0.6) {
         ctx.act2({ actors: [b, a], cat: 'conflict', fx: function () { ctx.stress(a, 20); hurt(ctx, a); ctx.mod(a, b, { ten: 10 }); }, text: ctx.t('{a}はホワイトデーのことを、すっかり忘れていた。{b}は何も言わなかった。', b, a), why: b.name + 'のドライさ' });
       } else {
-        ctx.act2({ actors: [b, a], cat: 'romance', fx: function () { ctx.stress(a, 15); hurt(ctx, a); ctx.mod(b, a, { aff: 4 }); }, text: ctx.t(ctx.pick([HK.Kin && HK.Kin.of(ctx, a, b) ? '{a}はお返しのクッキーを渡して、「これからも、' + HK.Kin.of(ctx, a, b) + 'としてよろしく｜これからも、' + HK.Kin.of(ctx, a, b) + 'としてよろしくな｜これからも、' + HK.Kin.of(ctx, a, b) + 'としてよろしくお願いします」と言った。' : '{a}はお返しのクッキーを渡して、「友達として、これからもよろしく｜友達として、これからもよろしくな｜友達として、これからもよろしくお願いします」と言った。', '{a}は丁寧に包んだお返しと一緒に、申し訳なさそうな顔を{b}に渡した。']), b, a), why: b.name + 'の惹かれは育たなかった（' + Math.round(r.att) + '）' });
+        ctx.act2({ actors: [b, a], cat: 'romance', fx: function () { ctx.stress(a, 15); hurt(ctx, a); ctx.mod(b, a, { aff: 4 }); }, text: ctx.t(ctx.pick([HK.Kin && HK.Kin.of(ctx, a, b) ? '{a}はお返しのクッキーを渡して、「これからも、' + HK.Kin.ofSay(ctx, a, b, 'say') + 'としてよろしく｜これからも、' + HK.Kin.ofSay(ctx, a, b, 'say') + 'としてよろしくな｜これからも、' + HK.Kin.ofSay(ctx, a, b, 'say') + 'としてよろしくお願いします」と言った。' : '{a}はお返しのクッキーを渡して、「友達として、これからもよろしく｜友達として、これからもよろしくな｜友達として、これからもよろしくお願いします」と言った。', '{a}は丁寧に包んだお返しと一緒に、申し訳なさそうな顔を{b}に渡した。']), b, a), why: b.name + 'の惹かれは育たなかった（' + Math.round(r.att) + '）' });
       }
     });
   }

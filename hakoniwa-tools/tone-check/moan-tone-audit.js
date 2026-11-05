@@ -46,7 +46,16 @@ const NOT_PLEA = /(?:(?:勝手に|かってに)、?(?:うごいて|動いて)|(?
 const QUIET_SWEET = new RegExp('(?<=[ぁ-ゖ一-鿿ー])[いきしちにひみりぎじびぴ]ぃ+' + E_ + '|(?<=[ぁ-ゖ一-鿿ー])[うくすつぬふむるぐずぶぷ]ぅ+' + E_ + '|(?<=[ぁ-ゖ一-鿿ー])[おこそとのほもろよごぞどぼぽ]ぉ+' + E_ + '|[てで]ぇ+' + E_ + '|ちょうだい|(?:だ|ん)もん' + E_);
 const FP_ALL = /(?:^|[^ぁ-ゖ])(俺様|オレ様|俺|オレ|僕|ボク|ぼく|あたし|アタシ|わたくし|わたし|私|拙者|わし|わらわ)(?=[はがもをにのとで、。！？…‥」っ　]|$)/g;
 const letters = s => String(s).replace(/[⁠⁡-⁤♡゛ﾞ\s　…‥、。！？!?っッー〜～ぁぃぅぇぉゃゅょ「」（）・]/g, '');
+/* 態度の特徴の語（2026-11-05 利用者の報告「厳格のハオンに『あたま、まわんねえ』」）：強気の表の崩した話し方（〜ねえ・〜んな・うるせえ・てめえ・くっそ・〜ぜ）は、
+   荒く話す口調（ROUGH_TALK。moan-engine.js の同名の表と同じ）か、普段の態度（m.own＝HK.Moan.psBase。夜の性格を入れない）が強気の人だけ。
+   夜の性格「サド」で強気の基盤が当たった厳格・冷静・穏やか・敬語・内気などの人に出たら数える。穏やかの「あらあら」も、強い口調の人に出たら数える */
+const ROUGH_TALK = grp('proud aniki yankee hero chara gyaru tame darui darui_lite darui_talk tsun tsun_n kansai');
+const ROUGH_WORD = new RegExp('うるせえ|てめえ|てめぇ|くっそ|クッソ|じゃねえ|くんねえ|らんね(?:え|ぇ)?' + E_ + '|(?<=[ぁ-ゖ一-鿿])(?<![めこそあどうもら])んね(?:え|ぇ)?' + E_ +
+  '|(?<=[らまがばきみりえけせてめれげべ])(?<![ねネ][えぇ])(?<![だん]が)ね(?:え|ぇ)' + E_ + '|[もが持勝立]たね(?:え|ぇ)' + E_ + '|(?:悪|わる|よ|良|すご|痛|いた|熱|あつ|甘|あま|強|弱|うま|上手)く、?ね(?:え|ぇ)' + E_ +
+  '|(?:^|[、…‥「\\s　♡！!っ。]|[にをはがもで]|調子に)(?:触|さわ|見|止め|とめ|進め|始め|乗|の|来|く|す|ふざけ|ざけ|もったい、?ぶ|ぶ|して|見て|笑って|動|うご|抜|入れ)んな' + E_ + '|(?<=[ぁ-ゖ一-鿿])(?<![なせ])ぜ' + E_);
 const TONE_RULES = [
+  ['態度の特徴の語が別の態度の人に（強気の荒い語）', (q, t, g, m) => !ROUGH_TALK[t] && !(m && m.own === 'proud') && ROUGH_WORD.test(q)],
+  ['態度の特徴の語が別の態度の人に（穏やかの「あらあら」）', (q, t) => STRONG[t] && t !== 'noja' && /(?:^|[、…‥「\s　♡！!？?っ])あら(?:あら|まあ)?(?=[、…‥っッ♡！!？?　\s]|$)/.test(q)],
   ['強い口調に女性的な語尾', (q, t) => STRONG[t] && FEM_END(t).test(q)],
   ['強い口調に甘えた語尾', (q, t) => STRONG[t] && SWEET.test(t === 'noja' ? q.replace(/じゃ/g, '') : q)],
   /* 「勝手に、動いて」は頼みではない */
@@ -66,8 +75,10 @@ function check(m) {
   const q = m.q, t = m.tone, g = m.g;
   return MOAN_RULES.check(q, t, g).concat(TONE_RULES.filter(([, f]) => f(q, t, g, m)).map(([nm]) => nm));
 }
-module.exports = { TONE_RULES, check, STRONG };
-if (require.main !== module) return;
+module.exports = { TONE_RULES, check, STRONG, ROUGH_TALK, ROUGH_WORD };
+/* 単独で回したときだけ集めて数える（require されたときは規則だけ。node --check が通るよう、上の階層で return しない） */
+if (require.main === module) main();
+function main() {
 
 /* ---------- 集める ---------- */
 let files = opt('from') ? opt('from').split(',') : [];
@@ -127,3 +138,4 @@ const show = (list, title) => {
 show(moanHits, '');
 if (DIALOG || WHY) show(dlgHits, '台詞（参考）');
 process.exit(moanHits.length ? 1 : 0);
+}
