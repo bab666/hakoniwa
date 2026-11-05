@@ -93,6 +93,12 @@
     if (HK.Attr) HK.Attr.copy(dst, src);
     /* 一途（恋人ができたら、その恋人がいる間はほかの人に惹かれない・浮気しない。poly.js） */
     dst.faithful = !!src.faithful;
+    /* 恋愛にしない相手（loveNo：恋愛だけを止める。体の関係は止めない）・R18にしない相手（r18No：体の関係・夜だけを止める）。
+       2026-11-05 利用者の指示：恋愛と夜の可否は住人の側で決める（関係ごとの「恋愛：あり／なし」「体の関係」の欄は使わない）。
+       loveNo は住人の印 loveOff（HK.canLove が見る）、r18No は noSex（HK.sexBlocked が見る）に足す。「恋愛・R18にしない相手」（loveNG → ng）は今までどおり両方を止める */
+    var addI = function (k, L) { if (!Array.isArray(L) || !L.length) return; var l = Array.isArray(dst[k]) ? dst[k] : (dst[k] = []); L.forEach(function (x) { x = +x; if (x >= 0 && l.indexOf(x) < 0) l.push(x); }); };
+    addI('loveOff', src.loveNo);
+    addI('noSex', src.r18No);
     return dst;
   };
   /* 恋愛相手の固定（キャラの設定 loveLock：番号か番号の配列）と性行為の相手の固定（sexLock：'any'／番号か番号の配列。sexLockMob が真なら「固定した相手＋モブ」）
@@ -203,6 +209,16 @@
      （恐怖の「体の関係：あり」は noSex に入れない。恐怖の「恋愛：あり」の恋愛は、和らぐまで HK.fearHold で止める） */
   HK.noSexPair = function (a, b) { return !!(a && b && a !== b && ((Array.isArray(a.noSex) && a.noSex.indexOf(b.i) >= 0) || (Array.isArray(b.noSex) && b.noSex.indexOf(a.i) >= 0))); };
   HK.sexBlocked = function (a, b) { if (!a || !b || a === b) return false; return !!(a.noR18 || b.noR18) || HK.ngExplicit(a, b) || coNG(a, b) || HK.sexNG(a, b) || HK.noSexPair(a, b); };
+  /* 住人の設定から見た可否（2026-11-05。パック・箱庭から使う公開の関数。関係の種類は見ない）
+     ・HK.loveOK(a, b)：恋愛してよい二人か（恋愛・R18にしない相手・恋愛にしない相手・恋愛相手の固定・恋愛対象の性別。HK.canLove を両方向）
+     ・HK.bodyOK(a, b)：体の関係を持ってよい二人か（R18にしない相手・R18に参加しない・性行為の相手の固定・受け攻めと恋愛対象。HK.Pos.okSex）
+     ・HK.bodyPick(a, b)：どちらかが相手を「体の相手」（性行為の相手の固定）に選んでいて、体の関係を持ってよい二人か。恋愛に進まない二人でも体だけの夜が起きる */
+  HK.loveOK = function (a, b) { return !!(a && b && a !== b && HK.canLove(a, b) && HK.canLove(b, a)); };
+  HK.bodyOK = function (a, b) { return !!(a && b && a !== b && !HK.SAFE_ON && !HK.sexBlocked(a, b) && (!HK.Pos || !HK.Pos.okSex || HK.Pos.okSex(a, b))); };
+  HK.bodyPick = function (a, b) {
+    var has = function (x, y) { return Array.isArray(x.sexLocks) && x.sexLocks.indexOf(y.i) >= 0; };
+    return !!(a && b && a !== b && (has(a, b) || has(b, a)) && HK.bodyOK(a, b));
+  };
   /* 恋愛はしない（恋愛相手の固定が食い違う）が、体の関係は許されている組。体の関係があっても、恋愛には進まないように補正する（Ctx.say） */
   HK.lockSexOnly = function (a, b) { return !!(a && b && a !== b && HK.lockConflict(a, b) && !HK.ngExplicit(a, b) && !coNG(a, b) && !HK.sexNG(a, b) && !HK.noSexPair(a, b)); };
   /* 恋愛を伴わない体の関係の場面（常識改変・マッサージ・サキュバス・催眠・バラエティ・ダンジョン・遮断穴など）で見る「恋愛・R18にしない組」。
@@ -266,6 +282,18 @@
       if (l.indexOf(q[1].i) < 0) { l.push(q[1].i); (q[0]._fhOff = q[0]._fhOff || []).push(q[1].i); }
     });
   };
+  /* 恐怖の二人の合意の夜の止め（2026-11-05 まとめ役の決定）：恐怖は和らぐまで恋愛も合意の夜も起こさない（関係の種類の傾向として残す）。
+     住人の設定で「体の相手」（性行為の相手の固定）に選んだ二人（HK.bodyPick）は止めない。noSex に入れ、_fhNS（和らいだら外す）・_fearNS（合意のない展開の場面だけ外す。pos.js の HK.Pos.fearSexInfo）に覚える */
+  HK.fearSexHold = function (a, b) {
+    if (!a || !b || a === b) return;
+    [[a, b], [b, a]].forEach(function (q) {
+      var l = q[0].noSex = Array.isArray(q[0].noSex) ? q[0].noSex : [];
+      if (l.indexOf(q[1].i) >= 0) return;
+      l.push(q[1].i);
+      (q[0]._fhNS = q[0]._fhNS || []).push(q[1].i);
+      var tr = q[0]._fearNS = Array.isArray(q[0]._fearNS) ? q[0]._fearNS : []; if (tr.indexOf(q[1].i) < 0) tr.push(q[1].i);
+    });
+  };
   HK.fearHeld = function (a, b) { return !!(a && b && a !== b && ((Array.isArray(a.fearHold) && a.fearHold.indexOf(b.i) >= 0) || (Array.isArray(b.fearHold) && b.fearHold.indexOf(a.i) >= 0))); };
   HK.fearRelease = function (a, b) {
     if (!a || !b || a === b || !HK.fearHeld(a, b)) return false;
@@ -273,12 +301,20 @@
       var c = q[0], o = q[1].i;
       if (Array.isArray(c.fearHold)) c.fearHold = c.fearHold.filter(function (i) { return i !== o; });
       if (Array.isArray(c._fhOff) && c._fhOff.indexOf(o) >= 0) { c._fhOff = c._fhOff.filter(function (i) { return i !== o; }); if (Array.isArray(c.loveOff)) c.loveOff = c.loveOff.filter(function (i) { return i !== o; }); }
+      if (Array.isArray(c._fhNS) && c._fhNS.indexOf(o) >= 0) {
+        c._fhNS = c._fhNS.filter(function (i) { return i !== o; });
+        if (Array.isArray(c.noSex)) c.noSex = c.noSex.filter(function (i) { return i !== o; });
+        if (Array.isArray(c._fearNS)) c._fearNS = c._fearNS.filter(function (i) { return i !== o; });
+      }
     });
     return true;
   };
+  /* 恋愛にしない相手（住人の設定 loveNo → 印 loveOff。恐怖が和らぐまでの止め HK.fearHold も同じ印）の二人か */
+  HK.loveOffPair = function (a, b) { return !!(a && b && a !== b && ((Array.isArray(a.loveOff) && a.loveOff.indexOf(b.i) >= 0) || (Array.isArray(b.loveOff) && b.loveOff.indexOf(a.i) >= 0))); };
   HK.tieLovePair = function (a, b, ctx) {
     if (!a || !b || a === b || !HK.tiesLove) return true;
     if (HK.fearHeld(a, b)) return false;
+    if (!HK.TIE_LOVE_GATE && HK.loveOffPair(a, b)) return false;
     var c0 = ctx && typeof ctx === 'object' ? ctx : HK._curCtx;
     if (c0 && c0.tiesAll && c0.chars && c0.chars[a.i] === a) return HK.tiesLove(c0.tiesAll[key(a, b)]);
     if (ctx && typeof ctx === 'object' && Array.isArray(ctx.ties)) return HK.tiesLove(HK.tiesBetween(ctx.ties, a, b));
@@ -288,10 +324,11 @@
      惹かれを育てない（Ctx.mod）・恋愛の出来事を起こさない（Ctx.romanceOk）・結末で恋人・片想いにしない（classify0）。
      クラスメイトの先生との恋愛の場面の中（ctx._tlScope。classroom-teacher-love.js）は、教師と生徒などの自動の「なし」（loveSoft）を止めない */
   HK.tieLoveNoPair = function (ctx, a, b) {
+    if (!HK.TIE_LOVE_GATE && HK.loveOffPair(a, b)) return true;
     var l = ctx && ctx.tiesAll && a && b && a !== b ? ctx.tiesAll[key(a, b)] : null;
     if (!l || !l.length) return false;
     if (HK.fearHeld(a, b)) return true;
-    if (l.some(function (t) { return t.love === 'no'; })) return true;
+    if (HK.TIE_LOVE_GATE && l.some(function (t) { return t.love === 'no'; })) return true;
     if (!HK.tiesLove) return false;
     var s0 = HK._softLove; if (ctx._tlScope) HK._softLove = true;
     try { return !HK.tiesLove(l); } finally { HK._softLove = s0; }

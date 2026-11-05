@@ -16,7 +16,7 @@
   'use strict';
   var HK = window.HK;
   if (!HK || HK.SexSpot) return;
-  var SP = HK.SexSpot = { cur: null };
+  var SP = HK.SexSpot = { cur: null, time: null };   /* time：場面の時間帯（sex-flow-r18.js が opt.time から置く。'night'・'day'・'morning'） */
 
   /* 場所の語（sex-flow-r18.js の F.PLACE と同じ。読み込み順に依らないように、ここにも持つ） */
   var PLACE = [

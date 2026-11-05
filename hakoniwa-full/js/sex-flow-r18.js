@@ -257,7 +257,7 @@
     look: /\{b\}[はが][^。「]{0,30}(?:見つめ|見上げ|目を合わせ|見返|睨|見下ろ|見入|視線を(?:合わせ|向け|上げ)|目で追|見て(?:い|しま))/,
     /* 2026-11-05：「目を見て」「顔を見せて」「見つめて」も（電車の報告の申し送り。目隠しのあとの見る台詞） */
     lookLine: /(?:こっち|こちら|私|前)を?見(?:ろ|て|な|よ|なさい|るんだ)|目を(?:開け|逸らす|見て|見ろ|閉じるな)|目、見て|見つめ(?:て|ろ|返して)|顔(?:を|、)?(?:見せ|上げ|よく見せ)(?:て|ろ|な|なさい)|顔(?:を|、)?隠す(?:な|んじゃない)/,
-    rearFace: /(?:顔|目|瞳)を[^。]{0,6}(?:じっと)?(?:見つめ|覗き込|のぞき込|見下ろ|のぞ)|見つめ合|目を合わせ|視線を合わせ|視線が絡|額を(?:つけ|合わせ|くっつけ|押し当て|寄せ)|額と額|額をこつん|鼻先を(?:すり|擦|寄せ)|まぶたに|唇を重ね/,
+    rearFace: /見上げ|(?:顔|目|瞳)を[^。]{0,6}(?:じっと)?(?:見つめ|覗き込|のぞき込|見下ろ|のぞ)|見つめ合|目を合わせ|視線を合わせ|視線が絡|額を(?:つけ|合わせ|くっつけ|押し当て|寄せ)|額と額|額をこつん|鼻先を(?:すり|擦|寄せ)|まぶたに|唇を重ね/,
     rearOk: /振り向|振り返|肩越し|鏡|横顔|首をひね|後ろを向かせ(?:たまま)?顔|体を返|向き合|仰向け|向かい合|(?:シーツ|枕|敷布|布団|壁|腕)に額/,
     move: /運(?:ん|び|ぶ|ば)|連れ(?:て|込|出)|移(?:っ|し|動|ろ|る)|向か(?:っ|い|う)|抱き上げ|抱え上げ|抱えて|もつれ(?:る|込)|(?:へ|まで)[^。]{0,6}(?:行|戻|導|誘)|倒れ込|場所を変え|起き上が|降ろ|下ろ|立たせ|立ち上が|引っ張|手を引|押し倒|押しつけ|押し付け|座らせ|寝かせ|横たえ|押し込|引き倒|追い込|崩れ落ち|たどり着|から上が|戻っ|降り/,
     bye: /じゃあ(?:な|ね)|それじゃ(?:あ|、|。|ね)|^では[。、]?$|(?:先に|もう)(?:帰|行|戻|上が)|失礼(?:する|します)|帰って(?:いい|くれ)|出て(?:いけ|って)/,
@@ -430,10 +430,16 @@
     if (st.pending) v.push({ k: 'd', i: units.length, why: '応答待ち（' + st.pending.kind + '：' + st.pending.s + '）で場面が終わる' });
     /* (h) 型の矛盾：着衣なのに脱がせる／型の体位の段のあと（山場まで）に別の体位へ変える動き */
     if (play) {
-      var clx = false;
+      var clx = false, bareSeen = false;
       for (var hi = 0; hi < units.length; hi++) {
         var hf = units[hi].f || (units[hi].f = feat(units[hi], mode));
         if (play.prop === 'chakui' && hf.undress) v.push({ k: 'h', i: hi, why: '着衣の型なのに脱がせる', re: RE.undress });
+        /* 着衣の型で、直に触れたあとに「服の上から」「布越し」に戻る（2026-11-05。電車の申し送り） */
+        if (play.prop === 'chakui') {
+          var htx = narrOf(units[hi].t || '');
+          if (bareSeen && OVER_RE.test(htx)) v.push({ k: 'h', i: hi, why: '着衣の型で直に触れたあとに「' + OVER_RE.exec(htx)[0] + '」', re: OVER_SEN });
+          if (BARE_RE.test(htx)) bareSeen = true;
+        }
         if (hf.climax) clx = true;
         /* 女性の攻め×男性で攻めが腰を落とす言い回し（FM_AUP）は、どの体位でも使うので数えない */
         if (play.lock && posIdx >= 0 && hi > posIdx && !clx) {
@@ -481,6 +487,9 @@
   }
   function psOf(c) { var b = (HK.personaOf ? HK.personaOf(c) : c && c.persona) || (c && c.persona) || 'gentle'; if (HK.Attr && HK.Attr.psNight) b = HK.Attr.psNight(c, null, b) || b; return /^(proud|stern|tsun|gentle|devoted|cool|free|shy|polite)$/.test(b) ? b : 'gentle'; }
   var NOM = /根元|竿|\{男性器\}|\{亀頭\}|ものが|ものを|硬く|吐き出|射精|搾/;
+  /* 着衣の型：直に触れる言い回しと、服の上から触れる言い回し（(h)） */
+  var BARE_RE = /素肌|直に|直接(?:触|撫|肌)|服の(?:下|中)(?:へ|に|で)|裾から(?:手|指)|(?:下着|ショーツ|ボタン)をずら|下着の(?:中|下)|肌に直/;
+  var OVER_RE = /服の上から|布越し|シャツ越し|ブラウス越し|スカート越し|ズボン越し|下着越し|服越し/, OVER_SEN = /[^。]*(?:服の上から|布越し|シャツ越し|ブラウス越し|スカート越し|ズボン越し|下着越し|服越し)[^。]*。/;
   var FACE = /胸に顔|首に腕|見上げ|見つめ|目を合わせ|鼻先|頬を両手|肩に額|顔をのぞ|見下ろ/;
   function noM(b) { var P = HK.Pos; return P && P.hasM ? !P.hasM(b) : false; }
   function flowUnit(text, kind) { return { paras: [text], flow: kind }; }
@@ -990,6 +999,13 @@
   function tap(obj, key, fn) { if (!obj || typeof obj[key] !== 'function') return null; var f0 = obj[key]; obj[key] = fn(f0); return function () { obj[key] = f0; }; }
   function makeWrap(sc0, obj) {
     var f = function (opt) {
+      /* 時間帯（opt.time：'night'・'day'・'morning'。2026-11-05）とモブの性格（opt.mobPersona：態度 9 種。相手がモブのとき、モブの台詞をその性格で選ぶ）：場面のあいだだけ置く */
+      var SPT = HK.SexSpot, tm0 = SPT ? SPT.time : null, mobC = null, mobT = null, mp = opt && opt.mobPersona;
+      if (SPT && opt && opt.time) SPT.time = opt.time;
+      if (mp && opt && opt.a && opt.b && HK.PERSONA && HK.PERSONA[mp]) { mobC = opt.a.mob ? opt.a : opt.b.mob ? opt.b : null; if (mobC) { mobT = { tone: mobC.tone, persona: mobC.persona }; mobC.tone = mp; mobC.persona = mp; } }
+      try { return f1.apply(this, arguments); } finally { if (SPT) SPT.time = tm0; if (mobC) { mobC.tone = mobT.tone; mobC.persona = mobT.persona; } }
+    };
+    var f1 = function (opt) {
       /* 場所（opt.spot。sex-spot-r18.js の HK.SexSpot）：場面のあいだだけ候補を絞り、組み立てたあとに残った言い回しを直す */
       var SPK = HK.SexSpot, spot = SPK && !HK.SAFE_ON && opt ? SPK.of(opt) : '';
       var rs0;

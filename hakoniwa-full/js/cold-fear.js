@@ -68,13 +68,21 @@
   function apaOn(p) { return p.type === 'apathy' && !p.st; }
   CF.fearOn = fearOn; CF.apaOn = apaOn;
   /* 一回の箱庭の組の表（エンジン型 ctx._cf・物語型 S._cf）。鍵は「抱く側>相手」 */
+  /* 「恋愛：あり」の組か。2026-11-05 から可否は住人の設定で決める（ties.js の HK.TIE_LOVE_GATE が偽）：恋愛・R18にしない相手（ng）・恋愛にしない相手（loveNo の印 loveOff。
+     恐怖が和らぐまでの止め HK.fearHold が足した分 _fhOff は除く）に入っていなければ、恋愛に進みうる組として扱う */
+  function lvOf(t, A, B) {
+    if (HK.TIE_LOVE_GATE !== false) return !!(HK.tieLoveOK && HK.tieLoveOK(t));
+    if (!A || !B || (HK.ngPair && HK.ngPair(A, B))) return false;
+    var off = function (x, y) { return Array.isArray(x.loveOff) && x.loveOff.indexOf(y.i) >= 0 && !(Array.isArray(x._fhOff) && x._fhOff.indexOf(y.i) >= 0); };
+    return !(off(A, B) || off(B, A));
+  }
   function build(ties, P) {
     var out = {}, any = false;
     (ties || []).forEach(function (t) {
       if (!t || (t.type !== 'apathy' && t.type !== 'fear') || t.a === t.b || !P[t.a] || !P[t.b]) return;
       var k = t.a + '>' + t.b;
       if (out[k] && out[k].type === 'fear') return;   /* 同じ向きに無関心と恐怖の両方があれば、恐怖を見る */
-      out[k] = { h: t.a, t: t.b, type: t.type, lv: !!(HK.tieLoveOK && HK.tieLoveOK(t)), st: '', deep: 0 };
+      out[k] = { h: t.a, t: t.b, type: t.type, lv: lvOf(t, P[t.a], P[t.b]), st: '', deep: 0 };
       any = true;
     });
     return any ? out : null;

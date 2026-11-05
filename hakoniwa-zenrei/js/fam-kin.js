@@ -32,6 +32,17 @@
       if (!t || t.a === t.b || (t.type !== 'apathy' && t.type !== 'fear')) return;
       var a = P[t.a], b = P[t.b];
       if (!a || !b || a === b) return;
+      /* 2026-11-05：可否は住人の設定だけ（ties.js の HK.TIE_LOVE_GATE が偽）。無関心は印を付けない（避ける重みだけ） */
+      if (!HK.TIE_LOVE_GATE && t.type === 'apathy') return;
+      /* 恐怖：和らぐまで恋愛も合意の夜も起こさない（engine.js の HK.fearHold・HK.fearSexHold。和らいだら cold-fear.js の HK.fearRelease が外す）。
+         住人の設定で体の相手に固定した二人（HK.bodyPick）は夜を止めない（恐れる側に fearBody） */
+      if (!HK.TIE_LOVE_GATE) {
+        if (HK.fearHold) HK.fearHold(a, b);
+        var fo2 = a.fearOf = Array.isArray(a.fearOf) ? a.fearOf : []; if (fo2.indexOf(b.i) < 0) fo2.push(b.i);
+        if (HK.bodyPick && HK.bodyPick(a, b)) { var fb2 = a.fearBody = Array.isArray(a.fearBody) ? a.fearBody : []; if (fb2.indexOf(b.i) < 0) fb2.push(b.i); }
+        else if (HK.fearSexHold) HK.fearSexHold(a, b);
+        return;
+      }
       /* 「恋愛：あり」にした無関心・恐怖（ties.js の HK.tieLoveOK）は、恋愛は止めず、体の関係だけを止める（noSex：engine.js の HK.sexBlocked） */
       var lv = !!(HK.tieLoveOK && HK.tieLoveOK(t)), f = lv ? 'noSex' : 'noLove';
       /* 恐怖（2026-11-03 利用者の指示）：「恋愛：あり」は恐怖が和らぐまで恋愛しない（engine.js の HK.fearHold。和らいだら cold-fear.js が外す）。

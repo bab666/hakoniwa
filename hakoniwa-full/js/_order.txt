@@ -168,6 +168,7 @@ js/room-same.js @scen:whiteroom
 js/room-same-r18.js @scen:whiteroom
 js/room-tie-r18.js @scen:whiteroom
 js/room-tie-r18-more.js @scen:whiteroom
+js/room-body-night-r18.js @scen:whiteroom
 js/room-games.js @scen:whiteroom
 js/room-trio-note.js @scen:whiteroom
 js/room-noexit-note.js @scen:whiteroom

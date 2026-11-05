@@ -209,8 +209,15 @@
     var tt = String(t || '');
     var ns = C.ACT_N[kd].filter(function (n) { return !MOT.some(function (re) { return re.test(n) && re.test(tt); }); });
     if (!ns.length) return '';
-    var n = pick(ns), ln = pick((C.ACT_L[pa] || C.ACT_L.gentle)[kd] || C.ACT_L[pa].none);
-    var rb = pick((C.REACT_B[pb] || C.REACT_B.gentle)[HARD[kd] ? 'hard' : 'soft']);
+    /* 2026-11-05（電車の申し送り）：相手がモブ（住人でない）なら恋人の言葉（大好き・好き・愛して）を出さない。眼鏡の仕草は、目につく特徴に眼鏡がある人だけ */
+    var mobOf = function (c) { return !!(c && (c.mob || c.npc || c.i == null || c.i < 0)); };
+    var glasOf = function (c) { var lk = HK.Attr && HK.Attr.looksOf ? HK.Attr.looksOf(c) || [] : []; return lk.some(function (x) { return /眼鏡|メガネ|めがね/.test(x); }) || (mobOf(c) && /眼鏡|メガネ/.test(String(c.name || '') + String(c.desc || ''))); };
+    var anyMob = mobOf(a) || mobOf(b), LOVE = /大好き|好き(?![嫌勝])|愛して/;
+    var keep = function (l, who) { var f = (l || []).filter(function (x) { return !(anyMob && LOVE.test(x)) && !(/眼鏡/.test(x) && !glasOf(who)); }); return f.length ? f : null; };
+    var lnL = keep((C.ACT_L[pa] || C.ACT_L.gentle)[kd] || C.ACT_L[pa].none, a), rbL = keep((C.REACT_B[pb] || C.REACT_B.gentle)[HARD[kd] ? 'hard' : 'soft'], b);
+    if (!lnL || !rbL) return '';
+    var n = pick(ns), ln = pick(lnL);
+    var rb = pick(rbL);
     return n.replace('{L}', ln) + rb;
   };
 })();

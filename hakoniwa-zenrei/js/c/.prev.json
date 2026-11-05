@@ -1,9 +1,9 @@
 {
  "cur": {
-  "core": "core.3ae86de175.js",
+  "core": "core.e318434924.js",
   "late": "late.e79fd05944.js",
-  "pack-rel": "pack-rel.1d5aea8b5c.js",
-  "pack-sim": "pack-sim.b824a09a27.js",
+  "pack-rel": "pack-rel.8b69668dd4.js",
+  "pack-sim": "pack-sim.bd4a9a48bb.js",
   "scen-goukon": "scen-goukon.9a36a5b797.js",
   "scen-classroom": "scen-classroom.3eb804e61c.js",
   "scen-island": "scen-island.d73a986fd8.js",
@@ -11,7 +11,7 @@
   "pack-trap": "pack-trap.0ffcccb2a9.js",
   "scen-whiteroom": "scen-whiteroom.512ca26305.js",
   "scen-trial": "scen-trial.c3755db66f.js",
-  "scen-omega": "scen-omega.fcdbcf11b6.js",
+  "scen-omega": "scen-omega.0ea4a98e04.js",
   "scen-massage": "scen-massage.7f4aafd289.js",
   "scen-futari": "scen-futari.a2d911cc70.js",
   "scen-zombie": "scen-zombie.7dc95f2d0a.js",
@@ -67,10 +67,10 @@
   "tone-yankee": "tone-yankee.b80142025e.js"
  },
  "prev": {
-  "core": "core.3ae86de175.js",
-  "late": "late.e79fd05944.js",
-  "pack-rel": "pack-rel.1d5aea8b5c.js",
-  "pack-sim": "pack-sim.b824a09a27.js",
+  "core": "core.6c8e3ada88.js",
+  "late": "late.4011e9570e.js",
+  "pack-rel": "pack-rel.8b69668dd4.js",
+  "pack-sim": "pack-sim.bd4a9a48bb.js",
   "scen-goukon": "scen-goukon.9a36a5b797.js",
   "scen-classroom": "scen-classroom.3eb804e61c.js",
   "scen-island": "scen-island.d73a986fd8.js",
@@ -78,7 +78,7 @@
   "pack-trap": "pack-trap.0ffcccb2a9.js",
   "scen-whiteroom": "scen-whiteroom.512ca26305.js",
   "scen-trial": "scen-trial.c3755db66f.js",
-  "scen-omega": "scen-omega.d41e17b9b0.js",
+  "scen-omega": "scen-omega.0ea4a98e04.js",
   "scen-massage": "scen-massage.7f4aafd289.js",
   "scen-futari": "scen-futari.a2d911cc70.js",
   "scen-zombie": "scen-zombie.7dc95f2d0a.js",
@@ -151,16 +151,16 @@
    88
   ],
   "js/core.js": [
-   16708,
-   7202
+   17048,
+   7313
   ],
   "js/ego-desc.js": [
    5598,
    2776
   ],
   "js/ties.js": [
-   80275,
-   23600
+   81218,
+   23808
   ],
   "js/poly.js": [
    35559,
@@ -203,8 +203,8 @@
    20780
   ],
   "js/tone-dict-builtin.js": [
-   90275,
-   16698
+   90655,
+   16775
   ],
   "js/tone-ending.js": [
    27320,
@@ -287,8 +287,8 @@
    4092
   ],
   "js/engine.js": [
-   53024,
-   18040
+   54559,
+   18375
   ],
   "js/sib-word.js": [
    12833,

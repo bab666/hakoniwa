@@ -67,6 +67,8 @@
     if (!a || !b || a === b) return '';
     if (HK.lockSexOnly && HK.lockSexOnly(a, b)) return 'lock';
     if (noneFree(a, b)) return 'none';
+    /* 体の相手（住人の設定「性行為の相手の固定」で相手に選んだ二人。engine.js の HK.bodyPick。2026-11-05）：関係はそのまま、体だけの夜 */
+    if (HK.bodyPick && HK.bodyPick(a, b) && !(HK.ngPair && HK.ngPair(a, b))) return 'body';
     if (offPair(a, b) && !(HK.ngPair && HK.ngPair(a, b))) return 'off';
     if (HK.Pos && HK.Pos.hostile && HK.Pos.hostile(a, b) && !(HK.ngPair && HK.ngPair(a, b))) return 'host';
     if (rom0(a, b) && !(HK.ngPair && HK.ngPair(a, b))) return 'off';
@@ -78,7 +80,7 @@
     var kd = kindOf(a, b);
     if (!kd) return false;
     /* 恋人どうし（敵対を重ねた恋人など）は、恋人の夜の経路に任せる */
-    if ((kd === 'host' || kd === 'off') && eng(ctx) && ctx.pair(a, b).couple) return false;
+    if ((kd === 'host' || kd === 'off' || kd === 'body') && eng(ctx) && ctx.pair(a, b).couple) return false;
     if (!HK.State.pairSex(a, b)) return false;
     if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
     if (a.role === 'teacher' || b.role === 'teacher' || a.minor || b.minor) return false;
@@ -90,7 +92,7 @@
   var F = HK.FreeSex = {};
   F.kind = function (ctx, a, b) { return kindOf(a, b); };
   /* 「恋愛：なし」の二人・敵対や不仲の二人か（2026-10-28 担当MC。恋愛の条件の代わりに HK.Pos.sexDrive で起こりやすさを決める組） */
-  F.lust = function (ctx, a, b) { var k = kindOf(a, b); return (k === 'off' || k === 'host') && HK.State.freeSex(ctx, a, b); };
+  F.lust = function (ctx, a, b) { var k = kindOf(a, b); return (k === 'off' || k === 'host' || k === 'body') && HK.State.freeSex(ctx, a, b); };
   /* 体の関係の経路の起こりやすさ（0〜0.95）：HK.Pos.sexDrive（性欲＋衝動性＋状況）× k。固定した恋人がその場にいれば ×0.3。
      敵対・不仲の倍率（HK.Pos.hostK）は上限で切ったあとに掛ける（性欲が強い二人でも、嫌悪のぶんは起きにくいまま残るように） */
   F.chance = function (ctx, a, b, k) {
@@ -169,12 +171,25 @@
     shy: L('{a}は{b}のことが苦手だった。それなのに、近くにいると胸の音がうるさかった。|「き、嫌いだから……こんなの、今夜だけ｜嫌いだから……こんなのは、今夜だけだ｜き、嫌いですから……こんなの、今夜だけです」――{a}は消え入りそうな声で言って、{b}の服の裾を握った。|{a}は{b}と目が合うたびに逸らしていた。けれど今夜は、逸らしきれなかった。'),
     polite: L('「あなたとは折り合いが悪いけど、今夜だけは休戦にしよう｜あなたとは折り合いが悪いが、今夜だけは休戦だ｜あなたとは折り合いが悪いですが、今夜だけは休戦にいたしましょう」――{a}はそう言って、{b}の手に指を重ねた。|{a}は礼儀正しく、しかし冷ややかに{b}を見た。嫌いな相手だからこそ、乱れるところは見せたくなかった。それなのに、熱は引かなかった。|反りの合わない相手だった。{a}は小さくため息をついてから、{b}の手を取った。')
   };
+  /* 体の相手の二人の導入（{a}＝主に動く人、{b}＝相手）：関係はそのまま、体だけだと分かる地の文（態度9種 × 2 本・3 文。2026-11-05） */
+  F.LEAD_BODY = {
+    proud: L('{a}は{b}との関係に、新しい名前を付けるつもりはなかった。明日になれば、二人はまたいつもの二人に戻る。今夜は体だけ、と{a}は自分で決めていた。|{a}にとって、{b}は恋の相手ではなかった。関係を変える気も、約束をする気もない。それでも今夜の熱だけは、{b}に向けて隠さなかった。'),
+    stern: L('{a}は線を引いたまま、{b}に手を伸ばした。二人の関係は、今夜のあとも何一つ変わらない。体を重ねることと、それとは別の話だった。|{a}は余計な言葉を使わなかった。{b}とは、明日もこれまでどおりの間柄でいる。今夜のことは、体だけのことだと互いに分かっていた。'),
+    tsun: L('{a}はそっぽを向いたまま、{b}の袖を引いた。そういう意味じゃない、と顔に書いてあった。関係はそのままで、今夜だけは体の距離を縮めたかった。|{a}は、{b}に何かを期待しているわけではなかった。好きとか嫌いとかは、今夜の話に入れない。体だけ、と言い聞かせる声は、少しだけ早口だった。'),
+    gentle: L('{a}と{b}のあいだにあるものは、今夜のあとも変わらない。それを壊さないまま、二人は少しだけ近づいた。言葉にしない約束だけが、そこにあった。|{a}は、{b}との今の関係が好きだった。だから、名前を変えずにおきたかった。今夜はただ、体温を分け合うだけにした。'),
+    devoted: L('{a}は、{b}との関係を変えたいとは思っていなかった。求められたぶんだけ、応えたいと思っただけだった。明日になれば、いつもどおりに笑えるはずだった。|{a}は、{b}のそばにいられれば、それでよかった。恋人になりたいわけではない。今夜は体だけを、{b}に預けることにした。'),
+    cool: L('{a}は、これを関係の話にするつもりはなかった。互いに必要なものを分け合うだけだ。明日の二人は、今日の二人と同じでいい。|{a}は条件を確かめるように{b}を見た。関係は今のまま、気持ちは持ち込まない。それで足りると、二人とも分かっていた。'),
+    free: L('{a}は気楽に笑って、{b}の肩に腕を回した。難しいことは考えない。関係はそのまま、今夜は体で楽しむだけだった。|{a}にとって、これは特別な約束ではなかった。明日になれば、いつもの{a}と{b}に戻る。だから今夜は、遠慮をしなかった。'),
+    shy: L('{a}は、うつむいたまま{b}の隣に座った。何かが変わってしまうのは、少し怖かった。だから今夜は、関係の名前には触れずに、体だけを寄せた。|{a}は、{b}との今の関係をなくしたくなかった。それでも、触れたい気持ちは抑えられなかった。体だけなら、明日もきっと同じでいられる。'),
+    polite: L('{a}は、いつもの丁寧さを崩さないまま、{b}に体を寄せた。二人の間柄は、今夜のあとも変わらない。それを確かめ合うように、目を合わせた。|{a}は、{b}との関係に区切りをつける気はなかった。今夜のことは、今夜だけのこととして置いておく。体を重ねても、明日の挨拶はいつもどおりにするつもりだった。')
+  };
   F.persona = function (c) {
     var k = (c && c.persona) || (HK.personaOf && HK.personaOf(c)) || 'gentle';
     return F.LEAD[k] ? k : 'gentle';
   };
   F.lead = function (ctx, a, b) {
     var kd = kindOf(a, b);
+    if (kd === 'body' && F.LEAD_BODY) return fill(pick(ctx, F.LEAD_BODY[F.persona(a)] || F.LEAD_BODY.gentle), a, b);
     if (kd === 'off' || kd === 'host') return fill(pick(ctx, (kd === 'off' ? F.LEAD_OFF : F.LEAD_HOST)[F.persona(a)]), a, b);
     var x = freeOne(a, b), y = x === a ? b : a;
     return fill(pick(ctx, (x.likes === 'none' ? F.LEAD_NONE : F.LEAD)[F.persona(x)]), x, y);
@@ -183,7 +198,8 @@
   F.why = function (a, b) {
     var kd = kindOf(a, b);
     var dw = HK.Pos && HK.Pos.driveWhy ? '（' + HK.Pos.driveWhy(HK._curCtx && HK._curCtx.chars && HK._curCtx.chars[a.i] === a ? HK._curCtx : null, a, b) + '）' : '';
-    if (kd === 'off') return a.name + 'と' + b.name + 'は恋愛にならない関係（' + (offPair(a, b) ? '関係の「恋愛：なし」' : '恋愛の起こりやすさ 0') + '）。恋人にはならないまま、性欲と勢いで体だけの関係に' + dw;
+    if (kd === 'body') return a.name + 'と' + b.name + 'は体の相手（住人の設定「性行為の相手の固定」）。関係はそのまま、体だけの夜に' + dw;
+    if (kd === 'off') return a.name + 'と' + b.name + 'は恋愛にならない関係（' + (offPair(a, b) ? (HK.TIE_LOVE_GATE ? '関係の「恋愛：なし」' : '住人の設定「恋愛にしない相手」') : '恋愛の起こりやすさ 0') + '）。恋人にはならないまま、性欲と勢いで体だけの関係に' + dw;
     if (kd === 'host') return a.name + 'と' + b.name + 'は表面上は嫌い合っている（敵対・不仲）。それでも性欲と衝動に負けて、体だけの関係に（嫌悪のぶん起きにくい）' + dw;
     var x = freeOne(a, b);
     if (x.likes === 'none') {
@@ -225,7 +241,7 @@
       pf.night = true; pf.fwb = true; pf.couple = false; pf.since = null;
       pf.freeSex = (pf.freeSex || 0) + 1;
       /* 体の場面のあと、好意と惹かれが少し上がる（「恋愛：なし」の組の惹かれは engine.js の mod が育てない。2026-10-28 担当MC） */
-      if (kd === 'off' || kd === 'host') { var k0 = ctx.k; ctx.k = 1; ctx.mod2(a, b, { aff: 2, att: 3 }, { aff: 2, att: 3 }); ctx.k = k0; }
+      if (kd === 'off' || kd === 'host' || kd === 'body') { var k0 = ctx.k; ctx.k = 1; ctx.mod2(a, b, { aff: 2, att: 3 }, { aff: 2, att: 3 }); ctx.k = k0; }
       return pf;
     }
     var k = Math.min(a.i, b.i) + '-' + Math.max(a.i, b.i);

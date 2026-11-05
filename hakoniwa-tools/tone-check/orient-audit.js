@@ -72,6 +72,8 @@ const PASS = function* (HK, opt) {
           chars.forEach(c => { c.likes = 'both'; });
           ties.push({ a: 0, b: 1, type: ['sibling', 'parent', 'sibclose', 'relative', 'stepsib'][(s >> 2) % 5], love: '' });
           if (n >= 3) ties.push({ a: 1, b: 2, type: (s >> 2) % 2 ? 'apathy' : 'fear' });
+          /* 2026-11-05：恋愛と夜の可否は住人の設定で決める（ties.js の HK.TIE_LOVE_GATE が偽）。この二組を、互いの「恋愛にしない相手」「R18にしない相手」に入れて回す */
+          if (HK.TIE_LOVE_GATE === false) [[0, 1], [1, 2]].forEach(p => { if (p[1] >= n) return; ['loveNo', 'r18No'].forEach(f => { (chars[p[0]][f] = chars[p[0]][f] || []).push(p[1]); (chars[p[1]][f] = chars[p[1]][f] || []).push(p[0]); }); });
         }
         /* FT の回（2026-10-27 担当HC）：恋愛対象「なし」の三人に、歪んだ関係・執着・敵対（愛憎 双方）を付ける */
         const FT = s % 8 === 6 && n >= 3;
