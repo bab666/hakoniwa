@@ -346,6 +346,8 @@ function decide(R) {
   else skip('butt-word', '体の語の印・喘ぎ・R18 の文を変えていない');
   if (on('kin') || toolOn('kin-label')) add({ id: 'kin-label', stage: 'heavy', label: CHECK['kin-label'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['kin']) || '道具を変えた', scope: sScope, weight: 1, est: sScope === 'all' ? 45 : 15 });
   else skip('kin-label', '血縁の二人の札・文に触れる js を変えていない');
+  if (on('kin') || toolOn('rel-word')) add({ id: 'rel-word', stage: 'heavy', label: CHECK['rel-word'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['kin']) || '道具を変えた', scope: sScope, weight: 1, est: sScope === 'all' ? 150 : 30 });
+  else skip('rel-word', '関係の名前・血縁の文に触れる js を変えていない');
   if (anyOn(['moan', 'serifu', 'tone']) || toolOn('meta-tone')) add({ id: 'meta-tone', stage: 'heavy', label: CHECK['meta-tone'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['moan', 'serifu', 'tone']) || '道具を変えた', scope: sScope, weight: 1 });
   else skip('meta-tone', '台詞・喘ぎ・口調を変えていない');
   if (anyOn(['ui', 'order', 'buildtool']) || toolOn('regress')) ['r18', 'safe', 'zen'].forEach(m => add({ id: 'regress', stage: 'heavy', key: 'regress:' + m, label: CHECK.regress.name + '：' + ({ r18: 'R18版', safe: '全年齢モード', zen: '全年齢版' })[m], mode: m, why: O.all ? '--all' : why(['ui', 'order', 'buildtool']) || '道具を変えた', weight: 1 }));
@@ -374,6 +376,7 @@ function decide(R) {
         if (tg('serifu') || tg('tone')) add({ id: 'pack-feel', stage: 'heavy', key: 'pack-feel:' + room, label: 'パックの tone-feel：' + room, pack: id, room, why: X.why.slice(0, 3).join('・'), weight: 1 });
         else skip('pack-feel', room + '：台詞を変えていない');
         if (tg('moan')) add({ id: 'pack-moan', stage: 'heavy', key: 'pack-moan:' + room, label: 'パックの moan-tone：' + room, pack: id, room, why: X.why.slice(0, 3).join('・'), weight: 1 });
+        if (all || tg('sim') || tg('serifu') || tg('kin')) add({ id: 'pack-relword', stage: 'heavy', key: 'pack-relword:' + room, label: 'パックの rel-word：' + room, pack: id, room, why: X.why.slice(0, 3).join('・'), weight: 1 });
         if (id === 'set-b' && room === 'set-b-kanbyo' && (all || tg('sim') || tg('serifu'))) add({ id: 'kanbyo-role', stage: 'heavy', key: 'kanbyo-role', label: CHECK['kanbyo-role'].name, pack: id, room, why: X.why.slice(0, 3).join('・'), weight: 1 });
         if (tg('trio')) add({ id: 'pack-flow', stage: 'heavy', key: 'pack-flow:' + room, label: 'パックの trio-shape：' + room, pack: id, room, flow: false, trio: true, why: X.why.slice(0, 3).join('・'), weight: 1 });
       });
@@ -439,14 +442,14 @@ function keyOf(t) {
     case 'force-repeat': inp = hashFiles(chunkFiles('full', 'all')); break;
     case 'meta-tone': inp = sha(['full', 'zen'].map(b => hashFiles(chunkFiles(b, t.scope)) + manifestPart(b, t.scope)).join()); break;
     case 'butt-word': inp = hashFiles(chunkFiles('full', t.scope)) + manifestPart('full', t.scope); break;
-    case 'kin-label': inp = sha(['full', 'zen'].map(b => hashFiles(chunkFiles(b, t.scope)) + manifestPart(b, t.scope)).join()); break;
+    case 'kin-label': case 'rel-word': inp = sha(['full', 'zen'].map(b => hashFiles(chunkFiles(b, t.scope)) + manifestPart(b, t.scope)).join()); break;
     case 'regress': { const b = t.mode === 'zen' ? 'zen' : 'full'; inp = hashFiles(chunkFiles(b, 'all')) + manifestPart(b, 'all') + (gitOk(['rev-parse', BASE_SHA + ':' + BUILDS[b]]) || ''); break; }
     case 'chunk-regress': case 'chunk-audit': inp = hashFiles(chunkFiles(t.b, 'all')) + String(readOr(path.join(ROOT, BUILDS[t.b], 'index.html'), '')); break;
     case 'dict-regress': inp = hashFiles(fs.readdirSync(path.join(ROOT, 'hakoniwa-full/js')).filter(f => /^(?:tone-|core|ego-desc|persona)/.test(f)).map(f => 'hakoniwa-full/js/' + f)); break;
     case 'date-setting': inp = packInputs('set-b', 'set-b-date'); break;
     case 'pack-catalog': inp = packInputs(t.pack) + String(readOr(path.join(ROOT, 'docs/reports/2026-11-03/pack-event-catalog.md'), '')); break;
     case 'pack-site': return null;   /* 試しのフォルダは毎回作る（中で build-pack を回す。数十秒） */
-    case 'pack-audit': case 'pack-feel': case 'pack-moan': case 'pack-flow': case 'kanbyo-role': inp = packMainInputs(t.pack) + packInputs(t.pack, t.room) + (packCodes() ? sha(JSON.stringify(packCodes().J[t.pack] || packCodes().J['*'])) : ''); break;
+    case 'pack-audit': case 'pack-feel': case 'pack-moan': case 'pack-flow': case 'pack-relword': case 'kanbyo-role': inp = packMainInputs(t.pack) + packInputs(t.pack, t.room) + (packCodes() ? sha(JSON.stringify(packCodes().J[t.pack] || packCodes().J['*'])) : ''); break;
     default: inp = HEAD_SHA;
   }
   return sha(JSON.stringify(base) + inp);
@@ -583,6 +586,12 @@ const RUN = {
     const m = r.text.match(/kin-label：(\d+) 件/);
     return { rc: r.rc, n: m ? +m[1] : null, sum: m ? '血縁の二人の「友人」' + m[1] + ' 件' : lastLine(r.text), log: r.log };
   },
+  'rel-word': async (t) => {
+    const r = await spawnLog(t, N, [TCD + 'rel-word-audit.js', BUILDS.full, '16', '--zen=' + BUILDS.zen].concat(t.scope === 'all' ? [] : ['--scen=' + t.scope.join(',')]));
+    const m = r.text.match(/rel-word：(\d+) 件/), p = (r.text.match(/直し待ち（[^）]*）：(\d+) 件/g) || []).map(x => +x.replace(/\D+(\d+) 件$/, '$1')).reduce((a, b) => a + b, 0);
+    return { rc: r.rc, n: m ? +m[1] : null, sum: m ? '関係の名前の語 ' + m[1] + ' 件' + (p ? '（別の担当の直し待ち ' + p + ' 件は数えない）' : '') : lastLine(r.text), log: r.log };
+  },
+  'pack-relword': async (t) => { const r = await spawnLog(t, N, [TCD + 'rel-word-audit.js', path.join(SITE(), BUILDS.full), '24', '--modes=r18,safe'], packEnv(t, true)); const m = r.text.match(/rel-word：(\d+) 件/); return { rc: r.rc, n: m ? +m[1] : null, sum: m ? '関係の名前の語 ' + m[1] + ' 件' : lastLine(r.text), log: r.log }; },
   'butt-word': async (t) => {
     const r = await spawnLog(t, N, [TCD + 'butt-word-audit.js', BUILDS.full, '6'].concat(t.scope === 'all' ? [] : [t.scope.join(',')]));
     const m = r.text.match(/\(a\) 受けが女性の体の組[^:]*: (\d+) 件/), mb = r.text.match(/\(b\) [^:]*: (\d+) 件/);

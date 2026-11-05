@@ -1057,6 +1057,24 @@
      HK.Kin.tie(ctx, a, b)：二人のあいだの家族の関係（なければ null）／HK.Kin.word(t, A, B)：血縁の種類の語／HK.Kin.of(ctx, a, b)：その語（なければ ''）
      HK.Kin.name(id, 語, 元の名前)：結末の関係の名前。HK.Kin.FRIEND：友人を表す語（この語を含む名前は「仲の良い〜」に置き換える） */
   var KIN_WORD = { parent: '親子', pparent: '擬似親子', relative: '親戚' };
+  var KIN_NAR = { pparent: ['血の繋がらない親子', '育ての親と子', '血縁のない親子'] };
+  /* 本文で内部の名前を使わない関係の言い方（地の文 REL_NAR・台詞 REL_SAY）。「{rel}として」「{rel}だった二人」「{rel}のまま」に入る名詞の形 */
+  var REL_NAR = { fwb: ['体だけの相手', '割り切った関係の相手', '体だけのつき合いの相手'], ex: ['かつての恋人', '一度は別れた恋人', '昔の恋人'],
+    almost: ['友達とも恋人ともつかない相手', '友達より少しだけ近い相手', '恋人の一歩手前の相手'], enemy: ['犬猿の仲の相手', 'いがみ合ってきた相手', '敵どうし'],
+    bad: ['反りの合わない相手', '顔を合わせればぶつかる相手'], crush: '片想いの相手', honmei: '想い続けてきた相手', yan: '執着してきた相手', worship: '崇めてきた相手',
+    fond: '慕ってきた相手', blind: '信じ切ってきた相手', fear: '怖がってきた相手', apathy: '気にも留めない相手', lovehate: '憎みながら気になる相手', abuse: 'こじれた関係の相手',
+    benefactor: '恩のある相手', inferior: '張り合ってきた相手', superior: '張り合ってきた相手', acq: '顔見知り' };
+  var REL_SAY = { fwb: '体だけの相手', ex: '昔の恋人', almost: '友達', enemy: '敵', bad: '犬猿の仲', crush: '片想いの相手', honmei: '片想いの相手', yan: '相手',
+    worship: '相手', fond: '相手', blind: '相手', fear: '相手', apathy: '他人', lovehate: '相手', abuse: '恋人', benefactor: '恩人', inferior: 'ライバル', superior: 'ライバル', acq: '知り合い' };
+  var kinRotN = 0;
+  /* 言い方を順に回す（同じ回の中では続けて同じにしない）。始まりは二人の名前で決める（配役ごとに違う言い方から始まる。乱数は引かない） */
+  function kinRot(o, k, L, salt) {
+    if (!L.length) return '';
+    var box = o && typeof o === 'object' ? (o.flags && typeof o.flags === 'object' ? o.flags : o) : null, n, h = 0, i;
+    for (i = 0; i < String(salt || '').length; i++) h = (h * 31 + String(salt).charCodeAt(i)) % 9973;
+    if (box) { box._kinSay = box._kinSay || {}; n = box._kinSay[k] = (box._kinSay[k] || 0) + 1; } else n = ++kinRotN;
+    return L[(n - 1 + h) % L.length];
+  }
   var KIN_MOOD = { kinbond: '仲の良い', friends: '仲の良い', partners: '支え合う', kinfeud: '確執のある', awkward: 'ぎくしゃくした', strangers: 'よそよそしい', dislike: '反目し合う', rivals: 'いがみ合う',
     guard: '守り守られる', accomplice: '秘密を分け合う', relbond: '支え合う', lovers: '恋人になった', pining: '両片想いの', oneway: '片想いを抱えた', lovehate: '憎みながら惹かれ合う' };
   HK.Kin = {
@@ -1075,6 +1093,34 @@
       return (t.type === 'stepsib' || t.step ? '義理の' : '') + w;
     },
     of: function (ctx, a, b) { var t = HK.Kin.tie(ctx, a, b); return t ? HK.Kin.word(t, ctx.chars[t.a] || a, ctx.chars[t.b] || b) : ''; },
+    /* 本文で使う言い方（2026-11-05 利用者の指示「擬似親子・義兄弟と本人たちが自称するのは変。『血は繋がっていないものの』などの表現に」）：
+       word は結末・関係図の札の名前。本文（地の文・台詞）では内部の名前（擬似親子・義理のきょうだい・セフレ・元恋人・友達以上恋人未満…）を出さず、この say・rel を使う。
+       say(o, t, A, B, kind)：家族の関係の言い方。kind 'say'＝台詞（擬似親子→「親子」、義理のきょうだい→「姉弟」など）、'nar'（既定）＝地の文（擬似親子→「血の繋がらない親子」「育ての親と子」…）。
+       rel(o, t, A, B, kind)：どの関係でも（家族は say、セフレ→「体だけの相手」、元恋人→「昔付き合っていた相手」など、無ければ関係の表示名）。
+       o は回の状態（エンジンの ctx・物語型の S）。言い方を順に回して同じ言い方が続かないようにする（乱数は引かない） */
+    say: function (o, t, A, B, kind) {
+      if (!t) return '';
+      var nar = kind !== 'say', w;
+      if (t.type === 'parent') return '親子';
+      var salt = (A && A.name || '') + (B && B.name || '');
+      if (t.type === 'pparent') return nar ? kinRot(o, 'pp', KIN_NAR.pparent, salt) : '親子';
+      if (t.type === 'relative' && !t.step) return '親戚';
+      w = HK.Sib && HK.Sib.pairWord && A && B ? HK.Sib.pairWord(A, B, { tie: t }) : 'きょうだい';
+      if (t.type === 'twin' && w.indexOf('双子') < 0) w = '双子';
+      if (!(t.type === 'stepsib' || t.step) || !nar) return w;
+      return kinRot(o, 'st', (w === 'きょうだい' ? [] : ['義理の' + w]).concat(['親の再婚で家族になった' + w, 'あとから家族になった' + w]), salt);
+    },
+    /* 向きのある関係の呼び名（本文用）：擬似親子の roleA「親代わり」→「親」（{ra} の顔で・{ra} としては に入る）。ほかは関係の roleA／roleB */
+    role: function (t, side) { var D = t && (HK.TIES || {})[t.type] || {}; if (t && t.type === 'pparent') return side === 'b' ? '子' : '親'; return (side === 'b' ? D.roleB : D.roleA) || ''; },
+    ofSay: function (ctx, a, b, kind) { var t = HK.Kin.tie(ctx, a, b); return t ? HK.Kin.say(ctx, t, ctx.chars[t.a] || a, ctx.chars[t.b] || b, kind) : ''; },
+    rel: function (o, t, A, B, kind) {
+      if (!t) return '';
+      var D = (HK.TIES || {})[t.type] || {};
+      if (D.family) return HK.Kin.say(o, t, A, B, kind);
+      var L = kind === 'say' ? REL_SAY[t.type] : REL_NAR[t.type];
+      if (L) return typeof L === 'string' ? L : kinRot(o, 'r' + t.type, L, (A && A.name || '') + (B && B.name || ''));
+      return String((HK.tieLabel ? HK.tieLabel(t) : D.label) || '').replace(/（[^）]*）/g, '');
+    },
     /* 様子の決まった結末は「様子＋語」。ほかは、名前がもう血縁を言っていればそのまま、友人の名前は「仲の良い〜」、それ以外は「名前（語）」 */
     name: function (id, k, nm) {
       if (!k) return nm;

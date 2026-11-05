@@ -344,7 +344,8 @@
   function sibWord(H, X0, t, pair) {
     var S = HK.Sib, env = { tie: t }, w = '';
     if (S) w = pair ? S.pairWord(H, X0, env) : S.rel(X0, H, env);
-    return (t.step ? '義理の' : '') + (w || 'きょうだい');
+    /* 上下・性別が分からないときは「きょうだい」だけ（「義理のきょうだい」は関係の名前なので台詞に出さない。2026-11-05） */
+    return (t.step && w && w !== 'きょうだい' ? '義理の' : '') + (w || 'きょうだい');
   }
   W.words = function (ctx, t, H, X0) {
     var up = ctx.chars[t.a] === H, g = gen(H);
@@ -355,7 +356,7 @@
       case 'teacher': return { rel: '教師と生徒', my: up ? '教師' : '生徒' };
       case 'abuse': return { rel: '恋人', my: '恋人' };
       case 'parent': case 'pparent':
-        return { rel: '親子', my: up ? (t.type === 'pparent' ? '親代わり' : g === 'f' ? '母親' : g === 'm' ? '父親' : '親') : g === 'f' ? '娘' : g === 'm' ? '息子' : '子' };
+        return { rel: '親子', my: up ? (t.type === 'pparent' ? '育ての親' : g === 'f' ? '母親' : g === 'm' ? '父親' : '親') : g === 'f' ? '娘' : g === 'm' ? '息子' : '子' };
       case 'relative': if (!t.step) return { rel: '親戚', my: '親戚' };
       /* falls through：義理のきょうだいは、きょうだいと同じ */
       default: return { rel: sibWord(H, X0, t, true), my: sibWord(H, X0, t, false) };

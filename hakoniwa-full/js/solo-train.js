@@ -332,17 +332,18 @@
     var l = HK.TIES[t.type] ? HK.TIES[t.type].label : '';
     return { enemy: '敵どうし', rival: 'ライバルどうし', bad: '不仲な二人', boss: '上司と部下', senpai: '先輩と後輩', classmate: '同級生', teacher: '教師と生徒', mentor: '師弟', colleague: '同僚', buddy: '相棒', comrade: '仲間', master: '主従', benefactor: '恩人と恩を受けた側', lovehate: '愛憎の二人', inferior: '引け目のある二人', superior: '張り合う二人', apathy: '互いに無関心な二人', fear: '怖れのある二人' }[t.type] || l || '';
   }
-  function kinWord(S, a, b) {
+  function kinWord(S, a, b, kind) {
     var t = (S.ties || []).filter(function (x) { return x && HK.TIES[x.type] && HK.TIES[x.type].family && ((x.a === a.i && x.b === b.i) || (x.a === b.i && x.b === a.i)); })[0];
-    return t && HK.Kin ? HK.Kin.word(t, t.a === a.i ? a : b, t.a === a.i ? b : a) || '家族' : '家族';
+    /* 本文の言い方（地の文 kind 'nar'＝血の繋がらない親子 など／台詞 'say'＝親子・姉弟。擬似親子・義理のきょうだいの名前は本文に出さない。2026-11-05） */
+    return t && HK.Kin ? (HK.Kin.say ? HK.Kin.say(S, t, t.a === a.i ? a : b, t.a === a.i ? b : a, kind) : HK.Kin.word(t, t.a === a.i ? a : b, t.a === a.i ? b : a)) || '家族' : '家族';
   }
   function relJa(S, rel) { return rel === 'kin' ? S.kinW || '家族' : (rel === 'foe' || rel === 'work') && S.relW ? S.relW : REL_JA[rel]; }
   function KL(t) { return t.split('|'); }
   /* 家族の二人の文（{k}＝親子・姉弟などの語。ほかの関係の文は solo-train-ero.js・solo-train-text2.js） */
   var KIN_T = {
-    lead: KL('{r}と{o}は{k}だった。けれど、満員の車内で向かい合わせに押しつけられ、周りの誰もが慰め合っているのを見ると、{k}だからと手を引っ込めるほうが、この路線では不自然に思えた。|二人は顔を見合わせ、少しだけ気まずそうに笑った。{k}でも、この路線ではマナーはマナーだ。{r}がそっと{o}の腰に手を添えると、{o}は目を伏せたまま頷いた。'),
-    rescue: KL('{r}と{o}は{k}だった。それでも、ホームのベンチで火照った体を持て余す{o}を、{r}は放っておけなかった。「＠{o}＠……ねえ、少しだけ、そばにいて｜……少しだけ、そばにいてくれ｜……少しだけ、そばにいてください」――その一言で、二人は、{k}として引いてきた線を越えた。|改札を出ても、{o}の熱は引かなかった。{k}として何度も一緒に帰った道を、{r}は{o}の手を引いて、いつもと違う気持ちで歩いた。'),
-    after: KL('夜が明けるころ、二人は並んで天井を見ていた。「＠{b}＠……明日からも、{k}の顔でいられるかな｜……明日からも、{k}の顔でいられるだろうか｜……明日からも、{k}の顔でいられるでしょうか」――{b}の問いに、{a}はすぐには答えられなかった。|果てたあと、{a}は{b}の髪を、昔と同じ手つきで撫でた。{k}として過ごしてきた年月と、今夜のことが、同じ手のひらの中にあった。')
+    lead: KL('{r}と{o}は{k}だった。けれど、満員の車内で向かい合わせに押しつけられ、周りの誰もが慰め合っているのを見ると、{ks}だからと手を引っ込めるほうが、この路線では不自然に思えた。|二人は顔を見合わせ、少しだけ気まずそうに笑った。{ks}でも、この路線ではマナーはマナーだ。{r}がそっと{o}の腰に手を添えると、{o}は目を伏せたまま頷いた。'),
+    rescue: KL('{r}と{o}は{k}だった。それでも、ホームのベンチで火照った体を持て余す{o}を、{r}は放っておけなかった。「＠{o}＠……ねえ、少しだけ、そばにいて｜……少しだけ、そばにいてくれ｜……少しだけ、そばにいてください」――その一言で、二人は、{ks}として引いてきた線を越えた。|改札を出ても、{o}の熱は引かなかった。{ks}として何度も一緒に帰った道を、{r}は{o}の手を引いて、いつもと違う気持ちで歩いた。'),
+    after: KL('夜が明けるころ、二人は並んで天井を見ていた。「＠{b}＠……明日からも、{ks}の顔でいられるかな｜……明日からも、{ks}の顔でいられるだろうか｜……明日からも、{ks}の顔でいられるでしょうか」――{b}の問いに、{a}はすぐには答えられなかった。|果てたあと、{a}は{b}の髪を、昔と同じ手つきで撫でた。{ks}として過ごしてきた年月と、今夜のことが、同じ手のひらの中にあった。')
   };
 
   /* ---------- 長い場面（終点前の満員車両・二人の夜） ---------- */
@@ -715,7 +716,7 @@
       else S.mode = 'same';
       S.pairOk = pairSexOk(S, P[0], P[1]);
       S.rel = relOf(S, P[0], P[1]);
-      if (S.rel === 'kin') S.kinW = kinWord(S, P[0], P[1]);
+      if (S.rel === 'kin') { S.kinW = kinWord(S, P[0], P[1]); S.kinS = kinWord(S, P[0], P[1], 'say'); }
       S.relW = relWord(S, P[0], P[1]);
       /* 受け同士・攻め同士（体の関係の向きが決まらない二人）は、手と口まで（挿入しない。NO 16） */
       S.pairSoft = !S.pairOk && pairSoftOk(S, P[0], P[1]);
@@ -1351,7 +1352,7 @@
       /* 二日目からは「昨日の続き」の文（初対面の二人に「初めて乗り合わせた」を繰り返さない。報告 7）。敵対・同僚などは関係の名前で（{k}） */
       var plist = S.pairDays ? (S.lastPairDay === S.day - 1 || !D.PAIR_LEAD_GAP ? D.PAIR_LEAD_AGAIN : D.PAIR_LEAD_GAP) : rel === 'kin' ? KIN_T.lead : (rel === 'foe' || rel === 'work') && D.PAIR_LEAD_X ? D.PAIR_LEAD_X[rel] : D.PAIR_LEAD[rel] || D.PAIR_LEAD.stranger;
       S.pairDays = (S.pairDays || 0) + 1; S.lastPairDay = S.day;
-      lead(S, [T, U], fm(pk(S, plist), { r: T.name, o: U.name, k: rel === 'kin' ? S.kinW || '家族' : S.relW || '知り合い', d: S.day, n: S.pairDays }) + '\n\n' + fm(pk(S, D.PAIR_SIGN), { r: T.name, o: U.name }), '連れどうしで、常識どおりに（' + relJa(S, rel) + '・' + (soft ? '受け攻めの向きが決まらない二人なので、手と口まで' : T.name + 'が攻め') + '）・合図は目と手');
+      lead(S, [T, U], fm(pk(S, plist), { r: T.name, o: U.name, k: rel === 'kin' ? S.kinW || '家族' : S.relW || '知り合い', ks: S.kinS || S.kinW || '家族', d: S.day, n: S.pairDays }) + '\n\n' + fm(pk(S, D.PAIR_SIGN), { r: T.name, o: U.name }), '連れどうしで、常識どおりに（' + relJa(S, rel) + '・' + (soft ? '受け攻めの向きが決まらない二人なので、手と口まで' : T.name + 'が攻め') + '）・合図は目と手');
     }
     var stg = S.pairStg || 0, V = { a: T.name, b: U.name };
     [T, U].forEach(function (p) { p.pairToday = S.day; p.m.plea = clamp(p.m.plea + 12 * p.sens * p.libK, 0, 100); p.pleaPk = Math.max(p.pleaPk, p.m.plea); p.cnt.touch++; p.cnt.pair++; p.m.reason = clamp(p.m.reason - 3, 0, 100); });
@@ -1562,9 +1563,9 @@
     }
   }
   function rescueNight(S, T, R, kind, pr) {
-    var mode = modeOf(T, R), rel = S.rel, V = { r: T.name, o: R.name, k: rel === 'kin' ? S.kinW || '家族' : S.relW || '知り合い' };
+    var mode = modeOf(T, R), rel = S.rel, V = { r: T.name, o: R.name, k: rel === 'kin' ? S.kinW || '家族' : S.relW || '知り合い', ks: S.kinS || S.kinW || '家族' };
     lead(S, [T, R], fm(pk(S, rel === 'kin' ? KIN_T.rescue : (rel === 'foe' || rel === 'work') ? X.LEAD_RESCUE_X[rel] : X.LEAD_RESCUE[rel]), V) + (X.LEAD_RESCUE_T[kind] && X.LEAD_RESCUE_T[kind].length && X.LEAD_RESCUE_T[kind][0] ? fm(pk(S, X.LEAD_RESCUE_T[kind]), V) : ''), '車内で火照った体のまま、' + T.name + 'に引き寄せられて降りた（' + relJa(S, rel) + '・' + { high: '攻めの性欲が強い', low: '攻めの性欲が弱い', jeal: 'ほかの乗客に触れられたのを気にした', calm: '攻めは落ち着いていた' }[kind] + '・起きやすさ ' + Math.round(pr * 100) + '%）');
-    var text = S.lv === 'low' ? fm('その夜、{r}と{o}は灯りを落とした部屋で、車内の熱の続きを分け合った。翌朝、{o}の首筋には、{r}の残した小さな跡があった。', V) : longScene(S, T, R, { car: false, open: pk(S, X.OPEN_ROOM[mode]), after: rel === 'kin' ? fm(pk(S, KIN_T.after), { k: S.kinW || '家族' }) : (rel === 'foe' || rel === 'work') ? fm(pk(S, X.AFTER_RESCUE_X[rel]), { a: '{a}', b: '{b}', k: S.relW || '知り合い' }) : pk(S, X.AFTER_RESCUE[rel]) });
+    var text = S.lv === 'low' ? fm('その夜、{r}と{o}は灯りを落とした部屋で、車内の熱の続きを分け合った。翌朝、{o}の首筋には、{r}の残した小さな跡があった。', V) : longScene(S, T, R, { car: false, open: pk(S, X.OPEN_ROOM[mode]), after: rel === 'kin' ? fm(pk(S, KIN_T.after), { k: S.kinW || '家族', ks: S.kinS || S.kinW || '家族' }) : (rel === 'foe' || rel === 'work') ? fm(pk(S, X.AFTER_RESCUE_X[rel]), { a: '{a}', b: '{b}', k: S.relW || '知り合い' }) : pk(S, X.AFTER_RESCUE[rel]) });
     T.cnt.night++; R.cnt.night++; R.m.plea = 15; S.rescueNight = (S.rescueNight || 0) + 1;
     if (loveOk(S, T, R) && bondRel(S)) S.bonded = true; S.bodied = true;
     var o = say(S, { actors: [T, R], tag: '夜', lewd: true, text: text, why: T.name + 'が攻め（攻めの指定）・' + R.name + 'は車内の熱のまま', mag: 30 });
