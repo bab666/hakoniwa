@@ -752,6 +752,7 @@
   var RIDE3 = /跨|腰を[^。、]{0,4}(?:落と|沈め)|身を沈め|呑み込|呑みこ|飲み込|迎え入れ|自分の(?:中|奥|ナカ|\{ナカ\}|内側)|騎乗/;
   var TOOL3 = /指|舌|張り型|ペニバン|ディルド|バイブ|玩具/;
   EP.FRONT = FRONT; EP.KEEP = KEEP; EP.INS = INS;
+  EP.fixLog = null;
   /* 受け U の後ろに、T のほかの人（男性器・ペニバン）が入る組か */
   function backBy(C, T, U) {
     var T3 = HK.Trio3;
@@ -782,6 +783,8 @@
         var lead = (sen.match(/^\s+/) || [''])[0];
         var tab = back ? FRONT[st] : inBefore ? KEEP[st] : INS[sp ? 'sp' : 'fg'][st];
         var pool = tab.filter(function (x) { return !used[x]; });
+        /* 計測（EP.fixLog に配列を入れたときだけ）：この置き換え（安全網）が働いた文。元の表の文が直っていれば 0 に近づく */
+        if (EP.fixLog) EP.fixLog.push({ t: T.name, u: U.name, back: back, drop: !!(n || !pool.length), sen: sen });
         if (n++ || !pool.length) return lead;
         var t = pool[R.int(pool.length)]; used[t] = 1;
         if (!back) inBefore = true;
@@ -813,9 +816,11 @@
       if (HK.SAFE_ON || !ns.length || typeof text !== 'string' || !A) return f0.apply(this, arguments);
       var all = ns.concat([A.name, bn]).sort(function (x, y) { return y.length - x.length; }).map(function (n) { return HK.reEsc ? HK.reEsc(n) : n; });
       var reS = new RegExp('(' + all.join('|') + ')(?:は|が|も)'), keep = [];
+      /* 2026-11-05：主語の形でなくても、最初に出る名前が三人目で、女性の攻めが主語でない文（「ミナトの張り型が、…ユキノの{ナカ}を貫いた」）も伏せる */
+      var reN = new RegExp('(' + all.join('|') + ')'), reA = new RegExp((HK.reEsc ? HK.reEsc(A.name) : A.name) + '(?:は|が|も)');
       var masked = text.replace(/[^。！？「」]*(?:「[^」]*」[^。！？「」]*)*[。！？]/g, function (sen) {
-        var m = reS.exec(sen.replace(/「[^」]*」/g, ''));
-        if (!m || ns.indexOf(m[1]) < 0) return sen;
+        var b0 = sen.replace(/「[^」]*」/g, ''), m = reS.exec(b0), m1 = reN.exec(b0);
+        if (!(m && ns.indexOf(m[1]) >= 0) && !(m1 && ns.indexOf(m1[1]) >= 0 && !reA.test(b0))) return sen;
         keep.push(sen);
         return '\u2063' + (keep.length - 1) + '\u2063。';
       });

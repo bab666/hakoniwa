@@ -1,3 +1,4 @@
+/* @event-ok 三人の夜の女性の攻め×男性の受けの跨る文・後ろが埋まった受けへの指の文を、形と場面の状態で選ぶ文に直した（新しい出来事ではない。2026-11-05） */
 /* @event-ok 名前の呼びかけを減らした（2026-11-01 担当NC） */
 /* @event-ok 事後の返事を追加（2026-10-29 担当MS） */
 /* 箱庭シミュレーター（R18版のみ）: 三人の場面（3P）の組み立て（HK.Trio3）。2026-10-28 担当JC
@@ -775,6 +776,25 @@
     if (this._strap == null) this._strap = this.o.strap != null ? !!this.o.strap : this.E.some(function (e) { return X.strapOk(e[0], e[1]); }) && this.rand() < X.STRAP_P;
     return this._strap;
   };
+  /* 呼ぶ側が自分の文で繋がる段を書く場面（媚薬ロッカーの二人ずつの最中など）：この組をペニバンの組にするか（使える組で、場面のペニバンが決まっていれば印を付けて真。2026-11-05） */
+  Comp.prototype.useSp = function (a, b) {
+    if (!X.strapOk(a, b)) return false;
+    this._spCap = true;
+    if (!this.strapOn()) return false;
+    if (!this.isSp(a, b)) this._spE.push([a, b]);
+    return true;
+  };
+  /* 攻め×攻め×受け（twoOne）で、受けの中（後ろ。受けが女性の体なら下）に入っている攻め：mouth＝{t}（{m}は前で口）・updown＝男性器の攻め・alt＝あとの{m}（交代）・both＝{m}（{t}は前）。
+     ほかの形は null。呼ぶ側（thick-sex-ero.js の trioSoft・locker-crowd-r18.js の tpKey）は、この人でない攻めに指・張り型を受けの中へ入れさせない（2026-11-05） */
+  Comp.prototype.backBy = function () {
+    var sp = this.sp;
+    if (sp.p !== 'twoOne') return null;
+    var v = this.variant();
+    if (v === 'mouth') return sp.t;
+    if (v === 'updown') return edgeKind(sp.t, sp.u) === 'm' ? sp.t : sp.m;
+    if (v === 'alt' || v === 'both') return sp.m;
+    return sp.t;
+  };
   Comp.prototype.isSp = function (a, b) { return this._spE.some(function (e) { return e[0] === a && e[1] === b; }); };
   /* 組の体（繋がる段でペニバンを使った組は sp） */
   Comp.prototype.ek = function (a, b) { return this.isSp(a, b) ? 'sp' : edgeKind(a, b); };
@@ -855,7 +875,16 @@
     if (!T || !T.AFTF[sp.p]) return null;
     var tab = T.AFTF[sp.p], who = sp.p === 'twoOne' ? sp.u : sp.p === 'sandwich' ? sp.m : sp.t;
     if (tab['*']) tab = { gentle: tab['*'] };
-    return { who: who, line: this.say3(who, tab, this.r3()) };
+    /* 一回の遊びで同じ一言は 2 回まで（2026-11-05。数は乱数の持ち主に置く：E.fresh と同じ。使い切ったら呼ぶ側の三人の事後の一言 AFT3 のまま） */
+    var arr = tab[psOf(who)] || tab.gentle || [];
+    if (this.fl && HK.EroFlavor && HK.EroFlavor.trim) arr = HK.EroFlavor.trim(arr, this.fl);
+    var own = (this.S && this.S.rng) || this.S, cnt = own && (typeof own === 'object' || typeof own === 'function') ? (own._trioAft || (own._trioAft = {})) : {};
+    arr = arr.filter(function (l) { return (cnt[l] || 0) < 2; });
+    if (!arr.length) return null;
+    var l = this.pk(arr);
+    if (!l) return null;
+    cnt[l] = (cnt[l] || 0) + 1;
+    return { who: who, line: this.say3(who, { gentle: [l] }, this.r3(), undefined, undefined, 0) };
   };
   /* ---------- 場面の状態（HK.SexFlow と同じ見方：段階・体位・使った動き・応答待ち） ---------- */
   var POSTURE = { twoOne: { mouth: 'rear', alt: 'aUp', both: 'bUp', updown: 'rear' }, oneTwo: { alt: 'aUp', row: 'aUp', wait: 'aUp', touch: 'aUp' }, sandwich: { press: 'rear', step: 'rear' }, show: { one: 'aUp' } };

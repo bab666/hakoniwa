@@ -1,3 +1,4 @@
+/* @event-ok 三人の夜の女性の攻め×男性の受けの跨る文・後ろが埋まった受けへの指の文を、形と場面の状態で選ぶ文に直した（新しい出来事ではない。2026-11-05） */
 /* @event-ok 名前の呼びかけを減らした（2026-11-01 担当NC） */
 /* 箱庭シミュレーター: 媚薬ロッカー ― 一人のとき・三人以上のとき（全年齢版も同じ）
    ・一人：媚薬の満ちるロッカーに一人きり。耐える（全年齢・R18に参加しない人）か、一人で慰める（R18版。文は locker-crowd-r18.js）。
@@ -1044,7 +1045,9 @@
     var nUsed = {}, nLab = [];
     S.trioNight = '';
     prs.forEach(function (z, zi) {
-      put(zi ? 'mid' : 'in', ST.fmt(pk((H ? R.TPW : R.TP)[modeOf(z[0], z[1])]), { a: z[0].name, b: z[1].name, c: z[2].name }), zi || !th3 ? 2 : 1);
+      /* 組の鍵は R.tpKey（体の組・ペニバン・受けの中にもう一人が入っているか。2026-11-05）。無ければ modeOf */
+      var tk = R && R.tpKey ? R.tpKey(z[0], z[1], sp, T3) : null, TPT = H ? R.TPW : R.TP;
+      put(zi ? 'mid' : 'in', ST.fmt(pk(TPT[tk && TPT[tk] ? tk : modeOf(z[0], z[1])]), { a: z[0].name, b: z[1].name, c: z[2].name }), zi || !th3 ? 2 : 1);
       if (!LK.nightLine) return;
       var uT = nUsed['a' + z[0].i], uB = nUsed['b' + z[1].i];
       if (uT && uB) return;

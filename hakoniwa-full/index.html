@@ -1660,17 +1660,17 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
 <!-- 古いブラウザの知らせ（2026-11-04）：本体は正規表現の後読み（iOS 16.4・Safari 16.4 から）を使うので、それより前の版では読み込みの段階で止まり、何も表示されない。そのときだけ、何が要るかを画面の上に出す -->
 <script>(function(){try{new RegExp('(?<=a)b');}catch(e){document.addEventListener('DOMContentLoaded',function(){var d=document.createElement('p');d.setAttribute('role','alert');d.style.cssText='margin:12px 16px;padding:12px 14px;border:1px solid #c33;border-radius:8px;background:#fff;color:#16233b;font-size:14px;line-height:1.7';d.textContent='このブラウザの版では箱庭シミュレーターが動きません。iPhone・iPad は iOS 16.4 以降、Mac の Safari は 16.4 以降に更新してください（Chrome・Edge・Firefox の新しい版でも動きます）。';document.body.insertBefore(d,document.body.firstChild);});}})();</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"ba2dc3bea1","api":1,"build":"full","core":"js/c/core.27ec97454b.js",
+<script>window.HK_MANIFEST={"v":"3764005082","api":1,"build":"full","core":"js/c/core.27ec97454b.js",
 "chunks":{
-  "late":{"src":"js/c/late.0c9ab2ce27.js","br":230616,"deps":["pack-sim","pack-lewd"]},
+  "late":{"src":"js/c/late.789d92c591.js","br":230739,"deps":["pack-sim","pack-lewd"]},
   "pack-sim":{"src":"js/c/pack-sim.3137f0d567.js","br":155699,"deps":[]},
   "pack-rel":{"src":"js/c/pack-rel.4092a88bb4.js","br":385251,"deps":["pack-sim","pack-lewd"]},
-  "pack-lewd":{"src":"js/c/pack-lewd.a94564645e.js","br":542221,"deps":["pack-sim"]},
+  "pack-lewd":{"src":"js/c/pack-lewd.055dbbd789.js","br":545755,"deps":["pack-sim"]},
   "scen-goukon":{"src":"js/c/scen-goukon.74fe310c08.js","br":92810,"deps":["pack-sim","pack-rel"]},
   "scen-classroom":{"src":"js/c/scen-classroom.1e871b9ef8.js","br":102661,"deps":["pack-sim","pack-rel"]},
   "scen-island":{"src":"js/c/scen-island.98b8038a87.js","br":91549,"deps":["pack-sim","pack-rel"]},
   "pack-trap":{"src":"js/c/pack-trap.be7fb54722.js","br":33407,"deps":["pack-sim","pack-lewd"]},
-  "scen-whiteroom":{"src":"js/c/scen-whiteroom.e4fbf55b32.js","br":393964,"deps":["pack-sim","pack-rel","pack-trap"]},
+  "scen-whiteroom":{"src":"js/c/scen-whiteroom.114e5808a5.js","br":394059,"deps":["pack-sim","pack-rel","pack-trap"]},
   "scen-omega":{"src":"js/c/scen-omega.9799acd010.js","br":174042,"deps":["pack-sim","pack-rel"]},
   "scen-br":{"src":"js/c/scen-br.436e0e8d7c.js","br":12381,"deps":["pack-sim","pack-rel"]},
   "scen-trial":{"src":"js/c/scen-trial.795e333267.js","br":9436,"deps":["pack-sim","pack-rel"]},
@@ -1684,7 +1684,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "scen-succubus":{"src":"js/c/scen-succubus.38e397fb93.js","br":103018,"deps":["pack-sim","pack-rel","pack-solo"]},
   "scen-saimin":{"src":"js/c/scen-saimin.47c1b03f2c.js","br":142173,"deps":["pack-sim","pack-rel","pack-solo"]},
   "scen-variety":{"src":"js/c/scen-variety.cfc5697fd5.js","br":99959,"deps":["pack-sim","pack-rel","pack-solo"]},
-  "scen-locker":{"src":"js/c/scen-locker.b00c6b1f1d.js","br":192945,"deps":["pack-sim","pack-rel","pack-solo","pack-trap"]},
+  "scen-locker":{"src":"js/c/scen-locker.d8417f2434.js","br":194395,"deps":["pack-sim","pack-rel","pack-solo","pack-trap"]},
   "scen-jashin":{"src":"js/c/scen-jashin.a07ed4b3d5.js","br":332848,"deps":["pack-sim","pack-story"]},
   "scen-yakata":{"src":"js/c/scen-yakata.88677bf27d.js","br":124473,"deps":["pack-sim","pack-story"]},
   "scen-ship":{"src":"js/c/scen-ship.7502c1dfac.js","br":259512,"deps":["pack-sim","pack-story"]},

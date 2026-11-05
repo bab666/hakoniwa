@@ -1,3 +1,4 @@
+/* @event-ok 三人の夜の女性の攻め×男性の受けの跨る文・後ろが埋まった受けへの指の文を、形と場面の状態で選ぶ文に直した（新しい出来事ではない。2026-11-05） */
 /* 箱庭シミュレーター: 出られない部屋 ― 三人以上で一緒に条件を満たして出る（三人婚の芽）
    ・扉の紙の但し書き「三人以上で同時に行った場合、参加者全員がそれぞれ条件を満たしたものとみなす」
    ・三人になるきっかけ：選べない三角関係／恋人同士が取り残されそうな一人を誘う／ノリで／時間切れが迫って
@@ -616,9 +617,11 @@
     /* 男性向け：入れる側がみな男性なら挿入の文、そうでなければ指・舌・口の文を足す */
     if (TE) {
       var pens = { oneTwo: [sp.t], twoOne: [sp.t, sp.m], sandwich: [sp.t, sp.m], ring: [sp.t, sp.m, sp.u] }[sp.p] || [sp.t];
-      var penM = !ffE && !ngE && HK.Pos && pens.every(function (c) { return !HK.Pos.isF(c); }) && TE.TRIO.pen[sp.p];
-      /* 一回の遊びで同じ文を 3 回使わない（pickR。2026-11-03：state の S10） */
-      var teL = pickR(penM ? TE.TRIO.pen[sp.p] : ngE ? TE.TRIO.soft.filter(function (l) { return !/ナカ|沈め|挿|貫|奥/.test(l); }) : TE.TRIO.soft);
+      /* 入れる側がみな男性器で繋がる組（フタナリの攻めも。HK.Trio3.edgeKind が m）なら挿入の文（2026-11-05） */
+      var penM = !ffE && !ngE && HK.Pos && (HK.Trio3 && HK.Trio3.edgeKind ? allMT : pens.every(function (c) { return !HK.Pos.isF(c); })) && TE.TRIO.pen[sp.p];
+      /* 一回の遊びで同じ文を 3 回使わない（pickR。2026-11-03：state の S10）。
+         指・舌・口の文は、形と場面の状態（誰が受けの中に入っているか）で選ぶ（HK.ThickEro.trioSoft。2026-11-05：後ろが埋まった受けに、もう一人が指を入れる文を出さない） */
+      var teL = pickR(penM ? TE.TRIO.pen[sp.p] : TE.trioSoft ? TE.trioSoft(sp, T3, ngE) : ngE ? TE.TRIO.soft.filter(function (l) { return !/ナカ|沈め|挿|貫|奥/.test(l); }) : TE.TRIO.soft);
       if (teL) put('in', efill(teL), 2);
     }
     /* 受けの二人が攻めを取り合う見所（一つは必ず、初回はもう一つのことも） */
@@ -695,7 +698,8 @@
        （その二人の女性上位の文に差し替えると、触れ合わない二人が繋がってしまう。2026-10-28 担当LG2） */
     var apartP = function (a, b) { return apart.some(function (p) { return p.indexOf(a) >= 0 && p.indexOf(b) >= 0; }); };
     if (HK.FM && HK.Pos) g.filter(function (c) { return HK.Pos.isF(c) && (HK.Pos.isTop(c) || HK.Pos.hasFor(c)); }).forEach(function (f) {
-      g.forEach(function (m) { if (m !== f && !HK.Pos.isF(m) && HK.Pos.isTop(f, m) && !apartP(f, m)) txt3 = HK.FM.fixWith(ctx, txt3, f, m.name); });
+      /* 形の組（E：f が m を抱く組）だけ。攻めどうし（twoOne の二人の攻め）など、この場面で繋がらない二人の文を女性上位の文に置き換えない（2026-11-05） */
+      g.forEach(function (m) { if (m !== f && !HK.Pos.isF(m) && HK.Pos.isTop(f, m) && !apartP(f, m) && (!E || E.some(function (e) { return e[0] === f && e[1] === m; }))) txt3 = HK.FM.fixWith(ctx, txt3, f, m.name); });
     });
     /* 形の上で女性が男性を抱く側に回った組（受け×受けで女性が動く側に回ったときなど、女性の指定が攻めでない組）も、同じく女性上位の文へ */
     if (HK.FM && HK.Pos && E) E.forEach(function (e) { var f = e[0], m = e[1]; if (f && m && f !== m && HK.Pos.isF(f, m) && !HK.Pos.isF(m, f) && !HK.Pos.isTop(f, m)) txt3 = HK.FM.fixWith(ctx, txt3, f, m.name); });
