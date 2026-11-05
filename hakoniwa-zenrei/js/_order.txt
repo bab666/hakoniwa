@@ -464,6 +464,7 @@ js/jinro-after.js @scen:jinro
 js/rel-bad-story.js @pack:sim
 late js/tie-new-story.js
 late js/tips.js
+late js/ui-tone-lab.js
 late js/tips-scen-a.js
 late js/tips-scen-b.js
 late js/tips-scen-c.js

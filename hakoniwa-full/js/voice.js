@@ -755,6 +755,8 @@
             var byDict = ov == null && !pre && nb && nb.dict;
             /* 辞書だけで作る口調（tone-registry.js の dictOnly）の1本の台詞：常体か敬語かを見て辞書を当てる（従来の言い換え・keigoUnify・仕上げは通さない。性別の語尾は通す） */
             var d1 = !byDict && ov == null && !pre && !nb && !kg && !nounQ && HK.toneOpt && HK.toneOpt(who.tone, 'dictOnly') && HK.Tone && HK.Tone.apply1 ? HK.Tone.dictOf(who.tone) : null;
+            /* 見本の箱の説明（ui-tone-lab.js）：この台詞がどの経路で言い換わったか。V.trace が配列のときだけ足す（出力は変えない） */
+            if (V.trace) V.trace.push({ who: who.name, path: ov != null ? 'ov' : pre ? 'pre' : byDict ? 'dict' : d1 ? 'd1' : 'old', base: nb ? nb.base : d1 && HK.Tone.formOf ? HK.Tone.formOf(q) : '', kg: !!kg, moan: !!svT, noun: !!nounQ, one: !nb });
             if (byDict) { q = HK.Tone.apply(q, nb.dict, who); own = true; }
             /* 男性の台詞は、辞書を当てる前に女性的な語尾を外す（従来の言い換えの styleQuote と同じ扱い。辞書が足す語尾はそのまま） */
             else if (d1) { q = HK.Tone.apply1(who.gender === 'm' ? V.unfem(q, who) : q, d1, who); own = true; }

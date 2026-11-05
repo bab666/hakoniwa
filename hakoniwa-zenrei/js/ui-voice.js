@@ -108,6 +108,8 @@
       if (id && !c) return;
       box.innerHTML = c ? sampleLines(c, S().chars.filter(function (x) { return x !== c; })) : sampleLines(demoChar(), []);
     });
+    /* 見本の台詞で試す（ui-tone-lab.js）も、少し待ってから描き直す */
+    if (HK.ToneLab) HK.ToneLab.refreshAll();
   };
   var tsTimer = null;
   function sampleTick() {
@@ -132,7 +134,7 @@
   /* 口調の基本の欄（⚙設定の「口調」と、この節の住人の「口調」の前半で同じものを描く。2026-10-28 担当LI）：
      口調・一人称・二人称・怒ったとき／恋人になってからの一人称・名前の読み・語尾の記号（・語尾の付け替え）・口調の説明・台詞の見本・語尾の設定（かんたん）。
      保存先はどちらも住人の c.*（data-gf も同じ）。入力は basicField（この節は toneField から、⚙設定は ui-gear.js の onField から） */
-  function basicHtml(c, others) {
+  function basicHtml(c, others, lab) {
     var autoK = autoKey(c), keys = HK.TONE_KEYS || HK.PERSONA_KEYS;
     var toneSel = '<select data-gf="tone" aria-label="口調">' + opt('', 'おまかせ（' + toneLabel(autoK) + '）', c.tone || '') + keys.map(function (k) { var t = HK.toneInfo ? HK.toneInfo(k) : HK.PERSONA[k]; return opt(k, t.label, c.tone || '', t.desc); }).join('') + '</select>';
     var tInfo = HK.toneInfo ? HK.toneInfo(c.tone || autoK) : HK.PERSONA[c.tone || autoK];
@@ -142,9 +144,10 @@
       (HK.TONE_CUSTOM_OFF ? '' : '<label title="口調で言い換えたあとの台詞の語尾を、さらに付け替えます。「元→先」を読点で区切って5つまで">語尾の付け替え <input type="text" data-gf="toneCustom" value="' + esc(c.toneCustom || '') + '" maxlength="120" placeholder="例：です→っす、だ→だぜ" style="width:16em"></label>') + '</div>' +
       '<p class="gearhint">' + esc(tInfo ? tInfo.desc : '') + '</p>' +
       sampleBox(c, others) +
-      (HK.Ending ? HK.Ending.gearHtml(c, others[0], { esc: esc, opt: opt, part: 'easy' }) : '');
+      (HK.Ending ? HK.Ending.gearHtml(c, others[0], { esc: esc, opt: opt, part: 'easy', lab: lab }) : '');
   }
-  VS.basicHtml = function (c) { return basicHtml(c, S().chars.filter(function (x) { return x !== c; })); };
+  /* ⚙設定の「口調」：語尾の設定の下に「見本の台詞で試す」も出す（住人タブでは口調の辞書（上級）の下に出る） */
+  VS.basicHtml = function (c) { return basicHtml(c, S().chars.filter(function (x) { return x !== c; }), true); };
   /* 基本の欄の入力：扱った欄なら true。changed(rerender) は呼んだ側の保存と描き直し */
   function basicField(c, f, t, isInput, changed) {
     if (/^end:/.test(f) && HK.Ending) return HK.Ending.gearField(c, f, t, isInput, changed, VS.sampleRefresh, S().chars.filter(function (x) { return x !== c; })[0]);

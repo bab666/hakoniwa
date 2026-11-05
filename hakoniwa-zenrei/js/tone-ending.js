@@ -2,7 +2,7 @@
    住人ごとに、語尾（ふだん・問い）・驚いたときの言葉・短い笑い声・前置き・言い切りの多さを決めると、
    口調の辞書（tone-engine.js の形式）を作って、その住人の台詞に当てる。設計は docs/reports/2026-10-25/tone-engine-design.md の 20 章。
    ■ 保存の値 c.ending（住人ごと。ui.js の normChar → attr.js の A.norm → E.norm）
-     { base: ''（その人の口調）| 'K' | 'F' | 'P' | 口調の鍵, plain: 'ですぞ', ask: 'ですかな', surprise: 'なんと！', laugh: 'フハハ', lead: 'ふむ', flat: ''（なし）| 'some' | 'often', off: true（使わない） }
+     { base: ''（その人の口調）| 'K' | 'F' | 'P' | 口調の鍵, plain: 'ですぞ', ask: 'ですかな', add: 'だよ'（文末に足す。2026-11-05）, surprise: 'なんと！', laugh: 'フハハ', lead: 'ふむ', flat: ''（なし）| 'some' | 'often', off: true（使わない） }
      以前の「語尾の付け替え」（toneCustom の文字列）が残っていれば、読み込みのときに plain に写して空にする
      c.toneDict（4000字まで）…「口調の辞書（上級）」（旧「辞書を直接書く（上級）」）。住人ごとの辞書の書き方（tone-engine.js の形式。[口調 …] の見出しは省いてよい）。
        語尾の設定と両方あれば、直接書いた [文末]・[語彙]・[規則]・[効果] を、語尾の設定で作った辞書の上に重ねる（同じ項目は直接書いたほうが勝つ）。off は両方を止める
@@ -11,6 +11,7 @@
      ・語尾が「です・ます」で始まれば敬語（P）の型（です=ですぞ、ます=ますぞ、ません=ませんぞ…。組み込みの otaku の並び）
      ・それ以外は常体の型：名詞の後ろ（だ・だよ・だね→だぜ）と動詞・形容詞の後ろ（よ・ね・ぞ→ぜ）に分けて当てる（組み込みの kohai・honwaka の並び）。
        ベースの口調が敬語なら、敬語の台詞を常体に崩してから当てる（kohai の「っす」と同じ形）
+     ・文末に足す（add）：辞書の規則「文末に足す」（tone-engine.js の appendEnd）。文末の項目がどれも当たらなかった文（大丈夫。・座って。）の終わりに足す
      ・言い切り：なし（文末の語尾をいつも付ける）／たまに（0.3。語尾のない文には半分だけ付ける）／よく（0.6。語尾のない文には付けない）
    ■ 実行時：鍵は「e:」＋辞書の中身から作る名前（同じ設定なら同じ鍵）。E.toneOf(c) が辞書を登録して鍵を返す。
      HK.TONES・HK.TONE_EXTRA に辞書だけの口調（dictOnly）として載せる（選択欄の並び HK.TONE_KEYS には足さない）。
@@ -21,7 +22,7 @@
   if (!HK || !T) return;
   var E = HK.Ending = {};
   function hash(s) { var x = 7; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0; return Math.abs(x).toString(36); }
-  var FIELDS = { plain: 12, ask: 12, surprise: 40, laugh: 40, lead: 40 };
+  var FIELDS = { plain: 12, ask: 12, add: 12, surprise: 40, laugh: 40, lead: 40 };
   var FORM_TONE = { K: 'gentle', F: 'stern', P: 'polite' };
   var FORM_LABEL = { K: 'くだけた常体', F: '硬い常体', P: '敬語' };
 
@@ -39,7 +40,7 @@
     if (e.off) o.off = true;
     return o;
   };
-  E.active = function (e) { return !!(e && !e.off && (e.plain || e.ask || e.surprise || e.laugh || e.lead || e.flat)); };
+  E.active = function (e) { return !!(e && !e.off && (e.plain || e.ask || e.add || e.surprise || e.laugh || e.lead || e.flat)); };
   var DICT_MAX = 4000;
   function dictText(c) { return c && typeof c.toneDict === 'string' ? c.toneDict.replace(/^\s+|\s+$/g, '') : ''; }
   /* 語尾の設定か直接書いた辞書のどちらかを使う住人か */
@@ -78,7 +79,7 @@
 
   /* ---------- 辞書の文字列にする（ベースの口調の辞書を書き戻す） ---------- */
   var RULE_JA = { neg: '否定', prog: '進行', copula: '断定', drop: '助詞落とし', contract: '縮約', emph: '強調語', emphRate: '強調語の割合', exist: '存在', shortCasual: '短い文はため口', mixK: 'ため口を混ぜる',
-    lead: '前置き', leadRate: '前置きの割合', surprise: '驚き', laugh: '笑い', flat: '言い切り', shaken: '動揺', shakenRate: '動揺の割合' };
+    lead: '前置き', leadRate: '前置きの割合', surprise: '驚き', laugh: '笑い', flat: '言い切り', shaken: '動揺', shakenRate: '動揺の割合', append: '文末に足す' };
   var FX_JA = { bangOff: '感嘆符を落とす', stretch: '伸ばす', bangOn: '言い切りに！', short: '短くする', stammer: '言いよどみ', dots: '前に……', pause: '間を置く' };
   /* 条件（後読み e[2]・先読み e[3]）も書き戻す */
   function endLine(e) { return e[0] + (e[2] || e[3] ? '(' + (e[2] ? e[2].source.replace(/\$$/, '') : '') + (e[3] ? e[3].source.replace(/^\^/, '') : '') + ')' : '') + '=' + e[1].join('／'); }
@@ -217,6 +218,8 @@
     if (ucache[text]) return ucache[text];
     var n = 0, lines = text.split(/\r?\n/).map(function (l) { if (/^\s*[\[［]\s*口調(?:[\s　][^\]］]*)?[\]］]\s*$/.test(l)) { n++; return ''; } return l; });
     var p = T.parse('[口調 e:tmp]\n' + lines.join('\n'), false), d = p.dicts['e:tmp'] || null;
+    /* [文末] の頭の「〜」（「〜です=〜でござる」）は外す（文の中の語に「〜」は無いので、付けたままだと当たらない。2026-11-05） */
+    if (d) d.ends.forEach(function (x) { x[0] = x[0].replace(/^[〜～~]+/, '') || x[0]; x[1] = x[1].map(function (v) { return v.replace(/^[〜～~]+/, ''); }); });
     var errs = p.errors.map(function (m) { return m.replace(/^(\d+)行目/, function (x, k) { return (+k - 1) + '行目'; }); });
     if (n > 1) errs.push('[口調] は一つ分だけ書けます（見出しを外して、一つの口調として読みました）');
     var bm = text.match(/^\s*ベース\s*[=＝]\s*([KFPkfp])\s*$/m);
@@ -241,8 +244,10 @@
       Object.keys(bd.effects || {}).forEach(function (k) { if (FX_JA[k] && bd.effects[k]) fx[k] = 'はい'; });
     }
     var flat = e.flat || '';
-    if (plain) ends = (base === 'P' ? pEnds(plain, flat) : kEnds(plain, flat)).concat(ends);
-    if (ask) ends = (base === 'P' ? pAsk(ask) : kAsk(ask)).concat(ends);
+    var easyL = [];
+    if (plain) { easyL = base === 'P' ? pEnds(plain, flat) : kEnds(plain, flat); ends = easyL.concat(ends); }
+    if (ask) { var al = base === 'P' ? pAsk(ask) : kAsk(ask); easyL = easyL.concat(al); ends = al.concat(ends); }
+    if (e.add) rules.append = splitList(bare(e.add)).join('／');
     if (e.surprise) rules.surprise = splitList(e.surprise).join('／');
     if (e.laugh) rules.laugh = splitList(e.laugh).join('／');
     if (e.lead) { rules.lead = splitList(e.lead).join('／'); rules.leadRate = '0.3'; }
@@ -265,9 +270,15 @@
     }
     var body = head.concat(['ベース=' + base, '[文末]'], ends, ['[語彙]'], words, ['[規則]'], Object.keys(rules).map(function (k) { return RULE_JA[k] + '=' + rules[k]; }), ['[効果]'], Object.keys(fx).map(function (k) { return FX_JA[k] + '=' + fx[k]; }));
     var key = 'e:' + hash(bt + '#' + label + '#' + body.join('\n'));
-    return { key: key, base: base, tone: bt, e: e, label: label, uerr: u ? u.errors : [], text: ['[口調 ' + key + ']', '名前=' + label].concat(body).join('\n') };
+    return { key: key, base: base, tone: bt, e: e, label: label, easyL: easyL, uerr: u ? u.errors : [], text: ['[口調 ' + key + ']', '名前=' + label].concat(body).join('\n') };
   }
   E.toDict = function (c) { return build(c).text; };
+  /* 見本の箱（ui-tone-lab.js）が、当たった行の出どころと、当たらなかった理由を書くのに使う：ベース（K/F/P）・直接書いた辞書（読んだもの）・語尾の設定で作った文末の項目 */
+  E.parts = function (c) {
+    var b = build(c), ut = b.e.off ? '' : dictText(c), u = ut ? parseUser(ut) : null, easy = {};
+    b.easyL.forEach(function (l) { easy[l.split('=')[0].replace(/\(.*\)$/, '')] = 1; });
+    return { base: b.base, tone: b.tone, e: b.e, user: u && u.d, easy: easy };
+  };
 
   /* ---------- 登録 ---------- */
   var cache = {};
@@ -329,56 +340,96 @@
   /* ---------- 辞書のサンプル（「サンプルを入れる」。住人の「辞書を直接書く」から） ----------
      head は [口調 …] の見出しつきで使うときの見出し（住人の欄では見出しなし。箱庭全体の辞書は廃止）。足すときはこの並びに一つ足す */
   E.SAMPLES = [
+    /* 2026-11-05：読んで直せばそのまま使えるように、見本の台詞（ui-tone-lab.js の「見本の台詞で試す」）に当たる行から並べ、何行目に当たるかをコメントに書いた。
+       番号は見本の台詞の番号（全年齢版にもある 1〜44 だけを書く）。足したら「見本の台詞で試す」で当たる行を確かめて番号を直す */
     { id: 'gozaru', label: 'ござる（侍）', head: '[口調 ござる]\n名前=ござる（侍）', text: [
       '# 「〜でござる」の侍の口調の見本。# で始まる行は説明で、辞書としては読み飛ばされます',
-      '# ベース：どの文を土台にするか（K＝くだけた常体、F＝硬い常体、P＝敬語）。ござるは敬語の文の「です・ます」を置き換えて作る',
+      '# 下の「見本の台詞で試す」を開くと、どの行がどの台詞に当たったか（当たらなかった理由も）が出ます。気に入らない行は書き換えたり消したりしてください',
+      '# ベース：どの文を土台にするか（K＝くだけた常体、F＝硬い常体、P＝敬語）。ござるは敬語の文の「です・ます」を置き換えて作るので P',
       'ベース=P',
       '# 一人称・二人称：住人の設定の欄が空のときに使う（「男|女|その他」の順で3つ書いてもよい）',
       '一人称=拙者',
       '二人称=そなた',
-      '# 文末：文の終わり（。！？の手前）だけに効く「元=先」。／で候補を並べると、くじで一つ選ぶ。長い項目が先に当たる',
-      '# 「？」付きの項目は問いの文だけに当たる。{る}{た}{ない}{よう} は「ます」の前を活用させる印（帰りましょう→帰ろう）',
+      '# 文末：文の終わり（。！？の手前）だけに効く「元=先」。終わりまでそろったときだけ当たり、長い項目が先に当たる（「ですね」の文に「です」は当たらない）',
+      '# ／で候補を並べると、くじで一つ選ぶ。「？」付きの項目は問いの文だけ。{よう} は「ます」の前を活用させる印（行きましょう→行こう）',
       '[文末]',
-      'ですか？=でござるか？',
-      'ですか=でござるか',
-      'ですね=でござるな',
-      'ですよ=でござるよ',
-      'んですよ=のでござるよ',
-      'んです=のでござる',
-      'でした=でござった',
-      'でしょうか=でござろうか',
-      'でしょう=でござろう',
+      '# 見本 1・17・21・24・31・33 行目（私は〜です・恥ずかしいです・大丈夫です）',
       'です=でござる',
+      '# 見本 5・22・44 行目（いい天気ですね・すごいですね）',
+      'ですね=でござるな',
+      '# 見本 8・35・36 行目（明日も早いですよ・泣いてもいいですよ）',
+      'ですよ=でござるよ',
+      '# 見本 22・27・37・39 行目（本当ですか？・いいですか？）',
+      'ですか？=でござるか？',
+      '# 見本 7・18 行目（どこで買ったんですか？・黙っていたんですか？）',
+      'んですか？=のでござるか？',
+      '# 見本 25 行目（好きなんです）',
+      'んです=のでござる',
+      '# 見本 13・17 行目（無理でした・あなたのせいでした）',
+      'でした=でござった',
+      '# 見本 19 行目（いいでしょう）',
+      'でしょう=でござろう',
+      'でしょうか=でござろうか',
+      '# 見本 1・2・6・31・42 行目（お願いします・何とかなります・誰か来ます）',
+      'ます=まする',
+      '# 見本 8・14 行目（もう寝ますか？・組んでいてくれますか？）',
       'ますか？=まするか？',
-      'ますか=まするか',
-      'ていますね=ておるな',
-      'ていますか=ておりまするか',
+      '# 見本 6・36 行目（すぐ戻りますから・ここにいますから）',
+      'ますから=まするゆえ',
+      '# 見本 9・29 行目（知っています・似合っていますよ）',
       'ています=ておりまする',
+      'ていますね=ておるな',
       'ますね=まするな',
       'ますよ=まするぞ',
+      '# 見本 3・4・11・12・41 行目（戻りました・助かりました・分かりました）',
       'ました=ましたぞ／申した',
       'ませんでした=ませなんだ',
+      '# 見本 10・16・21・23・34 行目（聞いていません・知りません・分かりません）',
       'ません=ませぬ',
+      '# 見本 26 行目（どこかへ行きませんか？）',
+      'ませんか？=ませぬか？',
+      '# 見本 40 行目（一緒に行きましょう）・38 行目（どうしましょうか？）',
       'ましょう={よう}ぞ',
-      'ます=まする',
-      'ください=くだされ',
+      'ましょうか？={よう}か？',
+      '# 見本 4・16・20・30・41・43 行目（食べてください・任せてください）',
       'てください=てくだされ',
+      '# 見本 15・20・30・43 行目（気にしないでください・行かないでください）',
       'ないでください=ないでくだされ',
+      'ください=くだされ',
       '# 語彙：文のどこでも効く言葉の置き換え（長い言葉から当たる）',
       '[語彙]',
+      '# 見本 11・13 行目（ありがとうございます）',
       'ありがとうございます=かたじけない',
       'ありがとう=かたじけない',
+      '# 見本 12・14 行目（すみません、遅れて）',
       'すみません=面目ない',
       'ごめんなさい=申し訳ござらぬ',
-      'すごい=見事',
+      '# 見本 11・44 行目（本当に助かりました）・22・44 行目（すごいですね）',
       '本当に=まことに',
+      'すごい=見事',
       '# 規則：前置き（台詞の頭の一言）・驚き（え・うそ などを置き換え）・笑い（はは・ふふ などを置き換え）・言い切り（よ・ね を落とす割合）',
       '[規則]',
       '前置き=ふむ。／して、',
       '前置きの割合=0.3',
+      '# 見本 10・22 行目（え、それは聞いていません・うそ、本当ですか？）',
       '驚き=なんと！／むむっ……',
       '笑い=はっはっは',
       '言い切り=0.2'
+    ].join('\n') },
+    /* 語尾を足すだけの見本（文末に足す。2026-11-05） */
+    { id: 'dayo', label: '〜だよ（語尾を足す）', head: '[口調 だよ]\n名前=〜だよ', text: [
+      '# 語尾の無い文に「だよ」を足す見本。# で始まる行は説明で、辞書としては読み飛ばされます',
+      '# ベース=K：くだけた常体の文を土台にする（敬語の文には足さない）',
+      'ベース=K',
+      '[文末]',
+      '# 元を空にした「=だよ」は、どの項目も当たらなかった文の終わりに足す。名詞の後ろはそのまま（大丈夫→大丈夫だよ）、',
+      '# 動詞・形容詞の後ろは「だ」を外す（分かった→分かったよ・怖い→怖いよ）。問い・もう語尾のある文・あいさつには足さない',
+      '# 見本 1・10・21・31・33・34 行目（私は〜・聞いてない・大丈夫・怖い・分からない）',
+      '=だよ',
+      '# 一語だけ変えたいときは [語彙] に書く（大丈夫=大丈夫だよ のように）',
+      '[語彙]',
+      '# 見本 11 行目（ありがとう）',
+      'ありがとう=ありがとね'
     ].join('\n') }
   ];
   E.sampleDict = function (id, withHead) { var x = E.SAMPLES.filter(function (s) { return s.id === id; })[0]; return x ? (withHead ? x.head + '\n' : '') + x.text + '\n' : ''; };
@@ -432,14 +483,18 @@
     var st0 = function (on) { return on ? '使う' : e.off ? '使わない' : '未設定'; };
     var cid = esc(c.id || '');
     var easy = '<details class="gend" data-endk="e" data-cid="' + cid + '"' + (isOpen(c, 'e', E.active(e)) ? ' open' : '') + '><summary><b>語尾の設定（かんたん）</b><span class="gendon">' + st0(E.active(e)) + '</span></summary>' +
-      '<p class="gearhint">例文の語尾を、同じ法則で書き換えます（です→ですぞ・ます→ますぞ・ません→ませんぞ、だ・だよ→だぜ・よ・ね→ぜ のように）。決めた欄だけが効き、空の欄はベースの口調のままです。一人称・二人称は上の欄を使います。</p>' +
+      '<p class="gearhint">例文の語尾を、同じ法則で書き換えます（です→ですぞ・ます→ますぞ・ません→ませんぞ、だ・だよ→だぜ・よ・ね→ぜ のように）。決めた欄だけが効き、空の欄はベースの口調のままです。一人称・二人称は上の欄を使います。' +
+        '語尾の無い文（大丈夫。・座って。）に足したいときは「文末に足す」に書きます（例：だよ → 大丈夫だよ・分かったよ）。</p>' +
       '<div class="gearrow"><label>ベースの口調 ' + baseSel + '</label><label title="語尾の設定と「口調の辞書（上級）」の両方を止めます（書いた中身は残ります）"><input type="checkbox" data-gf="end:off"' + (e.off ? ' checked' : '') + '> いまは使わない</label></div>' +
-      '<div class="gearrow">' + inp('plain', '語尾（ふだん）', '例：〜ですぞ／〜だぜ／〜なのよ', '「です・ます」で始まれば敬語の語尾、それ以外は常体の語尾として扱います') + inp('ask', '語尾（問い）', '例：〜ですかな？／〜か？／〜なのかしら？') + '</div>' +
+      '<div class="gearrow">' + inp('plain', '語尾（ふだん）', '例：〜ですぞ／〜だぜ／〜なのよ', '「です・ます」で始まれば敬語の語尾、それ以外は常体の語尾として扱います') + inp('ask', '語尾（問い）', '例：〜ですかな？／〜か？／〜なのかしら？') +
+        inp('add', '文末に足す', '例：だよ／っす／でござる', '語尾の書き換えが当たらなかった文の終わりに足します（大丈夫→大丈夫だよ、分かった→分かったよ）。問い・敬語の文・もう語尾のある文には足しません。／で区切ると候補を4つまで') + '</div>' +
       '<div class="gearrow">' + inp('surprise', '驚いたとき', '例：なんと！／うわ、まじで', '文頭の「え」「うそ」「マジ」などを置き換えます。／で区切ると候補を4つまで') + inp('laugh', '短い笑い声', '例：フハハ／ふふ／にしし', '「はは」「ふふ」などを置き換えます') + '</div>' +
       '<div class="gearrow">' + inp('lead', '前置き（任意）', '例：やれやれ／ふむ', '台詞の頭にときどき付ける一言（3回に1回くらい）') +
       '<label>言い切り <select data-gf="end:flat" aria-label="言い切りを使う">' + opt('', 'なし（語尾をいつも付ける）', e.flat || '') + opt('some', 'たまに', e.flat || '') + opt('often', 'よく', e.flat || '') + '</select></label></div>' +
       '</details>';
-    if (h.part === 'easy') return easy;
+    /* 見本の台詞で試す（ui-tone-lab.js の HK.ToneLab。読み込み前は出さない）：⚙設定の「口調」は語尾の設定の下（h.lab）、住人タブは口調の辞書（上級）の下 */
+    var lab = HK.ToneLab ? HK.ToneLab.box(c, o) : '';
+    if (h.part === 'easy') return easy + (h.lab ? lab : '');
     var s = sampleHtml(c, o);
     var dict =
       /* 口調の辞書（上級）：住人ごとの辞書を直接書く欄（語尾の設定の上に重ねる）と、語尾の設定・辞書で言い換えた台詞の見本（全文）。
@@ -448,11 +503,12 @@
       '<p class="gearhint">この住人だけの口調の辞書を書けます（住人ごとの辞書の書き方。[口調 …] の見出しと名前は省けます）。語尾の設定と両方あるときは、ここに書いた [文末]・[語彙]・[規則]・[効果] を上に重ね、同じ項目はこちらが勝ちます。</p>' +
       '<p class="gearhint" style="white-space:pre-wrap">' + esc(T.help ? T.help() : '') + '</p>' +
       '<div class="gearrow"><label>サンプル ' + E.sampleSel('data-endsel') + '</label><button type="button" class="btn ghost small" data-endact="sample">サンプルを入れる</button><span class="gearhint" style="margin:0"># で始まる行は説明です（読み飛ばされます）</span></div>' +
-      '<textarea data-gf="end:dict" rows="8" maxlength="' + DICT_MAX + '" spellcheck="false" aria-label="この住人の口調の辞書" style="width:100%;font-size:13px;font-family:inherit" placeholder="' + esc('[文末]\nです=でござる\nます=まする\n[語彙]\nありがとう=かたじけない\n[規則]\n前置き=さて') + '">' + esc(c.toneDict || '') + '</textarea>' +
-      '<div class="tonesample endsample" id="endsample" aria-live="polite">' + s.html + '</div></details>' +
+      '<textarea data-gf="end:dict" rows="8" maxlength="' + DICT_MAX + '" spellcheck="false" aria-label="この住人の口調の辞書" style="width:100%;font-size:13px;font-family:inherit" placeholder="' + esc('ベース=P\n[文末]\nです=でござる\nます=まする\n=だよ\n[語彙]\nありがとう=かたじけない\n[規則]\n前置き=さて') + '">' + esc(c.toneDict || '') + '</textarea>' +
+      /* 見本の箱があれば、言い換えた台詞の全文はそちらで見る（同じ台詞を二度並べない） */
+      (lab ? '' : '<div class="tonesample endsample" id="endsample" aria-live="polite">' + s.html + '</div>') + '</details>' +
       /* 辞書の読み込みの問題は、閉じていても見えるように折りたたみの外に */
       '<p class="enderr" id="enderr"' + (s.err ? '' : ' hidden') + '>' + esc(s.err) + '</p>';
-    return h.part === 'dict' ? dict : easy + dict;
+    return (h.part === 'dict' ? dict : easy + dict) + lab;
   };
   /* 欄の入力。扱った欄なら true */
   E.gearField = function (c, f, t, isInput, changed, refresh, other) {
