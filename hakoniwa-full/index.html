@@ -1660,18 +1660,18 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
 <!-- 古いブラウザの知らせ（2026-11-04）：本体は正規表現の後読み（iOS 16.4・Safari 16.4 から）を使うので、それより前の版では読み込みの段階で止まり、何も表示されない。そのときだけ、何が要るかを画面の上に出す -->
 <script>(function(){try{new RegExp('(?<=a)b');}catch(e){document.addEventListener('DOMContentLoaded',function(){var d=document.createElement('p');d.setAttribute('role','alert');d.style.cssText='margin:12px 16px;padding:12px 14px;border:1px solid #c33;border-radius:8px;background:#fff;color:#16233b;font-size:14px;line-height:1.7';d.textContent='このブラウザの版では箱庭シミュレーターが動きません。iPhone・iPad は iOS 16.4 以降、Mac の Safari は 16.4 以降に更新してください（Chrome・Edge・Firefox の新しい版でも動きます）。';document.body.insertBefore(d,document.body.firstChild);});}})();</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"b073982316","api":1,"build":"full","core":"js/c/core.1cf1296f0c.js",
+<script>window.HK_MANIFEST={"v":"74570ffdd2","api":1,"build":"full","core":"js/c/core.1cf1296f0c.js",
 "chunks":{
   "late":{"src":"js/c/late.673c7d3645.js","br":228000,"deps":["pack-sim","pack-lewd"]},
   "pack-rel":{"src":"js/c/pack-rel.9bc32295bf.js","br":383463,"deps":["pack-sim","pack-lewd"]},
   "pack-sim":{"src":"js/c/pack-sim.c82696bb3b.js","br":153834,"deps":[]},
-  "pack-lewd":{"src":"js/c/pack-lewd.1da687e2fd.js","br":533496,"deps":["pack-sim"]},
-  "scen-goukon":{"src":"js/c/scen-goukon.4cf1457edf.js","br":92605,"deps":["pack-sim","pack-rel"]},
+  "pack-lewd":{"src":"js/c/pack-lewd.635f578429.js","br":533487,"deps":["pack-sim"]},
+  "scen-goukon":{"src":"js/c/scen-goukon.be663e7d14.js","br":92636,"deps":["pack-sim","pack-rel"]},
   "scen-classroom":{"src":"js/c/scen-classroom.d63fd5a9da.js","br":102662,"deps":["pack-sim","pack-rel"]},
   "scen-island":{"src":"js/c/scen-island.8a3766add8.js","br":91548,"deps":["pack-sim","pack-rel"]},
   "pack-trap":{"src":"js/c/pack-trap.94333e1b84.js","br":33407,"deps":["pack-sim","pack-lewd"]},
   "scen-whiteroom":{"src":"js/c/scen-whiteroom.4060c09936.js","br":393148,"deps":["pack-sim","pack-rel","pack-trap"]},
-  "scen-omega":{"src":"js/c/scen-omega.86146ad13c.js","br":173918,"deps":["pack-sim","pack-rel"]},
+  "scen-omega":{"src":"js/c/scen-omega.065d65848a.js","br":173938,"deps":["pack-sim","pack-rel"]},
   "scen-br":{"src":"js/c/scen-br.a8540f27c8.js","br":12380,"deps":["pack-sim","pack-rel"]},
   "scen-trial":{"src":"js/c/scen-trial.eb1b825fd7.js","br":9436,"deps":["pack-sim","pack-rel"]},
   "scen-dungeon":{"src":"js/c/scen-dungeon.b780f6ce5c.js","br":121504,"deps":["pack-sim","pack-story"]},

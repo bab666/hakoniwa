@@ -564,7 +564,7 @@
     /* 「誰とでも可」の人と固定外の相手（HK.State.freeSex）は、恋愛の条件（HK.canLove・惹かれ・恋人のいない人どうし）を外す（番のいる人は除く） */
     /* 惹かれの壁は、性欲＋衝動性（HK.Pos.sexDrive。理性・状況込み。全年齢では 0）が強いほど下がる（最大 20。2026-10-28 担当MC：性的な出来事は性欲・衝動性で判定する） */
     when: function (ctx, a, b) { var pf = ctx.pair(a, b); if (pf.couple || pf.night || !met(ctx, a, b) || BD.mateOf(ctx, a) || BD.mateOf(ctx, b)) return false; var dv = HK.Pos && HK.Pos.sexDrive ? HK.Pos.sexDrive(ctx, a, b) * 20 : 0; return HK.State.freeSex(ctx, a, b) || (HK.canLove(a, b) && HK.canLove(b, a) && ctx.R(a, b).att > 28 - dv && ctx.R(b, a).att > 24 - dv && !partnerOf(ctx, a) && !partnerOf(ctx, b)); },
-    w: function (ctx, a, b) { var h = ctx.om.hesitate[key(a, b)] ? 1 : 0, fs = HK.State.freeSex(ctx, a, b); return ((HK.FWB.lean(a) + HK.FWB.lean(b)) * 1.4 + h * 0.8 + (a.goal.id === 'free' ? 0.6 : 0) + (fs ? 0.5 : 0)) * (fs ? HK.FreeSex.factor(ctx, a, b, true) : 1); },
+    w: function (ctx, a, b) { var h = ctx.om.hesitate[key(a, b)] ? 1 : 0, fs = HK.State.freeSex(ctx, a, b); return ((HK.FWB.lean(a) + HK.FWB.lean(b)) * 1.4 + h * 0.8 + (a.goal.id === 'free' ? 0.6 : 0) + (fs ? 0.5 : 0)) * (fs ? HK.FreeSex.factor(ctx, a, b, true) : 1) * (HK.Pos && HK.Pos.feelK ? HK.Pos.feelK(a, b) : 1); },   /* 気持ちの関係（愛憎・劣等感・優越）の二人は衝動のぶん起きやすく（HK.Pos.feelK。しづらくしない原則。2026-11-05） */
     run: function (ctx, a, b) {
       var pf = ctx.pair(a, b); pf.night = true; pf.nights = (pf.nights || 0) + 1;
       var fs = HK.State.freeSex(ctx, a, b);
