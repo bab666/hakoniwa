@@ -1,3 +1,4 @@
+/* @event-ok 長い夜の台詞・一幕・受けの一文の本数を増やし、一回の遊びで同じ文は 2 回まで（2026-11-05 担当R2。新しい出来事ではない） */
 /* 箱庭シミュレーター: 今日から同居生活の夜の文の追加（R18版のみ。かたまり scen-futari。futari-r18.js より後に読む。2026-11-04 担当FT・不具合リスト 1104 の NO 8・9・11）
    ■ NO 8（事後の文が毎回同じ）：受けの態度 9 種の事後（AFTER_PS）を 3 → 11 に。始まり（OPEN_PS）・果てたあと（PEAK_PS）も 3 → 6。
        関係・何回目か・夜の種の事後の一文（afterX）。きっかけの種（LEAD）を 2 → 4、相手の応え（LEAD_R）・同じ家の気配（LEAD_HOUSE）、
@@ -26,6 +27,17 @@
   var PO = FR.POOLS;
   function L(s) { return s.split('|'); }
   function P9(o) { var r = {}; for (var k in o) r[k] = L(o[k]); return r; }
+  /* 一回の遊びで同じ文は 2 回まで（2026-11-05 担当R2・申し送り：長い場面の攻めの台詞「この顔は、ほかの誰にも見せるな」が一回の遊びで 4 回）。
+     まだ使っていない文を先に選び、使い切ったら 2 回目まで。must なら（場面の導入など、空にできない段）いちばん少なく出た文 */
+  FR.pickQ = function (ctx, l, must) {
+    if (!l || !l.length) return '';
+    var ft = ctx && ctx.ft, U = ft ? ft.used : null, N = ft ? (ft.lineN = ft.lineN || {}) : null, R = ctx && ctx.rng ? ctx.rng : Math.random;
+    var f = l.filter(function (t) { return !U || !U[t]; });
+    if (!f.length) f = l.filter(function (t) { return !N || (N[t] || 0) < 2; });
+    if (!f.length && must) { var mn = Math.min.apply(null, l.map(function (t) { return N[t] || 0; })); f = l.filter(function (t) { return (N[t] || 0) === mn; }); }
+    if (!f.length) return '';
+    var t = f[Math.floor(R() * f.length)]; if (U) U[t] = 1; if (N) N[t] = (N[t] || 0) + 1; return t;
+  };
   var PK = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite'];
   function att(c) { var k = HK.Emo && HK.Emo.att ? HK.Emo.att(c) : c && c.persona; return PK.indexOf(k) >= 0 ? k : 'gentle'; }
   function addAll(dst, src) { Object.keys(src).forEach(function (k) { dst[k] = (dst[k] || []).concat(src[k]); }); }
@@ -288,21 +300,21 @@
   };
   /* 最中の一幕のあとの受けの態度 9 種の一文（{b}＝受け） */
   var REACT = P9({
-    proud: '{b}は悔しそうに唇を噛んだが、腰は正直に{a}を追っていた。|{b}は「……まだ、平気｜……まだ平気だ｜……まだ、平気です」と言い張った。声は、もう震えていた。',
-    stern: '{b}は眉を寄せて、乱れそうになる息を必死に数えていた。|{b}は{a}の手を探して、指が白くなるほど握りしめた。',
-    tsun: '{b}は「ばか、そこ……｜ばか、そこは……｜ば、ばか、そこは、だめです……」と言いかけて、続きを飲み込んだ。|{b}は顔を背けたまま、{a}の背中に回した腕に力を込めた。',
-    gentle: '{b}は{a}の頬を撫でながら、とろけるように微笑んだ。|{b}は{a}の名前を、何度も優しく呼んだ。',
-    devoted: '{b}は{a}にしがみついて、「離れないで｜離れないでくれ｜離れないでください」と繰り返した。|{b}は潤んだ目で、ずっと{a}だけを見つめていた。',
-    cool: '{b}はいつもの涼しい顔を保とうとして、すぐに諦めた。|{b}は短く息を吐いて、{a}の肩に額を押し当てた。',
-    free: '{b}は笑いながら、もっと、とねだった。|{b}は{a}の首に腕を回して、楽しそうに声を上げた。',
-    shy: '{b}は両手で顔を覆ったが、指の隙間から{a}を見ていた。|{b}は真っ赤な顔で、声が漏れないように枕を引き寄せた。',
-    polite: '{b}は「す、すみません、声が……｜す、すまない、声が……｜す、すみません、声が……」と言いかけて、また息を詰めた。|{b}は乱れる息の合間に、律儀に{a}の名前を呼んだ。'
+    proud: '{b}は悔しそうに唇を噛んだが、腰は正直に{a}を追っていた。|{b}は「……まだ、平気｜……まだ平気だ｜……まだ、平気です」と言い張った。声は、もう震えていた。|{b}は{a}を睨みつけようとして、そのたびに目を潤ませた。|{b}は「……覚えてて｜……覚えていろ｜……覚えていてください」と悔しまぎれに言ったが、腕は{a}の首に回ったままだった。',
+    stern: '{b}は眉を寄せて、乱れそうになる息を必死に数えていた。|{b}は{a}の手を探して、指が白くなるほど握りしめた。|{b}は乱れる自分の息を恥じるように、{a}の肩に顔を伏せた。|{b}は{a}の動きに合わせて、こらえていた声を一つずつ手放していった。',
+    tsun: '{b}は「ばか、そこ……｜ばか、そこは……｜ば、ばか、そこは、だめです……」と言いかけて、続きを飲み込んだ。|{b}は顔を背けたまま、{a}の背中に回した腕に力を込めた。|{b}は「……べ、別に、いいけど｜……べ、別に、構わない｜……べ、別に、構いませんけど」と言いながら、{a}を離そうとしなかった。|{b}は悔しそうに{a}を睨んだまま、甘い声を一つこぼした。',
+    gentle: '{b}は{a}の頬を撫でながら、とろけるように微笑んだ。|{b}は{a}の名前を、何度も優しく呼んだ。|{b}は{a}の背中を抱き寄せて、ゆっくりと息を合わせた。|{b}は「……気持ちいい｜……気持ちいい｜……気持ちいいです」と素直に囁いて、{a}の肩に頬を寄せた。',
+    devoted: '{b}は{a}にしがみついて、「離れないで｜離れないでくれ｜離れないでください」と繰り返した。|{b}は潤んだ目で、ずっと{a}だけを見つめていた。|{b}は{a}の手を取って、自分の頬に押し当てた。|{b}は{a}の名前を呼ぶたびに、腕の力を強くした。',
+    cool: '{b}はいつもの涼しい顔を保とうとして、すぐに諦めた。|{b}は短く息を吐いて、{a}の肩に額を押し当てた。|{b}はいつもの落ち着いた顔のまま、それでも息だけは隠せずにいた。|{b}は目を伏せたまま、{a}の手首をそっとつかんだ。',
+    free: '{b}は笑いながら、もっと、とねだった。|{b}は{a}の首に腕を回して、楽しそうに声を上げた。|{b}は「もっと、好きにして｜もっと、好きにしろ｜もっと、好きにしてください」と笑って、{a}を引き寄せた。|{b}は{a}の動きに合わせて、自分からも楽しそうに体を寄せた。',
+    shy: '{b}は両手で顔を覆ったが、指の隙間から{a}を見ていた。|{b}は真っ赤な顔で、声が漏れないように手の甲で口を押さえた。|{b}は顔を隠そうとした手を{a}に取られて、真っ赤になって目を伏せた。|{b}は{a}の胸に顔を押しつけて、こぼれる声を隠そうとした。',
+    polite: '{b}は「す、すみません、声が……｜す、すまない、声が……｜す、すみません、声が……」と言いかけて、また息を詰めた。|{b}は乱れる息の合間に、律儀に{a}の名前を呼んだ。|{b}は乱れた息を整えようとして、そのたびに{a}に唇を塞がれた。|{b}は{a}の腕にすがって、「……もう少し、このまま｜……もう少し、このままで｜……もう少し、このままでいてください」と囁いた。'
   });
   var PL = HK.Play;
   if (PL && PL.addScene) {
     var KIND_OF = { kabe: ['kabe'], rusu: ['rusu'], bath: ['bath'], sofa: ['sofa'], kitchen: ['kitchen'], genkan: ['late'] };
     var LABEL = { kabe: '壁の向こうを気にしながらの長い夜', rusu: '誰もいない家で声をこらえない夜', bath: '湯上がりの脱衣所から始まる夜', sofa: '居間のソファで映画のあとの長い夜', kitchen: '台所の灯りの下で始まる夜', genkan: '遅い帰りを玄関で迎えた夜' };
-    var rp = function (ctx, l) { return l && l.length ? l[Math.floor((ctx && ctx.rng ? ctx.rng() : Math.random()) * l.length)] : ''; };
+    var rp = function (ctx, l) { return FR.pickQ(ctx, l, true); };
     var cur = function (ctx) { return ctx && ctx.ft ? ctx.ft.curKind || '' : ''; };
     /* @event-ok この部屋だけの長い場面の登録（出来事の印はこのファイルの頭の ft_long_*） */
     Object.keys(LONG).forEach(function (k) {
@@ -313,7 +325,7 @@
         play: { prop: 'none' },
         lead: function (ctx, a, b, mode) { return rp(ctx, D.lead[mode] || D.lead.mf); },
         steps: [
-          { stage: 'play', fn: function (ctx, a, b, mode) { var t = rp(ctx, D.play[mode] || D.play.mf); return t ? t + rp(ctx, REACT[att(b)] || REACT.gentle) : ''; } },
+          { stage: 'play', fn: function (ctx, a, b, mode) { var t = rp(ctx, D.play[mode] || D.play.mf); return t ? t + FR.pickQ(ctx, REACT[att(b)] || REACT.gentle) : ''; } },
           { stage: 'after', fn: function (ctx) { return rp(ctx, D.after); } }
         ],
         tags: ['night'] });

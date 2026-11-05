@@ -1,3 +1,4 @@
+/* @event-ok 乗車・後味・覚めたままの朝の文を増やし、覚めたまま続ける人の後味と朝を分けた（2026-11-05 担当R2。新しい出来事ではない） */
 /* @event-ok 戸惑いの二段目（打ち消せない）の段を足した（2026-11-05 担当TF） */
 /* 箱庭シミュレーター（R18版のみ）: 常識改変：電車
    満員電車で乗客どうしが体を触れ合わせ、慰め合うのが「当たり前のマナー」になった世界（常識改変の姉妹の部屋）。
@@ -776,7 +777,7 @@
           say(S, { actors: [p], tag: p.goReport ? '今日こそ' : 'また乗ってしまう', text: fm(pk(S, p.goReport ? D.SILENT_GO : D.SILENT_AGAIN), V), why: p.name + 'は昨日、言い出せなかった' + (p.goReport ? '。今日こそ言うと決めた' : '') });
           return;
         }
-        say(S, { actors: [p], tag: '覚めたまま', text: fm(pk(S, D.KEEP), V), why: p.name + 'は覚めたまま、次の朝を迎えた（引き戻されやすさ ' + Math.round(pr * 100) + '%）' });
+        say(S, { actors: [p], tag: '覚めたまま', text: fm(pk(S, p.branch === 'thrill' && D.KEEP_THRILL && !(v.line === 'night' && v.trip) ? D.KEEP.concat(D.KEEP_THRILL).filter(function (x) { return !/ほとんど眠れ|起き上がれ/.test(x); }) : D.KEEP), V), why: p.name + 'は覚めたまま、次の朝を迎えた（引き戻されやすさ ' + Math.round(pr * 100) + '%）' });
       }
     });
   }
@@ -816,7 +817,7 @@
       }
     }
     /* 駅のポスターは最初の日と、三日ごと（同じ遊びで同じ標語を繰り返さないように） */
-    t += '\n\n' + (d === 1 || d % 3 === 0 ? pk(S, D.POSTER[v.norm]).replace(/\{a\}/g, riders[0].name) : '') + fm(pk(S, D.CROWD[v.crowd]), { a: riders[0].name });
+    t += '\n\n' + (d === 1 || d % 3 === 0 ? pk(S, v.crowd === 'sparse' ? keep(D.POSTER[v.norm], function (x) { return !/混み合|混雑|満員/.test(x); }) : D.POSTER[v.norm]).replace(/\{a\}/g, riders[0].name) : '') + fm(pk(S, D.CROWD[v.crowd]), { a: riders[0].name });
     if (D.BEAT) t += '\n\n' + fm(pk(S, rng() < 0.65 || !D.BEAT_ALL ? D.BEAT[v.line] : D.BEAT_ALL), Object.assign({ a: riders[0].name }, V0));
     say(S, { actors: riders, tag: '乗車', text: t, why: d === 1 ? '常識の強さ「' + { loose: 'ゆるい', normal: 'ふつう', strict: '徹底' }[v.norm] + '」・降りる駅まで ' + nSt + '駅' : '' });
     riders.forEach(function (p) {
@@ -860,6 +861,8 @@
       var k = p.offToday ? '' : p.state === 'awake' ? 'awake' : p.m.doubt >= 40 ? 'doubt' : p.cnt.touch ? 'sink' : 'none';
       if (!k) return;
       var al = (D.AFTER_LINE && D.AFTER_LINE[v.line] && D.AFTER_LINE[v.line][k]) || D.AFTER[k];
+      /* 覚めたまま自分で続けている人（スリル）には、続けることを選んだ人の後味（2026-11-05 担当R2） */
+      if (k === 'awake' && p.branch === 'thrill' && D.AFTER_THRILL) al = D.AFTER_THRILL;
       /* 今日は連れとだけ触れ合った人に、「名前も知らない乗客と会釈」の文を付けない */
       if (p.pairToday === d && p.mobToday !== d) al = keep(al, function (x) { return !/名前も知らない|乗客と会釈/.test(x); });
       /* 山場の無かった日に「体は満たされている」と書かない（報告 8） */
