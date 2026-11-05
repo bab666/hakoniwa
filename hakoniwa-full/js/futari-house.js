@@ -46,6 +46,14 @@
   function pickOf(ctx, c, k) { var p = ctx.input && ctx.input.perChar && ctx.input.perChar[c.i]; var v = p && p.pick ? p.pick[k] : null; return v && v !== 'auto' ? v : null; }
   function tr(c) { return c.tr || {}; }
   H.canChore = function (ctx, c) { return pf(ctx, c).chore !== 'none'; };
+  /* 毎日の種（futari-days.js）が使う：住人ごとの欄・家事の分担・同居の理由・ぎこちなさ・家の呼び方 */
+  H.prof = function (ctx, c) { return pf(ctx, c); };
+  H.mode = function (ctx) { var h = hs(ctx); return h ? h.chores : ''; };
+  H.reasonKey = function (ctx) { var h = hs(ctx); return h ? h.reason : ''; };
+  H.awk = function (ctx, a, b) { return awk(ctx, a, b); };
+  H.on = function (ctx, a, b) { return house(ctx, a, b); };
+  /* 古い家の留守番は「シェアハウス」と呼ばない（2026-11-04・遊んで確かめた報告 1104 の B12） */
+  H.homeName = function (ctx) { var h = hs(ctx), f = ctx.ft; if (h && h.reason === 'house') return '預かった古い家'; return f && f.liv === 'share' ? 'シェアハウス' : '自宅'; };
   H.cookGood = function (ctx, c) { var k = pf(ctx, c).chore; return k !== 'none' && k !== 'clumsy'; };
   function per(c) { return FC.att(c); }
   function rp(ctx, arr) { return arr && arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : ''; }
@@ -97,8 +105,10 @@
     if (!house(ctx, a, b)) return true;
     var v = awk(ctx, a, b), f = ctx.ft, x = FC.stOf(ctx, a, b), st = (x.awk0 || 0) >= 60;
     /* 知らない人どうしは、一緒に暮らした日数も要る（両片想いは日数の 4 分の 1、告白は半分ほど。友人どうしはその半分） */
-    if (kind === 'pining') return v < 40 && f.day >= Math.round(f.days * (st ? 0.25 : 0.12));
-    if (kind === 'confess') return v < 28 && f.day >= Math.round(f.days * (st ? 0.45 : 0.25));
+    /* 恋愛の進み「ゆっくり」：両片想い・告白までの日数の下限を上げる（2026-11-04・遊んで確かめた報告 1104 の B16：ゆっくりでも 4 日目に告白と初夜） */
+    var sl = ctx.env && ctx.env.pace === 'slow';
+    if (kind === 'pining') return v < (sl ? 34 : 40) && f.day >= Math.round(f.days * (sl ? 0.4 : st ? 0.25 : 0.12));
+    if (kind === 'confess') return v < (sl ? 22 : 28) && f.day >= Math.round(f.days * (sl ? 0.6 : st ? 0.45 : 0.25)) && (!sl || f.day - (x.at[2] == null ? f.day : x.at[2]) >= 2);
     return kind === 'friend' ? v < 68 : true;
   };
 
@@ -120,13 +130,20 @@
     var f = ctx.ft, h = hs(ctx), P = ctx.present(), T = TX();
     if (!h || !h.on || !T.REASON) return false;
     var R = T.REASON[h.reason], A = P[0], B = P[1];
-    /* 恋人どうしの二人は、関係の始まり（scenario-futari.js の introTie）のまま */
-    if (P.length === 2 && FC.st(ctx, A, B) >= 3) return false;
-    var sp = FC.W(ctx, f.liv === 'share' ? 'シェアハウスの居間' : '自宅の居間');
+    var sp = FC.W(ctx, H.homeName(ctx) + 'の居間');
+    /* 恋人どうしの二人：同居の理由（恋人どうしの文）→ 関係の始まり（scenario-futari.js の introTie）（2026-11-04・遊んで確かめた報告 1104 の B11：恋人の回は同居の理由が出なかった） */
+    if (P.length === 2 && FC.st(ctx, A, B) >= 3) {
+      var lvR = (T.REASON_LV || {})[h.reason];
+      if (lvR) emitT(ctx, [A, B], 'bond', FC.fresh(ctx, lvR), sp + '同居の理由：' + R.label + '（恋人どうし）', null, 'meet');
+      FC.introTie(ctx, A, B);
+      return true;
+    }
     if (P.length === 2) {
       var s0 = FC.st(ctx, A, B);
       var kn = FC.kinOf ? FC.kinOf(ctx, A, B) : null;
-      if (kn && T.REASON_KIN) emitT(ctx, [A, B], 'bond', FC.fresh(ctx, T.REASON_KIN), sp + '同居の理由：' + kn.label + 'の二人の同居', { rel: kn.label }, 'meet');
+      /* 家族の二人：同居の理由を選んでいれば、その理由の一文を続ける（「親どうしが決めた」が出なかった・義理のきょうだいが「親戚」になった。2026-11-04） */
+      var kx = ctx.env && /^(rent|fire|parents|recruit|work|house)$/.test(ctx.env.reason) ? FC.fresh(ctx, (T.REASON_KINX || {})[h.reason]) : '';
+      if (kn && T.REASON_KIN) emitT(ctx, [A, B], 'bond', FC.fresh(ctx, kn.step && T.REASON_STEP ? T.REASON_STEP : T.REASON_KIN) + (kx || ''), sp + '同居の理由：' + kn.label + 'の二人の同居' + (kx ? '・' + R.label : ''), { rel: kn.label }, 'meet');
       else emitT(ctx, [A, B], 'bond', FC.fresh(ctx, s0 === 0 ? R.s : R.f), sp + '同居の理由：' + R.label + (s0 === 0 ? '（知らない人どうし）' : ''), null, 'meet');
       if (s0 === 0) greet(ctx, A, B, sp);
       else FC.introTie(ctx, A, B);
@@ -263,6 +280,10 @@
     var lv = hot(a, b) >= hot(b, a) ? a : b, st = lv === a ? b : a, w = rp(ctx, T.WHERE || ['実家']);
     var t = FC.freshP(ctx, T.LEAVE, lv);
     if (!t) return;
+    /* 今日の言い合いが記録に無いときは、言い合いの一文から始める（2026-11-04・遊んで確かめた報告 1104 の A6：言い争いの無い家出） */
+    var xp = FC.stOf(ctx, a, b);
+    var nowF = ctx.log.slice(f.l0 || 0).some(function (e) { return e && e.cat === 'conflict' && e.actors && e.actors.indexOf(a.i) >= 0 && e.actors.indexOf(b.i) >= 0; });
+    if (xp.fightDay !== f.day && !nowF && T.LEAVE_PRE) t = (FC.fresh(ctx, T.LEAVE_PRE) || '') + t;
     t += '\n\n' + (FC.fresh(ctx, T.AWAY_A) || '');
     emitT(ctx, [lv, st], 'conflict', t, FC.W(ctx, '自宅の玄関') + '家を出て行ってしまうケンカ：' + lv.name + 'は' + w + 'へ（緊張 ' + Math.round(ctx.R(lv, st).ten) + '）', { w: w }, 'leave', function () { ctx.stress(lv, 12); ctx.stress(st, 10); });
     var x = FC.stOf(ctx, lv, st);
@@ -290,7 +311,8 @@
   }
 
   /* ======================= 出来事（エンジンが選ぶ） ======================= */
-  function addEv(e) { e.noOdd = true; if (!e.tie) e.tie = '-'; FC.EV.push(e); return e; }
+  /* 旅に出ている人は、その日は家の出来事に出さない（2026-11-04・遊んで確かめた報告 1104 の A7） */
+  function addEv(e) { e.noOdd = true; if (!e.tie) e.tie = '-'; var w0 = e.when; e.when = function (ctx, a, b) { if (ctx.ft && ctx.ft.trip && (FC.onTrip(ctx, a) || (b && FC.onTrip(ctx, b)))) return false; return w0.apply(this, arguments); }; FC.EV.push(e); return e; }
   function houseTg(ctx, a, b) { var f = ctx.ft; return !!(f && house(ctx, a, b) && FC.together(ctx, a, b) && !FC.onTrip(ctx, a) && !FC.onTrip(ctx, b) && (f.t !== 1 || f.hol)); }
 
   /* ---------- 生活のすれ違い ---------- */
@@ -336,7 +358,7 @@
       (T.RUB_KEYS || []).forEach(function (k) {
         [[a0, b0], [b0, a0]].forEach(function (o) {
           var w = topicW(ctx, k, o[0], o[1]) * ((x.rubT[k] || 0) >= 2 ? 0.15 : (x.rubT[k] || 0) ? 0.5 : 1);
-          var ok = (RB[k] ? RB[k].sit : []).filter(function (t) { return !f.used[t] && sitOk(ctx, t, o[0]); });
+          var ok = (RB[k] ? RB[k].sit : []).filter(function (t) { return !f.used[t] && sitOk(ctx, t, o[0]) && (!FC.textOk || FC.textOk(ctx, t)); });
           if (w > 0 && ok.length) C.push({ k: k, a: o[0], b: o[1], w: w, ok: ok });
         });
       });
@@ -373,7 +395,7 @@
   /* ---------- 家事の分担 ---------- */
   addEv({ id: 'ft_chore', cat: 'help', scope: 'pair', label: '家事の分担のひとこま',
     when: function (ctx, a, b) { var h = hs(ctx); return !!b && houseTg(ctx, a, b) && ctx.ft.t !== 1 && h.choreDay !== ctx.ft.day; },
-    w: function () { return 0.7; },
+    w: function () { return 1.3; },
     run: function (ctx, a, b) {
       var f = ctx.ft, h = hs(ctx), T = TX(), CH = T.CHORE || {}, pa = pf(ctx, a), pb = pf(ctx, b), t = '', doer = null, why = '';
       var none = pa.chore === 'none' ? a : pb.chore === 'none' ? b : null;
@@ -391,7 +413,8 @@
       else doer = cands[Math.floor(ctx.rng() * cands.length)];
       var other = doer === a ? b : a, pd = pf(ctx, doer);
       if (pd.chore === 'clumsy' && ctx.rng() < 0.5) { t = FC.fresh(ctx, CH.clumsy); why = doer.name + 'は家事が苦手'; }
-      if (!t) { var pool = (CH[h.chores] || []).filter(function (s) { return !(h.chores === 'skill' && /味噌汁/.test(s) && !H.cookGood(ctx, doer)); }); t = FC.fresh(ctx, pool); why = MODE_N[h.chores] + '・' + doer.name; }
+      /* 得意な人が受け持つ家：受け持つ人の得意なこと（料理が得意＝料理、家事をよくする＝片づけ・洗濯、ふつう＝ほかの人の苦手を引き受ける）の文（2026-11-04・遊んで確かめた報告 1104 の A4） */
+      if (!t) { var pool = h.chores === 'skill' ? (pd.chore === 'cook' ? CH.skillCook : pd.chore === 'much' ? CH.skillMuch : CH.skillNorm) || CH.skill : CH[h.chores]; t = FC.fresh(ctx, pool); why = MODE_N[h.chores] + '・' + doer.name + (h.chores === 'skill' ? '（' + ({ cook: '料理が得意', much: '家事をよくする' }[pd.chore] || '手の空いた人') + '）' : ''); }
       if (!t) return null;
       h.choreDay = f.day;
       ctx.mod(other, doer, { aff: 2, trust: 2 }); addAwk(ctx, a, b, -2);
