@@ -47,6 +47,9 @@
 /* @event scen=set-b-kanbyo id=kb_leave_morn cat=bond tie=- label=泊まった看病の人が朝に帰っていく */
 /* @event scen=set-b-kanbyo id=kb_near cat=romance tie=- label=治ったあとの夜に二人の距離が近づく */
 /* @event scen=set-b-kanbyo id=kb_contact cat=bond tie=- label=他の住人からお大事にと連絡が来る */
+/* @event scen=set-b-kanbyo id=kb_work cat=bond tie=- label=通いの看病の人が仕事の合間に様子を気にかける */
+/* @event scen=set-b-kanbyo id=kb_rest_peak cat=bond tie=- label=熱がいちばん高い日に看病のため仕事を休む */
+/* @event scen=set-b-kanbyo id=kb_kaeshi_nearly cat=bond tie=- label=看病した人にうつりかけて持ちこたえる */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -57,7 +60,7 @@
   function RC() { return HK.PairReact; }
   function f(ctx) { return ctx.kb; }
   function pickOf(ctx, arr) { return arr && arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : ''; }
-  function fill(ctx, t, a, b, ex) { return famWord(ctx, K.fill(ctx, t, a, b, ex)); }
+  function fill(ctx, t, a, b, ex) { var r = famWord(ctx, K.fill(ctx, t, a, b, ex)); if (ctx && ctx.kb && /合鍵を(?:預か|渡さ|受け取)/.test(r)) ctx.kb.hasKey = true; return r; }
   /* 血縁の二人（親子・きょうだい・親戚）は、文の「家族」を血縁の言い方にする（2026-11-04 利用者の指示「親子は親子のまま、血縁＋様子で表す」）。
      「AとBは（遠慮のいらない）家族だ」「家族の看病の数日」「家族として」「家族に」だけを置き換え、「家族の〇〇は」のような人を指す言い方はそのまま */
   function famWord(ctx, t) {
@@ -125,8 +128,34 @@
     if (S && S.rk !== 'spouse' && WED.test(x)) return false;
     if (S && S.sev === 'light' && LIGHT_NG.test(x)) return false;
     if (!K.choreOk(x, a, b)) return false;
+    if (S && !partOk(S, x)) return false;
+    /* 通い・同居していない二人（2026-11-05 遊んで確かめた報告 3 回目）：合鍵を預かっていないのに「合鍵で入った」、一緒に住んでいないのに「夕食のあと並んでテレビ」を出さない */
+    if (S && S.live !== 'together' && !S.hasKey && !S.couple0 && /合鍵(?!を(?:預か|渡さ|受け取))/.test(x)) return false;
+    if (S && S.live !== 'together' && /並んでテレビ|夕食のあと、二人/.test(x)) return false;
+    if (S && !roleWordOk(S, x, a, b)) return false;
     return true;
   }
+  /* 時間帯の札（2026-11-05 報告：朝の区切りに「夕方、隣の家から工事の音」）：区切りに合わない時間の語で始まる文を外す */
+  var PART_NG = { m: /^(?:夕方|夜|夕食|晩|昼過ぎ)|。(?:夕方|夜更け|夕食のあと|夜になる)/, d: /^(?:夜|朝|夜中)[、に]|^夜更け/, n: /^(?:朝|昼)[、に]|^昼過ぎ/ };
+  function partOk(S, x) { var ng = S.part && PART_NG[S.part]; return !ng || !ng.test(String(x).replace(/「[^」]*」/g, '')); }
+  /* 役の言い回し（2026-11-05 報告：看病された側に「看病の癖が、まだ抜けていなかった」）：{a} の看病の癖・看病の手つきは、{a} が看病した人のとき。
+     「ぶり返していない？」と聞かれる・「もう治ってる」と笑う {b} は、最後に寝込んでいた人のとき */
+  function roleWordOk(S, x, a, b) {
+    if (!a || !b || a === b) return true;
+    var kd = S.kaeshi && S.day && S.day.d >= S.kaeshi.from, carerOk = kd ? (a === S.A || a === S.B) : a === S.A, sick = kd ? S.A : S.B;
+    if (/\{a\}[^。]*看病の(?:癖|手つき|夜と同じ手つき)|看病の(?:癖|手つき)(?:が、?まだ抜け|のまま)|看病の夜と同じ手つき/.test(x) && !carerOk) return false;
+    if (/ぶり返して(?:ない|いない|いません)|もう治って(?:る|いる|います)/.test(x) && b !== sick) return false;
+    /* 夜の場面の文は {a}＝攻め・{b}＝受けで書いてあり、多くは「受けが看病された人・攻めが看病した人」の書き方（病み上がりの{b}・看病のあいだ{a}が拭いた…）。
+       受けが看病した人（攻めが看病された人）の夜には、その向きの文を使わない（2026-11-05 kanbyo-role：看病した人が「元気になった」）。うつって看病し返したあとは、どちらも看病した人なので見ない */
+    if (!kd && (b === S.A || a === S.B) && (B_PAT.test(x) || A_CARE.test(x))) return false;
+    /* 看病の礼を言うのは看病された人だけ（うつった人が寝込んでいる日は、うつった人。治ったあとは、はじめに看病された人） */
+    var thx = kd && S.day.d < S.kaeshi.heal ? S.A : S.B;
+    if (/\{a\}は「[^」]*(?:看病の(?:お)?礼|看病のお返し|看病してくれ)/.test(x) && a !== thx) return false;
+    if (/\{b\}は「[^」]*(?:看病の(?:お)?礼|看病のお返し|看病してくれ)/.test(x) && b !== thx) return false;
+    return true;
+  }
+  var B_PAT = /(?:病み上がり|治ったばかり|元気になった|熱の残る|熱っぽい|微熱の残る|血色の戻った|寝込んでいた|寝てばかりいた|熱で(?:上気|潤|うる))[^。]{0,4}\{b\}|\{b\}(?:の|は)[^。]{0,16}(?:熱の名残|熱が少し|熱が残|病み上がり|寝込んで|治った|元気になった|平熱|熱を測|体温計|微熱|うわごと|寝汗|看病のあいだ寝)|\{b\}の額の冷却シート|熱のある\{b\}/;
+  var A_CARE = /看病のあいだ[^。]{0,20}\{a\}が|\{a\}は[^。]{0,30}看病の(?:あいだ|夜|とき)[^。]{0,24}(?:拭|さす|直し|留め|数え|洗|替え|支え|飲ませ|敷い|見下ろし|手つき)|\{a\}が貼った|\{a\}の看病/;
   /* 候補から一つ（一回の遊びで同じ文を二度出さない。使っていない文が無ければ ''。rep＝使い切ったら使った文から選んでよい） */
   function cands(ctx, arr, a, b) {
     var p = (arr || []).filter(function (x) { return okText(ctx, x, a, b); });
@@ -195,6 +224,13 @@
   function kStage(S, d) { var k = S.kaeshi; if (!k) return null; return d >= k.from && d < k.heal ? 'ksick' : d === k.heal ? 'kheal' : d > k.heal ? 'kafter' : null; }
   /* その夜、誰かが病気か（性的な場面を起こさない夜） */
   function sickNight(S, d) { var st = stageOf(S, d); return st === 'rise' || st === 'peak' || st === 'fall' || kStage(S, d) === 'ksick'; }
+  /* うつる日程：治った日の翌日から 1〜2 日寝込み、必ず遊びの中で治る日を残す（2026-11-05 報告：看病し返しに流れて夜の機会が無くなった） */
+  function mkKaeshi(ctx, S, by) {
+    var from = S.heal + 1, len = ctx.rng() < 0.5 ? 1 : 2;
+    len = Math.max(1, Math.min(len, S.days - 1 - from));
+    S.kaeshi = { from: from, heal: from + len };
+    if (by) { S.kaeshiBy = by; S.endK = null; }
+  }
 
   /* ---------- 立場・おまかせ ---------- */
   function partOf(input, i) { var p = input && input.perChar && input.perChar[i], v = p && p.pick ? p.pick.part : null; return /^(carer|patient|guest)$/.test(v) ? v : null; }
@@ -325,6 +361,8 @@
     var gs = side === 'carer' ? f(ctx).gsA : f(ctx).gsB, gl = side === 'carer' ? f(ctx).glA : f(ctx).glB, gb = (gs && GS[gs.k] && GS[gs.k].b) || (gl && GL[gl.k] && GL[gl.k].b);
     var gu = (gs && gs.user && GS[gs.k] && GS[gs.k].b) || (gl && gl.user && GL[gl.k] && GL[gl.k].b);
     if (gu) gb = gu;
+    /* 立場に合わない後押し（看る側に「甘える」など）は使わない（2026-11-05 報告：表示名「〇〇が甘える」で甘えるのは相手） */
+    if (gb && !(side === 'carer' ? /^(over|clumsy)$/ : /^(hide|amae)$/).test(gb)) gb = '';
     if (gb && (gu || ctx.rng() < 0.55)) base = gb;
     /* 利用者が選んだ目標の後押しは、らしくない揺らぎで入れ替えない（選んだ目標どおりに動く） */
     var odd = !gu && RC() && ctx.rng() < RC().pOdd(ctx);
@@ -447,8 +485,10 @@
     /* 病気の間に一度も来られない配置にはしない（来られる日が無ければ、熱が下がり始めた日か、いちばん高い日に来る） */
     if (S.live === 'apart' && !Object.keys(S.come).some(function (k) { return +k < S.heal && S.come[k]; })) S.come[S.heal - 1 > S.peak ? S.heal - 1 : S.peak] = true;
     /* うつる：治った日の翌日から看病した人が寝込む（日数が足りるときだけ）。うつりやすさ・同居・近くで世話をする行動で起こりやすく */
-    var pc = { low: 0.08, mid: 0.2, high: 0.45 }[S.cont] * (S.live === 'together' ? 1.25 : 1) + (S.pb.k === 'amae' ? 0.08 : 0) + (S.cb.k === 'over' ? 0.06 : 0);
-    if (S.heal <= days - 3 && ctx.rng() < pc) { var len = ctx.rng() < 0.5 ? 1 : 2; S.kaeshi = { from: S.heal + 1, heal: S.heal + 1 + len }; }
+    /* うつりやすさ「うつりやすい」は 8 割以上（2026-11-05 報告：高いのにうつらない回）。日数が足りるときだけ */
+    var pc = { low: 0.08, mid: 0.25, high: 0.85 }[S.cont] * (S.live === 'together' ? 1.1 : 1) + (S.pb.k === 'amae' ? 0.06 : 0) + (S.cb.k === 'over' ? 0.05 : 0);
+    /* うつりやすい設定は、治った日の翌日が最後の日でもうつる（最後の日は看病し返す一日。2026-11-05） */
+    if ((S.heal <= days - 3 || (S.cont === 'high' && S.heal <= days - 2)) && ctx.rng() < pc) mkKaeshi(ctx, S, '');
     if (!HK.SAFE_ON && HK.KanbyoR18 && HK.KanbyoR18.quota) S.lewdMax = HK.KanbyoR18.quota(ctx, env.lewdN);
     ctx.place = S.live === 'together' ? '二人の家' : B.name + 'の部屋';
     /* 導入：なぜ看病することになったか（関係ごとの段）と、体調を崩したわけ（仕事の型・重さ） */
@@ -457,11 +497,14 @@
     var liv = pickT(ctx, (Tx.LIVE || {})[S.live], A, B);
     var fw = S.feud ? pickT(ctx, (Tx.FEUD_WHY || {})[per(A)] || (Tx.FEUD_WHY || {}).gentle, A, B) : '';
     var tx = fill(ctx, cause, A, B) + fill(ctx, intro, A, B, { rel: RK_NAME[rk] }) + (fw ? fill(ctx, fw, A, B) : '') + (liv ? fill(ctx, liv, A, B) : '');
+    /* 始まりで「駆けつけた」なら、同居していなくても初日は来ている（2026-11-05 報告：駆けつけたのに 1 日目はひとりで寝込む） */
+    if (S.live === 'apart' && /駆けつけ|飛んでき|看病に来|訪ねて|やってきた/.test(tx)) S.come[0] = true;
     ctx.act2({ actors: [A, B], cat: 'bond', text: tx, why: '看病の部屋：始まり（' + RK_NAME[rk] + '・' + B.name + 'が体調を崩した）' });
   }
 
   /* ---------- 一日 ---------- */
-  var REST_RATE = 1e-9;
+  var REST_RATE = 1e-9, PART_K = ['m', 'd', 'n'];
+  function workOut(c) { return !!(c && c.life && c.life.work && !/^(home|remote)$/.test(c.life.work)); }
   /* 区切りに何も出なかった（見出しだけの区切り）ときは、治ったあと・うつった人が治った日なら関係ごとの段で埋める（2026-11-04 報告） */
   /* 一回の遊びで同じ文（18 字以上）を二度出さない：前の区切りまでに増えた記録（本体の出来事・キスの段を含む）から、もう出た文を外す。
      文が全部外れた記録は消す（2026-11-04 報告：同じ文が回をまたいで・一回の中で何度も出る） */
@@ -469,6 +512,9 @@
     var L = ctx.log || [], U = S.sentU = S.sentU || {};
     for (var i = S.dedupAt || 0; i < L.length; i++) {
       var e = L[i]; if (!e || e.kind !== 'event' || typeof e.text !== 'string') continue;
+      /* 同じ出来事の文を名前の向きだけ替えて二度出さない（本体の共通の出来事の短い文。2026-11-05） */
+      var fk = '#' + (ctx.chars || []).reduce(function (t, c) { return c && c.name ? t.split(c.name).join('＊') : t; }, e.text).replace(/\s/g, '');
+      if (fk.length >= 20 && !e.lewd && e.tag !== '山場' && e.tag !== 'きっかけ') { if (U[fk]) { L.splice(i, 1); i--; continue; } U[fk] = 1; }
       var out = [], cut = false, cur = '', d = 0, tx = e.text;
       for (var k = 0; k < tx.length; k++) {
         var c = tx.charAt(k); cur += c;
@@ -509,7 +555,10 @@
     /* 本体の気分の一句は付けない（病気の間だけでなく治ったあとも。同じ一句が一回の遊びで何度も出たため。2026-11-04） */
     if (ctx.stepIndex != null) ctx._emoWS = ctx.stepIndex;
     if (t === 0) S.day = { d: d, st: st, ks: ks, hol: holiday(d), visited: false, care: 0 };
+    S.part = PART_K[t];
     var day = S.day, last = d === S.days - 1;
+    /* 通い・同居していない看る人の仕事（2026-11-05 報告：同僚が毎日朝から晩まで看病して仕事に触れない）：外で働く人は、平日の病気の間（初日・いちばん高い日は休みを取る）、日中は仕事に出る */
+    if (t === 0) day.work = S.live !== 'together' && workOut(A) && !day.hol && d > 0 && st !== 'peak' && (st === 'rise' || st === 'fall') && S.come[d] && ctx.rng() < 0.7;
     if (ks === 'ksick' || ks === 'kheal') { kaeshiStep(ctx, day, t, last); return; }
     if (st === 'heal' || st === 'after') { healStep(ctx, day, t, last); return; }
     /* 病気の間（rise・peak・fall）。同居していない日で看る人が来ない日は、ひとりで寝込む段と連絡の段（alone） */
@@ -525,6 +574,9 @@
     }
     if (t === 1) {
       if (d === 0 && !day.hol) rest(ctx, day);
+      /* いちばん高い日は、外で働く通いの看る人も休みを取る */
+      else if (day.st === 'peak' && !day.hol && S.live !== 'together' && workOut(A) && !S.peakRest) { S.peakRest = true; var pr = pickT(ctx, (TX().REST || {}).carer_peak, A, B); if (pr) ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, pr, A, B), why: '看病の部屋：熱がいちばん高い日に仕事を休んだ（' + A.name + '）' }); }
+      if (day.work) { workGap(ctx, day); visit(ctx, day, 'd'); return; }
       care(ctx, day, 'd');
       if (!chores(ctx, day)) { if (S.feud && ctx.rng() < 0.55) feud(ctx, day); else behave(ctx, day); }
       visit(ctx, day, 'd');
@@ -546,7 +598,9 @@
     /* 病気の道中の夜（R18。看る人が来ている夜だけ。寝込むほどの熱のいちばん高い夜は無し） */
     var ill = illNight(ctx, day, last);
     if ((ill || st === 'peak') && S.live !== 'together') S.stayN = d;
-    if (!ill && st !== 'peak' && S.live !== 'together') say1(ctx, S.live === 'apart' ? TX().LEAVE_APART || TX().LEAVE || {} : TX().LEAVE || {}, A, B, 'kb_leave', '看病の部屋：' + A.name + 'が帰った', 'bond');
+    /* 帰る段：翌日に来るか（同居していない日）で、「また明日」と「次はまた今度」を分ける（2026-11-05 報告：「また今度」の翌朝に来る） */
+    if (!ill && st !== 'peak' && S.live !== 'together') { var nx = S.come[d + 1] !== false && d + 1 < S.days, LT = S.live === 'apart' ? TX().LEAVE_APART || TX().LEAVE || {} : TX().LEAVE || {};
+      say1(ctx, filtT(LT, function (x) { return nx ? !/また今度|しばらく来られ|明日は来られ/.test(x) : !/また明日|明日も来|明日の朝/.test(x); }), A, B, 'kb_leave', '看病の部屋：' + A.name + 'が帰った', 'bond'); }
     if (last) ending(ctx);
   }
   /* 通い・同居していない日の朝：前の晩に泊まったなら「泊まった朝」、前の日にも来ていたなら「久しぶり」の文を使わない（2026-11-04 報告） */
@@ -557,8 +611,8 @@
     if (S.live === 'apart') {
       var T0 = Tx.ARRIVE_APART || {}, came = d === 0 || S.come[d - 1];
       var T1 = {}; Object.keys(T0).forEach(function (k) { T1[k] = (T0[k] || []).filter(function (x) { return !came || !/久しぶり/.test(x); }); });
-      say1(ctx, T1, A, B, 'kb_arrive', '看病の部屋：看病に来られた日（' + A.name + 'が来た）', 'bond');
-    } else if (d > 0) say1(ctx, Tx.ARRIVE || {}, A, B, 'kb_arrive', '看病の部屋：通いの看病（' + A.name + 'が来た）', 'bond');
+      say1(ctx, day.work && Tx.ARRIVE_WORK ? Tx.ARRIVE_WORK : T1, A, B, 'kb_arrive', '看病の部屋：看病に来られた日（' + A.name + 'が来た' + (day.work ? '・出勤の前' : '') + '）', 'bond');
+    } else if (d > 0) say1(ctx, day.work && Tx.ARRIVE_WORK ? Tx.ARRIVE_WORK : Tx.ARRIVE || {}, A, B, 'kb_arrive', '看病の部屋：通いの看病（' + A.name + 'が来た' + (day.work ? '・出勤の前' : '') + '）', 'bond');
   }
   /* ---------- 同居していない日（看る人が来ない日）：ひとりで寝込む人（{b}）の段と、連絡（電話・メッセージ）の段 ---------- */
   function aloneStep(ctx, day, t, last) {
@@ -681,9 +735,19 @@
     /* 次の日が治る日のまま動かせないとき（日数の上限・うつる日が決まっている）もぶり返さない（「ぶり返した」の翌朝に「すっかり下がった」にならないように） */
     var capR = S.days >= 4 ? S.days - 2 : S.days - 1, canR = day.d + 1 < S.heal || (!S.kaeshi && S.heal + 1 <= capR);
     var rel = day.d < S.heal && day.st !== 'heal' && canR ? relapse(ctx, day, 0.5) : false;
-    if (!S.kaeshi && S.heal <= S.days - 3 && ctx.rng() < { low: 0.2, mid: 0.35, high: 0.55 }[S.cont]) { var len = ctx.rng() < 0.5 ? 1 : 2; S.kaeshi = { from: S.heal + 1, heal: S.heal + 1 + len }; S.kaeshiBy = 'near'; S.endK = null; }
+    if (!S.kaeshi && S.heal <= S.days - 3 && ctx.rng() < { low: 0.2, mid: 0.35, high: 0.55 }[S.cont]) mkKaeshi(ctx, S, 'near');
     var t = pickT(ctx, rel ? Tx.ILL_AFTER_RE : Tx.ILL_AFTER, A, B);
     if (t) ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, t, A, B), why: '看病の部屋：夜のあとの朝' + (rel ? '（熱がぶり返した）' : '') });
+  }
+  /* 表 T の各列を fn で絞った写し */
+  function filtT(T, fn) { var o = {}; Object.keys(T || {}).forEach(function (k) { o[k] = (T[k] || []).filter(fn); }); return o; }
+  /* 仕事に出る日の日中（通い・同居していない看る人。{a}＝看る人、{b}＝寝込んでいる人） */
+  function workGap(ctx, day) {
+    var S = f(ctx), A = S.A, B = S.B, W = TX().WORK_GAP || {};
+    var t = relPick(ctx, W, A, B);
+    if (!t) return care(ctx, day, 'd');
+    S.cnt.work = (S.cnt.work || 0) + 1;
+    ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, t, A, B, { temp: tempOf(S, day.d) }), why: '看病の部屋：仕事の合間に様子を気にかける（' + A.name + '）', fx: function () { ctx.mod2(A, B, { aff: 1 }, { aff: 1, trust: 1 }); } });
   }
   /* 関係ごとの表から一つ言う（{ rk/grp/all }） */
   function say1(ctx, T, a, b, id, why, cat, ex) {
@@ -707,7 +771,7 @@
   function rest(ctx, day) {
     var S = f(ctx), A = S.A, B = S.B, W = TX().REST || {};
     if (B.life.work !== 'home') { var rt = pickT(ctx, W.patient, A, B); if (rt) ctx.act2({ actors: [B], cat: 'solo', text: fill(ctx, rt, A, B), why: '看病の部屋：体調を崩して休んだ（' + B.name + '）' }); }
-    if (!/home|remote/.test(A.life.work) && S.live === 'together') { var wt = pickT(ctx, W.carer, A, B); if (wt) ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, wt, A, B), why: '看病の部屋：看病のために仕事を休んだ（' + A.name + '）' }); }
+    if (workOut(A) && (S.live === 'together' || S.come[day.d])) { var wt = pickT(ctx, S.live === 'together' ? W.carer : (W.carer_v || W.carer), A, B); if (wt) ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, wt, A, B), why: '看病の部屋：看病のために仕事を休んだ（' + A.name + '）' }); }
   }
   /* 看病の種（その段・その区切りに合うもの。一回の遊びで同じ種は続けない＝HK.Journal.pick） */
   function care(ctx, day, part) {
@@ -782,7 +846,7 @@
     if (e) { e.tag = '山場'; S.weak = true; S.weakIn = true; if (lv) S.weakLove = true; }
     if (S.live !== 'together') S.cnt.stay = (S.cnt.stay || 0) + 1;
     /* 看病の最中に近づきすぎた（恋人・両片想いの夜の一文）：うつりやすさで、看る人にうつることがある */
-    if (lv && !S.kaeshi && S.heal <= S.days - 3 && ctx.rng() < { low: 0.08, mid: 0.15, high: 0.28 }[S.cont]) { var ln = ctx.rng() < 0.5 ? 1 : 2; S.kaeshi = { from: S.heal + 1, heal: S.heal + 1 + ln }; S.kaeshiBy = 'near'; }
+    if (lv && !S.kaeshi && S.heal <= S.days - 3 && ctx.rng() < { low: 0.08, mid: 0.15, high: 0.28 }[S.cont]) mkKaeshi(ctx, S, 'near');
   }
   /* ---------- 治った日・治ったあと ---------- */
   function decideEnd(ctx) {
@@ -815,6 +879,8 @@
         if (th) S.thanked = true;
         if (th) ctx.act2({ actors: [B, A], cat: 'bond', text: fill(ctx, th, A, B) + (tr ? fill(ctx, tr, A, B) : ''), why: '看病の部屋：看病のお礼（' + B.name + 'から）', fx: function () { ctx.mod2(B, A, { aff: 4, trust: 3, att: S.love ? 3 : 0 }, { aff: 3, att: S.love ? 2 : 0 }); } });
         if (S.kaeshi) say1(ctx, Tx.KAESHI_SIGN || {}, A, B, 'kb_kaeshi', '看病の部屋：' + A.name + 'に風邪がうつりかけている', 'bond');
+        /* うつりやすい設定でも日数が足りずにうつらなかったときは、うつりかけて持ちこたえた段（2026-11-05 報告：うつりやすさ「高い」でうつらない回） */
+        else if (S.cont === 'high') say1(ctx, Tx.KAESHI_NEARLY || {}, A, B, 'kb_kaeshi', '看病の部屋：' + A.name + 'にうつりかけたが持ちこたえた', 'bond');
         return;
       }
       /* 治った日の夜：最後の日なら結末、そうでなければ穏やかな夜（恋人どうしなら R18 の夜も） */
@@ -905,7 +971,8 @@
   function night(ctx, day, entry) {
     var S = f(ctx);
     if (HK.SAFE_ON || !HK.KanbyoR18 || S.sex >= S.lewdMax || sickNight(S, day.d)) return false;
-    if (S.kaeshi && day.d < S.kaeshi.heal) return false;
+    /* うつった人が寝込んでいる夜は無し（治った日の夜＝うつりかけの夜は残す。2026-11-05） */
+    if (S.kaeshi && day.d >= S.kaeshi.from && day.d < S.kaeshi.heal) return false;
     /* 恋愛の進みの日数の下限（2026-11-04 報告：関係の薄い二人が一気に体の関係まで行く）：始まりから恋人どうし・セフレでない二人は、
        告白した日の夜にはしない／告白していなければ、治った日の夜は無し・先に「近づく段」を出して、その次の日以降 */
     if (!S.couple0 && !S.fwb) {
@@ -918,16 +985,33 @@
         if (S.nearDay >= day.d) return false;
       }
     }
+    /* 片想いの二人は、告白の前に体の関係にしない（2026-11-05 報告） */
+    if (S.rk === 'crush' && !S.confessed) return false;
+    /* 回数の設定を守る（2026-11-05 報告：「多め」で長い場面が一度も無い・0 回）：残りの夜の数が、まだ要る回数以下なら必ず起こし、
+       多めで長い場面がまだ無ければ、最後の機会の夜は長い場面にする（描写の長さ「数行で短く」・ほのめかすのときを除く） */
+    var noLong = ctx.env.lewdN === 'high' && !S.longN && ctx.env.lewdLen !== 'short' && !(HK.Lewd && HK.Lewd.lv(ctx.env) === 'low') && S.sex < S.lewdMax;
+    var need = Math.max(nightNeed(S), noLong ? 1 : 0), left = nightsLeft(S, day.d);
+    S.forceN = need > 0 && left <= need;
+    S.wantLong = noLong && (left <= 1 || S.sex + 1 >= S.lewdMax || S.forceN && need <= 1);
     var ok = HK.KanbyoR18.night(ctx, entry, day, day.d === S.days - 1);
+    S.forceN = false; S.wantLong = false;
     if (ok) S.sex++;
     return ok;
+  }
+  /* まだ要るエッチの回数（多め＝2 回・一度は長い場面、ふつう＝恋人どうし・セフレは 1 回） */
+  function nightNeed(S) { var n = S.lewdMax >= 3 ? 2 : S.lewdMax >= 2 && (S.couple0 || S.fwb) ? 1 : 0; return Math.max(0, Math.min(n, S.lewdMax) - S.sex); }
+  /* その日から最後の夜までの、エッチの場面を出せる夜の数（病気の夜・うつった人が寝込む夜を除く） */
+  function nightsLeft(S, d) {
+    /* 最後の夜に告白する二人（結末が「治って恋人に」でまだ告げていない）は、告白した夜にはしないので、最後の夜を数えない */
+    var lastCf = !S.couple0 && !S.fwb && S.endK === 'koi' && !S.confessed;
+    var n = 0; for (var x = d; x < S.days; x++) if (!sickNight(S, x) && S.confessDay !== x && !(lastCf && x === S.days - 1)) n++; return n;
   }
   /* 近づく段（体の関係に進む前に一度。恋愛の語は使わない書き方。R18版で、体の関係にしてよい組だけ） */
   function nearBeat(ctx, day) {
     var S = f(ctx), A = S.A, B = S.B, KR = HK.KanbyoR18, PR = HK.PairR18, P = HK.Pos;
     if (!PR || !PR.sexOk(ctx, A, B) || (P && P.okSex && !P.okSex(A, B))) return;
     /* 恋愛にしない二人（恋愛：なし など）はお礼のデートの夜が無いので、近づく段を出やすく（性的な出来事の門：恋愛の有無で起きにくくしすぎない。2026-11-04） */
-    if (ctx.rng() > (S.love ? 0.6 : 0.9)) return;
+    if (ctx.rng() > (S.love ? (ctx.env.lewdN === 'high' ? 0.8 : 0.6) : 0.9)) return;
     var t = relPick(ctx, TX().NEAR || {}, A, B);
     if (!t) return;
     var e = ctx.act2({ actors: [A, B], cat: rcat(ctx, A, B), text: fill(ctx, t, A, B), why: '看病の部屋：治ったあとの夜、二人の距離が近づいた', fx: function () { ctx.mod2(A, B, { aff: 2, att: 4 }, { aff: 2, att: 4 }); } });
@@ -989,7 +1073,11 @@
     /* 二人の目標の判定の一文（短期：叶った／叶わなかった＝態度9種、長期：近づいた／変わらない／遠のいた） */
     /* 目標は、かぎかっこで並べて読み上げず、物語の文で 1〜2 文（2026-11-04 報告）：看病された人の短期の目標を一つと、長期の目標が動いた（近づいた・遠のいた）人の一つだけ。
        熱の夜に気持ちがこぼれた二人は、その回収の一文を先に */
-    var tail = goalStory(ctx);
+    /* 目標は結末の文で読み上げない（2026-11-05 報告：「〜と願っていた○○は…少しだけ手が届いた」が同じ型で並ぶ）。叶ったかは結果欄の目標の行に出す */
+    goalJudge(ctx);
+    var tail = '';
+    /* エッチの回数の設定があるのに一度も無かったときは、理由の文を一つ（R18版。kanbyo-r18.js の noneWhy） */
+    if (!HK.SAFE_ON && HK.KanbyoR18 && HK.KanbyoR18.noneWhy && S.lewdMax > 0 && S.sex === 0) HK.KanbyoR18.noneWhy(ctx);
     var RC0 = S.weakLove ? (TX().RECALL || {})[ek] : null, rc = RC0 ? pickT(ctx, RC0, A, B, true) : '';
     if (rc) tail = fill(ctx, rc, A, B) + tail;
     ctx.act2({ actors: [A, B], cat: /koi|date|amai/.test(ek) ? rcat(ctx, A, B) : 'bond', text: fill(ctx, t, A, B) + tail, why: '看病の部屋：結末（' + endName(S) + '）', fx: function () { ctx.mod2(A, B, { aff: 4, trust: 3 }, { aff: 4, trust: 3 }); } });
@@ -1030,6 +1118,8 @@
     B.fate = S.kaeshi ? '看病された人（そして看病し返した人）' : '看病された人'; B.fateNote = A.name + 'に看病された';
     if (S.kaeshi) A.fateNote += '。最後は風邪がうつって、看病し返してもらった';
     ctx.flags.outcome = B.name + 'の看病の' + S.days + '日――' + endName(S);
+    /* 想いが返ってこなかった人（片想いのまま終わった想う側）：結果欄の「想いは向こうからも返ってきていた」を本編に合わせて直す（下の HK.simulate の包み） */
+    if (S.rk === 'crush' && !S.confessed && S.rkKey) ctx.flags.kanbyo.oneSide = (S.rkKey === 'crushA' ? A : B).i;
   }
   if (HK.PairCast) HK.PairCast.install(ID, couple, 'kanbyo');
   var SEV_NAME = { light: '軽い風邪', mid: '熱が出る', heavy: '寝込む' };
@@ -1102,6 +1192,21 @@
     var c = cl && cl.kbc; if (!c) return null;
     return KBC[c.k][3].split('{k}').join(c.w || '').split('{x}').join(c.x || '').split('{y}').join(c.y || '');
   };
+  /* 結果欄の住人ごとの所見（本体の charSummary）の「想いは向こうからも返ってきていた」は、二人きりだと数値だけで必ず付くので、
+     片想いのまま終わった想う側では「想いが同じ形で返ってきたかは分からない」に直す（2026-11-05 報告。保存前の、作ったばかりの結果だけを直す） */
+  if (HK.wrap && HK.simulate) HK.wrap(HK, 'simulate', function (sim0) {
+    return function (input) {
+      var r = sim0.apply(this, arguments);
+      try {
+        var R = r && r.end && r.end.kanbyo;
+        if (input && input.scenId === ID && R && R.oneSide != null) (r.chars || []).forEach(function (c) {
+          if (c.i !== R.oneSide || !Array.isArray(c.notes)) return;
+          c.notes = c.notes.map(function (n) { return String(n).replace('。想いは向こうからも返ってきていた。', '。けれど、その想いが同じ形で返ってきたかどうかは、まだ分からない。'); });
+        });
+      } catch (e) { /* 所見の直しに失敗しても結果は返す */ }
+      return r;
+    };
+  });
   HK.Kanbyo = { okText: okText, stageOf: stageOf, kStage: kStage, sickNight: sickNight, relKind: relKind, RK_NAME: RK_NAME, pickT: pickT, per: per };
   HK.SCENARIOS[ID] = scen;
   if (HK.Lewd && HK.Lewd.install) HK.Lewd.install(ID, { lenDef: 'mix', desc: HK.SAFE_BUILD ? '' : '夜の場面の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });

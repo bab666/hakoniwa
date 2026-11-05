@@ -24,6 +24,12 @@
 /* @event scen=set-b-kanbyo id=kb_well_doraiya cat=romance tie=- tags=night label=風呂上がりの髪を乾かすうちに始まる夜 */
 /* @event scen=set-b-kanbyo id=kb_well_gokko cat=romance tie=- tags=night label=今度は私が看る番と看病ごっこから始まる夜 */
 /* @event scen=set-b-kanbyo id=kb_well_yume cat=romance tie=- tags=night label=熱の夜に見た夢の話から始まる夜 */
+/* @event scen=set-b-kanbyo id=kb_well_kigae cat=romance tie=- tags=night label=治った日の着替えを手伝ううちに始まる夜 */
+/* @event scen=set-b-kanbyo id=kb_well_futon cat=romance tie=- tags=night label=寝汗の布団を替えたあとで始まる夜 */
+/* @event scen=set-b-kanbyo id=kb_well_iwai cat=romance tie=- tags=night label=回復祝いの乾杯のあとで始まる夜 */
+/* @event scen=set-b-kanbyo id=kb_well_taionkei cat=romance tie=- tags=night label=平熱を確かめ合う体温計から始まる夜 */
+/* @event scen=set-b-kanbyo id=kb_well_zaiaku cat=romance tie=- tags=night label=うつした罪悪感から始まる看病し返しの夜 */
+/* @event scen=set-b-kanbyo id=kb_none_why cat=bond tie=- label=夜にならなかった理由が語られる */
 /* @event scen=set-b-kanbyo id=kb_form_fade cat=romance tie=- tags=night label=夜の場面・ほのめかす（暗転と翌朝） */
 /* @event scen=set-b-kanbyo id=kb_form_short cat=romance tie=- tags=night label=夜の場面・短い場面（治ったあとの内容） */
 /* @event scen=set-b-kanbyo id=kb_form_mid cat=romance tie=- tags=night label=夜の場面・中くらいの場面（反応と山場） */
@@ -70,6 +76,41 @@
     }).filter(function (x) { return x; }).join('\n\n');
   }
   var KR = HK.KanbyoR18 = { ENTRY: ENTRY, FORM: FORM };
+  /* 場面の長さ（2026-11-05 遊んで確かめた報告 3 回目：長さ「厚く」なのに短い・中くらいだけ、「多め」で長い場面が一度も無い）：
+     描写の長さ「数行で短く」はいつも短い、「段落分けして厚く」はいつも長い、「混ぜる」は共通の決め方。多めで長い場面がまだ無い最後の機会（kanbyo.js の S.wantLong）は長い */
+  function formK(ctx, S, env, lv, nogen, last) {
+    if (lv === 'low') return 'fade';
+    if (env.lewdLen === 'short') return 'short';
+    if (S.wantLong || env.lewdLen === 'thick') return 'long';
+    return PR.formOf(ctx, S, env, lv, nogen, last);
+  }
+  /* 熱のある夜の長さ：短く＝短い、厚く＝長い（長い場面の部品があるとき。無ければ中くらい）、混ぜる＝短いか中くらい */
+  function illForm(ctx, env, lv, nogen, canLong) {
+    if (lv === 'low') return 'fade';
+    if (env.lewdLen === 'short') return 'short';
+    if (env.lewdLen === 'thick') return canLong && HK.ThickSex ? 'long' : nogen ? 'short' : 'mid';
+    var f0 = ctx.rng() < 0.5 ? 'short' : 'mid';
+    return f0 === 'mid' && nogen ? 'short' : f0;
+  }
+  KR.formK = formK; KR.illForm = illForm;
+  /* 長い場面の場所（HK.SexSpot）：看病の部屋の夜は寝床（寝込んでいた部屋の布団・ベッド）。風呂上がりの夜も髪を乾かしたあとに寝床へ移ってから（2026-11-05 報告：きっかけは湯船なのに玄関で靴を脱ぐ） */
+  KR.SPOT = 'bed';
+  /* 長い場面：共通の部品 HK.PairR18.scene（部屋専用の段 kanbyo-r18-room.js で組む。2026-11-05 kit-r18 の部屋の口）に、部屋の始まり（open）を渡し、
+     部屋の事後（aft。{a}{b} のまま、か名前を当てた文）を最後の段落に置く。濃いときのもう一度は組み立ての側が入れる */
+  function thick(ctx, a, b, open, aft, x, key, jealous, ill) {
+    var S = ctx.kb, env = ctx.env, LV = HK.Lewd, T = TX(), lv = LV ? LV.lv(env) : 'mid', ero = !!(LV && LV.ero(env) && HK.ThickEro), nogen = !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b));
+    var src = ill ? SRC_ILL : SRC;
+    src.R = ill ? { BOTTOM: T.ILL_BOTTOM_ROWS, TOP: T.ILL_TOP_ROWS } : { BOTTOM: T.BOTTOM_ROWS, TOP: T.TOP_ROWS };
+    S.curEntry = key || '';
+    CUR = ctx;
+    try {
+      var full = PR.scene(ctx, S, env, a, b, PR.shape(a, b), 'long', { lv: ill ? 'mid' : lv, ero: ero, nogen: nogen, pi: ill ? T.PLAY_ROWS.length - 1 : 0, afi: ill ? 1 : 0, jealTop: !!jealous, leadB: x === b, entry: key || 'long', resume: false, open: open }, src);
+      var text = full.text;
+      if (aft) { var P = text.split('\n\n'); P[P.length - 1] = K.fill(ctx, aft, a, b); text = P.join('\n\n'); }
+      return { text: text };
+    } finally { S.curEntry = ''; }
+  }
+  KR.thick = thick;
   /* 長い場面の型（本体の HK.Play）：看病の部屋の始まりの文は寝床で服を脱がせるので、着衣のまま・台所に立つ相手を後ろから・我慢できずに（着衣）の型を出さない（2026-11-04 報告：ボタンを外したあとに「服を一枚も乱さないまま」、寝間着を脱がせている途中に台所） */
   if (HK.Play && HK.Play.addRoom) HK.Play.addRoom('set-b-kanbyo', { entry: { backhug: -50, hurry: -50 }, prop: { chakui: -50 } });
   /* 文の向き：{a}（言い出す人）が看病された人なら、看病した人の言い回し（汗を拭き・着替えを手伝った）を外す。看病した人なら、看病された人の言い回し（看病の礼・元気になった証拠）を外す。
@@ -95,12 +136,13 @@
     var le = lead(ctx, x, y, K.fill(ctx, L0 + (fe || ''), x, y), LONG[key] + '・' + x.name + 'から', key === 'shouko' ? '治った日の夜' : '');
     var pk = function (arr) { return pickOf(ctx, arr); }, text, form;
     if (lv === 'low') { text = K.fill(ctx, KB.pickT(ctx, T.ILL_FADE, a, b, true), a, b); form = 'fade'; }
+    else if (env.lewdLen === 'short') { drop(ctx, le); return false; }
     else {
       CUR = ctx;
       var open = K.mark(KB.pickT(ctx, ((T.LONG_OPEN || {})[key] || {})[sh], a, b, true)), aft = K.mark(KB.pickT(ctx, (T.LONG_AFTER || {})[key], a, b, true));
-      var st = HK.ThickSex.style(a);
-      var rr = ero ? HK.ThickEro.scene({ S: ctx, pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: aft, jealous: false, leadB: x === b })
-        : HK.ThickSex.scene({ pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: aft, ctx: ctx, jealous: false, leadB: x === b });
+      /* 最中の一幕（看病の小道具）を始まりの段のあとに一つ（2026-11-05：部屋だけの段を増やす）。p＝熱のある人・治った人、q＝看る人 */
+      var pp = key === 'shouko' ? x : y, qq = pp === x ? y : x, bl = beatText(ctx, a, b, sh, pp, qq, key !== 'shouko');
+      var rr = thick(ctx, a, b, open + (bl ? '\n\n' + bl : ''), aft, x, 'long_' + key, false, key !== 'shouko');
       text = dedupe(ctx.t(rr.text, a, b)); form = 'long';
     }
     var e = ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: text, why: '看病の部屋：' + (key === 'shouko' ? '夜' : '熱のある夜') + '（' + FORM[form] + '・' + LONG[key] + '）', sex: true, lewd: form !== 'fade',
@@ -115,7 +157,8 @@
      入り方：熱のある夜 3（kusuri・samuke・taion。KR.ill の候補に足す）／治ったあとの夜 4（momo・doraiya・gokko・yume。KR.night が 45% で使う）。どれもきっかけの段つき
      最中の一幕：短い・中くらいの場面は挿入の前の段に、長い場面は始まりの段のあとに一つ差す（一回の遊びで同じ一幕は一度）
      終わり方：短い・中くらいの場面は事後の段を替え、長い場面は事後に渡す（一回の遊びで同じ終わり方は一度） */
-  var NEW_NAME = { kusuri: '薬を口移しで飲ませるうちに', samuke: '寒気に震える体を肌で温めるうちに', taion: '額を合わせて熱を測るうちに', momo: '桃の缶詰を食べさせ合ううちに', doraiya: '風呂上がりの髪を乾かすうちに', gokko: '今度は私が看る番と看病ごっこから', yume: '熱の夜に見た夢の話から' };
+  var NEW_NAME = { kusuri: '薬を口移しで飲ませるうちに', samuke: '寒気に震える体を肌で温めるうちに', taion: '額を合わせて熱を測るうちに', momo: '桃の缶詰を食べさせ合ううちに', doraiya: '風呂上がりの髪を乾かすうちに', gokko: '今度は私が看る番と看病ごっこから', yume: '熱の夜に見た夢の話から',
+    kigae: '着替えを手伝ううちに', futon: '寝汗の布団を替えたあとで', iwai: '回復祝いの乾杯のあとで', taionkei: '平熱を確かめ合う体温計から', zaiaku: 'うつした罪悪感から' };
   KR.NEW = NEW_NAME;
   function pT(ctx, arr, a, b) { return KB.pickT(ctx, arr, a, b, true); }
   function attT(ctx, tbl, x, y) { tbl = tbl || {}; return pT(ctx, tbl[PR.att(x, y)] || tbl.gentle, x, y); }
@@ -173,19 +216,15 @@
     var le = lead(ctx, x, y, K.fill(ctx, lt, x, y), NEW_NAME[key] + '・' + x.name + 'から', ill ? '熱のある夜' : ENTRY[entry]);
     /* 2. 場面：熱のある夜は短い〜中くらい、治ったあとの夜は共通の長さの決め方 */
     var lv = LV ? LV.lv(env) : 'mid', ero = !!(LV && LV.ero(env) && HK.ThickEro), nogen = !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b));
-    var form = ill ? (lv === 'low' ? 'fade' : env.lewdLen === 'short' || ctx.rng() < 0.5 ? 'short' : 'mid') : PR.formOf(ctx, S, env, lv, nogen, last);
+    var form = ill ? illForm(ctx, env, lv, nogen, !!NE.open) : formK(ctx, S, env, lv, nogen, last);
     if (form === 'mid' && nogen) form = 'short';
-    if (form === 'long' && (!NE.open || !HK.ThickSex)) form = 'mid';
+    if (form === 'long' && (!NE.open || !HK.ThickSex)) form = nogen ? 'short' : 'mid';
     var text, pk = function (arr) { return pickOf(ctx, arr); };
     CUR = ctx;
     if (form === 'long') {
       var open = K.mark(pT(ctx, NE.open[sh], a, b)), bt = beatText(ctx, a, b, sh, p, q, ill), en = endText(ctx, a, b, sh, p, q, key === 'momo' ? 'yashoku' : '');
       if (bt) open += '\n\n' + bt;
-      var again = lv === 'high' && HK.ThickEro ? HK.ThickEro.again(ctx, pk, a, b, ero, false) + '\n\n' : '';
-      var aft = again + (en || K.mark(pickOf(ctx, T.AFTER[0].all)));
-      var st = HK.ThickSex.style(a);
-      var rr = ero ? HK.ThickEro.scene({ S: ctx, pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: aft, jealous: false, leadB: x === b })
-        : HK.ThickSex.scene({ pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: aft, ctx: ctx, jealous: false, leadB: x === b });
+      var rr = thick(ctx, a, b, open, en || '', x, (ill ? 'ill_' : 'well_') + key, false, ill);
       text = dedupe(ctx.t(rr.text, a, b));
     } else {
       var base = ill ? SRC_ILL : SRC, bt0 = ctx.rng() < 0.75 ? beatText(ctx, a, b, sh, p, q, ill) : '', row = {};
@@ -211,11 +250,26 @@
     if (ill) S.illEntry = key;
     return true;
   }
+  /* 長い場面（入口の文が部屋の始まりを持たないとき）：部屋の始まりの文＋最中の一幕＋終わり方を、場所（寝床）つきで本体の長い場面に渡す。
+     p＝熱のある人・治った人、q＝看る人。ill＝熱のある夜（始まりは ILL_OPEN） */
+  function longGen(ctx, a, b, sh, x, p, q, ill, key, jealous) {
+    var T = TX(), LV = HK.Lewd, lv = LV ? LV.lv(ctx.env) : 'mid', ero = !!(LV && LV.ero(ctx.env) && HK.ThickEro), pk = function (arr) { return pickOf(ctx, arr); };
+    var OL = fresh(ill && T.ILL_OPEN ? T.ILL_OPEN : T.OPEN), open = K.mark(pickOf(ctx, OL)), bt = beatText(ctx, a, b, sh, p, q, ill);
+    if (bt) open += '\n\n' + bt;
+    var en = endText(ctx, a, b, sh, p, q, '');
+    CUR = ctx;
+    var rr = thick(ctx, a, b, open, en || '', x, key, jealous, ill);
+    var text = dedupe(ctx.t(rr.text, a, b));
+    remember(ctx, text, [T.OPEN, T.ILL_OPEN]);
+    return text;
+  }
+  KR.longGen = longGen;
   /* 治ったあとの夜の入り方を選ぶ（使っていないもの。言い出す人が相手を避けていれば入れ替え、両方なら使わない）。使えなければ null */
   function newWell(ctx, entry, a, b, sh, last) {
     var S = ctx.kb, A = S.A, B = S.B, AV = HK.Avoid, NE = TX().NEW || {};
     var h = entry === 'back' ? A : B, q = h === A ? B : A;
-    var keys = unused(ctx, 'new:', Object.keys(NE).filter(function (k) { return NE[k].well; }));
+    /* entry の決まった入り方（看病し返されて治った夜だけの「うつした罪悪感」など）。長い場面にする夜は、長い場面の始まりのある入り方だけ */
+    var keys = unused(ctx, 'new:', Object.keys(NE).filter(function (k) { return NE[k].well && (!NE[k].entry || NE[k].entry.indexOf(entry) >= 0) && (!S.wantLong || NE[k].open); }));
     if (!keys.length) return null;
     var key = keys[Math.floor(ctx.rng() * keys.length)], xk = NE[key].x;
     var x = xk === 'healed' ? h : xk === 'carer' ? q : (ctx.rng() < 0.5 ? h : q), y = x === h ? q : h;
@@ -233,13 +287,15 @@
     /* 起こりやすさは kanbyo.js の illNight が決める（回数の設定ごとの一回の遊びの割合。2026-11-04 利用者「30% かな」） */
     /* 入口の選び方：受けが看病される人なら「受けから迫る」も。看る側が攻めなら「理性が揺らぐ」も */
     var bt = PR.att(b, a), tp = PR.att(a, b), ld = P && P.leadOf ? P.leadOf(b) : '', kd = HK.Attr && HK.Attr.nightKind ? HK.Attr.nightKind(a, b) : '';
-    var W = [['yukkuri', 1.2], ['soine', /devoted|gentle|shy|free/.test(PR.att(B, A)) ? 1.1 : 0.6]];
+    /* 描写の長さ「厚く」では、短い場面にしかならない入り方（ゆっくり・口や手だけ）を選ばない。「短く」では長い場面だけの入り方を選ばない（2026-11-05） */
+    var thickL = env.lewdLen === 'thick', shortL = env.lewdLen === 'short';
+    var W = [['yukkuri', thickL ? 0 : 1.2], ['soine', /devoted|gentle|shy|free/.test(PR.att(B, A)) ? 1.1 : 0.6]];
     if (b === B && ld !== 'top' && !(P && P.hardTop && P.hardTop(b, a))) W.push(['osoi', /sasoi|osoi/.test(ld) ? 1.4 : /free|proud|devoted/.test(bt) ? 0.8 : 0.4]);
-    W.push(['kuchi', 1], ['jii', 0.8]);
+    W.push(['kuchi', thickL ? 0 : 1], ['jii', 0.8]);
     /* 看病ならではの入り方（2026-11-04）：薬を口移し・額で熱を測る（看る人から）、寒気を肌で温める（熱のある人が頼む） */
     unused(ctx, 'new:', ['kusuri', 'samuke', 'taion']).forEach(function (k) { W.push([k, 1]); });
     /* 専用の長い場面（受けが看病される人で、熱の下がってきた日か軽い風邪） */
-    if (b === B && (day.st === 'fall' || S.sev === 'light') && !(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b))) W.push(['mizu', 1.2], ['ase', 1.2], ['koori', 1.2]);
+    if (!shortL && b === B && (day.st === 'fall' || S.sev === 'light') && !(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b))) W.push(['mizu', 1.2], ['ase', 1.2], ['koori', 1.2]);
     if (a === A) W.push(['rise', /sadist|mean/.test(kd) ? 1.4 : /proud|free|cool/.test(tp) ? 1 : 0.7]);
     var entry = HK.weighted(ctx.rng, W, function (x) { return x[1]; })[0];
     if (entry === 'mizu' || entry === 'ase' || entry === 'koori') return longScene(ctx, entry, a, b, sh, A, B, last);
@@ -259,18 +315,19 @@
     if (le) le.tag = 'きっかけ';
     /* 2. 場面：ゆっくりは短い場面（山場の喘ぎを出さない静かな本文）。ほかは中くらいまで（病気の体なので長い場面にしない） */
     var lv = LV ? LV.lv(env) : 'mid', ero = !!(LV && LV.ero(env) && HK.ThickEro), nogen = !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b));
-    var form = lv === 'low' ? 'fade' : entry === 'yukkuri' ? 'short' : (env.lewdLen === 'short' || ctx.rng() < 0.5 ? 'short' : 'mid');
+    var form = lv === 'low' ? 'fade' : entry === 'yukkuri' ? 'short' : illForm(ctx, env, lv, nogen, true);
     if (form === 'mid' && nogen) form = 'short';
     SRC_ILL.R = { BOTTOM: T.ILL_BOTTOM_ROWS, TOP: T.ILL_TOP_ROWS };
     var pi = T.PLAY_ROWS.length - (entry === 'yukkuri' ? 2 : 1);
     CUR = ctx;
-    var full = PR.scene(ctx, S, env, a, b, sh, form, { lv: lv === 'low' ? 'low' : 'mid', ero: entry === 'yukkuri' ? false : ero, nogen: nogen, pi: pi, afi: 1, jealTop: entry === 'rise', leadB: entry === 'osoi', entry: entry === 'osoi' ? 'ini' : entry, resume: false }, SRC_ILL);
+    var full = form === 'long' ? { text: longGen(ctx, a, b, sh, x, B, A, true, 'ill_' + entry, entry === 'rise'), form: 'long' } : PR.scene(ctx, S, env, a, b, sh, form, { lv: lv === 'low' ? 'low' : 'mid', ero: entry === 'yukkuri' ? false : ero, nogen: nogen, pi: pi, afi: 1, jealTop: entry === 'rise', leadB: entry === 'osoi', entry: entry === 'osoi' ? 'ini' : entry, resume: false }, SRC_ILL);
     full.text = dedupe(spice(ctx, full.text, full.form, a, b, sh, B, A, true, 0.5, 0.4, ''));
     remember(ctx, full.text, [T.OPEN, T.FADE, T.ILL_FADE]);
     var e = ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: full.text, why: '看病の部屋：熱のある夜（' + FORM[full.form] + '・' + ILL[entry] + '）', sex: true, lewd: full.form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 3, att: 5 }, { aff: 3, att: 5 }); } });
     if (!e) { if (le) { var Lg = ctx.log, i = Lg.indexOf(le); if (i >= 0) Lg.splice(i, 1); } return false; }
     S.illEntry = entry;
+    if (full.form === 'long') S.longN = (S.longN || 0) + 1;
     S.entries = S.entries || {}; S.entries['ill_' + entry] = (S.entries['ill_' + entry] || 0) + 1;
     return true;
   };
@@ -342,9 +399,11 @@
     var tx2 = K.fill(ctx, body + '\n\n' + fd, A, B);
     var le2 = lead(ctx, B, A, tx2, '別室でひとりでしているのを見つけた・' + B.name + 'から');
     CUR = ctx; SRC_ILL.R = { BOTTOM: T.ILL_BOTTOM_ROWS, TOP: T.ILL_TOP_ROWS };
-    var full = PR.scene(ctx, S, ctx.env, a, b, sh, ctx.rng() < 0.6 ? 'short' : 'mid', { lv: 'mid', ero: !!(HK.Lewd && HK.Lewd.ero(ctx.env) && HK.ThickEro), nogen: !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b)), pi: T.PLAY_ROWS.length - 1, afi: 1, jealTop: false, leadB: B === b, entry: 'ini', resume: false }, SRC_ILL);
+    var ngj = !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b)), fj = illForm(ctx, ctx.env, HK.Lewd ? HK.Lewd.lv(ctx.env) : 'mid', ngj, true);
+    var full = fj === 'long' ? { text: longGen(ctx, a, b, sh, B, B, A, true, 'ill_jii', false), form: 'long' } : PR.scene(ctx, S, ctx.env, a, b, sh, fj === 'fade' ? 'short' : fj, { lv: 'mid', ero: !!(HK.Lewd && HK.Lewd.ero(ctx.env) && HK.ThickEro), nogen: ngj, pi: T.PLAY_ROWS.length - 1, afi: 1, jealTop: false, leadB: B === b, entry: 'ini', resume: false }, SRC_ILL);
     var e3 = sceneSay(ctx, a, b, full.text, '看病の部屋：熱のある夜（' + FORM[full.form] + '・別室でしていたのを見つかって）');
     if (!e3) { drop(ctx, le); drop(ctx, le2); S.jiiDay = null; return false; }
+    if (full.form === 'long') S.longN = (S.longN || 0) + 1;
     S.illEntry = 'jii_found'; return true;
   }
   /* 翌晩：「今日もするのか……？」と看病される人が腕を掴む（態度9種）。55% でそこから始まる夜、ほかは「今夜は大人しく寝る」 */
@@ -364,11 +423,25 @@
     var le = lead(ctx, B, A, K.fill(ctx, g + KB.pickT(ctx, T.JII_NEXT_YES, A, B, true), A, B), ILL.jiinext + '・' + B.name + 'から');
     var sh = PR.shape(a, b);
     CUR = ctx; SRC_ILL.R = { BOTTOM: T.ILL_BOTTOM_ROWS, TOP: T.ILL_TOP_ROWS };
-    var full = PR.scene(ctx, S, ctx.env, a, b, sh, ctx.rng() < 0.5 ? 'short' : 'mid', { lv: 'mid', ero: !!(HK.Lewd && HK.Lewd.ero(ctx.env) && HK.ThickEro), nogen: !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b)), pi: T.PLAY_ROWS.length - 1, afi: 1, jealTop: false, leadB: B === b, entry: B === b ? 'ini' : 'jiinext', resume: false }, SRC_ILL);
+    var ngn = !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b)), fn0 = illForm(ctx, ctx.env, HK.Lewd ? HK.Lewd.lv(ctx.env) : 'mid', ngn, true);
+    var full = fn0 === 'long' ? { text: longGen(ctx, a, b, sh, B, B, A, true, 'ill_jiinext', false), form: 'long' } : PR.scene(ctx, S, ctx.env, a, b, sh, fn0 === 'fade' ? 'short' : fn0, { lv: 'mid', ero: !!(HK.Lewd && HK.Lewd.ero(ctx.env) && HK.ThickEro), nogen: ngn, pi: T.PLAY_ROWS.length - 1, afi: 1, jealTop: false, leadB: B === b, entry: B === b ? 'ini' : 'jiinext', resume: false }, SRC_ILL);
     var e = sceneSay(ctx, a, b, full.text, '看病の部屋：熱のある夜（' + FORM[full.form] + '・' + ILL.jiinext + '）');
     if (!e) { drop(ctx, le); return false; }
+    if (full.form === 'long') S.longN = (S.longN || 0) + 1;
     S.entries = S.entries || {}; S.entries.ill_jiinext = (S.entries.ill_jiinext || 0) + 1;
     return true;
+  };
+  /* ---------- エッチの回数の設定があるのに一度も無かった遊びの、理由の一文（2026-11-05 報告：同僚が 0 回で理由が見えない） ----------
+     結末の直前に一つ（記録の一件。性的な描写はしない）。血縁・無関心の二人は出さない */
+  KR.noneWhy = function (ctx) {
+    var S = ctx.kb, A = S.A, B = S.B, T = TX(), W = T.NONE_WHY || {}, P = HK.Pos;
+    if (ctx.pair && ctx.pair(A, B).kin) return null;
+    if (HK.Ties && HK.Ties.apathy && (HK.Ties.apathy(ctx, A, B) || HK.Ties.apathy(ctx, B, A))) return null;
+    var k = !PR.sexOk(ctx, A, B) || (P && P.okSex && !P.okSex(A, B)) ? 'nosex' : S.rk === 'crush' && !S.confessed ? 'crush'
+      : S.kaeshi ? 'kaeshi' : !S.couple0 && !S.fwb && !S.confessed && S.nearDay == null ? 'far' : 'chance';
+    var t = KB.pickT(ctx, W[k] || W.chance, A, B, true);
+    if (!t) return null;
+    return ctx.act2({ actors: [A, B], cat: 'bond', text: K.fill(ctx, t, A, B), why: '看病の部屋：夜にならなかった理由（' + { nosex: '体の関係にならない二人', crush: '想いを告げないまま', kaeshi: 'うつった風邪で寝込んでいた', far: '距離が縮まりきらなかった', chance: '機会が合わなかった' }[k] + '）' });
   };
   KR.quota = function (ctx, v) { return v === 'none' ? 0 : v === 'low' ? 1 : v === 'high' ? 3 : 2; };
   KR.night = function (ctx, entry, day, last) {
@@ -386,9 +459,10 @@
     if (!S.couple && !(entry === 'after' && !S.love && S.nearDay != null)) p *= /^(bad|ex)$/.test(S.rk) ? 0.55 : 0.75;
     p *= P && P.libMul ? Math.min(1.5, P.libMul([A, B])) : 1;
     if (last && S.sex < S.lewdMax) p = Math.max(p, S.couple ? 0.85 : 0.5);
-    if (ctx.rng() > p) return false;
+    /* 回数の設定を守る夜（kanbyo.js の S.forceN：残りの夜が、まだ要る回数以下） */
+    if (!S.forceN && ctx.rng() > p) return false;
     /* 治った日の夜は 35% で専用の長い場面「元気になった証拠を見せる」（言い出すのは治った人） */
-    if (entry === 'heal' && !(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b)) && ctx.rng() < 0.35) { var AVx = HK.Avoid, xb = B, yb = A; if (AVx && AVx.of && AVx.of(ctx, B, A)) { xb = A; yb = B; } return longScene(ctx, 'shouko', a, b, sh, xb, yb, last); }
+    if (entry === 'heal' && env.lewdLen !== 'short' && !(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b)) && ctx.rng() < 0.35) { var AVx = HK.Avoid, xb = B, yb = A; if (AVx && AVx.of && AVx.of(ctx, B, A)) { xb = A; yb = B; } return longScene(ctx, 'shouko', a, b, sh, xb, yb, last); }
     /* 看病ならではの入り方（2026-11-04）：45% で、桃の缶詰・風呂上がりの髪・看病ごっこ・熱の夜の夢 */
     if (ctx.rng() < 0.45) { var nw = newWell(ctx, entry, a, b, sh, last); if (nw != null) return nw; }
     /* 1. きっかけ：言い出す人（{x}）。治った日・デート・甘い夜は看病された人（B）が多く、うつって治った夜は看病し返された人（A） */
@@ -412,12 +486,13 @@
     /* 2. 場面 */
     var lv = LV ? LV.lv(env) : 'mid', ero = !!(LV && LV.ero(env) && HK.ThickEro);
     var nogen = !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b));
-    var form = PR.formOf(ctx, S, env, lv, nogen, last);
+    var form = formK(ctx, S, env, lv, nogen, last);
     SRC.R = { BOTTOM: T.BOTTOM_ROWS, TOP: T.TOP_ROWS };
     /* 最後の二行は病気の道中の夜の種なので、治ったあとの夜には使わない */
     var play = J.pick(ctx, 'kplay', T.PLAY_ROWS, function (x, i) { return i < T.PLAY_ROWS.length - 2 ? 1 : 0; }) || T.PLAY_ROWS[0], pi = T.PLAY_ROWS.indexOf(play);
     CUR = ctx;
-    var full = PR.scene(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: pi, afi: 0, jealTop: false, leadB: x === b, entry: entry, resume: false }, SRC);
+    var full = form === 'long' && HK.ThickSex ? { text: longGen(ctx, a, b, sh, x, entry === 'back' ? A : B, entry === 'back' ? B : A, false, entry, false), form: 'long' }
+      : PR.scene(ctx, S, env, a, b, sh, form, { lv: lv, ero: ero, nogen: nogen, play: play, pi: pi, afi: 0, jealTop: false, leadB: x === b, entry: entry, resume: false }, SRC);
     form = full.form;
     /* 一つの場面の中で同じ文（12 字以上）を二度出さない（本体の部品を重ねたときの重なりを、あとの方から外す） */
     full.text = dedupe(spice(ctx, full.text, form, a, b, sh, entry === 'back' ? A : B, entry === 'back' ? B : A, false, 0.45, 0.4, ''));
