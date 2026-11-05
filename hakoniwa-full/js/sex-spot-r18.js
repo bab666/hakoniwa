@@ -3,6 +3,8 @@
    ■ 呼ぶ側が HK.ThickSex.scene／HK.ThickEro.scene の opt.spot に場所を渡すと、場所に合わない部品（寝床・シーツ・膝の上・うつ伏せ など）を
      最初から候補に入れない（2026-11-05。電車・同居生活の遊んで確かめた報告の申し送り。設計は docs/reports/2026-11-03/sex-flow-design.md の 9 章）
        bed 寝室・寝床／sofa ソファ／floor 床／wall 壁際（立ったまま）／door 玄関／kitchen 台所／bath 風呂・脱衣所／stand 立ったまま（場所の語なし）／car 車内（満員の車両・立ったまま）
+       宿の種類（2026-11-05。デートの日々の旅先の宿・ラブホ・帰り道の車）：hotel ホテルの部屋（ラブホ・リゾート・海外の宿も。和室の語を外す）／ryokan 旅館の和室（ベッド・ソファの語を外す）／
+       ship 客船の船室／tent テント（グランピング）／seat 乗用車の座席（寝具の語と寝そべる体位を外し、座位と騎乗位だけ）
      ※ opt.place（'goukon'・'room'・'locker' など。その場所ならではの一文を足す箱庭の名前）とは別の欄
    ■ 効くところ（sex-flow-r18.js のいちばん外側の包みが場面のあいだだけ SP.cur に置く）：
        (1) 本体の組み立ての候補（opt.pick を SP.pick で包む）・型（HK.Play）の文の候補（P.pickT）・流れの管理が足す段（pickFrom・fitCand）から、合わない文を外す（残りが無ければ元の表のまま）
@@ -48,6 +50,14 @@
     [/を抱き起こして膝の上に座らせ、/g, 'を抱え上げ、'], [/を膝の上に抱き上げ、/g, 'を抱え上げ、'], [/膝の上の/g, '抱え上げた'], [/の上から降りた/g, 'から体を離した']
   ];
   var BED_SUB = [];
+  /* 宿の種類（2026-11-05）：和室の設え・旅館の語（ホテル・船室・テントでは外す）と、置き換え */
+  var WAFU = /障子|襖|ふすま|畳|浴衣|座布団|縁側|布団|川の音|囲炉裏|行灯|床の間|仲居/;
+  var HOTEL_SUB = [[/掛け布団/g, '上掛け'], [/敷き布団/g, 'ベッド'], [/布団の上/g, 'ベッドの上'], [/布団に/g, 'ベッドに'], [/布団の/g, 'ベッドの'], [/浴衣の襟元/g, 'バスローブの襟元'], [/浴衣の帯/g, 'バスローブの紐'], [/浴衣/g, 'バスローブ'],
+    [/畳の上/g, '床の上'], [/障子越しの/g, 'カーテン越しの'], [/障子/g, 'カーテン']];
+  var RYOKAN_SUB = [[/ベッドの縁/g, '布団の端'], [/ベッドの上/g, '布団の上'], [/ベッドに/g, '布団に'], [/ベッドの/g, '布団の'], [/ベッド/g, '布団'], [/シーツ/g, '敷布'], [/カーテン越しの/g, '障子越しの']];
+  var TENT_SUB = HOTEL_SUB.concat([[/ベッドの/g, '寝床の'], [/カーテン/g, 'テントの幕']]);
+  var SEAT_SUB = [[/毛布を引き寄せて顔を隠した/g, '相手の胸に顔を埋めて隠した'], [/シーツを握りしめ/g, 'シートを握りしめ'], [/シーツを掴/g, 'シートを掴'], [/指がシーツを/g, '指がシートを'], [/爪先がシーツを掻き/g, '爪先が足元を掻き'],
+    [/シーツの擦れる音/g, 'シートのきしむ音'], [/握っていたシーツ/g, '握っていたシート'], [/背中がシーツから浮/g, '背中がシートから浮'], [/寝床の端を掴/g, 'シートの縁を掴'], [/シーツに顔を埋めて/g, '肩に顔を埋めて']];
   /* allow：通す場所の語／ng：ほかに外す言い回し（地の文）／ngQ：台詞の中も外す語／pos：使う体位（HK.Play）／entryNG・propNG：使わない入り方・道具 */
   var KIND = SP.KIND = {
     bed: { ja: '寝室', allow: ['bed'], pos: ['seijo', 'back', 'kijo', 'zai', 'osae', 'nebak'], entryNG: [], propNG: [], sub: BED_SUB },
@@ -58,10 +68,16 @@
     kitchen: { ja: '台所', allow: ['kitchen', 'wall'], ng: new RegExp(LIE.source + '|' + LAP.source), ngQ: BEDW, pos: ['tachi'], entryNG: ['nekomi', 'push'], propNG: ['kagami'], sub: STAND_SUB },
     bath: { ja: '風呂', allow: ['bath', 'wall'], ng: new RegExp(LIE.source + '|' + LAP.source), ngQ: BEDW, pos: ['tachi'], entryNG: ['nekomi', 'push'], propNG: ['chakui'], sub: STAND_SUB },
     stand: { ja: '立ったまま', allow: ['wall', 'door'], ng: new RegExp(LIE.source + '|' + LAP.source), ngQ: BEDW, pos: ['tachi', 'back', 'kakae'], entryNG: ['nekomi', 'push'], propNG: [], sub: STAND_SUB },
-    car: { ja: '車内', allow: [], ng: new RegExp(LIE.source + '|' + LAP.source + '|ソファ|目隠し'), ngQ: BEDW, pos: ['tachi', 'back'], entryNG: ['nekomi', 'push', 'bath'], propNG: ['mekakushi', 'kagami', 'lotion'], sub: CAR_SUB }
+    car: { ja: '車内', allow: [], ng: new RegExp(LIE.source + '|' + LAP.source + '|ソファ|目隠し'), ngQ: BEDW, pos: ['tachi', 'back'], entryNG: ['nekomi', 'push', 'bath'], propNG: ['mekakushi', 'kagami', 'lotion'], sub: CAR_SUB },
+    /* 宿の種類（2026-11-05）：寝具の語は通し、宿に合わない設えの語を外す（置き換えで直せる言い回しは直す） */
+    hotel: { ja: 'ホテルの部屋', allow: ['bed', 'sofa', 'bath', 'wall', 'desk', 'floor'], ng: WAFU, ngQ: /浴衣|布団|障子/, pos: ['seijo', 'back', 'kijo', 'zai', 'osae', 'nebak', 'tachi', 'kakae'], entryNG: [], propNG: [], sub: HOTEL_SUB },
+    ryokan: { ja: '旅館の和室', allow: ['bed', 'floor', 'bath', 'wall'], ng: /ベッド|寝台|ソファ|長椅子|ホテル|バスローブ|カーテン|ネオン/, ngQ: /ベッド|ソファ/, pos: ['seijo', 'back', 'kijo', 'zai', 'osae', 'nebak'], entryNG: [], propNG: [], sub: RYOKAN_SUB },
+    ship: { ja: '客船の船室', allow: ['bed', 'sofa', 'bath', 'wall', 'desk'], ng: new RegExp(WAFU.source + '|ネオン|街の灯'), ngQ: /浴衣|布団|障子/, pos: ['seijo', 'back', 'kijo', 'zai', 'osae', 'nebak'], entryNG: [], propNG: [], sub: HOTEL_SUB },
+    tent: { ja: 'テント', allow: ['bed'], ng: new RegExp(WAFU.source + '|ソファ|長椅子|浴室|湯船|浴槽|シャワー|ネオン|壁'), ngQ: /浴衣|障子/, pos: ['seijo', 'back', 'kijo', 'zai', 'nebak'], entryNG: ['bath'], propNG: [], sub: TENT_SUB },
+    seat: { ja: '車の座席', allow: [], ng: /ベッド|寝床|布団|シーツ|敷布|枕|寝台|毛布|ソファ|長椅子|寝室|うつ伏せ|四つん這い|寝バック|横たえ|寝かせ|組み敷|壁|床に|目隠し/, ngQ: BEDW, pos: ['zai', 'kijo'], entryNG: ['nekomi', 'push', 'bath'], propNG: ['mekakushi', 'kagami', 'lotion'], sub: SEAT_SUB }
   };
   /* 呼ぶ側の書き方の揺れ（'standing'・'train' など）をそろえる */
-  var ALIAS = { bedroom: 'bed', standing: 'stand', train: 'car', genkan: 'door', entrance: 'door', shower: 'bath', datsui: 'bath' };
+  var ALIAS = { bedroom: 'bed', standing: 'stand', train: 'car', genkan: 'door', entrance: 'door', shower: 'bath', datsui: 'bath', lovehotel: 'hotel', resort: 'hotel', cabin: 'ship', glamping: 'tent', carseat: 'seat' };
   SP.norm = function (s) { s = String(s || ''); s = ALIAS[s] || s; return KIND[s] ? s : ''; };
   SP.of = function (opt) { return opt ? SP.norm(opt.spot) : ''; };
 

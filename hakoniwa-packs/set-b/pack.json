@@ -154,13 +154,15 @@
         "js/date-text-d.js",
         "js/date-text-e.js",
         "js/date-text-f.js",
+        "js/date-text-g.js",
         "js/date-more-text.js",
         "js/date-more.js",
         "js/date-tone.js",
         "js/date.js",
         "js/date-r18-text.js",
         "js/date-r18-yoin-text.js",
-        "js/date-r18.js"
+        "js/date-r18.js",
+        "js/date-r18-room.js"
       ]
     }
   ]
