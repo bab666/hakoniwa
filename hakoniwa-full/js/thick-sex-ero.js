@@ -353,7 +353,7 @@
     var pl = opt.place && TS && TS.PLACE && TS.PLACE[opt.place] ? pick(TS.PLACE[opt.place]) : '';
     /* 夜の性格の一文（attr-r18.js の男性向けの文） */
     var ntx = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(a, b, mode, pick, true) : '';
-    var cl = pick(mode === 'ff' ? X.FF_CLIMAX[g] : mode === 'fm' ? (sp && X.FM_CLIMAX_SP && X.FM_CLIMAX_SP[g] ? X.FM_CLIMAX[g].concat(X.FM_CLIMAX_SP[g]) : X.FM_CLIMAX[g]) : X.CLIMAX[g]);
+    var cl = pick(mode === 'ff' ? X.FF_CLIMAX[g] : mode === 'fm' ? (sp && X.FM_CLIMAX_SP && X.FM_CLIMAX_SP[g] ? (TS && TS.spClimax ? TS.spClimax(X.FM_CLIMAX[g], [open0, fore, body, ntx].join(' ')) : X.FM_CLIMAX[g]).concat(X.FM_CLIMAX_SP[g]) : X.FM_CLIMAX[g]) : X.CLIMAX[g]);
     /* すでにある攻めの台詞（主導する側の声 {ma1} も、言葉の混じる声なので一本に数える。攻めの台詞は全部で3本ほどまで） */
     var TQg = /\{a\}「|\{a\}は[^。「]{0,12}「/g, cnt = function (t) { return (String(t).match(TQg) || []).length; };
     /* 夜の性格の一文（ntx と、attr-r18.js が始まりのあとに足す一文）にも攻めの台詞が入ることがあるので、夜の性格を決めた攻めは一本あるものとして数える */
