@@ -299,7 +299,15 @@
     },
     {
       id: 'touch', cat: 'romance', scope: 'pair',
-      when: function (ctx, a, b) { return R(ctx, a, b).att > 30; },
+      /* 指先が触れる（恋の始まりの段）：恋人・夫婦・体の関係のある二人（夜を過ごした・体だけの場面のあと）には出さない。同じ二人には一回の遊びで一度だけ（2026-11-05。夫婦・事後の二人に出て、向きを変えて二度続いた） */
+      when: function (ctx, a, b) {
+        if (R(ctx, a, b).att <= 30) return false;
+        var pf = ctx.pair ? ctx.pair(a, b) : null, k = Math.min(a.i, b.i) + '-' + Math.max(a.i, b.i);
+        if (ctx._touchDone && ctx._touchDone[k]) return false;
+        if (pf && (pf.couple || pf.night || pf.nights || pf.freeSex)) return false;
+        if (HK.Ties && HK.Ties.has && /* 関係の段階 */ ['lover', 'spouse', 'fiance', 'fwb', 'mate', 'fated', 'ex'].some(function (t) { return HK.Ties.has(ctx, a, b, t); })) return false;
+        return true;
+      },
       w: function (ctx, a, b) { return a.tr.impulse * 0.6 * R(ctx, a, b).att / 45; },
       run: function (ctx, a, b) {
         var rb = R(ctx, b, a);
@@ -307,6 +315,7 @@
           ctx.mod2(a, b, { att: 2 }, { ten: 12, aff: -6 });
           return { text: ctx.t('{a}の手が{b}の肩に触れた。{b}は露骨に身を引いた。', a, b), why: a.name + 'の衝動性に対し、' + b.name + 'はその気がなかった' };
         }
+        (ctx._touchDone = ctx._touchDone || {})[Math.min(a.i, b.i) + '-' + Math.max(a.i, b.i)] = 1;
         ctx.mod2(a, b, { att: 7 }, { att: 9, aff: 3 });
         return { text: ctx.t('距離が近い。{a}の指先が{b}の手にかすかに触れ、どちらも離さなかった。', a, b), why: a.name + 'の衝動性（FC高・A低）と、' + b.name + 'の側の惹かれ（' + Math.round(rb.att) + '）' };
       }

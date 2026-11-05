@@ -139,7 +139,7 @@
     else if (ctx.rng() < (day.kissPromise ? 0.15 : 0.3)) k = 'oyasumi';
     if (!k) return;
     var can = k === 'oyasumi' && nightCan(ctx, S, day) && !day.kissPromise;
-    var r = kiss(ctx, pr[0], pr[1], { trig: k, night: can, tag: KS.KISS_NAME[k] }, k);
+    var r = kiss(ctx, pr[0], pr[1], { trig: k, night: can, time: 'night', tag: KS.KISS_NAME[k] }, k);
     if (r && r.plan.end === 'night') { st.night++; day.kissLead = { a: r.plan.top, b: r.plan.bot, k: 'night' }; }
   }
 

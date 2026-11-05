@@ -1,8 +1,8 @@
 {
  "cur": {
-  "core": "core.6c8e3ada88.js",
+  "core": "core.70b6489faa.js",
   "late": "late.4011e9570e.js",
-  "pack-rel": "pack-rel.8b69668dd4.js",
+  "pack-rel": "pack-rel.ba7906faae.js",
   "pack-sim": "pack-sim.bd4a9a48bb.js",
   "scen-goukon": "scen-goukon.3f077cb08f.js",
   "scen-classroom": "scen-classroom.3eb804e61c.js",
@@ -13,7 +13,7 @@
   "scen-trial": "scen-trial.c3755db66f.js",
   "scen-omega": "scen-omega.0e477b41bb.js",
   "scen-massage": "scen-massage.a904b9d9f4.js",
-  "scen-futari": "scen-futari.50626f0abc.js",
+  "scen-futari": "scen-futari.26312378d4.js",
   "scen-zombie": "scen-zombie.46cc1a3f99.js",
   "scen-rpg": "scen-rpg.dfca376d4f.js",
   "scen-saimin": "scen-saimin.144da52bcd.js",
@@ -23,7 +23,7 @@
   "scen-ship": "scen-ship.82e856f3c7.js",
   "scen-jinro": "scen-jinro.513caab9a2.js",
   "pack-story": "pack-story.e80c10d02b.js",
-  "pack-catalog": "pack-catalog.124f2c410d.js",
+  "pack-catalog": "pack-catalog.13c1204b6c.js",
   "pack-roomkit": "pack-roomkit.37c939f4c3.js",
   "tone-base": "tone-base.49819ee5ff.js",
   "tone-ane": "tone-ane.9216836300.js",
@@ -67,10 +67,10 @@
   "tone-yankee": "tone-yankee.b80142025e.js"
  },
  "prev": {
-  "core": "core.3ae86de175.js",
-  "late": "late.e79fd05944.js",
-  "pack-rel": "pack-rel.1d5aea8b5c.js",
-  "pack-sim": "pack-sim.b824a09a27.js",
+  "core": "core.6c8e3ada88.js",
+  "late": "late.4011e9570e.js",
+  "pack-rel": "pack-rel.8b69668dd4.js",
+  "pack-sim": "pack-sim.bd4a9a48bb.js",
   "scen-goukon": "scen-goukon.3f077cb08f.js",
   "scen-classroom": "scen-classroom.3eb804e61c.js",
   "scen-island": "scen-island.3a1fa63433.js",
@@ -167,8 +167,8 @@
    10968
   ],
   "js/events-common.js": [
-   18319,
-   6079
+   18762,
+   6258
   ],
   "js/topics.js": [
    32963,
@@ -295,8 +295,8 @@
    4580
   ],
   "js/emotion.js": [
-   25418,
-   8947
+   27022,
+   9465
   ],
   "js/content.js": [
    440,

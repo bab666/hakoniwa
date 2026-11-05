@@ -109,6 +109,7 @@
   var A_SAY = /全部、?入|奥、?いい|入って(?:る|く)|おっきい|中で|ナカで|奥まで来/;
 
   var POOLS = { open: OPEN, body: BODY, climax: CLIMAX, after: AFTER };
+  var PCT = []; for (var pc = 0; pc < 100; pc++) PCT.push(pc);
   function pickArr(ctx, arr) { return ctx && ctx.pick ? ctx.pick(arr) : arr[Math.floor(Math.random() * arr.length)]; }
   function fill(s, A, B) { return s.replace(/\{a\}/g, A.name).replace(/\{b\}/g, B.name); }
   function src(c, k) { return c ? (c[k] != null && c[k] !== '' ? c[k] : (c.src && c.src[k]) || '') : ''; }
@@ -185,7 +186,9 @@
       var aIn = new RegExp(anR + 'の(?:中|奥|ナカ|\\{ナカ\\}|内側)(?:で|に|へ|を|が)');
       var aSay = new RegExp(anR + '「[^」]*(?:' + A_SAY.source + ')[^」]*」');
       /* 挿れるもの：記録の中にペニバン・張り型があればペニバン、なければ 25% でペニバン（記録の中では最後まで同じ） */
-      var mode = /ペニバン|張り型/.test(text) ? 'sp' : (ctx && ctx.rng ? ctx.rng() : Math.random()) < FM.STRAP_P ? 'sp' : 'fg';
+      /* 乱数は呼び出し元の ctx から（ctx.rng が無く ctx.pick だけの呼び出し元は pick で引く。Math.random は使わない：同じ seed で同じ結果にする） */
+      var r0 = ctx && typeof ctx.rng === 'function' ? ctx.rng() : ctx && ctx.pick ? ctx.pick(PCT) / 100 : 0.5;
+      var mode = /ペニバン|張り型/.test(text) ? 'sp' : r0 < FM.STRAP_P ? 'sp' : 'fg';
       var inserted = false, changed = false, done = 0, prevRep = false;
       var INS_RE = mode === 'sp' ? /張り型[^。]{0,20}(?:沈|押し|あてが)/ : /指[^。]{0,16}(?:沈|埋|滑り込|潜り込|挿|ほぐ)/;
       var out = sentences(text).map(function (sen) {

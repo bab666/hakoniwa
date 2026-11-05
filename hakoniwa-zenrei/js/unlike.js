@@ -286,10 +286,23 @@
   }
   U.pickReact = pickReact;
   /* その人の、まだ使っていない型のうち、いちばん「らしくない」もの（同点は種で決める。乱数を使わない） */
+  /* 直前（記録の最後の 4 つ）に二人の恋愛・助け合い（看病・キスなど）があったか。あれば、突き放し・弱音などの「冷たい側」の型（neg）は選ばない
+     （2026-11-05。甘いキスと看病の直後に、看病された人の「放っておいて。今は、優しくできない」が出ていた） */
+  function warmJust(X, a, b) {
+    var L0 = X && X.log;
+    if (!Array.isArray(L0)) return false;
+    for (var n = L0.length - 1, m = 0; n >= 0 && m < 4; n--, m++) {
+      var e = L0[n];
+      if (!e || !Array.isArray(e.actors) || !/^(?:romance|help)$/.test(e.cat || '')) continue;
+      var ids = e.actors.map(function (x) { return typeof x === 'number' ? x : x && x.i; });
+      if (ids.indexOf(a.i) >= 0 && ids.indexOf(b.i) >= 0) return true;
+    }
+    return !!(a.ill || a.sick);
+  }
   function flipFor(X, a, b, ro) {
-    var s = st(X), used = s.used[a.i] || {}, t = trOf(a), p = per(a), th = U.TH(chaosOf(X)), best = null, bv = -1;
+    var s = st(X), used = s.used[a.i] || {}, t = trOf(a), p = per(a), th = U.TH(chaosOf(X)), best = null, bv = -1, warm = warmJust(X, a, b);
     F.forEach(function (f, j) {
-      if (used[f.k] || (f.rom && !ro)) return;
+      if (used[f.k] || (f.rom && !ro) || (f.neg && warm)) return;
       var v = f.fit(t, p);
       if (v < th) return;
       v += h01(s.salt, a.i, j, 31) * 0.12;

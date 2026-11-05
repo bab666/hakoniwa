@@ -7,7 +7,7 @@
    ■ HK.Kiss.scene(ctx, a, b, opt) … 本文を記録に一件出す（ctx.act2。cat は romance。opt.why・opt.fx・opt.mod を渡せる）。戻り値は記録か null
    ■ HK.Kiss.trio(ctx, a, b, c)    … 三人のキスの段 ／ HK.Kiss.seen(ctx, a, b, c, 'warm'|'jeal') … 三人目に見られる段
    opt：trig（きっかけ）・len（'s'|'m'|'l'）・place・end（終わり方を固定）・rel（'love'|'first'|'friend'|'feud'）・x・y（いってらっしゃい・おかえりの出かける人／帰った人と見送る人）・lead（始まりの段をこの文に替える。{a}{b}のまま）・tail（最後の段の後ろに足す文）・
-        night（true：R18 で「そのまま夜へ」を候補にする）・promise（true：いってらっしゃいの「続きは帰ってから」を候補にする）・oazuke（お預けの起こりやすさに足す値）・long（長い版の起こりやすさの倍率）
+        night（true：R18 で「そのまま夜へ」を候補にする）・promise（true：いってらっしゃいの「続きは帰ってから」を候補にする）・oazuke（お預けの起こりやすさに足す値）・time（'night' なら「続きは夜」のお預けを出さない。省略時はおやすみ・ごちそうさま・おかえりを夜とみる）・long（長い版の起こりやすさの倍率）
    選び方：受けと攻めの態度 9 種・攻めの夜の性格（サド・意地悪はお預けが出やすい、甘々は長く、恥じらいは短くて照れる。全年齢は性格なし）・気分（HK.Emo の喜び・恥ずかしさ）・関係・きっかけ。
    一回の遊びの中で同じ文は二度出さない（ctx._kissU に使った回数を覚え、いちばん使っていない文から選ぶ）。台詞（「…」）は一回の遊びで同じものを 2 回まで（ctx._kissQ。
    まだ出ていない台詞を先に。攻めの一言・受けの反応は使い切ったら段を省き、終わり方は使い切ったら別の終わり方へ）。乱数は ctx.rng。
@@ -56,9 +56,11 @@
   K.spent = spent;
   function fresh(ctx, list, opt) {
     if (!list || !list.length) return '';
-    var ok = list.filter(function (t) { return qMax(ctx, t) < Q_CAP; });
+    var U = ctx._kissU || (ctx._kissU = {});
+    /* 無くてもよい段（opt：受けの反応・攻めの一言）は、台詞の無い地の文も一回の遊びで 2 回まで（2026-11-05。反応の地の文が 14 日で 4 回出ていた） */
+    var ok = list.filter(function (t) { return qMax(ctx, t) < Q_CAP && !(opt && (U[t] || 0) >= Q_CAP); });
     if (!ok.length) { if (opt) return ''; ok = list; }
-    var U = ctx._kissU || (ctx._kissU = {}), m = Infinity, sub = [];
+    var m = Infinity, sub = [];
     ok.forEach(function (t) { var n = qMax(ctx, t) * 1000 + (U[t] || 0); if (n < m) { m = n; sub = [t]; } else if (n === m) sub.push(t); });
     var t = sub[Math.floor(ctx.rng() * sub.length)];
     U[t] = (U[t] || 0) + 1;
@@ -120,6 +122,8 @@
       rest = 0; Object.keys(we).forEach(function (k) { rest += we[k]; });
       if (opt.promise !== false) we.promise = rest * (oz + (p.len === 'l' ? 0.15 : 0.08)) / Math.max(0.05, 1 - oz);
     } else we.oazuke = rest * oz / Math.max(0.05, 1 - oz);
+    /* お預けの文は「続きは夜」と言うので、夜のキス（opt.time が 'night'・おやすみ・ごちそうさま・おかえり）には使わない（2026-11-05。布団の中で「続きは夜よ」が出ていた） */
+    if (opt.time === 'night' || (!opt.time && /^(?:oyasumi|gochi|okaeri)$/.test(p.trig))) we.oazuke = 0;
     if (opt.night && hot && p.len !== 's' && p.trig !== 'itte') we.night = rest * (nt === 'sweet' || nt === 'sadist' ? 0.35 : 0.22);
     /* 台詞を使い切った終わり方は外す（ほかの終わり方が残っているときだけ） */
     if (!opt.end) {
