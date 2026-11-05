@@ -7,7 +7,7 @@
        （R18に参加しない・恋愛やR18にしない相手・性欲「なし」・家族・無関心・恐怖でない）、性的に対象になる組（HK.Pos.okSex・HK.canLove（両方向）・性行為の相手の固定）は
        すべて恋人・夫婦・セフレなど体の関係のある関係（ctx.pair(x,y).couple／関係の種類）。攻め同士・受け同士など対象にならない組は恋人でなくてよい。
        受けかリバが 1 人以上いて、繋がる組（plan の段）がどれも体の関係のある組で組めること。HK.Quad.ringOk(ctx, g) は同じ判定を何人にでも（三人の夜の条件にも使う）
-   ■ HK.Quad.split(ctx, ids)：{ bottoms, tops, revs }（四人の中で、HK.Pos.order で全員に対して攻め＝攻め、全員に対して受け＝受け、ほか＝リバ）
+   ■ HK.Quad.split(ctx, ids)：{ bottoms, tops, revs }（四人の中で、性的に対象になる相手（wantOk）全員に対して HK.Pos.order で攻め＝攻め、全員に対して受け＝受け、ほか＝リバ）
    ■ HK.Quad.scene(ctx, ids, opt)：きっかけの段（opt.lead の文。無ければ汎用。記録の一件、e.tag＝'きっかけ'）と場面（記録の一件、sex・trioPairs＝実際に繋がる組）を積む。
        opt.len：'short'（2〜3 文でさっぱり）／'long'（二人ずつの組の段を順に。各段は HK.SexFlow.fix で段の管理に通す）。opt.why（理由の頭）・opt.fx・opt.leadWhy。
        戻り値 { lead, e, pairs, kind } か null。HK.Trio3 の形（三人の形の点検 trio-shape）とは別の部品・別の理由の印（「四人の夜（軽く）」）
@@ -31,7 +31,9 @@
      ・性的に対象になる組（wantOk：HK.Pos.okSex と HK.canLove（両方向）・性行為の相手の固定）は、すべて恋人・夫婦・セフレなど体の関係のある関係
      ・攻め同士・受け同士のように性的に対象にならない組は、恋人でなくてよい（友情・ライバルなどでよい。攻め同士に恋愛の出来事は起こさない）
      ・繋がる組（plan の各段）は、どれも体の関係のある組（pairOk）で、四人とも少なくとも一つの段に入る */
-  function hardOk(ctx, a, b) {
+  /* noTen：緊張（ten 60 以上）を見ない。性的に対象にならない組（攻めどうし・受けどうし）は張り合っていても同じ場にいてよい
+     （作業の決まり「三人・四人の夜の条件は性的に対象になる組がすべて恋人など。攻めどうし・受けどうしは不問」。2026-11-05 新婚部屋の申し送り） */
+  function hardOk(ctx, a, b, noTen) {
     if (HK.SAFE_ON || !a || !b || a === b || a.alive === false || b.alive === false) return false;
     if (a.noR18 || b.noR18) return false;
     if (ctx.pair(a, b).kin) return false;
@@ -45,7 +47,7 @@
        繋がらないだけで同じ場にいてよい（受けを中心にした輪の攻めどうし） */
     if ((HK.ngExplicit && HK.ngExplicit(a, b)) || (HK.noSexPair && HK.noSexPair(a, b))) return false;
     if (HK.fearHeld && (HK.fearHeld(ctx, a, b) || HK.fearHeld(ctx, b, a)) && !(HK.tieBodyOK && HK.tieBodyOK(ctx, a, b))) return false;
-    if (ctx.R && (ctx.R(a, b).ten >= 60 || ctx.R(b, a).ten >= 60)) return false;
+    if (!noTen && ctx.R && (ctx.R(a, b).ten >= 60 || ctx.R(b, a).ten >= 60)) return false;
     return true;
   }
   /* 性的に対象になる組（恋愛対象・受け攻め・恋愛相手の固定・性行為の相手の固定） */
@@ -64,23 +66,28 @@
   /* 繋がってよい組：同じ場にいてよく、性的に対象で、体の関係のある関係 */
   function pairOk(ctx, a, b) { return hardOk(ctx, a, b) && wantOk(ctx, a, b) && (!HK.State || !HK.State.pairSex || HK.State.pairSex(a, b)) && bodyTie(ctx, a, b); }
   Q.hardOk = hardOk; Q.wantOk = wantOk; Q.bodyTie = bodyTie; Q.pairOk = pairOk;
-  /* 輪が完成しているか（g は何人でも）：全組が hardOk、性的に対象になる組はすべて体の関係、体の関係の組が人数−1 以上 */
+  /* 輪が完成しているか（g は何人でも）：全組が hardOk（性的に対象にならない組は緊張を見ない）、性的に対象になる組はすべて体の関係、体の関係の組が人数−2 以上 */
   Q.ringOk = function (ctx, g) {
     var n = 0;
     for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) {
-      if (!hardOk(ctx, g[i], g[j])) return false;
-      if (wantOk(ctx, g[i], g[j])) { if (!bodyTie(ctx, g[i], g[j])) return false; n++; }
+      var w = wantOk(ctx, g[i], g[j]);
+      if (!hardOk(ctx, g[i], g[j], !w)) return false;
+      if (w) { if (!bodyTie(ctx, g[i], g[j])) return false; n++; }
     }
     /* 体の関係の組が人数−2 以上（四人なら、恋人どうしが二組で並ぶ「二組に分かれて」も含む。誰も置いていかない組み分けは plan が見る） */
     return n >= g.length - 2;
   };
   function chars(ctx, ids) { return (ids || []).map(function (i) { return typeof i === 'number' ? ctx.chars[i] : i; }); }
   function order(a, b) { var o = HK.Pos && HK.Pos.order ? HK.Pos.order(a, b, [a, b]) : [a, b]; return o && o[0] && o[1] ? o : [a, b]; }
+  /* 受け攻めは、性的に対象になる相手（wantOk）との向きだけで数える（受けどうし・攻めどうしの向きは数えない。2026-11-05 新婚部屋の申し送り：
+     受けどうしの向きで受けがリバに数えられ、攻め1・受け3 の四人が組めなかった）。対象になる相手が一人もいない人だけ、全員との向きで数える */
   Q.split = function (ctx, ids) {
     var g = chars(ctx, ids), out = { bottoms: [], tops: [], revs: [] };
     g.forEach(function (x) {
-      var w = g.filter(function (o) { return o !== x && order(x, o)[0] === x; }).length;
-      (w === g.length - 1 ? out.tops : w === 0 ? out.bottoms : out.revs).push(x);
+      var ps = g.filter(function (o) { return o !== x && wantOk(ctx, x, o); });
+      if (!ps.length) ps = g.filter(function (o) { return o !== x; });
+      var w = ps.filter(function (o) { return order(x, o)[0] === x; }).length;
+      (w === ps.length ? out.tops : w === 0 ? out.bottoms : out.revs).push(x);
     });
     return out;
   };
@@ -154,8 +161,11 @@
   });
   /* 短い版（2〜3 文。きっかけの段のあと） */
   var SHORT = L('四人は、居間の明かりを一つずつ落とした。最後の明かりが消えたあとのことは、誰も口にしなかった。翌朝の食卓は、いつもよりにぎやかだった。|その夜、四人の部屋の扉は、朝まで開かなかった。翌朝、四人は少し寝坊して、そろって同じ時間に台所に立った。|灯りを落とした部屋に、四人分の小さな笑い声と、ひそめた息づかいが満ちた。夜明け前、誰かが毛布をかけ直して、四人はそのまま眠った。|その夜、四人は一つの布団で朝を迎えた。灯りが消えたあとのことは、四人だけが知っている。|明かりが落ちると、部屋には四人分の息づかいだけが残った。翌朝、誰も昨夜のことを口にしなかったが、朝食の席はいつもより少しだけ静かだった。|それから先のことは、四人だけの秘密になった。翌朝、四人はそろって少し寝坊した。');
-  /* 長い版の締め（1〜2 文） */
-  var END = L('朝の光が差し込むころ、四人は誰からともなく目を覚まして、照れくさそうに笑い合った。|最後に明かりを消したのが誰だったのか、翌朝、誰も覚えていなかった。四人は同じ毛布の端を握ったまま眠っていた。|夜が更けるころには、四人とも布団の上で眠りに落ちていた。|明け方、誰かが掛け布団をかけ直す気配がした。四人は、そのまま朝まで眠った。');
+  /* 長い版の締め（1〜2 文。{a}{b}{c}＝四人のうち三人。一回の遊びで使っていない文から） */
+  var END = L('朝の光が差し込むころ、四人は誰からともなく目を覚まして、照れくさそうに笑い合った。|最後に明かりを消したのが誰だったのか、翌朝、誰も覚えていなかった。四人は同じ毛布の端を握ったまま眠っていた。|夜が更けるころには、四人とも布団の上で眠りに落ちていた。|明け方、誰かが掛け布団をかけ直す気配がした。四人は、そのまま朝まで眠った。|' +
+    '息が落ち着くと、誰からともなく水を回し飲みした。最後の一口を飲んだ{a}が、照れくさそうに笑った。|' +
+    '灯りを消し忘れたまま、四人は眠ってしまった。朝、最初に目を覚ました{b}が、そっとスイッチを切った。|' +
+    'しばらくは誰も口をきかなかった。やがて{c}が小さくあくびをして、それを合図に四人は毛布にくるまった。');
 
   /* ======================= 組み立て ======================= */
   function pickOf(ctx) { return function (arr) { return arr && arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : ''; }; }
@@ -190,7 +200,7 @@
     if (le && !le.skipped) le.tag = 'きっかけ'; else le = null;
     var short = opt.len !== 'long', text;
     if (short) text = fresh(ctx, SHORT);
-    else text = pl.segs.map(function (p) { return segText(ctx, p[0], p[1]); }).join('\n\n') + '\n\n' + fresh(ctx, END);
+    else text = pl.segs.map(function (p) { return segText(ctx, p[0], p[1]); }).join('\n\n') + '\n\n' + fillN(fresh(ctx, END), { a: g[0], b: g[1], c: g[2], d: g[3] });
     var pairs = pl.segs.map(function (p) { return [p[0], p[1]]; });
     var KN = { one: '受け1・攻め3：' + (pl.u && pl.u.name) + 'のもとへ順に', three: '攻め1・受け3：' + (pl.t && pl.t.name) + 'が順に', two: '受け2・攻め2：二組に分かれて', mix: 'リバ混じり：二組に分かれて' };
     var desc = pl.segs.map(function (p) { return p[0].name + '→' + p[1].name; }).join('、');

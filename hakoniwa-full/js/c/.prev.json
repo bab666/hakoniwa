@@ -1,10 +1,10 @@
 {
  "cur": {
-  "core": "core.6edae30992.js",
+  "core": "core.d674949689.js",
   "late": "late.c1be32dddb.js",
   "pack-sim": "pack-sim.5278292095.js",
-  "pack-rel": "pack-rel.e5ff4e9321.js",
-  "pack-lewd": "pack-lewd.47b6ecf1fc.js",
+  "pack-rel": "pack-rel.4e7104f2a1.js",
+  "pack-lewd": "pack-lewd.3246fc88fd.js",
   "scen-goukon": "scen-goukon.edfb238c7b.js",
   "scen-classroom": "scen-classroom.dd3dd81208.js",
   "scen-island": "scen-island.5982ca3125.js",
@@ -29,7 +29,7 @@
   "scen-ship": "scen-ship.92876a304f.js",
   "pack-story": "pack-story.9f47f61bbd.js",
   "scen-jinro": "scen-jinro.42738b0cf3.js",
-  "pack-catalog": "pack-catalog.178e5d70fb.js",
+  "pack-catalog": "pack-catalog.f8244cade8.js",
   "pack-roomkit": "pack-roomkit.5c83927ff0.js",
   "pack-solo": "pack-solo.d8c830fbef.js",
   "scen-train": "scen-train.b3ee7be3cf.js",
@@ -75,11 +75,11 @@
   "tone-yankee": "tone-yankee.c8e840b6cc.js"
  },
  "prev": {
-  "core": "core.6edae30992.js",
+  "core": "core.d674949689.js",
   "late": "late.c1be32dddb.js",
   "pack-sim": "pack-sim.5278292095.js",
-  "pack-rel": "pack-rel.e5ff4e9321.js",
-  "pack-lewd": "pack-lewd.0af744cb90.js",
+  "pack-rel": "pack-rel.e3e9e9fa10.js",
+  "pack-lewd": "pack-lewd.3246fc88fd.js",
   "scen-goukon": "scen-goukon.edfb238c7b.js",
   "scen-classroom": "scen-classroom.dd3dd81208.js",
   "scen-island": "scen-island.5982ca3125.js",
@@ -104,7 +104,7 @@
   "scen-ship": "scen-ship.92876a304f.js",
   "pack-story": "pack-story.9f47f61bbd.js",
   "scen-jinro": "scen-jinro.42738b0cf3.js",
-  "pack-catalog": "pack-catalog.178e5d70fb.js",
+  "pack-catalog": "pack-catalog.f8244cade8.js",
   "pack-roomkit": "pack-roomkit.5c83927ff0.js",
   "pack-solo": "pack-solo.d8c830fbef.js",
   "scen-train": "scen-train.b3ee7be3cf.js",
@@ -191,8 +191,8 @@
    10465
   ],
   "js/persona.js": [
-   26332,
-   8822
+   27276,
+   9134
   ],
   "js/tie-rel.js": [
    45494,
