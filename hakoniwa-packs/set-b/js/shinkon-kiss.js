@@ -75,7 +75,8 @@
   /* ---------- 朝：いってらっしゃい ---------- */
   function morning(ctx, S, day) {
     if (slowEarly(ctx, day)) return;
-    if (!S.love || day.sick || day.apart || day.recover || day.dull) return;
+    /* 出張から帰ってくる日（day.back。朝と日中はまだ出張先、夜の頭で玄関の再会がある）は、いってらっしゃい・おかえりのキスを出さない（2026-11-05 通し読み） */
+    if (!S.love || day.sick || day.apart || day.back || day.recover || day.dull) return;
     var d = day.d, P = spouses(S);
     var out = P.filter(function (c) { var p = lifeDay(c, d); return p && !p.trip && !p.hol && p.home && p.home.d === false; });
     if (!out.length) return;
@@ -84,7 +85,9 @@
     if (!ys.length) return;
     var y = ys[Math.floor(ctx.rng() * ys.length)];
     var shy = [x, y].some(function (c) { return KS.per(c) === 'shy' || KS.per(c) === 'stern'; });
-    if (ctx.rng() > (shy ? 0.6 : 0.75)) return;
+    /* いってらっしゃいのキスは毎朝にしない（続けて二日は出さない。2026-11-05 通し読み：14 日で 6 回、本体のキスの文「朝の玄関は、いつも少しだけ慌ただしい」が 7 回中 6 本に出ていた） */
+    if (S.itteD === d - 1 || ctx.rng() > (shy ? 0.4 : 0.55)) return;
+    S.itteD = d;
     var r = kiss(ctx, x, y, { trig: 'itte', x: x, y: y, promise: nightCan(ctx, S, day) && !!(HK.PairR18 && HK.PairR18.sexOk(ctx, x, y)), tag: 'いってらっしゃいのキス' }, 'itte');
     if (!r) return;
     if (r.plan.len === 'l') st.itteLong++;
@@ -94,7 +97,7 @@
   /* ---------- 夜のはじめ：おかえり ---------- */
   function evening(ctx, S, day) {
     if (slowEarly(ctx, day)) return;
-    if (!S.love || day.sick || day.apart || day.dull || day.lateHome) return;
+    if (!S.love || day.sick || day.apart || day.back || day.dull || day.lateHome) return;
     /* その夜の困りごと（残業・電車・雨・停電など）がある夜は、帰ってきた場面がそちらにあるので出さない */
     if (day.trouble && day.trouble.tr && day.trouble.tr.part === 'n') return;
     var d = day.d, P = spouses(S);
@@ -110,7 +113,7 @@
   /* ---------- 日中：ご褒美 ---------- */
   function daytime(ctx, S, day) {
     if (slowEarly(ctx, day)) return;
-    if (!S.love || day.sick || day.apart || ctx.rng() > (day.hol ? 0.2 : 0.06)) return;
+    if (!S.love || day.sick || day.apart || day.back || ctx.rng() > (day.hol ? 0.2 : 0.06)) return;
     var pr = pairAt(ctx, S, day.d, 'd');
     if (pr) kiss(ctx, pr[0], pr[1], { trig: 'hobi', place: ctx.rng() < 0.5 ? 'sofa' : 'kitchen', tag: 'ご褒美のキス' }, 'hobi');
   }

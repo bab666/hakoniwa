@@ -537,6 +537,8 @@
         var v = Math.min(ab.att, ba.att) + Math.min(ab.aff, ba.aff) * 0.5 + (ctx.pair(a, b).couple ? 30 : 0);
         /* 「恋愛：なし」の二人・敵対や不仲の二人（free-sex.js の HK.FreeSex.lust）は、惹かれ・好意の代わりに性欲＋衝動性（HK.Pos.sexDrive）で並べる（2026-10-28 担当MC）。
            並べる順では敵対・不仲の倍率（HK.Pos.hostK）を外す（関係のない組に先を越されて、性欲「ふつう」の敵対の二人がほとんど帰れなくなるため。起きにくさは下の HK.FreeSex.chance で掛ける） */
+        /* 気持ちの関係（愛憎・劣等感・優越。HK.Pos.feelK）の二人は、引け目や張り合いで気持ちが揺れても帰り道で手を出しやすくする（しづらくしない原則。2026-11-05） */
+        if (HK.Pos && HK.Pos.feelK) v *= HK.Pos.feelK(a, b);
         var lu = !!(HK.FreeSex && HK.FreeSex.lust && HK.FreeSex.lust(ctx, a, b));
         if (lu) v = Math.max(v, HK.Pos.sexDrive(ctx, a, b) / (HK.Pos.hostK ? HK.Pos.hostK(a, b) : 1) * 115);
         cand.push({ a: a, b: b, v: v, lu: lu });
@@ -551,7 +553,7 @@
         if (fs && c.lu) {
           /* 「恋愛：なし」の二人・敵対や不仲の二人：酔いと性欲＋衝動性で（HK.FreeSex.chance。敵対・不仲は起きにくい）。
              帰り道は一度きりの判定で、性欲の強い二人だと上限に届きやすいので、敵対・不仲の倍率をもう一段（平方根ぶん）掛ける（友人の 5〜7 割の目安） */
-          if (rng() >= HK.FreeSex.chance(ctx, c.a, c.b, 1.2) * Math.sqrt(HK.Pos.hostK ? HK.Pos.hostK(c.a, c.b) : 1)) return;
+          if (rng() >= HK.FreeSex.chance(ctx, c.a, c.b, 1.2)) return;
         } else if (fs) {
           var dr = ((c.a.flags.drunk || 0) + (c.b.flags.drunk || 0)) / 200, im0 = (c.a.tr.impulse + c.b.tr.impulse) / 2;
           if (rng() >= HK.clamp(0.25 + dr * 0.5 + im0 * 0.35, 0, 0.9) * 0.5 * HK.FreeSex.factor(ctx, c.a, c.b) * nK) return;
@@ -563,9 +565,11 @@
         if (so && !(HK.Pos && HK.Pos.okSex(c.a, c.b))) return;
         used[c.a.i] = used[c.b.i] = 1;
         var imp = (c.a.tr.impulse + c.b.tr.impulse) / 2;
+        /* 気持ちの関係（愛憎・劣等感・優越）の二人は、衝動を強める（HK.Pos.feelK。しづらくしない原則。2026-11-05） */
+        var fk = HK.Pos && HK.Pos.feelK ? HK.Pos.feelK(c.a, c.b) : 1;
         /* 性欲の強さ（HK.Pos.libMul。既定は 1）：お持ち帰りの夜になる起こりやすさに掛ける */
         /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK：50 で 1・100 で 1.7・0 で 0）：0 ならお持ち帰りの夜にしない（一緒に帰るだけ）。2026-10-29 担当MI */
-        var night = nK > 0 && (so || fs || (imp > 0.55 && rng() < imp * 0.9 * (HK.Pos && HK.Pos.libMul ? HK.Pos.libMul([c.a, c.b]) : 1) * nK));
+        var night = nK > 0 && (so || fs || (imp * fk > 0.55 && rng() < imp * fk * 0.9 * (HK.Pos && HK.Pos.libMul ? HK.Pos.libMul([c.a, c.b]) : 1) * nK));
         /* R18に参加しない人・体の関係にならない組（HK.sexBlocked）・性欲「なし」の人（HK.Pos.libOK）は、お持ち帰りの夜にしない（一緒に帰るだけ。恋愛は止めない） */
         if (night && ((HK.sexBlocked && HK.sexBlocked(c.a, c.b)) || (HK.Pos && HK.Pos.libOK && !HK.Pos.libOK([c.a, c.b])))) night = false;
         if (night) ctx.pair(c.a, c.b).night = true;

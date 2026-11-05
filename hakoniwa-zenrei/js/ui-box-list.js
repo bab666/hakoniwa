@@ -54,6 +54,11 @@
     '#view-box .bxlon{position:absolute;top:-8px;left:10px;padding:0 6px;border-radius:4px;background:var(--ui-hot);color:var(--ui-hot-ink);font-size:10px;font-weight:700;line-height:16px;letter-spacing:.04em}' +
     '#view-box .bxlc .scload{position:static;font-size:10.5px;padding:0 6px;border:1px solid var(--ui-line2,var(--line2));border-radius:999px;color:var(--ui-muted,var(--muted))}' +
     '#view-box .bxlc .scload.ng{color:var(--ui-danger,#b03a2e);border-style:dashed}' +
+    /* 全年齢版だけ、一覧の最後に R-18版の案内（窓の .bxr18c と同じ中身。開くと行いっぱいに広げる） */
+    '#view-box .bxlr18c{width:100%;box-sizing:border-box;border:1px dashed var(--ui-line2,var(--line2));border-radius:10px;background:var(--ui-card,var(--paper))}' +
+    '#view-box .bxlr18c:hover,#view-box .bxlr18c:focus-within{border-color:var(--ui-ink,var(--ink))}' +
+    '#view-box .bxlr18c .bxr18c-t{min-height:58px;padding:8px 36px 9px 12px;gap:1px}' +
+    '#view-box .bxlg>li.bxlr18:has(.bxr18c-t[aria-expanded="true"]){grid-column:1/-1}' +
     /* 一覧は PC だけ。スマホ幅では窓（#bxpick） */
     '@media (max-width:899px){#view-box .bxlist{display:none}}' +
     '@media print{#view-box .bxlist{display:none}}';
@@ -70,6 +75,15 @@
     var ci = HK.UI.cardInfo(id), s = ci.s || {};
     return { cat: catOf(id, ci.r18only), r18only: ci.r18only, adult: ci.adult, html: '<span class="bxlk">' + esc(ci.kt ? ci.kt + '・' + ci.cnt : ci.cnt) + '</span><span class="bxln">' + esc(s.name) + '</span>' + (ci.adult ? '<span class="r18tag bxlt">R18</span>' : ''), title: ci.full };
   }
+  /* 全年齢版だけ：一覧の最後の「R-18版のご案内」（URL は中核の js/safe.js の HK.CONF。押すと一文と BOOTH・note のリンクが開く＝ui.js の r18card。絞りの札が「すべて」のときだけ出す） */
+  function r18Item(cat) {
+    var C = HK.CONF;
+    if (!HK.SAFE_BUILD || !C || !C.r18Url) return '';
+    return '<li class="bxlr18"' + (cat === 'all' ? '' : ' hidden') + '><div class="bxr18c bxlr18c"><button type="button" class="bxr18c-t" data-act="r18card" aria-expanded="false" aria-controls="bxlr18c-b" title="成人向けの箱庭を5つ追加。夜の場面もぼかさずに描きます。">' +
+      '<span class="bxlk">18歳以上向け</span><span class="bxln">R-18版のご案内</span><span class="bxr18c-i" aria-hidden="true"></span></button>' +
+      '<div class="bxr18c-b" id="bxlr18c-b" hidden><p class="bxr18c-d">R-18版（BOOTH・noteで頒布中・18歳以上向け）では成人向けの箱庭を5つ追加。夜の場面もぼかさずに描きます。</p><p class="bxr18c-a">' +
+      '<a href="' + esc(C.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (C.noteUrl ? '<a href="' + esc(C.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '') + '</p></div></div></li>';
+  }
   var CATS = [['all', 'すべて'], ['daily', '日常'], ['extreme', '極限'], ['solo', 'ひとり用'], ['r18', 'R-18 のみ']];
   var BL = HK.BoxList = {};
   BL.html = function (order, sel, badge) {
@@ -83,7 +97,7 @@
       var id = x[0], c = x[1], on = id === sel, lack = n ? Math.max(0, smin(id) - n) : 0, hide = !on && (!c.cat[cat] || (pref.fit && lack > 0));
       return '<li' + (hide ? ' hidden' : '') + ' data-id="' + esc(id) + '"><button type="button" class="bxlc' + (c.r18only ? ' r18only' : '') + (c.adult ? ' r18' : '') + (on ? ' on' : '') + (lack ? ' lack' : '') + '" data-act="bxlpick" data-id="' + esc(id) + '" aria-pressed="' + on + '" title="' + esc(c.title) + '">' + c.html +
         (lack ? '<span class="bxlw">住人が' + lack + '人足りません</span>' : '') + (on ? '<span class="bxlon">選択中</span>' + (badge || '') : '') + '</button></li>';
-    }).join('') + (HK.PacksUI && HK.PacksUI.listItem ? HK.PacksUI.listItem() : '');   /* 追加パック：まだ開けていないセットがあれば「箱庭を追加」（js/packs-ui.js） */
+    }).join('') + (HK.PacksUI && HK.PacksUI.listItem ? HK.PacksUI.listItem() : '') + r18Item(cat);   /* 追加パック：まだ開けていないセットがあれば「箱庭を追加」（js/packs-ui.js）。全年齢版は最後に R-18版の案内 */
     return '<section class="bxlist" id="bxlist" aria-labelledby="bxlist-h" data-fold="' + (open ? 0 : 1) + '"><div class="bxlh"><h2 id="bxlist-h">箱庭を選ぶ</h2><span class="bxlnum">' + order.length + '種類</span>' +
       '<span class="bxlcur">いま：<b>' + curName + '</b></span>' +
       '<div class="bxlf" role="group" aria-label="箱庭の絞り込み">' + CATS.filter(function (x) { return x[0] === 'all' || cnt[x[0]]; }).map(function (x) {
@@ -101,6 +115,7 @@
     var bs = box.querySelectorAll('[data-act="bxlcat"]'), has = Array.prototype.some.call(bs, function (b) { return b.dataset.c === pref.cat; }), cat = has ? pref.cat : 'all';
     Array.prototype.forEach.call(bs, function (b) { b.setAttribute('aria-pressed', String(b.dataset.c === cat)); });
     Array.prototype.forEach.call(box.querySelectorAll('.bxlg>li'), function (li) {
+      if (li.classList.contains('bxlr18')) { li.hidden = cat !== 'all'; return; }
       var id = li.getAttribute('data-id'), c = memo[id], on = id === S.scenId, lack = n ? Math.max(0, smin(id) - n) : 0;
       li.hidden = !on && !!c && (!c.cat[cat] || (pref.fit && lack > 0));
     });

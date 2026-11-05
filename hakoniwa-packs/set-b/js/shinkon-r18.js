@@ -168,7 +168,9 @@
       /* {x}＝遅く帰った人・出張から帰った人（受け攻めに関係なく）、{n}＝離れていた日数 */
       var aw = HK.Shinkon && HK.Shinkon.away ? HK.Shinkon.away(ctx) : { n: 1, who: [] };
       var lx = cute === 'late' ? day.lateHome || a : aw.who[0] || a, ly = lx === A ? B : A;
-      lt = mk(ctx, pickOk(ctx, (MO().LEAD || {})[cute], a, b), a, b, { x: lx.name, y: ly.name, n: KANJI[Math.max(1, Math.min(9, aw.n))] + '日' });
+      /* 出張から帰ってきた夜は、夜の段の頭で玄関の再会を出しているので、玄関で迎える文を重ねない（shinkon.js の BACK_N。2026-11-05 通し読み） */
+      var LL = ((MO().LEAD || {})[cute] || []), LL2 = cute === 'trip' && day.back ? LL.filter(function (t) { return !/玄関/.test(t); }) : LL;
+      lt = mk(ctx, pickOk(ctx, LL2.length ? LL2 : LL, a, b), a, b, { x: lx.name, y: ly.name, n: KANJI[Math.max(1, Math.min(9, aw.n))] + '日' });
       lwho = [lx, ly];
     } else if (cute) {
       lt = mk(ctx, pickOk(ctx, (MO().LEAD || {})[cute], a, b), a, b);

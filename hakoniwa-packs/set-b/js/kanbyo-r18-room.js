@@ -18,6 +18,7 @@
   function flat(o) { return [].concat(o.mf || [], o.ff || [], o.fm || [], o.all || []); }
   function X(list, sh, when) { return list.map(function (t) { return { t: t, sh: sh || 'all', when: when || null }; }); }
   PR.addRoom('set-b-kanbyo', {
+    spot: 'bed',   /* 看病の部屋の夜は寝床（寝込んでいた部屋の布団・ベッド。kanbyo-r18.js の KR.SPOT。2026-11-05 通し読み） */
     ok: function (ctx, t, a, b) { return !HK.Kanbyo || HK.Kanbyo.okText(ctx, t, a, b); },
     open: X(L('枕もとには、看病のあいだに使った体温計と、飲みかけの水のペットボトルがまだ並んでいた。{a}はそれを少しだけ脇へ寄せて、布団の上の{b}の隣に腰を下ろした。肩が触れたところから、{b}の体温がじわりと伝わってきた。' +
       '|寝込んでいた部屋には、まだ少しだけ薬の匂いが残っていた。{a}はカーテンを引いて、枕もとの灯りだけを残した。布団の上で振り返った{b}の目が、灯りを映して揺れていた。' +

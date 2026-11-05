@@ -142,6 +142,18 @@
     if (S && S.live !== 'together' && !S.hasKey && !S.couple0 && /合鍵(?!を(?:預か|渡さ|受け取))/.test(x)) return false;
     if (S && S.live !== 'together' && /並んでテレビ|夕食のあと、二人/.test(x)) return false;
     if (S && !roleWordOk(S, x, a, b)) return false;
+    if (S && !illWordOk(S, x)) return false;
+    return true;
+  }
+  /* 熱の状態の言い回し（2026-11-05 通し読み：二人とも治った 7 日目の夜に「熱の残る体に負担をかけないよう」、まだ熱のある夜に「熱の引いた胸」「今夜はその必要がない」、
+     うつって看病し返したあとに「もしうつったら、今度は私が看病する番」）：その日の状態に合う文だけ */
+  function illOn(S, d) { return d < S.heal || !!(S.kaeshi && d >= S.kaeshi.from && d < S.kaeshi.heal); }
+  function illWordOk(S, x) {
+    var d = S.day && S.day.d; if (d == null || S.heal == null) return true;
+    var n = String(x).replace(/「[^」]*」/g, ''), now = illOn(S, d), justWell = d === S.heal || !!(S.kaeshi && d === S.kaeshi.heal);
+    if (/熱の残る|熱を持った|熱のある|微熱の残る/.test(n) && !now && !justWell) return false;
+    if (/熱の引いた|今夜はその必要がない|声を潜めて過ごしてきた/.test(n) && now) return false;
+    if (/もしうつったら|今度は[^。」]{0,8}看病する番/.test(x) && S.kaeshi && d >= S.kaeshi.from) return false;
     return true;
   }
   /* 時間帯の札（2026-11-05 報告：朝の区切りに「夕方、隣の家から工事の音」）：区切りに合わない時間の語で始まる文を外す */

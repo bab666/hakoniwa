@@ -44,9 +44,11 @@
   var ROM = K.ROM, WED = K.WED, COOK = K.COOK, CHORE = K.CHORE;
   function romRow(x) { return ROM.test(typeof x === 'string' ? x : ((x && x.k) || '') + ((x && x.t) || '')); }
   function f(ctx) { return ctx.sk; }
-  var SAD_RE = /不安|すれ違|気まず|もどかし|拗ね|寂し|胸がざわ|眉を寄せ|ため息/;
+  var SAD_RE = /不安|すれ違|気まず|もどかし|拗ね|寂し|さびし|胸がざわ|ざわつ|眉を寄せ|ため息|遠く感じ|戸惑|反省|つらい|震えて|弱音|素っ気|涙|申し訳な|負担|迷い|迷っ|考えごと|黙り込|黙って|呼べなかった|遠慮/;
   var HOUSE_NG = /上の階|下の階|階下の|階上の|隣の部屋|両隣と上|隣室|エレベーター|オートロック|管理人室/, FLAT_NG = /縁側|庭の草|庭に出|庭先|二階の|一階の/;
-  var DAY_NG = /白み始め|寝息を立て|夜更け|真夜中|深夜|眠りにつ|布団に入っ|風呂から上がると|月明かり|夜空/, NIGHT_NG = /昼下がり|朝起きると|朝の光|午前中|昼過ぎ|日差しの中|ピクニック|休みの朝|出かける前に|今朝は早く|朝から鏡/;
+  var DAY_NG = /白み始め|寝息を立て|夜更け|真夜中|深夜|眠りにつ|布団に入っ|風呂から上がると|月明かり|夜空|前の晩|夜遅く|出張先の夕飯|^夜、|。夜、/, NIGHT_NG = /昼下がり|朝起きると|朝の光|午前中|昼過ぎ|日差しの中|ピクニック|休みの朝|出かける前に|今朝は早く|朝から鏡|昼休み|昼寝を|一緒に昼寝|休みの午後|鍵を忘れて出かけ|昼ご飯は食べたか/;
+  /* 休みの日だけの文（平日の木曜に「休日にも仕事の資料」「休みの午後」を出さない）・二人とも家にいる日に「一人の食卓」を出さない（2026-11-05 通し読み） */
+  var HOL_ONLY = /休日|休みの日|休みの午後|休みの朝|休みの昼/, ALONE_MEAL = /一人の食卓|一人で食べる|湯気の立つ定食の写真/;
   /* 平屋（一階だけの家）：階段・二階の文を出さない（2026-11-05 報告「平屋で階段を下りて」）。一軒家・古民家は二階があってよい */
   var FLAT1_NG = /階段|二階|上の階|下の階|階下|階上|二階建て/;
   function houseKind(h) { return /平屋|一軒家|古民家|隠れ家/.test(h) ? 'house' : /アパート|マンション|タワマン|ロフト/.test(h) ? 'flat' : ''; }
@@ -67,6 +69,8 @@
     /* 区切りに合わない時間帯の文（日中に夜明け・寝息、夜に昼下がり・朝の光。2026-11-04 報告） */
     if (S && S.part === 1 && DAY_NG.test(x)) return false;
     if (S && S.part === 2 && NIGHT_NG.test(x)) return false;
+    if (S && S.day && HOL_ONLY.test(x) && !S.day.hol) return false;
+    if (S && S.day && ALONE_MEAL.test(x) && !(S.day.apart || (S.day.pa && S.day.pa.late) || (S.day.pb && S.day.pb.late))) return false;
     /* 季節に合わない文（夏に雪など）・誕生日でない日の誕生日の文（shinkon-cal.js の HK.ShinkonCal.ok） */
     if (HK.ShinkonCal && !HK.ShinkonCal.ok(ctx, x)) return false;
     return true;
@@ -610,7 +614,9 @@
     ctx.act2({ actors: [hi, lo], cat: 'romance', text: fill(ctx, pickT(ctx, STEP[k], hi, lo) || STEP[k][0], hi, lo, { rel: rl }), why: '新婚部屋：恋愛へ進む（' + STEP_NAME[k] + '・' + rl + 'から）',
       fx: function () { ctx.mod2(hi, lo, { aff: 6, att: 20, trust: 3 }, { aff: 6, att: 20, trust: 3 }); } });
   }
-  var HIMO = ['{a}は昼近くまで寝て、起きてからはソファでゲームをしていた。相手が帰ってくる時間が近づくと、慌てて部屋を少しだけ片づけた。', '{a}は日当たりのいい窓辺でうたた寝をして、一日の大半を過ごした。夕方、冷蔵庫をのぞいて、今夜は何を作ってもらおうかと考えた。', '{a}はふらりと散歩に出て、商店街で買い食いをして帰ってきた。財布の中身が心もとないことに気づいたのは、帰り道のことだった。'];
+  var HIMO = ['{a}は昼近くまで寝て、起きてからはソファでゲームをしていた。相手が帰ってくる時間が近づくと、慌てて部屋を少しだけ片づけた。', '{a}は日当たりのいい窓辺でうたた寝をして、一日の大半を過ごした。冷蔵庫をのぞいて、今夜は何を作ってもらおうかと考えた。', '{a}はふらりと散歩に出て、商店街で買い食いをして帰ってきた。財布の中身が心もとないことに気づいたのは、帰り道のことだった。',
+    '{a}は動画を見ながら昼までごろごろしていた。気づけばお菓子の袋が三つ空になっていて、{a}は証拠を隠すように袋をたたんだ。', '{a}は近所の公園のベンチで、知らない犬と半日遊んでいた。飼い主のおばあさんに、お茶まで分けてもらった。',
+    '{a}は珍しく洗い物に手をつけたが、皿を二枚洗ったところで満足して、残りは水につけたままにした。', '{a}は通販の画面を眺めて、買うつもりのない家具を何時間も見比べていた。', '{a}は昼過ぎに起きて、相手が作り置きしてくれていたおかずを温めた。一口食べて、ありがたさがしみた。'];
   var NW_SETUP = [
     '{a}と{b}は、{rel}のまま、{home}で一緒に暮らし始めた。段ボールはまだいくつか残っているけれど、玄関には二人分の靴が並んでいる。',
     '{home}の窓から、朝の光が差し込んでいる。{rel}の間柄の{a}と{b}が同じ家で暮らし始めて、まだ数日しかたっていない。',
@@ -673,9 +679,14 @@
     /* 最後の日は二人とも家にいる（最後の夜の幸せなキスがあるので、出張はその日までに切り上げる）。誕生日・バレンタイン・ホワイトデー・クリスマス・イブも出張を入れない（shinkon-cal.js） */
     if (d === S.days - 1 || (CL && S.cal && CL.keyDay(S, d))) [pa, pb, day.pc].forEach(function (p) { if (p && p.trip) { p.trip = false; p.tripEnd = true; p.home = { m: true, d: p.hol, n: true }; } });
     var apart = day.apart = pa.trip || pb.trip;
+    /* 出張から帰ってくる日（前の日まで出張で、今日は取りやめでなく帰ってくる一人）：朝と日中はまだ家にいない。再会は夜（2026-11-05 通し読み） */
+    if (!apart && !sc && !day.recover && d > 0 && d !== S.days - 1 && !S.trio && !S.quad) {
+      var bk = [[A, pa], [B, pb]].filter(function (x) { var y = lifeDay(x[0], d - 1); return y && y.trip && !x[1].tripEnd; });
+      if (bk.length === 1) { day.back = bk[0][0]; bk[0][1].home = { m: false, d: false, n: true }; }
+    }
     var lv = S.love, nr = function (x) { return lv || !romRow(x) ? 1 : 0; }, nw = function (x) { return (S.wed || !WED.test((x.k || '') + (x.t || '')) ? 1 : 0) * seaRow(ctx, x); };
     /* 新しく体調を崩してよい日か：状態の外・治った朝でない・二人とも家にいる・最後の朝までに治る・まだ崩していない人がいる */
-    var canSick = !sc && !day.recover && !apart && !(S.sick && !S.sick.done) && d <= S.days - 2 && [A, B].some(function (c) { return !(S.sickWho && S.sickWho[c.i]); }) && !keyAhead(S, d);
+    var canSick = !sc && !day.recover && !apart && !day.back && !(S.sick && !S.sick.done) && d <= S.days - 2 && [A, B].some(function (c) { return !(S.sickWho && S.sickWho[c.i]); }) && !keyAhead(S, d);
     /* 日替わり：離れている日は連絡、休日はデートも、家事が苦手（ポンコツ）の人がいるときだけポンコツの出来事も */
     var clumsy = [A, B].some(function (c) { return LF.clumsy(c); });
     var noChore = !LF.canChore(A) || !LF.canChore(B);
@@ -969,6 +980,7 @@
       if (day.recover) { sickMorning(ctx, day, day.recoverK); day.pend = []; }
       else if (day.sick && day.sickDay > 0) { sickMorning(ctx, day, 'morn'); day.pend = []; return; }
       else if (day.apart) { apartMorning(ctx, day); day.pend = []; return; }
+      else if (day.back) { scen.actRate = REST_RATE; backPart(ctx, day, 'BACK_M'); day.pend = []; return; }
       if (!day.recover) {
         var it = day.introI, who = day.introWho || (it === 9 || it === 2 || it === 3 ? (ctx.rng() < 0.5 ? A : B) : day.hi);
         var other = who === A ? B : A;
@@ -987,14 +999,17 @@
     if (day2.sick || day2.apart) scen.actRate = REST_RATE;
     if (day2.sick && ctx.stepIndex != null) ctx._emoWS = ctx.stepIndex;
     if (t === 1 && day2.sick) { sickDay(ctx, day2); return; }
+    if (t === 1 && day2.back) { scen.actRate = REST_RATE; backPart(ctx, day2, 'BACK_D'); return; }
     if (t === 2 && day2.sick) { sickNight(ctx, day2, d); return; }
     if (t === 1) {
       [A, B].forEach(function (c) {
         var pl = c === A ? day2.pa : day2.pb;
-        if (day2.hol && !pl.trip) { if (ctx.rng() < 0.45) ctx.act2({ actors: [c], cat: 'solo', text: fill(ctx, c.life && c.life.role === 'r10' ? pickT(ctx, HIMO, c, c) : LF.roleLine(ctx, c), c), why: '新婚部屋：休日の家のこと' }); return; }
+        /* 一人の昼の一文は、一回の遊びで同じものを二度出さない（使い切ったら出さない。2026-11-05 通し読み：14 日で「〜の一日は、いつもどおりの段取りで進んだ」が 5 回） */
+        if (day2.hol && !pl.trip) { if (ctx.rng() < 0.45) { var hl = c.life && c.life.role === 'r10' ? freshT(ctx, HIMO, c) : lifeLine(ctx, c, function () { return LF.roleLine(ctx, c); }); if (hl) ctx.act2({ actors: [c], cat: 'solo', text: fill(ctx, hl, c), why: '新婚部屋：休日の家のこと' }); } return; }
         /* ヒモタイプ（家事も仕事も相手に任せきり）は仕事の文を出さない（2026-11-04 報告：ヒモが仕事の資料に向かう） */
-        if (c.life && c.life.role === 'r10' && !pl.trip) { if (ctx.rng() < 0.6) ctx.act2({ actors: [c], cat: 'solo', text: fill(ctx, pickT(ctx, HIMO, c, c), c), why: '新婚部屋：ヒモの昼' }); return; }
-        if (ctx.rng() < (pl.trip ? 1 : 0.6)) ctx.act2({ actors: [c], cat: 'solo', text: fill(ctx, LF.line(ctx, c, pl), c), why: '新婚部屋：' + (pl.trip ? '出張' : '仕事') + '（' + LF.workInfo(c.life.work).label + '）' });
+        if (c.life && c.life.role === 'r10' && !pl.trip) { var hm = ctx.rng() < 0.6 ? freshT(ctx, HIMO, c) : ''; if (hm) ctx.act2({ actors: [c], cat: 'solo', text: fill(ctx, hm, c), why: '新婚部屋：ヒモの昼' }); return; }
+        var wl = ctx.rng() < (pl.trip ? 1 : 0.6) ? lifeLine(ctx, c, function () { return LF.line(ctx, c, pl); }, pl) : '';
+        if (wl) ctx.act2({ actors: [c], cat: 'solo', text: fill(ctx, wl, c), why: '新婚部屋：' + (pl.trip ? '出張' : '仕事') + '（' + LF.workInfo(c.life.work).label + '）' });
       });
       trouble(ctx, day2, 'd');
       /* 休日の昼ご飯は日中の区切りに（以前は夜の区切りに「休日の昼下がり」の昼ご飯が出ていた。2026-11-04 報告） */
@@ -1034,6 +1049,7 @@
       return;
     }
     /* 夜 */
+    if (day2.back) backPart(ctx, day2, 'BACK_N');
     trouble(ctx, day2, 'n');
     if (day2.meal && day2.mealK === 'DINNER') meal(ctx, day2);
     visit(ctx, day2, 'n');
@@ -1119,6 +1135,19 @@
     if (t) U[t] = 1;
     return t;
   }
+  /* 使っていない文だけから（使い切ったら ''） */
+  function freshT(ctx, arr, c) {
+    var U = f(ctx).skUsed = f(ctx).skUsed || {}, q = (arr || []).filter(function (x) { return !U[x] && okText(ctx, x, c, c); });
+    var t = pickOf(ctx, q); if (t) U[t] = 1; return t || '';
+  }
+  /* 本体の暮らしの一文（roomkit-life.js）を、使っていない・区切りに合う文が出るまで引き直す（6 回まで。出なければ ''） */
+  function lifeLine(ctx, c, gen, pl) {
+    var U = f(ctx).skUsed = f(ctx).skUsed || {};
+    /* 仕事の型「出張が多い」の人の、出張でない日に出張先の一文を出さない（本体の暮らしの一文は、仕事の型 trip の文と出張の日の文が同じ表。2026-11-05 通し読み） */
+    var noTrip = !(pl && pl.trip);
+    for (var i = 0; i < 6; i++) { var t = gen(); if (t && !U[t] && okText(ctx, t, c, c) && !/夕飯|夕食|晩ご飯/.test(t) && !(noTrip && /出張/.test(t))) { U[t] = 1; return t; } }
+    return '';
+  }
   /* 看病を受ける人（b）の受け止め方（態度9種） */
   function careReact(ctx, a, b, p) {
     if (ctx.rng() > p) return '';
@@ -1156,6 +1185,13 @@
     /* 三人・四人で暮らす家：残りの皆で看る（shinkon-four.js） */
     if (HK.ShinkonFour) HK.ShinkonFour.run(ctx, S, day, 'n');
     if (d === S.days - 1) ending(ctx);
+  }
+  /* 出張から帰ってくる日の朝・日中の一段（{a}＝家で待つ人、{b}＝帰ってくる人） */
+  function backPart(ctx, day, key) {
+    var S = f(ctx), b = day.back, a = b === S.A ? S.B : S.A;
+    var t = pickT(ctx, SK()[key], a, b);
+    if (!t) return;
+    ctx.act2({ actors: [a, b], cat: key === 'BACK_N' ? (S.love ? 'romance' : 'bond') : 'solo', text: fill(ctx, t, a, b), why: '新婚部屋：' + (key === 'BACK_M' ? '朝' : key === 'BACK_D' ? '日中' : '夜') + '（' + b.name + (key === 'BACK_N' ? 'が出張から帰ってきた）' : 'が出張から帰ってくる日）') });
   }
   function apartMorning(ctx, day) {
     var S = f(ctx), A = S.A, B = S.B, both = day.pa.trip && day.pb.trip;
@@ -1250,8 +1286,13 @@
     var S = f(ctx), A = S.A, B = S.B, r = ctx.rel[A.i][B.i], q = ctx.rel[B.i][A.i];
     var key = day.fought ? (S.makeups ? 'mend' : 'rough') : day.apart ? 'apart' : (r && q && r.att + q.att > 120) ? 'close' : 'calm';
     var DIST = TX().DIST || {};
-    var arr = (DIST[key] || []).filter(function (x) { return okText(ctx, x, A, B); });
+    /* 一回の遊びで同じ一文を二度使わない（使い切ったら付けない。2026-11-05 通し読み：14 日で「心の距離が、また少し縮まった」が 5 回） */
+    var U = S.distUsed = S.distUsed || {};
+    /* 毎日は付けない（6 割。回をまたいで同じ一文が目立たないように） */
+    if (ctx.rng() > 0.6) return '';
+    var arr = (DIST[key] || []).filter(function (x) { return !U[x] && okText(ctx, x, A, B); });
     var t = pickOf(ctx, arr);
+    if (t) U[t] = 1;
     return t ? fill(ctx, t, A, B) : '';
   }
   function ending(ctx) {
