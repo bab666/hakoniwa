@@ -257,7 +257,14 @@
   };
   /* r18:end */
   /* 恐怖の関係で「体の関係：あり」を選んだか（全年齢版・全年齢モードでは常に偽） */
-  HK.tieBodyOK = function (t) { return !!(t && t.type === 'fear' && t.body === 'ok' && HK.FEAR_BODY && !HK.SAFE_ON); };
+  /* 体の関係を持ってよいか（2026-11-05 から住人の設定だけで決める）。(ctx, a, b) なら HK.bodyOK(a, b)（engine.js）。
+     関係 t だけを渡したとき（古い呼び方）は、恐怖の関係なら真（恐怖の二人の夜は止めない。止めるのは住人の「R18にしない相手」） */
+  HK.tieBodyOK = function (t, a, b) {
+    if (HK.SAFE_ON) return false;
+    if (a && b && a.i != null) return !!(HK.bodyOK ? HK.bodyOK(a, b) : true);
+    if (HK.TIE_LOVE_GATE) return !!(t && t.type === 'fear' && t.body === 'ok' && HK.FEAR_BODY);
+    return !!(t && t.type === 'fear');
+  };
   /* 追加の欄の名前の一覧（保存・書き出し・読み込み・まとめて読み込むで通す。ui.js も使う） */
   HK.TIE_XF = ['sub', 'grade', 'feel', 'feelB', 'mode', 'lh', 'elder', 'heavy', 'kg', 'past', 'pastB', 'noev', 'body'];
   /* 関係ごとの追加の選択肢（「相手の気持ち」cold とは別の欄）。f＝関係の欄の名前、who＝その欄がどちらの側の気持ちか（表示用） */
@@ -280,7 +287,8 @@
     if (type === 'honmei') X[type] = [{ f: 'heavy', map: HK.LOVE_WEIGHT, order: HK.LOVE_WEIGHT_ORDER, aria: '想う人の気持ちの重さ' }];
     if (type === 'ex') X[type] = [{ f: 'feel', who: 'a', map: HK.EX_FEEL, order: HK.EX_FEEL_ORDER, aria: '一人目の気持ち' }, { f: 'feelB', who: 'b', map: HK.EX_FEEL, order: HK.EX_FEEL_ORDER, aria: '二人目の気持ち' }];
     /* 恐怖の「体の関係」（R18版だけ。全年齢モードでは隠す：値は残す） */
-    if (type === 'fear' && HK.FEAR_BODY) X[type] = [{ f: 'body', map: HK.FEAR_BODY, order: HK.FEAR_BODY_ORDER, aria: '体の関係', hide: !!HK.SAFE_ON }];
+    /* 恐怖の「体の関係」の欄は画面に出さない（2026-11-05。可否は住人の設定で決める。保存の値は読み込みで住人の設定へ写し、落とさない） */
+    if (type === 'fear' && HK.FEAR_BODY) X[type] = [{ f: 'body', map: HK.FEAR_BODY, order: HK.FEAR_BODY_ORDER, aria: '体の関係', hide: true }];
     if (HK.KIN_GRADE_RE.test(type)) X[type] = (X[type] || []).concat([{ f: 'kg', map: HK.KIN_GRADE, order: HK.KIN_GRADE_ORDER, aria: '二人の仲' }]);
     if (T[type] && !T[type].hidden && type !== 'noobs') X[type] = (X[type] || []).concat([{ f: 'past', from: 'a', map: HK.TIE_PAST, order: HK.TIE_PAST_ORDER, aria: '一人目から見た過去', names: true }, { f: 'pastB', from: 'b', map: HK.TIE_PAST, order: HK.TIE_PAST_ORDER, aria: '二人目から見た過去', names: true }, { f: 'noev', map: HK.TIE_NOEV, order: HK.TIE_NOEV_ORDER, aria: 'この関係の出来事' }]);
     return X[type] || [];
@@ -793,7 +801,12 @@
   var LOVE_TIE_RE = /^(lover|mate|fated|spouse|abuse|crush|almost|fwb|ex|honmei|yan|fiance)$/;
   HK.LOVE_TIE_RE = LOVE_TIE_RE;
   HK.tieLoveDefault = function (t) { var D = t && T[t.type]; if (!D) return 'ok'; if (t.type === 'worship' && t.cold === 'dominate') return 'ok'; return D.loveDef === 'no' ? 'no' : 'ok'; };
-  HK.tieLoveOK = function (t) { if (!t) return true; if (t.love === 'no') return false; if (t.love === 'ok' && !(T[t.type] && T[t.type].loveLock)) return true; return HK.tieLoveDefault(t) === 'ok'; };
+  /* 2026-11-05 利用者の指示：恋愛と夜の可否は住人の設定（恋愛にしない相手・R18にしない相手・恋愛相手の固定・体の相手の固定）だけで決める。
+     関係の種類・関係ごとの「恋愛：あり／なし」の欄（t.love）・恐怖の「体の関係」の欄（t.body）は可否に使わない（HK.TIE_LOVE_GATE が偽。画面にも出さない）。
+     関係の種類の傾向（血縁は恋愛に進みにくい・恐怖は和らぐまで恋愛しない など）は、起こりやすさの倍率と段（HK.fearHold）として残す。
+     古い保存の t.love・t.body は落とさず、読み込みで住人の設定へ写す（ui-norm.js の HK.tieLoveMigrate） */
+  HK.TIE_LOVE_GATE = false;
+  HK.tieLoveOK = function (t) { if (!HK.TIE_LOVE_GATE) return true; if (!t) return true; if (t.love === 'no') return false; if (t.love === 'ok' && !(T[t.type] && T[t.type].loveLock)) return true; return HK.tieLoveDefault(t) === 'ok'; };
   HK.tieLoveHelp = function (t) {
     var D = t && T[t.type]; if (!D) return '';
     var d = HK.tieLoveDefault(t) === 'ok';
@@ -802,6 +815,7 @@
   /* 既定が「なし」の関係で「あり」を選んだか（既定が「あり」の関係の 'ok' は、自動と同じに扱う） */
   function loveOn(t) { var D = T[t.type]; return t.love === 'ok' && !!D && D.loveDef === 'no' && !D.loveLock; }
   HK.tiesLove = function (list) {
+    if (!HK.TIE_LOVE_GATE) return true;
     var l = (list || []).filter(function (t) { return t && T[t.type]; }), i;
     if (!l.length) return true;
     for (i = 0; i < l.length; i++) if (l[i].love === 'no') return false;
@@ -816,16 +830,16 @@
     return true;
   };
   /* 箱庭に渡す関係の恋愛の欄（「なし」はそのまま、「あり」は既定が「なし」の関係のときだけ。ほかは自動 ''） */
-  HK.tieLoveNorm = function (t) { return !t ? '' : t.love === 'no' ? 'no' : loveOn(t) ? 'ok' : ''; };
+  HK.tieLoveNorm = function (t) { return !t || !HK.TIE_LOVE_GATE ? '' : t.love === 'no' ? 'no' : loveOn(t) ? 'ok' : ''; };
   /* 血縁など家族の関係で恋愛が起きない（R18にもしない）か。擬似親子も「恋愛：なし」にすればこちら */
-  HK.tieNoLove = function (t) { var D = t && T[t.type]; return !!(D && D.family && !HK.tieLoveOK(t)); };
+  HK.tieNoLove = function (t) { if (!HK.TIE_LOVE_GATE) return false; var D = t && T[t.type]; return !!(D && D.family && !HK.tieLoveOK(t)); };
   /* 既定が「恋愛なし」の家族で「恋愛：あり」にしたもの */
-  HK.tieFamLove = function (t) { var D = t && T[t.type]; return !!(D && D.family && D.loveDef === 'no' && HK.tieLoveOK(t)); };
+  HK.tieFamLove = function (t) { if (!HK.TIE_LOVE_GATE) return false; var D = t && T[t.type]; return !!(D && D.family && D.loveDef === 'no' && HK.tieLoveOK(t)); };
   /* 恋愛に発展するかを選べる関係（執着（信仰）など。loveOpt）：「発展しない」なら、この二人のあいだでは惹かれが育たず、恋愛の出来事も起きにくい */
   HK.tieLoveOpt = function (t) { var D = t && T[t.type]; return !!(D && D.loveOpt); };
-  HK.tieOptNoLove = function (t) { return HK.tieLoveOpt(t) && t.love !== 'ok'; };
+  HK.tieOptNoLove = function (t) { return HK.TIE_LOVE_GATE && HK.tieLoveOpt(t) && t.love !== 'ok'; };
   /* 「恋愛：なし」をはっきり選んだ関係（自動で「なし」の関係は含まない） */
-  HK.tieLoveNo = function (t) { return !!(t && t.love === 'no'); };
+  HK.tieLoveNo = function (t) { return !!(HK.TIE_LOVE_GATE && t && t.love === 'no'); };
   /* 二人（a・b の番号）のあいだの関係を、入力の関係の並び（物語型の S.ties など）から拾う */
   HK.tiesBetween = function (ties, a, b) { var ia = a && a.i != null ? a.i : a, ib = b && b.i != null ? b.i : b; return (ties || []).filter(function (t) { return t && ((t.a === ia && t.b === ib) || (t.a === ib && t.b === ia)); }); };
   /* 住人の写しに「恋愛にしない相手」（恋愛だけ。R18 は止めない）の印 loveOff を付ける（物語型は fam-kin.js、エンジン型は HK.Ties.after）。
@@ -990,7 +1004,7 @@
         if (D.night && ctx.scen.id !== 'classroom') p.night = true;
         /* 恋愛に発展しない信仰：最初の惹かれも低く抑える */
         /* 「恋愛：なし」を選んだ関係（どの関係でも）も同じ */
-        if ((D.loveOpt && t.love !== 'ok') || t.love === 'no') { ab.att = Math.min(ab.att, 8); ba.att = Math.min(ba.att, 8); }
+        if (HK.TIE_LOVE_GATE && ((D.loveOpt && t.love !== 'ok') || t.love === 'no')) { ab.att = Math.min(ab.att, 8); ba.att = Math.min(ba.att, 8); }
         /* 冷えた・別居中の夫婦：惹かれと信頼を下げ、険悪さを上げる（どちらから見ても） */
         /* 本命：想う人に本命の印（engine.js の HK.honmeiFactor） */
         if (t.type === 'honmei') A.honmei = B.i;
@@ -1051,7 +1065,7 @@
         if (xf.past) o.past = xf.past;
         if (xf.pastB) o.pastB = xf.pastB;
         /* 恐怖の「体の関係」（HK.tieBodyOK） */
-        if (t.type === 'fear' && xf.body) o.body = xf.body;
+        if (xf.body) o.body = xf.body;
         if (xf.noev) o.noev = xf.noev;
         if (t.type === 'fiance') {
           o.feel = xf.feel; o.feelB = xf.feelB;
@@ -1075,7 +1089,7 @@
       Object.keys(ctx.tiesAll || {}).forEach(function (k) {
         /* 恋愛：なし（自動の既定を含む。HK.tiesLove）の二人は、互いの loveOff に入れる（恋愛だけを止める：engine.js の HK.canLove。写しの住人でも効くように） */
         var L0 = ctx.tiesAll[k], X0 = L0.length ? ctx.chars[L0[0].a] : null, Y0 = L0.length ? ctx.chars[L0[0].b] : null;
-        var off0 = X0 && Y0 && X0 !== Y0 && !HK.tiesLove(L0);
+        var off0 = X0 && Y0 && X0 !== Y0 && (!HK.tiesLove(L0) || (!HK.TIE_LOVE_GATE && HK.loveOffPair && HK.loveOffPair(X0, Y0) && !HK.fearHeld(X0, Y0)));
         if (off0) [[X0, Y0], [Y0, X0]].forEach(function (q) { var l = q[0].loveOff = q[0].loveOff || []; if (l.indexOf(q[1].i) < 0) l.push(q[1].i); });
         /* 恋愛しない二人（「恋愛：なし」を選んだ関係・自動で「なし」の関係）は、恋人・番・執着などの関係を重ねていても恋人として扱わず、
            最初の惹かれも低く抑える（両方向。「恋愛：なし」を選んだ関係と同じ。無関心の値の凍結 freezeInit より前） */
@@ -1094,6 +1108,20 @@
           }
           if (t.type !== 'apathy' && t.type !== 'fear') return;
           var A = ctx.chars[t.a], B = ctx.chars[t.b];
+          /* 2026-11-05：可否は住人の設定だけ。無関心は印を付けない（避ける重み ctx._apathy だけ）。恐怖は和らぐまで恋愛も合意の夜も起こさない（HK.fearHold・HK.fearSexHold。
+             関係の種類の傾向）。住人の設定で体の相手に固定した二人は夜を止めない（恐れる側に fearOf・fearBody） */
+          if (!HK.TIE_LOVE_GATE) {
+            if (t.type === 'apathy') { (ctx._apathy = ctx._apathy || {})[t.a + '>' + t.b] = 1; return; }
+            if (HK.fearHold) HK.fearHold(A, B);
+            var fo1 = A.fearOf = A.fearOf || []; if (fo1.indexOf(B.i) < 0) fo1.push(B.i);
+            /* 合意の夜は和らぐまで止める（HK.fearSexHold）。住人の設定で体の相手に選んだ二人（HK.bodyPick）だけは止めない（体だけ・関係はそのまま） */
+            if (HK.bodyPick && HK.bodyPick(A, B)) { var fb1 = A.fearBody = A.fearBody || []; if (fb1.indexOf(B.i) < 0) fb1.push(B.i); }
+            else if (HK.fearSexHold) HK.fearSexHold(A, B);
+            (ctx._fear = ctx._fear || {})[t.a + '>' + t.b] = 1;
+            var p1 = ctx.pair(A, B); p1.couple = false; p1.night = false;
+            var fi1 = HK.Ties.has(ctx, A, B, 'fiance'); if (fi1) fi1.couple = false;
+            return;
+          }
           /* 「恋愛：あり」にした無関心・恐怖：恋愛は止めず、体の関係・夜だけを今までどおり止める（noSex：engine.js の HK.sexBlocked） */
           var lv = HK.tieLoveOK(t);
           /* 恐怖の「体の関係：あり」（HK.tieBodyOK。2026-11-03 利用者の指示）：noLove・noSex を入れない（夜の場面を止めない）。
@@ -1208,7 +1236,7 @@
         /* 気持ちの関係（愛憎・劣等感・優越）：体の関係の出来事は、衝動の倍率を掛ける（同じ二人で一度だけ） */
         if (body && D.feelTie) { if (!feelDone) { feelDone = true; r *= HK.feelImpK(HK.Ties.all(ctx, a, b), a.i, b.i); } return; }
         if (m[cat] != null) r *= cat === 'romance' && HK.tieFamLove(t) ? Math.max(m[cat], 1) : m[cat];
-        if (cat === 'romance' && !(body && ev.free) && (HK.tieOptNoLove(t) || t.love === 'no')) r *= 0.1;
+        if (cat === 'romance' && !(body && ev.free) && (HK.tieOptNoLove(t) || HK.tieLoveNo(t))) r *= 0.1;
         /* 関係の層の選択肢（2026-10-26）：気持ちの重さ（本命は想う人の側だけ）・家族の仲・元恋人それぞれの気持ち */
         if (t.heavy && cat === 'romance' && HK.LOVE_WEIGHT[t.heavy] && (t.type !== 'honmei' || t.a === a.i)) r *= HK.LOVE_WEIGHT[t.heavy].rom || 1;
         if (t.kg && HK.KIN_GRADE[t.kg] && HK.KIN_GRADE[t.kg].bias && HK.KIN_GRADE[t.kg].bias[cat] != null) r *= HK.KIN_GRADE[t.kg].bias[cat];
@@ -1230,7 +1258,7 @@
           return;
         }
         if (m != null) r *= f === 'att' && HK.tieFamLove(t) ? Math.max(m, 1) : m;
-        if (f === 'att' && (HK.tieOptNoLove(t) || t.love === 'no')) r *= 0.05;
+        if (f === 'att' && (HK.tieOptNoLove(t) || HK.tieLoveNo(t))) r *= 0.05;
         /* 愛憎を持つ側：嫌っていても、惹かれは育つ（同じ二人の敵対・不仲の惹かれにくさを打ち消して ×1.6。持たない側は今までどおり） */
         if (f === 'att' && t.type === 'lovehate' && t.a === a.i) {
           var hk0 = 1;

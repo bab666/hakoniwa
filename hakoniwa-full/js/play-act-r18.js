@@ -167,7 +167,9 @@
       hard: L('{b}は表情を崩すまいとしたが、浅い息までは隠せなかった。{b}「＠{b}＠……っ、想定外。……悪くない｜……っ、想定外だ。……悪くない｜……っ、想定外です。……悪くありません」冷静なはずの声が、熱で掠れていた。¦' +
         '{b}は一度だけ目を閉じ、それから醒めた目で{a}を見返した。{b}「＠{b}＠……それで、終わり？｜……それで終わりか｜……それで、終わりですか」挑むような言葉の端で、{b}の指先が震えていた。'),
       soft: L('{b}はわずかに目を見開き、それから小さく息をついた。{b}「＠{b}＠……そう。覚えておく｜……そうか。覚えておく｜……そうですか。覚えておきます」淡々とした声の奥に、確かな熱があった。¦' +
-        '{b}は視線を逸らし、眼鏡を押し上げるような仕草で口元を隠した。{b}「＠{b}＠……反応に困ること、言わないで｜……反応に困ることを、言うな｜……反応に困ることを、言わないでください」')
+        '{b}は視線を逸らし、眼鏡を押し上げるような仕草で口元を隠した。{b}「＠{b}＠……反応に困ること、言わないで｜……反応に困ることを、言うな｜……反応に困ることを、言わないでください」¦' +
+        '{b}は少しのあいだ黙って{a}を見つめ、それから小さく視線を外した。{b}「＠{b}＠……悪い気は、しない｜……悪い気は、しない｜……悪い気は、しません」平坦なはずの声が、ほんの少しだけ揺れていた。¦' +
+        '{b}は答える代わりに、{a}の指に自分の指をそっと絡めた。{b}「＠{b}＠……今のは、聞かなかったことにはしない｜……今のは、聞かなかったことにはしない｜……今のは、聞かなかったことにはしません」')
     },
     free: {
       hard: L('{b}は息を弾ませながら、挑発するように笑ってみせた。{b}「＠{b}＠あはっ……それ、もっとやって｜ははっ……それを、もっとやれ｜あはっ……それ、もっとやってください」恥じらいのかけらもない声に、{a}の目が光った。¦' +
@@ -209,8 +211,15 @@
     var tt = String(t || '');
     var ns = C.ACT_N[kd].filter(function (n) { return !MOT.some(function (re) { return re.test(n) && re.test(tt); }); });
     if (!ns.length) return '';
-    var n = pick(ns), ln = pick((C.ACT_L[pa] || C.ACT_L.gentle)[kd] || C.ACT_L[pa].none);
-    var rb = pick((C.REACT_B[pb] || C.REACT_B.gentle)[HARD[kd] ? 'hard' : 'soft']);
+    /* 2026-11-05（電車の申し送り）：相手がモブ（住人でない）なら恋人の言葉（大好き・好き・愛して）を出さない。眼鏡の仕草は、目につく特徴に眼鏡がある人だけ */
+    var mobOf = function (c) { return !!(c && (c.mob || c.npc || c.i == null || c.i < 0)); };
+    var glasOf = function (c) { var lk = HK.Attr && HK.Attr.looksOf ? HK.Attr.looksOf(c) || [] : []; return lk.some(function (x) { return /眼鏡|メガネ|めがね/.test(x); }) || (mobOf(c) && /眼鏡|メガネ/.test(String(c.name || '') + String(c.desc || ''))); };
+    var anyMob = mobOf(a) || mobOf(b), LOVE = /大好き|好き(?![嫌勝])|愛して/;
+    var keep = function (l, who) { var f = (l || []).filter(function (x) { return !(anyMob && LOVE.test(x)) && !(/眼鏡/.test(x) && !glasOf(who)); }); return f.length ? f : null; };
+    var lnL = keep((C.ACT_L[pa] || C.ACT_L.gentle)[kd] || C.ACT_L[pa].none, a), rbL = keep((C.REACT_B[pb] || C.REACT_B.gentle)[HARD[kd] ? 'hard' : 'soft'], b);
+    if (!lnL || !rbL) return '';
+    var n = pick(ns), ln = pick(lnL);
+    var rb = pick(rbL);
     return n.replace('{L}', ln) + rb;
   };
 })();

@@ -1,9 +1,9 @@
 {
  "cur": {
-  "core": "core.7ce4b10651.js",
-  "late": "late.75ea17630b.js",
-  "pack-rel": "pack-rel.1d5aea8b5c.js",
-  "pack-sim": "pack-sim.b824a09a27.js",
+  "core": "core.a6ada25e67.js",
+  "late": "late.87d5da14eb.js",
+  "pack-rel": "pack-rel.ba7906faae.js",
+  "pack-sim": "pack-sim.bd4a9a48bb.js",
   "scen-goukon": "scen-goukon.23c864f621.js",
   "scen-classroom": "scen-classroom.3eb804e61c.js",
   "scen-island": "scen-island.3a1fa63433.js",
@@ -11,9 +11,9 @@
   "pack-trap": "pack-trap.0ffcccb2a9.js",
   "scen-whiteroom": "scen-whiteroom.77c0d9a1a1.js",
   "scen-trial": "scen-trial.c3755db66f.js",
-  "scen-omega": "scen-omega.eeb7c3aa73.js",
+  "scen-omega": "scen-omega.13c3d9b192.js",
   "scen-massage": "scen-massage.a904b9d9f4.js",
-  "scen-futari": "scen-futari.93be2787da.js",
+  "scen-futari": "scen-futari.c85be4afbc.js",
   "scen-zombie": "scen-zombie.46cc1a3f99.js",
   "scen-rpg": "scen-rpg.dfca376d4f.js",
   "scen-saimin": "scen-saimin.144da52bcd.js",
@@ -23,7 +23,7 @@
   "scen-ship": "scen-ship.82e856f3c7.js",
   "scen-jinro": "scen-jinro.513caab9a2.js",
   "pack-story": "pack-story.e80c10d02b.js",
-  "pack-catalog": "pack-catalog.124f2c410d.js",
+  "pack-catalog": "pack-catalog.91714253d4.js",
   "pack-roomkit": "pack-roomkit.37c939f4c3.js",
   "tone-base": "tone-base.49819ee5ff.js",
   "tone-ane": "tone-ane.9216836300.js",
@@ -67,10 +67,10 @@
   "tone-yankee": "tone-yankee.b80142025e.js"
  },
  "prev": {
-  "core": "core.7ce4b10651.js",
-  "late": "late.75ea17630b.js",
-  "pack-rel": "pack-rel.1d5aea8b5c.js",
-  "pack-sim": "pack-sim.b824a09a27.js",
+  "core": "core.a6ada25e67.js",
+  "late": "late.87d5da14eb.js",
+  "pack-rel": "pack-rel.ba7906faae.js",
+  "pack-sim": "pack-sim.bd4a9a48bb.js",
   "scen-goukon": "scen-goukon.23c864f621.js",
   "scen-classroom": "scen-classroom.3eb804e61c.js",
   "scen-island": "scen-island.3a1fa63433.js",
@@ -78,9 +78,9 @@
   "pack-trap": "pack-trap.0ffcccb2a9.js",
   "scen-whiteroom": "scen-whiteroom.77c0d9a1a1.js",
   "scen-trial": "scen-trial.c3755db66f.js",
-  "scen-omega": "scen-omega.eeb7c3aa73.js",
+  "scen-omega": "scen-omega.13c3d9b192.js",
   "scen-massage": "scen-massage.a904b9d9f4.js",
-  "scen-futari": "scen-futari.50626f0abc.js",
+  "scen-futari": "scen-futari.26312378d4.js",
   "scen-zombie": "scen-zombie.46cc1a3f99.js",
   "scen-rpg": "scen-rpg.dfca376d4f.js",
   "scen-saimin": "scen-saimin.144da52bcd.js",
@@ -90,7 +90,7 @@
   "scen-ship": "scen-ship.82e856f3c7.js",
   "scen-jinro": "scen-jinro.513caab9a2.js",
   "pack-story": "pack-story.e80c10d02b.js",
-  "pack-catalog": "pack-catalog.124f2c410d.js",
+  "pack-catalog": "pack-catalog.91714253d4.js",
   "pack-roomkit": "pack-roomkit.37c939f4c3.js",
   "tone-base": "tone-base.49819ee5ff.js",
   "tone-ane": "tone-ane.9216836300.js",
@@ -151,24 +151,24 @@
    88
   ],
   "js/core.js": [
-   16708,
-   7202
+   17048,
+   7313
   ],
   "js/ego-desc.js": [
    5598,
    2776
   ],
   "js/ties.js": [
-   80275,
-   23600
+   81218,
+   23808
   ],
   "js/poly.js": [
    35559,
    10968
   ],
   "js/events-common.js": [
-   18319,
-   6079
+   18770,
+   6265
   ],
   "js/topics.js": [
    32963,
@@ -203,8 +203,8 @@
    20780
   ],
   "js/tone-dict-builtin.js": [
-   90275,
-   16698
+   90655,
+   16775
   ],
   "js/tone-ending.js": [
    27320,
@@ -287,16 +287,16 @@
    4092
   ],
   "js/engine.js": [
-   53024,
-   18040
+   54559,
+   18375
   ],
   "js/sib-word.js": [
    12833,
    4580
   ],
   "js/emotion.js": [
-   25418,
-   8947
+   27022,
+   9465
   ],
   "js/content.js": [
    440,
@@ -447,8 +447,8 @@
    8073
   ],
   "js/ui-ties.js": [
-   40702,
-   12557
+   40453,
+   12533
   ],
   "js/ui-env.js": [
    7767,
@@ -487,24 +487,24 @@
    1864
   ],
   "js/ui-norm.js": [
-   9653,
-   3517
+   11010,
+   3848
   ],
   "js/ui.js": [
-   120678,
-   35765
+   121225,
+   35922
   ],
   "js/ui-cast-ops.js": [
-   6623,
-   2693
+   6642,
+   2697
   ],
   "js/ui-cast-teacher.js": [
    1540,
    796
   ],
   "js/ui-gear.js": [
-   37211,
-   11582
+   38171,
+   11763
   ],
   "js/ui-adv.js": [
    6974,

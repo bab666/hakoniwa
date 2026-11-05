@@ -68,8 +68,10 @@
     /* r18:end */
     if (HK.Attr) bits = bits.concat(HK.Attr.summary(c, byId));
     if (HK.Shared) bits = bits.concat(HK.Shared.summary(c));
-    var ngs = (c.loveNG || []).map(byId).filter(Boolean);
+    var ngs = (c.loveNo || []).map(byId).filter(Boolean);
     if (ngs.length) bits.push('恋愛にしない：' + ngs.map(function (o) { return o.name; }).join('・'));
+    var rgs = HK.SAFE_ON ? [] : (c.r18No || []).map(byId).filter(Boolean);
+    if (rgs.length) bits.push('R18にしない：' + rgs.map(function (o) { return o.name; }).join('・'));
     var n = tiesOf(c).length;
     if (n) bits.push('関係 ' + n + '件');
     /* 「仲間」を入れたグループ（ui.js の S.grpComrade） */
@@ -200,7 +202,10 @@
     /* 相手を選ぶ折りたたみ（複数可）：恋愛相手の固定・性行為の相手・恋愛にしない相手。住人が多くても伸びないよう、基本は閉じる */
     var cbs = function (gf, ids) { return others.map(function (o) { return '<label><input type="checkbox" data-gf="' + gf + '" data-o="' + esc(o.id) + '"' + ((ids || []).indexOf(o.id) >= 0 ? ' checked' : '') + '> ' + esc(o.name) + '</label>'; }).join(''); };
     var sumOf = function (ids, none) { var n = namesOf(ids); return n.length ? n.join('・') + (n.length > 1 ? '（' + n.length + '人）' : '') : none; };
-    var ngRow = others.length ? det('ng', HK.SAFE_ON ? '恋愛にしない相手' : '恋愛・R18にしない相手', sumOf(c.loveNG, 'なし'), cbs('ng', c.loveNG)) : '';
+    /* 恋愛にしない相手（恋愛だけを止める）・R18にしない相手（夜・体の関係だけを止める。R18版）。2026-11-05：恋愛と夜の可否は住人の側で決める（関係ごとの欄は使わない）。
+       恋愛にしない相手でも、R18にしない相手に入れていなければ、夜の起こりやすさに応じて体だけの夜が起きる（体の相手に固定すれば、夜 100 で必ず） */
+    var ngRow = others.length ? det('ngl', '恋愛にしない相手', sumOf(c.loveNo, 'なし'), cbs('ngl', c.loveNo)) : '';
+    if (others.length && !HK.SAFE_ON) ngRow += det('ngr', 'R18にしない相手', sumOf(c.r18No, 'なし'), cbs('ngr', c.r18No));
     var lockBox = others.length ? det('lock', '恋愛相手を固定', sumOf(c.loveLock, '固定しない'), cbs('lockc', c.loveLock)) : '';
     var sexSel = '', sexBox = '';
     /* r18:begin */
@@ -300,7 +305,7 @@
         html: HK.Shared.gearHtml(c, { esc: esc, opt: opt }) });
     }
     /* ④恋愛（R18版は恋愛と夜）：受け攻め・恋愛相手の固定・一途・恋愛にしない相手（R18：性行為の相手の固定・R18に参加しない・夜の性格・ふたなり など） */
-    var loveSet = !!(c.pos || c.faithful || (c.loveLock || []).length || (c.loveNG || []).length || c.sexLock || c.noR18 || c.trio || c.libido || c.sexLikes || c.night || c.futa || c.posNpc || c.daku || c.heart === false);
+    var loveSet = !!(c.pos || c.faithful || (c.loveLock || []).length || (c.loveNG || []).length || (c.loveNo || []).length || (c.r18No || []).length || c.sexLock || c.noR18 || c.trio || c.libido || c.sexLikes || c.night || c.futa || c.posNpc || c.daku || c.heart === false);
     secs.push({ k: 'love', name: HK.SAFE_ON ? '恋愛' : '恋愛と夜', tip: 'gear-love', desc: '受け攻め・恋愛相手の固定・一途など。決めなければ、気質と相性で決まります。',
       set: loveSet, sum: [c.pos ? lab(POS, c.pos) : '', c.faithful ? '一途' : '', namesOf(c.loveLock).length ? '固定：' + namesOf(c.loveLock).join('・') : ''].filter(Boolean).join('・'),
       html: '<div class="gearrow"><label>受け攻め ' + selOf('pos', POS, c.pos) + '</label>' +
@@ -535,6 +540,18 @@
         var o = byId(t.dataset.o); if (!o) return;
         c.sexLocks = (c.sexLocks || []).filter(function (k) { return k !== o.id; });
         if (t.checked) c.sexLocks.push(o.id);
+        changed(true);
+      })(); break;
+      case 'ngl': case 'ngr': if (isInput) return; (function () {
+        var o = byId(t.dataset.o); if (!o) return;
+        var f = t.dataset.gf === 'ngl' ? 'loveNo' : 'r18No';
+        c[f] = (c[f] || []).filter(function (k) { return k !== o.id; }); o[f] = (o[f] || []).filter(function (k) { return k !== c.id; });
+        if (t.checked) {
+          c[f].push(o.id); o[f].push(c.id);
+          /* 恋愛にしない相手は恋愛相手の固定から、R18にしない相手は体の相手（性行為の相手の固定）から外す */
+          if (f === 'loveNo') { c.loveLock = (c.loveLock || []).filter(function (k) { return k !== o.id; }); o.loveLock = (o.loveLock || []).filter(function (k) { return k !== c.id; }); }
+          else [[c, o], [o, c]].forEach(function (q) { q[0].sexLocks = (q[0].sexLocks || []).filter(function (k) { return k !== q[1].id; }); if ((q[0].sexLock === 'pick' || q[0].sexLock === 'pickMob') && !q[0].sexLocks.length) q[0].sexLock = ''; });
+        }
         changed(true);
       })(); break;
       case 'ng': if (isInput) return; (function () {

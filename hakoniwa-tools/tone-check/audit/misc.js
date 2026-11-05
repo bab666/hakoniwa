@@ -180,6 +180,8 @@ const JUDGE = function (HK, opt) {
           for (let i = 0; i < paras.length; i++) {
             const pi = strip(paras[i]);
             if (!FINGER.test(pi.replace(/髪に指[^。]*/g, '')) || OUT.test(pi) || INS.test(pi)) continue;   /* 「髪に指を差し入れた」は髪（2026-10-29） */
+            /* 繋がったまま（跨ったまま・ナカに包まれたまま）指でも責める段落は、指でほぐしてから挿れる流れではない（2026-11-05。オメガバースの前立腺を撫でる段） */
+            if (/(?:包まれた|繋がった|跨った|咥え込んだ|呑み込んだ)まま/.test(pi) && /\{?ナカ\}?|中|奥/.test(pi)) continue;
             let j = i + 1; while (j < paras.length && !strip(paras[j]).replace(/[\s―…・、。]/g, '').replace(new RegExp(NAMES.join('|'), 'g'), '')) j++;
             if (j >= paras.length) continue;
             const pj = strip(paras[j]);

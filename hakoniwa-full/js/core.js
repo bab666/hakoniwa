@@ -343,7 +343,18 @@
         var paras = [];
         if (hadNL || b.t.length < 120) paras = [b.t.replace(/\s+/g, '')];
         else {
-          var sents = b.t.split(/(?<=[。！？](?:」|）)?)\s*/).filter(Boolean), cur = '', n = 0, first = !res.length;
+          /* 文に分ける：かぎかっこ・丸かっこの中の「！」「？」「。」では切らない（2026-11-05。「」の中の「！」の直後で改行していた） */
+          var sents = (function (t) {
+            var o = [], cur0 = '', d = 0;
+            for (var ci = 0; ci < t.length; ci++) {
+              var ch = t.charAt(ci); cur0 += ch;
+              if (ch === '「' || ch === '『' || ch === '（') d++;
+              else if ((ch === '」' || ch === '』' || ch === '）') && d > 0) d--;
+              if (d === 0 && /[。！？]/.test(ch) && !/[」）』！？]/.test(t.charAt(ci + 1))) { o.push(cur0.replace(/^\s+/, '')); cur0 = ''; }
+            }
+            if (cur0.trim()) o.push(cur0.replace(/^\s+/, ''));
+            return o.filter(Boolean);
+          })(b.t), cur = '', n = 0, first = !res.length;
           sents.forEach(function (x) {
             x = x.replace(/^\s+/, '');
             /* 場面の最初の一文が短ければ（情景の一文）、それだけで一段落にする */

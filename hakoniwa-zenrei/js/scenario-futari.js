@@ -936,7 +936,12 @@
       if (f.slept[k] === f.day) return;
       /* 体だけの夜：恋愛相手を固定し、性行為の相手を「誰とでも可」にした人と、固定外の相手（HK.State.freeSex。free-sex.js）。
          恋人でなくても。一緒にいない夜は呼び出して。固定した恋人がその場にいれば ×0.3。恋人にはならない。一晩に体の場面は一つまで */
-      if (!f.sexTonight && !couple(ctx, a, b) && HK.State.freeSex && HK.State.freeSex(ctx, a, b) && onTrip(ctx, a) === onTrip(ctx, b) && rng() < (together(ctx, a, b) ? 0.2 : 0.1) * HK.FreeSex.factor(ctx, a, b) && freeNight(ctx, a, b)) return;
+      /* 夜の起こりやすさ 100（nk が 1.7）なら、まだ体だけの夜のない二人には必ず起こす（2026-11-05。夜 100 で一度も起きない回があった） */
+      if (!f.sexTonight && !couple(ctx, a, b) && HK.State.freeSex && HK.State.freeSex(ctx, a, b) && onTrip(ctx, a) === onTrip(ctx, b)) {
+        var fch = (together(ctx, a, b) ? 0.2 : 0.1) * HK.FreeSex.factor(ctx, a, b);
+        if (nk >= 1.69) fch = f.r18[k] ? Math.min(1, fch * nk) : 1;
+        if (rng() < fch && freeNight(ctx, a, b)) return;
+      }
       if (!together(ctx, a, b)) { if (f.liv === 'apart' && x.s >= 2 && rng() < 0.28) msg(ctx, a, b, 'n'); return; }
       /* 勢いの一夜（R18版）：恋人ではないが恋愛にしてよい二人。起こりやすさは性欲と衝動性（HK.FreeSex.chance）。どちらかに恋人がいれば起こさない */
       if (R && !f.sexTonight && !couple(ctx, a, b) && loveOk(ctx, a, b) && HK.FreeSex && HK.FreeSex.chance && !(HK.State.freeSex && HK.State.freeSex(ctx, a, b)) &&

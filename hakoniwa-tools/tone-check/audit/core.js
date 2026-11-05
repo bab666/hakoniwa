@@ -12,6 +12,35 @@
 const { openBuild } = require('../lib.js');
 const TOPICS = require('./topics-sample.js');
 
+/* ---------- ページの中：点検の配役の関係を住人の設定に写す（2026-11-05） ----------
+   恋愛と夜の可否は住人の設定（恋愛にしない相手 loveNo・R18にしない相手 r18No）で決める形になったので、点検が「止める組」として配役した関係を、
+   以前の既定のとおり住人の設定に写す（画面の読み込みの写し HK.tieLoveMigrate より広い：自動の既定も写す。点検の意図を保つため）
+   ・恋愛：なし → 恋愛にしない／家族（恋愛：ありでない）→ 恋愛・R18にしない（loveNG）／執着（信仰）の「発展しない」・教師と生徒の自動 → 恋愛にしない
+   ・無関心 → 恋愛：ありなら R18にしない、ほかは恋愛・R18にしない／恐怖 → 恋愛も体の関係も「あり」でなければ恋愛・R18にしない、体の関係だけありなら恋愛にしない、恋愛だけありなら R18にしない／体の関係：なし → R18にしない
+   ・恐怖の「体の関係：あり」→ 互いの体の相手（性行為の相手の固定）にする（ui-norm.js の HK.tieLoveMigrate と同じ） */
+const LEGACY = function (HK, input) {
+  const C = input.chars || [], T = HK.TIES || {};
+  if (input._legacy) return; input._legacy = true;
+  const add = (x, y, f) => { const c = C[x]; if (!c) return; c[f] = Array.isArray(c[f]) ? c[f].slice() : []; if (c[f].indexOf(y) < 0) c[f].push(y); };
+  const both = (t, f) => { add(t.a, t.b, f); add(t.b, t.a, f); };
+  const rom = {};
+  (input.ties || []).forEach(t => { if (t && /^(lover|spouse|fiance|honmei|crush|mate|fated|fwb|almost|ex)$/.test(t.type)) rom[Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b)] = 1; });
+  (input.ties || []).forEach(t => {
+    if (!t || t.a === t.b || !C[t.a] || !C[t.b]) return;
+    const D = T[t.type] || {}, ok = t.love === 'ok', k = Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b);
+    if (t.love === 'no') both(t, 'loveNo');
+    /* 以前 noLove（恋愛にも体の関係にもならない）で止めていた組は「恋愛・R18にしない相手」（loveNG）に */
+    if (D.family && !D.loveOK && !ok) both(t, 'loveNG');
+    if (D.loveOpt && !ok && !(t.type === 'worship' && t.cold === 'dominate')) both(t, 'loveNo');
+    if (D.loveSoft && !ok && !rom[k] && t.type !== 'worship') both(t, 'loveNo');
+    if (t.type === 'apathy') both(t, ok ? 'r18No' : 'loveNG');
+    if (t.type === 'fear') { if (!ok && t.body !== 'ok') both(t, 'loveNG'); else if (!ok) both(t, 'loveNo'); else if (t.body !== 'ok') both(t, 'r18No'); }
+    if (t.body === 'no') both(t, 'r18No');
+    /* 恐怖の「体の関係：あり」→ 互いの「体の相手」（性行為の相手の固定＋モブ。固定が空の人だけ）にする（恐怖の二人は和らぐまで合意の夜を起こさない。体の相手に固定した二人だけ夜が起きる） */
+    if (t.type === 'fear' && t.body === 'ok') [[t.a, t.b], [t.b, t.a]].forEach(q => { const c = C[q[0]]; if (c && (c.sexLock === '' || c.sexLock == null)) { c.sexLock = [q[1]]; c.sexLockMob = true; } });
+  });
+};
+
 /* ---------- ページの中：1 パスを回す ---------- */
 const RUN = function (plan) {
   const HK = window.HK, A = window.__AUD;
@@ -39,6 +68,9 @@ const RUN = function (plan) {
     if (run.special) { on.forEach(o => call(o, 'special', run)); continue; }
     /* 見本の話題（audit/topics-sample.js）：話題の文も検査に当たるように、パスの opt.topics が真のときだけ入れる（audit-all.js の topics-* のパス。ほかのパスの回は変えない） */
     if (run.input && plan.pass.opt && plan.pass.opt.topics && A.topicsFor) { try { A.topicsFor(run.input); } catch (e) { A.jerr.push('見本の話題: ' + String(e).slice(0, 200)); } }
+    /* 2026-11-05：恋愛と夜の可否は住人の設定で決める（ties.js の HK.TIE_LOVE_GATE が偽）。点検の配役の関係が前提にしている「止める組」
+       （関係の「恋愛：なし」・家族と信仰の自動・無関心・恐怖・体の関係：なし）を、住人の「恋愛にしない相手」「R18にしない相手」に写してから回す（A.legacyTies） */
+    if (run.input && HK.TIE_LOVE_GATE === false) { try { A.legacyTies(HK, run.input); } catch (e) { A.jerr.push('legacyTies: ' + String(e).slice(0, 200)); } }
     on.forEach(o => call(o, 'begin', run));
     let res;
     try { res = HK.simulate(run.input); }
@@ -66,7 +98,7 @@ async function inject(page, mods) {
     Object.keys(m.fns || {}).forEach(id => parts.push('A.F[' + JSON.stringify(id) + '] = (' + m.fns[id].toString() + ');'));
   });
   const src = '(function () { var A = window.__AUD; if (!A) { A = window.__AUD = { P: {}, J: {}, F: {}, inst: {}, jerr: [], mode0: window.HK && window.HK.LewdWords ? window.HK.LewdWords.MODE : null }; }\n' +
-    'var P = A.P, J = A.J;\n' + parts.join('\n') + '\nA.topicsFor = (' + TOPICS.ADD.toString() + ');\nA.run = (' + RUN.toString() + ');\nA.finish = (' + FINISH.toString() + ');\n})()';
+    'var P = A.P, J = A.J;\n' + parts.join('\n') + '\nA.topicsFor = (' + TOPICS.ADD.toString() + ');\nA.legacyTies = (' + LEGACY.toString() + ');\nA.run = (' + RUN.toString() + ');\nA.finish = (' + FINISH.toString() + ');\n})()';
   await page.evaluate(src);
 }
 

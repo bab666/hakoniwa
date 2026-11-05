@@ -304,6 +304,9 @@
     /* 恋人・夫婦の夜には「今夜だけ」の台詞を出さない（勢い・体だけ・一夜の夜だけ。2026-11-05。同居生活の報告の申し送り） */
     if (/^(?:lover|pine)$/.test(rk.rel) || (opt && /^(?:lover|first)$/.test(opt.rel || '') && rk.rel !== 'one')) { var lo = pool.filter(function (l) { return !ONLY_TONIGHT.test(l); }); pool = lo.length ? lo : base.filter(function (l) { return !ONLY_TONIGHT.test(l); }); }
     if (HK.NoGen && HK.NoGen.on && HK.NoGen.on(top, bot)) { var ng = pool.filter(function (l) { return !NOGEN_NG.test(l); }); pool = ng.length ? ng : pool; }
+    /* 場面の時間帯（opt.time。sex-spot-r18.js の HK.SexSpot.time）が夜でなければ「今夜」の台詞を出さない（2026-11-05。電車の申し送り） */
+    var tm = (opt && opt.time) || (HK.SexSpot && HK.SexSpot.time) || '';
+    if (tm && tm !== 'night') { var nt = pool.filter(function (l) { return !/今夜|今晩|一晩|朝まで/.test(l); }); if (!nt.length) return ''; pool = nt; }
     return pool.length ? freshPick(S, pool) : '';
   };
   /* 事後の一段落（{a}{b}。mode：mf／fm／ff） */

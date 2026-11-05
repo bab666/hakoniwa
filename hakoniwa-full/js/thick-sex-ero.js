@@ -335,7 +335,10 @@
     var mode = X.mode(a, b);
     if (HK.NoGen && HK.NoGen.on(a, b)) { var g0 = HK.NoGen.short({ S: S, pick: pick, rng: S && S.rng, a: a, b: b }); return ero ? X.fill(S, g0, a, b) : g0; }
     pick = E.freshPick(S, pick);
-    var t = short ? pick(ero ? X.shortAgain(mode) : X.AGAIN.shortNovel) : pick(X.noSwap(X.AGAIN[ero ? 'ero' : 'novel'][mode], a, b));
+    /* 場面の時間帯（HK.SexSpot.time。呼ぶ側が opt.time で渡す）が夜でなければ「朝まで」「一晩中」「今夜」の文を外す（2026-11-05。電車の申し送り） */
+    var tm = (HK.SexSpot && HK.SexSpot.time) || '', NIGHT_W = /朝まで|夜明けまで|一晩|今夜|夜通し/;
+    var tk = function (l) { if (!tm || tm === 'night' || !Array.isArray(l)) return l; var f = l.filter(function (x) { return !NIGHT_W.test(x); }); return f.length ? f : l.map(function (x) { return x.replace(/朝まで|夜明けまで|夜通し/g, '何度も').replace(/一晩中/g, 'しばらく').replace(/今夜/g, '今日'); }); };
+    var t = short ? pick(tk(ero ? X.shortAgain(mode) : X.AGAIN.shortNovel)) : pick(tk(X.noSwap(X.AGAIN[ero ? 'ero' : 'novel'][mode], a, b)));
     return ero ? X.fill(S, t, a, b) : t;
   };
 })();

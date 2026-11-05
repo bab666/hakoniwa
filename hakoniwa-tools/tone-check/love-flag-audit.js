@@ -34,6 +34,8 @@ const PASS = function* (HK, opt) {
       const env = {}; (sc.env || []).forEach(e => { env[e.id] = e.def != null ? e.def : (e.options && e.options[0] ? e.options[0].v : (e.min != null ? e.min : '')); });
       (sc.env || []).forEach(e => { if (e.max != null && /romance|love|night|lewd/.test(e.id)) env[e.id] = e.max; });
       if (HK.Content && env.ct == null) env.ct = HK.Content.TAGS.map(t => t.id).join(',');
+      /* 2026-11-05：恋愛の可否は住人の設定で決める（ties.js の HK.TIE_LOVE_GATE が偽）。関係の「恋愛：なし」は住人の「恋愛にしない相手」（loveNo）に写して回す（画面の読み込みと同じ） */
+      if (HK.TIE_LOVE_GATE === false) ties.forEach(t => { if (t.love === 'no' && chars[t.a] && chars[t.b]) { (chars[t.a].loveNo = chars[t.a].loveNo || []).push(t.b); (chars[t.b].loveNo = chars[t.b].loveNo || []).push(t.a); } });
       return ({ scenId: id, seed: 9100 + s * 37, env, chars, perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, pick: {}, role: '' })), ties });
     };
     for (const id of ids) {
@@ -108,7 +110,9 @@ const JUDGE = function (HK, opt) {
             if (lv === 'ok') o.Y += g.N1 + g.N2 + g.N3; else { o.Z += g.N2 + g.N3; o.Z1 += g.N1; }
           return;
         }
-        const no = ties.filter(t => t.love === 'no');
+        /* 住人の設定で決める形では、両方の住人の「恋愛にしない相手」に入っている組だけを「恋愛：なし」として見る */
+        const lno = (x, y) => { const c = (run.input.chars || [])[x]; return !!(c && Array.isArray(c.loveNo) && c.loveNo.indexOf(y) >= 0); };
+        const no = ties.filter(t => t.love === 'no' && (HK.TIE_LOVE_GATE !== false || lno(t.a, t.b) || lno(t.b, t.a)));
         no.forEach(t => { const g = signs(res, [t.a, t.b], o.ex, '[なし ' + t.type + ']', ties); ['N1', 'N2', 'N3', 'N4'].forEach(k => { o[k] += g[k]; }); });
       },
       finish() { return out; }

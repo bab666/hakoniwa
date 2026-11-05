@@ -11,7 +11,7 @@
      その住人の設定（エゴグラム・口調・語尾の設定・辞書・一人称/二人称・性別・恋愛対象・受け攻め・体の設定・好物・箱庭の能力・アイコン・箱庭ごとの設定 など）を
      すべて写した住人を、すぐ下に足す。関係（K.S().ties）と、ほかの住人を指す設定（恋愛相手の固定・性行為の相手の固定・相手ごとの設定・恋愛にしない相手・
      殺さない相手・同一人物）は写さない。名前は「〇〇２」のように、今いる住人と重ならないものにする */
-  var DUP_CLEAR = { loveLock: [], sexLocks: [], loveNG: [], noKillFor: [], calls: {}, keigo: {}, nightFor: {}, posFor: {}, youFor: {}, fpFor: {}, same: '', sameDark: false };
+  var DUP_CLEAR = { loveLock: [], sexLocks: [], loveNG: [], loveNo: [], r18No: [], noKillFor: [], calls: {}, keigo: {}, nightFor: {}, posFor: {}, youFor: {}, fpFor: {}, same: '', sameDark: false };
   function zen(n) { return String(n).replace(/\d/g, function (d) { return String.fromCharCode(d.charCodeAt(0) + 0xFEE0); }); }
   function dupName(name) {
     var used = {}; K.S().chars.forEach(function (c) { used[c.name] = 1; });

@@ -353,10 +353,13 @@ const JUDGE = function (HK, opt) {
     const nlOf = (ties, i, j) => (ties || []).filter(t => (t.type === 'apathy' || t.type === 'fear') && ((t.a === i && t.b === j) || (t.a === j && t.b === i)))[0] || null;
     const nlKey = t => t.type === 'apathy' ? 'S19' : 'S20';
     /* 恐怖の「体の関係：あり」（夜・性的な文は誤りにしない）／「恋愛：あり」で恐怖が和らいだ（HK.fearHeld が偽。恋愛・恋人は誤りにしない）。2026-11-03 */
-    const fBody = t => !!(t && t.type === 'fear' && t.body === 'ok' && HK.tieBodyOK && HK.tieBodyOK(t));
+    /* 2026-11-05（可否は住人の設定。ties.js の HK.TIE_LOVE_GATE が偽）：恐怖は和らぐまで恋愛も合意の夜も起こさない。住人の設定で体の相手に固定した二人（HK.bodyPick）の夜・性的な文と、
+       和らいだ（HK.fearHeld が偽）あとの夜は誤りにしない。fPick＝体の相手に固定した二人、fBody＝夜を誤りにしない二人 */
+    const fPick = (t, P) => !!(t && t.type === 'fear' && (HK.TIE_LOVE_GATE === false ? !!(P && P[t.a] && P[t.b] && HK.bodyPick && HK.bodyPick(P[t.a], P[t.b])) : (t.body === 'ok' && HK.tieBodyOK && HK.tieBodyOK(t))));
+    const fBody = (t, P) => fPick(t, P) || (HK.TIE_LOVE_GATE === false && fFree(t, P));
     /* 箱庭が恐怖・無関心の関係を外した二人（新婚部屋の元恐怖：なれそめで上書き・三人婚で夫婦に）は、その関係の決まりを当てない（エンジン型。回している ctx に関係が無い） */
     const fGone = (t, ctx) => !!(t && ctx && ctx.tiesAll && ctx.chars && HK.Ties && HK.Ties.has && ctx.chars[t.a] && ctx.chars[t.b] && !HK.Ties.has(ctx, ctx.chars[t.a], ctx.chars[t.b], t.type));
-    const fFree = (t, P) => !!(t && t.type === 'fear' && t.love === 'ok' && P && P[t.a] && P[t.b] && HK.fearHeld && !HK.fearHeld(P[t.a], P[t.b]));
+    const fFree = (t, P) => !!(t && t.type === 'fear' && (t.love === 'ok' || HK.TIE_LOVE_GATE === false) && P && P[t.a] && P[t.b] && HK.fearHeld && !HK.fearHeld(P[t.a], P[t.b]));
     const nlTxt = (C, t) => (C[t.a] || {}).name + '→' + (C[t.b] || {}).name + '：' + (t.type === 'apathy' ? '無関心' : '恐怖');
     /* S35・S36：恐怖・無関心と同じ向きの愛憎・劣等感・優越（cold:'both' の愛憎は双方） */
     const feelHas = (ty, a, b) => (cur && cur.feel || []).some(t => t.type === ty && ((t.a === a && t.b === b) || (ty === 'lovehate' && t.cold === 'both' && t.a === b && t.b === a)));
@@ -381,7 +384,7 @@ const JUDGE = function (HK, opt) {
         if ((t.type === 'apathy' || t.type === 'fear') && !fGone(t, ctx)) {
           const n0 = (pf.nights || 0) + (pf.night ? 1 : 0);
           if (pf.couple && !seen['c' + tkey(t.a, t.b)] && !fFree(t, C)) { seen['c' + tkey(t.a, t.b)] = 1; hit(nlKey(t), '恋人 ' + nlTxt(C, t) + (end ? '（終わり）' : '')); }
-          if (n0 > (seen['n' + tkey(t.a, t.b)] || 0) && !fBody(t)) hit(nlKey(t), '夜 ' + nlTxt(C, t));
+          if (n0 > (seen['n' + tkey(t.a, t.b)] || 0) && !fBody(t, C)) hit(nlKey(t), '夜 ' + nlTxt(C, t));
           seen['n' + tkey(t.a, t.b)] = n0;
         }
         if (t.type === 'lovehate' && lhKin().indexOf(t) >= 0 && pf.couple && !seen['k' + tkey(t.a, t.b)]) { seen['k' + tkey(t.a, t.b)] = 1; hit('S35', '家族の顔の愛憎が恋人に ' + C[t.a].name + '×' + C[t.b].name); }
@@ -504,7 +507,7 @@ const JUDGE = function (HK, opt) {
           const x = acs[0], y = acs[1], nl0 = nlOf(cur.feel, x.i, y.i), nl = fGone(nl0, this) ? null : nl0;
           /* 恐怖：体の関係「あり」の二人の性的な場面・体の関係の出来事は数えない。「恋愛：あり」で和らいだあとの恋愛は数えない（和らぐ前の恋愛は数える） */
           const sx0 = !!(e.lewd || o.sex || (this._ev && this._ev.sex));
-          if (o.cat === 'romance' && nl && !(fBody(nl) && sx0) && !fFree(nl, this.chars)) hit(nlKey(nl), '恋愛' + (nl.type === 'fear' && nl.love === 'ok' ? '（恐怖が和らぐ前）' : '') + ' ' + nlTxt(this.chars, nl) + ' | ' + String(o.text).slice(0, 120));
+          if (o.cat === 'romance' && nl && !(fBody(nl, this.chars) && sx0) && !fFree(nl, this.chars)) hit(nlKey(nl), '恋愛' + (nl.type === 'fear' && nl.love === 'ok' ? '（恐怖が和らぐ前）' : '') + ' ' + nlTxt(this.chars, nl) + ' | ' + String(o.text).slice(0, 120));
           /* 無関心の引き金（cold-fear.js：理由に「無関心の変化：」）のあとは、無関心が解けているので助け合いなどに入ってよい（2026-10-28 担当MG） */
           if (CFX.test(String(o.why || ''))) cur.feel.forEach(t => { if (t.type === 'apathy' && acs.some(c => c.i === t.a) && acs.some(c => c.i === t.b)) (cur.cfBroke = cur.cfBroke || {})[t.a + '>' + t.b] = 1; });
           cur.feel.forEach(t => {
@@ -534,10 +537,13 @@ const JUDGE = function (HK, opt) {
             const pf = this.pf[k];
             /* 敵対・不仲の二人の体だけの場面（free-sex.js の HK.FreeSex.kind が 'host'）は、恋愛を止めていない組なので、そのあと恋人・恋愛になってよい（数えない。2026-10-28 担当MC） */
             if (pf.freeSex && !fz[k]) { const ij0 = k.split('-').map(Number), x0 = this.chars[ij0[0]], y0 = this.chars[ij0[1]]; fz[k] = x0 && y0 && HK.FreeSex && HK.FreeSex.kind && HK.FreeSex.kind(this, x0, y0) === 'host' ? 3 : 1; }
-            if (fz[k] === 1 && pf.couple && !(cur.feel && cur.feel.some(t => t.type === 'fear' && tkey(t.a, t.b) === k && fFree(t, this.chars)))) { fz[k] = 2; const ij = k.split('-').map(Number); hit('S18', '恋人化 ' + this.chars[ij[0]].name + '×' + this.chars[ij[1]].name + ' [' + ((this._ev && this._ev.id) || o.kind || '') + ']'); }
+            if (fz[k] === 1 && pf.couple && !(HK.TIE_LOVE_GATE === false && HK.loveOK && HK.loveOK(this.chars[+k.split('-')[0]], this.chars[+k.split('-')[1]])) && !(cur.feel && cur.feel.some(t => t.type === 'fear' && tkey(t.a, t.b) === k && fFree(t, this.chars)))) { fz[k] = 2; const ij = k.split('-').map(Number); hit('S18', '恋人化 ' + this.chars[ij[0]].name + '×' + this.chars[ij[1]].name + ' [' + ((this._ev && this._ev.id) || o.kind || '') + ']'); }
           });
           /* 恐怖の「恋愛：あり」で恐怖が和らいだ二人（2026-11-03）は、体だけの場面のあとでも恋愛になってよい */
-          const fr18 = (x, y) => !!(cur.feel && cur.feel.some(t => t.type === 'fear' && tkey(t.a, t.b) === tkey(x.i, y.i) && fFree(t, this.chars)));
+          /* 2026-11-05（可否は住人の設定）：体の相手に固定した二人でも、恋愛の相手にもなれる二人（HK.loveOK：恋愛にしない相手・恋愛相手の固定・恋愛対象を両方向）なら恋人・恋愛になってよい。
+             数えるのは恋愛にならないはずの二人（恋愛にしない相手・固定の食い違いなど）だけ */
+          const lok18 = (x, y) => !!(HK.TIE_LOVE_GATE === false && HK.loveOK && x && y && HK.loveOK(x, y));
+          const fr18 = (x, y) => lok18(x, y) || !!(cur.feel && cur.feel.some(t => t.type === 'fear' && tkey(t.a, t.b) === tkey(x.i, y.i) && fFree(t, this.chars)));
           if (e && !e.skipped && o.cat === 'romance' && !sexMark && !SKIPK.test(kind) && acs.length >= 2 && fz[pkey(acs[0], acs[1])] === 1 && !fr18(acs[0], acs[1])) hit('S18', '恋愛 ' + acs[0].name + '×' + acs[1].name + ' [' + ((this._ev && this._ev.id) || '') + '] | ' + String(o.text).slice(0, 120));
         }
         /* S15：二人だけの恋愛の出来事に、固定が食い違う組（「誰とでも可」で許されている組の体の出来事は除く） */
@@ -577,7 +583,7 @@ const JUDGE = function (HK, opt) {
         /* S35・S36（物語型） */
         if (cur && cur.story && S && acs.length >= 2 && !SKIPK.test(kind)) esHit(acs, o, String(o.id || o.tag || kind));
         /* S19・S20（物語型）：無関心・恐怖の二人だけの、恋愛・夜の札の記録 */
-        if (cur && cur.feel && cur.story && acs.length === 2 && /告白|恋|想い|デート|口づけ|キス|両想い|夜/.test(o.tag || '') && !/失恋|恋敵|元恋人|夜明け|夜番|夜警|見張り|一夜明け|無音の夜/.test(o.tag || '')) { const nl = nlOf(cur.feel, acs[0].i, acs[1].i); if (nl && !(fBody(nl) && (e && e.lewd || /夜/.test(o.tag || ''))) && !fFree(nl, S.P)) hit(nlKey(nl), '物語型 [' + o.tag + '] ' + nlTxt(S.P, nl) + ' | ' + String(o.text).slice(0, 100)); }
+        if (cur && cur.feel && cur.story && acs.length === 2 && /告白|恋|想い|デート|口づけ|キス|両想い|夜/.test(o.tag || '') && !/失恋|恋敵|元恋人|夜明け|夜番|夜警|見張り|一夜明け|無音の夜/.test(o.tag || '')) { const nl = nlOf(cur.feel, acs[0].i, acs[1].i); if (nl && !(fBody(nl, S.P) && (e && e.lewd || /夜/.test(o.tag || ''))) && !fFree(nl, S.P)) hit(nlKey(nl), '物語型 [' + o.tag + '] ' + nlTxt(S.P, nl) + ' | ' + String(o.text).slice(0, 100)); }
         /* S15・S16（物語型）：恋人の記録の増え方と、二人だけの恋愛の札の記録 */
         if (cur && cur.story) {
           /* S16（物語型）：恋人の札の記録（恋人の夜など）が、恋人の記録にない二人に出た／「恋人になった」の記録が、別の恋人がいる人に出た（複数の恋人「なし」） */
@@ -592,7 +598,7 @@ const JUDGE = function (HK, opt) {
           if (S && S.freeSex && S.P) {
             const lv18 = storyLov(S), fz = S._audit18 || (S._audit18 = {});
             /* 恐怖の「恋愛：あり」で恐怖が和らいだ二人（2026-11-03）と、敵対・不仲の二人（free-sex.js の HK.FreeSex.kind が 'host'。恋愛を止めていない組。エンジン型と同じ）は数えない */
-            const fr18s = k => { const ij = k.split('-').map(Number), x = S.P[ij[0]], y = S.P[ij[1]]; return !!(cur.feel && cur.feel.some(t => t.type === 'fear' && tkey(t.a, t.b) === k && fFree(t, S.P))) || !!(x && y && HK.FreeSex && HK.FreeSex.kind && HK.FreeSex.kind(S, x, y) === 'host'); };
+            const fr18s = k => { const ij = k.split('-').map(Number), x = S.P[ij[0]], y = S.P[ij[1]]; return !!(HK.TIE_LOVE_GATE === false && HK.loveOK && x && y && HK.loveOK(x, y)) || !!(cur.feel && cur.feel.some(t => t.type === 'fear' && tkey(t.a, t.b) === k && fFree(t, S.P))) || !!(x && y && HK.FreeSex && HK.FreeSex.kind && HK.FreeSex.kind(S, x, y) === 'host'); };
             Object.keys(S.freeSex).forEach(k => { if (lv18[k] && !fz[k] && !fr18s(k)) { fz[k] = 1; const ij = k.split('-').map(Number); hit('S18', '恋人の記録 ' + S.P[ij[0]].name + '×' + S.P[ij[1]].name + ' [' + (o.tag || '') + ']'); } });
             if (acs.length >= 2 && S.freeSex[Math.min(acs[0].i, acs[1].i) + '-' + Math.max(acs[0].i, acs[1].i)] && !fr18s(tkey(acs[0].i, acs[1].i)) && /告白|恋|想い|デート|口づけ|キス|両想い/.test(o.tag || '') && !/失恋|恋敵|元恋人/.test(o.tag || '')) hit('S18', '恋愛 [' + o.tag + '] ' + acs[0].name + '×' + acs[1].name + ' | ' + String(o.text).slice(0, 120));
           }
@@ -863,10 +869,10 @@ const JUDGE = function (HK, opt) {
             const x = P0 && P0[t.a], y = P0 && P0[t.b];
             if ((t.type === 'apathy' || t.type === 'fear') && x && y && !(lastCtx && !cur.story && fGone(t, lastCtx))) {
               if ((HK.canLove(x, y) || HK.canLove(y, x)) && !fFree(t, P0)) hit(nlKey(t), '恋愛の判定が通る（HK.canLove） ' + nlTxt(P0, t));
-              if (HK.Pos && HK.Pos.okSex(x, y) && !fBody(t)) hit(nlKey(t), '体の関係の判定が通る（HK.Pos.okSex） ' + nlTxt(P0, t));
+              if (HK.Pos && HK.Pos.okSex(x, y) && !fBody(t, P0)) hit(nlKey(t), '体の関係の判定が通る（HK.Pos.okSex） ' + nlTxt(P0, t));
               /* 体の関係「あり」の恐怖は、体の関係を止めていないか（夜の場面を止めない：noLove・noSex に入っていない） */
               const has0 = (c, f, o) => Array.isArray(c[f]) && c[f].indexOf(o.i) >= 0;
-              if (fBody(t) && (has0(x, 'noSex', y) || has0(x, 'noLove', y) || has0(y, 'noSex', x) || has0(y, 'noLove', x)) && !ties.some(u => u !== t && (u.type === 'apathy' || (u.type === 'fear' && !fBody(u)) || (HK.TIES[u.type] && HK.TIES[u.type].family && u.love !== 'ok')) && tkey(u.a, u.b) === tkey(t.a, t.b))) hit('S20', '体の関係「あり」なのに恐怖の印で止めた ' + nlTxt(P0, t));
+              if (fPick(t, P0) && (has0(x, 'noSex', y) || has0(x, 'noLove', y) || has0(y, 'noSex', x) || has0(y, 'noLove', x)) && !ties.some(u => u !== t && (u.type === 'apathy' || (u.type === 'fear' && !fPick(u, P0)) || (HK.TIES[u.type] && HK.TIES[u.type].family && u.love !== 'ok')) && tkey(u.a, u.b) === tkey(t.a, t.b))) hit('S20', '体の関係「あり」なのに恐怖の印で止めた ' + nlTxt(P0, t));
               if (lastS && cur.story && lastS.P === P0) { const lv = storyLov(lastS); if (lv[tkey(t.a, t.b)] && !fFree(t, P0)) hit(nlKey(t), '物語型の恋人の記録 ' + nlTxt(P0, t)); }
             }
             /* S35：家族の顔の愛憎（物語型の恋人の記録・恋人の結末の関係） */
@@ -895,7 +901,7 @@ const JUDGE = function (HK, opt) {
           /* 関係図・結末：無関心・恐怖の組の恋の線 */
           const edges = (res.pairs || []).map(p => ({ a: p.a, b: p.b, cls: p.cls, name: p.name })).concat(res.relmap && res.relmap.edges ? res.relmap.edges.map(e => ({ a: e.a, b: e.b, cls: e.cls, name: e.label })) : []);
           const gone0 = t => !!(lastCtx && !cur.story && fGone(t, lastCtx));
-          edges.forEach(ed => { const nl = nlOf(ties, ed.a, ed.b); if (nl && !gone0(nl) && ((ed.cls === 'love' || ed.cls === 'pine') && !fFree(nl, P0) || ed.cls === 'night' && !fBody(nl))) hit(nlKey(nl), '結末・関係図 ' + nlTxt(chars, nl) + '＝' + ed.name); });
+          edges.forEach(ed => { const nl = nlOf(ties, ed.a, ed.b); if (nl && !gone0(nl) && ((ed.cls === 'love' || ed.cls === 'pine') && !fFree(nl, P0) || ed.cls === 'night' && !fBody(nl, chars))) hit(nlKey(nl), '結末・関係図 ' + nlTxt(chars, nl) + '＝' + ed.name); });
           /* 性的な文に、無関心・恐怖の二人の名前だけが出た */
           (res.log || []).forEach(e => {
             if (!e || typeof e.text !== 'string') return;
@@ -910,7 +916,7 @@ const JUDGE = function (HK, opt) {
                 if (chars[t.b].libido === 'none') hit('S20', '恐れられる側の性欲「なし」で恐怖の夜 ' + why0);
               });
             }
-            if (!CFF.test(String(e.why || ''))) sents(e.text).forEach(x => { if (!isSex(x) || MOB.test(x) || /最期に遺した言葉/.test(x)) return; const inS = chars.map((c, i) => x.indexOf(c.name) >= 0 ? i : -1).filter(i => i >= 0); if (inS.length === 2) { const nl = nlOf(ties, inS[0], inS[1]); if (nl && !fBody(nl) && !gone0(nl)) hit(nlKey(nl), '性的な文 ' + nlTxt(chars, nl) + ' | ' + x.slice(0, 120)); } });
+            if (!CFF.test(String(e.why || ''))) sents(e.text).forEach(x => { if (!isSex(x) || MOB.test(x) || /最期に遺した言葉/.test(x)) return; const inS = chars.map((c, i) => x.indexOf(c.name) >= 0 ? i : -1).filter(i => i >= 0); if (inS.length === 2) { const nl = nlOf(ties, inS[0], inS[1]); if (nl && !fBody(nl, chars) && !gone0(nl)) hit(nlKey(nl), '性的な文 ' + nlTxt(chars, nl) + ' | ' + x.slice(0, 120)); } });
             /* 参考：恐怖で避けた・無関心で受け流した出来事の数 */
             const w = String(e.why || '');
             if (/を恐れている：|に庇護を求めた/.test(w)) out.info.fear = (out.info.fear || 0) + 1;
