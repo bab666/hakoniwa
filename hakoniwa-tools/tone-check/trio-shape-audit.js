@@ -6,6 +6,8 @@
      ・設定に合わない形（0 件が合格）：形の組の向きが HK.Pos.orients に無い／受ける人が自分で攻めを選んでいる（HK.Pos.hardTopIn）／
        sandwich の真ん中がリバ・おまかせでない（HK.Pos.midOk）・後ろの人が跨る組（女性の攻め×男性）
      ・場面の状態（0 件が合格）：同じ動き（HK.SexFlow.MOTION）の二度出し・繋がったあとの脱がせる文・応答を求める攻めの台詞のあとに受けの台詞が無い
+     ・女性の攻めと後ろの二重（2026-11-05。0 件が合格）：女性の攻め（男性器なし）× 男性の受けの組で攻めが跨る・自分の中へ受け入れる文（仕上がった記録の文）／
+       受けの後ろに別の人が入る形（twoOne でもう一人の攻めも同じ受けを抱く）に、プレイの段（ero-play-r18.js の HK.EroPlay）が前立腺・結腸を差した
      ・ペニバンとフタナリ（2026-11-04。0 件が合格）：ペニバン（張り型）の文が、女性の攻め（男性器なし）× 受けの組（HK.Trio3.strapOk）でない人・組に出た／
        ペニバンを使った場面の印（info.spE）が無いのに文が出た／フタナリ（性器の欄が「両方」）の攻めの組が男性器で繋がる組（m）になっていない／
        ペニバンの出る割合（ペニバンを使える組のある場面のうち。目安 2〜3 割）が 12〜40% の外（使える場面が 60 件以上のときだけ判定）
@@ -73,6 +75,7 @@ const JUDGE = function (HK, opt) {
     if (!cur) return;
     const sp = { p: info.p, t: info.who.t, m: info.who.m, u: info.who.u }, g = [sp.t, sp.m, sp.u];
     out.scenes++;
+    if (cur.scs) cur.scs.push({ sp, E: (C && C.E || []).slice(), g });
     add(out.byP, sp.p); add(out.byPV, sp.p + (info.v ? '/' + info.v : '') + (info.form ? '' : '（形の段なし）'));
     const pk = cur.meta.pos + ' ' + cur.meta.body; out.byPos[pk] = out.byPos[pk] || {}; add(out.byPos[pk], sp.p);
     out.bySc[cur.sc] = out.bySc[cur.sc] || {}; add(out.bySc[cur.sc], sp.p);
@@ -144,9 +147,39 @@ const JUDGE = function (HK, opt) {
     X.touchScene = function () { const r = t0.apply(this, arguments); if (cur && r) { out.touch++; add(out.byP, 'touch'); out.bySc[cur.sc] = out.bySc[cur.sc] || {}; add(out.bySc[cur.sc], 'touch'); const ex = out.ex['touch'] || (out.ex['touch'] = []); if (ex.length < SHOW) ex.push(cur.sc + '#' + cur.s + ' ' + r); } return r; };
     X.touchScene._aud = true;
   }
+  /* 女性の攻め（男性器なし）× 男性の受けの組（fm）で、攻めが跨る・受け入れる文（2026-11-05。仕上がった記録の文で見る：HK.FM.fix・ero-play の直しのあと）／
+     受けの後ろに別の人が入る形（twoOne でもう一人の攻めも同じ受けに挿れる・指を入れる組）に、プレイの段（ero-play-r18.js）が前立腺・結腸を差した */
+  const EPL = HK.EroPlay;
+  const fmRideOf = (texts, scs) => {
+    const hit = [];
+    scs.forEach(sc => sc.E.forEach(e => {
+      const T = e[0], U = e[1];
+      if (X.edgeKind(T, U) !== 'fm') return;
+      texts.forEach(t => sents(t).forEach(x => { const b = NAR(x);
+        if (b.indexOf(T.name) < 0 || b.indexOf(U.name) < 0 || /指|舌|張り型|ペニバン|ディルド|バイブ|玩具/.test(b) || new RegExp(U.name + '(?:は|が|も)[^。]{0,30}跨').test(b)) return;
+        if ((new RegExp(T.name + '(?:は|が|も)[^。]{0,30}跨').test(b) && /呑み込|呑みこ|飲み込|咥え込|迎え入れ|腰を落と|腰を沈め|自分の(?:中|奥|ナカ)|の(?:ナカ|中)へ導|受け入れ/.test(b)) ||
+          new RegExp(T.name + 'の(?:ナカ|\\{ナカ\\}|膣内|膣|中|奥|内側)(?:に包まれ|で脈打|に咥え|で締め)').test(b)) hit.push(T.name + '→' + U.name + ' | ' + x); }));
+    }));
+    return hit;
+  };
   return {
-    begin(run) { cur = run; },
-    end() { cur = null; },
+    begin(run) { cur = run; cur.scs = []; if (EPL) EPL.log = []; },
+    end(run, res) {
+      if (cur && res) {
+        const texts = (res.log || []).map(e => e && typeof e.text === 'string' ? e.text : '').filter(Boolean);
+        const fr = fmRideOf(texts, cur.scs);
+        if (fr.length) { out.fmRide = (out.fmRide || 0) + 1; (out.fmRideEx = out.fmRideEx || []).length < 10 && out.fmRideEx.push(cur.sc + '#' + cur.s + ' ' + fr[0]); }
+        ((EPL && EPL.log) || []).forEach(l => {
+          if (l.src !== 'trio' || !l.keys || !l.keys.some(k => k === 'pros' || k === 'colon')) return;
+          const sc = cur.scs.filter(x => x.E[0] && x.E[0][0].name === l.t && x.E[0][1].name === l.u)[0];
+          if (!sc) return;
+          const T = sc.E[0][0], U = sc.E[0][1];
+          if (sc.E.some(e => e[1] === U && e[0] !== T && /^(?:m|fm)$/.test(X.edgeKind(e[0], U)))) { out.backDbl = (out.backDbl || 0) + 1; (out.backDblEx = out.backDblEx || []).length < 10 && out.backDblEx.push(cur.sc + '#' + cur.s + ' ' + sc.sp.p + ' ' + l.t + '→' + l.u + ' ' + l.keys.join(',')); }
+        });
+      }
+      if (EPL) EPL.log = null;
+      cur = null;
+    },
     error() { cur = null; },
     finish() { return out; }
   };
@@ -164,6 +197,8 @@ function print(r, errors, o) {
   Object.keys(r.byPos).sort().forEach(k => console.log('  ' + k.padEnd(22) + Object.keys(r.byPos[k]).map(p => p + ' ' + r.byPos[k][p]).join('・')));
   console.log('設定に合わない形：' + r.bad + ' 件');
   console.log('挿入の向きが受け攻めと逆：' + (r.rev || 0) + ' 件／男性器の無い人の男性器（女性器だけの人が入れる側）：' + (r.fem || 0) + ' 件');
+  console.log('女性の攻め（男性器なし）が男性の受けに跨る・受け入れる文：' + (r.fmRide || 0) + ' 件／受けの後ろに別の人がいるのに前立腺・結腸の段：' + (r.backDbl || 0) + ' 件');
+  (r.fmRideEx || []).concat(r.backDblEx || []).forEach(x => console.log('    ' + String(x).slice(0, 300)));
   (r.revEx || []).concat(r.femEx || []).forEach(x => console.log('    ' + x));
   r.badEx.forEach(x => console.log('    ' + x));
   const sp = r.sp || { cap: 0, n: 0, byP: {}, bySc: {}, ex: [] }, fu = r.futa || { n: 0, m: 0, ex: [] };
@@ -197,13 +232,13 @@ function tableStats(dir) {
   return st;
 }
 /* audit-all.js の追加の配役パス（--extra=trio）用のまとめ（2026-11-04。単独で回したときの終了コードの条件と同じ 5 項目。判定は変えていない） */
-const LABEL = { bad: '設定に合わない形', rev: '挿入の向きが逆', fem: '男性器の無い人の男性器', strap: 'ペニバンの文が合わない人・組', futa: 'フタナリの攻めが男性器で繋がらない', strapRate: 'ペニバンの割合が目安の外', motion: '動きの二度出し', undress: '繋がったあとの脱がせる', pending: '応答待ちのあと受けの台詞なし', dupS: '同じ地の文の二度出し' };
+const LABEL = { bad: '設定に合わない形', rev: '挿入の向きが逆', fem: '男性器の無い人の男性器', fmRide: '女性の攻めが跨って受け入れる', backDbl: '後ろの二重（前立腺・結腸の段）', strap: 'ペニバンの文が合わない人・組', futa: 'フタナリの攻めが男性器で繋がらない', strapRate: 'ペニバンの割合が目安の外', motion: '動きの二度出し', undress: '繋がったあとの脱がせる', pending: '応答待ちのあと受けの台詞なし', dupS: '同じ地の文の二度出し' };
 function summarize(r) {
   const items = {}, ex = {};
   if (!r || r.noX) return { items: {}, ex: {}, info: { 三人の場面: r && r.noX ? 'HK.Trio3 なし' : 0 }, err: 0 };
   Object.keys(LABEL).forEach(k => {
     if (k === 'strap' || k === 'futa' || k === 'strapRate') { const o = k === 'strap' ? r.sp : r.futa; items[k] = k === 'strapRate' ? strapRateBad(r) : (o && o.bad) || 0; ex[k] = k === 'strapRate' ? [((r.sp && r.sp.n) || 0) + '/' + ((r.sp && r.sp.cap) || 0)] : ((o && o.ex) || []).slice(0, 3); return; }
-    items[k] = k === 'bad' ? r.bad : k === 'rev' || k === 'fem' ? (r[k] || 0) : (r.flow[k] || 0); ex[k] = k === 'bad' ? r.badEx.slice(0, 3) : k === 'rev' || k === 'fem' ? (r[k + 'Ex'] || []).slice(0, 3) : r.flowEx.filter(x => x.indexOf(k === 'motion' ? '動き' : k === 'undress' ? '脱が' : k === 'pending' ? '応答待ち' : '同じ文') >= 0).slice(0, 3); });
+    items[k] = k === 'bad' ? r.bad : k === 'rev' || k === 'fem' || k === 'fmRide' || k === 'backDbl' ? (r[k] || 0) : (r.flow[k] || 0); ex[k] = k === 'bad' ? r.badEx.slice(0, 3) : k === 'rev' || k === 'fem' || k === 'fmRide' || k === 'backDbl' ? (r[k + 'Ex'] || []).slice(0, 3) : r.flowEx.filter(x => x.indexOf(k === 'motion' ? '動き' : k === 'undress' ? '脱が' : k === 'pending' ? '応答待ち' : '同じ文') >= 0).slice(0, 3); });
   return { items, ex, info: { 三人の場面: r.scenes, 触れ合いだけ: r.touch, ペニバン: ((r.sp && r.sp.n) || 0) + '/' + ((r.sp && r.sp.cap) || 0) }, err: 0 };
 }
 module.exports = { passes: { trio: PASS }, judges: { trio: JUDGE }, print, summarize, LABEL, DEF_SCEN, tableStats };
@@ -216,5 +251,5 @@ if (require.main === module) (async () => {
   print(t.r, t.errors, { why: WHY });
   const st = tableStats(dir);
   if (st) console.log('文の表：繋がる段の文 ' + st.in + ' 本（分岐は 組A・組B・締めの 3 文）・最中の段 ' + st.mid + ' 本（地の文の最小 ' + st.inMin + ' 文）・山場 ' + st.peak + ' 本（最小 ' + st.peakMin + ' 文）・待つ受けの反応 ' + st.waitr + ' 本・導入の台詞 ' + st.intro + ' 本・事後の一言 ' + st.aft + ' 本・触れ合いだけ ' + st.touch + ' 本');
-  const r = t.r; if (r && (r.bad || r.rev || r.fem || r.flow.motion || r.flow.undress || r.flow.pending || r.flow.dupS || (r.sp && r.sp.bad) || (r.futa && r.futa.bad) || strapRateBad(r))) process.exitCode = 1;
+  const r = t.r; if (r && (r.bad || r.rev || r.fem || r.fmRide || r.backDbl || r.flow.motion || r.flow.undress || r.flow.pending || r.flow.dupS || (r.sp && r.sp.bad) || (r.futa && r.futa.bad) || strapRateBad(r))) process.exitCode = 1;
 })();

@@ -1,3 +1,4 @@
+/* @event-ok 女性の攻め×男性の受けの前立腺・乳首の段を跨らない文に書き直し、三人の夜で後ろが埋まっている受けに後ろの段を差さない・跨る文を前から責める文に直す（新しい出来事ではない。2026-11-05） */
 /* @event-ok 既にある山場（出られない部屋・媚薬ロッカー・オメガバース・合コン／無人島／ゾンビの共通の夜）に、前立腺・結腸・乳首・喉奥の段を差し込む（2026-10-31 担当E1） */
 /* 箱庭シミュレーター（R18版のみ）: プレイ幅の増強 ― 前立腺いじり・結腸責め（奥）・乳首責め・イラマチオ（喉奥）の段（HK.EroPlay）
    ■ 何をするか：共通の山場（thick-sex.js の HK.ThickSex.scene・thick-sex-ero.js の HK.ThickEro.scene・omega-thick-kit.js の HK.TKC.body）が
@@ -78,11 +79,19 @@
         e: L('{a}は{b}の腰を抱え直し、{亀頭}のカリで{前立腺}をごりごりと擦り上げた。{s:hit}。一突きごとに{b}の{男性器}がぶるんっと揺れ、{先走り}がシーツに糸を引く。{b}「{mb}」|' +
           '{a}は浅いところで小刻みに腰を揺らし、{前立腺}だけをとちゅとちゅと執拗に叩いた。{s:wet}。{b}の目は焦点を失い、半開きの口から涎がこぼれていく。{b}「{mb}」')
       },
+      /* 女性の攻め（男性器なし）× 男性の受け（2026-11-05）：跨る・攻めが受け入れる文は書かない。挿れているのが指でもペニバンでも合う文（後ろの弱いところを捉えたまま、手で前を）。
+         ペニバンと決めた二人の場面（HK.FM が直す二人の組 o.strapOk のうち 28%。本文に張り型があると HK.FM.fix がその記録をペニバンでそろえる。三人の場面では使わない）は fsp の文 */
       fm: {
-        n: L('{a}は{b}の上でゆっくりと腰を沈めながら、後ろ手に伸ばした指を、もう一度{b}の{後ろ}へ潜り込ませた。腰を揺らすのに合わせて、指先が内側の膨らみを押し上げる。前と後ろを同時に責められて、{b}は{a}の下でどうしようもなく身をよじった。|' +
-          '{a}は{b}に跨ったまま上体を倒し、{b}の脚のあいだへ指を滑り込ませた。{a}の{ナカ}に包まれたまま、{後ろ}の弱いところを指で撫でられて、{b}の腰が勝手に浮く。{a}はその反応を見下ろしながら、腰と指の動きをわざとずらしてみせた。'),
-        e: L('{a}は{b}の{男性器}を{ナカ}に咥え込んだまま、後ろに回した指で{前立腺}をぐりぐりと押し潰した。{s:wet}。前も後ろも逃げ場がなくなり、{b}の腰ががくがくと震える。{b}「{mb}」|' +
-          '{a}は腰をくねらせながら、{b}の{後ろ}に沈めた指をくいっと曲げた。{s:wet}。中で{男性器}がびくびくと膨らむのを、{a}は締めつけで受け止めて笑った。{b}「{mb}」')
+        n: L('{a}は{b}の{後ろ}の弱いところを捉えたまま、空いた手を{b}の{男性器}へ伸ばした。根元から先へ、手のひらでゆっくりと扱き上げていく。前と後ろを同時に責められて、{b}は逃げ場もなく身をよじった。|' +
+          '{a}は{b}の膝を胸のほうへ折り曲げさせ、見つけた膨らみだけを狙って、小さく何度も押し上げた。{b}の{男性器}は触れられてもいないのに揺れ、腹の上に{先走り}の糸を引いていく。{a}はその様子を見下ろしながら、わざと間隔をずらして{b}を焦らした。'),
+        e: L('{a}は{b}の{後ろ}の弱いところを捉えたまま、{b}の{男性器}をぐちゅぐちゅと扱き上げた。{s:wet}。前も後ろも逃げ場がなくなり、{b}の腰ががくがくと震える。{a}は跳ねる腰を片手で押さえて、手の動きを止めてやらなかった。{b}「{mb}」|' +
+          '{a}は{b}の脚を大きく開かせたまま、{前立腺}をとんとんと執拗に叩いた。{s:wet}。{b}の{男性器}の先から{先走り}がとぷとぷと溢れ、{a}はそれを手のひらですくって先端に塗り広げた。{b}の目が、みるみるとろけていく。{b}「{mb}」')
+      },
+      fsp: {
+        n: L('{a}は腰に着けたペニバンの張り型で、指で覚えた場所をゆっくりと擦り上げた。張り出したところが内側の膨らみを掠めるたびに、{b}の{男性器}が揺れて{先走り}を滴らせる。{a}は{b}の顔を見下ろしたまま、同じ角度を何度も確かめた。|' +
+          '{a}は腰の張り型を浅いところに留め、膨らみだけを狙って短く腰を揺らした。{b}の内側がそのたびにひくつき、背中が弓なりに反る。{b}の声は、さっきまでとはまるで違う、上ずった響きに変わっていた。'),
+        e: L('{a}は腰のペニバンのベルトを締め直し、張り型の先で{前立腺}をごりごりと擦り上げた。{s:hit}。一擦りごとに{b}の{男性器}がぶるんっと揺れ、{先走り}がシーツに糸を引く。{a}は楽しそうに、同じ場所ばかりを狙い続けた。{b}「{mb}」|' +
+          '{a}は浅いところで小刻みに腰を揺らし、張り型で{前立腺}だけをとちゅとちゅと叩いた。{s:wet}。{b}の目は焦点を失い、半開きの口から涎がこぼれていく。{a}は{b}の{男性器}にも手を添えて、前と後ろを同じ速さで責めた。{b}「{mb}」')
       }
     },
     peak: {
@@ -91,8 +100,16 @@
         e: L('{前立腺}をごりゅごりゅと潰され続け、{b}の{男性器}は触られてもいないのにびくびくと跳ね上がった。{b}は後ろだけで、{精液}をとろとろと押し出していく。|{a}が{前立腺}を抉るのと同時に、{b}の{男性器}をぎゅっと扱き上げた。前と後ろの快感が一気に弾け、{b}の頭の中が真っ白に塗りつぶされる。')
       },
       fm: {
-        n: L('{a}の指が弱いところを押し上げた瞬間、{b}の腰がひときわ大きく跳ねた。{a}の{ナカ}に包まれたまま、{b}はなすすべもなく限界へ追い立てられていった。|{a}は腰を沈めきったまま、指で後ろの膨らみをゆっくりと撫で続けた。前と後ろから同時に押し寄せる熱に、{b}の喉が震えた。'),
-        e: L('{a}が{前立腺}をぐりっと押し潰した瞬間、{b}の{男性器}が{a}の{ナカ}で大きく脈打った。{b}は指一本で、あっけなく限界まで押し上げられた。|{a}は締めつけながら、指で{前立腺}をとんとんと叩き続けた。前も後ろもぐちゃぐちゃにされて、{b}は{a}の下でがくがくと腰を震わせた。')
+        n: L('{a}が後ろの膨らみを強く押し上げるのと同時に、{b}の{男性器}を握る手に力を込めた。{b}の腰がひときわ大きく跳ね、喉から押し殺せない声がこぼれる。前と後ろから同時に押し寄せる熱に、{b}はなすすべもなく限界へ追い立てられていった。|' +
+          '{a}は{b}の弱いところから少しも離れないまま、手のひらで{b}の{男性器}の先をくるりと撫でた。{b}の内腿が震え、足の指がきつく丸まる。逃げ場のない快感に、{b}は{a}の名前を呼ぶことしかできなかった。'),
+        e: L('{a}が{前立腺}をぐりっと押し潰すのと同時に、{b}の{男性器}をぎゅっと扱き上げた。{b}の{男性器}がびくびくと跳ね、{先走り}が{a}の手のひらを濡らしていく。前も後ろもぐちゃぐちゃにされて、{b}はがくがくと腰を震わせた。|' +
+          '{a}は{前立腺}をとんとんと叩き続けながら、空いた手で{b}の{男性器}を根元から扱き上げた。{b}は後ろと前を同時に責め立てられ、声にならない声を上げる。{b}の頭の中が、一気に真っ白に塗りつぶされていった。')
+      },
+      fsp: {
+        n: L('{a}の張り型が弱いところを捉えたまま、{a}の手が{b}の{男性器}を握り込んだ。{b}の背中が反り、腰の奥から知らない熱がせり上がってくる。前と後ろから押し寄せる波に、{b}はもう抗えなかった。|' +
+          '{a}は張り型で膨らみを押し上げながら、{b}の耳元で、もう我慢しなくていいと囁いた。その一言で、{b}の腰がびくびくと跳ね上がる。{b}は前に触れられないまま、後ろだけで限界へ押し上げられていった。'),
+        e: L('{a}が張り型で{前立腺}をごりゅごりゅと潰し続けると、{b}の{男性器}が触られてもいないのにびくびくと跳ね上がった。{b}は後ろだけで、{精液}をとろとろと押し出していく。{a}はその顔を見下ろして、満足そうに目を細めた。|' +
+          '{a}が張り型で{前立腺}を抉るのと同時に、{b}の{男性器}をぎゅっと扱き上げた。前と後ろの快感が一気に弾け、{b}の頭の中が真っ白に塗りつぶされる。{b}の腰が、{a}の手の中で何度も跳ねた。')
       }
     },
     /* 夜の性格の種類ごとの攻めの進め方（態度の列は共通の GEN_M） */
@@ -171,8 +188,8 @@
       },
       fm: {
         n: L('{a}は{b}の上に覆いかぶさり、{b}の胸に唇を落として、{乳首}を舌先でつついた。柔らかく吸われるたびに、{b}の胸が大きく上下する。{a}は{b}の顔を上目遣いに見上げながら、もう片方を指でそっと摘まんだ。|' +
-          '{a}は{b}に跨ったまま、両手の指先で{b}の{乳首}を同時に撫で上げた。くすぐったさに笑いかけた{b}の声が、途中で甘く裏返る。{a}は楽しそうに目を細め、尖った先端をきゅっと摘まんだ。'),
-        e: L('{a}は{b}に跨り、{b}の{乳首}を両手でくにくにと捏ね回した。{b}の{男性器}が{a}の下でびくびくと跳ね、{先走り}が溢れ出す。{b}「{mb}」|' +
+          '{a}は{b}の脚のあいだに膝をついたまま、両手の指先で{b}の{乳首}を同時に撫で上げた。くすぐったさに笑いかけた{b}の声が、途中で甘く裏返る。{a}は楽しそうに目を細め、尖った先端をきゅっと摘まんだ。'),
+        e: L('{a}は{b}の脚のあいだに膝をつき、{b}の{乳首}を両手でくにくにと捏ね回した。{b}の{男性器}が{a}の目の前でびくびくと跳ね、{先走り}が溢れ出す。{b}「{mb}」|' +
           '{a}は{b}の{乳首}をぺろりと舐め上げ、ちゅぱちゅぱと音を立てて吸いついた。{s:suck}。もう片方を指先でぴんっと弾かれ、{b}の腰がシーツから浮き上がる。{b}「{mb}」')
       },
       ff: {
@@ -382,9 +399,10 @@
   }
   if (HK.simulate && HK.wrap) HK.wrap(HK, 'simulate', function (sim0) {
     var f = function (input) {
-      var prev = { nc: RUN.nc, seed: RUN.seed, n: RUN.n, last: RUN.last, cnt: RUN.cnt, env: RUN.env, scen: RUN.scen, used: RUN.used, pend: RUN.pend };
+      var prev = { names: RUN.names, nc: RUN.nc, seed: RUN.seed, n: RUN.n, last: RUN.last, cnt: RUN.cnt, env: RUN.env, scen: RUN.scen, used: RUN.used, pend: RUN.pend };
       RUN.seed = String(input && input.seed != null ? input.seed : ''); RUN.n = 0; RUN.last = {}; RUN.cnt = {}; RUN.used = {}; RUN.pend = null;
       RUN.env = (input && input.env) || {}; RUN.scen = (input && input.scenId) || ''; RUN.nc = input && input.chars ? input.chars.length : 0;
+      RUN.names = input && Array.isArray(input.chars) ? input.chars.map(function (c) { return c && c.name; }).filter(Boolean) : [];
       try { return sim0.apply(this, arguments); } finally { for (var k in prev) RUN[k] = prev[k]; }
     };
     for (var ks in sim0) if (Object.prototype.hasOwnProperty.call(sim0, ks)) f[ks] = sim0[ks];
@@ -466,7 +484,9 @@
     if (R() >= Math.min(0.75, p)) return null;
     /* プレイの重み */
     var pk = [T.name, U.name].join('\u0001'), last = RUN.last[pk] || [];
-    var cand = ['pros', 'colon', 'nip', 'throat'].filter(function (k) { return anatOk(k, T, U, mode) && last.indexOf(k) < 0 && !(k === 'throat' && o.place === 'locker'); });
+    /* o.noBack：受けの後ろにもう別の人が入る三人の形（twoOne で、もう一人の攻めが受けに挿れる・指を入れる組）では、前立腺（後ろへ指・張り型）と結腸を出さない。
+       o.noPros：二人の場面で、前戯の段より前にもう繋がっている（後ろへ指を入れる段が二重になる） */
+    var cand = ['pros', 'colon', 'nip', 'throat'].filter(function (k) { return anatOk(k, T, U, mode) && last.indexOf(k) < 0 && !(k === 'throat' && o.place === 'locker') && !(o.noBack && (k === 'pros' || k === 'colon')) && !(o.noPros && k === 'pros'); });
     var wt = function (k) {
       var w = { pros: 1, colon: 0.7, nip: 0.8, throat: 0.8 }[k];
       if (kT) w *= (W_KIND_T[kT] || {})[k] != null ? W_KIND_T[kT][k] : 1; else w *= (W_ATT_T[aT] || {})[k] != null ? W_ATT_T[aT][k] : 1;
@@ -582,7 +602,9 @@
         if (R() < 0.5) out.mid.push(F(pk(dn.self[uf][st]), key));
         if (R() < 0.4 && !out.peak) out.peak = F(pickF(R, dn.peak[uf][st]), key);
       } else if (key === 'pros') {
-        var dp = D.pros, k2 = c === 'fm' ? 'fm' : 'mm';
+        /* 女性の攻め × 男性の受け：指と手（fm）。二人の場面で HK.FM が直す組（o.strapOk）は、まれにペニバン（fsp。HK.FM.STRAP_P＝28%） */
+        var dp = D.pros, k2 = c === 'fm' ? (o.strapOk && R() < ((HK.FM && HK.FM.STRAP_P) || 0.28) ? 'fsp' : 'fm') : 'mm';
+        if (k2 === 'fsp') plan.tool = 'sp';
         var tp = head(key) + pk(dp.fore[k2][st]) + manner(R, key, T, U, o) + react(R, key, T, U);
         if (!hasQ(tp)) tp += '{b}「{mb}」';
         tp += sayOf(R, 'pros', T, U) + pickF(R, dp.out[st]);
@@ -663,6 +685,17 @@
   EP.on = function () { return !HK.SAFE_ON && !!EP.SCEN[RUN.scen]; };
 
   /* ---------- 取り付け：共通の山場の差し込み口（raceWeave）と、媚薬ロッカーのベッド（racePlay） ---------- */
+  /* 前戯の段（idx.fore）までに、もう繋がっている文があるか（HK.SexFlow の挿入・繋がっているしるし。台詞は見ない） */
+  function inBefore(arr, idx) {
+    var RE = HK.SexFlow && HK.SexFlow.RE, fi = idx && idx.fore;
+    if (!RE || !RE.insert || fi == null) return false;
+    if (Array.isArray(fi)) fi = Math.max.apply(null, fi.filter(function (j) { return typeof j === 'number'; }).concat([-1]));
+    for (var j = 0; j <= fi && j < arr.length; j++) {
+      var t = typeof arr[j] === 'string' ? arr[j].replace(/「[^」]*」/g, '') : '';
+      if (RE.insert.test(t) || (RE.inside && RE.inside.test(t))) return true;
+    }
+    return false;
+  }
   function phOf(arr) { var s = arr.join(''); return /\{T\}|\{U\}/.test(s) ? 'TU' : /\{a\}|\{b\}/.test(s) ? 'ab' : 'name'; }
   /* 山場の部品の呼び出しの間だけ、その場面の印（合意のない場面 opt.force・慰めの夜 o.soft）を覚える */
   function scWrap(obj, key, get) {
@@ -677,8 +710,126 @@
       return f;
     });
   }
+  /* ---------- 三人の場面：女性の攻め（男性器なし）が男性の受けに跨る・受け入れる文を直す（2026-11-05） ----------
+     例：twoOne の updown（男性器の攻めが後ろから、女性の攻めが前で跨る）・媚薬ロッカーの三人の女性上位の一文（locker-crowd-r18.js の TP.fm）。
+     HK.FM.fix（pos-fm.js）は自分で攻めを選んだ女性の組しか直さず、直すときも「指・張り型を後ろへ」の文にするので、後ろにもう一人いると二重の挿入になる。
+     組み立てた本文（段ごとの文。HK.Trio3 の render）のうち、その組の文だけを置き換える：
+       ・受けの後ろに別の人（男性器・ペニバン）が入る組 … 前から手・口・{乳首}で責める文（FRONT）
+       ・後ろが空いている組 … その組がもう指・張り型を挿れていれば「挿れたまま、手で前を」の文（KEEP）、まだなら指を挿れる文（INS.fg。その組がペニバンの組なら INS.sp）
+     後ろに誰がいるかは、本文が名指ししていればそれ（「後ろから{t}に」）、なければ形の組（backBy）で決める。置き換えるのは組ごとに一文だけ（続く同じ種類の文は落とす） */
+  var FRONT = {
+    n: L('{a}は{b}の正面に膝をつき、揺さぶられる{b}の{男性器}を両手で包むように扱き上げた。|' +
+      '{a}は{b}の胸に唇を寄せ、{乳首}を舌先で転がしながら、手のひらで{b}の{男性器}を撫で上げた。|' +
+      '{a}は{b}の顎をすくって唇を塞ぎ、もう片方の手で{b}の{男性器}を根元からゆっくりと扱いた。|' +
+      '{a}は{b}の前に座りこみ、{b}の{乳首}を指先で摘まみながら、熱を持った{男性器}の先を親指でなぞった。'),
+    e: L('{a}は{b}の正面に膝をつき、揺さぶられるたびに跳ねる{b}の{男性器}を、ぐちゅぐちゅと音を立てて扱き上げた。|' +
+      '{a}は{b}の{乳首}にちゅうっと吸いつきながら、{b}の{男性器}を手のひらでぬちぬちと擦り上げた。|' +
+      '{a}は{b}の唇を舌でこじ開けて塞ぎ、{先走り}でぬるついた{b}の{男性器}を、根元からきつく扱いた。|' +
+      '{a}は{b}の前に座りこみ、{b}の{男性器}の先を口に含んで、じゅるっと吸い上げた。')
+  };
+  var KEEP = {
+    n: L('{a}は{b}の後ろの弱いところを捉えたまま、空いた手で{b}の{男性器}をゆっくりと扱き上げた。|' +
+      '{a}は{b}の反応を見下ろしながら、後ろの膨らみを押し上げるのと同じ速さで、手のひらを{b}の{男性器}に滑らせた。|' +
+      '{a}は{b}の後ろを責める手を緩めないまま、{b}の{乳首}に唇を寄せて、そっと吸い上げた。'),
+    e: L('{a}は{b}の後ろを責め立てたまま、{先走り}でぬるついた{b}の{男性器}をぐちゅぐちゅと扱き上げた。|' +
+      '{a}は後ろの膨らみをとんとんと叩きながら、{b}の{男性器}の先を手のひらでぬちぬちと擦った。|' +
+      '{a}は{b}の後ろをぐりぐりと責めながら、{b}の{乳首}をきゅっと摘まみ上げた。')
+  };
+  var INS = {
+    fg: {
+      n: L('{a}は濡らした指を{b}の{後ろ}へ沈め、もう片方の手で{b}の{男性器}を包むように扱いた。|' +
+        '{a}は{b}の脚を開かせ、指先で{後ろ}をほぐしながら、ゆっくりと奥の膨らみを探っていった。'),
+      e: L('{a}は{b}の{後ろ}に指を二本ぬぷりと沈め、くいくいと曲げながら{b}の{男性器}を扱き上げた。|' +
+        '{a}は指で{b}の{後ろ}をぐちゅぐちゅと掻き回し、跳ねる{b}の{男性器}を空いた手で握り込んだ。')
+    },
+    sp: {
+      n: L('{a}は腰に着けたペニバンの張り型を{b}の{後ろ}にあてがい、{b}の息に合わせて少しずつ沈めていった。|' +
+        '{a}は腰のペニバンを確かめてから、張り型の先で{b}の{後ろ}をゆっくりと押し広げていった。'),
+      e: L('{a}は腰のペニバンの張り型で{b}の{後ろ}をずぶずぶと押し広げ、浅いところをごりごりと擦り上げた。|' +
+        '{a}は腰に締めたペニバンの張り型を{b}の{後ろ}へぬぷっと沈め、膨らみを狙って小刻みに腰を揺らした。')
+    }
+  };
+  var RIDE3 = /跨|腰を[^。、]{0,4}(?:落と|沈め)|身を沈め|呑み込|呑みこ|飲み込|迎え入れ|自分の(?:中|奥|ナカ|\{ナカ\}|内側)|騎乗/;
+  var TOOL3 = /指|舌|張り型|ペニバン|ディルド|バイブ|玩具/;
+  EP.FRONT = FRONT; EP.KEEP = KEEP; EP.INS = INS;
+  /* 受け U の後ろに、T のほかの人（男性器・ペニバン）が入る組か */
+  function backBy(C, T, U) {
+    var T3 = HK.Trio3;
+    return (C.E || []).some(function (e2) { return e2[1] === U && e2[0] !== T && (T3.edgeKind(e2[0], U) === 'm' || (C.isSp && C.isSp(e2[0], U))); });
+  }
+  var SEN3 = /[^。！？「」]*(?:「[^」]*」[^。！？「」]*)*[。！？]/g;
+  function riderFix(C, text) {
+    var E0 = C && C.E, T3 = HK.Trio3;
+    if (!E0 || !T3 || !T3.edgeKind || HK.SAFE_ON) return text;
+    var st = C.ero ? 'e' : 'n', used = {}, R = mkRng(text.slice(0, 64) + '|rider');
+    var re = function (n) { return HK.reEsc ? HK.reEsc(n) : n; };
+    E0.forEach(function (e) {
+      var T = e[0], U = e[1];
+      if (T3.edgeKind(T, U) !== 'fm' || !hasM(U) || hasF(U) || (P().noGen && (P().noGen(T) || P().noGen(U)))) return;
+      var tn = re(T.name), un = re(U.name), back = backBy(C, T, U), sp = !!(C.isSp && C.isSp(T, U));
+      /* 本文が誰を後ろに置いているか（媚薬ロッカーの「前から{m}に、後ろから{t}に抱えこまれていた」など、形の変化と違う置き方をする部品がある）を先に見る */
+      var nar = text.replace(/「[^」]*」/g, ''), behind = function (n) { return new RegExp('後ろから' + n + '(?:に|が)|' + n + '(?:は|が)[^。]{0,12}(?:背後|後ろ)に回|' + n + 'が後ろから').test(nar); };
+      if (behind(tn)) back = false;
+      else if ((C.g || []).some(function (c) { return c !== T && c !== U && behind(re(c.name)); })) back = true;
+      var subj = new RegExp(tn + '(?:は|が|も)'), inT = new RegExp(tn + 'の(?:ナカ|\\{ナカ\\}|中|奥|膣)(?:に|で|へ)'), uSubjInT = new RegExp(un + '(?:は|が)[^。]{0,16}' + tn + 'の(?:ナカ|\\{ナカ\\}|中|奥)');
+      var insd = new RegExp(tn + '(?:は|が)[^。]{0,40}(?:指|張り型)[^。]{0,24}(?:沈|埋|差し入|押し当|あてが|満たし|貫|押し広げ|掻き回|ほぐ)');
+      var n = 0, inBefore = false;
+      text = text.replace(SEN3, function (sen) {
+        var b0 = sen.replace(/「[^」]*」/g, '');
+        if (b0.indexOf(T.name) < 0 || b0.indexOf(U.name) < 0) return sen;
+        if (TOOL3.test(b0)) { if (insd.test(b0) && b0.indexOf(U.name) >= 0) inBefore = true; return sen; }
+        if (!((subj.test(b0) && RIDE3.test(b0)) || inT.test(b0) || uSubjInT.test(b0))) return sen;
+        var lead = (sen.match(/^\s+/) || [''])[0];
+        var tab = back ? FRONT[st] : inBefore ? KEEP[st] : INS[sp ? 'sp' : 'fg'][st];
+        var pool = tab.filter(function (x) { return !used[x]; });
+        if (n++ || !pool.length) return lead;
+        var t = pool[R.int(pool.length)]; used[t] = 1;
+        if (!back) inBefore = true;
+        return lead + t.replace(/\{a\}/g, T.name).replace(/\{b\}/g, U.name);
+      });
+    });
+    return text;
+  }
+  /* 段ごとの文は、区切りの印を挟んで一つの本文にしてから直し、また段に戻す（印が欠けたら直さない） */
+  var STG3 = ['fore', 'in', 'mid', 'peak', 'after'];
+  function fmFix(C, o3) {
+    var E0 = C && C.E, T3 = HK.Trio3;
+    if (!E0 || !T3 || !T3.edgeKind || HK.SAFE_ON || !E0.some(function (e) { return T3.edgeKind(e[0], e[1]) === 'fm'; })) return;
+    var ks = STG3.filter(function (k) { return typeof o3[k] === 'string'; });
+    var text = riderFix(C, ks.map(function (k, i) { return o3[k] + '⁤' + i + '⁤。'; }).join(''));
+    var parts = text.split(/⁤\d+⁤。/);
+    if (parts.length !== ks.length + 1) return;
+    ks.forEach(function (k, i) { o3[k] = parts[i]; });
+  }
+  /* HK.FM.fixWith（pos-fm.js）は、女性の攻めと男性の受けの二人の記録を文ごとに直す。三人以上の場面では、主語が三人目の住人の文
+     （「ユイはタクミの腰を後ろから抱えこみ、…貫いた」「ユイがタクミの上に跨り直した」）まで女性の攻めの文として「指を後ろへ」に置き換え、
+     後ろの人との二重の挿入になっていた。三人目が主語の文は、直す前に伏せて、直したあとに戻す（2026-11-05） */
+  function fmGuard() {
+    var FM = HK.FM;
+    if (!FM || !FM.fixWith || FM.fixWith._eroPlay) return;
+    var f0 = FM.fixWith;
+    FM.fixWith = function (ctx, text, A, bn) {
+      var ns = (RUN.names || []).filter(function (n) { return n && A && n !== A.name && n !== bn && A.name.indexOf(n) < 0 && n.indexOf(A.name) < 0 && String(bn).indexOf(n) < 0 && n.indexOf(bn) < 0; });
+      if (HK.SAFE_ON || !ns.length || typeof text !== 'string' || !A) return f0.apply(this, arguments);
+      var all = ns.concat([A.name, bn]).sort(function (x, y) { return y.length - x.length; }).map(function (n) { return HK.reEsc ? HK.reEsc(n) : n; });
+      var reS = new RegExp('(' + all.join('|') + ')(?:は|が|も)'), keep = [];
+      var masked = text.replace(/[^。！？「」]*(?:「[^」]*」[^。！？「」]*)*[。！？]/g, function (sen) {
+        var m = reS.exec(sen.replace(/「[^」]*」/g, ''));
+        if (!m || ns.indexOf(m[1]) < 0) return sen;
+        keep.push(sen);
+        return '\u2063' + (keep.length - 1) + '\u2063。';
+      });
+      if (!keep.length) return f0.apply(this, arguments);
+      var out = f0.call(this, ctx, masked, A, bn);
+      if (typeof out !== 'string') return out;
+      return out.replace(/\u2063(\d+)\u2063。/g, function (x, i) { return keep[+i]; });
+    };
+    for (var k in f0) if (Object.prototype.hasOwnProperty.call(f0, k)) FM.fixWith[k] = f0[k];
+    FM.fixWith._eroPlay = true;
+  }
   function install() {
     var A = HK.Attr;
+    fmGuard();
     scWrap(HK.ThickSex, 'scene', function (opt) { return { force: !!(opt && opt.force) }; });
     scWrap(HK.ThickEro, 'scene', function (opt) { return { force: !!(opt && opt.force) }; });
     scWrap(HK.TKC, 'body', function (T, U, o) { return { force: !!(o && o.force), soft: !!(o && o.soft) }; });
@@ -692,6 +843,8 @@
           var mode = o && /^(?:mf|fm|ff)$/.test(o.mode || '') ? o.mode : 'mf';
           var co = ctxOpt(T, U, mode, !!(o && o.ero), ph === 'TU' ? 'tkc' : o && o.ero ? 'ero' : 'thick');
           co.ph = ph;
+          co.noPros = inBefore(arr, idx);
+          co.strapOk = mode === 'fm' && !!(HK.FM && HK.FM.pair && HK.FM.pair(T, U));
           EP.weave(arr, T, U, idx, co);
         } catch (e) { if (EP.log) EP.log.push({ err: String(e && e.stack || e) }); }
         return r;
@@ -766,9 +919,13 @@
             this._eroPlay = true;
             try {
               var e = this.E && this.E[0], T = e && e[0], U = e && e[1], Q = P();
-              if (T && U && !(Q && Q.hardTop && Q.hardTop(U, T))) {
-                var mode = Q && Q.isF ? (Q.isF(T, U) ? (Q.isF(U, T) ? 'ff' : 'fm') : 'mf') : 'mf';
+              /* 組の体は HK.Trio3.edgeKind（m＝男性器で挿れる攻め。フタナリの攻めもここ／fm＝女性の攻めが男性の受けを指と手で／ff／n＝性器の語なし）で決める */
+              var ek = T && U && T3.edgeKind ? T3.edgeKind(T, U) : '';
+              if (T && U && ek !== 'n' && !(Q && Q.hardTop && Q.hardTop(U, T))) {
+                var mode = ek === 'fm' ? 'fm' : ek === 'ff' ? 'ff' : ek === 'm' ? 'mf' : Q && Q.isF ? (Q.isF(T, U) ? (Q.isF(U, T) ? 'ff' : 'fm') : 'mf') : 'mf';
                 var co = ctxOpt(T, U, mode, !!this.ero, 'trio');
+                /* 受けの後ろに別の人が入る形（twoOne：もう一人の攻めも同じ受けを抱く。男性器・指・張り型）では、後ろの段（前立腺・結腸）を差さない */
+                co.noBack = (this.E || []).some(function (e2) { if (e2[1] !== U || e2[0] === T) return false; var k2 = T3.edgeKind(e2[0], U); return k2 === 'm' || k2 === 'fm'; });
                 co.R = EP.rngFor(T, U);
                 if (RUN.scen === 'locker') co.place = 'locker';
                 var plan = co.skip ? null : EP.plan(T, U, co);
@@ -784,6 +941,15 @@
           }
           return tx0.apply(this, arguments);
         };
+        /* 段ごとの文（render。text もこれを通る）を仕上げる：女性の攻め × 男性の受けの組の跨る・受け入れる文（fmFix） */
+        if (typeof c.render === 'function') {
+          var rd0 = c.render;
+          c.render = function () {
+            var o3 = rd0.apply(this, arguments);
+            try { if (o3 && typeof o3 === 'object') fmFix(this, o3); } catch (er2) { if (EP.log) EP.log.push({ err: String(er2 && er2.stack || er2) }); }
+            return o3;
+          };
+        }
         return c;
       };
       f._eroPlay = true;
