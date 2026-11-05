@@ -606,7 +606,10 @@
       if (o.blind && (ST2.look.test(n) || /見上げ|見つめ|睨|目を合わせ|見下ろ/.test(n))) return false;
       return true;
     });
-    return out.length ? out : list;
+    if (out.length) return out;
+    /* 合う文が無いときも、本文にもう出ている文は戻さない（同じ記録に同じ文を二度出さない。2026-11-05） */
+    var fresh = list.filter(function (t) { return all.indexOf(normNames(t, S.a, S.b)) < 0 && all.indexOf(t) < 0; });
+    return fresh.length ? fresh : list;
   }
   /* 段の中の文 s の中の from を to に（一つだけ） */
   function subIn(u, s, from, to) {
