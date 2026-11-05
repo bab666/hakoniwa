@@ -30,9 +30,12 @@
 - **多人数**：出番の計測、人数ごとの導入・最後の場面・結末、外れた人の扱い。
 - **点検 ＋ 自分で読む**：check.js を 0 にしたうえで、10 通り × 20 回の計測の表と、記録 3 本以上の通し読み（辻褄・設定の反映・面白さ）を設計の文書に残す。
 
+- **回数・長さ・部屋だけの文**（3 回目の報告から）：「多め」で長い場面無しが 4 回に 1 回、場面の文の 4 割強が 3 部屋共通、宿の種類が旅館に固定、きっかけがその日に無かった出来事を参照。→ 回数・長さの設定を全入口で守る、kit に部屋専用の段を優先する口、場所を spot で渡す、きっかけは記録を見る。
+
 ## 3. 報告との対応
 
 - 新婚：`docs/reports/2026-11-04/shinkon-playtest-1104.md` → shinkon-design.md 9 章
 - 看病：`docs/reports/2026-11-04/kanbyo-playtest-1104.md` → kanbyo-design.md
 - 電車・同居（1 回目）：`docs/reports/2026-11-04/train-futari-playtest-1104.md` → train-design.md 14 章・futari-design.md 11 章
+- デート・新婚・看病（3 回目・パック）：`docs/reports/2026-11-05/pack-playtest-3.md` → 各設計の文書（作業中）
 - 電車・同居（2 回目）：`docs/reports/2026-11-05/train-futari-playtest-2.md` → train-design.md 15 章・futari-design.md 12 章（作業中）
