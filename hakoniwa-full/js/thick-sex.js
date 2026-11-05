@@ -471,6 +471,14 @@
     return fem && fem(a, b) && fem(b, a) ? 'ff' : fem && fem(a, b) && !fem(b, a) ? 'fm' : 'mf';
   };
   /* ペニバンを使える組：女性の攻め（男性器なし・性器なしでない）× 男性器のある受け（HK.FM.STRAP_P で場面ごとに決める。一度決めたら、その場面の段・プレイの段（ero-play-r18.js）も同じ） */
+  /* ペニバンの回の果てる段（2026-11-05）：指と手の果てる段（FM_CLIMAX）のうち、手の文（「手の中に吐き出した」「前を握る手」「奥を責める手」）は、
+     その場面に前を握る・扱く手の文があるときだけ候補に入れる（張り型で責めているのに、手の文が無いまま「手の中に」と果てる段にしない） */
+  T.SP_HAND = /手(?!首)/;
+  T.SP_HELD = /\{男性器\}を[^。]{0,12}(?:握|扱|包)|(?:前|根元)を[^。]{0,6}(?:握|扱|包)|扱き|扱い|手のひらで[^。]{0,10}\{男性器\}/;
+  T.spClimax = function (list, before) {
+    var held = T.SP_HELD.test(String(before || '').replace(/「[^」]*」/g, ''));
+    return held ? list : list.filter(function (s) { return !T.SP_HAND.test(String(s).replace(/「[^」]*」/g, '').replace(/手首/g, '')); });
+  };
   T.strapOk = function (a, b) { var P = HK.Pos; return !!(P && P.hasM && a && b && !P.hasM(a) && P.hasM(b) && !(P.noGen && (P.noGen(a) || P.noGen(b)))); };
   T.strapPick = function (opt, a, b) {
     if (!T.strapOk(a, b)) return false;
@@ -516,7 +524,7 @@
     var fa = pick(faL.length ? faL : T.FEEL_A[mode]), pl = opt.place && T.PLACE[opt.place] ? pick(T.PLACE[opt.place]) : '';
     /* 夜の性格の一文（attr-r18.js：攻めの振る舞いと受けの崩れ方。どちらも決めていなければ空） */
     var ntx = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(a, b, mode, pick, false) : '';
-    var cl = mode === 'ff' ? pick(T.ffClimaxFor(g, ffBody)) : mode === 'fm' ? pick(sp && T.FM_CLIMAX_SP && T.FM_CLIMAX_SP[g] ? T.FM_CLIMAX[g].concat(T.FM_CLIMAX_SP[g]) : T.FM_CLIMAX[g]) : pick(jl ? T.JEALOUS_CLIMAX : hard ? T.ROUGH_CLIMAX : T.CLIMAX[st] || T.CLIMAX.gentle);
+    var cl = mode === 'ff' ? pick(T.ffClimaxFor(g, ffBody)) : mode === 'fm' ? pick(sp && T.FM_CLIMAX_SP && T.FM_CLIMAX_SP[g] ? T.spClimax(T.FM_CLIMAX[g], open0 + fore + body + feel + fa + ntx).concat(T.FM_CLIMAX_SP[g]) : T.FM_CLIMAX[g]) : pick(jl ? T.JEALOUS_CLIMAX : hard ? T.ROUGH_CLIMAX : T.CLIMAX[st] || T.CLIMAX.gentle);
     /* 攻めの台詞を入れる段（繋がる段・山場の文にすでに攻めの台詞があれば、そこは足さない） */
     var TQ = /\{a\}「|\{a\}は[^。「]{0,12}「/, TQg = /\{a\}「|\{a\}は[^。「]{0,12}「/g, cnt = function (t) { return (String(t).match(TQg) || []).length; };
     /* 夜の性格の一文（ntx と、attr-r18.js が始まりのあとに足す一文）にも攻めの台詞が入ることがあるので、夜の性格を決めた攻めは一本あるものとして数える */

@@ -1134,7 +1134,7 @@
         var pressK = F.pressOf(a, b, opt), md = modeOf(r, a, b);
         /* エッチの型（play-r18.js の HK.Play）：入り方・主な責め・道具・体位・終わり方に沿って本文を組み替え、性格が目立つ行為の段を足す */
         var pl = null;
-        if (HK.Play && HK.Play.apply) { try { pl = HK.Play.apply(r.text, { a: a, b: b, mode: md, opt: opt, ero: obj === HK.ThickEro, parts: parts, press: pressK, lead: lt }); } catch (e) { pl = null; if (F.log) F.log.push({ err: String(e) }); } }
+        if (HK.Play && HK.Play.apply) { try { pl = HK.Play.apply(r.text, { a: a, b: b, mode: md, opt: opt, ero: obj === HK.ThickEro, parts: parts, press: pressK, lead: lt, strap: r.strap != null ? r.strap : opt.strap }); } catch (e) { pl = null; if (F.log) F.log.push({ err: String(e) }); } }
         if (pl && pl.act) parts.push({ role: 'act', t: pl.act });
         var t1 = pl ? pl.text : r.text;
         if (HK.SexSpot && HK.SexSpot.cur) t1 = HK.SexSpot.fix(t1, HK.SexSpot.cur);
