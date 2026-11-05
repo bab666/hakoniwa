@@ -129,7 +129,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `name` | 言い換え（名前が壊れうる） |
 | `rel` | 関係を前提にした文・場面や結末を足した |
 | `pair` | 二人きりで出うる文（出られない部屋・執着・関係・共通の出来事。第三者を前提にした文） |
-| `kin` | 血縁の二人の札・文（親子・きょうだいを「友人」にしない。結末・関係図・共通の出来事） |
+| `kin` | 血縁の二人の札・文（親子・きょうだいを「友人」にしない。結末・関係図・共通の出来事）・関係の種類の名前（擬似親子・セフレなど）を本文に出さない |
 | `event` | 出来事の印（@event・label・場面の書き方） |
 | `zen` | r18 の印（全年齢版の中身が変わる） |
 | `order` | 読み込み順・かたまりの振り分け |
@@ -183,6 +183,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `/relFilter\|relClass\|初対面\|初めまして\|連絡先\|付き合い始め\|出会/` | `rel` |
 | `/ほかの誰か\|他の誰か\|別の誰か\|みんな\|全員\|人目\|誰と話\|誰に笑いかけ\|周りの人\|noThird\|THIRD_RE/` | `pair` |
 | `/友人\|友達\|友だち\|親友\|HK\.Kin\b\|KIN_FR_TXT\|\.family\b/` | `kin` |
+| `/擬似親子\|疑似親子\|義兄弟\|義姉妹\|義理のきょうだい\|親代わり\|元恋人\|セフレ\|友達以上恋人未満\|宿敵\|両片想い\|両片思い\|拾われ\|\{rel\}\|\{rels\}\|\{myrole\}\|\{r[ab]?\}\|tieLabel\|roleA\|roleB/` | `kin` |
 | `/@event\|@labels\|@event-table\|@event-ok/` | `event` `rel` `js` |
 | `/r18:(?:begin\|end\|ok)/` | `zen` `js` |
 | `/\blabel\s*:\s*['"]\|\btag\s*:\s*['"]\|kind\s*:\s*['"]climax\|\bsex\s*:\s*true/`・ファイルの追加と削除 | `event` |
@@ -208,6 +209,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | 単独・乱順の読み込み（chunk-regress）（`chunk-regress`） | heavy | `order` `buildtool` | build | 1 | 450 秒 | 両ビルド |
 | かたまりの境目（chunk-audit）（`chunk-audit`） | heavy | `order` `buildtool` | build | 1 | 60 秒 | 両ビルド |
 | 血縁の二人の札（kin-label-audit）（`kin-label`） | heavy | `kin` | build | 1 | 45 秒 | 親子・きょうだい・親戚・双子・擬似親子の二人の結末・関係図の札（開始時・転機）・台詞・地の文に「友人・友達・親友」が 0 件（R18版・全年齢モード・全年齢版）。箱庭のかたまりだけ変えたときはその箱庭だけ |
+| 関係の名前の語（rel-word-audit）（`rel-word`） | heavy | `kin` | build | 1 | 150 秒 | 擬似親子・義理の兄弟・セフレ・元恋人・友達以上恋人未満・敵対の二人の台詞・本人の視点の地の文に、関係の種類の内部の名前（擬似親子・義理のきょうだい・親代わり・セフレ・友達以上恋人未満・両片想い など）が 0 件（R18版・全年齢モード・全年齢版。記録の区分 seg で、名詞の引用・理由の欄・結果欄・関係図の札は数えない）。箱庭のかたまりだけ変えたときはその箱庭だけ |
 | 口調の辞書の成績（dict-regress。参考）（`dict-regress`） | heavy | `dict` | — | 1 | 10 秒 | 終了コードに入れない（成績を出すだけ） |
 | デートの舞台と段（date-setting-audit）（`date-setting`） | pre | `pack` | — | 0 | 1 秒 | set-b のデートの日々を変えたとき。行き先 52 か所 × 汎用の出来事の舞台の矛盾・段の付いていない行（ページを開かない） |
 | 看病の部屋の役と状態（kanbyo-role-audit）（`kanbyo-role`） | heavy | `pack` | pack-site | 1 | 30 秒 | set-b の看病の部屋を変えたとき。報告の 16 通りで、看る人・看られる人の取り違え・通いの行き来・熱の数字と言葉・関係の取り違え・三人目・結末のあとが 0 件 |
@@ -216,6 +218,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | パックの点検の一式（audit-all・HK_ONLY_SCEN）（`pack-audit`） | heavy | `pack` | pack-site | 2 | 150 秒 | 変えた部屋だけ（共有の部品 kit などを変えたらそのパックの全部屋）。長い場面を変えたら --extra=sexflow も |
 | パックの口調の違和感（tone-feel --scen=部屋）（`pack-feel`） | heavy | `pack` | pack-site | 1 | 60 秒 | 台詞を変えた部屋だけ |
 | パックの喘ぎの口調（moan-tone-audit --scen=部屋）（`pack-moan`） | heavy | `pack` | pack-site | 1 | 120 秒 | 喘ぎを変えた部屋だけ |
+| パックの関係の名前の語（rel-word-audit 部屋）（`pack-relword`） | heavy | `pack` | pack-site | 1 | 30 秒 | 台詞・場面・関係の文を変えた部屋だけ（R18版・全年齢モード） |
 | パックの三人の場面（trio-shape-audit 部屋）（`pack-flow`） | heavy | `pack` | pack-site | 1 | 30 秒 | 三人の部品を変えた部屋だけ（長い場面はパックの audit-all に --extra=sexflow で入れる） |
 
 補足：
@@ -224,6 +227,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 - 点検の道具（hakoniwa-tools/ の js）を変えたら、その道具を使う点検を全範囲で回し直す（キャッシュの鍵にも道具の中身が入っている）。check.js・check/table.js・text-studio は何も回さない。
 - 文書（*.md・docs/）・CLAUDE.md は何も回さない。
 - 血縁の二人の札（kin-label。2026-11-04）：結末の分類・関係図・関係の出来事・共通の小さな出来事・結末の js か、友人の語・`HK.Kin` に触れた行で回す。親子・きょうだい・親戚・双子・擬似親子の二人を全箱庭で回し、結末・関係図の札・台詞・地の文に「友人・友達・親友」が 0 件で合格（`docs/reports/2026-11-04/kin-and-topics.md`）。
+- 関係の名前の語（rel-word。2026-11-05）：同じ印 kin（関係の種類の名前・`{rel}`・`tieLabel`・`roleA` に触れた行も kin）で回す。擬似親子・義理の兄弟・セフレ・元恋人・友達以上恋人未満・敵対の二人の台詞・本人の視点の地の文に関係の種類の内部の名前が 0 件で合格。パックは部屋ごとの pack-relword（`docs/reports/2026-11-04/kin-and-topics.md` の 3 節）。
 
 ## 4. 重複の解消で変えた道具（判定は変えていない）
 

@@ -96,7 +96,8 @@
   };
   OM.END_IDS = Object.keys(E);
 
-  function mk(ctx, id, a, b, k) { var d = E[id], f = function (x) { return k ? x.replace(/\{k\}/g, k) : x; }; return { id: id, title: f(d[0]), text: ctx.t(f(d[1]), a, b), a: a.i, b: b ? b.i : null }; }
+  /* k＝結末の名前に入る語（擬似親子など）、kt＝本文に入る語（血の繋がらない親子など。HK.Kin.ofSay。内部の名前を本文に出さない 2026-11-05） */
+  function mk(ctx, id, a, b, k, kt) { var d = E[id], f = function (x, w) { return w ? x.replace(/\{k\}/g, w) : x; }; return { id: id, title: f(d[0], k), text: ctx.t(f(d[1], kt || k), a, b), a: a.i, b: b ? b.i : null }; }
   /* 二人の関係から結末を一つ選ぶ（a を主語にする向きも決める） */
   B.endingFor = function (ctx, a, b) {
     var om = ctx.om, pf = ctx.pair(a, b), k = key(a, b), ab = ctx.R(a, b), ba = ctx.R(b, a);
@@ -139,7 +140,7 @@
     if (love(ab) !== love(ba)) { var lv = love(ab) ? a : b; return mk(ctx, 'reject', lv, lv === a ? b : a); }
     if (a.om.quit || b.om.quit) return mk(ctx, 'quit_alone', a.om.quit ? a : b, a.om.quit ? b : a);
     var kw = HK.Kin && HK.Kin.of(ctx, a, b);
-    if (kw) return mk(ctx, (ab.ten + ba.ten) / 2 > 35 ? 'kin_feud' : (ab.aff > 22 && ba.aff > 22) || pf.buddy ? 'kin_bond' : 'kin_cold', a, b, kw);
+    if (kw) return mk(ctx, (ab.ten + ba.ten) / 2 > 35 ? 'kin_feud' : (ab.aff > 22 && ba.aff > 22) || pf.buddy ? 'kin_bond' : 'kin_cold', a, b, kw, HK.Kin.ofSay ? HK.Kin.ofSay(ctx, a, b) : kw);
     if (pf.buddy) return mk(ctx, 'buddy', a, b);
     if ((ab.ten + ba.ten) / 2 > 35) return mk(ctx, 'rivals', a, b);
     if (ab.aff > 22 && ba.aff > 22) return mk(ctx, 'friends', a, b);
