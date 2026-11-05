@@ -125,6 +125,10 @@
 
   /* 男性の受けが入れる・跨る・上から攻める書き方（指・張り型の文に置き換える） */
   var BOT_ACT2 = /突き上げ|腰を(?:沈め|落と|打ちつけ|押しつけ)|跨[っりるがら]|覆いかぶさ|押し倒|組み敷|貫|押し入|挿れ|抱き潰|犯し|注ぎ込|中に出/;
+  /* 指・舌・口・手・張り型で責める文（女性の攻めの正しい書き方）。跨って受け入れる言い回し（RIDE_HARD）が無ければ、根元・奥・沈め などの語があっても直さない
+     （2026-11-05：口でする文「根元まで咥え込んだ」・張り型の文「張り型を根元まで沈めた」・指の文「指を締めつけた」を跨る文と取り違えて置き換えていた） */
+  var TOOL = /指|舌|張り型|ペニバン|ディルド|バイブ|玩具|咥え|口に含|唇|手のひら|手の中/;
+  var RIDE_HARD = /跨|騎乗|自分の(?:中|奥|ナカ|\{ナカ\}|内側)|腰を[^。、]{0,4}落と|迎え入れ/;
   /* 置き換えた文の体の語の印を語にする（ctx.env があれば lewd-words.js の作風で。なければ素の語） */
   function lw(ctx, s) {
     if (s.indexOf('{') < 0) return s;
@@ -198,7 +202,8 @@
         var ia = body.search(reA), ib = body.search(reB), subj = ia >= 0 && (ib < 0 || ia < ib) ? 'a' : ib >= 0 ? 'b' : last;
         if (ia >= 0 || ib >= 0) last = subj;
         var sx = SEXCTX.test(body) || A_FILLED.test(body) || RIDE_IN.test(body) || aIn.test(body);
-        var bad = sx && ((subj === 'a' && (RIDE_IN.test(body) || A_FILLED.test(body) || (TOP_PEN.test(body) && !RIDE.test(body)))) || (subj === 'b' && BOT_ACT2.test(body)) || partA.test(body) || partBin.test(body) || bInA.test(body) || (aIn.test(body) && !/指|舌/.test(body)) || (subj !== 'b' && A_FILLED.test(body) && body.indexOf(an) >= 0));
+        var toolOK = TOOL.test(body) && !RIDE_HARD.test(body);
+        var bad = sx && toolOK ? ((subj === 'b' && BOT_ACT2.test(body)) || bInA.test(body) || (aIn.test(body) && !/指|舌/.test(body))) : sx && ((subj === 'a' && (RIDE_IN.test(body) || A_FILLED.test(body) || (TOP_PEN.test(body) && !RIDE.test(body)))) || (subj === 'b' && BOT_ACT2.test(body)) || partA.test(body) || partBin.test(body) || bInA.test(body) || (aIn.test(body) && !/指|舌/.test(body)) || (subj !== 'b' && A_FILLED.test(body) && body.indexOf(an) >= 0));
         if (!bad && aSay.test(sen)) bad = true;
         /* 指の記録で「繋がる」（交わる書き方）が残っていれば、指の文に置き換える */
         if (!bad && mode === 'fg' && /繋が(?:っ|る|り)/.test(body) && (body.indexOf(an) >= 0 || body.indexOf(bn) >= 0)) bad = true;
@@ -234,7 +239,10 @@
     try {
       var cs = P.withIdx((input && input.chars) || []);
       var F = cs.filter(function (c) { return P.isF(c) && (P.isTop(c) || P.hasFor(c)); }), M = cs.filter(isM);
-      if (!F.length || !M.length || !res) return res;
+      /* 受け攻めの欄がリバ・おまかせの女性（男性器なし）が、二人の向き（HK.Pos.order）で攻めに回る組も直す（2026-11-05。安全網：元の表は指と手の文に直してある）。
+         向きが決まらない組（リバどうし：HK.Pos.fixed が偽）は、場面ごとにどちらが攻めか分からないので直さない */
+      var F2 = cs.filter(function (c) { return P.isFBody(c) && !P.hasM(c) && !(P.noGen && P.noGen(c)) && F.indexOf(c) < 0; });
+      if ((!F.length && !F2.length) || !M.length || !res) return res;
       var pairs = [];
       /* 恋愛・R18にしない組（キャラの設定 loveNG：相手の番号）と、恋愛相手を別の人に固定している組は、そもそも性的な場面にならないので直さない */
       /* 固定は番号一つ・番号の並びのどちらでも（engine.js の HK.parseLocks。[-1] は「誰とも」） */
@@ -244,6 +252,10 @@
       var tieNG = function (ix, iy) { return ((input && input.ties) || []).some(function (t) { return t && ((t.a === ix && t.b === iy) || (t.a === iy && t.b === ix)) && ((HK.tieNoLove && HK.tieNoLove(t)) || t.type === 'apathy' || t.type === 'fear'); }); };
       var ng = function (x, y) { var ix = cs.indexOf(x), iy = cs.indexOf(y); return (Array.isArray(x.loveNG) && x.loveNG.indexOf(iy) >= 0) || (Array.isArray(y.loveNG) && y.loveNG.indexOf(ix) >= 0) || (lk(x) != null && lk(x).indexOf(iy) < 0) || (lk(y) != null && lk(y).indexOf(ix) < 0) || tieNG(ix, iy); };
       F.forEach(function (f) { M.forEach(function (m) { if (FM.on(f, m) && !ng(f, m) && !(P.isMaleTop && P.isMaleTop(f, m))) pairs.push([f, m]); }); });
+      F2.forEach(function (f) { M.forEach(function (m) {
+        if (!P.hasM(m) || (P.noGen && P.noGen(m)) || ng(f, m) || (P.isMaleTop && P.isMaleTop(f, m)) || !P.okSex(f, m) || (P.fixed && !P.fixed(f, m))) return;
+        if (P.isF(f, m) && P.order(f, m)[0] === f) pairs.push([f, m, true]);
+      }); });
       if (!pairs.length) return res;
       var rng = HK.rng ? HK.rng(((input.seed || 1) * 7919 + 17) >>> 0) : null;
       var ctx = { env: (input && input.env) || {}, rng: function () { return rng ? rng.int(1000000) / 1000000 : Math.random(); }, pick: function (a) { return a[rng ? rng.int(a.length) : Math.floor(Math.random() * a.length)]; } };
@@ -270,7 +282,7 @@
         if (!e || typeof e.text !== 'string') return;
         for (var k = 0; k < pairs.length; k++) {
           var p = pairs[k];
-          if (both(e, p[0], p[1])) { ctx._lewd = e.lewd === true; e.text = FM.fix(ctx, e.text, p[0], p[1]); }
+          if (both(e, p[0], p[1])) { ctx._lewd = e.lewd === true; e.text = p[2] ? FM.fixWith(ctx, e.text, p[0], p[1].name) : FM.fix(ctx, e.text, p[0], p[1]); }
         }
         if (e._end != null) res.ending.lines[e._end] = e.text;
       });

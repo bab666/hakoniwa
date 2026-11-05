@@ -603,7 +603,8 @@
         if (R() < 0.4 && !out.peak) out.peak = F(pickF(R, dn.peak[uf][st]), key);
       } else if (key === 'pros') {
         /* 女性の攻め × 男性の受け：指と手（fm）。二人の場面で HK.FM が直す組（o.strapOk）は、まれにペニバン（fsp。HK.FM.STRAP_P＝28%） */
-        var dp = D.pros, k2 = c === 'fm' ? (o.strapOk && R() < ((HK.FM && HK.FM.STRAP_P) || 0.28) ? 'fsp' : 'fm') : 'mm';
+        /* 長い場面（thick-sex.js・thick-sex-ero.js の scene）がペニバンの回を決めていれば、それに合わせる（o.strap。同じ場面の中で指とペニバンを混ぜない。2026-11-05） */
+        var dp = D.pros, k2 = c === 'fm' ? ((o.strap != null ? o.strap : o.strapOk && R() < ((HK.FM && HK.FM.STRAP_P) || 0.28)) ? 'fsp' : 'fm') : 'mm';
         if (k2 === 'fsp') plan.tool = 'sp';
         var tp = head(key) + pk(dp.fore[k2][st]) + manner(R, key, T, U, o) + react(R, key, T, U);
         if (!hasQ(tp)) tp += '{b}「{mb}」';
@@ -850,6 +851,7 @@
           co.ph = ph;
           co.noPros = inBefore(arr, idx);
           co.strapOk = mode === 'fm' && !!(HK.FM && HK.FM.pair && HK.FM.pair(T, U));
+          if (mode === 'fm' && o && o.strap != null) co.strap = !!o.strap;
           EP.weave(arr, T, U, idx, co);
         } catch (e) { if (EP.log) EP.log.push({ err: String(e && e.stack || e) }); }
         return r;
