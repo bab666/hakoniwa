@@ -93,7 +93,8 @@
     if (has('kanran')) o.push('kanran');
     if (YO_ID[d.id]) o.push(YO_ID[d.id]);
     if (d.kind === 'fun') o.push('asobi');
-    if (d.kind === 'shop') o.push('kaimono');
+    /* 服を買う余韻は、服を買える行き先だけ（家具と雑貨の店の日に「今日選んだ服」を出さない。2026-11-05 通し読み） */
+    if (d.kind === 'shop' && d.id !== 'kagu') o.push('kaimono');
     return o;
   }
   function yoinOf(ctx, day) {
@@ -214,7 +215,7 @@
     var entry = first && br !== 'hotel' ? 'first' : br;
     var kind = kindOf(ctx, br, day);
     if (kind === 'uchi' && entry !== 'first') entry = 'uchi';
-    var dest = day.P && day.P.main ? day.P.main.name : '';
+    var dest = day.P && day.P.main ? day.P.main.noun || day.P.main.name : '';
     /* 1. きっかけ：言い出す人（{a}）。ラブホ・車は性欲の強い方・夜の性格が攻めの方、ほかはデートの余韻から */
     var la = P && P.libK ? P.libK(A) : 1, lb = P && P.libK ? P.libK(B) : 1;
     var x = br === 'hotel' || br === 'car' ? (la > lb ? A : lb > la ? B : (ctx.rng() < 0.6 ? a : b)) : (ctx.rng() < 0.55 ? a : b), y = x === A ? B : A;
@@ -357,7 +358,7 @@
     if (!touch && !sp) return false;
     var nm = sp ? { t: sp.t.name, m: sp.m.name, u: sp.u.name } : {}, sub = function (t) { return String(t).replace(/\{([tmu])\}/g, function (m0, k) { return nm[k] || m0; }); };
     var pk = function (arr) { return arr[Math.floor(ctx.rng() * arr.length)]; };
-    var dest = day.P && day.P.main ? day.P.main.name : '';
+    var dest = day.P && day.P.main ? day.P.main.noun || day.P.main.name : '';
     var say3 = function (arr) { var t = DT.pickT(ctx, arr, a, bc[0]) || DT.pickT(ctx, arr, a, bc[0], true); return t ? DT.fill(ctx, t, a, bc[0], { c: bc[1].name, dest: dest }) : ''; };
     var lt = say3(TT.LEAD), fl = TT.FORM_LEAD[touch ? 'touch' : sp.p];
     if (!lt) return false;
