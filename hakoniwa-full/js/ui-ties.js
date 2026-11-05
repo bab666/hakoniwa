@@ -87,6 +87,8 @@
   function loveSel(t, attr, short) { return '<select ' + attr + ' aria-label="恋愛" title="' + esc(loveHelp(t)) + '">' + loveOpts(t, short) + '</select>'; }
   /* 説明の行に添える文（自動のときは足さない。選択肢に既定が出ているため） */
   function loveNote(t) {
+    /* 関係ごとの恋愛の欄は画面に出さない（2026-11-05）。説明にも添えない */
+    if (!HK.TIE_LOVE_GATE) return '';
     var D = t && HK.TIES[t.type], v = loveVal(t), fam = !!(D && D.family && !D.loveOK);
     if (!D || !v) return '';
     /* 恐怖の「恋愛：あり」は、恐怖が和らぐ見込みがあるという意味（和らいだあとにだけ恋愛になる。2026-11-03） */
@@ -113,7 +115,7 @@
     var na = (by[t.a] || {}).name, nb = (by[t.b] || {}).name;
     var typeIn = lz && CP ? CP.typeOpt(t.type) : HK.tieOptions ? HK.tieOptions(t.type, { dir: true }) : HK.TIE_ORDER.map(function (id) { var d = HK.TIES[id]; return '<option value="' + id + '"' + (id === t.type ? ' selected' : '') + '>' + esc(d.label) + (d.dir ? '（' + d.roleA + '→' + d.roleB + '）' : '') + '</option>'; }).join('');
     var xs = '', past = '', ev = '';
-    xs += loveSel(t, 'id="tl-' + k + '" data-f="tie" data-k="' + k + '" data-p="love"', true);
+    /* 関係ごとの「恋愛：自動／あり／なし」の欄は出さない（2026-11-05 利用者の指示：恋愛と夜の可否は住人の設定「恋愛にしない相手」「R18にしない相手」などで決める） */
     var CO = HK.coldOpts ? HK.coldOpts(t.type) : null;
     if (CO) xs += '<select id="tc-' + k + '" data-f="tie" data-k="' + k + '" data-p="cold" aria-label="' + CO.aria + '">' + CO.order.map(function (id) { return '<option value="' + id + '"' + ((t.cold || '') === id ? ' selected' : '') + '>' + esc(CO.map[id].label) + '</option>'; }).join('') + '</select>';
     /* 追加の欄（型・度合い・気持ち・様子。許嫁・元恋人は二人それぞれの気持ち）。hide の欄（敵対の度合い「憎悪」）は出さない（保存済みの値は残って効く）。
@@ -219,7 +221,7 @@
   var B = { open: false, op: 'tie', sc: '', tg: 'g', ts: 'gin', lv: 'no', p: '', g1: '', g2: '', m: {}, ty: 'friend', dir: 'l', rep: false, mode: 'add', both: false, lk: '', tf: '', fv: 'noev:off', cp: { tie: 1, ng: 1, lock: 1, sex: 1, nk: 1 } };
   var undo = null;
   var CAP_TIES = 3000, CAP_PAIRS = 30000;
-  function ngLabel() { return HK.SAFE_ON ? '恋愛にしない相手' : '恋愛・R18にしない相手'; }
+  function ngLabel() { return '恋愛にしない相手'; }
   /* R18版だけの操作（性行為の相手の固定）。全年齢版のビルドでは中身ごと落ちる */
   var SEX = null;
   /* r18:begin */
@@ -229,7 +231,7 @@
   function OPS() {
     var l = [['tie', '関係をまとめて付ける'], ['ng', ngLabel() + 'をまとめて付ける・外す'], ['lock', '恋愛相手の固定をまとめて足す・外す']];
     if (sexOn()) l.push(['sex', SEX.label + 'をまとめて足す・外す']);
-    return l.concat([['nk', '殺さない相手をまとめて付ける・外す'], ['fld', '関係の欄（出来事・過去）をまとめて変える'], ['love', '関係の恋愛（自動・あり・なし）をまとめて変える'], ['del', '関係をまとめて削除する'], ['copy', 'ある人の関係・設定をほかの人に写す']]);
+    return l.concat([['nk', '殺さない相手をまとめて付ける・外す'], ['fld', '関係の欄（出来事・過去）をまとめて変える'], ['del', '関係をまとめて削除する'], ['copy', 'ある人の関係・設定をほかの人に写す']]);
   }
   /* 範囲の選択肢（グループが無いときはグループを使うものを出さない） */
   var PAIR_SC = [['gg', 'グループの全員どうし', 1], ['pg', '選んだ人 × グループの全員', 1], ['pa', '選んだ人 × 全員', 0], ['pm', '選んだ人 × 選んだ住人たち', 0], ['g2', 'グループ × グループ', 2], ['mm', '選んだ住人たちどうし', 0]];
@@ -308,9 +310,9 @@
   function put(c, f, id) { var l = idl(c[f]).filter(function (x) { return x !== id; }); l.push(id); c[f] = l; }
   function pull(c, f, id) { if (!Array.isArray(c[f])) return false; var n = c[f].length; c[f] = c[f].filter(function (x) { return x !== id; }); return c[f].length !== n; }
   /* 恋愛（・R18）にしない相手に入れる：双方向。二人のあいだの恋愛相手の固定・性行為の相手の固定は外す（⚙️ 設定と同じ決まり） */
-  function ngOn(x, y) { put(x, 'loveNG', y.id); put(y, 'loveNG', x.id); pull(x, 'loveLock', y.id); pull(y, 'loveLock', x.id); pull(x, 'sexLocks', y.id); pull(y, 'sexLocks', x.id); }
+  function ngOn(x, y) { put(x, 'loveNo', y.id); put(y, 'loveNo', x.id); pull(x, 'loveLock', y.id); pull(y, 'loveLock', x.id); }
   /* 恋愛相手の固定に足す：二人のあいだの「恋愛にしない相手」は外す（⚙️ 設定と同じ決まり） */
-  function lockOn(x, y) { put(x, 'loveLock', y.id); pull(x, 'loveNG', y.id); pull(y, 'loveNG', x.id); }
+  function lockOn(x, y) { put(x, 'loveLock', y.id); pull(x, 'loveNo', y.id); pull(y, 'loveNo', x.id); }
   function sexMode(c) { return c.sexLock === 'pick' || c.sexLock === 'pickMob'; }
   function sexOnTo(x, y) { if (!sexMode(x) || B.lk) x.sexLock = B.lk || 'pick'; put(x, 'sexLocks', y.id); }
   function sexOff(x, y) { pull(x, 'sexLocks', y.id); if (sexMode(x) && !idl(x.sexLocks).length) x.sexLock = ''; }
@@ -341,7 +343,7 @@
     }
     if (op === 'ng' || op === 'nk') {
       var PR2 = pairs(); if (PR2.err) return { n: 0, msg: PR2.err };
-      var f = op === 'ng' ? 'loveNG' : 'noKillFor', nm = op === 'ng' ? ngLabel() : '殺さない相手', on = B.mode !== 'del', lockHit = 0;
+      var f = op === 'ng' ? 'loveNo' : 'noKillFor', nm = op === 'ng' ? ngLabel() : '殺さない相手', on = B.mode !== 'del', lockHit = 0;
       var L = PR2.list.filter(function (p) { var x = p[0], y = p[1], h = has(x, f, y.id) && has(y, f, x.id), any = has(x, f, y.id) || has(y, f, x.id); return on ? !h : any; });
       if (op === 'ng' && on) L.forEach(function (p) { var x = p[0], y = p[1]; if (has(x, 'loveLock', y.id) || has(y, 'loveLock', x.id) || has(x, 'sexLocks', y.id) || has(y, 'sexLocks', x.id)) lockHit++; });
       var tx2 = PR2.list.length + '組のうち' + L.length + '組を、' + (on ? '二人とも互いの「' + nm + '」にします' : '二人とも「' + nm + '」から外します') + (lockHit ? '。' + lockHit + '組は恋愛相手の固定' + (sexOn() ? '・' + SEX.short + 'の固定' : '') + 'から外れます' : '');
@@ -358,7 +360,7 @@
       if (!TG.length) return { n: 0, msg: B.tg === 'm' ? '相手の住人を選んでください（下の一覧）' : '相手になる住人がいません' };
       var need = function (x, y) { return on2 ? !has(x, lf, y.id) || (op === 'sex' && !sexMode(x)) : has(x, lf, y.id); };
       var L2 = TG.filter(function (o) { return need(P, o) || (B.both && need(o, P)); });
-      if (op === 'lock' && on2) L2.forEach(function (o) { if (has(P, 'loveNG', o.id) || has(o, 'loveNG', P.id)) ngHit++; });
+      if (op === 'lock' && on2) L2.forEach(function (o) { if (has(P, 'loveNo', o.id) || has(o, 'loveNo', P.id)) ngHit++; });
       var tx3 = P.name + 'の' + nm2 + (on2 ? 'に' : 'から') + L2.length + '人を' + (on2 ? '足します' : '外します') + (B.both ? '（相手の側の' + P.name + 'も' + (on2 ? '足します' : '外します') + '）' : '') + (ngHit ? '。' + ngHit + '人は「' + ngLabel() + '」から外れます' : '');
       return { n: L2.length, msg: L2.length ? tx3 : (on2 ? 'すでに全員が入っています' : '外す相手がいません'), ask: tx3 + '。よろしいですか？', label: P.name + 'の' + nm2 + (on2 ? 'に' : 'から') + L2.length + '人を' + (on2 ? '足した' : '外した'),
         run: function () {
@@ -416,7 +418,7 @@
           ix2[pk(T.id, o) + '|' + t.type] = 1; newT.push(nt);
         });
         var cnt2 = function (f, flag) { return flag ? idl(P[f]).filter(function (id) { return id !== T.id && by[id] && !has(T, f, id); }).length : 0; };
-        nNG += cnt2('loveNG', C.ng); nLk += cnt2('loveLock', C.lock); nNk += cnt2('noKillFor', C.nk);
+        nNG += cnt2('loveNo', C.ng); nLk += cnt2('loveLock', C.lock); nNk += cnt2('noKillFor', C.nk);
         if (sexOn() && sexMode(P)) nSx += cnt2('sexLocks', C.sex);
       });
       var bits = [];
@@ -432,7 +434,7 @@
           s.ties = (s.ties || []).concat(newT);
           TG2.forEach(function (T) {
             var each = function (f, fn) { idl(P[f]).slice().forEach(function (id) { var o = by[id]; if (o && o !== T && !has(T, f, id)) fn(o); }); };
-            if (C.ng) each('loveNG', function (o) { ngOn(T, o); });
+            if (C.ng) each('loveNo', function (o) { ngOn(T, o); });
             if (C.lock) each('loveLock', function (o) { lockOn(T, o); });
             if (C.nk) each('noKillFor', function (o) { put(T, 'noKillFor', o.id); put(o, 'noKillFor', T.id); });
             if (sexOn() && C.sex && sexMode(P)) { var any = false; each('sexLocks', function (o) { put(T, 'sexLocks', o.id); any = true; }); if (any || !sexMode(T)) T.sexLock = P.sexLock; }
@@ -444,7 +446,7 @@
   }
 
   /* ---------- 取り消し：一括の前の関係と、住人の「相手を指す設定」の写し ---------- */
-  var SNAP_F = ['loveNG', 'loveLock', 'sexLock', 'sexLocks', 'noKillFor'];
+  var SNAP_F = ['loveNo', 'r18No', 'loveNG', 'loveLock', 'sexLock', 'sexLocks', 'noKillFor'];
   function snap() {
     var s = S();
     return { ties: JSON.parse(JSON.stringify(s.ties || [])), ch: s.chars.map(function (c) { var o = { id: c.id }; SNAP_F.forEach(function (f) { if (Object.prototype.hasOwnProperty.call(c, f)) o[f] = JSON.parse(JSON.stringify(c[f])); }); return o; }) };
@@ -518,7 +520,7 @@
       h += row('写すもの', cb('tie', '関係') + cb('ng', ngLabel()) + cb('lock', '恋愛相手の固定') + (sexOn() ? cb('sex', SEX.label) : '') + cb('nk', '殺さない相手'));
       h += '<p class="tbxnote">同じ相手に対して付けます（写す元の人と写す先の人のあいだの関係は写しません）。今ある設定は消さずに足します。</p>';
     }
-    if (op === 'ng') h += '<p class="tbxnote">二人とも、相手を「' + ngLabel() + '」に入れます。付けた二人のあいだの恋愛相手の固定' + (sexOn() ? '・' + SEX.short + 'の固定' : '') + 'は外れます（⚙️ 設定と同じ）。</p>';
+    if (op === 'ng') h += '<p class="tbxnote">二人とも、相手を「' + ngLabel() + '」に入れます。付けた二人のあいだの恋愛相手の固定は外れます（⚙️ 設定と同じ）。</p>';
     if (op === 'lock') h += '<p class="tbxnote">足した相手との「' + ngLabel() + '」は外れます（⚙️ 設定と同じ）。</p>';
     if (N.m) {
       var sel2 = picked().length;

@@ -55,6 +55,8 @@
         if (c.sexLock === 'any') o.sexLock = c.sexLock;
         else if (c.sexLock === 'pick' || c.sexLock === 'pickMob') { var sls = idList(c.sexLocks).map(ref).filter(function (x) { return x != null; }); if (sls.length) { o.sexLock = sls.length === 1 ? sls[0] : sls; if (c.sexLock === 'pickMob') o.sexLockMob = true; } }
         if (c.loveNG && c.loveNG.length) { var ng = c.loveNG.map(ref).filter(function (x) { return x != null; }); if (ng.length) o.loveNG = ng; }
+        /* 恋愛にしない相手・R18にしない相手（2026-11-05） */
+        ['loveNo', 'r18No'].forEach(function (f) { if (c[f] && c[f].length) { var l = c[f].map(ref).filter(function (x) { return x != null; }); if (l.length) o[f] = l; } });
         if (c.calls) { var cl = {}; Object.keys(c.calls).forEach(function (id) { if (ref(id) != null && c.calls[id]) cl[ref(id)] = c.calls[id]; }); if (Object.keys(cl).length) o.calls = cl; }
         if (c.keigo) { var kg = Object.keys(c.keigo).filter(function (id) { return ref(id) != null && c.keigo[id]; }).map(ref); if (kg.length) o.keigo = kg; }
         if (R.per && R.per[c.id]) o.per = R.per[c.id];
@@ -137,7 +139,7 @@
       if (HK.Shared) HK.Shared.importFrom(c, o);
       if (o.toneCustom != null) c.toneCustom = (HK.normToneCustom ? HK.normToneCustom(String(o.toneCustom).slice(0, 120)) : '');
       if (o.moanTone != null) c.moanTone = okTone(o.moanTone) ? String(o.moanTone || '') : ''; ['moanDict', 'moanDictT', 'moanFit', 'moanOpt'].forEach(function (k) { if (o[k] != null) c[k] = typeof o[k] === 'string' ? o[k].slice(0, 4000) : JSON.parse(JSON.stringify(o[k])); });
-      c._lk = o.loveLock; c._sl = o.sexLock; c._slm = !!o.sexLockMob; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG;
+      c._lk = o.loveLock; c._sl = o.sexLock; c._slm = !!o.sexLockMob; c._cl = o.calls; c._kg = o.keigo; c._ng = o.loveNG; c._lno = o.loveNo; c._rno = o.r18No;
       if (o.fp != null) c.fp = String(o.fp).trim().slice(0, 8);
       if (typeof o.icon === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(o.icon) && o.icon.length < 400000) c.icon = o.icon;
       if (o.per && typeof o.per === 'object') { K.S().per = K.S().per || {}; K.S().per[c.id] = JSON.parse(JSON.stringify(o.per)); migVamp(c, K.S().per[c.id]); }
@@ -184,6 +186,11 @@
     list.forEach(function (c) {
       if (Array.isArray(c._ng)) c.loveNG = c._ng.map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; }).filter(Boolean);
       delete c._ng;
+      var nIds = function (v) { return (Array.isArray(v) ? v : []).map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; }).filter(Boolean); };
+      c.loveNo = nIds(c._lno); c.r18No = nIds(c._rno); delete c._lno; delete c._rno;
+      /* 以前の「恋愛・R18にしない相手」は両方に写す（ui-norm.js の normChar と同じ） */
+      (c.loveNG || []).forEach(function (k) { if (c.loveNo.indexOf(k) < 0) c.loveNo.push(k); if (c.r18No.indexOf(k) < 0) c.r18No.push(k); });
+      c.loveNG = [];
       if (HK.Attr) HK.Attr.importRefs(c, ref);
       /* 固定した相手：番号・名前・その並び、のどれでも */
       var toIds = function (v) { return idList((Array.isArray(v) ? v : [v]).map(function (k) { return typeof k === 'number' || /^\d+$/.test(String(k)) ? map[+k] : (list.filter(function (x) { return x.name === k; })[0] || {}).id; })); };

@@ -1175,12 +1175,21 @@
         S.chars.forEach(function (c) { nm[c.id] = c.name; });
         /* 固定した相手の番号の並び。固定しているのに誰もこの箱庭にいなければ [-1]（誰とも、の印。engine.js の HK.parseLocks） */
         var lockIdx = function (l) { l = idList(l); if (!l.length) return ''; var x = l.map(function (k) { return ids.indexOf(k); }).filter(function (i) { return i >= 0; }); return x.length ? x : [-1]; };
+        var ngIdx = function (c, k) {
+          var L = c.loveNo || [], R = c.r18No || [], G = c.loveNG || [];
+          var pick = k === 'both' ? L.filter(function (x) { return R.indexOf(x) >= 0; }).concat(G) : k === 'love' ? L.filter(function (x) { return R.indexOf(x) < 0 && G.indexOf(x) < 0; }) : R.filter(function (x) { return L.indexOf(x) < 0 && G.indexOf(x) < 0; });
+          return pick.map(function (x) { return ids.indexOf(x); }).filter(function (x, i, l) { return x >= 0 && l.indexOf(x) === i; });
+        };
         return cast.map(function (c) {
           var calls = {}, keigo = {};
           if (c.calls) Object.keys(c.calls).forEach(function (id) { if (c.calls[id] && nm[id]) calls[nm[id]] = c.calls[id]; });
           if (c.keigo) Object.keys(c.keigo).forEach(function (id) { if (c.keigo[id] && nm[id]) keigo[nm[id]] = 1; });
           /* id・group：話題（topics.js）が住人・住人どうし・グループの話題を引くのに使う */
-          var o = { id: c.id, group: c.group || '', name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' ? c.sexLock : c.sexLock === 'pick' || c.sexLock === 'pickMob' ? lockIdx(c.sexLocks) : '', sexLockMob: c.sexLock === 'pickMob' && idList(c.sexLocks).length > 0, loveNG: (c.loveNG || []).map(function (k) { return ids.indexOf(k); }).filter(function (x) { return x >= 0; }) };
+          var o = { id: c.id, group: c.group || '', name: c.name, eg: c.eg, memo: c.memo, gender: c.gender || '', likes: c.likes || '', tone: c.tone || '', fp: c.fp || '', toneCustom: c.toneCustom || '', pos: c.pos || '', futa: !!c.futa, daku: !!c.daku, faithful: !!c.faithful, noR18: !!c.noR18, posNpc: HK.Pos ? HK.Pos.npcValid(c.posNpc) : '', alcohol: HK.ALC_OK(c.alcohol) ? +c.alcohol : '', partWords: c.partWords || '', partM: c.partM || '', partF: c.partF || '', color: c.color || '', call: c.call || '', callG: c.callG || null, bmonth: c.bmonth || '', age: c.age || '', keigoOlder: !!c.keigoOlder, you: c.you || '', marks: c.marks || '', calls: calls, keigo: keigo, loveLock: lockIdx(c.loveLock), sexLock: c.sexLock === 'any' ? c.sexLock : c.sexLock === 'pick' || c.sexLock === 'pickMob' ? lockIdx(c.sexLocks) : '', sexLockMob: c.sexLock === 'pickMob' && idList(c.sexLocks).length > 0, loveNG: ngIdx(c, 'both') };
+          /* 恋愛にしない相手だけ（loveNo）・R18にしない相手だけ（r18No）。両方に入れた相手は今までどおり loveNG（恋愛・R18にしない相手）で渡す（2026-11-05） */
+          var lnI = ngIdx(c, 'love'), rnI = ngIdx(c, 'r18');
+          if (lnI.length) o.loveNo = lnI;
+          if (rnI.length && !HK.SAFE_ON) o.r18No = rnI;
           /* 喘ぎの口調（R18版。全年齢モードでは渡さない） */
           if (!HK.SAFE_ON) ['moanTone', 'moanDict', 'moanDictT', 'moanFit'].forEach(function (k) { if (c[k]) o[k] = c[k]; });
           /* ♡喘ぎを外した人（R18版。外したときだけ渡す。voice.js の V.unheart） */
@@ -1590,7 +1599,7 @@
         /* 「⋯」のメニューの「削除する…」は確かめてから */
         if (t.dataset.ask && !window.confirm('「' + ((S.chars.filter(function (c) { return c.id === row.dataset.id; })[0] || {}).name || '') + '」を削除しますか？（関係・この人を指す設定も消えます）')) return;
         S.chars = S.chars.filter(function (c) { return c.id !== row.dataset.id; });
-        S.chars.forEach(function (x) { x.loveLock = idList(x.loveLock).filter(function (k) { return k !== row.dataset.id; }); x.sexLocks = idList(x.sexLocks).filter(function (k) { return k !== row.dataset.id; }); if ((x.sexLock === 'pick' || x.sexLock === 'pickMob') && !x.sexLocks.length) x.sexLock = ''; if (x.loveNG) x.loveNG = x.loveNG.filter(function (k) { return k !== row.dataset.id; }); if (x.calls) delete x.calls[row.dataset.id]; if (x.keigo) delete x.keigo[row.dataset.id]; });
+        S.chars.forEach(function (x) { x.loveLock = idList(x.loveLock).filter(function (k) { return k !== row.dataset.id; }); x.sexLocks = idList(x.sexLocks).filter(function (k) { return k !== row.dataset.id; }); if ((x.sexLock === 'pick' || x.sexLock === 'pickMob') && !x.sexLocks.length) x.sexLock = ''; if (x.loveNG) x.loveNG = x.loveNG.filter(function (k) { return k !== row.dataset.id; }); ['loveNo', 'r18No'].forEach(function (f) { if (x[f]) x[f] = x[f].filter(function (k) { return k !== row.dataset.id; }); }); if (x.calls) delete x.calls[row.dataset.id]; if (x.keigo) delete x.keigo[row.dataset.id]; });
         cleanTies(); if (HK.TopicsUI) HK.TopicsUI.sync(); save(); renderCast(); break;
       case 'tieadd':
         if (S.chars.length < 2) return;

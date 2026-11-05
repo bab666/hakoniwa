@@ -1,7 +1,7 @@
 {
  "cur": {
-  "core": "core.e318434924.js",
-  "late": "late.e79fd05944.js",
+  "core": "core.6c8e3ada88.js",
+  "late": "late.4011e9570e.js",
   "pack-rel": "pack-rel.8b69668dd4.js",
   "pack-sim": "pack-sim.bd4a9a48bb.js",
   "scen-goukon": "scen-goukon.9a36a5b797.js",
@@ -67,8 +67,8 @@
   "tone-yankee": "tone-yankee.b80142025e.js"
  },
  "prev": {
-  "core": "core.6c8e3ada88.js",
-  "late": "late.4011e9570e.js",
+  "core": "core.e318434924.js",
+  "late": "late.e79fd05944.js",
   "pack-rel": "pack-rel.8b69668dd4.js",
   "pack-sim": "pack-sim.bd4a9a48bb.js",
   "scen-goukon": "scen-goukon.9a36a5b797.js",
@@ -447,8 +447,8 @@
    8073
   ],
   "js/ui-ties.js": [
-   40702,
-   12557
+   40453,
+   12533
   ],
   "js/ui-env.js": [
    7767,
@@ -487,24 +487,24 @@
    1864
   ],
   "js/ui-norm.js": [
-   9653,
-   3517
+   11010,
+   3848
   ],
   "js/ui.js": [
-   120660,
-   35758
+   121207,
+   35915
   ],
   "js/ui-cast-ops.js": [
-   6623,
-   2693
+   6642,
+   2697
   ],
   "js/ui-cast-teacher.js": [
    1540,
    796
   ],
   "js/ui-gear.js": [
-   37211,
-   11582
+   38171,
+   11763
   ],
   "js/ui-adv.js": [
    6974,

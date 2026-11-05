@@ -121,6 +121,11 @@
     else if (c.sexLock === 'pick' || c.sexLock === 'pickMob' || Array.isArray(c.sexLock) || (typeof c.sexLock === 'string' && c.sexLock)) { var slMob = c.sexLock === 'pickMob'; c.sexLocks = idList(c.sexLock === 'pick' || slMob ? c.sexLocks : c.sexLock); c.sexLock = c.sexLocks.length ? (slMob ? 'pickMob' : 'pick') : ''; }
     else { c.sexLock = ''; c.sexLocks = []; }
     c.loveNG = Array.isArray(c.loveNG) ? c.loveNG.filter(function (x) { return typeof x === 'string'; }) : [];
+    /* 恋愛にしない相手（loveNo）・R18にしない相手（r18No）。2026-11-05：以前の「恋愛・R18にしない相手」（loveNG）は両方に写す（足すだけ。両方に入った相手は今までどおり両方を止める） */
+    c.loveNo = Array.isArray(c.loveNo) ? c.loveNo.filter(function (x) { return typeof x === 'string'; }) : [];
+    c.r18No = Array.isArray(c.r18No) ? c.r18No.filter(function (x) { return typeof x === 'string'; }) : [];
+    c.loveNG.forEach(function (k) { if (c.loveNo.indexOf(k) < 0) c.loveNo.push(k); if (c.r18No.indexOf(k) < 0) c.r18No.push(k); });
+    c.loveNG = [];
     if (c.icon && !(typeof c.icon === 'string' && /^data:image\//.test(c.icon))) delete c.icon;
     return c;
   }
@@ -134,6 +139,8 @@
       if ((c.sexLock === 'pick' || c.sexLock === 'pickMob') && !c.sexLocks.length) c.sexLock = '';
       /* 恋愛・R18にしない相手：今いる住人だけ。片方に書かれていれば、もう片方にも書く */
       c.loveNG = (c.loveNG || []).filter(function (k, i, l) { return ids[k] && k !== c.id && l.indexOf(k) === i; });
+      c.loveNo = (c.loveNo || []).filter(function (k, i, l) { return ids[k] && k !== c.id && l.indexOf(k) === i; });
+      c.r18No = (c.r18No || []).filter(function (k, i, l) { return ids[k] && k !== c.id && l.indexOf(k) === i; });
       Object.keys(c.calls).forEach(function (k) { if (!ids[k] || k === c.id || typeof c.calls[k] !== 'string' || !c.calls[k].trim()) delete c.calls[k]; else c.calls[k] = c.calls[k].slice(0, 16); });
       Object.keys(c.keigo).forEach(function (k) { if (!ids[k] || k === c.id || !c.keigo[k]) delete c.keigo[k]; else c.keigo[k] = 1; });
       if (HK.Attr) HK.Attr.normRefs(c, ids, S0.chars);
@@ -141,6 +148,8 @@
     var byId = {};
     S0.chars.forEach(function (c) { byId[c.id] = c; });
     S0.chars.forEach(function (c) { (c.loveNG || []).forEach(function (k) { var o = byId[k]; if (o) { o.loveNG = o.loveNG || []; if (o.loveNG.indexOf(c.id) < 0) o.loveNG.push(c.id); } }); });
+    /* 恋愛にしない相手・R18にしない相手も、片方に書かれていれば、もう片方にも書く */
+    ['loveNo', 'r18No'].forEach(function (f) { S0.chars.forEach(function (c) { (c[f] || []).forEach(function (k) { var o = byId[k]; if (o) { o[f] = o[f] || []; if (o[f].indexOf(c.id) < 0) o[f].push(c.id); } }); }); });
     /* 古い保存の形（敵対・不仲の欄 lh）は、気持ちの関係「愛憎」に写してから読む（ties.js の HK.tieLhMigrate。2026-10-29） */
     S0.ties = (Array.isArray(S0.ties) ? (HK.tieLhMigrate ? HK.tieLhMigrate(S0.ties) : S0.ties) : []).filter(function (t) {
       /* 関係の種類は自分の持つ鍵だけ（壊れた保存の type が「constructor」などでも読み込みが止まらないように） */
@@ -154,7 +163,30 @@
       if (HK.tieExtraNorm) HK.tieExtraNorm(t);
       return true;
     });
+    HK.tieLoveMigrate(S0.chars, S0.ties);
   }
+  /* 関係ごとの「恋愛：なし」・恐怖の「体の関係」（2026-11-05 から画面に出さない）を、住人の設定へ写す（足すだけ。関係の欄の値は残す。一度写した関係には _mig を付ける）
+     ・恋愛：なし → 二人を互いの「恋愛にしない相手」に
+     ・体の関係：あり（恐怖） → 互いの「体の相手」（性行為の相手の固定）に。固定が空の人だけ（既に別の人を固定していれば何もしない）
+     ・体の関係：なし → 互いの「R18にしない相手」に */
+  HK.tieLoveMigrate = function (chars, ties) {
+    var byId = {};
+    (chars || []).forEach(function (c) { byId[c.id] = c; });
+    (ties || []).forEach(function (t) {
+      if (!t || t._mig) return;
+      var A = byId[t.a], B = byId[t.b];
+      if (!A || !B || A === B) return;
+      var add = function (c, f, k) { c[f] = Array.isArray(c[f]) ? c[f] : []; if (c[f].indexOf(k) < 0) c[f].push(k); };
+      var did = false;
+      if (t.love === 'no') { add(A, 'loveNo', B.id); add(B, 'loveNo', A.id); did = true; }
+      if (t.body === 'no') { add(A, 'r18No', B.id); add(B, 'r18No', A.id); did = true; }
+      if (t.body === 'ok') {
+        [[A, B], [B, A]].forEach(function (q) { var c = q[0]; if (!c.sexLock || c.sexLock === '') { c.sexLock = 'pickMob'; c.sexLocks = [q[1].id]; } });
+        did = true;
+      }
+      if (did) t._mig = 1;
+    });
+  };
   function normState(S0) {
     S0 = obj(S0);
     S0.chars = (Array.isArray(S0.chars) ? S0.chars : []).filter(function (c) { return c && typeof c === 'object'; }).slice(0, MAX).map(normChar);
