@@ -487,3 +487,5 @@ R18版だけの無料アップデートの箱庭。既存の「常識改変」�
 
 ### 16-5. 本体の共通部品で要る直し
 playthrough-body.md の 5 節（着衣の型の入り方・口調の辞書のじゃ）。
+
+- 点検（2026-11-05。origin/main ee014e2e を取り込んだあと `check.js --since=origin/main`）：すべて合格（audit-all ＋ 追加の配役パス 0 件・tone-feel 全口調 ◯・moan-tone 0・catalog-check 0・base-lint 0。詳細は playthrough-body.md の 6 節）。

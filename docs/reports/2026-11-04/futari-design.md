@@ -373,3 +373,5 @@ playthrough-body.md の 5 節（events-common の決め台詞・unlike.js・Thic
 - 原因：勢いの一夜（`impulseNight`）と体だけの夜（`freeNight`）の記録に性的な記録の印（`lewd`）を渡していなかったため、体の語の印が先に語へ置き換わった文では性的な記録として数えられず、とくに恋人でない二人（関係なし h・友人＋愛憎 k）の夜が少なく見えていた（13.2 の恋人どうしの夜と同じ原因）。`R.night` の `lewd` を三つの夜の記録すべてに渡した。
 - あわせて、気持ちの関係（愛憎・劣等感・優越。`HK.Pos.feelK`、上限 1.6）を勢いの一夜と恋人の夜の起こりやすさに掛け、恋人でない二人の二度目以降の勢いの夜を 1.6 倍にした（勢いの一夜の始まる日・恋愛の進み「ゆっくり」の決まり `impulseReady` はそのまま）。
 - `sex-gate-audit.js hakoniwa-full 24 r18 futari`：前 h＝38%（不具合）→ 後 ok（b 81・h 43・k 88・敵対 106%・不仲 136%・理性 高÷低 90%）。goukon・omega の不具合（e＝33%・l＝77%・m＝84%）は origin/claude/pack-foundation（8c92a107）でも同じ数で、この作業とは関係しない。
+
+- 点検（2026-11-05。origin/main ee014e2e を取り込んだあと `check.js --since=origin/main`）：すべて合格（audit-all ＋ 追加の配役パス 0 件・tone-feel 全口調 ◯・moan-tone 0・catalog-check 0・base-lint 0。詳細は playthrough-body.md の 6 節）。
