@@ -47,7 +47,8 @@
 /* @event scen=set-b-kanbyo id=kb_leave_morn cat=bond tie=- label=泊まった看病の人が朝に帰っていく */
 /* @event scen=set-b-kanbyo id=kb_near cat=romance tie=- label=治ったあとの夜に二人の距離が近づく */
 /* @event scen=set-b-kanbyo id=kb_contact cat=bond tie=- label=他の住人からお大事にと連絡が来る */
-/* @event scen=set-b-kanbyo id=kb_work cat=bond tie=- label=通いの看病の人が仕事の合間に様子を気にかける */
+/* @event scen=set-b-kanbyo id=kb_work cat=bond tie=- label=通いの看病の人が仕事中も看病の相手を心配する */
+/* @event scen=set-b-kanbyo id=kb_alone_day cat=solo tie=- label=看病の人が仕事の日にひとりで寝込んで過ごす */
 /* @event scen=set-b-kanbyo id=kb_rest_peak cat=bond tie=- label=熱がいちばん高い日に看病のため仕事を休む */
 /* @event scen=set-b-kanbyo id=kb_kaeshi_nearly cat=bond tie=- label=看病した人にうつりかけて持ちこたえる */
 (function () {
@@ -110,6 +111,14 @@
     var t = tl.filter(function (x) { return x && ty.test(x.type); })[0];
     if (!t || t.a == null) return '';
     return rk + (t.a === A.i ? 'A' : t.a === B.i ? 'B' : '');
+  }
+  /* 関係の欄の「体の関係：あり」（どの関係でも t.body が 'ok'、本体の恐怖の関係は HK.tieBodyOK） */
+  function bodyTie(ctx, A, B) {
+    var tl = HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, A, B) || [] : [];
+    if (tl.some(function (t) { return t && (t.body === 'ok' || (HK.tieBodyOK && HK.tieBodyOK(t))); })) return true;
+    /* 本体の関係の読み込みは恐怖の関係にだけ body を残すので、入力の関係の欄（ctx.input.ties）もそのまま見る */
+    var raw = ctx.input && ctx.input.ties || [];
+    return raw.some(function (t) { return t && t.body === 'ok' && ((t.a === A.i && t.b === B.i) || (t.a === B.i && t.b === A.i)); });
   }
   /* 恋愛にしてよい二人か（恋愛対象・恋愛相手の固定・関係の「恋愛：なし」（家族・無関心・恐怖など）を両方向で） */
   function canLove2(ctx, a, b) {
@@ -467,6 +476,10 @@
     S.pine = S.love && /^(almost|crush)$/.test(rk);
     /* 始まりのときから恋人どうし（夫婦・恋人）か（告白で恋人になった二人と分ける。初めての夜の日数の下限に使う） */
     S.couple0 = S.couple; S.fwb = rk === 'fwb';
+    /* 関係が進まない二人の「体だけ」の夜（2026-11-05 利用者の回答）：関係の欄の体の関係が「あり」（t.body＝'ok'・HK.tieBodyOK）なら、
+       夜の起こりやすさ（本体の共通の値 night。0〜100）の割合で、関係はそのまま体だけの夜を起こす（100 なら必ず一度）。恋人・夫婦・セフレは今までどおり */
+    S.bodyOnly = !S.couple0 && !S.fwb && bodyTie(ctx, A, B);
+    S.bodyGo = S.bodyOnly && !HK.SAFE_ON && ctx.rng() * 100 < (env.night != null && env.night !== '' ? +env.night : 50);
     S.rkKey = relDir(ctx, A, B, rk);
     /* 同居か通いか（おまかせ：夫婦・家族はいつも同居、恋人は半々、ほかは通い） */
     S.feud = FEUD_RK.test(rk);
@@ -742,12 +755,26 @@
   /* 表 T の各列を fn で絞った写し */
   function filtT(T, fn) { var o = {}; Object.keys(T || {}).forEach(function (k) { o[k] = (T[k] || []).filter(fn); }); return o; }
   /* 仕事に出る日の日中（通い・同居していない看る人。{a}＝看る人、{b}＝寝込んでいる人） */
+  /* 仕事に出る日の日中（2026-11-05 利用者の回答）：その代わりに「仕事中の心配」（{a}＝看る人）と「一人で過ごす看られる側」（{b}）の段を必ず出す。
+     両方か片方かは関係と性格で（恋人・両片想い・家族ほど両方。温かい看る人は心配の段、寂しがりの看られる人は一人の段）。受け止め方は看られる人の態度 9 種 */
+  var BOTH_P = { love: 0.75, pine: 0.65, fam: 0.6, close: 0.5, fwb: 0.4, work: 0.35, awk: 0.3 };
   function workGap(ctx, day) {
-    var S = f(ctx), A = S.A, B = S.B, W = TX().WORK_GAP || {};
-    var t = relPick(ctx, W, A, B);
-    if (!t) return care(ctx, day, 'd');
-    S.cnt.work = (S.cnt.work || 0) + 1;
-    ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, t, A, B, { temp: tempOf(S, day.d) }), why: '看病の部屋：仕事の合間に様子を気にかける（' + A.name + '）', fx: function () { ctx.mod2(A, B, { aff: 1 }, { aff: 1, trust: 1 }); } });
+    var S = f(ctx), A = S.A, B = S.B, Tx = TX(), pa = per(A), pb = per(B);
+    var both = ctx.rng() < (BOTH_P[S.feud ? 'awk' : S.grp] || 0.4);
+    var worryFirst = /devoted|gentle|stern|polite/.test(pa) ? 0.65 : 0.4, lonely = /devoted|shy|gentle|free/.test(pb);
+    var which = both ? ['worry', 'alone'] : [ctx.rng() < (lonely ? worryFirst - 0.2 : worryFirst) ? 'worry' : 'alone'];
+    var done = 0;
+    which.forEach(function (k) {
+      var W = k === 'worry' ? Tx.WORK_WORRY || {} : Tx.ALONE_DAY || {}, R = k === 'worry' ? Tx.WORK_WORRY_RE || {} : Tx.ALONE_DAY_RE || {};
+      var t = relPick(ctx, W, A, B, true);
+      if (!t) return;
+      var re = pickT(ctx, R[pb] || R.gentle, A, B, true);
+      done++;
+      S.cnt.work = (S.cnt.work || 0) + 1;
+      ctx.act2({ actors: k === 'worry' ? [A, B] : [B, A], cat: 'bond', text: fill(ctx, t, A, B, { temp: tempOf(S, day.d) }) + (re ? fill(ctx, re, A, B) : ''),
+        why: '看病の部屋：' + (k === 'worry' ? '仕事中も気が気でない（' + A.name + '）' : 'ひとりで過ごす日中（' + B.name + '・' + A.name + 'は仕事）'), fx: function () { ctx.mod2(A, B, { aff: 1 }, { aff: 1, trust: 1 }); } });
+    });
+    if (!done) care(ctx, day, 'd');
   }
   /* 関係ごとの表から一つ言う（{ rk/grp/all }） */
   function say1(ctx, T, a, b, id, why, cat, ex) {
@@ -975,7 +1002,9 @@
     if (S.kaeshi && day.d >= S.kaeshi.from && day.d < S.kaeshi.heal) return false;
     /* 恋愛の進みの日数の下限（2026-11-04 報告：関係の薄い二人が一気に体の関係まで行く）：始まりから恋人どうし・セフレでない二人は、
        告白した日の夜にはしない／告白していなければ、治った日の夜は無し・先に「近づく段」を出して、その次の日以降 */
-    if (!S.couple0 && !S.fwb) {
+    /* 体だけの夜を起こす二人（S.bodyGo）は、関係の進みの下限（告白・近づく段）を見ない。治った日の夜から */
+    if (S.bodyGo && day.d < S.heal) return false;
+    if (!S.couple0 && !S.fwb && !S.bodyGo) {
       if (S.confessDay === day.d) return false;
       if (!S.confessed) {
         /* 恋愛にしない二人（お礼のデートの夜が無い）は、治った日の夜に近づく段を出してよい（その夜はしない。日数 5 日では治ったあとの夜が最後の夜だけになり、近づく段のあとの夜が無かったため。2026-11-04） */
@@ -986,7 +1015,7 @@
       }
     }
     /* 片想いの二人は、告白の前に体の関係にしない（2026-11-05 報告） */
-    if (S.rk === 'crush' && !S.confessed) return false;
+    if (S.rk === 'crush' && !S.confessed && !S.bodyGo) return false;
     /* 回数の設定を守る（2026-11-05 報告：「多め」で長い場面が一度も無い・0 回）：残りの夜の数が、まだ要る回数以下なら必ず起こし、
        多めで長い場面がまだ無ければ、最後の機会の夜は長い場面にする（描写の長さ「数行で短く」・ほのめかすのときを除く） */
     var noLong = ctx.env.lewdN === 'high' && !S.longN && ctx.env.lewdLen !== 'short' && !(HK.Lewd && HK.Lewd.lv(ctx.env) === 'low') && S.sex < S.lewdMax;
@@ -999,7 +1028,7 @@
     return ok;
   }
   /* まだ要るエッチの回数（多め＝2 回・一度は長い場面、ふつう＝恋人どうし・セフレは 1 回） */
-  function nightNeed(S) { var n = S.lewdMax >= 3 ? 2 : S.lewdMax >= 2 && (S.couple0 || S.fwb) ? 1 : 0; return Math.max(0, Math.min(n, S.lewdMax) - S.sex); }
+  function nightNeed(S) { var n = S.lewdMax >= 3 ? 2 : S.lewdMax >= 2 && (S.couple0 || S.fwb) ? 1 : 0; if (S.bodyGo) n = Math.max(n, 1); return Math.max(0, Math.min(n, S.lewdMax) - S.sex); }
   /* その日から最後の夜までの、エッチの場面を出せる夜の数（病気の夜・うつった人が寝込む夜を除く） */
   function nightsLeft(S, d) {
     /* 最後の夜に告白する二人（結末が「治って恋人に」でまだ告げていない）は、告白した夜にはしないので、最後の夜を数えない */
