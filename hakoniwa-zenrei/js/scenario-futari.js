@@ -706,11 +706,21 @@
   }
   function gate(ctx) {
     if (ctx._ftSay) return;
-    var s0 = ctx.say;
+    var s0 = ctx.say, a0 = ctx.act2;
     ctx._ftSay = true;
     ctx.say = function (o) {
       if (o && o.kind !== 'step' && o.kind !== 'phase' && this.ft && !sayOk(this, o)) return { n: this.log.length, step: this.stepIndex, cat: o.cat || 'phase', actors: [], text: '', mag: 0, kind: 'event', skipped: true };
+      /* ctx.act2 から来た三人以上の場面（本体の HK.Quad.scene など）：act2 は直接の行為をする組（trioPairs）を記録の門（Ctx.say の romanceOk）に渡さないので、
+         ここで足す（2026-11-05：攻め 1・受け 3 の四人の夜が、受けどうしの組で門に止められて 22/22 回落ちていた） */
+      var tp = this._ftTP;
+      if (tp && o && o.kind === 'event' && !(o.trioPairs && o.trioPairs.length) && o.text === tp.text) { o = Object.assign({}, o, { trioPairs: tp.pairs }); return s0.call(this, o); }
       return s0.apply(this, arguments);
+    };
+    ctx.act2 = function (o) {
+      if (!(o && o.trioPairs && o.trioPairs.length && typeof o.text === 'string')) return a0.apply(this, arguments);
+      var keep = this._ftTP;
+      this._ftTP = { pairs: o.trioPairs, text: o.text };
+      try { return a0.apply(this, arguments); } finally { this._ftTP = keep; }
     };
   }
 
@@ -907,6 +917,25 @@
     return e && !e.skipped ? e : null;
   }
   function unLead(ctx, le) { if (!le) return; var k = ctx.log.indexOf(le); if (k >= 0) { ctx.log.splice(k, 1); for (var j = k; j < ctx.log.length; j++) if (ctx.log[j]) ctx.log[j].n = j; } }
+/* r18:begin */
+  /* 攻め 1・受け 3 の四人の夜の長い版（本体の HK.Quad の二人の段）：攻めは最後の受けの段で一度だけ果てる。それより前の段の「二人とも果てた」文を、
+     受けだけが達して攻めはこらえる文に言い換える（2026-11-05 申し送り。新婚部屋の shinkon-r18-four.js の HOLD と同じ決まり） */
+  function quadHold(text, prs) {
+    if (!prs || prs.length < 3) return text;
+    var T = prs[0][0], lastB = prs[prs.length - 1][1], ps = String(text).split(/\n\n/), cut = -1;
+    for (var i = 0; i < ps.length; i++) if (ps[i].indexOf(lastB.name) >= 0) { cut = i; break; }
+    if (cut < 0) return text;
+    var esc = function (x) { return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
+    for (var j = 0; j < cut; j++) {
+      var B = prs.map(function (q) { return q[1]; }).filter(function (c) { return ps[j].indexOf(c.name) >= 0; })[0];
+      if (!B) continue;
+      ps[j] = ps[j].replace('二人は短い時間のうちに、同じ波にさらわれていった。', B.name + 'が先に波にさらわれても、' + T.name + 'はまだ果てずに、動きを止めてこらえた。')
+        .replace('、二人の息がひとつになって途切れた。', '、' + B.name + 'の息だけが細く途切れた。' + T.name + 'は、まだ果てずにいた。')
+        .replace(new RegExp(esc(T.name) + '(?:も|は|が)[^。「」、]{0,30}?(?:熱を(?:注いだ|注ぎ込んだ|放った|吐き出した)|果てた)', 'g'), T.name + 'は、果てる手前で動きを止めてこらえた');
+    }
+    return ps.join('\n\n');
+  }
+/* r18:end */
   function nights(ctx, PS) {
     var f = ctx.ft, rng = ctx.rng, R = !HK.SAFE_ON && HK.FutariR18 ? HK.FutariR18 : null;
     f.sexTonight = false;
@@ -918,6 +947,7 @@
       var LW = HK.Lewd, lv0 = LW ? LW.lv(ctx.env) : 'mid', shortQ = lv0 === 'low' || (f.quadN || 0) >= 1 || !!(LW && LW.short && LW.short(ctx.env, rng));
       var rq = HK.Quad.scene(ctx, P4.map(function (c) { return c.i; }), { len: shortQ ? 'short' : 'long', lead: R.quadLead ? R.quadLead(ctx, P4) : null, leadWhy: '四人の夜（' + P4.map(function (c) { return c.name; }).join('・') + '・同じ家の居間で）', why: W(ctx, '自宅の居間') });
       if (rq) {
+        if (rq.kind === 'three' && !shortQ && rq.e && typeof quadHold === 'function') rq.e.text = quadHold(rq.e.text, rq.pairs);
         f.sexTonight = true; f.quadDay = f.day; f.quadN = (f.quadN || 0) + 1;
         pairs(ctx).forEach(function (q) { f.slept[K(q[0], q[1])] = f.day; });
         rq.pairs.forEach(function (q) { var kk = K(q[0], q[1]), pf = ctx.pair(q[0], q[1]); f.r18[kk] = (f.r18[kk] || 0) + 1; pf.nights = (pf.nights || 0) + 1; pf.night = true; });

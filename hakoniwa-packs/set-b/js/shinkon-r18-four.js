@@ -1,4 +1,5 @@
 /* r18:begin */
+/* @event-ok 四人の夜の長い版の途中の段（寸止め・次の組へ移る一文）を足した（既にある出来事の言い回し。2026-11-05） */
 /* @event scen=set-b-shinkon id=sk_night_futari cat=romance tie=- tags=night cond=家に三人以上・ほかの人が仕事や外出 label=ほかの人の留守に夫婦で過ごす昼 */
 /* @event scen=set-b-shinkon id=sk_night_quad cat=romance tie=- tags=night cond=四人婚・四人とも体の関係にしてよい label=四人で軽く求め合う新婚の夜 */
 /* 新婚部屋：三人・四人で暮らす家の R18（R18版だけ。2026-11-04 利用者の指示）
@@ -91,17 +92,63 @@
   /* 四人の夜の長い版（2026-11-05 報告「四人婚の夜が『B→A、D→C』の 2 行だけ」）：組ごとに、入り方（前戯）・繋がる段・最中の一幕・山場・終わり方を
      新婚部屋専用の段（shinkon-r18-more.js の HK.PairR18.addRoom）から組む。組が三つ以上（受け一人に攻め三人など）は繋がる段・山場・終わり方だけ。
      体の組が形に合わない組（性器の指定など）は本体の二人の段のまま。最後は本体の締めの一文 */
+  /* 組が三つ以上の四人の夜（攻め 1・受け 3＝同じ攻めが三人と順に／受け 1・攻め 3＝同じ受けのもとへ順に）で、途中の組の段（2026-11-05 申し送り：
+     攻め 1・受け 3 で、攻めが三つの段それぞれで「中に熱を注いだ」と 3 回果てた）。
+     HOLD＝山場の代わり：受けだけが達し、攻めはまだ果てずにこらえる（あとの組にも出る攻めの段）。{m}＝受けの山場の声。体の語は組の形（mf／ff／fm）ごと
+     PASS＝終わり方の代わり：次の組へ移る一文（three＝攻めが次の受けへ、one＝受けが次の攻めへ）。{a}＝この段の攻め・{b}＝受け */
+  var HOLD = {
+    mf: L('{a}の動きが速くなるにつれて、{b}の声は途切れがちになっていった。{m}――{b}が{a}の背中にしがみついて達すると、{a}は奥で動きを止め、果てる手前で深く息を吐いた。|' +
+      '{a}は{b}のいちばん弱いところを、何度も同じ深さで突いた。{m}――{b}の{ナカ}がきつく締めつけても、{a}は歯を食いしばってこらえた。まだ、果てるわけにはいかなかった。|' +
+      '{b}の脚が{a}の腰に絡みつき、離すまいと引き寄せた。{m}――{b}が背を反らして昇りつめるのを、{a}は動きをゆるめて最後まで見届けた。自分の熱は、まだ奥にしまったままだった。|' +
+      '{a}は{b}の手を探して指を絡め、浅いところと奥を交互に擦った。{m}――{b}が小さく震えて達すると、{a}はそこで動きを止め、{b}の息が落ち着くのを待った。{a}はまだ果てていなかった。'),
+    ff: L('{a}の指が、{b}の弱いところを捉えて離さなかった。{m}――{b}は{a}の腕にしがみついたまま、小刻みに震えて達した。{a}は濡れた指をそっと引き抜き、{b}の髪を撫でた。|' +
+      '{a}は{b}の{陰核}を舌でなぞりながら、{ナカ}の指をゆっくり曲げた。{m}――{b}が腰を跳ねさせて果てると、{a}は顔を上げて、満足そうに唇をぬぐった。|' +
+      '{a}は{b}の耳もとで名前を呼びながら、指の動きを少しずつ速めた。{m}――{b}の背中がしなり、{a}の腕の中で長い震えが続いた。{a}は自分の熱を、まだ胸の奥に抱えたままだった。'),
+    fm: L('{a}は{b}の{男性器}を握る手をゆるめずに、{ナカ}の指で奥を押し上げた。{m}――{b}は{a}の手の中で、どくどくと熱を吐き出した。{a}は息の荒い{b}の頬に口づけて、そっと手を離した。|' +
+      '「＠{a}＠いいよ、出して｜いい、出せ｜いいですよ、出してください」――{a}が耳元でささやくと、{b}の最後の我慢がほどけた。{m}――{b}は体を大きく震わせて果てた。{a}は濡れた手のひらを見下ろして、小さく笑った。|' +
+      '{a}は{b}の胸に唇を落としながら、手の動きを最後までゆるめなかった。{m}――{b}は{a}の名前を呼びながら、{a}の手の中で果てた。')
+  };
+  var PASS = {
+    three: L('{b}がぐったりと布団に沈むと、{a}はその肩に毛布を掛けてやった。息を整える間もなく、隣から伸びてきた手が{a}の手首を引いた。|' +
+      '{a}は{b}の汗ばんだ額に口づけて、そっと体を離した。{b}は目を閉じたまま、満ち足りたように小さく笑った。夜は、まだ終わっていなかった。|' +
+      '{b}の呼吸が落ち着くのを待って、{a}は身を起こした。暗がりの向こうで、次の伴侶が{a}を待っていた。|' +
+      '{a}が離れると、{b}は布団に頬を押しつけたまま、行ってきて、というように{a}の背中を押した。|' +
+      '{b}は{a}の首から腕をほどき、横へ転がって場所を空けた。{a}の肌には、まだ{b}の熱が残っていた。'),
+    one: L('{a}が身を離すと、{b}は息を整える間もなく、次に伸びてきた腕に引き寄せられた。|' +
+      '{a}は{b}の髪を撫でてから、場所を譲った。{b}の体には、まだ{a}の熱が残っていた。|' +
+      '{a}が名残惜しそうに体を離すと、{b}は荒い息のまま、次の伴侶へ手を伸ばした。|' +
+      '{a}は{b}の額に口づけて、隣に身を横たえた。{b}が目を開けたときには、もう次の手が{b}の頬に触れていた。')
+  };
+  /* 本体の段の文の攻めの「果てた」を、寸止めに言い換える（{a} の名前で始まる節だけ） */
+  function holdFix(t, a) {
+    var n = a && a.name; if (!n) return t;
+    var e = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return String(t).replace(new RegExp(e + '(?:も|は|が)[^。「」、]{0,30}?(?:熱を(?:注いだ|注ぎ込んだ|放った|吐き出した)|果てた)', 'g'), n + 'は、果てる手前で動きを止めてこらえた');
+  }
   function quadLong(ctx, r) {
     var PR = HK.PairR18, TS = HK.ThickSex;
     if (!PR || !PR.part || !r.pairs || !r.pairs.length) return;
     var ps = String(r.e.text).split(/\n\n+/), endP = ps.length > r.pairs.length ? ps[ps.length - 1] : '';
-    var kinds = r.pairs.length >= 3 ? ['insert', 'peak', 'end'] : ['fore', 'insert', 'mid', 'peak', 'end'];
+    var many = r.pairs.length >= 3, kinds = many ? ['insert', 'peak', 'end'] : ['fore', 'insert', 'mid', 'peak', 'end'];
     var out = [];
     r.pairs.forEach(function (pr, i) {
       var a = pr[0], b = pr[1], sh = PR.shape(a, b);
-      if (!PR.bodyFits(sh, a, b)) { if (ps[i]) out.push(ps[i]); return; }
+      /* 組が三つ以上：この段の攻めがあとの段にも出るなら、ここでは果てない（HOLD）。最後の段でないなら、終わり方の代わりに次の組へ移る一文（PASS） */
+      var later = r.pairs.slice(i + 1), hold = many && later.some(function (q) { return q[0] === a; }), pass = many && later.length > 0;
+      var passK = later.length && later[0][0] === a ? 'three' : 'one';
+      if (!PR.bodyFits(sh, a, b)) {
+        /* 本体の二人の段のまま（本体の段は攻めの果てる文を持つので、途中の段の攻めの「果てた」を寸止めに言い換える） */
+        if (ps[i]) out.push(hold ? holdFix(ps[i], a) : ps[i]);
+        return;
+      }
       var pk = function (l) { return l[Math.floor(ctx.rng() * l.length)]; }, used = [];
-      var segs = kinds.map(function (k) { var t = PR.part(ctx, 'set-b-shinkon', k, sh, a, b, used); used.push(t); return t; });
+      var segs = kinds.map(function (k) {
+        var t;
+        if (k === 'peak' && hold) t = PR.lru(ctx, HOLD[sh] || HOLD.mf);
+        else if (k === 'end' && pass) t = PR.lru(ctx, PASS[passK]);
+        else t = PR.part(ctx, 'set-b-shinkon', k, sh, a, b, used);
+        used.push(t); return t;
+      });
       if (segs.some(function (x) { return !x; })) { if (ps[i]) out.push(ps[i]); return; }
       if (HK.NovelMoan) HK.NovelMoan.top = a;
       var mo = function (cl) { var m = TS && TS.moan ? String(TS.moan(pk, b, cl, ctx.rng)) : ''; return m ? '{b}「' + m.replace(/^「|」$/g, '') + '」' : ''; };
