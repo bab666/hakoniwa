@@ -271,10 +271,12 @@
       put(T, 'OPEN', allKeys(T.OPEN, N.open));
       put(T, 'BODY', allKeys(T.BODY, N.body.mf.concat(((T.BODY || {})[bk] || []).filter(notSweet))));
       put(T, 'CLIMAX', allKeys(T.CLIMAX, N.climax.mf));
-      /* 女性の攻め（男性器なし）×男性：色の指と手の文だけ（共通の FM_BODY は跨る文なので混ぜない。2026-11-05） */
+      /* 女性の攻め（男性器なし）×男性：色の指と手の文だけ（色の場面は共通の FM_BODY を混ぜない。2026-11-05） */
       put(T, 'FM_BODY', allKeys(T.FM_BODY, N.body.fm));
       put(T, 'FM_CLIMAX', allKeys(T.FM_CLIMAX, N.climax.fm));
-      /* 感じる段も、指と手の文に（共通の表は跨る文。2026-11-05） */
+      /* 色の場面はペニバンの回にしない（色の指と手の文だけ。thick-sex.js の T.scene は FM_BODY_SP が空ならペニバンにしない） */
+      put(T, 'FM_BODY_SP', {});
+      /* 感じる段も、色の指と手の文に（2026-11-05） */
       put(T, 'FEEL_FM', FEEL_FM_N);
       if (T.FEEL_A) put(T, 'FEEL_A', Object.assign({}, T.FEEL_A, { fm: FEEL_A_FM }));
       put(T, 'FF_BODY', allKeys(T.FF_BODY, N.body.ff.concat(((T.FF_BODY || {}).dom || []).filter(noMut))));
@@ -289,6 +291,7 @@
       put(X, 'CLIMAX', allKeys(X.CLIMAX, E.climax.mf.concat(dl ? (X.CLIMAX || {}).tease || [] : [])));
       put(X, 'FM_BODY', allKeys(X.FM_BODY, E.body.fm));
       put(X, 'FM_CLIMAX', allKeys(X.FM_CLIMAX, E.climax.fm));
+      put(X, 'FM_BODY_SP', {});
       if (X.FEEL) put(X, 'FEEL', Object.assign({}, X.FEEL, { fm: FEEL_FM_E }));
       put(X, 'FF_BODY', allKeys(X.FF_BODY, E.body.ff.concat(((X.FF_BODY || {}).dom || []).filter(noMut))));
       put(X, 'FF_CLIMAX', allKeys(X.FF_CLIMAX, E.climax.ff.concat(((X.FF_CLIMAX || {}).dom || []).filter(noMut))));

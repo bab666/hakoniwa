@@ -104,6 +104,10 @@
     }
     return true;
   };
+  /* 女性の攻め（男性器なし）× 男性器のある受け（fm）：型の共通の文（入り方・責め・体位・終わり方。play-text*-r18.js の fm）は、攻めが跨って受け入れる書き方のままなので、
+     この組には使わない（決まり「女性の攻め × 男性の受けは指と手・まれにペニバン」。2026-11-05）。部屋の場面（P.addScene）は部屋の段だけで組み、足りない段は本文のまま。
+     フタナリの攻め（男性器のある女性）は mf の組なので当たらない */
+  P.fmNoPen = function (a, b, mode) { var Q = HK.Pos; return mode === 'fm' && !!(Q && Q.hasM && a && !Q.hasM(a)); };
   /* 場所の決まり：この場所では使わない値 */
   var PLACE_NG = {
     room: { entry: ['bath', 'nekomi'], prop: ['kagami', 'omocha'] },
@@ -265,8 +269,8 @@
     var uniq = function (l) { var s = {}; return l.filter(function (x) { if (!x || x.length < 20 || s[x]) return false; s[x] = 1; return true; }).sort(function (p, q) { return q.length - p.length; }); };
     LISTS = {
       fore: uniq(flat([T.FORE, X.FORE], [])),
-      body: uniq(flat([T.BODY, T.ROUGH_BODY, T.JEALOUS_BODY, T.FM_BODY, T.FF_BODY, X.BODY, X.FM_BODY, X.FF_BODY], [])),
-      climax: uniq(flat([T.CLIMAX, T.ROUGH_CLIMAX, T.JEALOUS_CLIMAX, T.FM_CLIMAX, T.FF_CLIMAX, X.CLIMAX, X.FM_CLIMAX, X.FF_CLIMAX], [])),
+      body: uniq(flat([T.BODY, T.ROUGH_BODY, T.JEALOUS_BODY, T.FM_BODY, T.FM_BODY_SP, T.FF_BODY, X.BODY, X.FM_BODY, X.FM_BODY_SP, X.FF_BODY], [])),
+      climax: uniq(flat([T.CLIMAX, T.ROUGH_CLIMAX, T.JEALOUS_CLIMAX, T.FM_CLIMAX, T.FM_CLIMAX_SP, T.FF_CLIMAX, X.CLIMAX, X.FM_CLIMAX, X.FM_CLIMAX_SP, X.FF_CLIMAX], [])),
       fout: uniq(flat([T.FINGER_OUT], [])),
       /* 感じていく段（受けの快感）の地の文の段落 */
       feel: uniq(flat([T.FEEL, T.FEEL_FF, T.FEEL_FM, X.FEEL], []).map(function (x) { return String(x).split(/\n\n/)[0]; }))
@@ -464,6 +468,8 @@
     var rs = roomScene({ a: a, b: b, opt: opt }, R);
     if (rs && rs.play) Object.keys(rs.play).forEach(function (k) { if (rs.play[k]) play[k] = rs.play[k]; });
     if (rs) play.scene = rs.id;
+    var gen = !P.fmNoPen(a, b, mode);
+    if (!gen && !rs) return why0('fm');
     var ctx = opt.ctx || opt.S || HK._curCtx, ero = !!info.ero;
     var edits = [], keep = [];
     var put = function (s, e, s2, isKeep) { edits.push({ s: s, e: e, t: s2 }); if (isKeep && s2) s2.split(/\n\n/).forEach(function (p) { if (p && p.length >= 12) keep.push(p); }); };
@@ -486,7 +492,7 @@
     /* 入り方（部屋の場面ならそのきっかけ） */
     var entT = '';
     if (rs && rs.lead) entT = stepText(R, rs.lead, ctx, a, b, mode);
-    else if (play.entry !== 'lead') {
+    else if (gen && play.entry !== 'lead') {
       entT = pickT(R, (T0.ENTRY || {})[play.entry], mode, b);
       /* 入り方の段の最後の攻めの台詞は、同じ入り方の台詞（三つの組の分。組を問わない書き方）から選び直す */
       var ELn = entryLines(T0, play.entry), lm = /\{a\}「＠\{a\}＠[^」]*」$/.exec(entT);
@@ -501,7 +507,7 @@
       var fsx = rs.steps.filter(function (s) { return s.stage === 'undress' || s.stage === 'fore'; }).map(function (s) { return stepText(R, s, ctx, a, b, mode); }).filter(Boolean);
       if (fsx.length) foreT = fsx.join('\n\n');
     }
-    if (!foreT) foreT = pickT(R, (T0.FOCUS || {})[play.focus], mode, b);
+    if (!foreT && gen) foreT = pickT(R, (T0.FOCUS || {})[play.focus], mode, b);
     if (foreT) {
       /* 受けのこらえる声の段落は後ろへ（地の文を一つの段落にまとめ、声で終える。声が毎回違うので段の文が重なりにくい） */
       var fps = foreT.split(/\n\n/), fn = fps.filter(function (p) { return !/^\{b\}「\{mf\}」$/.test(p); }), fm0 = fps.length - fn.length;
@@ -512,16 +518,16 @@
       foreT = foreT.replace(/\{mf\}/g, function () { return moanPre(b, ero); });
       /* 着衣の型の前戯の頭（「服を一枚も乱さないまま」「ボタンを一つも外さず、布の上から」）は、場面がもう直に触れた・口や下着の中まで進んだあと
          （前戯の段より前の本文・入り方の段・呼ぶ側の opt.direct）には出さない（2026-11-05。通し読み T5 の申し送り） */
-      var pf = pr && pr.fore && !(play.prop === 'chakui' && (opt.direct || P.bareBefore(t.slice(0, fo ? fo.s : bo ? bo.s : co ? co.s : 0) + '\n\n' + entT))) ? pickT(R, pr.fore, mode, b) : '';
+      var pf = gen && pr && pr.fore && !(play.prop === 'chakui' && (opt.direct || P.bareBefore(t.slice(0, fo ? fo.s : bo ? bo.s : co ? co.s : 0) + '\n\n' + entT))) ? pickT(R, pr.fore, mode, b) : '';
       if (pf) { foreT = pf + foreT; play.pfT = pf; }
     }
     /* 体位：繋がる段と最中の段 */
     var posT = '';
     if (rs && rs.steps) { var ins = rs.steps.filter(function (s) { return s.stage === 'insert'; })[0]; if (ins) posT = stepText(R, ins, ctx, a, b, mode); }
-    if (!posT) posT = pickT(R, (T0.POS || {})[play.pos], mode, b);
+    if (!posT && gen) posT = pickT(R, (T0.POS || {})[play.pos], mode, b);
     var midT = '';
     if (rs && rs.steps) midT = rs.steps.filter(function (s) { return s.stage === 'play'; }).map(function (s) { return stepText(R, s, ctx, a, b, mode); }).filter(Boolean).join('\n\n');
-    if (!midT) {
+    if (!midT && gen) {
       var m1 = pickT(R, (T0.POS_MID || {})[play.pos], mode, b), m2 = pickT(R, (T0.FOCUS_MID || {})[play.focus], mode, b), m3 = pr && pr.mid ? pickT(R, pr.mid, mode, b) : '';
       midT = (m1 + m2 + m3).replace(/^\s+/, '');
       if (midT) midT = 'そのまま、' + midT.replace(/^そのまま、?/, '');
@@ -539,7 +545,7 @@
     }
     /* 終わり方 */
     var finT = '';
-    if (co) {
+    if (co && gen) {
       var FT = ero ? (T0.FIN_E || T0.FIN) : T0.FIN;
       finT = pickT(R, (FT || {})[play.finish], mode, b);
       if (finT && ero) finT = fillE(finT, a, b);
@@ -598,7 +604,7 @@
   P.shortLine = function (a, b, mode, opt) {
     if (P.off || HK.SAFE_ON || !a || !b) return '';
     mode = mode === 'ff' || mode === 'fm' ? mode : 'mf';
-    if (!P.ok(a, b, mode)) return '';
+    if (!P.ok(a, b, mode) || P.fmNoPen(a, b, mode)) return '';
     var T0 = TX(); if (!T0.SHORT_FOCUS) return '';
     var play = P.choose({ a: a, b: b, mode: mode, opt: opt || {}, press: '', againAfter: true }), R = play.R; delete play.R;
     var f = pickT(R, T0.SHORT_FOCUS[play.focus], mode, b), p = pickT(R, (T0.SHORT_POS || {})[play.pos], mode, b);
