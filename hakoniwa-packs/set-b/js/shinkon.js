@@ -1198,8 +1198,10 @@
     if (HK.relFilter && a && b && p.length) { var r = HK.relFilter(ctx, p, a, b); if (r && r.length) p = r; }
     /* 一回の遊びで同じ文を続けて使わない（使っていない文から） */
     var U = f(ctx).skUsed = f(ctx).skUsed || {}, q = p.filter(function (x) { return !U[x]; });
+    /* 使い切ったときも、直前に選んだ文は避ける（風呂の順番など、人ごとに同じ表から続けて引く段で同じ一文が二人に出ないように。2026-11-06） */
+    if (!q.length && p.length > 1) { var last = f(ctx).skLast; q = p.filter(function (x) { return x !== last; }); }
     var t = pickOf(ctx, q.length ? q : p);
-    if (t) U[t] = 1;
+    if (t) { U[t] = 1; f(ctx).skLast = t; }
     return t;
   }
   /* 使っていない文だけから（使い切ったら ''） */
