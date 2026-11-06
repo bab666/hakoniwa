@@ -683,7 +683,7 @@
       if (midT) midT = 'そのまま、' + midT.replace(/^そのまま、?/, '');
     }
     /* 性格が目立つ行為の段（攻めの態度 × 夜の性格・受けの反応） */
-    var actT = AC() && AC().unit ? AC().unit(R, a, b, mode, t, { press: info.press, rough: !!(opt.force || opt.hate), force: !!opt.force, ctx: ctx, ero: ero, pick: function (l) { return pickL(R, l); } }) : '';
+    var actT = AC() && AC().unit ? AC().unit(R, a, b, mode, t, { press: info.press, rough: !!(opt.force || opt.hate), force: !!opt.force, rel: relOf(opt, a, b), ctx: ctx, ero: ero, pick: function (l) { return pickL(R, l); } }) : '';
     /* 攻めの夜の性格の一文（attr-r18.js）は、性格が目立つ行為の段と役割が重なるので外す（受けの夜の性格・相手に合わせる人の一文があるときは残す） */
     if (actT) {
       var A = HK.Attr, kdA = A && A.nightKind ? A.nightKind(a, b) : '', kdB = A && A.nightKind ? A.nightKind(b, a) : '';

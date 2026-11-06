@@ -218,6 +218,20 @@
     return ok;
   }
   C.bondOf = bondOf;
+  /* 恋人・夫婦・婚約の二人か（体だけの関係 fwb は含めない）。「今夜だけ」「これきり」などの一夜・割り切りの言い回しを出さないために見る（2026-11-07） */
+  var LOVE_T = /^(?:lover|spouse|fiance|mate|fated|honmei)$/;
+  function loveOf(ctx, a, b, rel) {
+    if (rel === 'lover' || rel === 'spouse' || rel === 'first') return true;
+    if (!ctx || !a || !b || a.i == null || b.i == null) return false;
+    var ok = false;
+    try { if (HK.Ties && HK.Ties.all) HK.Ties.all(ctx, a, b).forEach(function (t) { if (t && LOVE_T.test(t.type)) ok = true; }); } catch (e) { /* 関係を引けなければ下へ */ }
+    if (!ok && Array.isArray(ctx.ties)) ctx.ties.forEach(function (t) { if (t && LOVE_T.test(t.type) && ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i))) ok = true; });
+    if (!ok && ctx.pf && HK.pairKey) { var pk = ctx.pf[HK.pairKey(a, b)]; if (pk && pk.couple) ok = true; }
+    if (!ok && typeof ctx.pair === 'function') { try { var pf = ctx.pair(a, b); if (pf && pf.couple) ok = true; } catch (e) { /* 二人の状態が無ければ関係だけで */ } }
+    return ok;
+  }
+  C.loveOf = loveOf;
+  var ONE_NIGHT = C.ONE_NIGHT = /今夜だけ|今夜限り|一晩だけ|これきり|今回だけ|次はない/;
 
   /* 同じ動き（sex-flow-r18.js の MOTION と同じ見方）：本文にもうあれば、その行為は選ばない */
   var MOT = [/髪(?:に指を絡め|を(?:掴|鷲掴|引))/, /顎(?:に指をかけ|を(?:掴|持ち上げ|すくい))/, /手首を[^。]{0,14}(?:掴|握|押さえ)/, /首筋にそっと手を添え|首筋へ持っていき/, /頬を[^。]{0,8}はたい|頬を叩く/];
@@ -251,6 +265,11 @@
     var MOB_L = HK.Voice.reMk(/私だけを|ずっと、?そばに|ずっとこうしたかった|あなたのだって|宝物|離すつもり|愛おし/);
     var keep = function (l, who) { var f = (l || []).filter(function (x) { return !((anyMob || !close) && LOVE.test(x)) && !(anyMob && MOB_L.test(x)) && !(/眼鏡/.test(x) && !glasOf(who)); }); return f.length ? f : null; };
     var lnL = keep((C.ACT_L[pa] || C.ACT_L.gentle)[kd] || C.ACT_L[pa].none, a), rbL = keep((C.REACT_B[pb] || C.REACT_B.gentle)[HARD[kd] ? 'hard' : 'soft'], b);
+    /* 恋人・夫婦・婚約の二人には、一夜・割り切りの言い回し（今夜だけ・これきり・次はない…）を出さない（同じ態度の残りの行から） */
+    if (loveOf(o.ctx || HK._curCtx, a, b, o.rel)) {
+      var noOne = function (l) { if (!l) return l; var f = l.filter(function (x) { return !ONE_NIGHT.test(x); }); return f.length ? f : null; };
+      lnL = noOne(lnL); rbL = noOne(rbL);
+    }
     if (rbL && !close) { var rf = anyMob ? [] : rbL.filter(function (x) { return !LOVER_B.test(x); }); rbL = rf.length ? rf : C.REACT_MOB[pb] || C.REACT_MOB.gentle; }
     if (!lnL || !rbL) return '';
     var n = pick(ns), ln = pick(lnL);
