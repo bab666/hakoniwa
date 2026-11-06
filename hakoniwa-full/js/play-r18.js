@@ -394,9 +394,27 @@
     if ((mode === 'fm' || mode === 'fsp') && HK.Pos && HK.Pos.hasM && !HK.Pos.hasM(b)) { var f = l.filter(function (s) { return !NOM.test(s); }); if (f.length) l = f; }
     return pickL(R, l);
   }
+  /* 相手の種類で台詞を絞る（2026-11-06 利用者の指摘（痴漢電車の記録））：受けが誘う・甘える・恋人向けの言い回し（WARM）は、
+     相手がモブ・合意のない場面（強引・愛憎・敵対）・恋人でも体の関係でもない二人（COLD.on）には出さない。候補が全部 WARM なら
+     受けの反応の段（ENTRY_B・FOCUS_B・MID_B）は短い声（COLD_B）に、ほかの段はそのまま（地の文が主で、台詞を持たない段のため） */
+  var WARM = P.WARM = /大好き|好き(?![嫌勝])|愛して|愛おし|どきどき|鼓動|幸せ|ありがとう|嬉し|うれし|ずっと、?こうして|あなたなら|好きにして|何でもする|任せ|同じこと(?:を)?思って|胸に当て|口づけを返|擦り寄|すり寄|わ、私も|恋人|落ち着く|あったか|温かい|もっと、?していい|全部、?いい|甘えて|甘やか/;
+  var COLD = { on: false };
+  P.coldOf = function (a, b, opt, rel) {
+    var mob = function (c) { return !!(c && (c.mob || c.npc || c.i == null || c.i < 0)); };
+    opt = opt || {};
+    if (mob(a) || mob(b) || opt.force || opt.hate || rel === 'hate' || opt.rel === 'enemy' || opt.mob) return true;
+    if (rel === 'lover' || rel === 'casual') return false;
+    /* 恋人・体の関係の二人か：性格が目立つ行為の段と同じ見方（play-act-r18.js の HK.PlayAct.bondOf。関係の表・物語型の関係・二人の状態） */
+    var AC0 = HK.PlayAct;
+    return AC0 && AC0.bondOf ? !AC0.bondOf(opt.ctx || opt.S || HK._curCtx, a, b) : true;
+  };
+  P.COLD_B = ['{b}は息を詰めて、喉の奥で短い声を漏らした。{b}「……っ」', '{b}の肩が小さく跳ねた。噛みしめた唇の隙間から、こらえきれない吐息がこぼれた。', '{b}はぎゅっと目を閉じて、声にならない息を吐いた。{b}「……ん、っ……」', '{b}の体がびくりと強ばり、浅い息が一つ漏れた。'];
+  function coldF(l) { if (!COLD.on || !l || !l.length) return l; var f = l.filter(function (x) { return !WARM.test(x); }); return f.length ? f : l; }
+  function coldB(R, l) { if (!COLD.on || !l) return pickFresh(R, l); var f = l.filter(function (x) { return !WARM.test(x); }); return pickFresh(R, f.length ? f : P.COLD_B); }
   /* 型の段の文を選ぶ：場所（opt.spot。sex-spot-r18.js）に合わない文と、もう出た動きの文を避ける */
   function pickL(R, l) {
     if (!l || !l.length) return '';
+    l = coldF(l);
     if (HK.SexSpot && HK.SexSpot.cur) l = HK.SexSpot.filter(l, HK.SexSpot.cur);
     /* 同じ動き（手首を押さえる など。HK.SexFlow.MOTION）が、もう本文か、この型で選んだ文にあれば、その動きのない文を選ぶ（P.apply の間だけ） */
     if (MOV.on && l.length > 1) { var g = l.filter(function (s) { return !motionsOf(s).some(function (k) { return MOV.used[k]; }); }); if (g.length) l = g; }
@@ -542,7 +560,9 @@
      info = { a, b, mode, opt, ero, parts（差し込まれた部品）, press, lead }。戻り値：{ text, play（点検用の印つき）, keep（守る段落） } か null */
   P.apply = function (text, info) {
     MOV.on = false; MOV.used = {};
-    try { return apply0(text, info); } finally { MOV.on = false; MOV.used = {}; }
+    var o0 = (info && info.opt) || {};
+    COLD.on = !!(info && info.a && info.b && P.coldOf(info.a, info.b, o0, relOf(o0, info.a, info.b)));
+    try { return apply0(text, info); } finally { MOV.on = false; MOV.used = {}; COLD.on = false; }
   };
   function apply0(text, info) {
     var a = info.a, b = info.b, mode = info.mode || 'mf', opt = info.opt || {};
@@ -604,10 +624,10 @@
       entT = pickT(R, (T0.ENTRY || {})[play.entry], mode, b);
       /* 入り方の段の最後の攻めの台詞は、同じ入り方の台詞（三つの組の分。組を問わない書き方）から選び直す */
       var ELn = entryLines(T0, play.entry), lm = /\{a\}「＠\{a\}＠[^」]*」$/.exec(entT);
-      if (lm && ELn.length > 1) entT = entT.slice(0, lm.index) + '{a}「＠{a}＠' + pickFresh(R, ELn) + '」';
+      if (lm && ELn.length > 1) entT = entT.slice(0, lm.index) + '{a}「＠{a}＠' + pickFresh(R, coldF(ELn)) + '」';
       /* 受けの応じ方（態度ごと）を続ける（同じ入り方でも段の文が毎回同じにならないように） */
       var eb = entT && T0.ENTRY_B ? T0.ENTRY_B[psOf(b, a)] || T0.ENTRY_B.gentle : null;
-      if (eb && play.entry !== 'nekomi') entT += pickFresh(R, eb);
+      if (eb && play.entry !== 'nekomi') entT += coldB(R, eb);
     }
     /* 主な責め：前戯の段 */
     var foreT = '';
@@ -621,7 +641,7 @@
       var fps = foreT.split(/\n\n/), fn = fps.filter(function (p) { return !/^\{b\}「\{mf\}」$/.test(p); }), fm0 = fps.length - fn.length;
       if (fm0 && !(rs && rs.steps)) {
         var fbl = T0.FOCUS_B ? T0.FOCUS_B[psOf(b, a)] || T0.FOCUS_B.gentle : null;
-        foreT = fn.join('') + (fbl ? pickFresh(R, fbl) : '') + '\n\n{b}「{mf}」';
+        foreT = fn.join('') + (fbl ? coldB(R, fbl) : '') + '\n\n{b}「{mf}」';
       }
       foreT = foreT.replace(/\{mf\}/g, function () { return moanPre(b, ero); });
       /* 着衣の型の前戯の頭（「服を一枚も乱さないまま」「ボタンを一つも外さず、布の上から」）は、場面がもう直に触れた・口や下着の中まで進んだあと
@@ -682,7 +702,7 @@
     var fl = locate(t, L.feel || []);
     if (fl && T0.MID_B && !(co && fl.s >= co.s) && !(bo && fl.s >= bo.s && fl.s < bo.e) && !(fo && fl.s >= fo.s && fl.s < fo.e)) {
       var mb = T0.MID_B[psOf(b, a)] || T0.MID_B.gentle;
-      put(fl.e, fl.e, pickFresh(R, mb), false);
+      put(fl.e, fl.e, coldB(R, mb), false);
     }
     /* 置き換え（後ろから） */
     if (co && finT) put(co.s, co.e, finT, true);

@@ -181,12 +181,16 @@
     return M.night || (M.night = { n: {}, last: {} });
   }
   A.nightMem = nmem;
+  /* 流れの管理が無いときの覚え（A._nmem）は、一回の遊びの入口で消す（load-order.js の HK.onSimReset） */
+  if (HK.onSimReset) HK.onSimReset(function () { A._nmem = null; });
   function pickNight(list, pick, T, U, role) {
     if (!list || !list.length) return '';
     var mm = nmem(), lk = T.name + '|' + U.name + '|' + role, last = mm.last[lk], ST = HK.SceneTime, PL = HK.Play;
     var ok = list.filter(function (t) { return (mm.n[t] || 0) < A.NIGHT_CAP && t !== last && (!ST || ST.ok(t)) && !(posHint && PL && PL.posConflict && PL.posConflict(t, posHint)); });
-    if (!ok.length) return '';
-    var t = pick(ok);
+    /* 使い切ったときも、呼ぶ側の乱数の引き方を変えないよう一度選んでから捨てる */
+    if (!ok.length) { pick(list); return ''; }
+    /* 候補が一つに絞れたときも、選ぶ部品（HK.Ero.fresh は二つ以上のときだけ乱数を引く）の乱数の引き方を変えない */
+    var t = ok.length > 1 ? pick(ok) : (pick(list), ok[0]);
     if (typeof t !== 'string' || !t) return '';
     mm.n[t] = (mm.n[t] || 0) + 1; mm.last[lk] = t;
     return t;
