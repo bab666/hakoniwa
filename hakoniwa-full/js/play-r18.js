@@ -54,6 +54,7 @@
   /* 使っていない文から選ぶ（一回の遊びで同じ文を二度出さない。全部使ったら、いちばん前に使ったものから戻す） */
   function pickFresh(R, arr) {
     if (!arr || !arr.length) return '';
+    if (HK.SceneTime && HK.SceneTime.cur) arr = HK.SceneTime.filter(arr);
     var m = memo(), best = Infinity, sub = [];
     arr.forEach(function (x) { var v = m.used[x] == null ? -1 : m.used[x]; if (v < best) { best = v; sub = [x]; } else if (v === best) sub.push(x); });
     var s = sub[Math.floor(R() * sub.length)];
@@ -123,6 +124,56 @@
     zombie: { entry: ['bath'], prop: ['kagami', 'omocha', 'lotion'] },
     ship: { entry: ['bath'] },
     dream: { entry: ['bath', 'nekomi'] }
+  };
+
+  /* ---------- 夜の性格の展開（HK.PlayArc） ---------- */
+  function arcChoose(a, b, mode, ka, kb, last, key, m) {
+    var PA = HK.PlayArc, AR = PA && PA.ARC;
+    if (!AR || P.arcOff) return null;
+    var ta = (AR.top || {})[ka], tb = (AR.bot || {})[kb];
+    /* 受けが攻め指定の組（向きの決まらない組）・受けに回らない人には受けの展開を付けない */
+    if (tb && HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(b, a)) tb = null;
+    if (!(ta && ta.length) && !(tb && tb.length)) return null;
+    var R2 = rngOf(hashOf(key + '|arc|' + m.n + '|' + ((HK.SexFlow && HK.SexFlow.seed) || 0) + '|' + mode));
+    var side = ta && ta.length && tb && tb.length ? (R2() < 0.6 ? 'a' : 'b') : ta && ta.length ? 'a' : 'b', list = side === 'a' ? ta : tb;
+    var w = {}; list.forEach(function (d) { w[d.key] = d.w || 1; });
+    var lk = last && last.arc ? String(last.arc).split('.').pop() : '';
+    if (lk && w[lk] != null && list.length > 1) w[lk] *= 0.15;
+    var k = wpick(R2, w), def = list.filter(function (d) { return d.key === k; })[0];
+    return def ? { side: side, kind: side === 'a' ? ka : kb, def: def } : null;
+  }
+  /* ---------- 体位の語（2026-11-06。短い場面・夜の性格の一文の差し込みで、本文の体位と合わない言い回しを並べない） ----------
+     P.postureOf(本文, a, b)：本文の体位（流れの管理 HK.SexFlow.POS の chg・at と「後ろから」などの語。最後に出たもの）。'' は分からない
+     P.posConflict(文, 体位)：その文に、体位と合わない体位の語があるか（台詞の中は見ない）
+     P.fitPos(差し込む文, 本文)：合わない体位の語のある文（。で区切った一文）を外す */
+  var POSW = P.POSW = {
+    aUp: /覆いかぶさ|押し倒|組み敷|見下ろ|仰向け|頭の上で(?:押さえ|縫いと)/,
+    rear: /後ろから|背後から|背中に覆|四つん這い|うつ伏せ|寝バック/,
+    bUp: /跨|馬乗り|上に乗|騎乗/,
+    sit: /膝の上|向かい合わせに膝|対面座位/,
+    face: /向かい合|見上げ|見下ろ|見つめ合|目を合わせ|額を合わせ|額と額/
+  };
+  var POS_NG = { rear: ['aUp', 'bUp', 'sit', 'face'], aUp: ['rear', 'bUp', 'sit'], bUp: ['aUp', 'rear', 'sit'], sit: ['aUp', 'rear', 'bUp'] };
+  P.postureOf = function (t, a, b) {
+    if (!t) return '';
+    var n = narrOf(a && b ? normNames(t, a, b) : String(t)), F = HK.SexFlow, PO = F && F.POS, best = '', at = -1;
+    var look = function (k, re) { if (!re) return; var g = new RegExp(re.source, 'g'), mm; while ((mm = g.exec(n))) { if (mm.index >= at) { at = mm.index; best = k; } if (!mm[0].length) g.lastIndex++; } };
+    ['aUp', 'rear', 'bUp', 'sit'].forEach(function (k) { if (PO) { look(k, PO.chg[k]); look(k, PO.at[k]); } });
+    look('rear', /後ろから|背後から|四つん這い|うつ伏せ/);
+    look('bUp', /\{b\}[はが][^。]{0,20}跨/);
+    look('sit', /膝の上で|対面座位/);
+    return best;
+  };
+  P.posConflict = function (t, hint) {
+    var ng = POS_NG[hint]; if (!ng || !t) return false;
+    var n = narrOf(String(t));
+    return ng.some(function (k) { return POSW[k].test(n); });
+  };
+  P.fitPos = function (ins, body) {
+    if (!ins || !body) return ins;
+    var hint = P.postureOf(body);
+    if (!hint || !P.posConflict(ins, hint)) return ins;
+    return ins.split(/\n\n/).map(function (pa) { return sentences(pa).filter(function (x) { return !P.posConflict(x, hint); }).join(''); }).filter(function (x) { return /\S/.test(x); }).join('\n\n');
   };
 
   /* ---------- 選び方 ---------- */
@@ -203,6 +254,9 @@
     if (pa === 'free') wp.omocha += 0.8;
     if (rough) { wp.mekakushi = 0; wp.omocha = 0; wp.kagami = 0; wp.lotion = 0; wp.chakui += 1; }
     var prop = done('prop', wp);
+    /* 夜の性格の展開（play-arc-r18.js の HK.PlayArc。2026-11-06）：攻めか受けの夜の性格ごとの小さな展開（サドなら焦らし・言葉責め・痕を付ける・命令…）を一つ選び、
+       主な責めの重みに足す。同じ二人の前の夜と同じ展開は選ばれにくく。乱数は型の乱数とは別（ほかの軸の選び方を変えない） */
+    var arc = arcChoose(a, b, mode, ka, kb, last, key, m);
     /* 主な責め */
     var wf = { mune: 1.2, chikubi: 1, mimi: 1, kotoba: 1, jirashi: 1, koshi: 1, te: 1.2, kuchi: 1, zenshin: 1 };
     if (feat(b, 'ear')) wf.mimi += 3;
@@ -226,6 +280,7 @@
     if (prop === 'mekakushi') wf.jirashi += 1;
     if (prop === 'kagami') wf.kotoba += 1;
     if (prop === 'lotion') { wf.te += 1; wf.mune += 0.5; }
+    if (arc && arc.def.focus) Object.keys(arc.def.focus).forEach(function (k) { if (wf[k] != null) wf[k] += arc.def.focus[k]; });
     if (rough) { wf.zenshin = 0; wf.kuchi *= 0.5; }
     var focus = done('focus', wf);
     /* 体位 */
@@ -262,7 +317,8 @@
     if (x.againAfter) { wn.again = 0; if (wn.renzoku) wn.renzoku = 0; }
     if (rough) { wn.issho *= 0.3; }
     var finish = done('finish', wn);
-    var play = { entry: entry, focus: focus, prop: prop, pos: pos, finish: finish, mode: mode };
+    var play = { entry: entry, focus: focus, prop: prop, pos: pos, finish: finish, mode: mode, arc: arc ? arc.side + '.' + arc.kind + '.' + arc.def.key : '' };
+    if (arc) play._arc = arc;
     m.pair[key] = play;
     if (strict && prop && prop !== 'none') propN[prop] = (propN[prop] || 0) + 1;
     if (HS) HS.plays.push({ entry: entry, focus: focus, prop: prop, pos: pos, finish: finish, a: a.name, b: b.name });
@@ -338,9 +394,27 @@
     if ((mode === 'fm' || mode === 'fsp') && HK.Pos && HK.Pos.hasM && !HK.Pos.hasM(b)) { var f = l.filter(function (s) { return !NOM.test(s); }); if (f.length) l = f; }
     return pickL(R, l);
   }
+  /* 相手の種類で台詞を絞る（2026-11-06 利用者の指摘（痴漢電車の記録））：受けが誘う・甘える・恋人向けの言い回し（WARM）は、
+     相手がモブ・合意のない場面（強引・愛憎・敵対）・恋人でも体の関係でもない二人（COLD.on）には出さない。候補が全部 WARM なら
+     受けの反応の段（ENTRY_B・FOCUS_B・MID_B）は短い声（COLD_B）に、ほかの段はそのまま（地の文が主で、台詞を持たない段のため） */
+  var WARM = P.WARM = /大好き|好き(?![嫌勝])|愛して|愛おし|どきどき|鼓動|幸せ|ありがとう|嬉し|うれし|ずっと、?こうして|あなたなら|好きにして|何でもする|任せ|同じこと(?:を)?思って|胸に当て|口づけを返|擦り寄|すり寄|わ、私も|恋人|落ち着く|あったか|温かい|もっと、?していい|全部、?いい|甘えて|甘やか/;
+  var COLD = { on: false };
+  P.coldOf = function (a, b, opt, rel) {
+    var mob = function (c) { return !!(c && (c.mob || c.npc || c.i == null || c.i < 0)); };
+    opt = opt || {};
+    if (mob(a) || mob(b) || opt.force || opt.hate || rel === 'hate' || opt.rel === 'enemy' || opt.mob) return true;
+    if (rel === 'lover' || rel === 'casual') return false;
+    /* 恋人・体の関係の二人か：性格が目立つ行為の段と同じ見方（play-act-r18.js の HK.PlayAct.bondOf。関係の表・物語型の関係・二人の状態） */
+    var AC0 = HK.PlayAct;
+    return AC0 && AC0.bondOf ? !AC0.bondOf(opt.ctx || opt.S || HK._curCtx, a, b) : true;
+  };
+  P.COLD_B = ['{b}は息を詰めて、喉の奥で短い声を漏らした。{b}「……っ」', '{b}の肩が小さく跳ねた。噛みしめた唇の隙間から、こらえきれない吐息がこぼれた。', '{b}はぎゅっと目を閉じて、声にならない息を吐いた。{b}「……ん、っ……」', '{b}の体がびくりと強ばり、浅い息が一つ漏れた。'];
+  function coldF(l) { if (!COLD.on || !l || !l.length) return l; var f = l.filter(function (x) { return !WARM.test(x); }); return f.length ? f : l; }
+  function coldB(R, l) { if (!COLD.on || !l) return pickFresh(R, l); var f = l.filter(function (x) { return !WARM.test(x); }); return pickFresh(R, f.length ? f : P.COLD_B); }
   /* 型の段の文を選ぶ：場所（opt.spot。sex-spot-r18.js）に合わない文と、もう出た動きの文を避ける */
   function pickL(R, l) {
     if (!l || !l.length) return '';
+    l = coldF(l);
     if (HK.SexSpot && HK.SexSpot.cur) l = HK.SexSpot.filter(l, HK.SexSpot.cur);
     /* 同じ動き（手首を押さえる など。HK.SexFlow.MOTION）が、もう本文か、この型で選んだ文にあれば、その動きのない文を選ぶ（P.apply の間だけ） */
     if (MOV.on && l.length > 1) { var g = l.filter(function (s) { return !motionsOf(s).some(function (k) { return MOV.used[k]; }); }); if (g.length) l = g; }
@@ -506,7 +580,9 @@
      info = { a, b, mode, opt, ero, parts（差し込まれた部品）, press, lead }。戻り値：{ text, play（点検用の印つき）, keep（守る段落） } か null */
   P.apply = function (text, info) {
     MOV.on = false; MOV.used = {};
-    try { return apply0(text, info); } finally { MOV.on = false; MOV.used = {}; }
+    var o0 = (info && info.opt) || {};
+    COLD.on = !!(info && info.a && info.b && P.coldOf(info.a, info.b, o0, relOf(o0, info.a, info.b)));
+    try { return apply0(text, info); } finally { MOV.on = false; MOV.used = {}; COLD.on = false; }
   };
   function apply0(text, info) {
     var a = info.a, b = info.b, mode = info.mode || 'mf', opt = info.opt || {};
@@ -534,6 +610,7 @@
     var againAfter = !!(opt.after && /もう一度|もう一回|二回戦|二度目/.test(opt.after)) || !!opt.again;
     var play = P.choose({ a: a, b: b, mode: mode, opt: opt, press: info.press, lead: info.lead, leadPart: leadPart, againAfter: againAfter });
     var R = play.R; delete play.R;
+    var arcD = play._arc || null; delete play._arc;
     var rs = roomScene({ a: a, b: b, opt: opt }, R);
     if (rs && rs.play) Object.keys(rs.play).forEach(function (k) { if (rs.play[k]) play[k] = rs.play[k]; });
     if (rs) play.scene = rs.id;
@@ -567,10 +644,10 @@
       entT = pickT(R, (T0.ENTRY || {})[play.entry], mode, b);
       /* 入り方の段の最後の攻めの台詞は、同じ入り方の台詞（三つの組の分。組を問わない書き方）から選び直す */
       var ELn = entryLines(T0, play.entry), lm = /\{a\}「＠\{a\}＠[^」]*」$/.exec(entT);
-      if (lm && ELn.length > 1) entT = entT.slice(0, lm.index) + '{a}「＠{a}＠' + pickFresh(R, ELn) + '」';
+      if (lm && ELn.length > 1) entT = entT.slice(0, lm.index) + '{a}「＠{a}＠' + pickFresh(R, coldF(ELn)) + '」';
       /* 受けの応じ方（態度ごと）を続ける（同じ入り方でも段の文が毎回同じにならないように） */
       var eb = entT && T0.ENTRY_B ? T0.ENTRY_B[psOf(b, a)] || T0.ENTRY_B.gentle : null;
-      if (eb && play.entry !== 'nekomi') entT += pickFresh(R, eb);
+      if (eb && play.entry !== 'nekomi') entT += coldB(R, eb);
     }
     /* 主な責め：前戯の段 */
     var foreT = '';
@@ -584,7 +661,7 @@
       var fps = foreT.split(/\n\n/), fn = fps.filter(function (p) { return !/^\{b\}「\{mf\}」$/.test(p); }), fm0 = fps.length - fn.length;
       if (fm0 && !(rs && rs.steps)) {
         var fbl = T0.FOCUS_B ? T0.FOCUS_B[psOf(b, a)] || T0.FOCUS_B.gentle : null;
-        foreT = fn.join('') + (fbl ? pickFresh(R, fbl) : '') + '\n\n{b}「{mf}」';
+        foreT = fn.join('') + (fbl ? coldB(R, fbl) : '') + '\n\n{b}「{mf}」';
       }
       foreT = foreT.replace(/\{mf\}/g, function () { return moanPre(b, ero); });
       /* 着衣の型の前戯の頭（「服を一枚も乱さないまま」「ボタンを一つも外さず、布の上から」）は、場面がもう直に触れた・口や下着の中まで進んだあと
@@ -614,6 +691,24 @@
         if (cutN) { fo = locate(t, L.fore); bo = locate(t, L.body); co = locate(t, L.climax); if (!bo && !co) return why0('nobody'); }
       }
     }
+    /* 夜の性格の展開の段（HK.PlayArc）：一段目は前戯の段のあと、二段目は最中の段のあと（三段目があれば性格が目立つ行為の段のあと）。部屋の場面（rs.steps）には足さない */
+    var arcT = [];
+    if (arcD && gen && !(rs && rs.steps)) {
+      arcT = (arcD.def.st || []).map(function (st0) { return pickT(R, st0, mode, b); });
+      if (!arcT[0] || !arcT[1]) arcT = [];
+      else {
+        /* 展開の持ち主の夜の性格の一文（attr-r18.js）は役割が重なるので外す（もう一人の夜の性格の一文が同じ段にあるときは残す） */
+        var A2 = HK.Attr, kA = A2 && A2.nightKind ? A2.nightKind(a, b) : '', kB = A2 && A2.nightKind ? A2.nightKind(b, a) : '';
+        if (arcD.side === 'a' ? kA && !kB && !(A2.nightAccom && A2.nightAccom(a, b)) : kB && !kA && !(A2.nightAccom && A2.nightAccom(b, a))) {
+          var cutN2 = false;
+          (info.parts || []).forEach(function (p) { if (p.role === 'night') { var pt = normNames(p.t, a, b); if (cut(pt)) cutN2 = true; } });
+          if (cutN2) { fo = locate(t, L.fore); bo = locate(t, L.body); co = locate(t, L.climax); if (!bo && !co) return why0('nobody'); }
+        }
+        if (foreT) foreT += '\n\n' + arcT[0];
+        midT = midT ? midT + '\n\n' + arcT[1] : arcT[1];
+        if (arcT[2]) actT = actT ? actT + '\n\n' + arcT[2] : arcT[2];
+      }
+    }
     /* 終わり方 */
     var finT = '';
     if (co && gen) {
@@ -627,7 +722,7 @@
     var fl = locate(t, L.feel || []);
     if (fl && T0.MID_B && !(co && fl.s >= co.s) && !(bo && fl.s >= bo.s && fl.s < bo.e) && !(fo && fl.s >= fo.s && fl.s < fo.e)) {
       var mb = T0.MID_B[psOf(b, a)] || T0.MID_B.gentle;
-      put(fl.e, fl.e, pickFresh(R, mb), false);
+      put(fl.e, fl.e, coldB(R, mb), false);
     }
     /* 置き換え（後ろから） */
     if (co && finT) put(co.s, co.e, finT, true);
@@ -666,7 +761,8 @@
     play.posT = posT ? posT.split(/\n\n/)[0] : '';
     play.lock = P.POSTURE[play.pos] || null;
     if (actT) play.act = actT.split(/\n\n/)[0];
-    if (P.log) P.log.push({ a: a.name, b: b.name, mode: mode, play: { entry: play.entry, focus: play.focus, prop: play.prop, pos: play.pos, finish: play.finish, scene: play.scene || '', strap: !!play.strap }, ero: ero });
+    if (!arcT.length) play.arc = '';
+    if (P.log) P.log.push({ a: a.name, b: b.name, mode: mode, play: { entry: play.entry, focus: play.focus, prop: play.prop, pos: play.pos, finish: play.finish, scene: play.scene || '', strap: !!play.strap, arc: play.arc || '' }, ero: ero, arcT: arcT });
     return { text: out, play: play, keep: keep, act: actT };
   }
 
@@ -679,11 +775,16 @@
     mode = mode === 'ff' || mode === 'fm' ? mode : 'mf';
     if (!P.ok(a, b, mode)) return '';
     var T0 = TX(); if (!T0.SHORT_FOCUS) return '';
-    var play = P.choose({ a: a, b: b, mode: mode, opt: opt || {}, press: '', againAfter: true }), R = play.R; delete play.R;
+    /* opt.posHint：差し込む先の本文の体位（P.postureOf）。合う体位の値に固定し、合わない体位の語の文は外す（2026-11-06） */
+    var o2 = opt || {}, hint = o2.posHint || '';
+    if (hint) { var okp = (P.MODE.pos[mode] || []).filter(function (k) { return HINT_POS[hint] && HINT_POS[hint].indexOf(k) >= 0; }); o2 = Object.assign({}, o2, { play: Object.assign({}, o2.play || {}, okp.length ? { pos: okp[0] } : {}) }); }
+    var play = P.choose({ a: a, b: b, mode: mode, opt: o2, press: '', againAfter: true }), R = play.R; delete play.R; delete play._arc;
     var f = pickT(R, rtx(opt, 'SHORT_FOCUS', play.focus, T0.SHORT_FOCUS[play.focus]), mode, b), p = pickT(R, rtx(opt, 'SHORT_POS', play.pos, (T0.SHORT_POS || {})[play.pos]), mode, b);
+    if (hint) { if (P.posConflict(f, hint)) f = ''; if (P.posConflict(p, hint)) p = ''; }
     if (P.log) P.log.push({ a: a.name, b: b.name, mode: mode, short: true, play: { focus: play.focus, pos: play.pos } });
     return f + p;
   };
+  var HINT_POS = { rear: ['back', 'nebak'], aUp: ['seijo', 'osae'], bUp: ['kijo'], sit: ['zai'] };
   /* 短い場面（HK.ThickEro.short）：最初の段落（なければ最初の一文）のあとに差す */
   function insert1(text, ins) {
     if (!ins) return text;
@@ -701,7 +802,7 @@
       X.short = function (o) {
         var r = s0.apply(this, arguments);
         if (!r || typeof r.text !== 'string' || !o || !o.a || !o.b || HK.SAFE_ON || P.off) return r;
-        var l = P.shortLine(o.a, o.b, r.mode || o.mode, o);
+        var l = P.shortLine(o.a, o.b, r.mode || o.mode, Object.assign({}, o, { posHint: P.postureOf(r.text, o.a, o.b) }));
         P._lastShort = o.a.name + '|' + o.b.name;
         if (l) r.text = insert1(r.text, l.replace(/\{a\}/g, o.a.name).replace(/\{b\}/g, o.b.name));
         return r;
@@ -723,17 +824,33 @@
         if (!(/^set-/.test(sid) || P.ROOM[sid] || P.SCENES[sid] || P.SHORT[sid])) return r;
         /* 直前に短い場面（HK.ThickEro.short）で同じ二人に一文を足していれば、二度は足さない */
         if (P._lastShort === T.name + '|' + U.name) { P._lastShort = ''; return r; }
-        var l = P.shortLine(T, U, mode, {});
+        var l = P.shortLine(T, U, mode, { posHint: A.posHint ? A.posHint() : '' });
         return l ? (r || '') + l : r;
       };
       Object.keys(n0).forEach(function (k) { if (k.charAt(0) === '_') A.nightText[k] = n0[k]; });
       A.nightText._play = true;
     }
   }
-  P.install = install;
+  /* 本体の長い場面に時刻を渡す口（opt.when：'m' 朝・'d' 昼・'e' 夕方・'n' 夜、または時刻の数。2026-11-06）：組み立てのあいだ HK.SceneTime.cur に入れ、場面のあと言い換える */
+  function installWhen() {
+    var ST = HK.SceneTime; if (!ST) return;
+    ['ThickSex', 'ThickEro'].forEach(function (n) {
+      var X = HK[n]; if (!X || typeof X.scene !== 'function' || X.scene._when) return;
+      var s0 = X.scene;
+      X.scene = function (opt) {
+        var w = opt && opt.when != null ? ST.norm(opt.when) : '';
+        if (!w || HK.SAFE_ON) return s0.apply(this, arguments);
+        var self = this, args = arguments;
+        return ST.run(w, function () { var r = s0.apply(self, args); if (r && typeof r.text === 'string') r.text = ST.fix(r.text, w); return r; });
+      };
+      Object.keys(s0).forEach(function (k) { if (k.charAt(0) === '_') X.scene[k] = s0[k]; });
+      X.scene._when = true;
+    });
+  }
+  P.install = function () { install(); installWhen(); };
   /* attr-r18.js（あとで読む分）より後に包むため、シミュレーションの直前に入れる */
   if (HK.simulate && HK.wrap && !HK.simulate._play) HK.wrap(HK, 'simulate', function (sim0) {
-    var g = function () { install(); return sim0.apply(this, arguments); };
+    var g = function () { P.install(); return sim0.apply(this, arguments); };
     g._play = true;
     return g;
   }, 2);

@@ -533,11 +533,15 @@ js/ero-flavor-r18.js @pack:lewd
 js/sex-spot-r18.js @pack:lewd
 js/sex-flow-text-r18.js @pack:lewd
 js/sex-flow-r18.js @pack:lewd
+# 長い場面の流れの直しの追加（2026-11-06。焦らしのあとの受けの反応・布越しのあとの挿入の前に下着をずらす一文。HK.SexFlow.fix の包み。流れの点検の (p)(q) を 0 にする）
+js/sex-flow-react-r18.js @pack:lewd
 # エッチの型（2026-11-03。入り方・主な責め・道具・体位・終わり方で一回のエッチを組み替える HK.Play と、性格が目立つ行為の段 HK.PlayAct。sex-flow-r18.js の包みが呼ぶ。設計は docs/reports/2026-11-03/play-design.md）
 js/play-text-r18.js @pack:lewd
 js/play-text2-r18.js @pack:lewd
 js/play-act-r18.js @pack:lewd
 js/play-more-r18.js @pack:lewd
+# 夜の性格の展開（2026-11-06。サドなら焦らし・言葉責め・痕・命令…を HK.Play の主な責めに結びつけ、前戯と最中に一段ずつ。設計は docs/reports/2026-11-06/night-variety.md）
+js/play-arc-r18.js @pack:lewd
 js/play-r18.js @pack:lewd
 # 合意のない展開の二回目・三回目（2026-11-04。同じ二人の回数で受けの反応・攻めの構え・台詞を書き分ける HK.ForceRep。設計は docs/reports/2026-11-04/force-repeat.md）
 js/force-repeat-r18.js @pack:lewd

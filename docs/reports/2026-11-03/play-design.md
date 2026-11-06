@@ -169,3 +169,10 @@ HK.Play.addRoom('set-b-kanbyo', { entry: { nekomi: 2 }, prop: { chakui: 1 } }); 
 - 型の文・行為の段を足したら、base-lint・tone-feel・moan-tone-audit・sex-flow-audit を回す（CLAUDE.md の R18 の文の基準）。
 - 口調の書き下ろしは `js/tone-brush-play-r18.js`（tone-feel で崩れた関西弁・ダウナー系チャラ男・男オタク・胡散臭いの新しい台詞だけ）。本体のほかの文と同じ台詞を鍵にすると全年齢モードの結果まで変わるので、鍵は型の文にしかない台詞にする。
 - ついでに直したもの：ero-flavor-lines-r18.js の「{a}は{b}がイく寸前で止め、……突き入れた」は、受けが挿れる文に読まれる（pos V11）ので主語を分けた。
+
+## 10. 夜の性格の展開・体位と時刻（2026-11-06。詳しくは `docs/reports/2026-11-06/night-variety.md`）
+
+- 夜の性格の展開（`js/play-arc-r18.js` の `HK.PlayArc`）：`P.choose` が攻め（と受け）の夜の性格から展開を一つ選んで主な責めの重みに足し（`play.arc`）、`P.apply` が一段目を前戯の段のあと・二段目を最中の段のあとに置く。展開の持ち主の夜の性格の一文は外す。
+- 体位の語：`P.postureOf(本文)`・`P.posConflict(文, 体位)`・`P.fitPos(差し込む文, 本文)`。短い場面の型の一文（`P.shortLine` の `opt.posHint`）と kit の差し込みが使う。
+- 時刻：`HK.SceneTime`（ero-kit.js）。`P.pickFresh` は場面の時間帯に合わない札の文を外す。本体の長い場面は `opt.when` で時間帯を渡せる。
+- 相手の種類（`P.coldOf`・`P.WARM`・`P.COLD_B`）：モブ・合意のない場面・恋人でも体の関係でもない二人には、型の段の文から受けが誘う・甘える・恋人向けの言い回しを出さない（性格が目立つ行為の段は play-act-r18.js の `REACT_MOB`）。

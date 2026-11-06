@@ -182,8 +182,58 @@
       return m;
     });
   };
+  /* ---------- 場面の時刻（2026-11-06。共通の長い場面に「夜が明けるまで」「今夜は」があり、昼の場面でも出ていた） ----------
+     HK.SceneTime.cur：いま組み立てている場面の時間帯（'m' 朝・'d' 昼・'e' 夕方・'n' 夜・'' 分からない）。部屋の場面の口（set-b の kit の PR.scene は
+     opt.when・S.hour・S.part から、本体の HK.ThickSex.scene・HK.ThickEro.scene は opt.when から）が組み立てのあいだだけ入れる。
+     札：文の表には時刻の語の札を正規表現で付ける（HARD_N＝夜だけの文・HARD_D＝昼だけの文）。選ぶ部品（HK.Ero.fresh・HK.Play の文・流れの段・kit の段・夜の性格の一文）は
+     合わない札の文を候補から外し（全部外れるなら外さない）、場面のあと ST.fix が言い換えのきく語（今夜→今日・夜が明けるまで→気が済むまで…）を直す。時間帯の分からない場面は何もしない */
+  var ST = HK.SceneTime = {
+    cur: '',
+    HARD_N: /月明かり|月の光|月光|真夜中|深夜|夜更け|夜空|夜の(?:闇|帳|静けさ)|白み始め|夜明け前|寝静ま|消灯|常夜灯/,
+    HARD_D: /昼下がり|日差し|陽射し|陽の光|日の光|真昼|白昼|日の高い|明るいうちから|朝の光|朝日/,
+    SOFT_N: [[/夜が明けるまで/g, '気が済むまで'], [/朝が来るまで/g, '気が済むまで'], [/朝まで/g, '気が済むまで'], [/夜通し/g, 'いつまでも'], [/一晩中/g, '飽きもせず'], [/今夜/g, '今日'], [/今晩/g, '今日'], [/その夜/g, 'その日'], [/毎晩/g, '毎日'], [/長い夜/g, '長い時間'], [/夜はまだ長い/g, '時間はまだある']],
+    norm: function (w) {
+      if (w == null || w === '') return '';
+      if (typeof w === 'number') return w >= 5 && w < 10 ? 'm' : w >= 10 && w < 17 ? 'd' : w >= 17 && w < 19 ? 'e' : 'n';
+      w = String(w);
+      if (/^(?:m|morning|朝)$/.test(w)) return 'm';
+      if (/^(?:d|day|noon|昼)$/.test(w)) return 'd';
+      if (/^(?:e|evening|夕方?)$/.test(w)) return 'e';
+      if (/^(?:n|night|夜)$/.test(w)) return 'n';
+      return '';
+    },
+    /* 部屋の状態から：o.when ＞ S.hour（時刻）＞ S.part（0・1・2＝朝・昼・夜、または 'm'・'d'・'n'） */
+    of: function (S, o) {
+      if (o && o.when != null && o.when !== '') return ST.norm(o.when);
+      if (S && typeof S.hour === 'number') return ST.norm(S.hour);
+      if (S && typeof S.part === 'number') return ['m', 'd', 'n'][S.part] || '';
+      if (S && typeof S.part === 'string') return ST.norm(S.part);
+      return '';
+    },
+    ok: function (t, w) {
+      if (w === undefined) w = ST.cur;
+      if (!w || typeof t !== 'string') return true;
+      if (w === 'm' || w === 'd') return !ST.HARD_N.test(t);
+      if (w === 'n') return !ST.HARD_D.test(t);
+      return true;
+    },
+    filter: function (arr, w) {
+      if (w === undefined) w = ST.cur;
+      if (!w || !arr || arr.length < 2) return arr;
+      var f = arr.filter(function (x) { return ST.ok(typeof x === 'string' ? x : x && typeof x.t === 'string' ? x.t : '', w); });
+      return f.length ? f : arr;
+    },
+    fix: function (text, w) {
+      if (w === undefined) w = ST.cur;
+      if (typeof text !== 'string' || (w !== 'm' && w !== 'd')) return text;
+      ST.SOFT_N.forEach(function (r) { text = text.replace(r[0], r[1]); });
+      return text;
+    },
+    run: function (w, fn) { var p = ST.cur; ST.cur = w || ''; try { return fn(); } finally { ST.cur = p; } }
+  };
   E.fresh = function (S, arr, base) {
     if (!arr || !arr.length) return base ? base(arr) : undefined;
+    if (ST.cur) arr = ST.filter(arr);
     var own = (S && S.rng) || S, rng = own && own.int ? own : S && S.rng;
     if (!own || arr.length < 2) return base ? base(arr) : arr[0];
     var st = own._fresh || (own._fresh = { n: 0, m: {} }), m = st.m;
