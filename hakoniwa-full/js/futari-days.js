@@ -550,7 +550,9 @@
   if (HK.Emo && HK.wrap) HK.wrap(HK.Emo, 'word', function (w0) {
     return function (c) {
       var r = w0.apply(this, arguments), ctx = HK._curCtx;
-      if (!r || !c || !ctx || !ctx.ft || !ctx.scen || ctx.scen.id !== 'futari') return r;
+      /* 回している ctx の住人のときだけ（物語型の箱庭（吹雪の館など）は HK._curCtx を置かないので、前に回した同居生活の ctx が残る。
+         その ctx の使った句の表で別の箱庭の句を消し、暮らしの前置きを混ぜていた＝同じ配役でも回すたびに結果が変わった。2026-11-06） */
+      if (!r || !c || !ctx || !ctx.ft || !ctx.scen || ctx.scen.id !== 'futari' || !ctx.chars || ctx.chars[c.i] !== c) return r;
       var U = ctx.ft.emoW = ctx.ft.emoW || {}, k = String(r).split(c.name).join('〇');
       if (U[k]) return '';
       /* その日にケンカ・失恋・家出のあった人に、浮かれた前置きを出さない（2026-11-05・報告 2 回目の B11） */

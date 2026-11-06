@@ -6,6 +6,8 @@
      who … 話し手の住人の番号（input.chars・res.chars・res.heroes の番号）。nm … s の頭の名前の長さ（名前「 の形のとき）
      h … 長い文の改行で一つの台詞の塊になるもの（core.js の HK.fmtLong と同じ規則。同じ番号が一つの塊）
      f … 1 なら目印「＠名前＠」で話し手を固定した台詞（推定ではない）
+     face … 表情の鍵（書いた人の印「〈照れ〉」・喘ぎの段。face.js の HK.Face。印の無い台詞には無い）
+   表情の鍵は、新しい記録には数える欄 e.fc（外側の「」の順の鍵の並び。印の無い台詞は null）として残す（保存・履歴に入る。保存済みの記録には書き足さない）。
    区分と話し手は voice.js の processText が台詞を整えるときに決め（V._segBuf）、この包みが、ほかの仕上げ（全年齢の言い換え・
    語の差し替えなど）がすべて済んだあとで、できあがった文に合わせて e.seg にする。台詞の中身が変わって合わせられないときは、文から決め直す。
    e.seg は数え上げない属性（保存・共有・履歴の JSON には入らない）。保存から開いた記録は HK.Seg.of(e, 名前の一覧) で作り直す。
@@ -119,6 +121,7 @@
       if (nm) o.nm = nm;
       if (h) o.h = h;
       if (d.f) o.f = 1;
+      if (d.fc) o.face = d.fc;
       seg.push(o);
       at = x.b + 1;
     });
@@ -156,8 +159,16 @@
     if (!e || typeof e.text !== 'string') return [];
     if (e.seg && S.text(e.seg) === e.text) return e.seg;
     var seg = S.build(e.text, namesOf(names));
+    /* 保存から開いた記録：数える欄 e.fc の表情の鍵を、外側の「」の順で写す */
+    if (Array.isArray(e.fc)) { var qi = 0; seg.forEach(function (x) { if (x.t === 'n') return; var f = e.fc[qi++]; if (f) x.face = f; }); }
     hide(e, 'seg', seg);
     return seg;
+  };
+  /* seg の外側の「」の順の表情の鍵（どれも無ければ null） */
+  S.faces = function (seg) {
+    var out = [], any = false;
+    (seg || []).forEach(function (x) { if (!x || x.t === 'n') return; out.push(x.face || null); if (x.face) any = true; });
+    return any ? out : null;
   };
   /* 台詞行（l）の話し手（出た順・重なりなし） */
   S.speakers = function (seg, kinds) {
@@ -216,7 +227,11 @@
           if (!e || typeof e !== 'object') return;
           /* 句読点の仕上げ（core.js の HK.punctFix：文頭の「。」・「。。」・文頭の台詞のあとの「」。」）を、seg を作る前に一度だけ */
           if (typeof e.text === 'string' && HK.punctFix) { try { e.text = HK.punctFix(e.text, names); } catch (err) { /* 直せなくても結果は返す */ } }
+          /* 表情の鍵の印の消し残し（「」の外・台詞の途中。face.js） */
+          if (typeof e.text === 'string' && HK.Face && HK.Face.strip) e.text = HK.Face.strip(e.text);
           try { if (typeof e.text === 'string') hide(e, 'seg', S.build(e.text, names, e._sq)); } catch (err) { /* 区分に失敗しても結果は返す */ }
+          /* 新しい記録の表情の鍵（数える欄。印・喘ぎの段のある台詞があるときだけ） */
+          if (e.seg) { var fcs = S.faces(e.seg); if (fcs) e.fc = fcs; }
           if (hp && e.seg) { try { unheartEv(e, e.seg, hp); } catch (err) { /* 外せなくても結果は返す */ } }
           if (e._sq) delete e._sq;
         });
