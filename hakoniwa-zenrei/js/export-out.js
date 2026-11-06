@@ -102,6 +102,8 @@
       var cat = $('#tlcat', h);
       if (cat && cat.value !== 'all') { u.cat = cat.value; cat.value = 'all'; cat.dispatchEvent(new Event('change', { bubbles: true })); }
     } catch (e) { /* 絞り込みが外せなくても印刷はする */ }
+    /* 記録の欄（コメント欄など。view.js の e.ch）：本編のあとにコメント欄も出す（2026-11-06） */
+    try { u.ch = HK.View && HK.View.chPrint ? HK.View.chPrint() : null; } catch (e) { u.ch = null; }
     $$('details', h).forEach(function (d) { if (!d.open) { u.details.push(d); d.open = true; } });
     undo = u;
   }
@@ -111,6 +113,7 @@
     if (!u) return;
     var h = host();
     u.details.forEach(function (d) { if (d.isConnected) d.open = false; });
+    if (u.ch) { try { u.ch(); } catch (e) { /* 戻せなくても表示は崩れない */ } }
     if (!h) return;
     try {
       if (u.cat) { var cat = $('#tlcat', h); if (cat) { cat.value = u.cat; cat.dispatchEvent(new Event('change', { bubbles: true })); } }
