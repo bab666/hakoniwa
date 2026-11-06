@@ -170,9 +170,16 @@
       body = o.resume ? pickOf(ctx, FB.short[sh]) : text(ctx, 'PLAY', o.pi, sh, pickOf(ctx, FB.short[sh]), a, b);
       if (o.nogen) { var ng = HK.NoGen.scene({ pick: pk, rng: ctx.rng, a: a, b: b, open: '', after: false }); body = ng && ng.text ? ng.text : body; form = 'short'; }
       if (form === 'mid') {
-        var bt = J.pick(ctx, 'bottom', R.BOTTOM), tp = J.pick(ctx, 'top', R.TOP);
-        var bx = text(ctx, 'BOTTOM', R.BOTTOM.indexOf(bt), sh, '{b}の' + bt.k + 'に触れると、' + bt.t.replace(/。$/, '') + '。', a, b);
-        var tx = text(ctx, 'TOP', R.TOP.indexOf(tp), sh, '{a}は、' + tp.t.replace(/。$/, '') + '。', a, b);
+        /* 反応の行（2026-11-06）：予備の文の継ぎ目で同じ語を重ねない（行の文が「胸に触れられて…」なら「{b}の胸に触れると、」を付けない）。
+           体位は前の行（受けの反応は内容の行、攻めの反応はその前まで）の体位（本体の HK.Play.postureOf）に合うものだけ（膝の上 → 脚の間に飛ばない。引き直しは 4 回まで、残れば合わない一文を外す） */
+        var PLx = HK.Play, rowB = function (bt) { var t0 = bt.t.replace(/。$/, ''); return t0.indexOf(bt.k) === 0 || /触れ/.test(t0) ? '{b}は、' + t0 + '。' : '{b}の' + bt.k + 'に触れると、' + t0 + '。'; };
+        var fitRow = function (key, list, mkT, before) {
+          var hint = PLx && PLx.postureOf ? PLx.postureOf(before, a, b) : '', t = '';
+          for (var k2 = 0; k2 < 5; k2++) { var r0 = J.pick(ctx, key, list); t = mkT(r0); if (!hint || !PLx.posConflict(t, hint)) return t; }
+          return PLx.fitPos ? PLx.fitPos(t, before) : t;
+        };
+        var bx = fitRow('bottom', R.BOTTOM, function (bt) { return text(ctx, 'BOTTOM', R.BOTTOM.indexOf(bt), sh, rowB(bt), a, b); }, body);
+        var tx = fitRow('top', R.TOP, function (tp) { return text(ctx, 'TOP', R.TOP.indexOf(tp), sh, '{a}は、' + tp.t.replace(/。$/, '') + '。', a, b); }, bx + '\n\n' + body);
         var T = HK.ThickSex, mo;
         if (HK.NovelMoan) HK.NovelMoan.top = a;
         /* 山場の喘ぎ（受けの態度ごと）：男性向けは ♡ や擬音の付く本体の男性向けの喘ぎ（HK.ThickEro.fill の {mb2}）と、男性向けの山場の文 */
@@ -354,14 +361,15 @@
     /* 本体の型の体位の一文（HK.Play の shortLine）は、部屋の段の体位と食い違うので足さない */
     var PL = HK.Play, off0 = PL ? PL.off : null, na;
     if (PL) PL.off = true;
-    try { na = nightAdd(ctx, a, b, sh, ero, o.entry, { jealous: !!o.jealTop, leadB: !!o.leadB }); } finally { if (PL) PL.off = off0; }
+    /* 部屋の段の体位（本体の HK.Play.postureOf）と合わない体位の語の一文は選ばない（2026-11-06。前から膝をつく段に「後ろから抱きすくめてばかり」が並んだ） */
+    try { na = nightAdd(ctx, a, b, sh, ero, o.entry, { jealous: !!o.jealTop, leadB: !!o.leadB }, body); } finally { if (PL) PL.off = off0; }
     body = insert1(body, na);
     return body;
   }
   PR0.addRoom = addRoom; PR0.addPart = addPart; PR0.roomOf = roomOf; PR0.lru = lru; PR0.part = part; PR0.roomW = roomW; PR0.compose = compose; PR0.bodyFits = bodyFits; PR0.count = count;
   KINDS.forEach(function (k) { PR0['add' + k.charAt(0).toUpperCase() + k.slice(1)] = function (id, list) { addPart(id, k, list); }; });
   /* 場面の場所（2026-11-05 通し読み：看病の布団の場面に、本体の型の一文「寝床まで辿り着く余裕もなかった」が差さった）：
-     o.spot か部屋の既定の場所（PR.addRoom の spot。文字列か (ctx, o) を返す関数）を、場面を組むあいだだけ本体の HK.SexSpot.cur に置く
+     o.spot か部屋の既定の場所（PR.addRoom の spot。文字列か (ctx, o, form) を返す関数。form は場面の長さ）を、場面を組むあいだだけ本体の HK.SexSpot.cur に置く
      （本体の型の一文 HK.Play.shortLine と、本体の組み立ての候補が場所に合わないものを外す。すでに置かれていれば上書きしない） */
   /* 温度（本体の HK.Heat。2026-11-06）：温度を読む部屋（HK.Heat.use）の場面は、関係と気分から温度を決め、その場面のあいだ HK.Heat.cur を置く。
      場面のあとに、変化の一文（前回と違う温度のとき。始まりの段のあと）と事後の型の一文を足し、気分を動かして温度を覚える。本体に HK.Heat が無ければ今までどおり */
@@ -393,7 +401,7 @@
     return r;
   }
   function sceneAt0(ctx, S, env, a, b, sh, form, o, src) {
-    var SP = HK.SexSpot, r = ROOMS[roomOf(ctx)], sp = (o && o.spot) || (r && (typeof r.spot === 'function' ? r.spot(ctx, o || {}) : r.spot)) || '';
+    var SP = HK.SexSpot, r = ROOMS[roomOf(ctx)], sp = (o && o.spot) || (r && (typeof r.spot === 'function' ? r.spot(ctx, o || {}, form) : r.spot)) || '';
     if (!SP || !sp || SP.cur) return sceneText(ctx, S, env, a, b, sh, form, o, src);
     SP.cur = sp;
     try { return sceneText(ctx, S, env, a, b, sh, form, o, src); } finally { SP.cur = null; }

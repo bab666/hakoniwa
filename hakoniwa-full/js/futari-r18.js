@@ -280,6 +280,7 @@
   /* 長い場面に渡す場所（本体の場所の口 opt.spot。sex-spot-r18.js の HK.SexSpot が、場所に合わない段・体位・入り方を候補から外す） */
   var SPOT_OF = { kabe: 'bed', rusu: 'bed', bath: 'bath', sofa: 'sofa', kitchen: 'kitchen', genkan: 'door' };
   var WATER = /水|コップ|グラス/;
+  var INROOM_R = /部屋の中へ招き入れ|扉の鍵を閉め/;
   var PLACE_W = /布団|ベッド|シーツ|寝室|寝床|枕|ソファ|壁|床/, BED_W = /布団|ベッド|シーツ|寝室|寝床|枕/, NOBED_W = /ソファ|玄関|台所|エンドロール|映画|湯船|浴室|脱衣所|洗面所/;
   var OPEN_N = {
     mf: L('{a}は{b}の手を取って、指を一本ずつ絡めた。言葉はいらなかった。今夜がどういう夜になるのか、二人とも分かっていた。|{a}は{b}の顎にそっと指をかけて、顔を上げさせた。目が合うと、{b}のほうが先にまぶたを伏せた。|{a}は{b}の名前を一度だけ呼んだ。それだけで、{b}の肩から力が抜けた。'),
@@ -459,7 +460,9 @@
     if (kind === 'oyasumi' && HK.Kiss) { var kr = HK.Kiss.text(ctx, a, b, { trig: 'oyasumi', len: 's', end: 'night', night: true }); if (kr && kr.text) t += '\n\n' + kr.text.replace(/\n\n/g, '') + '\n\n'; }
     if (c && kind !== 'trip' && ctx.rng() < 0.7) t += upk(LEAD_HOUSE);
     t += upk(kind === 'free' || kind === 'impulse' ? LEAD_QFREE : kind === 'wanted' ? LEAD_QWANT : (LEAD_Q[att(a)] || LEAD_Q.gentle));
-    t += upk(LEAD_R);
+    /* 応え（LEAD_R）は、きっかけの場所（長い場面の opt.spot と同じ SPOT_OF）に合うものだけ：寝室でない夜（居間のソファ・風呂上がり・台所・玄関）に「部屋の中へ招き入れた」「扉の鍵を閉めた」を出さない（2026-11-06） */
+    var lsp = ROOMK[kind] ? SPOT_OF[ROOMK[kind]] || 'bed' : 'bed', lr = lsp === 'bed' ? LEAD_R : LEAD_R.filter(function (x) { return !INROOM_R.test(x); });
+    t += upk(lr.length ? lr : LEAD_R);
     return { text: ctx.t(fillN(t, { c: c }), a, b), why: (lk === 'spatPre' ? LEAD_N.spat + '・' : lk !== kind ? LEAD_N[lk] + '・' : '') + LEAD_N[kind] + '（' + a.name + 'から' + (c && kind !== 'trip' ? '・同じ家に' + c.name + 'がいる' : '') + '）' };
   }
 

@@ -156,6 +156,13 @@ function packCodes() {
   const f = [path.join(ROOT, 'hakoniwa-packs/codes.local.json'), path.join(ROOT, 'hakoniwa-packs/codes.example.json')].find(x => fs.existsSync(x));
   return f ? { file: f, J: JSON.parse(fs.readFileSync(f, 'utf8')) } : null;
 }
+/* 試しの点検に渡すコード（2026-11-07 版ごとのコード）：R18版のコード（"<id>" か "*"）と全年齢版のコード（"<id>@zen" か "*@zen"。無ければ R18版のコード）の先頭を1つずつ。
+   HK_PACK_CODES に両方を渡し、開かない版のコードは unlock が何もしない */
+function packCodeList(id) {
+  const pc = packCodes(); if (!pc) return [];
+  const one = (k, z) => [].concat(pc.J[k + z] || (z ? pc.J[k] : null) || [], pc.J['*' + z] || (z ? pc.J['*'] : null) || [])[0];
+  return [one(id, ''), one(id, '@zen')].filter((c, i, a) => c && a.indexOf(c) === i);
+}
 
 /* ---------- 道具のファイル（require をたどる） ---------- */
 const TOOLDEP = {};
@@ -460,10 +467,10 @@ function keyOf(t) {
     case 'chunk-regress': case 'chunk-audit': inp = hashFiles(chunkFiles(t.b, 'all')) + String(readOr(path.join(ROOT, BUILDS[t.b], 'index.html'), '')); break;
     case 'dict-regress': inp = hashFiles(fs.readdirSync(path.join(ROOT, 'hakoniwa-full/js')).filter(f => /^(?:tone-|core|ego-desc|persona)/.test(f)).map(f => 'hakoniwa-full/js/' + f)); break;
     case 'date-setting': inp = packInputs('set-b', 'set-b-date'); break;
-    case 'heat': inp = packMainInputs('set-b') + packInputs('set-b') + hashFiles(chunkFiles('full', ['futari', 'train'])) + manifestPart('full', ['futari', 'train']) + (packCodes() ? sha(JSON.stringify(packCodes().J['set-b'] || packCodes().J['*'])) : ''); break;
+    case 'heat': inp = packMainInputs('set-b') + packInputs('set-b') + hashFiles(chunkFiles('full', ['futari', 'train'])) + manifestPart('full', ['futari', 'train']) + sha(packCodeList('set-b').join()); break;
     case 'pack-catalog': inp = packInputs(t.pack) + String(readOr(path.join(ROOT, 'docs/reports/2026-11-03/pack-event-catalog.md'), '')); break;
     case 'pack-site': return null;   /* 試しのフォルダは毎回作る（中で build-pack を回す。数十秒） */
-    case 'pack-audit': case 'pack-feel': case 'pack-moan': case 'pack-flow': case 'pack-relword': case 'kanbyo-role': inp = packMainInputs(t.pack) + packInputs(t.pack, t.room) + (packCodes() ? sha(JSON.stringify(packCodes().J[t.pack] || packCodes().J['*'])) : ''); break;
+    case 'pack-audit': case 'pack-feel': case 'pack-moan': case 'pack-flow': case 'pack-relword': case 'kanbyo-role': inp = packMainInputs(t.pack) + packInputs(t.pack, t.room) + sha(packCodeList(t.pack).join()); break;
     default: inp = HEAD_SHA;
   }
   return sha(JSON.stringify(base) + inp);
@@ -682,8 +689,7 @@ const RUN = {
   }
 };
 function packEnv(t, only) {
-  const pc = packCodes(), code = pc ? [].concat(pc.J[t.pack] || [], pc.J['*'] || [])[0] : '';
-  return Object.assign({ HK_PACK_CODES: code }, only ? { HK_ONLY_SCEN: t.room } : {});
+  return Object.assign({ HK_PACK_CODES: packCodeList(t.pack).join(',') }, only ? { HK_ONLY_SCEN: t.room } : {});
 }
 /* tone-feel：口調ごとの行（| 口調 | … | ◯／△／✕ | …）のうち ◯ でないものの数。まとめの行は「== まとめ：すべて ◯・…」 */
 function feelCount(s) { const m = String(s).match(/== まとめ：(.*)/); if (!m) return null; return /すべて ◯/.test(m[1]) ? 0 : /◯ でない口調 (\d+)/.test(m[1]) ? +RegExp.$1 : (String(s).match(/^\|[^\n]*\| (?:△|✕) \|/gm) || []).length; }

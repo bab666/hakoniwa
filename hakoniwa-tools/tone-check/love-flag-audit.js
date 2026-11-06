@@ -14,7 +14,7 @@
        Y＝ありの回の恋愛のしるし（N1〜N3 に当たるもの）の数、Z＝自動の回の告白・結末の恋（N2・N3。家族・信仰の自動は恋愛なしなので 0 のはず）を出す。
        自動の回の N1（恋愛の出来事）は Z1 に参考として出す（出られない部屋のように恋愛が中心の箱庭では、信仰の自動でも、手が触れて身を引く・指さしのような
        恋愛の分類の出来事が今までどおり起きる。恋愛を止めるのは「恋愛：なし」をはっきり選んだときと、家族）。
-       全箱庭の Y の合計が 0 なら、恋愛：ありが効いていないのでエラー（開始の可否で止める箱庭（scen.loveflagSkip か、scen.check が理由を返す配役）のありの回・自動の回は数えない。2026-11-06）
+       全箱庭の Y の合計が 0 なら、恋愛：ありが効いていないのでエラー（箱庭を HK_ONLY_SCEN で絞った回では見ない。住人どうしの恋愛が起きない箱庭だけだと 0 になるため。2026-11-06。開始の可否で止める箱庭（scen.loveflagSkip か、scen.check が理由を返す配役）のありの回・自動の回は数えない。2026-11-06）
    ・結末の関係のうち、入力の関係そのものを表示した線（物語型の関係図で、★の付かない、関係の名前の線）は数えない（設定の表示で、出来事の結果ではないため）
    ・N2 は文から拾うので誤判定がありうる。--why で例を出すので目で確かめる 
    （2026-10-29 担当MQ）配役（パス loveflag）と判定（judge loveflag）を分けて module.exports で出す。audit-all.js が同じ関数を使い、
@@ -106,6 +106,8 @@ const JUDGE = function (HK, opt) {
       end(run, res) {
         const o = oOf(run.sc), m = run.pass === 'loveflag' ? (run.meta || {}) : { lf: 'no' }, ties = run.input.ties || [];
         o.runs++;
+        /* 箱庭を絞った回（HK_ONLY_SCEN。lib.js が HK.SCEN_ONLY を入れる）の印。Y0 は全箱庭の合計で見る判定なので、絞った回では出さない */
+        if (HK.SCEN_ONLY) o.narrow = 1;
         if (m.lf === 'yes' || m.lf === 'auto') {
           const lv = m.lf === 'yes' ? 'ok' : '', ty = m.ty, tl = ties;
           if (m.blocked) return;
@@ -133,16 +135,19 @@ function print(r, errors) {
   }
   console.log('合計', JSON.stringify(tot), '（N1〜N4・Z・err は 0 であること。Y は 0 より大きいこと。Z1 は参考）');
   console.log('pageerr', errors.slice(0, 3));
-  if (tot.N1 + tot.N2 + tot.N3 + tot.N4 + tot.Z + tot.err > 0 || tot.Y === 0 || errors.length) process.exitCode = 1;
+  const narrow = Object.keys(r).some(id => r[id].narrow);
+  if (narrow && tot.Y === 0) console.log('（箱庭を絞った回なので、Y が 0 でもエラーにしない）');
+  if (tot.N1 + tot.N2 + tot.N3 + tot.N4 + tot.Z + tot.err > 0 || (tot.Y === 0 && !narrow) || errors.length) process.exitCode = 1;
 }
 function summarize(r) {
   const K = ['N1', 'N2', 'N3', 'N4', 'Z'], items = {}, ex = {};
   K.forEach(k => { items[k] = 0; ex[k] = []; });
-  let runs = 0, err = 0, Y = 0, Z1 = 0, yr = 0;
-  Object.keys(r || {}).forEach(id => { const o = r[id]; runs += o.runs; err += o.err; Y += o.Y; Z1 += o.Z1; yr += o.yr || 0; K.forEach(k => { items[k] += o[k]; }); o.ex.forEach(x => { const m = String(x).match(/ (N[1-4]) /); const k = m ? m[1] : 'Z'; if (ex[k] && ex[k].length < 3) ex[k].push(id + ' ' + x); }); });
-  /* 「恋愛：あり」が効いていない（ありの回があるのに Y が 0）のもエラー */
-  items.Y0 = yr && Y === 0 ? 1 : 0;
-  return { items, ex, info: { 回: runs, 'あり Y': Y, '参考 Z1': Z1 }, err };
+  let runs = 0, err = 0, Y = 0, Z1 = 0, yr = 0, narrow = false;
+  Object.keys(r || {}).forEach(id => { const o = r[id]; if (o.narrow) narrow = true; runs += o.runs; err += o.err; Y += o.Y; Z1 += o.Z1; yr += o.yr || 0; K.forEach(k => { items[k] += o[k]; }); o.ex.forEach(x => { const m = String(x).match(/ (N[1-4]) /); const k = m ? m[1] : 'Z'; if (ex[k] && ex[k].length < 3) ex[k].push(id + ' ' + x); }); });
+  /* 「恋愛：あり」が効いていない（ありの回があるのに Y が 0）のもエラー。全箱庭の合計で見る判定なので、箱庭を絞った回（check.js の箱庭の範囲・パックの部屋）では出さない
+     （2026-11-06：サキュバスの一夜・ダンジョン・人狼などは住人どうしの恋愛が起きない作りで、単独では Y が 0 になり、Y0 が 1 件と出ていた。通しでは 0 件） */
+  items.Y0 = !narrow && yr && Y === 0 ? 1 : 0;
+  return { items, ex, info: Object.assign({ 回: runs, 'あり Y': Y, '参考 Z1': Z1 }, narrow ? { 'Y0': '箱庭を絞った回なので見ない' } : {}), err };
 }
 const LABEL = { N1: '恋愛：なしの二人の恋愛の出来事', N2: '恋愛：なしの二人の告白・恋人になる文', N3: '恋愛：なしの二人の結末の恋', N4: '恋愛：なしの二人の惹かれが上がった', Z: '自動（家族・信仰）の告白・結末の恋', Y0: '恋愛：ありが効いていない（Y が 0）' };
 module.exports = { passes: { loveflag: PASS }, judges: { loveflag: JUDGE }, print, summarize, LABEL };

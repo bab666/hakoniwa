@@ -1660,12 +1660,12 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
 <!-- 古いブラウザの知らせ（2026-11-04）：本体は正規表現の後読み（iOS 16.4・Safari 16.4 から）を使うので、それより前の版では読み込みの段階で止まり、何も表示されない。そのときだけ、何が要るかを画面の上に出す -->
 <script>(function(){try{new RegExp('(?<=a)b');}catch(e){document.addEventListener('DOMContentLoaded',function(){var d=document.createElement('p');d.setAttribute('role','alert');d.style.cssText='margin:12px 16px;padding:12px 14px;border:1px solid #c33;border-radius:8px;background:#fff;color:#16233b;font-size:14px;line-height:1.7';d.textContent='このブラウザの版では箱庭シミュレーターが動きません。iPhone・iPad は iOS 16.4 以降、Mac の Safari は 16.4 以降に更新してください（Chrome・Edge・Firefox の新しい版でも動きます）。';document.body.insertBefore(d,document.body.firstChild);});}})();</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"26456cc372","api":1,"build":"full","core":"js/c/core.5c8822553d.js",
+<script>window.HK_MANIFEST={"v":"5d0e0eed13","api":1,"build":"full","core":"js/c/core.c057027118.js",
 "chunks":{
-  "late":{"src":"js/c/late.bfe30efd6d.js","br":248248,"deps":["pack-sim","pack-lewd"]},
+  "late":{"src":"js/c/late.7bf868eac4.js","br":248997,"deps":["pack-sim","pack-lewd"]},
   "pack-sim":{"src":"js/c/pack-sim.843e5acb5b.js","br":166347,"deps":[]},
   "pack-rel":{"src":"js/c/pack-rel.9ce9a8360d.js","br":387355,"deps":["pack-sim","pack-lewd"]},
-  "pack-lewd":{"src":"js/c/pack-lewd.a60bee65c7.js","br":575205,"deps":["pack-sim"]},
+  "pack-lewd":{"src":"js/c/pack-lewd.efd10de2f4.js","br":575505,"deps":["pack-sim"]},
   "scen-goukon":{"src":"js/c/scen-goukon.194befd036.js","br":93089,"deps":["pack-sim","pack-rel"]},
   "scen-classroom":{"src":"js/c/scen-classroom.21ae66b0a5.js","br":102712,"deps":["pack-sim","pack-rel"]},
   "scen-island":{"src":"js/c/scen-island.60c3b17d15.js","br":91826,"deps":["pack-sim","pack-rel"]},
@@ -1677,7 +1677,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "scen-dungeon":{"src":"js/c/scen-dungeon.148ae8f060.js","br":121774,"deps":["pack-sim","pack-story"]},
   "scen-massage":{"src":"js/c/scen-massage.4827c0ac29.js","br":99566,"deps":["pack-sim","pack-solo"]},
   "scen-hole":{"src":"js/c/scen-hole.e566c07abe.js","br":92776,"deps":["pack-sim","pack-solo"]},
-  "scen-futari":{"src":"js/c/scen-futari.d8a88b7737.js","br":164155,"deps":["pack-sim","pack-rel"]},
+  "scen-futari":{"src":"js/c/scen-futari.18a4edb2b0.js","br":164227,"deps":["pack-sim","pack-rel"]},
   "scen-zombie":{"src":"js/c/scen-zombie.54b10e6284.js","br":174117,"deps":["pack-sim","pack-rel"]},
   "scen-rpg":{"src":"js/c/scen-rpg.f4b9f62a9c.js","br":27461,"deps":["pack-sim","pack-story"]},
   "scen-kaihen":{"src":"js/c/scen-kaihen.862a5a080e.js","br":156139,"deps":["pack-sim","pack-rel","pack-solo"]},
@@ -1692,8 +1692,8 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "scen-jinro":{"src":"js/c/scen-jinro.1be6604bfb.js","br":84705,"deps":["pack-sim","pack-story"]},
   "pack-catalog":{"src":"js/c/pack-catalog.a8428573cf.js","br":48329,"deps":["pack-sim"]},
   "pack-roomkit":{"src":"js/c/pack-roomkit.6fb7e14d0d.js","br":3840,"deps":["pack-sim","pack-rel"]},
-  "pack-solo":{"src":"js/c/pack-solo.6211b42428.js","br":20080,"deps":["pack-sim","pack-lewd"]},
-  "scen-train":{"src":"js/c/scen-train.9dbaa77e8d.js","br":120342,"deps":["pack-sim","pack-rel","pack-solo"]},
+  "pack-solo":{"src":"js/c/pack-solo.0ed6ecd241.js","br":24572,"deps":["pack-sim","pack-lewd"]},
+  "scen-train":{"src":"js/c/scen-train.117373d571.js","br":121480,"deps":["pack-sim","pack-rel","pack-solo"]},
   "tone-base":{"src":"js/c/tone-base.9f812a1e1d.js","br":60463,"deps":[]},
   "tone-ane":{"src":"js/c/tone-ane.8cb12d937d.js","br":10736,"deps":[]},
   "tone-boku-n":{"src":"js/c/tone-boku-n.5f38bb84fc.js","br":6252,"deps":[]},
@@ -1758,7 +1758,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "rpg":{"id":"rpg","name":"ダンジョンRPG","kicker":"パーティ・冒険","desc":"パーティを組んでダンジョンへ。階ごとにランダムな戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、誰が宝箱に手を伸ばし、どこで引き返すのか。地下30階の主を倒せば踏破、引き返せば帰還、全員倒れれば全滅。","solo":true,"minCast":1,"maxCast":6,"unit":"階","castHint":"1〜6人のパーティで潜ります。職業は「おまかせ」ならエゴグラムから決まります。前に出るか、宝箱を開けるか、引き返すかは気質の数値で決まります。踏破できるのは一割ほど。多くは途中で引き返します。","env":[{"id":"floors","label":"目標の階層"},{"id":"danger","label":"魔物の強さ"},{"id":"loot","label":"お宝の多さ"},{"id":"retreat","label":"撤退"}],"stats":[{"id":"str","label":"腕っぷし"},{"id":"luck","label":"運"},{"id":"int","label":"知能"}],"perFields":[{"id":"job","label":"職業","auto":"おまかせ（エゴグラムから）","options":[{"id":"warrior","label":"戦士"},{"id":"mage","label":"魔法使い"},{"id":"priest","label":"僧侶"},{"id":"thief","label":"盗賊"},{"id":"hunter","label":"狩人"},{"id":"bard","label":"吟遊詩人"}]},{"id":"special","label":"特殊役職","auto":"なし","options":[{"id":"immortal","label":"不死（死んでも蘇る）"}]}],"card":{"desc":"パーティでダンジョンに潜り、いくら持ち帰れるか。","descLong":"パーティを組んでダンジョンへ。階ごとに戦闘・宝箱・罠・商人・泉が待つ。誰が前に出て、どこで引き返し、いくら持ち帰れるか。"},"tags":["extreme","story","death","race","job","undead"],"chunks":["scen-rpg"]},
   "jinro":{"id":"jinro","name":"人狼","kicker":"ゲーム・推理","desc":"住人どうしで人狼ゲーム。配役は人狼・狩人・占い師・霊媒師・村人からランダム。人狼は性格で戦法（騙り・潜伏・仲間切り・庇い合い）を選び、村は仕切り役しだいで方針（ローラー・真贋の見極め・グレー吊り）が変わる。信頼と協力、そして裏切り。知能は性格とは別に決まる。","solo":true,"minCast":4,"maxCast":15,"unit":"日","castHint":"4〜15人。配役の数は環境値で決めます（人狼は全体の半分未満に自動で調整）。ゲームなので、襲う相手や投票先は既存の関係と関係なく、推理と立ち回りで決まります。","env":[{"id":"wolves","label":"人狼の数"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"lovemode","label":"好意モード"},{"id":"prize","label":"賞品"},{"id":"prizeText","label":"賞品（自由に書く）"},{"id":"lewd","label":"描写の有無"},{"id":"lewdLen","label":"描写の長さ"},{"id":"style","label":"描写の作風"},{"id":"wolfnight","label":"人狼の勝利の夜"}],"stats":[{"id":"int","label":"知能"},{"id":"poker","label":"ポーカーフェイス"}],"perFields":[{"id":"role","label":"配役","auto":"ランダム","options":[{"id":"wolf","label":"人狼"},{"id":"seer","label":"占い師"},{"id":"medium","label":"霊媒師"},{"id":"hunter","label":"狩人"},{"id":"vill","label":"村人"}]}],"card":{"desc":"住人どうしの人狼ゲーム、騙りと推理と裏切り。","descLong":"住人どうしで人狼ゲーム。人狼は性格で騙りや潜伏を選び、村は仕切り役しだいで方針が変わる。信頼と協力、そして裏切り。"},"tags":["extreme","story","death","force","race","night"],"chunks":["scen-jinro"]}},
 "tones":{"auto":["aniki","proud","stern","tsun","gentle","devoted","cool","free","shy","polite"],"pack":{"tsun_n":"tone-tsun-n","ane":"tone-ane","kansai":"tone-kansai","noja":"tone-noja","gyaru":"tone-gyaru","chara":"tone-chara","cool_soft":"tone-cool-soft","darui_lite":"tone-darui-lite","boku_n":"tone-boku-n","god":"tone-god","gentleman":"tone-gentleman","mukuchi":"tone-mukuchi","mixed":"tone-mixed","yankee":"tone-yankee","gentle_n":"tone-gentle-n","devoted_p":"tone-devoted-p","kohai":"tone-kohai","calm":"tone-calm","usan":"tone-usan","ojou":"tone-ojou","hero":"tone-hero","mystic":"tone-mystic","genki":"tone-genki","darui":"tone-darui","sondai":"tone-sondai","mukuchi_ne":"tone-mukuchi-ne","otaku":"tone-otaku","tsun_soft":"tone-tsun-soft","keigo_bossy":"tone-keigo-bossy","chara_down":"tone-chara-down","keigo_twist":"tone-keigo-twist","keigo_sarc":"tone-keigo-sarc","keigo_flat":"tone-keigo-flat","ronkyaku":"tone-ronkyaku","flat_plain":"tone-flat-plain","tame":"tone-tame","gentle_m":"tone-gentle-m","honwaka":"tone-honwaka","darui_talk":"tone-darui-talk"}}};</script>
-<script src="js/c/core.5c8822553d.js"></script>
+<script src="js/c/core.c057027118.js"></script>
 <!-- scripts:end -->
 
 </body></html>

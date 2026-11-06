@@ -5,7 +5,9 @@
      （フォルダの中身を一覧できない file:// でも動くように、fetch は使わない。読めない枠は黙って飛ばす）
    ・開けたパックの中身（かたまりと箱庭の目録）は HK.Load.addPack で本体の目録に足す。かたまりは箱庭を選んだときに読む
    ・入れたコードと開けた鍵は端末の設定（localStorage の hakoniwa-packs。全年齢版は版ごとの鍵）に覚え、次からは聞かない。
-     書き出し（portable.js）には入れない
+     書き出し（portable.js）には入れない。覚えたコードで開かなくなった枠（全年齢版のコードが R18版と別になった前の保存など）は、
+     覚えた分を消さずに err 'recode'（「コードをもう一度入れてください」）にする
+   ・コードは版ごと（2026-11-07）：R18版のパックは R18版のコード、全年齢版のパックは全年齢版のコードで封をする（build-pack.js）
    ・本体とパックの版：パックの api が本体の HK.Packs.API より新しい／本体に無いかたまりが要る → 「本体を新しくしてください」、
      MIN_API より古い → 「追加データを新しくしてください」。R18版のパックは全年齢版では読まない（逆も）
    ・画面（「箱庭を追加」のボタンと入力）は js/packs-ui.js
@@ -38,6 +40,8 @@
     onReady: function (fn) { if (ready) fn(); else readyFns.push(fn); },
     on: function (fn) { if (typeof fn === 'function') subs.push(fn); },
     list: function () { return SLOTS.filter(shown).map(function (s) { var x = packs[s]; return { slot: s, id: x.pk.id, name: x.pk.name || x.pk.id, desc: x.pk.desc || '', st: x.st, err: x.err || '', rooms: x.rooms || [] }; }); },
+    /* この版のコードの呼び名（全年齢版は全年齢版のコード、R18版は R18版のコード。2026-11-07 版ごとのコード） */
+    codeName: function () { return build() === 'zenrei' ? '全年齢版のコード' : 'R18版のコード'; },
     /* まだ開けていないパックがあるか（「箱庭を追加」のボタンを出すか） */
     hasLocked: function () { return SLOTS.some(function (s) { return shown(s) && packs[s].st !== 'open'; }); },
     /* 追加パックの箱庭か（開けたものだけ分かる） */
@@ -59,7 +63,8 @@
     broken: '追加データが壊れています。もう一度入れ直してください',
     build: '別の版（R18版と全年齢版）の追加データです',
     'main-old': '本体が古いため開けません。本体を新しくしてください',
-    'pack-old': '追加データが古いため開けません。追加データを新しくしてください'
+    'pack-old': '追加データが古いため開けません。追加データを新しくしてください',
+    recode: '追加データの版が変わりました。コードをもう一度入れてください'
   };
   P.errText = function (code) { return ERR[code] || ERR.broken; };
 
@@ -111,6 +116,8 @@
       if (K) { try { C.open(x.pk, K); } catch (e) { K = null; } }
       if (!K && s.c) { K = C.unlock(x.pk, s.c); if (K) { s.m = x.pk.m; s.k = C.keyHex(K); changed = true; } }
       if (K && register(slot, K)) any = true;
+      /* 覚えたコードで開かない（全年齢版のコードが別になった・コードが差し替わった。2026-11-07）：覚えた分は消さずに残し、入れ直しを案内する */
+      else if (!K && x.st === 'locked') { x.err = 'recode'; any = true; }
     });
     if (changed) writeSaved(saved);
     if (any) emit();

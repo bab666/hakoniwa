@@ -1,14 +1,11 @@
 /* 箱庭シミュレーター: 配信の部屋（set-b-haishin）の「この箱庭のTIPS」（両ビルド。かたまり haishin の最後＝haishin.js のあと。表示は本体の tips.js。2026-11-07）
-   書き方は shinkon-tips.js と同じ（HK.TIPS_SCEN に足す・箱庭の印 tips: true）。R18 の追記は r18 の印の中。
-   カードの説明（desc・note）を短くする上書きもここに置く（haishin.js は名前の変更の担当が触っているため。いずれ haishin.js の desc・note に戻してこの上書きを消す） */
+   書き方は shinkon-tips.js と同じ（HK.TIPS_SCEN に足す・箱庭の印 tips: true）。R18 の追記は r18 の印の中。 */
 (function () {
   'use strict';
   var HK = window.HK, ID = 'set-b-haishin', T = HK.TIPS_SCEN = HK.TIPS_SCEN || {};
   var sc = HK.SCENARIOS && HK.SCENARIOS[ID];
   if (sc) {
     sc.tips = true;
-    sc.desc = '二人がカメラの前で配信をする。視聴者のコメントとスパチャに応えるうちに、質問はだんだん踏み込んだものになっていく。';
-    sc.note = '※参加は2人。どんな関係でも、この部屋ではカップルとして扱います。登場人物はすべて成人として扱います。くわしくは「この箱庭のTIPS」に。';
   }
   T[ID] = {
     lead: '二人がカメラの前で配信をするのを、30分ごとの区切りで眺めます。2人。視聴者のコメントとスパチャに応えるうちに、質問はだんだん踏み込んだものになっていきます。配信が終わったあとの評判まで見届けます。',

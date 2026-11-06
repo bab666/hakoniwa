@@ -58,7 +58,7 @@
     '#view-box .bxlr18c{width:100%;box-sizing:border-box;border:1px dashed var(--ui-line2,var(--line2));border-radius:10px;background:var(--ui-card,var(--paper))}' +
     '#view-box .bxlr18c:hover,#view-box .bxlr18c:focus-within{border-color:var(--ui-ink,var(--ink))}' +
     '#view-box .bxlr18c .bxr18c-t{min-height:58px;padding:8px 36px 9px 12px;gap:1px}' +
-    '#view-box .bxlg>li.bxlr18:has(.bxr18c-t[aria-expanded="true"]){grid-column:1/-1}' +
+    '#view-box .bxlg>li:is(.bxlr18,.bxlpk):has(.bxr18c-t[aria-expanded="true"]){grid-column:1/-1}' +
     /* 一覧は PC だけ。スマホ幅では窓（#bxpick） */
     '@media (max-width:899px){#view-box .bxlist{display:none}}' +
     '@media print{#view-box .bxlist{display:none}}';
@@ -95,7 +95,7 @@
       var id = x[0], c = x[1], on = id === sel, lack = n ? Math.max(0, smin(id) - n) : 0, hide = !on && ((TG && !TG.match(id)) || (pref.fit && (lack > 0 || noFit(id, S))));
       return '<li' + (hide ? ' hidden' : '') + ' data-id="' + esc(id) + '"><button type="button" class="bxlc' + (c.r18only ? ' r18only' : '') + (c.adult ? ' r18' : '') + (on ? ' on' : '') + (lack ? ' lack' : '') + '" data-act="bxlpick" data-id="' + esc(id) + '" aria-pressed="' + on + '" title="' + esc(c.title) + '">' + c.html +
         (lack ? '<span class="bxlw">住人が' + lack + '人足りません</span>' : '') + (on ? '<span class="bxlon">選択中</span>' + (badge || '') : '') + '</button></li>';
-    }).join('') + (HK.PacksUI && HK.PacksUI.listItem ? HK.PacksUI.listItem() : '') + r18Item(any);   /* 追加パック：まだ開けていないセットがあれば「箱庭を追加」（js/packs-ui.js）。全年齢版は最後に R-18版の案内 */
+    }).join('') + (HK.PacksUI && HK.PacksUI.listItem ? HK.PacksUI.listItem() : '') + (HK.PacksUI && HK.PacksUI.guideItem ? HK.PacksUI.guideItem() : '') + r18Item(any);   /* 追加パック：まだ開けていないセットがあれば「箱庭を追加」（js/packs-ui.js）。全年齢版は最後に R-18版の案内 */
     return '<section class="bxlist" id="bxlist" aria-labelledby="bxlist-h" data-fold="' + (open ? 0 : 1) + '"><div class="bxlh"><h2 id="bxlist-h">箱庭を選ぶ</h2><span class="bxlnum">' + order.length + '種類</span>' +
       '<span class="bxlcur">いま：<b>' + curName + '</b></span>' +
       /* 絞り込み：タグの札（複数選択。scen-tags.js の HK.ScenTags.bar。late を読む前は出さない） */
