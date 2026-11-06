@@ -320,7 +320,6 @@ js/history.js
 js/state-store.js
 js/save-folder.js
 js/scen-meta.js
-js/scen-tags.js
 js/shared-stats.js
 js/ui-rand.js
 js/ui-cast-pages.js
@@ -482,6 +481,8 @@ late js/ui-perzoom.js
 # 出来事の一覧の画面（ボタンと窓。データは pack-catalog）
 late js/event-catalog-ui.js
 late js/pack-crypto.js
+# 箱庭のタグ（カードの札と、箱庭を選ぶ一覧の絞り込み。語彙と本体の箱庭の表。パックの箱庭は HK.ScenTags.add。2026-11-07 に中核から late へ）
+late js/scen-tags.js
 late js/packs.js
 late js/packs-ui.js
 # スマホでも PC と同じことができるように：住人の設定の窓の「グループ・メモ」の節（2026-11-04）
