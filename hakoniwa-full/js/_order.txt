@@ -334,6 +334,7 @@ js/cold-fear-text.js @pack:rel
 js/cold-fear.js @pack:rel
 js/cold-fear-r18.js @pack:rel
 js/fear-soften.js @pack:rel
+js/fear-love.js @pack:rel
 js/cold-fear-room-r18.js @scen:whiteroom
 js/room-pressure.js @scen:whiteroom
 js/room-kill.js @scen:whiteroom

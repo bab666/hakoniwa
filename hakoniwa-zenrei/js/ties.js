@@ -80,7 +80,7 @@
   FEAR_NIGHT = 'この二人は恋愛にならない。体の関係は、内容のスイッチ「合意のない展開」が入のときだけ、恐れられる側が力ずくで迫る形で起きる（恐れられる側の性欲が「なし」・性行為の相手の固定などで止まるときは起きない）。' +
     '住人の設定で互いを「性行為の相手」にすると、夜の場面も止めない（怖いのか、興奮なのか分からないまま）。恋愛は、恐怖が和らいだあとにだけ起きる';
   /* r18:end */
-  T.fear = { mods: {}, modsA: { trust: 0.5, aff: 0.6 }, effect: '恐れる側は相手を避け（同じ場所にいたがらない・目を合わせない・話しかけられると固まる）、命じられると逆らえずに従い、ほかの人に庇護を求める。' + FEAR_NIGHT, label: '恐怖', dir: true, roleA: '恐れる側', roleB: '恐れられる側', ab: { ten: 42, aff: -12, trust: -18 }, ba: {}, pol: -1, chem: 0.05, fric: 1.2, pull: 1.1, fear: true, stiffA: { ten: 0.4 }, biasA: { romance: 0, help: 0.3, bond: 0.25, conflict: 0.35, combat: 0.25, betray: 0.7 }, biasB: { romance: 0.2 } };
+  T.fear = { mods: {}, modsA: { trust: 0.5, aff: 0.6 }, effect: '恐れる側は相手を避け（同じ場所にいたがらない・目を合わせない・話しかけられると固まる）、命じられると逆らえずに従い、ほかの人に庇護を求める。' + FEAR_NIGHT, label: '恐怖', dir: true, roleA: '恐れる側', roleB: '恐れられる側', ab: { ten: 42, aff: -12, trust: -18 }, ba: {}, pol: -1, chem: 0.7, fric: 1.2, pull: 1.1, fear: true, stiffA: { ten: 0.4 }, biasA: { romance: 0, help: 0.3, bond: 0.25, conflict: 0.35, combat: 0.25, betray: 0.7 }, biasB: { romance: 1 } };
   /* 気持ちの関係（2026-10-29。docs/reports/2026-10-29/lovehate-design.md）：どの関係にも重ねられる、向きのある気持ち。表の顔は重ねた関係が決める。
      lovehate：愛憎（{a} が {b} に）。口や態度では嫌悪・反発しながら、相手を構いたがり、相手がほかの人を構うと嫉妬する。
                相手も持つ（双方）は「相手の気持ち」の欄 cold:'both'（両片想いと同じく、箱庭に渡す前に二本に開く：HK.Ties.expand）。
@@ -330,13 +330,14 @@
   };
   /* 無関心・恐怖の二人のあいだの恋愛の関係（恋人・セフレ・片想い・本命など）は外す（無関心・恐怖のほうを優先する）。
      一方通行の執着（yan）・許嫁・元恋人は残す（恋愛・夜には進まない：noLove）。該当がなければ、渡された配列をそのまま返す */
-  var FEAR_DROP = /^(lover|mate|fated|fwb|almost|crush|abuse|honmei|spouse)$/;
+  var FEAR_DROP = /^(lover|mate|fated|fwb|almost|crush|abuse|honmei|spouse)$/, FEAR_DROP_F = /^(lover|mate|fated|fwb|abuse|spouse)$/;
   HK.fearTies = function (ties) {
     var l = ties || [], nl = {};
     /* 「恋愛：あり」にした無関心（HK.tieLoveOK）は、恋愛の関係を外さない。恐怖は「恋愛：あり」でも外す（恐怖が和らぐまで恋人にしない。2026-11-03 利用者の指示） */
-    l.forEach(function (t) { if (t && (t.type === 'apathy' || t.type === 'fear') && t.a !== t.b && (t.type === 'fear' || !(HK.tieLoveOK && HK.tieLoveOK(t)))) nl[Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b)] = 1; });
+    /* 2026-11-06：恐怖の二人は、片想い・友達以上・本命（まだ恋人でない想い）を残す（和らぐ前でも恋愛の出来事は起きる。恋人・番・セフレなどは外し、恋人になるのは出来事で） */
+    l.forEach(function (t) { if (t && (t.type === 'apathy' || t.type === 'fear') && t.a !== t.b && (t.type === 'fear' || !(HK.tieLoveOK && HK.tieLoveOK(t)))) { var k0 = Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b); nl[k0] = nl[k0] === 'a' || t.type === 'apathy' ? 'a' : 'f'; } });
     if (!Object.keys(nl).length) return ties;
-    return l.filter(function (t) { return !(t && FEAR_DROP.test(t.type) && nl[Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b)]); });
+    return l.filter(function (t) { var k1 = t && nl[Math.min(t.a, t.b) + '-' + Math.max(t.a, t.b)]; return !(k1 && (k1 === 'a' ? FEAR_DROP : FEAR_DROP_F).test(t.type)); });
   };
   /* ---------- 過去は組（同じ二人）につき一か所（2026-10-29 担当MJ2） ----------
      同じ二人に関係を重ねても、過去の欄（past＝一人目から・pastB＝二人目から）は、その組で過去の欄を持てる最初の関係（家）にだけ出し、そこに持たせる。
