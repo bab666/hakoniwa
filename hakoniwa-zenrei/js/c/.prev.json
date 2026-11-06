@@ -16,7 +16,7 @@
   "scen-futari": "scen-futari.c64030d389.js",
   "scen-zombie": "scen-zombie.e8dd6ad92a.js",
   "scen-rpg": "scen-rpg.c8773d6f86.js",
-  "scen-saimin": "scen-saimin.6f4ad56de3.js",
+  "scen-saimin": "scen-saimin.8c8ca76142.js",
   "scen-locker": "scen-locker.c2a88c7a27.js",
   "scen-jashin": "scen-jashin.49148a1694.js",
   "scen-yakata": "scen-yakata.b0365cb7c4.js",
@@ -67,7 +67,7 @@
   "tone-yankee": "tone-yankee.e2e14f732b.js"
  },
  "prev": {
-  "core": "core.b992ef35d5.js",
+  "core": "core.c96e51b67b.js",
   "late": "late.d5e92a4541.js",
   "pack-rel": "pack-rel.b73013ea94.js",
   "pack-sim": "pack-sim.08823cc92c.js",

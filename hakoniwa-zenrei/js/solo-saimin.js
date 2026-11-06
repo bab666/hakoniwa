@@ -625,6 +625,8 @@
     }
     if (!g.lewd) return p.aTop && g.fullTop ? 'fullTop' : 'full';
     if (p.ff) return p.aTop ? (g.ffTop ? 'ffTop' : g.ffOk && g.topOk && g.full ? 'full' : null) : (g.ff ? 'ff' : g.ffOk && g.full ? 'full' : null);
+    /* かけられた側が女性の攻めで相手が男性：専用の書き出し（指と手。solo-saimin-fm-r18.js の SM.fmTop・fullTopF。2026-11-07） */
+    if (p.aTop && g.fullTopF && SM.fmTop && SM.fmTop(p)) return 'fullTopF';
     if (p.aTop) return g.fullTop ? 'fullTop' : g.topOk && g.full ? 'full' : null;
     return 'full';
   }
@@ -670,7 +672,7 @@
       alt: function (key, arr) { return eL(S, key, arr); },
       cv: function (q, top) { return eroOn(S) && !top ? HK.Ero.moan(S, q, 2) : null; } };
   }
-  function cmdOf(p, g) { return (p.ff && g.cmdFF) || (p.fm && g.cmdFM) || (p.aTop && g.cmdTop) || g.cmd; }
+  function cmdOf(p, g) { return (p.ff && g.cmdFF) || (p.fm && g.cmdFM) || (p.aTop && g.cmdTopF && SM.fmTop && SM.fmTop(p) && g.cmdTopF) || (p.aTop && g.cmdTop) || g.cmd; }
   /* 自分で攻めを選んだ人の台詞から、受け身の台詞を外す（solo-r18-moan.js の HK.R18M.topLines） */
   function topL(p, list) { return HK.R18M && HK.R18M.topLines ? HK.R18M.topLines(p, list) : list; }
   /* かけられた側が攻め（p.aTop）のときの声：SM.TRANCE_TOP / SM.CLIMAX_TOP（女性どうしは CLIMAX_TOP_FF）。弱気・従順な台詞は使わない */

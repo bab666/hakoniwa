@@ -256,6 +256,8 @@
     /* 自分で攻めを選んだ人を受け止める側にしない */
     if (HK.Pos && HK.Pos.hardTop && HK.Pos.hardTop(sub, dom)) return null;
     if (kind !== 'touch') kind = HK.Thick4 ? HK.Thick4.kindFor(kind, dom, sub) : kind;
+    /* 女性の攻め（男性器なし）× 男性の受けは、跨る型でなく手と指の型（pos-fm.js の決まり。2026-11-07） */
+    if (kind === 'ride' && HK.Pos && HK.Pos.hasM && !HK.Pos.hasM(dom) && HK.Pos.hasM(sub)) kind = 'touch';
     if (kind === 'touch') kind = isF(sub) ? 'touchF' : 'touchM';
     if (kind === 'serve') kind = isF(sub) ? 'touchF' : 'touchM';
     return { top: top, dom: dom, sub: sub, kind: kind, hc: hc };

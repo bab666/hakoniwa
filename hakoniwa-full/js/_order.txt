@@ -739,6 +739,7 @@ js/solo-variety-extra.js @scen:variety
 js/solo-erotic-more-a.js @scen:kaihen
 js/solo-erotic-more-a-succubus.js @scen:succubus
 js/solo-erotic-more-b.js @scen:saimin
+js/solo-saimin-fm-r18.js @scen:saimin
 js/solo-erotic-more-b-variety.js @scen:variety
 js/solo-variety-thick.js @scen:variety
 # 一人用の箱庭の専用の段（文の表だけ。差し込みは late の solo-ero3-r18.js。2026-10-31 担当E3a）
