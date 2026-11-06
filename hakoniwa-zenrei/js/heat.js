@@ -255,7 +255,8 @@
     var ps = text.split('\n\n'), n = ps.length, soft = re === H.ROUGH_RE;
     for (var i = soft ? 0 : Math.max(0, n - 2); i < (soft ? Math.min(2, n) : n); i++) {
       if (!re.test(ps[i])) continue;
-      var ss = ps[i].match(/[^。！？]+[。！？]+|[^。！？]+$/g) || [ps[i]];
+      /* 台詞の閉じ（」）のすぐあとに地の文が続くところでも区切る（「…しましょう」{a}は{b}の手首を押さえたまま…」の地の文を台詞と一緒に残さないように。2026-11-06） */
+      var ss = ps[i].replace(/」(?=[^とっ、。をにがはもの…―」\s\u2060])/g, '」\u0001').split('\u0001').reduce(function (o, q) { return o.concat(q.match(/[^。！？]+[。！？]+|[^。！？]+$/g) || [q]); }, []);
       var keep = ss.filter(function (x) { return /[「」]/.test(x) || !re.test(x); });
       if (keep.length && keep.length < ss.length && keep.join('').replace(/\s/g, '')) ps[i] = keep.join('');
       /* 外せない（段がその一文だけ）甘い・初々しいの「押し倒す」は、そっと横たえる言い方に */

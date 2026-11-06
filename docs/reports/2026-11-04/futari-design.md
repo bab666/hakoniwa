@@ -636,3 +636,4 @@ playthrough-body.md の 5 節（events-common の決め台詞・unlike.js・Thic
 ### 20.5 点検（`check.js --since=3b81411 --regress-ok=futari,train --pack=set-b`）
 - 本体：構文・r18 の印・2000 行・両ビルドの同名ファイル・base-lint（比べる相手に無かった問題 0）・build（両ビルド）・catalog-check 0・audit-all（＋relcons,sexflow）すべて 0 件・tone-feel（futari・出られない部屋・媚薬ロッカー・オメガバース）全口調 ◯・moan-tone 0・fp-audit 0・meta-tone 0・butt-word 0・heat-audit 0。
 - regress（check.js は「読み込み順を変えていない」として飛ばしたので、単独の regress.js を 3b81411 のビルドと比べて回した）：R18版は futari だけ指紋が違い（意図した変更）、ほかの 20 箱庭は一致。全年齢モード・全年齢版は全箱庭一致。
+- 取り込み（bd7c7207）のあとの最後の点検（`check.js --since=3b81411 --regress-ok=futari,train,goukon,whiteroom --pack=set-b`）：heat-audit で 1 件（新婚部屋・体だけの二人・女攻め×男の甘い夜の始まりに、本体の夜の色の文「{a}は{b}の手首を押さえたまま…」）。温度の文の外し方（heat.js の `HK.Heat.strip`）が、台詞の閉じ（」）のすぐあとに続く地の文を台詞と同じ一文として残していたので、」のあとでも区切るようにした（両ビルド）。regress の goukon・whiteroom は、取り込んだ作業ブランチ bd7c7207 そのものが 3b81411 と違う（この作業の変更ではない。bd7c7207 と 3b81411 のビルドを regress.js で比べて確かめた）ので --regress-ok に足した。
