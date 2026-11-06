@@ -521,6 +521,7 @@
     var D = toneDict(), dk = D[k] || {};
     var all = quotesOf(scen), SP = 'アキラ', OT = ['ミナト', 'ユキノ', 'カオル', 'ハルカ'];
     var fp = S.sb.fpOf(k, TU.gender);
+    var you = S.sb.youOf ? S.sb.youOf(k, TU.gender) : '';
     function fill(key) { var i = 0; return key.replace(/〈〉/g, function () { return OT[Math.min(i++, OT.length - 1)]; }); }
     function unfill(t) { OT.forEach(function (n) { t = t.split(n).join('〈〉'); }); return t; }
     /* 出来上がり（言い換えのあと）と、どこから来た文か */
@@ -571,6 +572,8 @@
            （「うち」「わし」など一人称と同じ字の語を印にしない。合わなければ出来上がりのまま出し、書き手が直す） */
         var cur = o.dict ? o.dict.g.items[o.dict.i].cols[2] : unfill(o.out);
         if (!o.dict && fp && (o.key.match(/私/g) || []).length > 0 && cur.split(fp).length === o.key.split('私').length) cur = cur.split(fp).join('{一人称}');
+        /* 二人称も同じ：元の台詞の「あなた」の数と、出来上がりの二人称の数が合うときだけ印 {二人称} に戻す（2026-11-06。書き下ろしの値は印で書く決まり） */
+        if (!o.dict && you && (o.key.match(/あなた/g) || []).length > 0 && cur.split(you).length === o.key.split('あなた').length) cur = cur.split(you).join('{二人称}');
         var src = o.srcs[0];
         return '<tr data-n="' + n + '"><td>' + fmtText(o.key) + '<div class="muted"><a href="#" data-src>' + esc(src.g.file.f) + ':' + src.g.line + '</a>' + (o.srcs.length > 1 ? '　ほか ' + (o.srcs.length - 1) + ' か所' : '') + (o.r18 ? ' <span class="tag r18">R18</span>' : '') + '</div></td>' +
           '<td>' + (cur !== o.out ? '<div class="prev0" title="出来上がり（一人称・名前を入れたもの）">' + esc(o.out) + '</div>' : '') +

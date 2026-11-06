@@ -149,6 +149,10 @@
   function fpOf(tone, gender) {
     try { return V.fpFor ? V.fpFor({ name: 'アキラ', tone: tone, gender: gender || '', fp: '' }) : ''; } catch (e) { return ''; }
   }
+  /* 口調の二人称（性別ごと。設定が空のときの既定。tone-registry.js の HK.toneYou） */
+  function youOf(tone, gender) {
+    try { return HK.toneYou ? HK.toneYou(tone, gender || '') || '' : ''; } catch (e) { return ''; }
+  }
   /* 書き下ろしの辞書（tone-fix・voice-override など）にこの台詞があるか。content は「」の中身（名前は people の名前で） */
   function hasOverride(content, tone, gender, people) {
     if (!V || !V.overrideFor) return false;
@@ -159,6 +163,6 @@
   /* 口調ごとの、文面の表を借りる態度（9種のどれか） */
   function baseOf(tone) { try { return HK.personaOf ? HK.personaOf({ tone: tone, eg: { CP: 10, NP: 10, A: 10, FC: 10, AC: 10 } }) : ''; } catch (e) { return ''; } }
 
-  window.STUDIO = { info: info, events: events, run: run, batch: batch, voice: voice, fpOf: fpOf, hasOverride: hasOverride, baseOf: baseOf, errors: errors };
+  window.STUDIO = { info: info, events: events, run: run, batch: batch, voice: voice, fpOf: fpOf, youOf: youOf, hasOverride: hasOverride, baseOf: baseOf, errors: errors };
   if (window.parent && window.parent !== window && window.parent.onSandboxReady) window.parent.onSandboxReady(window.STUDIO);
 })();

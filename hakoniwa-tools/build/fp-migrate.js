@@ -8,7 +8,8 @@
    (c) 台詞の表：「」を付けない文字列のうち、3 本の形（｜を含む）か、頭に「＠名前＠」の目印があるもの
    (b) 書き下ろし（tone-fix*・tone-brush*・voice-override*・パックの *-tone*.js）：値の列だけ（鍵は「私」「あなた」のまま。voice.js が印を戻した写しで引く）
        タブ区切りの行は、頭が口調の id なら 3 列目から（tone-fix の形）、そうでなければ 2 列目から（voice-override-rows の形）が値。
-       オブジェクトの値（「鍵: 値」の値・値の配列の中）も値。関数の引数の頭（add('鍵', {…}) の鍵）・オブジェクトの鍵は見ない
+       オブジェクトの値（「鍵: 値」の値・値の配列の中）も値。関数の引数の頭（add('鍵', {…}) の鍵）・オブジェクトの鍵・
+       値の配列の中の [鍵, 値] の対の頭（HK.Load.toneData の F: [[元, 書き下ろし], …] の元）・3 本の形（｜を含む）の文字列（鍵）は見ない
    置き換える語（出力が変わらないことが条件）：
    ・「私」→ {一人称}：voice.js の FP_RE が一人称として当たる「私」だけ（後ろが漢字の 私物・私語・私用・私的・私情・私生活・私服・私見・私立 と、前が 公・滅・無 の 公私 などは当たらないので除く）。
      どもり「わ、私」は「わ、{一人称}」（展開がどもりの頭を直す）
@@ -129,11 +130,13 @@ function doFile(dir, f) {
   try { toks = [...acorn.tokenizer(src, { ecmaVersion: 'latest', allowHashBang: true })]; } catch (e) { console.error('字句に分けられない：' + dir + '/' + f + '：' + e.message); process.exitCode = 1; return; }
   const isV = VFILE(dir, f), vBound = /^voice-override/.test(f) ? /[／]/ : /(?!)/;
   const edits = [];
-  const stack = [];   /* 括弧の並び：{ c: '[' | '{' | '(', val: 値の配列か } */
+  /* 括弧の並び：{ c: '[' | '{' | '(', val: 値の配列か, pair: 配列の中の配列（[鍵, 値] の対。HK.Load.toneData の F: [[元, 書き下ろし], …]）か, ix: 配列の何番目の要素か } */
+  const stack = [];
   for (let ti = 0; ti < toks.length; ti++) {
     const t = toks[ti], L = t.type.label, prev = toks[ti - 1], next = toks[ti + 1];
     const pl = prev ? prev.type.label : '', nl = next ? next.type.label : '';
-    if (L === '[' ) { stack.push({ c: '[', val: pl === ':' || (stack.length && stack[stack.length - 1].c === '[' && stack[stack.length - 1].val) }); continue; }
+    if (L === '[') { const up = stack[stack.length - 1], inArr = !!(up && up.c === '[' && up.val); stack.push({ c: '[', val: pl === ':' || inArr, pair: inArr, ix: 0 }); continue; }
+    if (L === ',' && stack.length && stack[stack.length - 1].c === '[') { stack[stack.length - 1].ix++; continue; }
     if (L === '{' || L === '${') { stack.push({ c: '{' }); continue; }
     if (L === '(') { stack.push({ c: '(' }); continue; }
     if (L === ']' || L === '}' || L === ')') { stack.pop(); continue; }
@@ -155,7 +158,11 @@ function doFile(dir, f) {
       if (/\\t/.test(raw)) {
         const cols = raw.split('\\t'), from = TONE_ID.test(cols[0]) ? 2 : 1;
         raw = cols.map((c, ci) => ci >= from ? seg(c, 'b', where, false, vBound) : c).join('\\t');
-      } else if (pl === ':' || (top && top.c === '[' && top.val && (pl === '[' || pl === ','))) {
+      } else if (/｜/.test(raw)) {
+        /* 3 本の形の文字列は書き下ろしの鍵（パックの kanbyo-tone-b.js の Q.yume: '…｜…｜…' を F3(Q.yume, 値) で鍵にする形）。値は 1 本なので移さない */
+        continue;
+      } else if (pl === ':' || (top && top.c === '[' && top.val && (pl === '[' || pl === ',') && !(top.pair && top.ix === 0))) {
+        /* [鍵, 値] の対の頭（鍵）は移さない（上の else に落ちる） */
         raw = seg(raw, 'b', where, L === 'template', vBound);
       } else continue;
     } else {

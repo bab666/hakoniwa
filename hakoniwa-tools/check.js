@@ -242,7 +242,8 @@ function classify(files) {
       if ([...f.tags].some(t => t !== 'doc' && t !== 'event' && t !== 'serifu' && t !== 'tone' && t !== 'dict' && t !== 'js')) {
         R.mainScen[bk] = R.mainScen[bk] === 'all' || sc === 'all' ? 'all' : [...new Set((R.mainScen[bk] || []).concat(sc))];
       }
-      if (f.tags.has('serifu')) { if (/^scen-/.test(chunk)) R.feelScen.add(chunk.slice(5)); else T.FEEL_DEF.forEach(x => R.feelScen.add(x)); }
+      /* tone-feel は R18版で回すので、全年齢版だけの箱庭（br・trial）は数えない（2026-11-06。全年齢版だけのファイルの台詞を変えると「知らない箱庭」で止まっていた） */
+      if (f.tags.has('serifu') && bk === 'full') { if (/^scen-/.test(chunk)) R.feelScen.add(chunk.slice(5)); else T.FEEL_DEF.forEach(x => R.feelScen.add(x)); }
       f.scen = sc;
       /* パックが頼る本体のかたまり（pack-roomkit・pack-lewd など。core・late は数えない） */
       if (!f.commentOnly) packIds().forEach(id => { const pk = pack(id); if (pk && pk.mainDeps.some(d => d === chunk)) { const X = R.packs[id] = R.packs[id] || { rooms: new Set(), tags: new Set(), why: [] }; pk.rooms.forEach(r => X.rooms.add(r)); X.tags.add('sim'); X.why.push(b + '（' + chunk + '）'); } });
