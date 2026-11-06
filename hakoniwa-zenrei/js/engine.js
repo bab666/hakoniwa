@@ -726,6 +726,9 @@
     return o;
   };
   HK.simulate = function (input) {
+    /* 前の回の ctx を残さない（物語型の箱庭は Ctx を作らないので、HK._curCtx を読む包み（futari-r18.js の nightOk・play-r18.js・pos.js など）が
+       前に回したエンジン型の回の ctx を見て、回す順で結果が変わっていた。2026-11-06）。エンジン型は new Ctx がすぐに置き直す。回し終えたあとは残す（外側の包みが結果に写すため） */
+    HK._curCtx = null;
     input = HK.nameInput(input);
     var sc0 = HK.SCENARIOS[input.scenId];
     if (sc0 && sc0.simulate) return sc0.simulate(HK.fearInput(input));

@@ -9,7 +9,7 @@ var e = ctx.say({ kind: 'phase', cat: 'phase', actors: [], text: '「＠＠こ�
 if (e && !e.skipped) e.ch = 'cm';
 ```
 
-一区切り一件・改行で並べる。`actors: []`・`lewd: false`（恋愛・夜・状態の点検と数えから外れる）。体の語は画面の住人の体に合わせる。モブは住人の名前を呼ばない（`hakoniwa-packs/README.md`）。
+一区切り一件・改行で並べる（配信の部屋の切り忘れの本番の区切りだけは、本編の段の合間に差すため 3 件。haishin-design.md の 1 章の 13）。`actors: []`・`lewd: false`（恋愛・夜・状態の点検と数えから外れる）。体の語は画面の住人の体に合わせる。モブは住人の名前を呼ばない（`hakoniwa-packs/README.md`）。
 
 ## 2. 画面（view.js）
 

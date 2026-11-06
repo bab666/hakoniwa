@@ -370,8 +370,7 @@
     /* 中盤の始まり：夜 100 でも、残りが 8 区切りより多ければ 30%（段 6 の要求を何回か出してから）。ほかは 50% */
     if (S.midI === 0 && S.mid === 'none' && !o.last) { var lf = o.n - o.s; if (ctx.rng() >= (S.n100 ? (lf <= 8 ? 1 : 0.3) : 0.5)) return false; }
     if (!pairOk(ctx, S) && S.midI === 0 && !S.n100) { if (o.last) hint(ctx, S); return !!o.last; }
-    /* 中盤のあいだ（電話・自慰・お仕置き）は、その区切りの「配信の様子」（haishin.js が先に出す雑談の段）を外す（通話中にお便りを読み上げる矛盾。2026-11-06 通し読み） */
-    if (S.midI > 0 && S.mid !== 'none') { var L = ctx.log, lastE = L[L.length - 1]; if (lastE && !lastE.ch && /配信の部屋：配信の様子/.test(lastE.why || '')) { L.pop(); S.nMain = Math.max(0, S.nMain - 1); } }
+    /* 中盤のあいだ（電話・自慰・お仕置き）の区切りの「配信の様子」は、haishin.js（骨組み）が出さない */
     var left = Math.max(1, o.n - o.s), need = CHAIN.length - S.midI;
     var k = S.n100 ? Math.max(1, Math.ceil(need / left)) : (left <= 1 ? 1 : (ctx.rng() < 0.3 ? 2 : 1));
     if (!S.n100 && left <= 1 && S.midI < CHAIN.indexOf('come')) k = 1;

@@ -14,7 +14,7 @@
        Y＝ありの回の恋愛のしるし（N1〜N3 に当たるもの）の数、Z＝自動の回の告白・結末の恋（N2・N3。家族・信仰の自動は恋愛なしなので 0 のはず）を出す。
        自動の回の N1（恋愛の出来事）は Z1 に参考として出す（出られない部屋のように恋愛が中心の箱庭では、信仰の自動でも、手が触れて身を引く・指さしのような
        恋愛の分類の出来事が今までどおり起きる。恋愛を止めるのは「恋愛：なし」をはっきり選んだときと、家族）。
-       全箱庭の Y の合計が 0 なら、恋愛：ありが効いていないのでエラー
+       全箱庭の Y の合計が 0 なら、恋愛：ありが効いていないのでエラー（開始の可否で止める箱庭（scen.loveflagSkip か、scen.check が理由を返す配役）のありの回・自動の回は数えない。2026-11-06）
    ・結末の関係のうち、入力の関係そのものを表示した線（物語型の関係図で、★の付かない、関係の名前の線）は数えない（設定の表示で、出来事の結果ではないため）
    ・N2 は文から拾うので誤判定がありうる。--why で例を出すので目で確かめる 
    （2026-10-29 担当MQ）配役（パス loveflag）と判定（judge loveflag）を分けて module.exports で出す。audit-all.js が同じ関数を使い、
@@ -48,8 +48,11 @@ const PASS = function* (HK, opt) {
           /* ありの回：家族（兄弟姉妹）・執着（信仰）を「恋愛：あり」と「自動」で */
           const ty = (s >> 2) % 2 ? 'worship' : 'sibling';
           for (const lv of ['ok', '']) {
-            const tl = [{ a: 0, b: 1, type: ty, love: lv }];
-            yield { sc: id, s, input: mk(id, sc, s, tl, n), meta: { lf: lv === 'ok' ? 'yes' : 'auto', ty } };
+            const tl = [{ a: 0, b: 1, type: ty, love: lv }], inp = mk(id, sc, s, tl, n);
+            /* 開始の可否で止める箱庭（恋人・夫婦でないと始まらない配信の部屋など）：scen.loveflagSkip が真か、scen.check が止める理由を返したら、ありの回に数えない（2026-11-06） */
+            let blocked = !!sc.loveflagSkip;
+            if (!blocked && typeof sc.check === 'function') { try { blocked = !!sc.check(inp); } catch (e) { blocked = false; } }
+            yield { sc: id, s, input: inp, meta: { lf: lv === 'ok' ? 'yes' : 'auto', ty, blocked } };
           }
           continue;
         }
@@ -105,6 +108,7 @@ const JUDGE = function (HK, opt) {
         o.runs++;
         if (m.lf === 'yes' || m.lf === 'auto') {
           const lv = m.lf === 'yes' ? 'ok' : '', ty = m.ty, tl = ties;
+          if (m.blocked) return;
           if (lv === 'ok') o.yr = (o.yr || 0) + 1;
             const g = signs(res, [0, 1], lv === 'ok' ? null : o.ex, '[自動 ' + ty + ']', tl);
             if (lv === 'ok') o.Y += g.N1 + g.N2 + g.N3; else { o.Z += g.N2 + g.N3; o.Z1 += g.N1; }

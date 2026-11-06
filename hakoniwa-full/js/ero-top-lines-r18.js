@@ -7,6 +7,7 @@
              night: 攻めの夜の性格（省くと HK.Attr.nightOf(攻め, 受け)）, kind: 'm'（攻めが男性の体）｜'ff'（女性どうし）｜'fm'（女性の攻めが跨る）（省くと体から決める）,
              who: 名前の代わりに前に付ける文字（'{a}' など）, p: 言う確率（省くと 1）, persona: 態度を指定するとき }
      HK.EroTop.line(...) は「…」だけを返す。HK.EroTop.has(段) で表があるかを見られる。
+   ■ 箱庭の口：scen.eroNoHome = true の箱庭では、帰宅を前提にした台詞（「ただいまの…」）を選ばない（帰ってきた場面でない夜だけの箱庭。配信の部屋）
    ■ 選び方：夜の性格（サド・マゾ・意地悪・甘々・恥じらい）の表 → 関係の表 → 体の組の表（繋がる・山場）→ 攻めの態度9種の表 の順に、くじで混ぜる。
      一回の結果の中で同じ台詞を繰り返さない（ero-kit.js の HK.Ero.fresh）。
    ■ 台詞は3本「くだけた常体｜硬い常体｜敬語」（＝は左と同じ。一人称は「私」、二人称は「あなた」。口調の辞書が話し手の口調に言い換える）。
@@ -236,7 +237,11 @@
   function stageOf(st) { st = ALIAS[st] || st; return STAGES.indexOf(st) >= 0 ? st : 'mid'; }
   var NOGEN_NG = /入れ|入っ|入り|挿|貫|奥まで|繋が|出す|出る|出し|中で|中に|締めつけ|飲み込/;
   /* 候補の束：[重み, 配列] の並び。夜の性格 → 関係 → 体の組 → 態度 */
-  function pools(top, bot, stage, opt) {
+  /* 帰宅を前提にした台詞（「ただいまのキス、まだだったね」）：箱庭が「帰宅の文を使わない」と伝えたとき（scen.eroNoHome が真。配信の部屋のように、帰ってきた場面でない夜だけの箱庭）は外す。
+     伝えていない箱庭は今までどおり（結果は変わらない）。2026-11-06 */
+  var HOME_NG = /ただいま/;
+  function noHome(S) { var c = S && S.scen ? S : HK._curCtx; return !!(c && c.scen && c.scen.eroNoHome); }
+  function pools(top, bot, stage, opt, S) {
     opt = opt || {};
     var st = stageOf(stage), out = [];
     var night = opt.night != null ? opt.night : (HK.Attr && HK.Attr.nightOf ? HK.Attr.nightOf(top, bot) : '');
@@ -252,6 +257,7 @@
     out.push([1, LINES[pt][st]]);
     /* 性器なしの人がいる組は、繋がる・出す・中の言い方の台詞を外す（口・指・玩具だけの場面なので） */
     if (nogen) out = out.map(function (p) { return [p[0], p[1].filter(function (l) { return !NOGEN_NG.test(l); })]; }).filter(function (p) { return p[1].length; });
+    if (noHome(S)) out = out.map(function (p) { return [p[0], p[1].filter(function (l) { return !HOME_NG.test(l); })]; }).filter(function (p) { return p[1].length; });
     return out;
   }
   function pickFrom(S, arr) {
@@ -281,7 +287,7 @@
       opt = opt || {};
       var r = rngOf(S);
       if (opt.p != null && r() >= opt.p) return '';
-      var P = pools(top, bot, stage, opt);
+      var P = pools(top, bot, stage, opt, S);
       if (!P.length) return '';
       var x = r(), pool = P[P.length - 1][1];
       for (var i = 0; i < P.length - 1; i++) { if (x < P[i][0]) { pool = P[i][1]; break; } x = r(); }

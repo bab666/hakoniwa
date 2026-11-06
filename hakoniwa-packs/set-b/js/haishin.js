@@ -685,6 +685,25 @@
     rec(ctx, [a, b], fill(ctx, t, a, b), '配信の様子（' + KIND[S.kind].label + '・' + clockW(clk(S, s)) + '・同接 ' + comma(S.v) + ' 人）', 'bond');
   }
 
+  /* 区切りの様子を出し、あとで外せるように覚えておく（記録の位置・区切りの様子が動かした数え） */
+  function stepHold(ctx, S, s) {
+    var h = { from: ctx.log.length, nMain: S.nMain, ev: S.ev.length, seen: Object.assign({}, S.stepSeen || {}), round: S.stepRound, game: Object.assign({}, S.gameRes || {}), setUsed: Object.assign({}, S.setUsed || {}), setHits: Object.assign({}, S.setHits || {}) };
+    stepScene(ctx, S, s);
+    h.list = ctx.log.slice(h.from); h.evAdd = S.ev.slice(h.ev); h.nAdd = S.nMain - h.nMain;
+    return h;
+  }
+  function stepDrop(ctx, S, h) {
+    if (!h || !h.list.length) return;
+    h.list.forEach(function (e) {
+      var i = ctx.log.indexOf(e); if (i >= 0) ctx.log.splice(i, 1);
+      var c = e && e.actors && e.actors.length ? ctx.chars[e.actors[0]] : null;
+      if (c && c.cats && c.cats[e.cat]) c.cats[e.cat]--;
+    });
+    h.evAdd.forEach(function (k) { var i = S.ev.indexOf(k, h.ev); if (i >= 0) S.ev.splice(i, 1); });
+    S.nMain = Math.max(0, S.nMain - h.nAdd);
+    S.stepSeen = h.seen; S.stepRound = h.round; S.gameRes = h.game; S.setUsed = h.setUsed; S.setHits = h.setHits;
+  }
+
   /* ---------- 設定の出来事（5 章。T.SET[欄][値]＝出来事の配列、出来事＝文の配列。出来事 id は hs_set_<欄>_<値>_<添字＋1>。一つの出来事は一回の配信で一度だけ）。
      欄ごとに出た回数（S.setHits）を数え、少ない欄を先に ---------- */
   function hoursKey(S) { return S.hours <= 3 ? 'short' : S.hours === 6 ? 'mid' : 'long'; }
@@ -854,8 +873,9 @@
         return;
       }
     }
-    /* 2. 区切りの様子 */
-    if (!wantSleep && !after) stepScene(ctx, S, s);
+    /* 2. 区切りの様子。ソロの中盤のあいだ（電話・自慰・お仕置き。S.mid が進んでいる区切り）は出さない（通話中にお便りを読み上げる矛盾。2026-11-06 通し読み） */
+    var midOn = !!(S.r18 && S.form === 'solo' && S.midI > 0 && !/^(none|done|stay)$/.test(S.mid));
+    var stepH = !wantSleep && !after && !midOn ? stepHold(ctx, S, s) : null;
     /* 3〜4. 段の判定とメインの質問（段 6 の R18 はソロの中盤・本番を haishin-r18.js に） */
     var took = false;
     if (S.r18 && H.r18 && H.r18.step && (S.stage >= 6 || S.leak || S.mid !== 'none' || S.sexDone)) took = !!H.r18.step(ctx, S, { s: s, last: last, n: S.N });
@@ -871,6 +891,8 @@
         if (r) { o.ans++; o.ansSt += S.stage; if (r === 'big') o.big = true; }
       }
     }
+    /* 本番の区切り（この区切りで配信を切った／切ったつもりになった：S.ended が cut・leak になった）は、先に出した区切りの様子を外す（本番の区切りは本番の段だけ） */
+    if (stepH && s > 0 && S.endS == null && (S.ended === 'cut' || S.ended === 'leak')) stepDrop(ctx, S, stepH);
     /* 5. 設定の出来事（55%）・性格の行動（30%）。段 4 以上の行為に応えた区切り・中盤と本番の区切りは出さない */
     if (!took && !S.bigAns && !S.ended && !wantSleep) {
       if (s > 0 && ctx.rng() < 0.55) setEvent(ctx, S, s);
@@ -940,6 +962,8 @@
     unit: '時間', perUnit: 2, preRel: 0, lethal: false, minCast: 2, maxCast: 2,
     catBias: { romance: 1, bond: 1.2, help: 1, conflict: 0.2, combat: 0, betray: 0, kill: 0 },
     decay: 0.999, actRate: 0.02,
+    /* 帰ってきた場面でない夜（配信の夜）なので、本体の夜の攻めの台詞から帰宅の前提の一言（「ただいまのキス」）を外す（R18版の ero-top-lines-r18.js が読む口） */
+    eroNoHome: true,
     derived: ['warmth', 'honesty', 'jealous', 'impulse'],
     env: [
       { id: 'kind', label: '配信の種類', type: 'select', def: 'zatsu', options: [{ v: 'zatsu', label: '雑談' }, { v: 'cook', label: '料理' }, { v: 'game', label: 'ゲーム' }, { v: 'neochi', label: '寝落ち' }], desc: '配信の種類で始まる時刻が変わります（雑談 21 時・料理 19 時・ゲーム 22 時・寝落ち 24 時）。区切りの様子と、種類ならではの出来事が変わります' },
