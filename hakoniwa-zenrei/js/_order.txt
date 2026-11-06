@@ -177,6 +177,8 @@ js/classroom-staff.js @scen:classroom
 js/classroom-teacher-love.js @scen:classroom
 js/classroom-cheer.js @scen:classroom
 js/endings.js @pack:sim
+# 折れ線のグラフの部品（HK.Chart.line。結末のカードの after に入れる SVG。2026-11-06）
+js/chart.js @pack:sim
 js/epilogue.js @pack:sim
 js/futari-text.js @scen:futari
 js/scenario-futari.js @scen:futari

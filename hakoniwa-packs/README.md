@@ -149,7 +149,7 @@ if (HK.Endings) HK.Endings['set-b-haishin'] = function (res, X) {
 };
 ```
 
-- `series`：2 本まで（`{ name, values, max, unit, right, col }`。2 本目は右の目盛り。`right: true` で右）。`values` に null を入れるとその点を飛ばす。
+- `series`：2 本まで（`{ name, values, max, unit, col }`。2 本目は右の目盛り・点線）。`values` に null を入れるとその点を飛ばす。
 - `opt`：`w`（既定 320）・`h`（既定 110）・`max`（左の目盛りの上限。省くと値から）・`labels`（横の目盛りの文字。多ければ間引く）・`cols`（線の色。CSS の変数名 `'--accent'` など）・`aria`（読み上げの名前）・`caption`（図の下の一行）。色は CSS の変数なのでダークの見た目にも合う。
 
 ## 出来事の一覧（2026-11-03）
