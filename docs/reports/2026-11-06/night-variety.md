@@ -62,7 +62,7 @@
 | 全年齢モード | なし | |
 | 全年齢版 | whiteroom・omega | キスの反応の段を一つにした（指示 2。キスの場面は全年齢にもある）。乱数の引き方は変えていないので、変わるのはキスの記録の文だけ |
 
-check.js には `--regress-ok=goukon,whiteroom,futari,omega,train` を渡す。
+作業ブランチ（7537fdd・bd7c7207・eb9746cf）を取り込んだあとの最後の check.js（`--since=3b81411`）では、取り込んだ分で変わった箱庭（R18版 ship・massage・rpg、全年齢版 zombie。作業ブランチの先頭 eb9746cf だけでも 3b81411 と違う）も合わせて `--regress-ok=goukon,whiteroom,futari,omega,train,ship,massage,rpg,zombie` を渡した（すべて合格）。この作業で変わったのは上の表の箱庭だけ。
 
 ## 4. 残した課題
 
