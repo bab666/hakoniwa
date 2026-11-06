@@ -29,6 +29,7 @@
 /* @event scen=set-b-haishin id=hs_close cat=bond tie=lover label=予定の時間が来て配信を閉じる */
 /* @event scen=set-b-haishin id=hs_goal cat=bond tie=lover label=目標を意識して配信で動く */
 /* @event scen=set-b-haishin id=hs_off cat=bond tie=lover label=画面の外の相手から連絡や差し入れ */
+/* @event scen=set-b-haishin id=hs_off_hap cat=bond tie=lover label=同じ家にいる相手が配信中にうっかり顔を出す */
 /* @event scen=set-b-haishin id=hs_cookfail cat=bond tie=lover label=料理配信で失敗して騒ぐ */
 /* @event scen=set-b-haishin id=hs_sleep_fall cat=bond tie=lover label=寝落ち配信で眠りに落ちる */
 /* @event scen=set-b-haishin id=hs_sleep_breath cat=bond tie=lover label=寝落ち配信の寝息と寝言 */
@@ -129,6 +130,14 @@
     if (n === 'top') return S.form === 'couple' ? c === S.top : !!(P && P.hardTop && P.hardTop(c));
     return true;
   }
+  function offIn(S) { return !!(S && S.home && !S.offOut); }
+  /* 画面の外の人の目標の種（短期の k：aitai・last・safe・kiss。長期の hitori は嫉妬の側に数える）。無ければ '' */
+  function offGoal(S) {
+    var g = S && S.off && S.goal && S.goal[S.off.i]; if (!g) return '';
+    var k = g.s && g.s.k || '';
+    if (g.l && g.l.k === 'hitori' && k !== 'aitai') return 'hitori';
+    return k;
+  }
   function isFail(t) { return dig(TX().COOKFAIL, 'fail').some(function (x) { return (typeof x === 'string' ? x : x && x.t) === t; }); }
   function elOk(ctx, x, a, b) {
     var S = st(ctx);
@@ -146,6 +155,10 @@
       if (x.tm && x.tm !== S.tm) return '';
       if (x.tz && (Array.isArray(x.tz) ? x.tz.indexOf(S.tm) < 0 : x.tz !== S.tm)) return '';
       if (x.at === 'end' && S.N - S.s > 2) return '';
+      /* wh：画面の外の人の居場所（'in'＝同じ家にいる・'out'＝外にいる（別居・出かけた））。who：画面の外の人の目標の種（haishin-end.js の S.goal） */
+      if (x.wh && x.wh !== (offIn(S) ? 'in' : 'out')) return '';
+      if (x.gk && (Array.isArray(x.gk) ? x.gk : [x.gk]).indexOf(offGoal(S)) < 0) return '';
+      if (x.ap != null && !!x.ap !== !!S.apart) return '';
       if (x.nocook && S.cooks.length) return '';
       if (x.asleep && !(S.asleep > 0 && !S.woke)) return '';
       if (x.hn && !hasName(S, a)) return '';
@@ -443,6 +456,10 @@
     }
     /* P2・P3 が読む欄 */
     S.married = S.rk === 'spouse'; S.hour = Math.floor((S.t0 % 1440) / 60); S.sleepFirst = S.sleeper || null; S.offCame = false; S.gameWin = false;
+    /* 二人が離れている状態（2026-11-06 の利用者の報告「電話越しなのに隣に立つ文」）：ソロ配信の画面の外の人は、来訪（R18 の中盤の come・画面の外の人のハプニングで部屋に来る）までは配信部屋にいない。
+       S.apart のあいだは ctx.apart も立て、本体の飾り（体格差・体の特徴・目につく特徴の一文。attr-look.js）を付けない。電話・通話の文は声・息・音・画面の向こうの語で書く。
+       S.offOut：同居の画面の外の人が出かけた（T.OFF の out）。S.offIn＝同じ家にいる（同居で出かけていない）。同じ家にいるのに電話するときは「なんで傍にいるのに電話？」の反応を足す */
+    S.apart = S.form === 'solo'; ctx.apart = S.apart; S.offOut = false;
     /* 目標（短期・長期）は haishin-end.js の HK.HaishinEnd.init（S.goal・S.rel0E・c.goal）。無い本体の組み合わせでは下の代わり。立場：配信する人 'on'／画面の外 'off' */
     if (!S.stop && HK.HaishinEnd && HK.HaishinEnd.init) HK.HaishinEnd.init(ctx);
     if (!S.goal) S.goal = {};
@@ -666,7 +683,7 @@
       /* 軽い要求（ハグ・膝枕・あーん・撫でる・手をつなぐ）は、応えた人がする側かされる側かが文によって違う（あーんは食べさせてもらう側が応えることもある）ので、
          行為の向きを置かない（向きを言うコメントは出さない。通し読みで「あーん」を食べた側に「手が早い」が出た） */
       if (KISS_K[k]) setAct(S, a, b, k); else S.actMix = true;
-      rec(ctx, [a, b], head + fill(ctx, lt, a, b), '軽い要求に応えた（' + kJa(k) + '・' + howJa(how) + '）', S.form === 'couple' ? 'romance' : 'bond', { tag: 'リクエスト', odd: hw.odd, ev: KISS_K[k] ? 'kiss' : how === 'sunao' ? 'sunao' : '' });
+      rec(ctx, [a, b], head + fill(ctx, lt, a, b), '軽い要求に応えた（' + kJa(k) + '・' + howJa(how) + '）', S.form === 'couple' ? 'romance' : 'bond', { tag: 'リクエスト', odd: hw.odd, ev: KISS_K[k] ? 'kiss' : /^(sunao|serve|shy)$/.test(how) ? how : '' });
       if (KISS_K[k]) S.kiss++;
       S.ansSt[stg] = true;
       return 'ans';
@@ -743,7 +760,7 @@
     if (!t) t = pickT(ctx, flat((T0.STEP || {})[liveKind(S)]), a, b, true) || fbT(ctx, FB.step, a, b);
     /* ゲームの勝ち負けの数え（res の札） */
     var me = null; flat((T0.STEP || {})[liveKind(S)]).forEach(function (x) { if (x && typeof x === 'object' && x.t === t) me = x; });
-    if (me && me.res && S.gameRes[me.res] != null) { S.gameRes[me.res]++; if (me.res === 'lose') S.ev.push('lose'); }
+    if (me && me.res && S.gameRes[me.res] != null) { S.gameRes[me.res]++; if (me.res === 'lose' || me.res === 'win') S.ev.push(me.res); }
     rec(ctx, [a, b], fill(ctx, t, a, b), '配信の様子（' + KIND[S.kind].label + '・' + clockW(clk(S, s)) + '・同接 ' + comma(S.v) + ' 人）', 'bond');
   }
 
@@ -789,7 +806,7 @@
     c.forEach(function (x) { var L = (SET[x[0]] || {})[x[1]]; if (!Array.isArray(L)) return; L.forEach(function (e, k) { var id = 'hs_set_' + x[0] + '_' + x[1] + '_' + (k + 1); if (!S.setUsed[id] && Array.isArray(e)) ev.push([x[0], x[1], id, e, x[2], x[3]]); }); });
     /* R18 の性欲の出来事（R.LIB[none|low|high][couple|solo]）・画面の外の人（T.OFF）・料理の失敗（T.COOKFAIL）・目標（T.GOALACT）は文の配列のまま */
     if (S.r18 && !only) { var lb2 = HK.Pos && HK.Pos.libOf ? HK.Pos.libOf(a) : ''; if (lb2) ev.push(['lib', 'r18', '', dig(RX().LIB, lb2, S.form), a, b]); }
-    if (S.form === 'solo' && !only) ev.push(['role', 'off', '', flat(T0.OFF), on0, off0]);
+    if (S.form === 'solo' && !only) ev.push(['role', 'off', '', offPool(S, T0), on0, off0]);
     if (S.kind === 'cook' && !only) {
       var nc = S.on.filter(function (x) { return S.cooks.indexOf(x) < 0; })[0];
       if (nc && S.form === 'couple' && S.cooks.length === 1) ev.push(['cookfail', 'help', '', dig(T0.COOKFAIL, 'help'), nc, S.cooks[0]]);
@@ -813,8 +830,37 @@
     if (el && el.up && S.stage < S.capSt) { S.stage++; S.stall = 0; }
     if (f[2] === 'hs_set_size_s10k_1') S.trend = 0.3;
     if (f[0] === 'cookfail') S.ev.push('fail');
+    if (el && el.out && S.home) S.offOut = true;
+    if (el && el.back) S.offOut = false;
     var WHY = { kind: '配信の種類', size: 'リスナーの規模', sc: 'スパチャの太さ', hours: '配信時間', form: '形', hname: '配信の名前', charm: '魅力', role: '画面の外の人', cookfail: '料理の失敗', goal: '目標', lib: '性欲' };
     rec(ctx, [f[4], f[5]].filter(Boolean), fill(ctx, t, f[4], f[5]), '設定の出来事（' + WHY[f[0]] + '）', 'bond');
+    return true;
+  }
+  /* 画面の外の人の段の候補（T.OFF）：画面の外の人の目標の種（last・safe・aitai・jeal）＋暮らし（life）＋同居で家にいるなら出かける（out） */
+  var OFF_GK = { last: 'last', awake: 'last', safe: 'safe', quit: 'safe', aitai: 'aitai', kiss: 'aitai', amaya: 'aitai', hitori: 'jeal' };
+  function offPool(S, T0) {
+    var O = T0.OFF || {}, gk = OFF_GK[offGoal(S)] || 'last';
+    if (Array.isArray(O)) return O;
+    return flat(O[gk]).concat(flat(O.life), offIn(S) ? flat(O.out) : []);
+  }
+  /* 同じ家にいる画面の外の人のハプニング（T.OFF_HAP。部屋のドアを開けてしまう・声が聞こえる・差し入れ。一回の配信で 2 回まで。中盤が始まる前だけ） */
+  function offHap(ctx, S) {
+    if (S.form !== 'solo' || S.mid !== 'none') return false;
+    /* 画面の外の人の様子（T.OFF。目標と暮らしで。一回の配信で 3 回まで・2 区切り目から 25%） */
+    if (!offIn(S) || (S.hapN || 0) >= 2 || ctx.rng() >= 0.22) {
+      if ((S.offN || 0) >= 3 || !S.s || ctx.rng() >= 0.25) return false;
+      var T0 = TX(), on0 = S.on[0], off0 = S.off, l = offPool(S, T0), t0 = pickT(ctx, l, on0, off0), el0 = null;
+      if (!t0) return false;
+      l.forEach(function (x) { if (x && typeof x === 'object' && x.t === t0) el0 = x; });
+      if (el0 && el0.out && S.home) S.offOut = true;
+      S.offN = (S.offN || 0) + 1;
+      rec(ctx, [on0, off0], fill(ctx, t0, on0, off0), '画面の外の人の様子（' + off0.name + '' + '）', 'bond', {});
+      return true;
+    }
+    var a = S.on[0], b = S.off, t = pickT(ctx, TX().OFF_HAP, a, b);
+    if (!t) return false;
+    S.hapN = (S.hapN || 0) + 1;
+    rec(ctx, [a, b], fill(ctx, t, a, b), '画面の外の人のハプニング（' + b.name + 'は同じ家にいる）', 'bond', { tag: 'ハプニング', ev: 'hap' });
     return true;
   }
   /* 性格の行動（30%）：嫉妬（直前の区切りにガチ恋のコメント・太客の名指し）・素に戻る（発情度 60 以上かキスの直後）・らしくない */
@@ -927,8 +973,8 @@
     var K2 = CK();
     if (K2 && K2.post) {
       var sc = S.scNow.map(function (y) { return { yen: y, whale: y >= 10000 }; }); S.scNow = [];
-      var r = K2.post(ctx, { stage: S.stage, sleep: !!o.sleep, end: !!o.end, leak: S.leakPh || null, stall: !!o.stall, sc: sc, react: S.lastEv, hour: S.hour });
-      if (r && r.garikoi) S.ev.push('gari');
+      var r = K2.post(ctx, { stage: S.stage, sleep: !!o.sleep, end: !!o.end, leak: S.leakPh || null, stall: !!o.stall, sc: sc, react: o.react != null ? o.react : S.lastEv, reactBy: o.reactBy || null, hour: S.hour });
+      if (r && r.garikoi) { S.ev.push('gari'); S.gariN = (S.gariN || 0) + 1; }
       if (r && r.wed) S.ev.push('wed');
       return r && r.e;
     }
@@ -982,7 +1028,7 @@
       if (sr === 'wake' && !last) wantSleep = false;
       else if (sr !== 'fall') {
         vStep(ctx, S, o); heatStep(S, o);
-        cmPost(ctx, S, { n: cmCount(S, true), sleep: true, react: S.lastEv, cmOnly: cmOnly });
+        cmPost(ctx, S, { n: cmCount(S, true), sleep: true, react: S.ev.slice(), reactBy: S.evBy, cmOnly: cmOnly });
         endStep(ctx, S, s, last, stepSum);
         return;
       }
@@ -1017,6 +1063,7 @@
       if (ctx.rng() < 0.3) behave(ctx, S);
       /* 関係性の出来事（配信オリジナル。haishin-rel.js）：本体の共通の出来事の代わり */
       relEvent(ctx, S, s);
+      offHap(ctx, S);
     }
     /* 区切りが 1 件だけ（様子だけ）にならないよう、設定の出来事を一つ足す */
     if (!took && !S.ended && S.nMain < 2 && s > 0 && !wantSleep) { if (!setEvent(ctx, S, s)) behave(ctx, S); }
@@ -1031,7 +1078,7 @@
     o.trend = S.trend; stepSum += S.stepSc;
     vStep(ctx, S, o); heatStep(S, o);
     /* 7. コメントの一件 */
-    cmPost(ctx, S, { n: cmCount(S, false), sleep: false, end: last || (S.ended === 'cut' && s >= S.endAt), react: S.lastEv, leak: S.leak, stall: S.ev.indexOf('stall') >= 0, beg: S.capped && S.pt >= LINE[Math.min(5, S.capSt)] });
+    cmPost(ctx, S, { n: cmCount(S, false), sleep: false, end: last || (S.ended === 'cut' && s >= S.endAt), react: S.ev.slice(), reactBy: S.evBy, leak: S.leak, stall: S.ev.indexOf('stall') >= 0, beg: S.capped && S.pt >= LINE[Math.min(5, S.capSt)] });
     endStep(ctx, S, s, last, stepSum);
   }
   /* 結末が結婚報告になる配信は、予定の時間どおりに閉じる最後の区切りで、閉じる前に報告の段を出す（T.WEDLIVE。後日談はそのあとの話として書く。
@@ -1186,7 +1233,7 @@
 
   /* ---------- ほかの担当が読む口（16 章） ---------- */
   Object.assign(H, {
-    ID: ID, st: st, pickT: pickT, hasT: hasT, elOk: elOk, fill: fill, rec: rec, dig: dig, flat: flat, hn: hn, aikata: aikata, chName: chName, other: other, per: per, nightKind: nightKind,
+    ID: ID, st: st, offIn: offIn, offGoal: offGoal, pickT: pickT, hasT: hasT, elOk: elOk, fill: fill, rec: rec, dig: dig, flat: flat, hn: hn, aikata: aikata, chName: chName, other: other, per: per, nightKind: nightKind,
     howOf: howOf, setAct: setAct, kJa: kJa, howJa: howJa, askOf: askOf, askText: askText, needOk: needOk, targetOf: targetOf, reqOk: reqOk, handle: handle, cmCount: cmCount, cmPost: cmPost, clockW: clockW, clk: clk, comma: comma, yen: yen,
     formOf: formOf, blockOf: blockOf, topTop: topTop, relIn: relIn, KIND: KIND, SIZE: SIZE, SCB: SCB, HOURS: HOURS, LINE: LINE, STAGE_NAME: STAGE_NAME, LIGHT_K: LIGHT_K, GOAL_OPT: GOAL_OPT, FB_HANDLE: FB_HANDLE
   });

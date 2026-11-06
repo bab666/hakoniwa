@@ -35,6 +35,7 @@
 /* @event scen=set-b-haishin id=hs_mid_stall cat=bond tie=- tags=night label=一人の配信で踏み込んだ要求を渋る */
 /* @event scen=set-b-haishin id=hs_mid_toy cat=romance tie=- tags=night label=ソロ配信で玩具を使い体に触れる */
 /* @event scen=set-b-haishin id=hs_mid_call cat=romance tie=- tags=night label=配信中に画面の外の相手へ電話をかける */
+/* @event scen=set-b-haishin id=hs_mid_callin cat=romance tie=- tags=night label=配信中に画面の外の相手から電話がかかってくる */
 /* @event scen=set-b-haishin id=hs_mid_self cat=romance tie=- tags=night label=通話をつないだまま自慰を続ける */
 /* @event scen=set-b-haishin id=hs_mid_notice cat=romance tie=- tags=night label=電話の相手が配信中の様子に気づく */
 /* @event scen=set-b-haishin id=hs_mid_hangup cat=romance tie=- tags=night label=気づかれる前に通話が切れる */
@@ -73,6 +74,8 @@
   /* 表から一つ（一回の遊びで同じ文は 1 回。使い切ったら 2 回目、それも無ければどれか） */
   /* 表の値が文字列一本でも配列でも読む（R.LEAD[入口][態度] は文字列） */
   function lst(x) { return typeof x === 'string' ? [x] : flat(x); }
+  /* 表の値が文字列の { 鍵: 文 } を配列に（dig は文字列を拾わないため） */
+  function flatS(o) { return o ? Object.keys(o).reduce(function (r, k) { return r.concat(lst(o[k])); }, []) : []; }
   function pickAny(ctx, list, a, b) { var l = lst(list); return pickT(ctx, l, a, b) || pickT(ctx, l, a, b, true) || pickOf(ctx, l.map(function (x) { return typeof x === 'string' ? x : x && x.t; }).filter(Boolean)) || ''; }
   /* ソロの体の添字：t＝攻め（配信者が攻め）・b＝受け（リバ・おまかせも受け）、M＝男性器のある人・F＝ない人 */
   function bodyK(S, c) { return (c === S.top ? 't' : 'b') + (hasM(c) ? 'M' : 'F'); }
@@ -80,9 +83,13 @@
   function AB(S) { return S.form === 'couple' ? [S.top, S.bot] : [S.on[0], S.off]; }
   function zoneEx(S, c) { return c && S.zones && S.zones[c.i] && S.zones[c.i].length ? { zone: S.zones[c.i].join('と') } : null; }
   /* 配信者の声（本体の喘ぎ。態度・口調で選ばれる） */
+  /* 離れているあいだ（S.apart：電話・通話中）の喘ぎは、傍にいる相手に向けた声（やさしくして・抜いて・奥・抱いて…）を選ばない（2026-11-06 の利用者の報告） */
+  var NEAR_MOAN = /やさし|優し|触っ|触ら|触れ|さわっ|さわら|抜い|抜か|抜け|動か|動い|動く|突い|突か|奥|入れ|挿れ|離し|離せ|はなし|見ない|見るな|待っ|待て|止め|とめ|やめ|抱い|抱き|抱け|キス|噛|舐|吸|しがみ|離れ|もっと、?して|いじめ|激し|揺らさ|腰/;
   function moanOf(ctx, c, climax) {
     var T = HK.ThickSex; if (!T || !T.moan) return '';
-    var m = String(T.moan(function (l) { return pickOf(ctx, l); }, c, !!climax, ctx.rng) || '').replace(/^「|」$/g, '');
+    var S0 = ctx.hs, gen = function () { return String(T.moan(function (l) { return pickOf(ctx, l); }, c, !!climax, ctx.rng) || '').replace(/^「|」$/g, ''); };
+    var m = gen();
+    if (S0 && S0.apart) { for (var i = 0; i < 10 && m && NEAR_MOAN.test(m); i++) m = gen(); if (m && NEAR_MOAN.test(m)) m = climax ? '……っ、あ、ぁ……っ！' : '……っ、ん……ぁ……'; }
     return m ? c.name + '「' + m + '」' : '';
   }
   /* 場所：配信用の椅子は本体に chair があればそれ、無ければ sofa に落とす */
@@ -360,9 +367,13 @@
         rec(ctx, [x, y], fill(ctx, t, x, y), 'ソロの中盤：' + (x === S.top ? '体に触れる（攻め。穴には入れない）' : '玩具を入れる'), cat, { tag: '中盤' });
         S.mid = 'toy'; return true;
       case 'call':
+        /* 電話のかけ方（2026-11-06 の利用者の指示「電話のきっかけが毎回同じ」）：配信者がかける（R.MIDLEAD.call）か、画面の外の人からかかってくる（R.CALLIN。理由は画面の外の人の目標：
+           心配 worry・嫉妬 jeal・見ていた watch）。視聴者に「電話して」と言われた回（S.telReq）はかける。同じ家にいるのに電話した回は、受けた側の「なんで傍にいるのに電話？」（R.NEARCALL）を足す */
+        if (!S.telReq && callInOk(S) && ctx.rng() < callInP(S)) { if (callIn(ctx, S, x, y)) { S.mid = 'call'; return true; } }
         t = midText(ctx, S, 'call', x, y); if (!t) return false;
         midLead(ctx, S, 'call', x, y);
-        rec(ctx, [x, y], fill(ctx, t, x, y) + telLine(ctx, S, 0, x, y), 'ソロの中盤：画面の外の相手に電話をかけた', cat, { tag: '電話' });
+        S.callDir = 'out';
+        rec(ctx, [x, y], fill(ctx, t, x, y) + (H.offIn && H.offIn(S) ? nearCall(ctx, S, y, x) : telLine(ctx, S, 0, x, y)), 'ソロの中盤：画面の外の相手に電話をかけた' + (H.offIn && H.offIn(S) ? '（同じ家の別の部屋にいる相手に）' : ''), cat, { tag: '電話' });
         S.mid = 'call'; return true;
       case 'self':
         t = midText(ctx, S, 'self', x, y); if (!t) return false;
@@ -382,7 +393,9 @@
         if (!pairOk(ctx, S)) pc = 0;
         if (ctx.rng() < pc) {
           t = midText(ctx, S, 'come', x, y); if (!t) return false;
-          rec(ctx, [x, y], fill(ctx, t, x, y), 'ソロの中盤：' + y.name + 'が' + (S.home ? '帰ってきた' : '家に来た'), cat, { tag: '来訪' });
+          /* 来た：ここから二人は同じ部屋（S.apart を外す。本体の飾りも戻る） */
+          S.apart = false; ctx.apart = false; S.offCame = true;
+          rec(ctx, [x, y], fill(ctx, t, x, y), 'ソロの中盤：' + y.name + 'が' + (H.offIn && H.offIn(S) ? '別の部屋から来た' : S.home ? '帰ってきた' : '家に来た'), cat, { tag: '来訪' });
           S.mid = 'come'; S.comeMode = comeMode(ctx, S, y, x); return true;
         }
         /* 来ない：声だけで続け、電話越しの山場で配信を閉じる */
@@ -414,6 +427,35 @@
         S.mid = 'done'; return true;
     }
     return false;
+  }
+  /* 同じ家にいるのに電話を受けた人（c）の反応（R.NEARCALL[c の態度]。{a}＝受けた人、{b}＝かけた人） */
+  function nearCall(ctx, S, c, o, inc) {
+    var T0 = (inc && RX().NEARCALL_IN) || RX().NEARCALL, l = dig(T0, att(c, o)), t = pickT(ctx, l, c, o) || pickAny(ctx, l.length ? l : dig(T0), c, o);
+    S.nearCallN = (S.nearCallN || 0) + 1;
+    return t ? '\n\n' + fill(ctx, t, c, o) : '';
+  }
+  /* かかってくる電話：理由は画面の外の人の目標（safe → 心配、hitori・嫉妬の行動 → 嫉妬、ほか → 配信を見ていた） */
+  function callInOk(S) { var R = RX(); return !!(R.CALLIN && R.CALLIN_BODY && R.CALLIN_BODY.length); }
+  function callInP(S) { var g = H.offGoal ? H.offGoal(S) : ''; return /^(aitai|safe|hitori)$/.test(g) ? 0.55 : 0.35; }
+  function callWhy(ctx, S) {
+    var g = H.offGoal ? H.offGoal(S) : '';
+    if (g === 'safe') return 'worry';
+    if (g === 'hitori' || (S.ev.indexOf('gari') >= 0) || (S.gariN || 0) > 0 || (S.scMax || 0) >= 10000 || (S.regulars || []).some(function (r) { return r && (r.type === 'garikoi' || r.type === 'whale'); }) && ctx.rng() < 0.5) return 'jeal';
+    /* 会いたい・見届ける目標の人も、見ているうちに妬けてくることがある（3 割） */
+    if (g === 'aitai' || g === 'last' || g === 'kiss') return ctx.rng() < 0.3 ? 'jeal' : 'watch';
+    return ['worry', 'jeal', 'watch'][Math.floor(ctx.rng() * 3)];
+  }
+  var CALLWHY = { worry: '心配して', jeal: '嫉妬して', watch: '配信を見ていて' };
+  function callIn(ctx, S, x, y) {
+    var R = RX(), why = callWhy(ctx, S);
+    var b0 = pickAny(ctx, R.CALLIN_BODY, x, y), l = lst(((R.CALLIN || {})[why] || {})[att(y, x)]), w = pickT(ctx, l, y, x) || pickAny(ctx, l.length ? l : flatS((R.CALLIN || {})[why]), y, x);
+    var rl = dig(R.CALLIN_RE, att(x, y)), re = pickT(ctx, rl, x, y) || pickAny(ctx, rl, x, y);
+    if (!b0 || !w) return false;
+    S.callDir = 'in'; S.callWhy = why;
+    var e = ctx.say({ kind: 'event', cat: rcat(S), actors: [y, x], text: fill(ctx, b0, x, y) + '\n\n' + fill(ctx, w, y, x), why: 'きっかけ：ソロの中盤（' + y.name + 'から電話がかかってきた・' + CALLWHY[why] + (H.goalJa && H.offGoal && H.offGoal(S) ? '・' + y.name + 'の目標：' + H.goalJa(S, y) : '') + '）', mag: 0 });
+    if (e) { e.tag = 'きっかけ'; S.nMain++; S.midLeadN = (S.midLeadN || 0) + 1; }
+    rec(ctx, [x, y], (re ? fill(ctx, re, x, y) : '') + (H.offIn && H.offIn(S) ? nearCall(ctx, S, x, y, true) : ''), 'ソロの中盤：画面の外の相手から電話がかかってきた（' + CALLWHY[why] + '）', rcat(S), { tag: '電話' });
+    return true;
   }
   /* 来た人がお仕置きをするか甘やかすか（態度 9 種と夜の性格。来た人＝c、配信者＝o）。甘やかしの表（R.AMAE）が無ければいつもお仕置き */
   var AMAE_W = { gentle: 0.85, devoted: 0.8, shy: 0.7, polite: 0.65, free: 0.45, cool: 0.3, tsun: 0.3, stern: 0.2, proud: 0.15 };
@@ -496,7 +538,7 @@
     if (!t) return false;
     act(S, dd, tk, k);
     var ex = zoneEx(S, k === 'seikan' || k === 'sawaru' ? (S.form === 'couple' ? y : x) : null);
-    var txt = (head || '') + fill(ctx, t, x, y, ex), why = '踏み込んだ要求に応えた（' + (H.kJa ? H.kJa(k) : '') + '・' + (H.howJa ? H.howJa(how) : '') + '）', tag = 'リクエスト', ev = how === 'sunao' ? 'sunao' : '';
+    var txt = (head || '') + fill(ctx, t, x, y, ex), why = '踏み込んだ要求に応えた（' + (H.kJa ? H.kJa(k) : '') + '・' + (H.howJa ? H.howJa(how) : '') + '）', tag = 'リクエスト', ev = /^(sunao|serve|shy)$/.test(how) ? how : '';
     /* 性感帯の発表：前置き → R.ZONE[形][{a} の態度] */
     if (k === 'seikan') {
       var z = pickT(ctx, dig(R.ZONE, S.form, att(x, y)), x, y) || pickAny(ctx, dig(R.ZONE, S.form), x, y);
@@ -530,7 +572,7 @@
     }
     /* 相手に電話して（ソロ）：玩具の段は飛ばして電話から */
     if (k === 'tel' && S.form === 'solo' && S.mid === 'none') {
-      S.midI = CHAIN.indexOf('call');
+      S.midI = CHAIN.indexOf('call'); S.telReq = 1;
       soloStep(ctx, S, { s: S.s, last: S.s === S.N - 1, n: S.N });
     }
     return true;

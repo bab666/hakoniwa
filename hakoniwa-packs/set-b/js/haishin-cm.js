@@ -268,7 +268,7 @@
     opt = opt || {};
     var S = st(ctx); if (!S) return null;
     var CC = C(), G = CC.GEN || {}, stage = opt.stage || S.stage || 1, local = {}, used = {}, lines = [];
-    var act = S.actMix ? null : S.act || null, rt = tgtAct(ctx, act), evBy = S.lastEvBy || {};
+    var act = S.actMix ? null : S.act || null, rt = tgtAct(ctx, act), evBy = opt.reactBy || S.lastEvBy || {};
     var v = Math.max(S.v || 10, 1);
     var n = opt.n || Math.max(3, Math.min(12, Math.round(3 + 2.2 * Math.log(v) / Math.LN10 + 0.5 * stage)));
     if (opt.sleep && !opt.n) n = Math.min(12, Math.round(n * 1.5));
