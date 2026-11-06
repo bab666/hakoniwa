@@ -1,10 +1,10 @@
 {
  "cur": {
-  "core": "core.5e62654d9a.js",
+  "core": "core.44f1f81635.js",
   "late": "late.68a2a5bb2f.js",
   "pack-sim": "pack-sim.7d863b323b.js",
   "pack-rel": "pack-rel.e362e97f29.js",
-  "pack-lewd": "pack-lewd.b08a3726a6.js",
+  "pack-lewd": "pack-lewd.a35172aadf.js",
   "scen-goukon": "scen-goukon.fc9df805f4.js",
   "scen-classroom": "scen-classroom.ecb33c629d.js",
   "scen-island": "scen-island.2e0aa6a09e.js",
@@ -77,7 +77,7 @@
  "prev": {
   "core": "core.5e62654d9a.js",
   "late": "late.68a2a5bb2f.js",
-  "pack-sim": "pack-sim.306ebb5741.js",
+  "pack-sim": "pack-sim.7d863b323b.js",
   "pack-rel": "pack-rel.e362e97f29.js",
   "pack-lewd": "pack-lewd.b08a3726a6.js",
   "scen-goukon": "scen-goukon.fc9df805f4.js",
@@ -199,8 +199,8 @@
    11984
   ],
   "js/voice.js": [
-   70222,
-   22453
+   70792,
+   22579
   ],
   "js/voice-tone.js": [
    36717,

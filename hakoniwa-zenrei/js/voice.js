@@ -1096,6 +1096,22 @@
     }
     return st.length ? t : out;
   };
+  /* 一つの記録を整える（processResult の中と、結果が返ったあとに差し込まれた記録の両方から。2026-11-06：content-events-r18.js の pregFill が結果の仕上げのあとに記録を足していて、3 本の台詞が分かれずに縦棒ごと出ていた） */
+  function oneEntry(e, f, hOff, people) {
+      if (!e || typeof e.text !== 'string') return;
+      var buf = V._segBuf = [];
+      V._callPrev = V._callLast; V._callLast = {}; V._callAdd = [];
+      /* 性的な場面の記録か（呼びかけを足すのは、山場の懇願・告白だけにする） */
+      V._lewdEv = !HK.SAFE_ON && !!(HK.lewdEvent && HK.lewdEvent(e));
+      /* 状況で変わる一人称（怒ったとき・恋人ができてから。voice-fp.js）：この記録の間だけ、話し手の一人称を差し替える */
+      var fpBack = V.fpSwap ? V.fpSwap(people, e) : null;
+      /* ♡を外す人がいれば、この記録が性的な場面か（V.unheart を当てる範囲。外す人がいなければ null で、何もしない） */
+      V._heartEv = hOff ? !!(HK.lewdEvent && HK.lewdEvent(e)) : null;
+      try { e.text = V.nestQuote(f(e.text, e.actors)); } finally { V._segBuf = null; V._heartEv = null; V._lewdEv = false; if (fpBack) fpBack(); }
+      if (V._callAdd.length) Object.defineProperty(e, 'callAdded', { value: V._callAdd, configurable: true, writable: true, enumerable: false });
+      V._callAdd = null;
+      if (HK.Seg && HK.Seg.keep) HK.Seg.keep(e, buf);
+  }
   V.processResult = function (res, input) {
     if (!res || !input || !input.chars) return res;
     var people = input.chars.map(function (c, i) {
@@ -1118,21 +1134,7 @@
     /* 呼びかけの覚え（tone-plus.js の callAddress）：_callLast＝いま整えている記録で名前を呼んだ組（話し手>相手）、_callPrev＝ひとつ前の記録の組。
        _callAdd＝この記録で呼びかけを足した台詞（点検 call-audit.js が読む。e.callAdded は数え上げない属性で、保存・表示には出ない） */
     V._callLast = {}; V._callPrev = {};
-    (res.log || []).forEach(function (e) {
-      if (!e || typeof e.text !== 'string') return;
-      var buf = V._segBuf = [];
-      V._callPrev = V._callLast; V._callLast = {}; V._callAdd = [];
-      /* 性的な場面の記録か（呼びかけを足すのは、山場の懇願・告白だけにする） */
-      V._lewdEv = !HK.SAFE_ON && !!(HK.lewdEvent && HK.lewdEvent(e));
-      /* 状況で変わる一人称（怒ったとき・恋人ができてから。voice-fp.js）：この記録の間だけ、話し手の一人称を差し替える */
-      var fpBack = V.fpSwap ? V.fpSwap(people, e) : null;
-      /* ♡を外す人がいれば、この記録が性的な場面か（V.unheart を当てる範囲。外す人がいなければ null で、何もしない） */
-      V._heartEv = hOff ? !!(HK.lewdEvent && HK.lewdEvent(e)) : null;
-      try { e.text = V.nestQuote(f(e.text, e.actors)); } finally { V._segBuf = null; V._heartEv = null; V._lewdEv = false; if (fpBack) fpBack(); }
-      if (V._callAdd.length) Object.defineProperty(e, 'callAdded', { value: V._callAdd, configurable: true, writable: true, enumerable: false });
-      V._callAdd = null;
-      if (HK.Seg && HK.Seg.keep) HK.Seg.keep(e, buf);
-    });
+    (res.log || []).forEach(function (e) { oneEntry(e, f, hOff, people); });
     V._callLast = V._callPrev = null;
     var E = res.ending || res.end;
     if (E) {
@@ -1141,6 +1143,17 @@
     }
     (res.chars || []).forEach(function (c) { if (typeof c.fateNote === 'string') c.fateNote = f(c.fateNote); if (Array.isArray(c.notes)) c.notes = c.notes.map(function (n) { return typeof n === 'string' ? f(n) : n; }); });
     V._keepHeart = false;
+    /* 結果が返ったあとに記録を差し込む側（V.processLate）のために、話し手の作りを結果に隠して持たせる（数え上げない属性。保存・共有には出ない） */
+    Object.defineProperty(res, '_voice', { value: { people: people, hOff: hOff, keepHeart: !HK.SAFE_ON && !!(input.env && input.env.style === 'ero') }, enumerable: false, configurable: true, writable: true });
     return res;
+  };
+  /* 結果が返ったあとに差し込んだ記録を、processResult と同じ仕上げ（3 本の台詞・口調・一人称・呼び方・区分）に通す（2026-11-06） */
+  V.processLate = function (res, e) {
+    var v = res && res._voice;
+    if (!v || !e || typeof e.text !== 'string') return e;
+    var f = function (t, ac) { return V.processText(t, v.people, ac); };
+    V._keepHeart = v.keepHeart; V._callLast = {}; V._callPrev = {};
+    try { oneEntry(e, f, v.hOff, v.people); } finally { V._keepHeart = false; V._callLast = V._callPrev = null; }
+    return e;
   };
 })();

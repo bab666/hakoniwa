@@ -546,7 +546,7 @@
   });
 
   /* 終わりに：条件を満たしたのに孕む描写の出ていない組へ、その組の初めての夜の記録のすぐあとに描写を足す（記録の順と番号を直す） */
-  function pregFill(ctx) {
+  function pregFill(ctx, r) {
     var cs = ctx._ct, sp = cs && cs.sexP, P = HK.Pos;
     if (!sp || !P || !on(ctx, 'preg')) return;
     Object.keys(sp).map(function (k) { return sp[k]; }).sort(function (x, y) { return x.n - y.n; }).forEach(function (q) {
@@ -554,6 +554,8 @@
       if (q.om || !Tp || !B || B._ctPreg || B.alive === false) return;
       var e2 = pregAdd(ctx, Tp, B, q.why, false, false, false, false, false);
       if (!e2 || e2.skipped || !ctx.log) return;
+      /* 結果の仕上げ（persona-final.js の processResult）はもう済んでいるので、この記録だけ同じ仕上げに通す（3 本の台詞が分かれずに縦棒ごと残っていた。2026-11-06） */
+      if (r && HK.Voice && HK.Voice.processLate) HK.Voice.processLate(r, e2);
       var at = ctx.log.indexOf(e2), k0 = ctx.log.indexOf(q.e);
       if (at < 0 || k0 < 0 || at === k0 + 1) return;
       ctx.log.splice(at, 1); ctx.log.splice(k0 + 1, 0, e2);
@@ -628,7 +630,7 @@
       hookStory();
       CUR = null;
       var r = sim0.apply(this, arguments);
-      if (CUR && CUR._ct && r && r.end && typeof r.end === 'object') { pregFill(CUR); endNotes(CUR, r); }
+      if (CUR && CUR._ct && r && r.end && typeof r.end === 'object') { pregFill(CUR, r); endNotes(CUR, r); }
       CUR = null;
       return r;
     };
