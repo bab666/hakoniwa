@@ -751,6 +751,8 @@ js/jinro-data.js @scen:jinro
 js/jinro-after.js @scen:jinro
 js/jinro-wolfnight.js @scen:jinro
 js/rel-bad-story.js @pack:sim
+# 温度 6 段（HK.Heat。2026-11-06。温度を読む部屋が HK.Heat.use で登録したときだけ働く。設計は docs/reports/2026-11-06/heat-design.md）
+js/heat.js @pack:sim
 late js/tie-new-story.js
 late js/tips.js
 late js/ui-tone-lab.js
