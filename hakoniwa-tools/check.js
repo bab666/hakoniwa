@@ -356,6 +356,9 @@ function decide(R) {
   else skip('rel-word', '関係の名前・血縁の文に触れる js を変えていない');
   if (anyOn(['moan', 'serifu', 'tone']) || toolOn('meta-tone')) add({ id: 'meta-tone', stage: 'heavy', label: CHECK['meta-tone'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['moan', 'serifu', 'tone']) || '道具を変えた', scope: sScope, weight: 1 });
   else skip('meta-tone', '台詞・喘ぎ・口調を変えていない');
+  /* 一人称の置き換え（2026-11-06）：一人称を設定した住人で、一人称でない語の置き換え・画面に残った印・一人称のブレ */
+  if (anyOn(['serifu', 'tone', 'dict', 'moan']) || toolOn('fp-audit')) add({ id: 'fp-audit', stage: 'heavy', label: CHECK['fp-audit'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['serifu', 'tone', 'dict', 'moan']) || '道具を変えた', scope: sScope, weight: 1 });
+  else skip('fp-audit', '台詞・口調・喘ぎを変えていない');
   if (anyOn(['ui', 'order', 'buildtool']) || toolOn('regress')) ['r18', 'safe', 'zen'].forEach(m => add({ id: 'regress', stage: 'heavy', key: 'regress:' + m, label: CHECK.regress.name + '：' + ({ r18: 'R18版', safe: '全年齢モード', zen: '全年齢版' })[m], mode: m, why: O.all ? '--all' : why(['ui', 'order', 'buildtool']) || '道具を変えた', weight: 1 }));
   else skip('regress', '画面・読み込み順・build の道具を変えていない（結果が変わる変更は audit-all で見る）');
   ['chunk-regress', 'chunk-audit'].forEach(id => {
@@ -450,6 +453,7 @@ function keyOf(t) {
     case 'force-repeat': inp = hashFiles(chunkFiles('full', 'all')); break;
     case 'meta-tone': inp = sha(['full', 'zen'].map(b => hashFiles(chunkFiles(b, t.scope)) + manifestPart(b, t.scope)).join()); break;
     case 'butt-word': inp = hashFiles(chunkFiles('full', t.scope)) + manifestPart('full', t.scope); break;
+    case 'fp-audit': inp = hashFiles(chunkFiles('full', t.scope)) + manifestPart('full', t.scope); break;
     case 'kin-label': case 'rel-word': inp = sha(['full', 'zen'].map(b => hashFiles(chunkFiles(b, t.scope)) + manifestPart(b, t.scope)).join()); break;
     case 'regress': { const b = t.mode === 'zen' ? 'zen' : 'full'; inp = hashFiles(chunkFiles(b, 'all')) + manifestPart(b, 'all') + (gitOk(['rev-parse', BASE_SHA + ':' + BUILDS[b]]) || '') + REG_OK.join(','); break; }
     case 'chunk-regress': case 'chunk-audit': inp = hashFiles(chunkFiles(t.b, 'all')) + String(readOr(path.join(ROOT, BUILDS[t.b], 'index.html'), '')); break;
@@ -545,16 +549,17 @@ const RUN = {
     return { rc: u.length ? 1 : 0, n: u.length, sum: u.length ? '片方だけ変えた：' + u.join('・') : 'ずれなし' };
   },
   'base-lint': async (t) => {
-    const r = await spawnLog(t, N, [TCD + 'base-lint.js', t.dir]);
     const items = s => { const out = []; const ls = String(s).split('\n'); for (let i = 1; i < ls.length; i++) if (/\t/.test(ls[i])) out.push(ls[i] + '\n' + (ls[i + 1] || '')); return out; };
-    const now = items(r.text);
-    let baseSet = new Set();
+    let baseSet = new Set(), baseDir = '';
     if (t.dir === BUILDS.full && BASE_SHA) {
       const d = mkdir(path.join(CACHE, 'base-js', (gitOk(['rev-parse', BASE_SHA + ':' + t.dir + '/js']) || 'x').trim()));
       if (!fs.existsSync(path.join(d, '.ok'))) { cp.execSync('git archive ' + BASE_SHA + ' ' + t.dir + '/js | tar -x -C ' + JSON.stringify(d), { cwd: ROOT }); fs.writeFileSync(path.join(d, '.ok'), ''); }
       const b = cp.spawnSync(N, [TCD + 'base-lint.js', path.join(d, t.dir)], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 });
-      baseSet = new Set(items(b.stdout));
+      baseSet = new Set(items(b.stdout)); baseDir = path.join(d, t.dir);
     }
+    /* 比べる相手の js を渡す：新しく足した 3 本の台詞の「私」「あなた」の直書きだけを問題にする（2026-11-06。印 {一人称}・{二人称} で書く決まり） */
+    const r = await spawnLog(t, N, [TCD + 'base-lint.js', t.dir].concat(baseDir ? ['--base=' + baseDir] : []));
+    const now = items(r.text);
     const nw = now.filter(x => !baseSet.has(x));
     return { rc: nw.length ? 1 : 0, n: nw.length, sum: '問題 ' + now.length + '（比べる相手に無かったもの ' + nw.length + '）' + (nw.length ? '：' + nw.slice(0, 3).map(x => x.replace(/\s+/g, ' ').slice(0, 80)).join('／') : ''), log: r.log };
   },
@@ -589,6 +594,13 @@ const RUN = {
     const r = await spawnLog(t, N, [TCD + 'meta-tone-audit.js', '8'].concat(t.scope === 'all' ? [] : [t.scope.join(',')]).concat(['--full=' + BUILDS.full, '--zen=' + BUILDS.zen]));
     const m = r.text.match(/自分の口調に言及する台詞（合計）：(\d+) 件/);
     return { rc: r.rc, n: m ? +m[1] : null, sum: m ? '自分の口調に言及する台詞 ' + m[1] + ' 件' : lastLine(r.text), log: r.log };
+  },
+  'fp-audit': async (t) => {
+    /* 既定は 4 箱庭（whiteroom・locker・omega・massage）。箱庭のかたまりだけ変えたときはその箱庭 */
+    const r = await spawnLog(t, N, [TCD + 'fp-audit.js', BUILDS.full].concat(t.scope === 'all' ? [] : ['--scen=' + t.scope.join(',')]));
+    const m = r.text.match(/不合格（(\d+) 件）/), ok = /合格（すべて 0 件）/.test(r.text);
+    const part = (r.text.match(/\([abc]\) [^：\n]*：\d+ 件/g) || []).map(x => x.replace(/^\(([abc])\) ([^：]*)：(\d+) 件$/, '$2 $3')).join('・');
+    return { rc: r.rc, n: ok ? 0 : m ? +m[1] : null, sum: part || lastLine(r.text), log: r.log };
   },
   'kin-label': async (t) => {
     const r = await spawnLog(t, N, [TCD + 'kin-label-audit.js', BUILDS.full, '6', '--zen=' + BUILDS.zen].concat(t.scope === 'all' ? [] : ['--scen=' + t.scope.join(',')]));

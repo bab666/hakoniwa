@@ -609,12 +609,13 @@
     if (/(?:まっしろ|まっ白|真っ白|おもしろ|面白)[…‥っッ♡！？!?。、　\s〜ー]*$/.test(tail)) return s;
     try { return head + T.apply(tail, md, who); } catch (e) { return s; }
   }
-  /* 一人称・二人称だけそろえる（基盤には書いていないが、書いたときのため。「私」「あなた」） */
+  /* 一人称・二人称だけそろえる（基盤には書いていないが、書いたときのため。印 {一人称}・{二人称}、古い書き方の「私」「あなた」） */
   function persons(s, who) {
     var V = HK.Voice;
     if (!V || !who) return s;
-    if (/私/.test(s) && V.replaceFP) s = V.replaceFP(s, who);
-    if (/あなた/.test(s) && V.applyYou) { var yw = who.you || (HK.toneYou ? HK.toneYou(toneOf(who), who.gender) : ''); if (yw) s = V.applyYou(s, yw); }
+    var mk = V.hasMark && V.hasMark(s);
+    if ((/私|\{一人称\}|\uE0F1/.test(s)) && V.replaceFP) s = V.replaceFP(s, who);
+    if ((/あなた/.test(s) || mk) && V.applyYou) { var yw = who.you || (HK.toneYou ? HK.toneYou(toneOf(who), who.gender) : ''); if (yw || mk) s = V.applyYou(s, yw); }
     return s;
   }
   /* 素の言葉の喘ぎを仕上げる：（まれに）文末の語尾だけ口調 → 一人称・二人称 → 台詞の言い換えを通さない印 */

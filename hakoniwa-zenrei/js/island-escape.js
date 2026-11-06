@@ -222,7 +222,7 @@
       var t = fill(pick(ctx, T.found), mm(a, b));
       if (selfish(ctx, a) > 0.5 && R(ctx, a, b).trust > -10 && ctx.rng() < 0.6) {
         b.flags.partner = a.i; ctx.mod2(a, b, { trust: 10 }, { trust: 8 });
-        return { cat: 'betray', text: t + a.name + 'は皆を呼ばなかった。代わりに、低い声で言った。「私も乗せて。そうしたら、黙っててあげる｜私も乗せろ。そうしたら、黙っていてやる｜私も乗せてください。そうしたら、黙っていてあげます」', why: a.name + 'も自分が助かりたい（ドライさ）。二人は秘密を共有した' };
+        return { cat: 'betray', text: t + a.name + 'は皆を呼ばなかった。代わりに、低い声で言った。「＠' + a.name + '＠{一人称}も乗せて。そうしたら、黙っててあげる｜{一人称}も乗せろ。そうしたら、黙っていてやる｜{一人称}も乗せてください。そうしたら、黙っていてあげます」', why: a.name + 'も自分が助かりたい（ドライさ）。二人は秘密を共有した' };
       }
       var sus = a.tr.a * 0.6 + Math.max(0, -R(ctx, a, b).trust) / 100 + hostile(ctx, a, b) / 120;
       if (talk(b) + ctx.rng() * 0.35 > sus + 0.42) {

@@ -7,7 +7,7 @@
     "full",
     "zenrei"
   ],
-  "api": 1,
+  "api": 2,
   "chunks": [
     {
       "name": "kit",
@@ -166,6 +166,36 @@
         "js/date-r18-yoin-text.js",
         "js/date-r18.js",
         "js/date-r18-room.js"
+      ]
+    },
+    {
+      "name": "haishin",
+      "deps": {
+        "full": [
+          "pack-roomkit",
+          "pack-lewd",
+          "kit"
+        ],
+        "zenrei": [
+          "pack-roomkit",
+          "kit"
+        ]
+      },
+      "files": [
+        "js/haishin-cm-text-a.js",
+        "js/haishin-cm-text-b.js",
+        "js/haishin-r18-cm-text.js",
+        "js/haishin-text-a.js",
+        "js/haishin-text-b.js",
+        "js/haishin-text-c.js",
+        "js/haishin-end-text.js",
+        "js/haishin-r18-text-a.js",
+        "js/haishin-r18-text-a2.js",
+        "js/haishin-r18-text-b.js",
+        "js/haishin.js",
+        "js/haishin-cm.js",
+        "js/haishin-end.js",
+        "js/solo-warn-set-b-haishin.js"
       ]
     }
   ]
