@@ -341,6 +341,10 @@
     [HK.ThickSex && HK.ThickSex.FEEL_A, HK.ThickEro && HK.ThickEro.FEEL_A].forEach(function (m) { if (m) Object.keys(m).forEach(function (k) { (m[k] || []).forEach(function (s) { if (typeof s === 'string') FA[s] = 1; }); }); });
     return FA;
   }
+  /* 回の入口で作り直す（2026-11-06。HK.SIM_RESET）：最初に組み立てた場面が夜の色の差し替え（ero-flavor-r18.js の swap。FEEL_A の fm を色の文に替える）の
+     中だと、色の文が集合に入り、ふつうの fm の文が入らないまま残っていた（同じページで先に合コンを回すと、出られない部屋・同居生活の長い場面で
+     受けの返しの段の置き場所が変わった。chunk-regress の口調の閉包）。入口では差し替えの外なので、いつも元の表から作る */
+  if (HK.onSimReset) HK.onSimReset(function () { FA = null; faSet(); });
   function stateOf(opt, T, U) {
     var R0 = opt.S || opt.rng, nth = HK.Ero && HK.Ero.pairNight ? HK.Ero.pairNight(R0, T, U, true) : 1;
     var own = (opt.S && opt.S.rng) || opt.rng || opt.S, memo = own ? (own._iniMemo || (own._iniMemo = {})) : null;

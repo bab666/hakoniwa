@@ -191,6 +191,34 @@
     }
   };
 
+  /* ======================= 受けの反応：相手がモブ・合意のない場面・恋人でも体の関係でもない二人（態度 9 種 × 3 本。2026-11-06） =======================
+     恋人に向ける誘い・甘え（手を胸に当てさせる・「どきどきしてる」・名前を呼ぶ・「好き」・「あなたなら」）は出さず、こらえる声と息だけにする。
+     {mv}＝受けのこらえる声（HK.Play.moanOf。喘ぎの部品が態度と口調で選ぶ） */
+  C.REACT_MOB = {
+    proud: L('{b}は悔しそうに唇を噛んだが、漏れる息までは止められなかった。{b}「{mv}」¦{b}は顔を背けて声を押し殺そうとした。けれど、喉の奥から甘い声がこぼれた。{b}「{mv}」¦{b}は強がるように顎を上げたまま、浅い息を繰り返した。{b}「{mv}」'),
+    stern: L('{b}は固く目を閉じ、乱れる呼吸を必死に抑えた。{b}「{mv}」¦{b}の引き結んだ唇から、こらえきれない息が漏れた。{b}「{mv}」¦{b}は指先に力を込め、声を喉の奥に押し込めようとした。{b}「{mv}」'),
+    tsun: L('{b}は真っ赤な顔でそっぽを向いたが、声はこらえきれなかった。{b}「{mv}」¦{b}は唇を尖らせて耐えようとして、すぐに甘い息をこぼした。{b}「{mv}」¦{b}は相手の腕をつねりながら、震える声を漏らした。{b}「{mv}」'),
+    gentle: L('{b}はとろんとした目のまま、小さく喘いだ。{b}「{mv}」¦{b}の体から力が抜け、柔らかな吐息がこぼれた。{b}「{mv}」¦{b}は眉を下げて、されるがままに息を乱した。{b}「{mv}」'),
+    devoted: L('{b}は潤んだ目のまま、震える声を漏らした。{b}「{mv}」¦{b}はすがるように指先に力を込め、甘く喘いだ。{b}「{mv}」¦{b}の唇から、こらえきれない声が次々とこぼれた。{b}「{mv}」'),
+    cool: L('{b}は表情を崩すまいとしたが、浅い息の乱れは隠せなかった。{b}「{mv}」¦{b}は小さく息を呑み、平坦なはずの声を揺らした。{b}「{mv}」¦{b}の冷静な横顔が、熱でわずかに歪んだ。{b}「{mv}」'),
+    free: L('{b}は楽しそうに喉を鳴らし、遠慮なく声を漏らした。{b}「{mv}」¦{b}は息を弾ませ、甘い声を隠そうともしなかった。{b}「{mv}」¦{b}はびくりと跳ねてから、気持ちよさそうに喘いだ。{b}「{mv}」'),
+    shy: L('{b}は両手で口元を覆ったが、指の隙間から声が漏れた。{b}「{mv}」¦{b}は真っ赤になって身を縮め、か細く喘いだ。{b}「{mv}」¦{b}はぎゅっと目をつぶり、震える息をこぼした。{b}「{mv}」'),
+    polite: L('{b}は慎ましく声を抑えようとしたが、吐息が甘く崩れた。{b}「{mv}」¦{b}は丁寧に整えていた呼吸を乱し、か細い声をこぼした。{b}「{mv}」¦{b}は唇に指先を当てて声をこらえたが、喉の奥が小さく鳴った。{b}「{mv}」')
+  };
+  /* 恋人に向ける誘い・甘えの反応（REACT_B のうち、相手がモブ・恋人でない二人には出さない文） */
+  var LOVER_B = /胸に当て|どきどき|鼓動|大好き|好き(?![嫌勝])|愛し|幸せ|あなたなら|したいなら|何でも|何だって|同じこと|私も|ずっと、こうして|口づけを返|唇を重ね|擦り寄せ|指先に口づけ|髪に指を差し入れ|額が、こつん|許してあげる|許してやる/;
+  /* 恋人・体の関係の二人か（関係の表 HK.Ties・物語型の S.ties・二人の状態 ctx.pair）。関係を引けない場面（ctx が無い）は今までどおり */
+  var BODY_T = /^(?:lover|spouse|fiance|mate|fated|fwb|honmei)$/;
+  function bondOf(ctx, a, b) {
+    if (!ctx || !a || !b || a.i == null || b.i == null) return true;
+    var ok = false;
+    try { if (HK.Ties && HK.Ties.all) HK.Ties.all(ctx, a, b).forEach(function (t) { if (t && BODY_T.test(t.type)) ok = true; }); } catch (e) { /* 関係を引けなければ下へ */ }
+    if (!ok && Array.isArray(ctx.ties)) ctx.ties.forEach(function (t) { if (t && BODY_T.test(t.type) && ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i))) ok = true; });
+    if (!ok && typeof ctx.pair === 'function') { try { var pf = ctx.pair(a, b); if (pf && (pf.couple || pf.fwb || pf.nights > 0)) ok = true; } catch (e) { /* 二人の状態が無ければ関係だけで */ } }
+    return ok;
+  }
+  C.bondOf = bondOf;
+
   /* 同じ動き（sex-flow-r18.js の MOTION と同じ見方）：本文にもうあれば、その行為は選ばない */
   var MOT = [/髪(?:に指を絡め|を(?:掴|鷲掴|引))/, /顎(?:に指をかけ|を(?:掴|持ち上げ|すくい))/, /手首を[^。]{0,14}(?:掴|握|押さえ)/, /首筋にそっと手を添え|首筋へ持っていき/, /頬を[^。]{0,8}はたい|頬を叩く/];
   var HARD = { sadist: 1, mean: 1, maso: 1 };
@@ -215,11 +243,19 @@
     var mobOf = function (c) { return !!(c && (c.mob || c.npc || c.i == null || c.i < 0)); };
     var glasOf = function (c) { var lk = HK.Attr && HK.Attr.looksOf ? HK.Attr.looksOf(c) || [] : []; return lk.some(function (x) { return /眼鏡|メガネ|めがね/.test(x); }) || (mobOf(c) && /眼鏡|メガネ/.test(String(c.name || '') + String(c.desc || ''))); };
     var anyMob = mobOf(a) || mobOf(b), LOVE = /大好き|好き(?![嫌勝])|愛して/;
-    var keep = function (l, who) { var f = (l || []).filter(function (x) { return !(anyMob && LOVE.test(x)) && !(/眼鏡/.test(x) && !glasOf(who)); }); return f.length ? f : null; };
+    /* 2026-11-06（電車の利用者の指摘：モブ相手に「……ほら、こんなにどきどきしています」）：相手がモブ・合意のない場面・恋人でも体の関係でもない二人は、
+       受けの誘い・甘えの反応（手を胸に当てさせる・どきどき・好き・名前・あなたなら）を出さず、こらえる声と息だけ（C.REACT_MOB）。モブには名前を呼ぶ行為も出さない */
+    var close = !anyMob && !o.rough && !o.force && bondOf(o.ctx || HK._curCtx, a, b);
+    if (anyMob) { var nn = ns.filter(function (n0) { return !/名前/.test(n0); }); if (nn.length) ns = nn; }
+    /* モブの攻めの台詞：恋人のような独占・ずっと一緒の言葉（私だけを見て・ずっとそばに・離すつもりはない・跡が宝物）も出さない */
+    var MOB_L = /私だけを|ずっと、?そばに|ずっとこうしたかった|あなたのだって|宝物|離すつもり|愛おし/;
+    var keep = function (l, who) { var f = (l || []).filter(function (x) { return !((anyMob || !close) && LOVE.test(x)) && !(anyMob && MOB_L.test(x)) && !(/眼鏡/.test(x) && !glasOf(who)); }); return f.length ? f : null; };
     var lnL = keep((C.ACT_L[pa] || C.ACT_L.gentle)[kd] || C.ACT_L[pa].none, a), rbL = keep((C.REACT_B[pb] || C.REACT_B.gentle)[HARD[kd] ? 'hard' : 'soft'], b);
+    if (rbL && !close) { var rf = anyMob ? [] : rbL.filter(function (x) { return !LOVER_B.test(x); }); rbL = rf.length ? rf : C.REACT_MOB[pb] || C.REACT_MOB.gentle; }
     if (!lnL || !rbL) return '';
     var n = pick(ns), ln = pick(lnL);
     var rb = pick(rbL);
+    if (rb.indexOf('{mv}') >= 0) { var P0 = HK.Play, mv = P0 && P0.moanOf ? P0.moanOf(b, !!o.ero) : ''; rb = rb.replace(/\{mv\}/g, mv || '……っ、ん……'); }
     return n.replace('{L}', ln) + rb;
   };
 })();
