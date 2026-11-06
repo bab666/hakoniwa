@@ -361,7 +361,7 @@
   PR0.addRoom = addRoom; PR0.addPart = addPart; PR0.roomOf = roomOf; PR0.lru = lru; PR0.part = part; PR0.roomW = roomW; PR0.compose = compose; PR0.bodyFits = bodyFits; PR0.count = count;
   KINDS.forEach(function (k) { PR0['add' + k.charAt(0).toUpperCase() + k.slice(1)] = function (id, list) { addPart(id, k, list); }; });
   /* 場面の場所（2026-11-05 通し読み：看病の布団の場面に、本体の型の一文「寝床まで辿り着く余裕もなかった」が差さった）：
-     o.spot か部屋の既定の場所（PR.addRoom の spot。文字列か (ctx, o) を返す関数）を、場面を組むあいだだけ本体の HK.SexSpot.cur に置く
+     o.spot か部屋の既定の場所（PR.addRoom の spot。文字列か (ctx, o, form) を返す関数。form は場面の長さ）を、場面を組むあいだだけ本体の HK.SexSpot.cur に置く
      （本体の型の一文 HK.Play.shortLine と、本体の組み立ての候補が場所に合わないものを外す。すでに置かれていれば上書きしない） */
   /* 温度（本体の HK.Heat。2026-11-06）：温度を読む部屋（HK.Heat.use）の場面は、関係と気分から温度を決め、その場面のあいだ HK.Heat.cur を置く。
      場面のあとに、変化の一文（前回と違う温度のとき。始まりの段のあと）と事後の型の一文を足し、気分を動かして温度を覚える。本体に HK.Heat が無ければ今までどおり */
@@ -393,7 +393,7 @@
     return r;
   }
   function sceneAt0(ctx, S, env, a, b, sh, form, o, src) {
-    var SP = HK.SexSpot, r = ROOMS[roomOf(ctx)], sp = (o && o.spot) || (r && (typeof r.spot === 'function' ? r.spot(ctx, o || {}) : r.spot)) || '';
+    var SP = HK.SexSpot, r = ROOMS[roomOf(ctx)], sp = (o && o.spot) || (r && (typeof r.spot === 'function' ? r.spot(ctx, o || {}, form) : r.spot)) || '';
     if (!SP || !sp || SP.cur) return sceneText(ctx, S, env, a, b, sh, form, o, src);
     SP.cur = sp;
     try { return sceneText(ctx, S, env, a, b, sh, form, o, src); } finally { SP.cur = null; }
