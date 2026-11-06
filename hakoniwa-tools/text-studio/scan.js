@@ -305,7 +305,8 @@ function stats(idx) {
 
 module.exports = { scanBuild, scanSource, readOrder, stats, PERSONA_KEYS, SCEN_IDS: Object.keys(SCEN_FILE_HINT), isJa };
 
-if (require.main === module) {
+/* 単独で回すとき（関数で包む：check.js の構文の点検は vm.Script で読むので、関数の外の return を通さない） */
+if (require.main === module) (function () {
   const [dir, cmd, ...rest] = process.argv.slice(2);
   if (!dir) { console.error('使い方: node scan.js <ビルドのフォルダ> [stats|check|groups] [--json]'); process.exit(1); }
   const idx = scanBuild(dir);
@@ -328,4 +329,4 @@ if (require.main === module) {
     Object.keys(by).forEach(k => { console.log('\n■ ' + k + '（' + by[k].length + '件）'); by[k].slice(0, 30).forEach(r => console.log('  ' + r.f + ':' + r.line + '  ' + r.msg)); if (by[k].length > 30) console.log('  …ほか ' + (by[k].length - 30) + ' 件'); });
     process.exitCode = res.some(r => r.level === 'error') ? 1 : 0;
   }
-}
+})();
