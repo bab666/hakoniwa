@@ -201,10 +201,11 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | 口調の違和感（tone-feel）（`tone-feel`） | heavy | `serifu` `tone` | build | 1 | 155 秒 | 変えた箱庭だけ（--scen=）。本体の共通の文なら既定の 3 箱庭 |
 | 喘ぎの口調（moan-tone-audit）（`moan-tone`） | heavy | `moan` | build | 1 | 420 秒 | 箱庭のかたまりだけ変えたときは --scen= |
 | 長い場面の流れ（sex-flow-audit）（`sex-flow`） | heavy | `thick` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=sexflow に入れる（同じ関数。ページを開き直さない） |
-| 三人の場面の形（trio-shape-audit）（`trio-shape`） | heavy | `trio` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=trio に入れる。2026-11-05 から fmRide（女性の攻めが跨る）・backDbl（後ろの二重）も数える |
+| 三人の場面の形（trio-shape-audit）（`trio-shape`） | heavy | `trio` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=trio に入れる |
 | 無理やりの二回目・三回目（force-repeat-audit）（`force-repeat`） | heavy | `force` | build | 1 | 10 秒 |  |
 | 女性の受けのお尻の語（butt-word-audit）（`butt-word`） | heavy | `butt` | build | 1 | 60 秒 | 受けが女性の体の組（男×女・女×女）の記録に「ケツ」が 0 件（男性の受けの件数は参考）。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN） |
 | 自分の口調に言及する台詞（meta-tone-audit）（`meta-tone`） | heavy | `moan` `serifu` `tone` | build | 1 | 25 秒 | 台詞・喘ぎで本人が自分の話し方（敬語・言葉遣い・口調・タメ口…）に触れるもの 0 件。R18版・全年齢版の記録と、喘ぎの表・書き下ろし・「」の中のソース（静的。本体の両ビルドと全パック）。箱庭のかたまりだけ変えたときは記録はその箱庭だけ |
+| 一人称の置き換え（fp-audit）（`fp-audit`） | heavy | `serifu` `tone` `dict` `moan` | build | 1 | 90 秒 | 住人全員に一人称を設定（男 俺・女 あたし・性別なし 僕）して全口調 × 4 箱庭（whiteroom・locker・omega・massage）× N=12 × 種 2。一人称でない語の置き換え（冷めない「うち」・公私の「私」・交わしの「わし」）・画面に残った {一人称}・{二人称}・同じ住人の台詞の一人称のブレが 0 件 |
 | 結果の指紋（regress。比べる相手のコミットと）（`regress`） | heavy | `ui` `order` `buildtool` | build | 1 | 15 秒 | R18版・全年齢モード・全年齢版。比べる相手の指紋は、そのコミットのビルドを取り出して取る（キャッシュに残る） |
 | 単独・乱順の読み込み（chunk-regress）（`chunk-regress`） | heavy | `order` `buildtool` | build | 1 | 450 秒 | 両ビルド |
 | かたまりの境目（chunk-audit）（`chunk-audit`） | heavy | `order` `buildtool` | build | 1 | 60 秒 | 両ビルド |
@@ -228,6 +229,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 - 文書（*.md・docs/）・CLAUDE.md は何も回さない。
 - 血縁の二人の札（kin-label。2026-11-04）：結末の分類・関係図・関係の出来事・共通の小さな出来事・結末の js か、友人の語・`HK.Kin` に触れた行で回す。親子・きょうだい・親戚・双子・擬似親子の二人を全箱庭で回し、結末・関係図の札・台詞・地の文に「友人・友達・親友」が 0 件で合格（`docs/reports/2026-11-04/kin-and-topics.md`）。
 - 関係の名前の語（rel-word。2026-11-05）：同じ印 kin（関係の種類の名前・`{rel}`・`tieLabel`・`roleA` に触れた行も kin）で回す。擬似親子・義理の兄弟・セフレ・元恋人・友達以上恋人未満・敵対の二人の台詞・本人の視点の地の文に関係の種類の内部の名前が 0 件で合格。パックは部屋ごとの pack-relword（`docs/reports/2026-11-04/kin-and-topics.md` の 3 節）。
+- 一人称の置き換え（fp-audit。2026-11-06）：台詞・口調・辞書・喘ぎの印（serifu・tone・dict・moan）で回る。住人全員に一人称を設定して、一人称でない語の置き換え・画面に残った `{一人称}`・`{二人称}`・同じ住人の一人称のブレを数え、0 件で合格（設計は `docs/reports/2026-11-06/fp-marker-design.md`）。base-lint は、比べる相手のコミットの js を `--base=` で渡し、新しく足した 3 本の台詞の「私」「あなた」の直書きも問題にする。
 
 ## 4. 重複の解消で変えた道具（判定は変えていない）
 
