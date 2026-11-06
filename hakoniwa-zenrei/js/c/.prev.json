@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.382034d13b.js",
+  "core": "core.a60f617557.js",
   "late": "late.9ba787b283.js",
   "pack-rel": "pack-rel.17a42c62ac.js",
   "pack-sim": "pack-sim.5a68a9e80d.js",
@@ -67,7 +67,7 @@
   "tone-yankee": "tone-yankee.d917a8b52b.js"
  },
  "prev": {
-  "core": "core.4edcfed681.js",
+  "core": "core.382034d13b.js",
   "late": "late.9ba787b283.js",
   "pack-rel": "pack-rel.17a42c62ac.js",
   "pack-sim": "pack-sim.5a68a9e80d.js",
@@ -199,8 +199,8 @@
    5134
   ],
   "js/tone-plus.js": [
-   50962,
-   15550
+   53439,
+   16266
   ],
   "js/tone-engine.js": [
    68838,
