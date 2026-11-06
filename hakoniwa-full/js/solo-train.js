@@ -368,6 +368,8 @@
     S._trainScene = o.car ? 'car' : '';
     var opt = { S: S, ctx: S, pick: pick, rng: S.rng, a: a, b: b, style: HK.ThickSex.style(a), open: o.open, after: o.after, again: false };
     if (o.car) opt.spot = 'car';
+    /* 車内：本体の組み立てのいちばん外（流れの管理の包みの最後。sex-flow-r18.js の opt.post）で、脱がせる段・受け止める一文・焦らしのあとの反応を足す（2026-11-06） */
+    opt.post = function (t0, r0) { return carPQ(S, t0, a, b, (r0 && r0.mode) || modeOf(a, b), !o.car ? (r0 && r0.flow && r0.flow.play && r0.flow.play.prop === 'chakui' ? 'wear' : true) : false); };
     /* 相手が乗客（モブ）：乗客の態度（newMob で D.MOB_PS からそろえたもの）を本体の opt.mobPersona に渡し、山場の乗客の台詞を本体の部品がその態度で選ぶ。
        時間帯は路線から（朝の上り＝朝、夕方の下り＝昼、終電・夜行＝夜。「今夜」「朝まで」の文を本体が外す） */
     var mobP = a.mob ? a : b.mob ? b : null;
@@ -421,6 +423,8 @@
     if (mob) t = loveFix(S, t, mob === a ? b : a, mob === a ? '{b}' : '{a}');
     /* 車内の段の逆戻り（直に触れたあとの「服の上から」、後ろからのまま顔を合わせる、終点に着いたあとの「朝まで」。報告 4） */
     if (o.car) t = carFlow(t, o.direct);
+    /* 部屋の差し替え（carOwn・女性の攻めの車内）のあとにもう一度（足りないときだけ足す） */
+    t = carPQ(S, t, a, b, md, !o.car);
     /* 体の弱い・控えめな性格の乗客の力強い動きを柔らかく */
     if (mob && mob === a && mob.prof && D.SC_SOFTK && D.SC_SOFTK[mob.prof.k]) t = t.replace(/抱え上げ/g, '抱き寄せ').replace(/ぐいと/g, 'そっと').replace(/乱暴に/g, '性急に');
     if (o.car) srcStat(S, t);
@@ -616,7 +620,7 @@
     return out.filter(function (p) { return /\S/.test(p); }).join('\n\n');
   }
   /* 見知らぬ乗客に、住人が「大好き」「愛してる」を言わない（本体の型の文。報告 8）：その台詞は住人の喘ぎに */
-  var LOVE_RE = /大好き|愛して|愛おし|好きだよ|好きだ[。、…！」]|好きよ|好き[。…！♡]|「好き/;
+  var LOVE_RE = /どきどき|ドキドキ|大好き|愛して|愛おし|好きだよ|好きだ[。、…！」]|好きよ|好き[。…！♡]|「好き/;
   function loveFix(S, t, res, tag) {
     var re = new RegExp(tag.replace(/[{}]/g, '\\$&') + '「([^「」]*)」', 'g');
     return t.replace(re, function (all, q) {
@@ -650,6 +654,135 @@
         return true;
       }).join('');
     }).filter(function (p) { return /\S/.test(p); }).join('\n\n');
+  }
+  /* ---------- 車内の流れの約束（2026-11-06。利用者の指摘：電車の記録から） ----------
+     ・挿れる前に、服をはだける・下着をずらす段（X.UNDRESS[組] ＋ 受けの反応 X.UNDRESS_B[態度]）を挟む（指で中に入るときは、服の上からのあとに下着の中・素肌に触れていればよい）
+     ・挿れた文のすぐあとに、受け止める側の一文（X.RECV_N[焦らされた回数] ＋ X.RECV_B[態度]。段落にもう同じ言い回しがあれば、重ならない文を選ぶ）
+     ・焦らしの段のあと（その段の残り・続く台詞・次の段）に、受けの反応の地の文（HK.SexFlow.PQ.teaseReact）が無ければ X.TEASE_B[態度] の段を足す
+     本文は {a}＝攻め {b}＝受けの印のまま。流れの点検 sex-flow の (p)・(q) と同じ見方（HK.SexFlow.PQ・entryOf） */
+  /* 流れの点検 sex-flow の (p)・(q) を、この部屋では合否に数える */
+  if (HK.SexFlow && HK.SexFlow.pqOn) HK.SexFlow.pqOn('train');
+  var CAR_W = /周り|車内|窓|アナウンス|乗客|マナー|スリル|見られている|吊り革/;
+  function carPQ(S, t, a, b, md, room) {
+    var F = HK.SexFlow;
+    if (!F || !F.PQ || !F.entryOf || !F.RE || !X.UNDRESS || !t) return t;
+    /* 部屋の夜（room）は、車内の語の無い文と部屋の脱がせる段（X.UNDRESS_ROOM） */
+    var rk = function (l) { return room ? keep(l, function (x) { return !CAR_W.test(x); }) : l; };
+    var Q = F.PQ, RE = F.RE, mode = md === 'ff' || md === 'fm' ? md : 'mf';
+    var pb = HK.Play && HK.Play.psOf ? HK.Play.psOf(b, a) : ps(b);
+    if (PS.indexOf(pb) < 0) pb = 'gentle';
+    var narr = function (x) { return String(x).replace(/「[^」]*」/g, ''); };
+    var isClimax = function (n) { return RE.climax.test(n) && !RE.notClimax.test(n); };
+    var speechOnly = function (p) { return /^(?:\{[ab]\})?「/.test(p) && narr(p).replace(/\{[ab]\}|[\s　―…—]/g, '').length <= 15; };
+    var ps0 = t.split('\n\n');
+    /* 一度目（opt.post）で足した焦らしのあとの反応の段が、部屋の差し替えで焦らしの段だけ外れて残っていたら外す */
+    var allT = [].concat.apply([], Object.keys(X.TEASE_B).map(function (k) { return X.TEASE_B[k]; }));
+    ps0 = ps0.filter(function (p, i) {
+      if (allT.indexOf(p) < 0) return true;
+      for (var k = i - 1; k >= 0; k--) { if (speechOnly(ps0[k])) continue; return RE.tease.test(ps0[k]); }
+      return false;
+    });
+    /* 挿れる文と、その前の状態 */
+    var cloth = false, und = false, bare = false, teaseN = 0, ent = null;
+    outer: for (var i = 0; i < ps0.length; i++) {
+      var ss = sents(ps0[i]);
+      for (var j = 0; j < ss.length; j++) {
+        var n = narr(ss[j]);
+        if (RE.tease.test(ss[j]) && !isClimax(n)) teaseN++;
+        if (!/\S/.test(n)) continue;
+        if (RE.undress.test(n) || Q.part.test(n)) { und = true; cloth = false; }
+        else if (Q.over.test(n)) { cloth = true; bare = false; }
+        var e = F.entryOf(n, mode);
+        if (e) { ent = { i: i, j: j, e: e }; break outer; }
+        if (Q.bareIn.test(n)) bare = true;
+        if (isClimax(n)) break outer;
+      }
+    }
+    /* 受け止める一文を付ける文：男性器・玩具で挿れる文（女性どうしと、挿れる文の無い女性の攻め×男性は、最初に指で入る文）。前戯の指ではなく、繋がる段に付ける */
+    var findRecv = function () {
+      var first = null, teaseB = 0;
+      for (var i2 = 0; i2 < ps0.length; i2++) {
+        var s2 = sents(ps0[i2]);
+        for (var j2 = 0; j2 < s2.length; j2++) {
+          var n2 = narr(s2[j2]);
+          if (isClimax(n2)) return first && (mode === 'ff' || mode === 'fm') ? first : null;
+          var e2 = /\S/.test(n2) ? F.entryOf(n2, mode) : '';
+          if (e2 === 'pen') return { i: i2, j: j2, e: e2, tn: teaseB };
+          if (e2 && !first) first = { i: i2, j: j2, e: e2, tn: teaseB };
+          if (RE.tease.test(s2[j2])) teaseB++;
+        }
+      }
+      return first && (mode === 'ff' || mode === 'fm') ? first : null;
+    };
+    if (ent) {
+      /* 挿れる前の脱がせる段（男性器・玩具なら必ず。指なら、服の上からのあとに素肌に触れていないとき） */
+      if (!und && (ent.e === 'pen' || !bare)) {
+        var UT = room === 'wear' && X.UNDRESS_ROOM_P ? X.UNDRESS_ROOM_P : room && X.UNDRESS_ROOM ? X.UNDRESS_ROOM : X.UNDRESS;
+        /* 挿れる段と同じ小道具（アナウンス・トンネルの轟音・コート）を続けて書かない */
+        var pe = ps0[ent.i], ul = keep(UT[mode] || UT.mf, function (x) { return !['アナウンス', 'トンネル', 'コート'].some(function (w) { return x.indexOf(w) >= 0 && pe.indexOf(w) >= 0; }); });
+        ps0.splice(ent.i, 0, pk(S, ul) + pk(S, rk(X.UNDRESS_B[pb] || X.UNDRESS_B.gentle)));
+        ent.i++;
+        und = true;
+      }
+      /* 指で中に入ったあと（下着の中から）でも、男性器・玩具で挿れる前には脱がせる段が要る */
+      if (!und) {
+        var u2 = false, pen = -1;
+        scan2: for (var i3 = 0; i3 < ps0.length; i3++) {
+          var s3 = sents(ps0[i3]);
+          for (var j3 = 0; j3 < s3.length; j3++) {
+            var n3 = narr(s3[j3]);
+            if (!/\S/.test(n3)) continue;
+            if (RE.undress.test(n3) || Q.part.test(n3)) u2 = true;
+            if (isClimax(n3)) break scan2;
+            if (F.entryOf(n3, mode) === 'pen') { if (!u2) pen = i3; break scan2; }
+          }
+        }
+        if (pen >= 0) {
+          var UT2 = room === 'wear' && X.UNDRESS_ROOM_P ? X.UNDRESS_ROOM_P : room && X.UNDRESS_ROOM ? X.UNDRESS_ROOM : X.UNDRESS, pe2 = ps0[pen];
+          var ul2 = keep(UT2[mode] || UT2.mf, function (x) { return !['アナウンス', 'トンネル', 'コート'].some(function (w) { return x.indexOf(w) >= 0 && pe2.indexOf(w) >= 0; }); });
+          ps0.splice(pen, 0, pk(S, ul2) + pk(S, rk(X.UNDRESS_B[pb] || X.UNDRESS_B.gentle)));
+        }
+      }
+      /* 受け止める側の一文（まだ無いときだけ） */
+      var allR = [].concat.apply([], Object.keys(X.RECV_N).map(function (k) { return X.RECV_N[k]; }));
+      var whole = ps0.join('\n\n'), has = allR.some(function (r) { return ['熱', '指', '玩具'].some(function (w) { return whole.indexOf(r.replace(/\{in\}/g, w).split('。')[0] + '。') >= 0; }); });
+      var rv = has ? null : findRecv();
+      if (rv) {
+        ent = rv; teaseN = rv.tn;
+        var p1 = ps0[ent.i], ss1 = sents(p1);
+        var peg = /玩具|ペニバン|張り型|ディルド/.test(narr(ss1[ent.j]));
+        var inW = ent.e === 'fin' ? '指' : mode === 'fm' && peg ? '玩具' : mode === 'mf' ? '熱' : peg ? '玩具' : '熱';
+        var KW = /息を詰め|息を呑|喉|膝|背筋|吐息|腰|身を縮め|目を閉じ|頷|顔を埋め|口元を|唇を噛|顎を上げ|睨|袖/g, used = {};
+        (narr(p1 + (ent.i > 0 ? ps0[ent.i - 1] : '')).match(KW) || []).forEach(function (w) { used[w] = 1; });
+        var fit = function (l) { var f = l.filter(function (x) { return !(x.match(KW) || []).some(function (w) { return used[w]; }); }); return f.length ? f : l; };
+        var k = teaseN >= 2 ? 'n2' : teaseN === 1 ? 'n1' : 'n0';
+        var rn = pk(S, fit(X.RECV_N[k])).replace(/\{in\}/g, inW);
+        (rn.match(KW) || []).forEach(function (w) { used[w] = 1; });
+        var rb = pk(S, fit(rk(X.RECV_B[pb] || X.RECV_B.gentle)));
+        /* 挿れる段にもとからある受けの反応の一文（すぐあとの地の文）は、受け止める一文と重なるので外す（体の向き・しがみつく手の文は残す） */
+        var nx1 = ss1[ent.j + 1];
+        if (nx1 && /^[\s　]*\{b\}(?:は|の)/.test(nx1) && nx1.indexOf('「') < 0 && !/爪先|しがみ|脚を|首に|肩に/.test(nx1)) ss1.splice(ent.j + 1, 1);
+        ss1.splice(ent.j + 1, 0, rn + rb);
+        ps0[ent.i] = ss1.join('');
+      }
+    }
+    /* 焦らしの段のあとの反応 */
+    for (var q = 0; q < ps0.length; q++) {
+      var pq = ps0[q];
+      if (speechOnly(pq) || !RE.tease.test(pq) || isClimax(narr(pq))) continue;
+      var m, last = -1, re = new RegExp(RE.tease.source, 'g');
+      while ((m = re.exec(pq))) last = m.index + m[0].length;
+      var rest = pq.slice(last), c0 = rest.search(/[。！？]/);
+      rest = c0 >= 0 ? rest.slice(c0 + 1) : '';
+      var e2 = q + 1, tailS = [];
+      while (e2 < ps0.length && speechOnly(ps0[e2])) { tailS.push(ps0[e2]); e2++; }
+      var nxt = e2 < ps0.length ? ps0[e2] : '';
+      var react = function (x) { var nn = narr(x); return Q.teaseReact.test(nn) || RE.react.test(nn); };
+      if (react(rest) || react(nxt)) continue;
+      ps0.splice(e2, 0, pk(S, rk(X.TEASE_B[pb] || X.TEASE_B.gentle)));
+      q = e2;
+    }
+    return ps0.join('\n\n');
   }
   /* ---------- 車内の場面の直し（報告 1・8） ----------
      場所に合わない言い回しの置き換え・落とす文は本体（HK.SexSpot.fix(t, 'car')）。目隠しのあとの「見る」文は流れの管理の (j) が直す。
@@ -1445,6 +1578,8 @@
       text = pk(S, X.MID[mode]).replace('{mb}', mb || '……っ');
       if (m.prof) text = roomVoice(S, text, m, !top);
       text = loveFix(S, text, p, top ? '{a}' : '{b}');
+      /* 中くらいの場面も、挿れる前の脱がせる段・受け止める一文・焦らしのあとの反応（2026-11-06） */
+      text = carPQ(S, text, A, B, mode, false);
       text = text.replace(/\{a\}/g, an).replace(/\{b\}/g, bn);
       text += '\n\n' + fm(pk(S, crowdPool(S)), V) + fm(rx(S, (top ? X.PEAK_A : X.PEAK_B)[ps(p)]), V);
       text = carFix(HK.SexFlow && HK.SexFlow.mobName ? HK.SexFlow.mobName(text, p.name) : text);

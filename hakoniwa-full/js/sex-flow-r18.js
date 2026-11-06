@@ -365,7 +365,8 @@
   F.TH = { b: TH_B, t: TH_T };
   /* units：F.split の段（feat 済みでなくてよい）。戻り値：{ v: [{ k: 'a'|'b'|'c'|'d'|'e', i: 段の番号, why, ... }], st: 最後の状態, stages: [段ごとの段階] } */
   /* play：エッチの型（play-r18.js の HK.Play）。{ prop, lock（型の体位の posture）, posT（型の繋がる段の頭の段落） }。あれば型の矛盾（h）も数える */
-  F.check = function (units, mode, play, ext) {
+  /* xo：{ pq: true } で (p)・(q) も数える（点検の F.analyze だけ。F.fix には渡さない＝ほかの部屋の本文を変えない。直すのは呼ぶ側の部屋。2026-11-06） */
+  F.check = function (units, mode, play, ext, xo) {
     var posIdx = -1;
     if (play && play.posT) for (var pi0 = 0; pi0 < units.length; pi0++) if (units[pi0].paras.join('\n\n').indexOf(play.posT) >= 0) { posIdx = pi0; break; }
     var st = { stage: 'lead', insert: false, climax: false, posture: null, heatB: 0, heatT: 0, hold: false, used: { lines: {}, motions: {}, mpos: {} }, pending: null, posPrev: null }, v = [], stages = [];
@@ -439,7 +440,8 @@
       var clx = false, bareSeen = false;
       for (var hi = 0; hi < units.length; hi++) {
         var hf = units[hi].f || (units[hi].f = feat(units[hi], mode));
-        if (play.prop === 'chakui' && hf.undress) v.push({ k: 'h', i: hi, why: '着衣の型なのに脱がせる', re: RE.undress });
+        /* 部屋が着たまま「ずらす・はだける」を許した型（play.zurasu。電車の車内）は、脱がせる言い回しの無い「ずらす・はだける」だけの段を数えない（2026-11-06） */
+        if (play.prop === 'chakui' && hf.undress && !(play.zurasu && partOnly(narrOf(units[hi].paras.join('\n\n'))))) v.push({ k: 'h', i: hi, why: '着衣の型なのに脱がせる', re: RE.undress });
         /* 着衣の型で、直に触れたあとに「服の上から」「布越し」に戻る（2026-11-05。電車の申し送り） */
         if (play.prop === 'chakui') {
           var htx = narrOf(units[hi].t || '');
@@ -455,8 +457,64 @@
     }
     /* (i)〜(n) 文ごとの状態（ext を渡したときだけ。ext.tail は呼ぶ側の事後の段） */
     if (ext) walk(ext.tail ? units.concat([ext.tail]) : units, mode, ext).forEach(function (x) { v.push(x); });
+    if (xo && xo.pq) pqCheck(units, mode, v);
     return { v: v, st: st, stages: stages, posIdx: posIdx };
   };
+  /* ---------- (p)・(q)（2026-11-06。電車の利用者の指摘） ----------
+     (p) 服の上から・布越しに触れる描写のあと、脱がせる・ずらす・はだける段を挟まずに挿れる（指で中に入るときは、下着の中・素肌に触れた文があればよい）
+     (q) 焦らしの段（寸止め・止める・お預け）のあとに、受けの反応（待っていた刺激への反応：腰が動く・息を詰める・ねだる・睨む・受けの声）が無い
+     文の判定は F.PQ（呼ぶ側の部屋が、直すときにも同じ見方を使えるように出す） */
+  var PART_RE = /下着を[^。]{0,8}(?:ずら|寄せ|下ろ|引き下ろ)|下着の(?:縁|端|脇|股布)[^。]{0,14}(?:ずら|寄せ|引き下ろ|下ろ)|ファスナーを(?:下ろ|下げ)|前を(?:くつろげ|開け|開い|はだけ)|ベルトを(?:外|緩め|ゆるめ)|裾を[^。]{0,10}(?:まくり|たくし|捲り)上げ|はだけ|ボタンを[^。]{0,8}外|ずり下ろ|引き下ろ/;
+  var FULL_OFF = /脱が|脱い|脱ぎ|脱ご|裸に|剥ぎ|服は一枚ずつ/;
+  function partOnly(n) { return sentences(n).every(function (x) { return !RE.undress.test(x) || (PART_RE.test(x) && !FULL_OFF.test(x)); }); }
+  var FIN_IN = /指(?:先)?(?:を|で|が)[^。]{0,14}(?:沈め|沈ん|沈み|差し入れ|埋め|押し込|入っ|潜り込)|\{(?:ナカ|後孔|後ろ)\}へ[^。]{0,10}(?:沈|差し入|埋|押し込)|(?:中指|二本の指)を[^。]{0,10}(?:沈|差し入)/;
+  var BARE_IN = /下着の(?:中|内側|下)|素肌|直に|じかに|裾から(?:手|指)|服の(?:下|中|内側)へ/;
+  var TEASE_REACT = /\{b\}(?:は|が|の|も)[^。]{0,60}(?:腰|息を(?:詰|呑|飲)|睨|ねだ|すが|懇願|せが|震え|跳ね|喉|声|背を反|背中が反|爪先|膝|涙|身をよじ|悶え|焦れ|唇を噛|首を振|待ちわび|待ち望|待ちかね)/;
+  /* (p)・(q) を合否に数える部屋（直した部屋が F.pqOn(id) で登録する。ほかの部屋の件数は点検が参考として出す。2026-11-06 は電車だけ） */
+  F.PQ_ROOMS = {};
+  F.pqOn = function (id) { if (id) F.PQ_ROOMS[id] = true; };
+  F.PQ = { part: PART_RE, full: FULL_OFF, finIn: FIN_IN, bareIn: BARE_IN, over: null, teaseReact: TEASE_REACT };  /* over は下の OVER_RE を作ったあとで入れる */
+  /* 文ごとに：'pen'＝男性器・玩具で挿れる／'fin'＝指で中に入る／'' */
+  function entryOf(n, mode) {
+    if (mode !== 'ff' && ((RE.insert.test(n) && !RE.oralOnly.test(n) && !/指|舌/.test(n)) || (RE.inside.test(n) && !/指|舌|口で|唇で|ローター/.test(n)))) return 'pen';
+    if (FIN_IN.test(n) && !/(?:髪|頬|口|唇|指の間|指のあいだ)に[^。]{0,4}指|指を[^。]{0,4}(?:髪|頬|口|唇)/.test(n)) return 'fin';
+    return '';
+  }
+  F.entryOf = entryOf;
+  function pqCheck(units, mode, v) {
+    /* 指で入る最初の文（服の上からのあと素肌に触れていなければ）と、男性器・玩具で挿れる最初の文（服の上からの文が前にあれば）を見る */
+    var cloth = false, clothEver = '', und = false, bare = false, done = false, finSeen = false;
+    for (var i = 0; i < units.length && !done; i++) {
+      var ss = sentences(narrOf(units[i].paras.join('\n\n')));
+      for (var j = 0; j < ss.length && !done; j++) {
+        var n = ss[j];
+        if (RE.undress.test(n) || PART_RE.test(n)) { und = true; cloth = false; }
+        else if (OVER_RE.test(n)) { cloth = true; bare = false; clothEver = clothEver || OVER_RE.exec(n)[0]; }
+        var e = entryOf(n, mode);
+        if (e === 'pen') {
+          done = true;
+          if (clothEver && !und) v.push({ k: 'p', i: i, why: '「' + clothEver + '」のあと、脱がせる・ずらす段なしに挿れる', s: n });
+        } else if (e === 'fin' && !finSeen) {
+          finSeen = true;
+          if (cloth && !und && !bare) { v.push({ k: 'p', i: i, why: '「' + clothEver + '」のあと、脱がせる・ずらす段なしに指を入れる', s: n }); done = true; }
+        }
+        if (BARE_IN.test(n)) bare = true;
+        if (RE.climax.test(n) && !RE.notClimax.test(n)) done = true;
+      }
+    }
+    /* (q) 焦らしの段のあと（その段の焦らしの文より後ろか、次の段）に受けの反応が無い */
+    for (var q = 0; q < units.length; q++) {
+      var u = units[q], f = u.f || (u.f = feat(u, mode));
+      if (!f.tease) continue;
+      var t = f.t, m, last = -1, re = new RegExp(RE.tease.source, 'g');
+      while ((m = re.exec(t))) last = m.index + m[0].length;
+      var rest = t.slice(last), nx = units[q + 1] ? units[q + 1].paras.join('\n\n') : '';
+      /* 焦らしの文のある一文の終わりまでは焦らしの続き */
+      var cut = rest.search(/[。！？]/); rest = cut >= 0 ? rest.slice(cut + 1) : '';
+      var ok = function (s) { return TEASE_REACT.test(narrOf(s)) || RE.react.test(s) || linesOf(s).some(function (l) { return l.who === 'b'; }); };
+      if (!ok(rest) && !ok(nx)) v.push({ k: 'q', i: q, why: '焦らしの段（' + (RE.tease.exec(t) || [''])[0] + '）のあとに受けの反応が無い' });
+    }
+  }
   /* 体の組（男性器のある人）と呼ぶ側の事後の段 */
   /* 男性器のある人：体の設定（性器の欄）があればそれ、なければ場面の組（mf＝攻め・fm＝受け。オメガバースの女性のαの攻めは mf）か性別 */
   function extOf(a, b, tail, mode) {
@@ -469,7 +527,7 @@
   F.analyze = function (text, a, b, mode, after, play) {
     var t = normNames(text, a, b), af = after ? normNames(after, a, b) : '';
     var sp = F.split(t, af);
-    sp.check = F.check(sp.units, mode || 'mf', play || null, extOf(a, b, sp.tail, mode || 'mf'));
+    sp.check = F.check(sp.units, mode || 'mf', play || null, extOf(a, b, sp.tail, mode || 'mf'), { pq: true });
     return sp;
   };
 
@@ -498,6 +556,7 @@
   var BARE_RE = /素肌|直に|直接(?:触|撫|肌)|服の(?:下|中)(?:へ|に|で)|裾から(?:手|指)|(?:下着|ショーツ|ボタン)をずら|下着の(?:中|下)|肌に直|口に含|咥え|舌を這わせ|指を[^。]{0,10}(?:沈め|差し入れ)/;
   var OVER_W = '服の上から|布越し|シャツ越し|ブラウス越し|スカート越し|ズボン越し|下着越し|服越し|一枚も乱さない|ボタンを一つも外さず|布の上から';
   var OVER_RE = new RegExp(OVER_W), OVER_SEN = new RegExp('[^。]*(?:' + OVER_W + ')[^。]*。');
+  F.PQ.over = OVER_RE;
   var FACE = /胸に顔|首に腕|見上げ|見つめ|目を合わせ|鼻先|頬を両手|肩に額|顔をのぞ|見下ろ/;
   function noM(b) { var P = HK.Pos; return P && P.hasM ? !P.hasM(b) : false; }
   function flowUnit(text, kind) { return { paras: [text], flow: kind }; }
@@ -1099,6 +1158,10 @@
         var res = opt.a.mob ? opt.b : opt.a;
         rs0.text = F.mobName(rs0.text, res.name, opt.a.mob ? '{b}' : '{a}');
       }
+      /* 部屋の仕上げ（opt.post(本文, 結果) → 本文。2026-11-06。電車の車内の脱がせる段・受け止める一文・焦らしのあとの反応）：いちばん外の場面だけ。渡した部屋だけが使う */
+      if (rs0 && typeof rs0.text === 'string' && opt && typeof opt.post === 'function' && !F.cur && !HK.SAFE_ON) {
+        try { var pt = opt.post(rs0.text, rs0); if (typeof pt === 'string' && pt) rs0.text = pt; } catch (e) { if (F.log) F.log.push({ err: 'post ' + String(e) }); }
+      }
       return rs0;
     };
     var f0 = function (opt) {
@@ -1142,7 +1205,7 @@
         r.text = fx.changed ? fx.text : t1;
         if (!F.noCap) r.text = capRepeat(r.text, a, b);
         if (fx.trace) r._trace = fx.trace;
-        r.flow = { play: pl ? { entry: pl.play.entry, focus: pl.play.focus, prop: pl.play.prop, pos: pl.play.pos, finish: pl.play.finish, scene: pl.play.scene || '', posT: pl.play.posT, lock: pl.play.lock, act: pl.play.act || '' } : null, lead: lt, why: whyL, parts: parts.map(function (p) { return p.role; }), partT: parts.filter(function (p) { return p.role === 'lead' || p.role === 'ini-lead'; }).map(function (p) { return { role: p.role, t: p.t }; }) };
+        r.flow = { play: pl ? { entry: pl.play.entry, focus: pl.play.focus, prop: pl.play.prop, zurasu: !!pl.play.zurasu, pos: pl.play.pos, finish: pl.play.finish, scene: pl.play.scene || '', posT: pl.play.posT, lock: pl.play.lock, act: pl.play.act || '' } : null, lead: lt, why: whyL, parts: parts.map(function (p) { return p.role; }), partT: parts.filter(function (p) { return p.role === 'lead' || p.role === 'ini-lead'; }).map(function (p) { return { role: p.role, t: p.t }; }) };
         return r;
       } finally {
         undo.forEach(function (u) { if (u) u(); });
