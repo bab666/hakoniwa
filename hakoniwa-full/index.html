@@ -1660,12 +1660,12 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
 <!-- 古いブラウザの知らせ（2026-11-04）：本体は正規表現の後読み（iOS 16.4・Safari 16.4 から）を使うので、それより前の版では読み込みの段階で止まり、何も表示されない。そのときだけ、何が要るかを画面の上に出す -->
 <script>(function(){try{new RegExp('(?<=a)b');}catch(e){document.addEventListener('DOMContentLoaded',function(){var d=document.createElement('p');d.setAttribute('role','alert');d.style.cssText='margin:12px 16px;padding:12px 14px;border:1px solid #c33;border-radius:8px;background:#fff;color:#16233b;font-size:14px;line-height:1.7';d.textContent='このブラウザの版では箱庭シミュレーターが動きません。iPhone・iPad は iOS 16.4 以降、Mac の Safari は 16.4 以降に更新してください（Chrome・Edge・Firefox の新しい版でも動きます）。';document.body.insertBefore(d,document.body.firstChild);});}})();</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"935c871dc8","api":1,"build":"full","core":"js/c/core.2714482158.js",
+<script>window.HK_MANIFEST={"v":"a4125afdd6","api":1,"build":"full","core":"js/c/core.2714482158.js",
 "chunks":{
   "late":{"src":"js/c/late.b4ec1da7bc.js","br":238034,"deps":["pack-sim","pack-lewd"]},
   "pack-sim":{"src":"js/c/pack-sim.acfa26232c.js","br":164630,"deps":[]},
   "pack-rel":{"src":"js/c/pack-rel.cbf63a0548.js","br":386850,"deps":["pack-sim","pack-lewd"]},
-  "pack-lewd":{"src":"js/c/pack-lewd.ee0a13730d.js","br":552277,"deps":["pack-sim"]},
+  "pack-lewd":{"src":"js/c/pack-lewd.1a33d27bbe.js","br":552322,"deps":["pack-sim"]},
   "scen-goukon":{"src":"js/c/scen-goukon.bf3baa0d32.js","br":92913,"deps":["pack-sim","pack-rel"]},
   "scen-classroom":{"src":"js/c/scen-classroom.ecb33c629d.js","br":102674,"deps":["pack-sim","pack-rel"]},
   "scen-island":{"src":"js/c/scen-island.f41d7e0a37.js","br":91548,"deps":["pack-sim","pack-rel"]},
@@ -1677,7 +1677,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "scen-dungeon":{"src":"js/c/scen-dungeon.f26c47f595.js","br":121753,"deps":["pack-sim","pack-story"]},
   "scen-massage":{"src":"js/c/scen-massage.1817bb6890.js","br":99514,"deps":["pack-sim","pack-solo"]},
   "scen-hole":{"src":"js/c/scen-hole.4d1d300e54.js","br":92735,"deps":["pack-sim","pack-solo"]},
-  "scen-futari":{"src":"js/c/scen-futari.f44e751d07.js","br":154236,"deps":["pack-sim","pack-rel"]},
+  "scen-futari":{"src":"js/c/scen-futari.401f100f35.js","br":154928,"deps":["pack-sim","pack-rel"]},
   "scen-zombie":{"src":"js/c/scen-zombie.432b547c14.js","br":173909,"deps":["pack-sim","pack-rel"]},
   "scen-rpg":{"src":"js/c/scen-rpg.f6f6891af2.js","br":27438,"deps":["pack-sim","pack-story"]},
   "scen-kaihen":{"src":"js/c/scen-kaihen.a292bb429b.js","br":155880,"deps":["pack-sim","pack-rel","pack-solo"]},
@@ -1693,7 +1693,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "pack-catalog":{"src":"js/c/pack-catalog.654e29e1ee.js","br":48333,"deps":["pack-sim"]},
   "pack-roomkit":{"src":"js/c/pack-roomkit.987934fb7f.js","br":3840,"deps":["pack-sim","pack-rel"]},
   "pack-solo":{"src":"js/c/pack-solo.716eb86444.js","br":20073,"deps":["pack-sim","pack-lewd"]},
-  "scen-train":{"src":"js/c/scen-train.99d48391a3.js","br":114014,"deps":["pack-sim","pack-rel","pack-solo"]},
+  "scen-train":{"src":"js/c/scen-train.65e78bdd7c.js","br":114402,"deps":["pack-sim","pack-rel","pack-solo"]},
   "tone-base":{"src":"js/c/tone-base.d2ea8e26f0.js","br":59855,"deps":[]},
   "tone-ane":{"src":"js/c/tone-ane.38f5bafbc1.js","br":10597,"deps":[]},
   "tone-boku-n":{"src":"js/c/tone-boku-n.5711cc4fc9.js","br":6240,"deps":[]},

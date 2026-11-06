@@ -1,4 +1,5 @@
 /* r18:begin */
+/* @event-ok 場面の組み立てに温度（本体の HK.Heat）を通した：段の候補の絞り込み・前戯の長さ・夜の色・事後の型・変化の一文（既にある夜の場面の言い回し。2026-11-06） */
 /* セットB の部屋の共通部品：夜の場面の組み立て（R18版だけ。2026-11-03。新婚部屋の shinkon-r18.js から、看病の部屋でも使う部分を共通のかたまり kit に移した）
    ■ HK.PairR18（PR）
      ・PR.sexOk(ctx, a, b)：体の関係にしてよい二人か（血縁・無関心・HK.State.pairSex・性欲「なし」・HK.sexBlocked・HK.ngSexPair）
@@ -123,7 +124,7 @@
   function sceneText(ctx, S, env, a, b, sh, form, o, src) {
     var R = src.R, MO = src.MO, text = function (c, key, i, s2, f2, x, y) { return text0(c, src, key, i, s2, f2, x, y); };
     /* 一回の遊びで同じ段落を二度出さない（本体の HK.Ero.freshPick。2026-11-05 報告「男性向けの同じ段落が同じ回の別の夜に再登場」） */
-    var pk0 = function (arr) { return pickOf(ctx, arr); }, pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(ctx, pk0) : pk0;
+    var pk00 = function (arr) { return pickOf(ctx, arr); }, pk0 = HK.Heat && HK.Heat.pickWrap ? HK.Heat.pickWrap(pk00) : pk00, pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(ctx, pk0) : pk0;
     var high = o.lv === 'high', ero = o.ero, body, lo = { jealous: !!o.jealTop, leadB: !!o.leadB };
     /* 描写の長さ「数行で短く」：もう一度の段は付けず、一つの段落にまとめる（2026-11-05 報告「数行で短くなのに 5 段落」） */
     var oneP = env.lewdLen === 'short';
@@ -143,8 +144,10 @@
       var again = high && HK.ThickEro ? HK.ThickEro.again(ctx, pk, a, b, ero, false) + '\n\n' : '';
       /* 恋人・夫婦の二人は rel: 'lover'（本体の色の台詞・返事が「今夜だけ」を出さない。2026-11-05 報告「夫婦で今夜だけ」） */
       var cpl = !!((ctx.pair && ctx.pair(a, b).couple) || (ctx.sk && (ctx.sk.wed || ctx.sk.love)) || o.couple), rel = cpl ? 'lover' : undefined;
-      var rr = ero ? HK.ThickEro.scene({ S: ctx, pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: again + aft, jealous: o.jealTop, leadB: o.leadB, rel: rel })
-        : HK.ThickSex.scene({ pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: again + aft, ctx: ctx, jealous: o.jealTop, leadB: o.leadB, rel: rel });
+      /* 温度の場面（本体の HK.Heat）は、温度の夜の色で */
+      var hfl = HK.Heat && HK.Heat.cur && HK.Heat.flavor ? HK.Heat.flavor(HK.Heat.cur.key, a, b) : undefined;
+      var rr = ero ? HK.ThickEro.scene({ S: ctx, pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: again + aft, jealous: o.jealTop, leadB: o.leadB, rel: rel, flavor: hfl })
+        : HK.ThickSex.scene({ pick: pk, rng: ctx.rng, a: a, b: b, style: st, open: open, after: again + aft, ctx: ctx, jealous: o.jealTop, leadB: o.leadB, rel: rel, flavor: hfl });
       return { text: ctx.t(rr.text, a, b), form: form };
     } else if (form === 'short' && ero && HK.ThickEro && HK.ThickEro.short) {
       body = HK.ThickEro.short({ S: ctx, pick: pk, a: a, b: b, open: '', again: high, after: '' }).text;
@@ -237,6 +240,8 @@
     if (def.spot) r.spot = def.spot;
     KINDS.forEach(function (k) { if (def[k]) addPart(id, k, def[k]); });
   }
+  /* 温度を読む部屋（本体の HK.Heat。2026-11-06）：新婚・看病・デート */
+  if (HK.Heat && HK.Heat.use) ['set-b-shinkon', 'set-b-kanbyo', 'set-b-date'].forEach(function (id) { HK.Heat.use(id); });
   /* 今の遊びの部屋の id */
   function roomOf(ctx) {
     if (ctx && ctx.input && ctx.input.scenId) return ctx.input.scenId;
@@ -291,7 +296,10 @@
     /* 後ろからの体位の繋がる段のあとは、顔を合わせる文を使わない（sex-flow の (k)） */
     var rear = false;
     var P1 = function (kind) {
-      var l0 = cands(ctx, id, kind, sh, a, b), l = l0.filter(function (t) { return used.indexOf(t) < 0 && !(rear && REAR_NG.test(t)); });
+      var l0 = cands(ctx, id, kind, sh, a, b);
+      /* 温度（本体の HK.Heat。温度の場面のあいだだけ）：甘い・初々しいに荒い入り方の段、荒い・ドライ・歪んだに甘い終わり方の段を出さない */
+      if (HK.Heat && HK.Heat.cur && HK.Heat.trim) l0 = HK.Heat.trim(l0, kind);
+      var l = l0.filter(function (t) { return used.indexOf(t) < 0 && !(rear && REAR_NG.test(t)); });
       if (!l.length) l = l0.filter(function (t) { return !(rear && REAR_NG.test(t)); });
       var t = lru(ctx, l); if (t) used.push(t);
       if (kind === 'insert' && REAR.test(t)) rear = true;
@@ -314,7 +322,9 @@
     var ps = [];
     if (long || o.open) ps.push(o.open || P1('open'));
     ps.push(P1('fore'));
-    if (long && (thick || ctx.rng() < 0.5)) { var f2 = P1('fore'); if (f2) ps.push(f2); }
+    /* 前戯の長さは温度で（初々しい・甘い＝二つ、ドライ＝一つ。温度の無い部屋は今までどおり） */
+    var hk = HK.Heat && HK.Heat.cur ? HK.Heat.cur.key : '';
+    if (hk === 'sweet' || hk === 'fresh' ? (long || thick) : hk === 'dry' ? false : long && (thick || ctx.rng() < 0.5)) { var f2 = P1('fore'); if (f2) ps.push(f2); }
     ps.push(P1('insert'));
     /* 最中の一幕：中くらいは 2、長いは 2〜3（流れの管理の性感が山場の前に閾値に届く数。届かないと共通の追い上げの段が入る） */
     var nMid = long && thick ? 3 : 2;
@@ -340,7 +350,30 @@
   /* 場面の場所（2026-11-05 通し読み：看病の布団の場面に、本体の型の一文「寝床まで辿り着く余裕もなかった」が差さった）：
      o.spot か部屋の既定の場所（PR.addRoom の spot。文字列か (ctx, o) を返す関数）を、場面を組むあいだだけ本体の HK.SexSpot.cur に置く
      （本体の型の一文 HK.Play.shortLine と、本体の組み立ての候補が場所に合わないものを外す。すでに置かれていれば上書きしない） */
+  /* 温度（本体の HK.Heat。2026-11-06）：温度を読む部屋（HK.Heat.use）の場面は、関係と気分から温度を決め、その場面のあいだ HK.Heat.cur を置く。
+     場面のあとに、変化の一文（前回と違う温度のとき。始まりの段のあと）と事後の型の一文を足し、気分を動かして温度を覚える。本体に HK.Heat が無ければ今までどおり */
   function sceneAt(ctx, S, env, a, b, sh, form, o, src) {
+    var HT = HK.Heat, rid = roomOf(ctx);
+    if (!HT || !HT.enabled || !HT.enabled(rid) || HK.SAFE_ON) return sceneAt0(ctx, S, env, a, b, sh, form, o, src);
+    var cpl = !!((ctx.pair && ctx.pair(a, b).couple) || (ctx.sk && (ctx.sk.wed || ctx.sk.love)) || (o && o.couple));
+    var heat = HT.of(ctx, a, b, { rel: cpl ? 'lover' : undefined, kind: o && o.jealTop ? 'jeal' : '', first: o && o.first != null ? o.first : undefined, scen: rid });
+    var hSc = null, r = HT.scope(ctx, a, b, heat, function (sc) { hSc = sc; return sceneAt0(ctx, S, env, a, b, sh, form, o, src); });
+    if (!r || typeof r.text !== 'string') return r;
+    if (r.form !== 'fade') {
+      r.text = HT.strip(r.text, heat.key);
+      var chg = HT.change(ctx, heat, a, b), aft = HT.after(ctx, heat, sh, { spot: (o && o.spot) || '' });
+      if (chg && env.lewdLen === 'short') r.text = mk(ctx, chg, a, b) + r.text;
+      else if (chg) { var ps1 = r.text.split('\n\n'); ps1.splice(Math.min(1, ps1.length), 0, mk(ctx, chg, a, b)); r.text = ps1.join('\n\n'); }
+      if (aft) r.text = r.text.replace(/\s+$/, '') + (env.lewdLen === 'short' ? '' : '\n\n') + mk(ctx, aft, a, b);
+      if (hSc) { hSc.change = chg; hSc.after = aft; }
+      HT.move(ctx, heat, a, b);
+      HT.note(ctx, heat, a, b, { sc: hSc, text: r.text, form: r.form });
+    }
+    HT.remember(ctx, a, b, heat.key);
+    r.heat = heat.key;
+    return r;
+  }
+  function sceneAt0(ctx, S, env, a, b, sh, form, o, src) {
     var SP = HK.SexSpot, r = ROOMS[roomOf(ctx)], sp = (o && o.spot) || (r && (typeof r.spot === 'function' ? r.spot(ctx, o || {}) : r.spot)) || '';
     if (!SP || !sp || SP.cur) return sceneText(ctx, S, env, a, b, sh, form, o, src);
     SP.cur = sp;

@@ -1,3 +1,4 @@
+/* @event-ok 温度の重みを足した（2026-11-06。新しい出来事ではない） */
 /* @event-ok エッチの型（入り方・主な責め・道具・体位・終わり方）と性格が目立つ行為の段を、既にある長い場面に差すだけ。部屋ごとの場面の登録口（HK.Play.addScene）も、登録した部屋の側で @event を付ける。2026-11-03 */
 /* 箱庭シミュレーター（R18版のみ）: エッチの型（HK.Play）
    設計：docs/reports/2026-11-03/play-design.md（仕様書の「エッチの型：入り方・主な責め・道具・体位・終わり方の 5 つを組み合わせて一回のエッチを作る」）
@@ -136,6 +137,8 @@
     var A = HK.Attr, size = A && A.sizeDiff ? A.sizeDiff(a, b) : '', tall = A && A.heightDiff ? A.heightDiff(a, b) : '';
     var why = [];
     var fix = opt.play || {};
+    /* 温度（heat.js の HK.Heat）：温度の場面のあいだは温度の重みを掛ける（温度を読む部屋 HK.Heat.use だけ。既存の箱庭は今までどおり） */
+    var HS = HK.Heat && HK.Heat.cur && HK.Heat.cur.key ? HK.Heat.cur : null;
     var SPK = HK.SexSpot, spot = SPK ? SPK.of(opt) || SPK.cur || '' : '';
     /* 場所（opt.spot）：その場所で使わない値と、文の候補が一つも場所に合わない値は選ばない（全部 0 になるなら場所の絞りはしない） */
     function spotOk(axis, k) {
@@ -150,6 +153,7 @@
     function done(axis, w) {
       (ng[axis] || []).forEach(function (k) { if (w[k] != null) w[k] = 0; });
       var rw = room[axis]; if (rw) Object.keys(rw).forEach(function (k) { if (w[k] != null || (TX()[axis.toUpperCase()] || {})[k]) w[k] = (w[k] || 0) + rw[k]; });
+      if (HS) HK.Heat.weigh(axis, w);
       if (spot) { var w2 = {}, any = false; Object.keys(w).forEach(function (k) { w2[k] = spotOk(axis, k) ? w[k] : 0; if (w2[k] > 0) any = true; }); if (any) Object.keys(w2).forEach(function (k) { w[k] = w2[k]; }); }
       /* 前の夜と同じ値は選ばれにくく */
       if (last && last[axis] && w[last[axis]] > 0) w[last[axis]] *= 0.25;
@@ -254,6 +258,7 @@
     var finish = done('finish', wn);
     var play = { entry: entry, focus: focus, prop: prop, pos: pos, finish: finish, mode: mode };
     m.pair[key] = play;
+    if (HS) HS.plays.push({ entry: entry, focus: focus, prop: prop, pos: pos, finish: finish, a: a.name, b: b.name });
     play.R = R;
     return play;
   };

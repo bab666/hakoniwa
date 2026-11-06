@@ -1,3 +1,4 @@
+/* @event-ok 長い場面に温度（HK.Heat）の夜の色・事後の型・変化の一文を足した（既にある山場・夜の言い回し。2026-11-06） */
 /* @event-ok 場の設定「乗客の性別」（おまかせ／男だけ／女だけ）と、合わない住人の触れ合いの外の段（2026-11-05 担当TM。新しい出来事ではない） */
 /* @event-ok 乗車・後味・覚めたままの朝の文を増やし、覚めたまま続ける人の後味と朝を分けた（2026-11-05 担当R2。新しい出来事ではない） */
 /* @event-ok 戸惑いの二段目（打ち消せない）の段を足した（2026-11-05 担当TF） */
@@ -39,6 +40,8 @@
   var HK = window.HK, ST = HK.Story, D = HK.TRAIN, clamp = HK.clamp;
   if (!ST || !D || HK.SAFE_ON) return;
   var X = D.X || {};
+  /* 温度を読む部屋（heat.js。2026-11-06）。合意なし寄りの部屋なので、荒い・歪んだは内容のスイッチ「無理矢理」が入のときだけ */
+  if (HK.Heat && HK.Heat.use) HK.Heat.use('train', { forceGate: true });
   var PS = ['proud', 'stern', 'tsun', 'gentle', 'devoted', 'cool', 'free', 'shy', 'polite'];
   function ps(p) { return PS.indexOf(p && p.persona) >= 0 ? p.persona : 'gentle'; }
   /* 同じ結果の中で同じ文を繰り返さない：まだ使っていない文（いちばん前に使った文）から選ぶ */
@@ -372,6 +375,12 @@
     if (o.car && S.v) opt.time = { morning: 'morning', evening: 'day', last: 'night', night: 'night' }[S.v.line] || 'night';
     /* 乗客の性格に合う夜の色（疲れた・おどおど＝甘め、無言・事務的＝ドライ、からかう・強気＝駆け引き。報告 2） */
     if (o.flavor) opt.flavor = o.flavor;
+    /* 温度（heat.js の HK.Heat。2026-11-06）：乗客は乗客の性格の色から、連れどうしは関係と段階から。荒い・歪んだは内容のスイッチ「無理矢理」が入のときだけ（切ならドライ。HK.Heat.use の forceGate）。
+       夜の色・型の重み・事後の型・変化の一文（連れどうしだけ）が同じ温度を読む */
+    var HT = HK.Heat && HK.Heat.enabled && HK.Heat.enabled('train') ? HK.Heat : null;
+    var heat = HT ? HT.of(S, a, b, { flavor: o.flavor, rel: S.rel === 'lover' ? 'lover' : S.rel === 'fwb' ? 'casual' : undefined, scen: 'train' }) : null;
+    if (heat) { opt.flavor = HT.flavor(heat.key, a, b); opt.pick = HT.pickWrap(pick); }
+    var hSc = null, hDay = !!(o.car && S.v && S.v.line !== 'last' && S.v.line !== 'night');
     var r, kept = [];
     /* 路線・混み具合で山場の型を変える（人の壁・手すり・終点の放送。報告 1 の面白さ）：この場面のあいだだけ表に足す（空いている車内は人の壁の段を差し替える） */
     if (o.car) {
@@ -393,7 +402,8 @@
     });
     /* 女性の攻め（男性器のない体）× 男性の受けの車内：攻めは指と手・口・まれに玩具。本体の組み立ては使わず、部屋の段だけで組む（2026-11-05 の利用者の指示「攻めに挿入はしない」） */
     var fmOwn = o.car && modeOf(a, b) === 'fm' && hasM(b) && X.FM_ACT && !(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b));
-    try { r = fmOwn ? fmCar(S, a, b, o) : S.ero && HK.ThickEro ? HK.ThickEro.scene(opt) : HK.ThickSex.scene(opt); } finally { S._trainScene = ''; for (var ki = kept.length - 1; ki >= 0; ki--) { kept[ki][0].length = 0; Array.prototype.push.apply(kept[ki][0], kept[ki][1]); } }
+    var run0 = function () { return fmOwn ? fmCar(S, a, b, o) : S.ero && HK.ThickEro ? HK.ThickEro.scene(opt) : HK.ThickSex.scene(opt); };
+    try { r = heat ? HT.scope(S, a, b, heat, function (sc) { hSc = sc; return run0(); }) : run0(); } finally { S._trainScene = ''; for (var ki = kept.length - 1; ki >= 0; ki--) { kept[ki][0].length = 0; Array.prototype.push.apply(kept[ki][0], kept[ki][1]); } }
     var t = String(r && r.text || '');
     /* 女性の攻め×男性で、受けの熱を受け止める書き方（「注がれる熱を受け止め」）は、攻めが受ける文に読まれるので言い換える */
     if (r && r.mode === 'fm') t = t.replace(/注がれる熱/g, '{b}の放つ熱');
@@ -416,6 +426,17 @@
     if (o.car) srcStat(S, t);
     /* 計測用（D.DEBUG）：差し替えたあとの車内の場面を、流れの管理の点検（HK.SexFlow.analyze）に掛けた件数 */
     if (o.car && D.DEBUG && HK.SexFlow && HK.SexFlow.analyze) { try { var afT = o.after && t.indexOf(o.after) >= 0 ? o.after : '', ck = HK.SexFlow.analyze(afT ? t.replace(afT, '') : t, a, b, md, afT).check || []; (ck.v || ck).forEach(function (x) { var q = S._sfv = S._sfv || {}; q[x.k] = (q[x.k] || 0) + 1; (S._sfx = S._sfx || []).length < 40 && S._sfx.push(x.k + '：' + (x.why || '') + (x.k === 'e' ? ' ' + JSON.stringify(ck.stages) + ' ' + JSON.stringify(t.split('\n\n').map(function (q) { return q.slice(0, 40); })) : '')); }); } catch (e) { (S._sfx = S._sfx || []).push('err ' + e.message); } }
+    /* 温度の着地：変化の一文（連れどうしで前回と違う温度のとき。始まりの段のあと）と事後の型の一文（場面の終わり） */
+    if (heat) {
+      t = HT.strip(t, heat.key);
+      var hChg = HT.change(S, heat, a, b, { day: hDay }), hAft = HT.after(S, heat, md, { spot: o.car ? 'car' : 'bed' });
+      if (hChg) { var ps1 = t.split('\n\n'); ps1.splice(Math.min(1, ps1.length), 0, hChg); t = ps1.join('\n\n'); }
+      if (hAft) t = t.replace(/\s+$/, '') + '\n\n' + hAft;
+      if (hSc) { hSc.change = hChg; hSc.after = hAft; }
+      HT.move(S, heat, a, b);
+      HT.note(S, heat, a, b, { sc: hSc, text: t, car: !!o.car, moved: 'room' });
+      HT.remember(S, a, b, heat.key);
+    }
     var an = a.mob ? a.short || a.name : a.name, bn = b.mob ? b.short || b.name : b.name;
     t = t.replace(/\{a\}/g, an).replace(/\{b\}/g, bn);
     /* 本体の場所の直し・モブの呼びかけの直し */
