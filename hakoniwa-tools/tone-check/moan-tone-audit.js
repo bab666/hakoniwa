@@ -12,7 +12,8 @@
      強い口調（強気・兄貴分・ヤンキー・熱血・厳格・冷静・紳士・尊大・神・のじゃ・論客・無機質）の、女性的な語尾（〜わ・〜のよ・〜なの・〜ないの）・
        甘えた語尾（〜ちゃう・ちょうだい・〜だもん・〜てぇ・〜よぉ）・弱いお願い（〜ないで・もっと、して）（男女とも）、
      敬語でない口調の敬語（イきます・〜ください）、無口の女性的な語尾・伸ばした甘え（すきぃ・とまってぇ・ちょうだい）、無口の長い声、一人称の取り違え、男性の女性的な語尾、口調の付け替えの崩れ（まっしろ→まっしたまえ）、
-     頼みの形の二重（「見ないで、くれると」を「見るな、くれると」、「して……くれ」を「してくれたまえ……くれ」にしたもの）
+     頼みの形の二重（「見ないで、くれると」を「見るな、くれると」、「して……くれ」を「してくれたまえ……くれ」にしたもの）、
+     口調ごとの付いてはいけない語尾の表（TONE_NG。49 口調すべて：ぬ・じゃ・のう・女言葉の「わ」・っす・ぜ・乱暴語・敬語化の崩れ。上の規則が当たらない喘ぎだけ。2026-11-07）
    「喘ぎ」（HK.Moan の声・喘ぎの表）と「台詞（参考）」（場面のファイルの台詞のうち喘ぎに見えるもの。台詞の点検の受け持ち）に分けて出す。
    終了コード：喘ぎの件数が 0 なら 0 */
 'use strict';
@@ -71,11 +72,52 @@ const TONE_RULES = [
   ['一人称の取り違え', (q, t, g, m) => { if (!m || !m.fp) return false; let r = false; String(q).replace(FP_ALL, (a, f) => { if (f !== m.fp && !(f === '私' && /^(?:わたし|ワタシ)$/.test(m.fp)) && !(f === 'わたし' && m.fp === '私')) r = true; return a; }); return r; }],
   ['口調の付け替えの崩れ', q => /(?:まっ|真っ)(?:したまえ|しな|せよ)|っしたまえ/.test(q)]
 ];
+/* ---------- 口調ごとの「付いてはいけない語尾」の表（2026-11-07。利用者の指示「喘ぎ声のミスとか、辻褄のミスは頻繁に起きているため、点検内容に今後も整合性チェックを加えて」） ----------
+   49 口調すべてに、付いてはいけない語尾の種類を持つ（TONE_NG。--why で表を出す）。上の規則（MOAN_RULES・TONE_RULES）が当たった喘ぎには当てない（同じ喘ぎを二重に数えない）。
+     ぬ（たまらぬ・止まらぬ・見せぬ）……のじゃ・神の命令口調・古風な紳士・尊大のほか（2026-11-06 の利用者の指摘「厳格に『ぬ』」）
+     じゃ（のじゃ・じゃろう・じゃぞ）・のう（たまらんのう）……のじゃのほか
+     わ（女言葉の「いいわ」「イくわ」・「〜ですわ」）……厳格・冷静・論客・無機質と、お嬢様のほかの敬語の口調（紳士・尊大・神の「〜わ」は言い切りなので、上の規則と同じく数えない）
+     っす……後輩・チャラい・ダウナー系チャラ男・ギャル・ヤンキー・熱血・兄貴分・タメ口・奔放・けだるげ・意地っ張り・関西弁のほか
+     ぜ（だぜ）……荒く話す口調（ROUGH_TALK）・奔放・タメ口のほか
+     乱暴語（ふざけんな・てめえ・うるせえ・じゃねえ・くっそ・ちくしょう。短い「くそ」は強い口調の崩れの声として数えない）……厳格・冷静・紳士・尊大・神・論客・無機質と敬語の口調（普段の態度が強気でも。TONE_RULES の「強気の荒い語」は普段の態度が強気の人を数えない）
+     敬語化の崩れ（もしかしてください・どうしてください・〜ですだ・〜ませんだった）……全口調 */
+const ALL49 = 'proud aniki yankee stern tsun tsun_n gentle gentle_n gentle_m ane devoted devoted_p kohai cool calm free usan shy polite ojou gentleman sondai kansai noja mixed mukuchi hero gyaru chara mystic genki darui keigo_sarc keigo_bossy keigo_flat tame chara_down cool_soft darui_lite boku_n god honwaka darui_talk otaku tsun_soft keigo_twist mukuchi_ne ronkyaku flat_plain'.split(' ');
+const STRICT = grp('stern cool calm cool_soft gentleman sondai god ronkyaku flat_plain keigo_flat');
+const POLITE_G = grp('polite devoted ojou kohai genki keigo_sarc keigo_bossy keigo_flat otaku keigo_twist chara_down');
+const NU_OK = grp('noja god gentleman sondai');
+const SSU_OK = grp('kohai chara chara_down gyaru yankee hero aniki tame free darui darui_lite darui_talk tsun tsun_n tsun_soft kansai');
+const ZE_OK = Object.assign(grp('free tame'), ROUGH_TALK);
+const NG_RE = {
+  nu: new RegExp('(?<=[らかさたなまわがざだばせ])ぬ' + E_),
+  ja: new RegExp('(?:のじゃ|じゃろ[うー]?|じゃぞ|じゃのう|(?<=[ぁ-ゖ一-鿿])じゃな)' + E_),
+  nou: new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![あそこど])のう' + E_),
+  wa: new RegExp('(?:' + M_WA + '|ですわ|ますわ)' + E_),
+  ssu: new RegExp('(?<=[ぁ-ゖ一-鿿])っす' + E_),
+  ze: new RegExp('(?<=[ぁ-ゖ一-鿿])(?<![なせ])ぜ' + E_),
+  rough: /ふざけんな|ざけんな|てめえ|てめぇ|うるせえ|うるせぇ|じゃねえ|じゃねぇ|くっそ|クッソ|ちくしょ|畜生/,
+  keigo: /(?:もしかして|どうして|なんで|なぜ|まさか|やっぱり|やはり|たぶん|多分|きっと|わざと|せっかく|ひょっとして|もしや|なんとなく)(?:ください|くださ[いる])|(?:です|ます|ません|ました|でした|ませんでした)(?:だ|だった|だよ|だね|っす)(?=[。、！？!?…‥」\s　♡〜ーっ]|$)|ませんだ|ますだった|ですだった/
+};
+const NG_NAME = { nu: '口調に合わない「ぬ」', ja: 'のじゃでない口調に「じゃ」', nou: 'のじゃでない口調に「のう」', wa: '厳格・冷静・敬語の口調に女言葉の「わ」', ssu: '口調に合わない「っす」', ze: '口調に合わない「ぜ」', rough: '厳格・冷静・敬語の口調に乱暴語', keigo: '敬語化の崩れ（もしかしてください・ですだ）' };
+const TONE_NG = {};
+ALL49.forEach(t => {
+  const ng = [];
+  if (!NU_OK[t]) ng.push('nu');
+  if (t !== 'noja') ng.push('ja', 'nou');
+  if ((STRICT[t] || POLITE_G[t]) && t !== 'ojou' && !MG.grand[t]) ng.push('wa');
+  if (!SSU_OK[t]) ng.push('ssu');
+  if (!ZE_OK[t]) ng.push('ze');
+  if (STRICT[t] || POLITE_G[t]) ng.push('rough');
+  ng.push('keigo');
+  TONE_NG[t] = ng;
+});
 function check(m) {
   const q = m.q, t = m.tone, g = m.g;
-  return MOAN_RULES.check(q, t, g).concat(TONE_RULES.filter(([, f]) => f(q, t, g, m)).map(([nm]) => nm));
+  const base = MOAN_RULES.check(q, t, g).concat(TONE_RULES.filter(([, f]) => f(q, t, g, m)).map(([nm]) => nm));
+  if (base.length) return base;
+  /* 「のじゃ」の口調の「〜じゃ」を除いて当てる（「ぬ」の左の「なら」なども口調の語なので、表に無い口調だけ） */
+  return (TONE_NG[t] || TONE_NG.tame).filter(k => NG_RE[k].test(q)).map(k => NG_NAME[k]);
 }
-module.exports = { TONE_RULES, check, STRONG, ROUGH_TALK, ROUGH_WORD };
+module.exports = { TONE_RULES, check, STRONG, ROUGH_TALK, ROUGH_WORD, TONE_NG, NG_RE };
 /* 単独で回したときだけ集めて数える（require されたときは規則だけ。node --check が通るよう、上の階層で return しない） */
 if (require.main === module) main();
 function main() {
@@ -136,6 +178,7 @@ const show = (list, title) => {
   });
 };
 show(moanHits, '');
+if (WHY) { console.log('\n口調ごとの付いてはいけない語尾（TONE_NG）'); ALL49.forEach(t => console.log('  ' + t + '\t' + TONE_NG[t].map(k => NG_NAME[k]).join('・'))); }
 if (DIALOG || WHY) show(dlgHits, '台詞（参考）');
 process.exit(moanHits.length ? 1 : 0);
 }
