@@ -158,6 +158,7 @@
         "js/date-text-e.js",
         "js/date-text-f.js",
         "js/date-text-g.js",
+        "js/date-close-text.js",
         "js/date-more-text.js",
         "js/date-more.js",
         "js/date-rel.js",
