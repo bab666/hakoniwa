@@ -1,7 +1,7 @@
 {
  "cur": {
-  "core": "core.6f713f5a31.js",
-  "late": "late.fe8c2a7ff9.js",
+  "core": "core.6e2e40e2e7.js",
+  "late": "late.d5e92a4541.js",
   "pack-rel": "pack-rel.b73013ea94.js",
   "pack-sim": "pack-sim.08823cc92c.js",
   "scen-goukon": "scen-goukon.cc0b3d5fed.js",
@@ -68,7 +68,7 @@
  },
  "prev": {
   "core": "core.6f713f5a31.js",
-  "late": "late.fa5e376381.js",
+  "late": "late.14b834876f.js",
   "pack-rel": "pack-rel.b73013ea94.js",
   "pack-sim": "pack-sim.08823cc92c.js",
   "scen-goukon": "scen-goukon.cc0b3d5fed.js",
@@ -403,8 +403,8 @@
    10205
   ],
   "js/safe.js": [
-   23367,
-   9169
+   23468,
+   9192
   ],
   "js/safe-room.js": [
    9294,
@@ -471,8 +471,8 @@
    3002
   ],
   "js/ui-box-list.js": [
-   13586,
-   4572
+   13659,
+   4710
   ],
   "js/ui-import.js": [
    8911,
@@ -491,8 +491,8 @@
    3848
   ],
   "js/ui.js": [
-   121475,
-   36017
+   121524,
+   36032
   ],
   "js/ui-cast-ops.js": [
    6642,

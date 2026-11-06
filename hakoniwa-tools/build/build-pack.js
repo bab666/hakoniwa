@@ -14,7 +14,9 @@
    ・全年齢版では、本体と同じく /＊ r18:begin ＊/〜/＊ r18:end ＊/ を落とし、文字列に性的な語が残っていれば止める
    ・中身（かたまりの本文と目録）は JSON にして、コードで暗号化する（js/pack-crypto.js。本体と同じファイルを使う）。
      コードは hakoniwa-packs/codes.local.json（git に入れない）：{ "set-a": ["セットのコード"], "*": ["まとめ用のコード"] }。
-     "*" のコードは全部のパックに入る（まとめ用。1つのコードで全部のセットが開く）
+     "*" のコードは全部のパックに入る（まとめ用。1つのコードで全部のセットが開く）。
+     版ごとのコード（2026-11-07）：鍵に接尾辞の無いコードは R18版（--build=full）の封に、"set-a@zen"・"*@zen" は全年齢版（--build=zenrei）の封に使う。
+     全年齢版のコードが無い鍵は、全年齢版でも R18版のコードで封をする（後方互換。警告を出す）
    ・書き出し：<ビルド>/packs/<枠>/pack.js と、<ビルド>/packs/index.js（サイト公開版用：packs にあるパックの枠の一覧）。
      --dist：配布用の zip（dist/<ビルド>-<枠>.zip。中身は packs/<枠>/pack.js だけ。本体のフォルダにそのまま解凍する）も作る。
      本体の配布用の zip は build-dist.js
@@ -49,12 +51,24 @@ if (P.sample && !opt('out')) throw new Error('見本のパック（sample）は�
 const codesPath = path.resolve(opt('codes') || path.join(ROOT, 'hakoniwa-packs/codes.local.json'));
 if (!fs.existsSync(codesPath)) throw new Error('コードのファイルがありません: ' + codesPath + '（hakoniwa-packs/codes.example.json を写して作る。git には入れない）');
 const CODES = JSON.parse(fs.readFileSync(codesPath, 'utf8'));
-const codes = [].concat(CODES[P.id] || [], CODES['*'] || []).filter(Boolean);
-if (!codes.length) throw new Error(codesPath + ' に ' + P.id + ' のコード（か "*" のまとめ用のコード）がありません');
+Object.keys(CODES).forEach(k => { if (/@/.test(k) && !/^[^@]+@zen$/.test(k)) throw new Error(codesPath + ' の鍵 ' + k + '：版の接尾辞は @zen（全年齢版のコード）だけです'); });
 const PC = require(path.join(ROOT, 'hakoniwa-full/js/pack-crypto.js'));
-const norms = codes.map(PC.norm);
-if (norms.some(c => c.length < 6)) throw new Error('コードは整えたあと（空白・- を除いて大文字）6文字以上にしてください');
-if (new Set(norms).size !== norms.length) throw new Error('同じコードが2回あります（整えたあとで同じになるもの）');
+/* 版ごとのコード（2026-11-07）："set-b"・"*" は R18版のコード、"set-b@zen"・"*@zen" は全年齢版のコード。
+   全年齢版のコードが無い鍵は、全年齢版でも今までどおり R18版のコードで封をする（後方互換。警告を出す） */
+function codesFor(BUILD) {
+  const pick = k => {
+    if (BUILD !== 'zenrei') return CODES[k] || [];
+    if (CODES[k + '@zen']) return CODES[k + '@zen'];
+    if ((CODES[k] || []).length) console.warn('※ ' + rel(codesPath) + ' に "' + k + '@zen"（全年齢版のコード）がありません。全年齢版の ' + P.id + ' は R18版の "' + k + '" のコードで封をします');
+    return CODES[k] || [];
+  };
+  const codes = [].concat(pick(P.id), pick('*')).filter(Boolean);
+  if (!codes.length) throw new Error(codesPath + ' に ' + P.id + ' のコード（か "*" のまとめ用のコード）がありません（' + BUILD + '）');
+  const norms = codes.map(PC.norm);
+  if (norms.some(c => c.length < 6)) throw new Error('コードは整えたあと（空白・- を除いて大文字）6文字以上にしてください');
+  if (new Set(norms).size !== norms.length) throw new Error('同じコードが2回あります（整えたあとで同じになるもの。' + BUILD + '）');
+  return { codes, norms };
+}
 
 const rel = p => { const r = path.relative(ROOT, p); return /^\.\./.test(r) ? p : r; };
 const hv = s => crypto.createHash('sha1').update(s).digest('hex').slice(0, 10);
@@ -68,6 +82,7 @@ P.chunks.forEach(c => {
 
 function buildOne(BUILD) {
   const STRIP = BUILD === 'zenrei';
+  const { codes, norms } = codesFor(BUILD);
   const bdir = path.resolve(opt('out') ? path.join(opt('out'), 'hakoniwa-' + BUILD) : path.join(ROOT, 'hakoniwa-' + BUILD));
   const mainDir = path.join(ROOT, 'hakoniwa-' + BUILD);
   const html = fs.readFileSync(path.join(mainDir, 'index.html'), 'utf8'), MAN = MF.readManifest(html);

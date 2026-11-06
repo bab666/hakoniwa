@@ -1,7 +1,7 @@
 /* 追加パックの点検用の「試しのフォルダ」を作る（2026-11-03）
    node hakoniwa-tools/build/pack-site.js <パックのフォルダ…> --out=<試しのフォルダ> [--codes=<コードのファイル>]
    ・<試しのフォルダ>/hakoniwa-full・hakoniwa-zenrei に本体を写し（.gz・.br は除く）、パックを組み立てて packs/ に入れる
-   ・点検は、写したフォルダとコードを渡して回す（lib.js の HK_PACK_CODES・HK_ONLY_SCEN）：
+   ・点検は、写したフォルダとコードを渡して回す（lib.js の HK_PACK_CODES・HK_ONLY_SCEN。R18版と全年齢版のコードは , でつなぐ。版ごとのコードは build-pack.js が選ぶ）：
        HK_PACK_CODES=<コード> HK_ONLY_SCEN=<箱庭の id> node hakoniwa-tools/tone-check/audit-all.js --full=<試し>/hakoniwa-full --zen=<試し>/hakoniwa-zenrei
        HK_PACK_CODES=<コード> node hakoniwa-tools/tone-check/tone-feel.js <試し>/hakoniwa-full --scen=<箱庭の id>
    先に本体を build しておく */

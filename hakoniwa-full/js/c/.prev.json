@@ -1,7 +1,7 @@
 {
  "cur": {
-  "core": "core.5c8822553d.js",
-  "late": "late.bfe30efd6d.js",
+  "core": "core.70d9418362.js",
+  "late": "late.7bf868eac4.js",
   "pack-sim": "pack-sim.843e5acb5b.js",
   "pack-rel": "pack-rel.9ce9a8360d.js",
   "pack-lewd": "pack-lewd.a60bee65c7.js",
@@ -76,7 +76,7 @@
  },
  "prev": {
   "core": "core.5c8822553d.js",
-  "late": "late.fc1f59147b.js",
+  "late": "late.dba0f02d17.js",
   "pack-sim": "pack-sim.843e5acb5b.js",
   "pack-rel": "pack-rel.9ce9a8360d.js",
   "pack-lewd": "pack-lewd.a60bee65c7.js",
@@ -447,8 +447,8 @@
    13109
   ],
   "js/safe.js": [
-   23367,
-   9169
+   23468,
+   9192
   ],
   "js/saves.js": [
    26070,
@@ -511,8 +511,8 @@
    3002
   ],
   "js/ui-box-list.js": [
-   13586,
-   4572
+   13659,
+   4710
   ],
   "js/ui-import.js": [
    8911,
@@ -531,8 +531,8 @@
    3848
   ],
   "js/ui.js": [
-   121766,
-   36137
+   121815,
+   36151
   ],
   "js/ui-cast-ops.js": [
    6642,
