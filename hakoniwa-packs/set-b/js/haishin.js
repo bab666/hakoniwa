@@ -793,9 +793,9 @@
       return 'wake';
     }
     if (S.asleep <= 5) return 'cm';
-    /* 寝息・寝返り・寝言（T.SLEEP と、寝ている区切りの区切りの様子 T.STEP.neochi の asleep の札）。一度ずつ使い、足りなければ 2 回目まで。
+    /* 寝息・寝返り・寝言・寝ている間の短い出来事（T.SLEEP の breath・turn・talk・mini と、寝ている区切りの区切りの様子 T.STEP.neochi の asleep の札）。一度ずつ使い、足りなければ 2 回目まで。
        それでも尽きたら（24 時間の寝落ちなど）コメントだけの区切り */
-    var BL = flat(SL.breath).concat(flat(SL.turn), flat(SL.talk), flat((TX().STEP || {}).neochi).filter(function (x) { return x && x.asleep; }));
+    var BL = flat(SL.breath).concat(flat(SL.turn), flat(SL.talk), flat(SL.mini), flat((TX().STEP || {}).neochi).filter(function (x) { return x && x.asleep; }));
     var bt = pickT(ctx, BL, a, b) || pickT(ctx, BL, a, b, true) || (BL.length ? '' : fbT(ctx, FB.sleep, a, b));
     if (!bt) return 'cm';
     rec(ctx, S.form === 'couple' ? [a, b] : [a], fill(ctx, bt, a, b), '寝落ち配信の寝息と寝言（' + a.name + '）', 'bond', { tag: '寝落ち' });
