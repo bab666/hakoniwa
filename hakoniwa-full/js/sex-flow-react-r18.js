@@ -117,7 +117,7 @@
         sentences(narr(before)).forEach(function (z) { if (ST2.blOff && ST2.blOff.test(z)) blind = false; else if (ST2.blOn && ST2.blOn.test(z)) blind = true; });
         var l = (X.TEASE_B[psOf(b, a)] || X.TEASE_B.gentle)[md];
         if (blind) { var nl = l.filter(function (z) { return !LOOK.test(narr(z)); }); if (nl.length) l = nl; }
-        var add = pickBy(l, a.name + '|' + b.name + '|' + x.i + '|' + t.length, used);
+        var add = pickBy(l, a.name + '|' + b.name + '|' + x.i + '|' + HK.Voice.markOut(t).length, used);
         /* 新しい段落にはしない（段落の数で喘ぎなどを差す後ろの部品の乱数の引き方を変えないよう、焦らしの段の最後の段落の後ろに続ける） */
         var lp = us[x.i].paras.length - 1;
         if (!DEMAND.test(us[x.i].paras[lp])) {

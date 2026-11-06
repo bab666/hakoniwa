@@ -206,7 +206,7 @@
     polite: L('{b}は慎ましく声を抑えようとしたが、吐息が甘く崩れた。{b}「{mv}」¦{b}は丁寧に整えていた呼吸を乱し、か細い声をこぼした。{b}「{mv}」¦{b}は唇に指先を当てて声をこらえたが、喉の奥が小さく鳴った。{b}「{mv}」')
   };
   /* 恋人に向ける誘い・甘えの反応（REACT_B のうち、相手がモブ・恋人でない二人には出さない文） */
-  var LOVER_B = /胸に当て|どきどき|鼓動|大好き|好き(?![嫌勝])|愛し|幸せ|あなたなら|したいなら|何でも|何だって|同じこと|私も|ずっと、こうして|口づけを返|唇を重ね|擦り寄せ|指先に口づけ|髪に指を差し入れ|額が、こつん|許してあげる|許してやる/;
+  var LOVER_B = HK.Voice.reMk(/胸に当て|どきどき|鼓動|大好き|好き(?![嫌勝])|愛し|幸せ|あなたなら|したいなら|何でも|何だって|同じこと|私も|ずっと、こうして|口づけを返|唇を重ね|擦り寄せ|指先に口づけ|髪に指を差し入れ|額が、こつん|許してあげる|許してやる/);
   /* 恋人・体の関係の二人か（関係の表 HK.Ties・物語型の S.ties・二人の状態 ctx.pair）。関係を引けない場面（ctx が無い）は今までどおり */
   var BODY_T = /^(?:lover|spouse|fiance|mate|fated|fwb|honmei)$/;
   function bondOf(ctx, a, b) {
@@ -248,7 +248,7 @@
     var close = !anyMob && !o.rough && !o.force && bondOf(o.ctx || HK._curCtx, a, b);
     if (anyMob) { var nn = ns.filter(function (n0) { return !/名前/.test(n0); }); if (nn.length) ns = nn; }
     /* モブの攻めの台詞：恋人のような独占・ずっと一緒の言葉（私だけを見て・ずっとそばに・離すつもりはない・跡が宝物）も出さない */
-    var MOB_L = /私だけを|ずっと、?そばに|ずっとこうしたかった|あなたのだって|宝物|離すつもり|愛おし/;
+    var MOB_L = HK.Voice.reMk(/私だけを|ずっと、?そばに|ずっとこうしたかった|あなたのだって|宝物|離すつもり|愛おし/);
     var keep = function (l, who) { var f = (l || []).filter(function (x) { return !((anyMob || !close) && LOVE.test(x)) && !(anyMob && MOB_L.test(x)) && !(/眼鏡/.test(x) && !glasOf(who)); }); return f.length ? f : null; };
     var lnL = keep((C.ACT_L[pa] || C.ACT_L.gentle)[kd] || C.ACT_L[pa].none, a), rbL = keep((C.REACT_B[pb] || C.REACT_B.gentle)[HARD[kd] ? 'hard' : 'soft'], b);
     if (rbL && !close) { var rf = anyMob ? [] : rbL.filter(function (x) { return !LOVER_B.test(x); }); rbL = rf.length ? rf : C.REACT_MOB[pb] || C.REACT_MOB.gentle; }

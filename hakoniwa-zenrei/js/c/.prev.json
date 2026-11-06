@@ -1,19 +1,19 @@
 {
  "cur": {
-  "core": "core.3d26f0539a.js",
-  "late": "late.9ba787b283.js",
-  "pack-rel": "pack-rel.e46ac111f7.js",
-  "pack-sim": "pack-sim.2d5c936ed9.js",
+  "core": "core.917ce8fb6b.js",
+  "late": "late.50d42568af.js",
+  "pack-rel": "pack-rel.698eec9a09.js",
+  "pack-sim": "pack-sim.8a3297bd6f.js",
   "scen-goukon": "scen-goukon.1ccaaecb06.js",
   "scen-classroom": "scen-classroom.75d1a13496.js",
-  "scen-island": "scen-island.42ac697424.js",
+  "scen-island": "scen-island.56fe874645.js",
   "scen-br": "scen-br.e91debff59.js",
-  "pack-trap": "pack-trap.9f0e1382d6.js",
-  "scen-whiteroom": "scen-whiteroom.992cc3d9b2.js",
+  "pack-trap": "pack-trap.0937aef27e.js",
+  "scen-whiteroom": "scen-whiteroom.0a2120cb97.js",
   "scen-trial": "scen-trial.0dc4b6528b.js",
   "scen-omega": "scen-omega.c723a3635f.js",
   "scen-massage": "scen-massage.76430be52f.js",
-  "scen-futari": "scen-futari.367fb25089.js",
+  "scen-futari": "scen-futari.9099c0e4c9.js",
   "scen-zombie": "scen-zombie.cd9c9135c9.js",
   "scen-rpg": "scen-rpg.765a7cfb59.js",
   "scen-saimin": "scen-saimin.96ca63c124.js",
@@ -70,7 +70,7 @@
   "core": "core.3d26f0539a.js",
   "late": "late.9ba787b283.js",
   "pack-rel": "pack-rel.e46ac111f7.js",
-  "pack-sim": "pack-sim.5a68a9e80d.js",
+  "pack-sim": "pack-sim.2d5c936ed9.js",
   "scen-goukon": "scen-goukon.1ccaaecb06.js",
   "scen-classroom": "scen-classroom.75d1a13496.js",
   "scen-island": "scen-island.42ac697424.js",
@@ -167,8 +167,8 @@
    10968
   ],
   "js/events-common.js": [
-   22255,
-   7313
+   22307,
+   7338
   ],
   "js/topics.js": [
    32963,
@@ -187,32 +187,32 @@
    2116
   ],
   "js/voice.js": [
-   70994,
-   22666
+   71427,
+   22785
   ],
   "js/voice-tone.js": [
-   36646,
-   10598
+   36698,
+   10622
   ],
   "js/tone-registry.js": [
-   17517,
-   5134
+   17569,
+   5160
   ],
   "js/tone-plus.js": [
-   55665,
-   16863
+   55717,
+   16888
   ],
   "js/tone-engine.js": [
-   68838,
-   22107
+   68890,
+   22123
   ],
   "js/tone-dict-builtin.js": [
    90832,
    16803
   ],
   "js/tone-ending.js": [
-   31707,
-   10732
+   31759,
+   10747
   ],
   "js/tone-keigo-unify.js": [
    20871,
@@ -223,16 +223,16 @@
    2530
   ],
   "js/tone-extra2.js": [
-   12297,
-   4106
+   12349,
+   4129
   ],
   "js/voice-more.js": [
    172,
    132
   ],
   "js/voice-override.js": [
-   31328,
-   9023
+   31380,
+   9044
   ],
   "js/tone-lines.js": [
    20013,
@@ -259,8 +259,8 @@
    3122
   ],
   "js/tone-yankee.js": [
-   10377,
-   3433
+   10429,
+   3448
   ],
   "js/tone-gyaru.js": [
    11300,
@@ -299,8 +299,8 @@
    4580
   ],
   "js/emotion.js": [
-   27125,
-   9500
+   27177,
+   9522
   ],
   "js/content.js": [
    440,
