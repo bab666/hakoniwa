@@ -229,7 +229,7 @@
     S.leakPh = ph;
     var C = CK();
     if (ph !== 'start' && ph !== 'mid') return;
-    if (C && C.post) { try { C.post(ctx, { stage: 6, leak: ph, n: 4, react: [], sc: [], hour: S.hour }); } catch (e) { /* コメント欄が無くても止めない */ } }
+    if (C && C.post) { try { C.post(ctx, { stage: 6, leak: ph, n: Math.max(4, Math.round((H.cmCount ? H.cmCount(S, false) : 8) / 2)), react: [], sc: [], hour: S.hour }); } catch (e) { /* コメント欄が無くても止めない */ } }
   }
   function fateOf(ctx, S) {
     var W = { s10: [0.6, 0.2, 0.2], s100: [0.6, 0.2, 0.2], s1k: [0.3, 0.3, 0.4], s10k: [0.12, 0.33, 0.55] }[S.size] || [0.5, 0.25, 0.25], r = ctx.rng();

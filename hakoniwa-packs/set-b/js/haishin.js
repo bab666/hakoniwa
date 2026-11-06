@@ -498,6 +498,9 @@
     var g = -0.03 + ctx.rng() * 0.08;
     g += 0.04 * (o.ansSt || 0) + (S.ev.indexOf('kiss') >= 0 ? 0.08 : 0) + (S.ev.indexOf('jeal') >= 0 || S.ev.indexOf('sunao') >= 0 ? 0.03 : 0) + (o.trend || 0);
     if (S.ev.indexOf('stall') >= 0) g -= 0.06;
+    /* 場の熱で同接も伸びる（段 4 以上・ソロの中盤。コメントの本数と同じ傾き。2026-11-06） */
+    if (S.stage >= 4) g += 0.02 * (S.stage - 3);
+    if (S.form === 'solo' && S.midI > 0 && !/^(none|done)$/.test(S.mid)) g += 0.05;
     var h = Math.floor((o.clock % 1440) / 60);
     if (h >= 2 && h < 5) g -= 0.08;
     if (o.asleep) g -= 0.10;
@@ -961,7 +964,19 @@
   }
 
   /* ---------- コメントの一件（4.1。haishin-cm.js が無ければ代わりの組み立て） ---------- */
-  function cmCount(S, sleep) { var n = clamp(Math.round(3 + 2.2 * log10(S.v) + 0.5 * S.stage), 3, 12); return sleep ? Math.min(12, Math.round(n * 1.5)) : n; }
+  /* 一区切りのコメントの本数（2026-11-06 の利用者の指示「規模で倍、倍と増えて、エッチなことをしていると増えるように」。設計 4.4）：
+     同接 10 人で 3 本・100 人で 6 本・1,000 人で 12 本・1 万人で 24 本（同接の対数で倍々）× 場の熱（段 4 以上 1.25・キス 1.3・段 4〜6 の行為に応えた区切り 1.5・
+     ソロの中盤 1.6・切り忘れの本番中 2）× 停滞・寝ている区切りは半分。2〜30 本 */
+  function cmCount(S, sleep) {
+    var n = 3 * Math.pow(2, log10(Math.max(10, S.v)) - 1), m = 1;
+    if (S.stage >= 4) m = 1.25;
+    if (S.ev.indexOf('kiss') >= 0) m = Math.max(m, 1.3);
+    if (S.bigAns) m = Math.max(m, 1.5);
+    if (S.form === 'solo' && S.midI > 0 && !/^(none|done)$/.test(S.mid)) m = Math.max(m, 1.6);
+    if (S.leak === 'on' || S.leakPh) m = 2;
+    if (S.ev.indexOf('stall') >= 0 || sleep) m *= 0.5;
+    return clamp(Math.round(n * m), 2, 30);
+  }
   function cmLine(ctx, S, pool) {
     var fresh = pool.filter(function (x) { return !S.cmUsed[x.t]; }), p = fresh.length ? fresh : pool.filter(function (x) { return (S.cmUsed[x.t] || 0) < 2; });
     var x = pickOf(ctx, p); if (!x) return '';
@@ -973,7 +988,7 @@
     var K2 = CK();
     if (K2 && K2.post) {
       var sc = S.scNow.map(function (y) { return { yen: y, whale: y >= 10000 }; }); S.scNow = [];
-      var r = K2.post(ctx, { stage: S.stage, sleep: !!o.sleep, end: !!o.end, leak: S.leakPh || null, stall: !!o.stall, sc: sc, react: o.react != null ? o.react : S.lastEv, reactBy: o.reactBy || null, hour: S.hour });
+      var r = K2.post(ctx, { n: o.n || 0, stage: S.stage, sleep: !!o.sleep, end: !!o.end, leak: S.leakPh || null, stall: !!o.stall, sc: sc, react: o.react != null ? o.react : S.lastEv, reactBy: o.reactBy || null, hour: S.hour });
       if (r && r.garikoi) { S.ev.push('gari'); S.gariN = (S.gariN || 0) + 1; }
       if (r && r.wed) S.ev.push('wed');
       return r && r.e;
@@ -1165,6 +1180,12 @@
     actions: [],
     goals: [],
     check: function (input) { return blockOf(input); },
+    /* 箱庭タブの「いまの住人で遊べるものだけ」（ui-box-list.js）：二人で配信できる組が一組でもあるか（恋愛対象など住人の設定で、どの二人も配信できなければ外す。2026-11-06） */
+    fitOk: function (chars) {
+      var L = (chars || []).slice(0, 24);
+      for (var i = 0; i < L.length; i++) for (var j = i + 1; j < L.length; j++) { try { if (!blockOf({ chars: [L[i], L[j]], env: {} })) return true; } catch (e) { return true; } }
+      return L.length < 2;
+    },
     stepGroup: function (label) {
       var m = /^配信(?:開始| (\d+):(\d\d))（(翌々|翌)?(\d+):(\d\d)）$/.exec(label);
       if (!m) return null;

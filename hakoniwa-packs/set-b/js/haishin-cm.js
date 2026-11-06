@@ -272,7 +272,7 @@
     var v = Math.max(S.v || 10, 1);
     var n = opt.n || Math.max(3, Math.min(12, Math.round(3 + 2.2 * Math.log(v) / Math.LN10 + 0.5 * stage)));
     if (opt.sleep && !opt.n) n = Math.min(12, Math.round(n * 1.5));
-    if (opt.end && !opt.n) n = 3;
+    if (opt.end) n = opt.n ? Math.max(3, Math.round(opt.n / 2)) : 3;
     regulars(ctx);
     var res = { garikoi: false, wed: 0 };
     function add(o, h, y) { if (!o) return false; lines.push({ h: h || handle(ctx, used), y: y || 0, t: fill(ctx, o.t, o.tgt), reg: o.reg || '', d: dirOf(o.it), tg: o.tgt, src: o.t, ak: o.it && o.it.ak || '', act: o.act === undefined ? act : o.act }); return true; }
