@@ -195,6 +195,8 @@
         "js/haishin.js",
         "js/haishin-cm.js",
         "js/haishin-end.js",
+        "js/haishin-r18.js",
+        "js/haishin-r18-room.js",
         "js/solo-warn-set-b-haishin.js"
       ]
     }
