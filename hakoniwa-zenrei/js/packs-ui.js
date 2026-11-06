@@ -2,6 +2,7 @@
    ・箱庭の一覧（窓の一覧と、PC の上の一覧 ui-box-list.js）の最後に「箱庭を追加」のカードを出す（まだ開けていない追加パックがあるときだけ。データ配布版でフォルダを置いていなければ出ない）
    ・押すとコードの入力を出す。入れたコードで開くパックを全部開け（まとめ用のコードなら一度に全部）、一覧に箱庭を足す
    ・開けていない部屋の名前は出さない（入力の画面にセットの名前と紹介だけ）
+   ・案内の文のコードの呼び名は版ごと（全年齢版は「全年齢版のコード」、R18版は「R18版のコード」。2026-11-07）
    ・ui.js の renderBox がカードの HTML（HK.PacksUI.card()）を一覧に足す。パックが開いたら HK.UI.refresh で描き直す
    設計：docs/reports/2026-11-02/pack-foundation.md */
 (function () {
@@ -12,16 +13,21 @@
   function toast(m) { if (HK.UI && HK.UI.toast) HK.UI.toast(m); }
   function locked() { return HK.Packs ? HK.Packs.list().filter(function (x) { return x.st !== 'open'; }) : []; }
   var UI = HK.PacksUI = {};
+  /* この版のコードの呼び名（全年齢版は「全年齢版のコード」、R18版は「R18版のコード」。2026-11-07 版ごとのコード） */
+  function cname() { return HK.Packs && HK.Packs.codeName ? HK.Packs.codeName() : 'コード'; }
+  /* 覚えたコードで開かなくなったセットがあるか（全年齢版のコードが別になる前の保存など） */
+  function recode() { return locked().some(function (x) { return x.err === 'recode'; }); }
   UI.card = function () {
     if (!HK.Packs || !HK.Packs.ready() || !HK.Packs.hasLocked()) return '';
-    return '<div class="scen packadd"><div class="k">追加の箱庭</div><div class="n">箱庭を追加</div><div class="d">購入したコードを入れると、新しい箱庭のセットが一覧に加わります。</div>' +
+    return '<div class="scen packadd"><div class="k">追加の箱庭</div><div class="n">箱庭を追加</div><div class="d">' +
+      (recode() ? esc(HK.Packs.errText('recode')) + '（' + esc(cname()) + '）' : '購入した' + esc(cname()) + 'を入れると、新しい箱庭のセットが一覧に加わります。') + '</div>' +
       '<p style="margin:8px 0 0"><button type="button" class="btn small primary" data-packadd="1">コードを入れる</button></p></div>';
   };
 
   /* PC の上の一覧（js/ui-box-list.js）の最後に足す1枚 */
   UI.listItem = function () {
     if (!HK.Packs || !HK.Packs.ready() || !HK.Packs.hasLocked()) return '';
-    return '<li class="packadd"><button type="button" class="bxlc packadd" data-packadd="1" title="購入したコードを入れると、新しい箱庭のセットが一覧に加わります"><span class="bxlk">追加の箱庭</span><span class="bxln">＋ 箱庭を追加</span></button></li>';
+    return '<li class="packadd"><button type="button" class="bxlc packadd" data-packadd="1" title="購入した' + esc(cname()) + 'を入れると、新しい箱庭のセットが一覧に加わります"><span class="bxlk">追加の箱庭</span><span class="bxln">＋ 箱庭を追加</span></button></li>';
   };
   var ov = null, opener = null;
   function close() {
@@ -37,7 +43,7 @@
     if (!ls.length) return '<p class="hint">追加できるセットはありません。</p>';
     return '<ul class="packsets" style="margin:6px 0 10px;padding-left:1.2em">' + ls.map(function (x) {
       return '<li><b>' + esc(x.name) + '</b>' + (x.desc ? '<span class="hint small" style="display:block;margin:0">' + esc(x.desc) + '</span>' : '') +
-        (x.st === 'error' && x.err ? '<span class="hint small" style="display:block;margin:0;color:var(--hot,#B4232A)">' + esc(HK.Packs.errText(x.err)) + '</span>' : '') + '</li>';
+        (x.err ? '<span class="hint small" style="display:block;margin:0;color:var(--hot,#B4232A)">' + esc(HK.Packs.errText(x.err)) + '</span>' : '') + '</li>';
     }).join('') + '</ul>';
   }
   function open(from) {
@@ -47,9 +53,9 @@
     ov.className = 'gearov tipov packov';
     ov.innerHTML = '<div class="gearbox" role="dialog" aria-modal="true" aria-labelledby="packtitle" tabindex="-1" style="max-width:min(480px,calc(100vw - 24px))">' +
       '<div class="gearhd"><h2 id="packtitle">箱庭を追加</h2><button type="button" class="btn small" data-packclose="1">閉じる</button></div>' +
-      '<form class="packform" style="padding:4px 2px 8px"><p class="tiplead" style="margin:0 0 4px">購入したコードを入れてください。まとめ買いのコードなら、すべてのセットが一度に加わります。</p>' +
+      '<form class="packform" style="padding:4px 2px 8px"><p class="tiplead" style="margin:0 0 4px">購入した' + esc(cname()) + 'を入れてください。まとめ買いのコードなら、すべてのセットが一度に加わります。</p>' +
       '<div class="packsetsbox">' + setsHtml() + '</div>' +
-      '<label for="packcode" class="hint small" style="display:block;margin:0 0 4px">コード</label>' +
+      '<label for="packcode" class="hint small" style="display:block;margin:0 0 4px">' + esc(cname()) + '</label>' +
       '<input id="packcode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="latin" style="width:100%;box-sizing:border-box;font-size:16px;padding:8px 10px">' +
       '<p class="packerr hint small" role="alert" style="min-height:1.4em;margin:6px 0 0;color:var(--hot,#B4232A)"></p>' +
       '<p style="margin:8px 0 0;display:flex;gap:8px;justify-content:flex-end"><button type="submit" class="btn primary">追加する</button></p>' +
@@ -73,7 +79,7 @@
           toast('「' + r.opened.join('」「') + '」を追加しました' + (r.errors.length ? '（' + r.errors.map(function (x) { return x.name + '：' + HK.Packs.errText(x.err); }).join('／') + '）' : ''));
           return;
         }
-        msg.textContent = r.errors.length ? r.errors.map(function (x) { return x.name + '：' + HK.Packs.errText(x.err); }).join('／') : 'コードが違います（まだ開けていないセットのコードを入れてください）';
+        msg.textContent = r.errors.length ? r.errors.map(function (x) { return x.name + '：' + HK.Packs.errText(x.err); }).join('／') : 'コードが違います（まだ開けていないセットの' + cname() + 'を入れてください）';
         var sb = ov.querySelector('.packsetsbox'); if (sb) sb.innerHTML = setsHtml();
         inp.focus(); inp.select();
       }, 30);
@@ -91,5 +97,9 @@
   });
   /* パックが届いた・開いたら一覧を描き直す（箱庭の一覧が出ているときだけ） */
   function redraw() { if (HK.UI && HK.UI.refresh && document.querySelector('.scens')) { try { HK.UI.refresh(); } catch (e) { setTimeout(function () { throw e; }, 0); } } }
-  if (HK.Packs) { HK.Packs.on(redraw); HK.Packs.onReady(redraw); }
+  if (HK.Packs) {
+    HK.Packs.on(redraw); HK.Packs.onReady(redraw);
+    /* 覚えたコードで開かなくなったセットがあれば、起動のときに一度だけ知らせる（覚えた分は消さない） */
+    HK.Packs.onReady(function () { if (recode()) setTimeout(function () { toast(HK.Packs.errText('recode') + '（「箱庭を追加」から' + cname() + 'を入れてください）'); }, 600); });
+  }
 })();
