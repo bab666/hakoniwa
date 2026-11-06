@@ -267,6 +267,10 @@
     [new RegExp('じゃない(か)?' + FE, 'g'), 'やない$1']
   ];
   var FIT_GRAND_R = [[new RegExp('ちゃう' + FE, 'g'), 'てしまう'], [new RegExp('ちゃった' + FE, 'g'), 'てしまった'], [new RegExp('じゃう' + FE, 'g'), 'でしまう'], [new RegExp('じゃん' + FE, 'g'), 'ではないか'], [new RegExp('でしょ' + FE, 'g'), 'だろう']];
+  var FIT_STERN_R = [
+    [new RegExp('([ぁ-ゖ])([、…‥]*)ぬ' + FE, 'g'), '$1$2ない'], [new RegExp('のじゃ' + FE, 'g'), 'のだ'], [new RegExp('じゃのう' + FE, 'g'), 'だな'], [new RegExp('じゃろう?' + FE, 'g'), 'だろう'],
+    [new RegExp('([ぬなよだ])のう' + FE, 'g'), '$1な'], [new RegExp('([けげせぜてでねべめれえ]|見|す)、?んな' + FE, 'g'), '$1るな']
+  ];
   function runR(s, R) { R.forEach(function (r) { s = s.replace(r[0], r[1]); }); return s; }
   /* ---------- 強い口調の甘え・お願い・女性的な語尾（2026-11-03。点検は hakoniwa-tools/tone-check/moan-tone-audit.js） ----------
      夜の性格（マゾ・甘々・恥じらい）やエゴグラムで、強い口調の人にも健気・恥じらい・穏やかの基盤が当たる。基盤の言葉はそのまま使い、語尾だけ口調の形にする：
@@ -481,6 +485,10 @@
       /* 女性的な語尾（〜のよ・〜かしら）。のじゃ・古風な口調の「〜わ」（笑わせるわ）は残す（関西弁の扱いで「〜わ」を外さない） */
       if (V && V.unfem && t !== 'noja') q = V.unfem(q, { tone: grand ? 'kansai' : t });
     }
+    /* 厳格（stern）：のじゃの語尾（〜ぬ・〜じゃ・〜のう）と乱暴語の「〜んな」を、厳格の言い方（〜ない・〜だ・〜な・〜るな）に（2026-11-06 の利用者の報告「堪え、られ……ぬ」「ふざけ、んな」） */
+    if (t === 'stern') q = runR(q, FIT_STERN_R);
+    /* 敬語・厳格・冷静・無口の口調（お嬢様のような女性的な口調を除く）に女言葉の「いいわ」を残さない（moan-tone の「敬語の口調に女言葉のわ」。2026-11-06） */
+    if (!FIT_FEM[t] && (FIT_POLITE[t] || /^(?:stern|cool|cool_soft|calm|mukuchi|mukuchi_ne)$/.test(t))) q = q.replace(new RegExp('いいわ' + FE, 'g'), 'いい');
     if (t === 'mukuchi' && !light) q = quietFit(q);
     if (soft) {
       q = daro(runR(q, FIT_SOFT_R.concat(FIT_MASC_R)));

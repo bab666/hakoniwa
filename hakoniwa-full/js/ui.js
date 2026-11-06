@@ -1881,6 +1881,13 @@
       S.join = S.join || {};
       var cur = joined(S.scenId).map(function (x) { return x.id; });
       if (t.checked && smax(S.scenId) === 1) { cur = [t.dataset.id]; S.join[S.scenId] = cur; save(); renderBox(); return; }
+      /* 人数が決まっている箱庭（参加の下限と上限が同じ。配信の部屋・二人の箱庭など）は、上限に達していたら先に選んだ人と入れ替える（2026-11-06 の利用者の報告「配信の部屋で 3 人以上を選べてしまう」） */
+      if (t.checked && smax(S.scenId) === smin(S.scenId) && cur.indexOf(t.dataset.id) < 0 && cur.length >= smax(S.scenId)) {
+        var out0 = cur.shift(), on0 = S.chars.filter(function (c) { return c.id === out0; })[0];
+        cur.push(t.dataset.id); S.join[S.scenId] = cur; save(); renderBox();
+        toast(scenOf(S.scenId).name + 'は' + smax(S.scenId) + '人です' + (on0 ? '。' + on0.name + 'を参加から外しました' : ''));
+        return;
+      }
       if (t.checked) { if (cur.indexOf(t.dataset.id) < 0) cur.push(t.dataset.id); }
       else cur = cur.filter(function (x) { return x !== t.dataset.id; });
       S.join[S.scenId] = cur;

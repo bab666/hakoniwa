@@ -1,10 +1,10 @@
 {
  "cur": {
-  "core": "core.c057027118.js",
-  "late": "late.7bf868eac4.js",
+  "core": "core.afeece6c5c.js",
+  "late": "late.0f2aaea7ed.js",
   "pack-sim": "pack-sim.843e5acb5b.js",
-  "pack-rel": "pack-rel.9ce9a8360d.js",
-  "pack-lewd": "pack-lewd.efd10de2f4.js",
+  "pack-rel": "pack-rel.6c8e7fe9bd.js",
+  "pack-lewd": "pack-lewd.d61d8f83db.js",
   "scen-goukon": "scen-goukon.194befd036.js",
   "scen-classroom": "scen-classroom.21ae66b0a5.js",
   "scen-island": "scen-island.60c3b17d15.js",
@@ -75,11 +75,11 @@
   "tone-yankee": "tone-yankee.9b9bb1c5d4.js"
  },
  "prev": {
-  "core": "core.70d9418362.js",
+  "core": "core.c057027118.js",
   "late": "late.7bf868eac4.js",
   "pack-sim": "pack-sim.843e5acb5b.js",
   "pack-rel": "pack-rel.9ce9a8360d.js",
-  "pack-lewd": "pack-lewd.a60bee65c7.js",
+  "pack-lewd": "pack-lewd.efd10de2f4.js",
   "scen-goukon": "scen-goukon.194befd036.js",
   "scen-classroom": "scen-classroom.21ae66b0a5.js",
   "scen-island": "scen-island.60c3b17d15.js",
@@ -91,7 +91,7 @@
   "scen-dungeon": "scen-dungeon.148ae8f060.js",
   "scen-massage": "scen-massage.4827c0ac29.js",
   "scen-hole": "scen-hole.e566c07abe.js",
-  "scen-futari": "scen-futari.d8a88b7737.js",
+  "scen-futari": "scen-futari.18a4edb2b0.js",
   "scen-zombie": "scen-zombie.54b10e6284.js",
   "scen-rpg": "scen-rpg.f4b9f62a9c.js",
   "scen-kaihen": "scen-kaihen.862a5a080e.js",
@@ -106,8 +106,8 @@
   "scen-jinro": "scen-jinro.1be6604bfb.js",
   "pack-catalog": "pack-catalog.a8428573cf.js",
   "pack-roomkit": "pack-roomkit.6fb7e14d0d.js",
-  "pack-solo": "pack-solo.6211b42428.js",
-  "scen-train": "scen-train.9dbaa77e8d.js",
+  "pack-solo": "pack-solo.0ed6ecd241.js",
+  "scen-train": "scen-train.117373d571.js",
   "tone-base": "tone-base.9f812a1e1d.js",
   "tone-ane": "tone-ane.8cb12d937d.js",
   "tone-boku-n": "tone-boku-n.5f38bb84fc.js",
@@ -203,8 +203,8 @@
    2116
   ],
   "js/voice.js": [
-   71513,
-   22812
+   71623,
+   22846
   ],
   "js/voice-tone.js": [
    36769,
@@ -395,8 +395,8 @@
    11889
   ],
   "js/pos-nogen.js": [
-   52356,
-   17015
+   52367,
+   17022
   ],
   "js/persona-final.js": [
    1930,
@@ -431,8 +431,8 @@
    2516
   ],
   "js/attr-look.js": [
-   5053,
-   2505
+   5101,
+   2520
   ],
   "js/attr-race.js": [
    24809,
@@ -511,8 +511,8 @@
    3002
   ],
   "js/ui-box-list.js": [
-   13659,
-   4710
+   13862,
+   4779
   ],
   "js/ui-import.js": [
    8911,
@@ -531,8 +531,8 @@
    3848
   ],
   "js/ui.js": [
-   121815,
-   36151
+   122192,
+   36227
   ],
   "js/ui-cast-ops.js": [
    6642,

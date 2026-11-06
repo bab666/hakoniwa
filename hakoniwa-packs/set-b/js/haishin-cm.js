@@ -163,10 +163,13 @@
   }
 
   /* ---------- 2 回までの引き方 ---------- */
+  var KISS_REF = /(?:キス|ちゅー|チュー)(?:きた|キタ|来た|長|多すぎ|しすぎ|の音|顔|して(?:る|た))|(?:さっき|今|(?<!ただ)いま)の(?:キス|ちゅー|チュー|口づけ)/, KISS_ASK = /(?:カメラ|画面|レンズ)に(?:キス|ちゅー)|キス(?:して|ちょうだい|を(?:せが|ねだ))|キスを?ちょうだい/;
   function draw(ctx, pool, tgtOf, opt, local) {
     var S = st(ctx), U = S.cmUsed = S.cmUsed || {}, c0 = [], c1 = [];
     (pool || []).forEach(function (it) {
       var t = txt(it); if (!t || local[t]) return;
+      /* 「今のキス」「キス長くない？」などキスへの言及は、その区切りで実際にキスがあったときだけ（反応の表 C.REACT.kiss と同じ考え。2026-11-06） */
+      if (KISS_REF.test(t) && !KISS_ASK.test(t) && !(S.ev && S.ev.indexOf('kiss') >= 0)) return;
       var tg = tgtOf(it); if (tg === false) return;
       var o2 = tg && tg.am ? Object.assign({}, opt || {}, { actMode: true }) : opt; if (tg && tg.am) tg = tg.c;
       if (!okFor(ctx, it, tg, o2)) return;
@@ -268,11 +271,11 @@
     opt = opt || {};
     var S = st(ctx); if (!S) return null;
     var CC = C(), G = CC.GEN || {}, stage = opt.stage || S.stage || 1, local = {}, used = {}, lines = [];
-    var act = S.actMix ? null : S.act || null, rt = tgtAct(ctx, act), evBy = S.lastEvBy || {};
+    var act = S.actMix ? null : S.act || null, rt = tgtAct(ctx, act), evBy = opt.reactBy || S.lastEvBy || {};
     var v = Math.max(S.v || 10, 1);
     var n = opt.n || Math.max(3, Math.min(12, Math.round(3 + 2.2 * Math.log(v) / Math.LN10 + 0.5 * stage)));
     if (opt.sleep && !opt.n) n = Math.min(12, Math.round(n * 1.5));
-    if (opt.end && !opt.n) n = 3;
+    if (opt.end) n = opt.n ? Math.max(3, Math.round(opt.n / 2)) : 3;
     regulars(ctx);
     var res = { garikoi: false, wed: 0 };
     function add(o, h, y) { if (!o) return false; lines.push({ h: h || handle(ctx, used), y: y || 0, t: fill(ctx, o.t, o.tgt), reg: o.reg || '', d: dirOf(o.it), tg: o.tgt, src: o.t, ak: o.it && o.it.ak || '', act: o.act === undefined ? act : o.act }); return true; }

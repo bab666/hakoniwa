@@ -71,9 +71,10 @@
     HK.wrap(HK.Ctx.prototype, 'say', function (cs0) {
       var f = function (o) {
         try {
-          var ctx = this, pk = function (l) { return ctx.pick(l); }, ob = o && !o.look && o.actors ? obsessOf(o, o.actors) : null;
+          /* 二人が離れている場面（ctx.apart。配信の部屋のソロ配信で、相手が画面の外・電話の向こうにいるあいだ）と、離れている一件（o.apart）には、傍にいる前提の飾り（体格差・体の特徴・目につく特徴の一文）を付けない（2026-11-06 の利用者の報告「電話越しなのに隣に立つ文」） */
+          var ctx = this, pk = function (l) { return ctx.pick(l); }, ob = o && !o.look && !o.apart && !ctx.apart && o.actors ? obsessOf(o, o.actors) : null;
           if (ob) { if (ctx.rng() < 0.2) add(o, A.raceObsess(ob.c, ob.o, A.raceFresh(ctx, pk))); }
-          else if (o && !o.look && !o.sex && !o.story && typeof o.text === 'string' && o.text.length >= 20 && /^(?:bond|help|romance)$/.test(o.cat || '') && (o.kind || 'event') === 'event' && o.actors && o.actors.length === 2) {
+          else if (o && !o.look && !o.apart && !ctx.apart && !o.sex && !o.story && typeof o.text === 'string' && o.text.length >= 20 && /^(?:bond|help|romance)$/.test(o.cat || '') && (o.kind || 'event') === 'event' && o.actors && o.actors.length === 2) {
             var a = o.actors[0], b = o.actors[1];
             if (has(a, b) && ctx.rng() < 0.2) add(o, moodLine(a, b, pk, ctx) || A.pairLine(a, b, 'look', pk, ctx));
           }

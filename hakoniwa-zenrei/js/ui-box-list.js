@@ -82,6 +82,8 @@
       '<a href="' + esc(C.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (C.noteUrl ? '<a href="' + esc(C.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '') + '</p></div></div></li>';
   }
   var BL = HK.BoxList = {};
+  /* 「いまの住人で遊べるものだけ」：人数のほかに、箱庭が住人の組み合わせを確かめる口（scen.fitOk(住人の配列)。読み込んだ箱庭だけ。配信の部屋は二人で配信できる組が一組も無ければ外す。2026-11-06） */
+  function noFit(id, S) { var sc = HK.SCENARIOS && HK.SCENARIOS[id]; if (!sc || typeof sc.fitOk !== 'function') return false; try { return !sc.fitOk((S && S.chars) || []); } catch (e) { return false; } }
   BL.html = function (order, sel, badge) {
     if (!HK.UI || !HK.UI.cardInfo) return '';
     var S = HK.UI.state ? HK.UI.state() : { chars: [] }, n = (S.chars || []).length, smin = HK.UI.smin || function () { return 1; };
@@ -90,7 +92,7 @@
     var TG = HK.ScenTags, any = !!(TG && TG.sel().length), cards = order.map(function (id) { return [id, memo[id] || (memo[id] = cardOf(id))]; });
     var open = !pref.fold, curName = esc(meta(sel).name || '');
     var items = cards.map(function (x) {
-      var id = x[0], c = x[1], on = id === sel, lack = n ? Math.max(0, smin(id) - n) : 0, hide = !on && ((TG && !TG.match(id)) || (pref.fit && lack > 0));
+      var id = x[0], c = x[1], on = id === sel, lack = n ? Math.max(0, smin(id) - n) : 0, hide = !on && ((TG && !TG.match(id)) || (pref.fit && (lack > 0 || noFit(id, S))));
       return '<li' + (hide ? ' hidden' : '') + ' data-id="' + esc(id) + '"><button type="button" class="bxlc' + (c.r18only ? ' r18only' : '') + (c.adult ? ' r18' : '') + (on ? ' on' : '') + (lack ? ' lack' : '') + '" data-act="bxlpick" data-id="' + esc(id) + '" aria-pressed="' + on + '" title="' + esc(c.title) + '">' + c.html +
         (lack ? '<span class="bxlw">住人が' + lack + '人足りません</span>' : '') + (on ? '<span class="bxlon">選択中</span>' + (badge || '') : '') + '</button></li>';
     }).join('') + (HK.PacksUI && HK.PacksUI.listItem ? HK.PacksUI.listItem() : '') + (HK.PacksUI && HK.PacksUI.guideItem ? HK.PacksUI.guideItem() : '') + r18Item(any);   /* 追加パック：まだ開けていないセットがあれば「箱庭を追加」（js/packs-ui.js）。全年齢版は最後に R-18版の案内 */
@@ -113,7 +115,7 @@
       if (!li.getAttribute('data-id')) return;
       var id = li.getAttribute('data-id'), on = id === S.scenId, lack = n ? Math.max(0, smin(id) - n) : 0;
       ids.push(id);
-      li.hidden = !on && ((TG && !TG.match(id)) || (pref.fit && lack > 0));
+      li.hidden = !on && ((TG && !TG.match(id)) || (pref.fit && (lack > 0 || noFit(id, S))));
     });
     if (f && TG) { var h = TG.bar(ids); if (f.getAttribute('data-h') !== h) { f.innerHTML = h; f.setAttribute('data-h', h); } }
     var g = document.getElementById('bxlist-g'), fb = box.querySelector('.bxlfold');

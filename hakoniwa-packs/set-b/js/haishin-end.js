@@ -137,7 +137,7 @@
     switch (k) {
       case 'viewers': return Vp >= v0 * 1.5;
       case 'money': return num(S.scSum) >= (SC_LINE[S.sc] || 30000);
-      case 'kiss': return num(S.kiss) > 0;
+      case 'kiss': return num(S.kiss) > 0 || !!(S.px && S.px.sex > 0);   /* 本番まで行った夜は、キスも済んでいる（2026-11-06 の通し読み「本番のあとに『キスまでは行けなかった』」） */
       case 'safe': return num(S.stage) < 5 && !S.sexDone && !S.leak;
       case 'boast': return !solo(S) && num(S.stage) >= 3 && S.ended !== 'stall';
       case 'kind': return S.ended !== 'stall' && beh(S, 'jeal') < 2;
