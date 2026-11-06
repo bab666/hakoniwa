@@ -77,6 +77,7 @@
         "js/shinkon-multi.js",
         "js/shinkon.js",
         "js/shinkon-kiss.js",
+        "js/shinkon-tags.js",
         "js/shinkon-tips.js"
       ]
     },
@@ -119,6 +120,7 @@
         "js/kanbyo-r18-body.js",
         "js/kanbyo-kiss.js",
         "js/kanbyo-topics.js",
+        "js/kanbyo-tags.js",
         "js/kanbyo-tips.js"
       ]
     },
@@ -172,6 +174,7 @@
         "js/date-r18-yoin-text.js",
         "js/date-r18.js",
         "js/date-r18-room.js",
+        "js/date-tags.js",
         "js/date-tips.js"
       ]
     },
@@ -207,6 +210,7 @@
         "js/haishin-r18.js",
         "js/haishin-r18-room.js",
         "js/solo-warn-set-b-haishin.js",
+        "js/haishin-tags.js",
         "js/haishin-tips.js"
       ]
     }
