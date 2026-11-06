@@ -6,10 +6,11 @@
      node hakoniwa-tools/tone-check/audit-all.js --only-extra --extra=group             # 追加の配役パスだけ
      （既定の一式と --extra=relcons には、見本の話題を入れた回 topics-state・topics-seg・topics-relcons も入る。audit/topics-sample.js）
      （既定の一式には、名前の呼びかけの点検 call（call-audit.js。台詞に占める呼びかけの割合は参考、違和感の型は件数で 0 が合格）も入る。2026-11-01）
+     （場面の辻褄 cons（audit/cons.js。電話の段の接触・記録に無いキスへの言及・帰宅の無い「ただいまの口づけ」・寝ていない「起きていい」・つかまる物の飛び・車内のベッド・不穏な場面の嬉しい飾り・敬語化の崩れ）は、misc と同じく全部のパスの回に当てる。2026-11-07）
      node hakoniwa-tools/tone-check/audit-all.js --print=出力のフォルダ                 # 今までの道具の形の出力もパスごとに書く（単独実行の出力と同じになる）
      node hakoniwa-tools/tone-check/audit-all.js --cross                                # 判定をほかのパスの回にも当てる（調べもの用。誤判定を含む。下の注）
    ほかの指定：--jobs=1（ページを 1 枚ずつ。既定 2）、--scale=0.5（回数を一律に何倍にするか。seed の範囲が変わるので、件数は単独実行と比べられない）、
-              --json=まとめ.json、--info（参考の数も全部出す）、--compat（misc を当てない＝統合前の道具と同じ判定だけ）、
+              --json=まとめ.json、--info（参考の数も全部出す）、--why（0 でない項目の例を 10 件まで出す。既定は 3 件）、--compat（misc・cons を当てない＝統合前の道具と同じ判定だけ）、
               --full=…／--zen=…（ビルドのフォルダ。既定はこのリポジトリの hakoniwa-full・hakoniwa-zenrei）
    ・モードごとにページを開き（R18版 #r18・全年齢モード #safe・全年齢版）、パス（配役の決め方。今までの道具と同じ seed・配役）を順に回す。
      各判定は自分のパスの回に当てる（今までの道具の単独実行と同じ件数になる）。misc（使われなくなった小さな道具から取り込んだ文の崩れの判定）は自分のパスを持たず、全部のパスの回に当てる。
@@ -26,11 +27,11 @@ const TOOLS = {
   orient: require('./orient-audit.js'), pos: require('./pos-audit.js'), state: require('./state-audit.js'), loveflag: require('./love-flag-audit.js'),
   seg: require('./seg-audit.js'), qa: require('./qa-audit.js'), sexgate: require('./sex-gate-audit.js'), feud: require('./feud-audit.js'), group: require('./group-audit.js'),
   name: require('./name-audit.js'), relcons: require('./relcons-audit.js'), call: require('./call-audit.js'), sexflow: require('./sex-flow-audit.js'), trio: require('./trio-shape-audit.js'), pair: require('./pair-only-audit.js'),
-  misc
+  misc, cons: require('./audit/cons.js')
 };
 const MODS = Object.keys(TOOLS).map(k => TOOLS[k]);
 /* 判定の名前（まとめの見出し） */
-const JNAME = { orient: '恋愛対象', pos: '受け攻め・体の語', state: '状態', loveflag: '恋愛：なし', seg: '台詞の区分', qa: '問いと返事', sexgate: '性的な出来事の門', feud: '不仲の組', group: '複数人の恋愛', name: '名前の言い換え', relcons: '展開の不整合', call: '名前の呼びかけ', sexflow: '長い場面の流れ', trio: '三人の場面の形', pair: '二人きりの文', misc: '文の崩れ' };
+const JNAME = { orient: '恋愛対象', pos: '受け攻め・体の語', state: '状態', loveflag: '恋愛：なし', seg: '台詞の区分', qa: '問いと返事', sexgate: '性的な出来事の門', feud: '不仲の組', group: '複数人の恋愛', name: '名前の言い換え', relcons: '展開の不整合', call: '名前の呼びかけ', sexflow: '長い場面の流れ', trio: '三人の場面の形', pair: '二人きりの文', misc: '文の崩れ', cons: '場面の辻褄' };
 
 /* ---------- パス（配役の決め方）：今までの道具の既定の回数と同じ。est は 1 回分の目安の秒数（ページの割り振りに使う） ---------- */
 const PASSES = {
@@ -77,6 +78,8 @@ const JUDGES = {
   loveflag: { cross: true, opt: c => ({ why: !c.compat }) },
   seg: { cross: true, opt: () => ({}) },
   misc: { cross: true, opt: () => ({}) },
+  /* 場面の辻褄（2026-11-07。audit/cons.js）：misc と同じく自分のパスを持たず、全部のパスの回に当てる */
+  cons: { cross: true, opt: () => ({}) },
   qa: { cross: false, opt: () => ({}) },
   sexgate: { cross: false, opt: () => ({ cond: TOOLS.sexgate.COND }) },
   feud: { cross: false, opt: () => ({}) },
@@ -102,7 +105,7 @@ function plan(o) {
     /* 判定：このモードで当てるもの（比率の点検は、自分のパスがあるときだけ） */
     const mk = list => {
       const own = {}; list.forEach(p => { own[PASSES[p].tool] = 1; });
-      const js = Object.keys(JUDGES).filter(j => (!JUDGES[j].modes || JUDGES[j].modes.indexOf(m) >= 0) && (own[j] || (j === 'misc' ? !o.compat && !o.noMisc : JUDGES[j].cross && o.cross)));
+      const js = Object.keys(JUDGES).filter(j => (!JUDGES[j].modes || JUDGES[j].modes.indexOf(m) >= 0) && (own[j] || ((j === 'misc' || j === 'cons') ? !o.compat && !o.noMisc : JUDGES[j].cross && o.cross)));
       return { mode: m, passes: list, judges: js, est: list.reduce((s, p) => s + PASSES[p].est, 0) * o.scale + 5 };
     };
     /* 2 本以上で回すときは、重いモードのパスを 2 枚のページに分ける（判定の結果はあとで足す） */
@@ -130,7 +133,7 @@ async function runUnit(u, o, log) {
       lewdMode: core.lewdOf(P.lewd),
       /* pos は 3 つのパス（素・--hot・--ff --hot）を、--cross でなければパスごとに数える（今までの単独実行と同じ） */
       judges: u.judges.map(j => ({ id: j, key: !o.cross && j === 'pos' ? 'pos@' + p : j, opt: JUDGES[j].opt(j === 'state' ? u.mode : o, o), own: PASSES[p].tool === j }))
-        .filter(j => j.own || (j.id === 'misc' && !P.noMisc) || o.cross)
+        .filter(j => j.own || ((j.id === 'misc' || j.id === 'cons') && !P.noMisc) || o.cross)
     };
   });
   let fin;
@@ -143,7 +146,8 @@ async function runUnit(u, o, log) {
 
 /* ---------- まとめ ---------- */
 function addInfo(a, b) { Object.keys(b || {}).forEach(k => { const v = b[k]; if (typeof v === 'number') a[k] = (a[k] || 0) + v; else if (v && typeof v === 'object' && !Array.isArray(v)) { a[k] = a[k] || {}; addInfo(a[k], v); } else if (a[k] == null) a[k] = v; }); }
-function summarizeMode(m, fins) {
+function summarizeMode(m, fins, o) {
+  const NEX = o && o.why ? 10 : 3;
   const J = {};
   let runs = 0, err = 0, sec = 0; const perr = [], jerr = [];
   fins.forEach(f => {
@@ -152,7 +156,7 @@ function summarizeMode(m, fins) {
     Object.keys(f.out).forEach(key => {
       const id = key.split('@')[0], S = TOOLS[id].summarize(f.out[key] || {});
       const T = J[id] = J[id] || { items: {}, ex: {}, info: {}, err: 0, errEx: [] };
-      Object.keys(S.items || {}).forEach(k => { T.items[k] = (T.items[k] || 0) + S.items[k]; T.ex[k] = (T.ex[k] || []).concat((S.ex && S.ex[k]) || []).slice(0, 3); });
+      Object.keys(S.items || {}).forEach(k => { T.items[k] = (T.items[k] || 0) + S.items[k]; T.ex[k] = (T.ex[k] || []).concat((S.ex && S.ex[k]) || []).slice(0, NEX); });
       addInfo(T.info, S.info); T.err += S.err || 0; (S.errEx || []).forEach(x => T.errEx.length < 3 && T.errEx.push(x));
     });
   });
@@ -194,7 +198,7 @@ function report(sums, o) {
     modes: arg('modes', 'r18,safe,zen').split(',').filter(m => MODE[m]),
     extra: (v => v === 'all' ? Object.keys(PASSES).filter(p => PASSES[p].extra) : v.split(',').filter(Boolean))(arg('extra', '')),
     onlyExtra: has('only-extra'), compat: has('compat'), cross: has('cross'), print: arg('print', ''), jobs: Math.max(1, +arg('jobs', 2) || 1), scale: +arg('scale', 1) || 1,
-    json: arg('json', ''), info: has('info'), noMisc: has('no-misc')
+    json: arg('json', ''), info: has('info'), noMisc: has('no-misc'), why: has('why')
   };
   /* 展開の不整合（relcons）を回すときは、見本の話題を入れた回（topics-relcons）もいっしょに回す */
   if (o.extra.indexOf('relcons') >= 0 && o.extra.indexOf('topics-relcons') < 0) o.extra.push('topics-relcons');
@@ -228,7 +232,7 @@ function report(sums, o) {
       fs.writeFileSync(path.join(o.print, P.out(f.unit.mode === 'zen' ? 'zen' : f.unit.mode) + '.txt'), lines.join('\n') + '\n');
     }));
   }
-  const sums = o.modes.map(m => summarizeMode(m, done.filter(f => f.unit.mode === m))).filter(S => S.runs || Object.keys(S.judges).length);
+  const sums = o.modes.map(m => summarizeMode(m, done.filter(f => f.unit.mode === m), o)).filter(S => S.runs || Object.keys(S.judges).length);
   const R = report(sums, o);
   const sec = (Date.now() - T0) / 1000;
   console.log(R.lines.join('\n'));
