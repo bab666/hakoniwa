@@ -80,4 +80,33 @@
     ord.splice.apply(ord, [at, 0].concat(nn));
     return list;
   };
+
+  /* ---------- 一回の遊びの入口で消す覚え（2026-11-06。HK.SIM_RESET） ----------
+     「一回の遊びで同じ文を出さない」覚え（使った文・最後に選んだ文・表から作った集合など）を ctx でなくモジュールの変数に持つ部品は、
+     HK.onSimReset(fn) で消し方を登録する。HK.simulate のいちばん外の包み（番号 3e9。登録が一つでもあれば付ける）が、回の入口で一覧を順に呼ぶ。
+     前に回した箱庭の覚えが次の回に残ると、同じページで先に別の箱庭を回したかどうかで結果が変わる（chunk-regress の口調の閉包の揺れ）。
+     回の中から HK.simulate を呼び直した（入れ子の）ときは消さない。登録した関数は副作用（覚えを空にする・作り直す）だけを書き、例外は握りつぶす */
+  var SIM_RESET = HK.SIM_RESET = HK.SIM_RESET || [], simDepth = 0, simWrapped = false, simPending = false;
+  function simResetInstall() {
+    if (simWrapped || typeof HK.simulate !== 'function') return;
+    simWrapped = true;
+    wrap(HK, 'simulate', function (sim0) {
+      var f = function () {
+        if (!simDepth) for (var i = 0; i < SIM_RESET.length; i++) { try { SIM_RESET[i](); } catch (e) { /* 消し方の失敗で回を止めない */ } }
+        simDepth++;
+        try { return sim0.apply(this, arguments); } finally { simDepth--; }
+      };
+      Object.keys(sim0 || {}).forEach(function (k) { f[k] = sim0[k]; });
+      return f;
+    }, 3e9);
+  }
+  HK.onSimReset = function (fn) {
+    if (typeof fn !== 'function') return fn;
+    if (SIM_RESET.indexOf(fn) < 0) SIM_RESET.push(fn);
+    /* 中核の途中（ero-kit.js など）で登録したときは、中核の素の代入の包み（goukon-fresh.js・attr-meet.js など）がまだ外に来るので、次のかたまりを読み終えたときに付ける */
+    var L = HK.Load;
+    if (!simWrapped && L && L.isDone && L.onChunk && (L.cur || 0) > 0 && !L.isDone('core')) { if (!simPending) { simPending = true; L.onChunk(simResetInstall); } }
+    else simResetInstall();
+    return fn;
+  };
 })();
