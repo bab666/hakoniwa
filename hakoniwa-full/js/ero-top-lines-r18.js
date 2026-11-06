@@ -240,7 +240,8 @@
   /* 帰宅を前提にした台詞（「ただいまのキス、まだだったね」）：箱庭が「帰宅の文を使わない」と伝えたとき（scen.eroNoHome が真。配信の部屋のように、帰ってきた場面でない夜だけの箱庭）は外す。
      伝えていない箱庭は今までどおり（結果は変わらない）。2026-11-06 */
   var HOME_NG = /ただいま/;
-  function noHome(S) { var c = S && S.scen ? S : HK._curCtx; return !!(c && c.scen && c.scen.eroNoHome); }
+  /* scen.eroNoHome は真偽か、ctx を受けて真偽を返す関数（同居生活：帰宅の夜の種のときだけ偽） */
+  function noHome(S) { var c = S && S.scen ? S : HK._curCtx, v = c && c.scen ? c.scen.eroNoHome : false; if (typeof v === 'function') { try { return !!v(c); } catch (e) { return false; } } return !!v; }
   function pools(top, bot, stage, opt, S) {
     opt = opt || {};
     var st = stageOf(stage), out = [];
