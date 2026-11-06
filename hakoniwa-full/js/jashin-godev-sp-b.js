@@ -56,7 +56,7 @@
   function reveal(S, sh, vs, sign) {
     var I = S.ith; I.rev = true; I.v.deathHidden = false;
     var ct = GD.giveClue(S, sh);
-    var o = ST.say(S, { actors: [sh], tag: '成り代わり', kind: 'climax', text: sign + '――' + sh.name + 'は、気づいてしまった。「あなた……' + I.v.name + 'じゃない｜あなた……' + I.v.name + 'ではない｜あなた……' + I.v.name + 'ではありませんね」' + I.v.name + 'の姿をしたものの顔に、霜の亀裂が走った。それは人の声ではない声で笑い、窓を突き破って、吹雪の中へ消えた。' + ct, why: sh.name + 'が、成り代わりを見抜いた（観察' + (sh.job === 'psychic' ? '・霊感' : '') + '）', mag: 44 });
+    var o = ST.say(S, { actors: [sh], tag: '成り代わり', kind: 'climax', text: sign + '――' + sh.name + 'は、気づいてしまった。「{二人称}……' + I.v.name + 'じゃない｜{二人称}……' + I.v.name + 'ではない｜{二人称}……' + I.v.name + 'ではありませんね」' + I.v.name + 'の姿をしたものの顔に、霜の亀裂が走った。それは人の声ではない声で笑い、窓を突き破って、吹雪の中へ消えた。' + ct, why: sh.name + 'が、成り代わりを見抜いた（観察' + (sh.job === 'psychic' ? '・霊感' : '') + '）', mag: 44 });
     ST.key(S, o, I.v.name + 'は成り代わられていた');
     ST.say(S, { actors: [I.v], tag: '雪の中', text: '峠の雪の中から、本物の' + I.v.name + 'が見つかった。凍りついたその顔は、最後まで誰かを呼んでいるようだった。', why: I.v.name + 'は、吹雪の夜にすでに殺されていた', mag: 36 });
     S.gBonus = (S.gBonus || 0) + 0.06;

@@ -74,7 +74,7 @@
         if (mates.length) {
           var b = ctx.rng.pick(mates);
           if (a.tr.np > 0.5 || R(ctx, a, b).aff > 30) ctx.act2({ actors: [a, b], cat: 'bond', fx: function () { if (b.z) b.z.food = (b.z.food || 0) + 1; ctx.mod(b, a, { aff: 8, trust: 8 }); }, text: ctx.t('{a}は缶詰を半分、黙って{b}の前に置いた。', a, b), why: a.name + 'のNP・' + b.name + 'への好意' });
-          else if (a.tr.cold > 0.55) ctx.act2({ actors: [a, b], cat: 'conflict', fx: function () { ctx.mod(b, a, { ten: 10, aff: -5 }); }, text: ctx.t('{a}は箱を抱えたまま、{b}に背を向けた。「見つけたのは私だよ｜見つけたのは私だ｜見つけたのは私です」', a, b), why: a.name + 'のドライさ' });
+          else if (a.tr.cold > 0.55) ctx.act2({ actors: [a, b], cat: 'conflict', fx: function () { ctx.mod(b, a, { ten: 10, aff: -5 }); }, text: ctx.t('{a}は箱を抱えたまま、{b}に背を向けた。「見つけたのは{一人称}だよ｜見つけたのは{一人称}だ｜見つけたのは{一人称}です」', a, b), why: a.name + 'のドライさ' });
         }
       }
     },

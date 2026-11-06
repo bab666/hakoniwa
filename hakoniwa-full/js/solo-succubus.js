@@ -455,7 +455,7 @@
     var sa = a.stats.charm * 10 + a.stats.tech * 6 + rng() * 40, sb = b.stats.charm * 10 + b.stats.tech * 6 + rng() * 40;
     var w = sa >= sb ? a : b, l = w === a ? b : a, ml2 = Math.round(15 + rng() * 25);
     w.m.ml += ml2; l.m.mood -= 10;
-    ST.say(S, { actors: [a, b], tag: '取り合い', text: spot + 'で、' + ST.fmt(pkF(S, SB.RIVAL || ['{a}と{b}が同じ獲物の両腕をそれぞれ掴んでいた。「私が先に見つけたの！」――獲物が選んだのは{w}だった。{l}は尻尾をしならせて、悔しそうに見送った。']), { a: a.name, b: b.name, w: w.name, l: l.name }) + '（' + w.name + ' +' + ml2 + 'ml）', why: w.name + 'の魅力と技巧が上回った', mag: 22 });
+    ST.say(S, { actors: [a, b], tag: '取り合い', text: spot + 'で、' + ST.fmt(pkF(S, SB.RIVAL || ['{a}と{b}が同じ獲物の両腕をそれぞれ掴んでいた。「{一人称}が先に見つけたの！」――獲物が選んだのは{w}だった。{l}は尻尾をしならせて、悔しそうに見送った。']), { a: a.name, b: b.name, w: w.name, l: l.name }) + '（' + w.name + ' +' + ml2 + 'ml）', why: w.name + 'の魅力と技巧が上回った', mag: 22 });
   }
 
   /* ---------- 夜明け：夜が明けたら狩りはおしまい（その夜の成績に合わせた締め） ---------- */

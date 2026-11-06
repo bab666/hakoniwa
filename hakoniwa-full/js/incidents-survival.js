@@ -108,7 +108,7 @@
           ctx.act2({ actors: [taker], cat: 'conflict', fx: function () {
             taker.flags.knife = true;
             ctx.others(taker).forEach(function (o) { if (o.tr.caution > 0.55) ctx.mod(o, taker, { ten: 10, trust: -6 }); else ctx.mod(o, taker, { trust: 3 }); });
-          }, text: ctx.t('ナイフは{a}が預かることになった。「私が持ってるのが一番安全｜私が持っているのが一番安全だ｜私が持っているのが一番安全です」と言って。', taker), why: taker.name + 'のCP×攻撃性。慎重な者ほど警戒した' });
+          }, text: ctx.t('ナイフは{a}が預かることになった。「{一人称}が持ってるのが一番安全｜{一人称}が持っているのが一番安全だ｜{一人称}が持っているのが一番安全です」と言って。', taker), why: taker.name + 'のCP×攻撃性。慎重な者ほど警戒した' });
         } else if (kind === '無線機') {
           var fixer = ctx.most(P, function (c) { return c.tr.a + ctx.stat(c, 'know') * 0.15; });
           var ok = rng() < 0.2 + ctx.stat(fixer, 'know') * 0.1 + fixer.tr.a * 0.25;

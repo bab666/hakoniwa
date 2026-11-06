@@ -473,7 +473,7 @@
     if (others.length && rng() < 0.4) {
       var o2 = rng.pick(others), od = HK.Pos ? HK.Pos.order(g, o2, [o2, g]) : [o2, g];
       g.m.plea += 15 * g.sens; o2.m.plea += 15 * o2.sens; g.m.imm += 3; o2.m.imm += 3;
-      return ST.sayB(S, { actors: [g, o2], tag: '空き時間', lewd: true, text: ef(S, ST.fmt(pkF(S, E(S, 'idle', L('客が途切れた。{p}と{q}は、空いた施術室で手技の練習をすることにした。お互いの体で。|{p}は{q}に「さっきの手順、私にやってみて」と頼んだ。{q}は真剣な顔で頷き、{p}の服を脱がせ始めた。|{p}と{q}は休憩室で、どちらが多く搾ったかを比べ合った。負けた方が、勝った方を労うことになった。'))), { p: od[1].name, q: od[0].name }), od[1], od[0]), why: '同僚どうしの練習（' + SIT.name + 'では、これも業務の一部）', mag: 16 }, g.name + 'と' + o2.name + 'は空き時間に練習');
+      return ST.sayB(S, { actors: [g, o2], tag: '空き時間', lewd: true, text: ef(S, ST.fmt(pkF(S, E(S, 'idle', L('客が途切れた。{p}と{q}は、空いた施術室で手技の練習をすることにした。お互いの体で。|{p}は{q}に「さっきの手順、{一人称}にやってみて」と頼んだ。{q}は真剣な顔で頷き、{p}の服を脱がせ始めた。|{p}と{q}は休憩室で、どちらが多く搾ったかを比べ合った。負けた方が、勝った方を労うことになった。'))), { p: od[1].name, q: od[0].name }), od[1], od[0]), why: '同僚どうしの練習（' + SIT.name + 'では、これも業務の一部）', mag: 16 }, g.name + 'と' + o2.name + 'は空き時間に練習');
     }
     g.m.imm += 1;
     ST.sayB(S, { actors: [g], tag: '空き時間', text: ST.fmt(pkF(S, nm(S, SIT.idle || L('客が来ない。{p}は器具を一つずつ消毒し、次の客に備えた。|{p}は空き時間に、施術マニュアルを読み返した。付箋だらけだった。|{p}は待合室を覗き、誰もいないのを確かめてから、こっそり自分の制服の匂いを嗅いだ。|{p}は{boss}に頼まれて、新しいローションの使い心地を自分の腕で試した。'))), v) + (VO && VO.IDLE[g.persona] && rng() < 0.5 ? g.name + pkF(S, VO.IDLE[g.persona]) : ''), why: '客の少ない時間帯' }, g.name + 'は客待ち');

@@ -253,7 +253,7 @@
   });
 
   /* ================= 恐れていた相手の落ちぶれた姿 → 行動の選び方（エンジン型・物語型の共通） ================= */
-  var KNAME = { push: '突き落とした', abandon: '見捨てて逃げた', let: '見殺しにした', sell: '「私は悪くない……」と言いながら売り渡した', scorn: '見下した', retort: '言い返した', cut: '縁を切った', flee: '逃れた', shelter: '歪んだ庇護欲を向けた', love: '恋に転じた' };
+  var KNAME = { push: '突き落とした', abandon: '見捨てて逃げた', let: '見殺しにした', sell: '「{一人称}は悪くない……」と言いながら売り渡した', scorn: '見下した', retort: '言い返した', cut: '縁を切った', flee: '逃れた', shelter: '歪んだ庇護欲を向けた', love: '恋に転じた' };
   var KTO = { push: 'hate', abandon: 'hate', let: 'hate', sell: 'hate', scorn: 'scorn', retort: 'hate', cut: 'scorn', flee: 'fled', shelter: 'shelter', love: 'love' };
   CF.KNAME = KNAME; CF.KTO = KTO;
   function tiesOf(Z, a, b) {

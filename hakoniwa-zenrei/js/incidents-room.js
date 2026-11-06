@@ -27,11 +27,11 @@
         if (boss.tr.cp > 0.65 && boss.tr.np < 0.45 && meek && meek.tr.ac > 0.6) {
           drinker = meek; how = 'forced';
           ctx.act2({ actors: [boss, meek], cat: 'conflict', mag: 15, fx: function () { ctx.mod(meek, boss, { ten: 18, trust: -12, att: 4 }); },
-            text: ctx.t('「あなたが飲んで｜あなたが飲め｜あなたが飲んでください」{a}は{b}に小瓶を握らせた。{b}は数秒黙ってから、蓋を開けた。', boss, meek), why: boss.name + 'のCP高・NP低／' + meek.name + 'のAC（' + Math.round(meek.eg.AC) + '）：断れない' });
+            text: ctx.t('「{二人称}が飲んで｜{二人称}が飲め｜{二人称}が飲んでください」{a}は{b}に小瓶を握らせた。{b}は数秒黙ってから、蓋を開けた。', boss, meek), why: boss.name + 'のCP高・NP低／' + meek.name + 'のAC（' + Math.round(meek.eg.AC) + '）：断れない' });
         } else {
           drinker = ctx.most(P, function (c) { return c.tr.np * 0.45 + c.tr.impulse * 0.45 + c.tr.cold * 0.3 + (c.goal.id === 'quick' ? 0.4 : 0) + (c.goal.id === 'respect' ? 0.3 : 0); });
           how = drinker.tr.np >= Math.max(drinker.tr.impulse, drinker.tr.cold) ? 'np' : drinker.tr.impulse >= drinker.tr.cold ? 'fc' : 'cold';
-          var line = { np: '「誰かに飲ませるくらいなら、私が飲む｜＝｜誰かに飲ませるくらいなら、私が飲みます」{a}はそう言って小瓶を空けた。', fc: '「どうせなら試してみたいでしょ｜どうせなら試してみたいだろう｜どうせなら試してみたいでしょう」{a}は止める間もなく一息に飲み干した。', cold: '「効率の問題だよ｜効率の問題だ｜効率の問題です」{a}は表情も変えずに小瓶を傾けた。' }[how];
+          var line = { np: '「誰かに飲ませるくらいなら、{一人称}が飲む｜＝｜誰かに飲ませるくらいなら、{一人称}が飲みます」{a}はそう言って小瓶を空けた。', fc: '「どうせなら試してみたいでしょ｜どうせなら試してみたいだろう｜どうせなら試してみたいでしょう」{a}は止める間もなく一息に飲み干した。', cold: '「効率の問題だよ｜効率の問題だ｜効率の問題です」{a}は表情も変えずに小瓶を傾けた。' }[how];
           ctx.act2({ actors: [drinker], cat: 'romance', mag: 10, text: ctx.t(line, drinker), why: drinker.name + 'の' + { np: 'NP（自分が引き受ける）', fc: '衝動性（FC高・A低）', cold: 'ドライさ（A高・NP低）' }[how] });
         }
         drinker.flags.aphro = true;

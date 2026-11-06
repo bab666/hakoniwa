@@ -181,10 +181,10 @@
         if (forcer.tr.cp > 0.7 && forcer.tr.np < 0.4 && meek && meek.tr.ac > 0.6) {
           tasterUsed = meek;
           ctx.act2({ actors: [forcer, meek], cat: 'conflict', fx: function () { ctx.mod(meek, forcer, { ten: 20, trust: -15 }); },
-            text: ctx.t('「あなたが先に食べなよ｜あなたが先に食え｜あなたが先に食べてください」{a}は{b}の前に皿を押しやった。{b}は逆らわなかった。', forcer, meek), why: forcer.name + 'のCP高・NP低／' + meek.name + 'のAC（' + Math.round(meek.eg.AC) + '）' });
+            text: ctx.t('「{二人称}が先に食べなよ｜{二人称}が先に食え｜{二人称}が先に食べてください」{a}は{b}の前に皿を押しやった。{b}は逆らわなかった。', forcer, meek), why: forcer.name + 'のCP高・NP低／' + meek.name + 'のAC（' + Math.round(meek.eg.AC) + '）' });
         } else {
           ctx.act2({ actors: [taster], cat: 'help', fx: function () { ctx.others(taster).forEach(function (o) { ctx.mod(o, taster, { trust: 6, aff: 4 }); }); },
-            text: ctx.t('「毒見なら私がやる｜＝｜毒見なら私がやります」{a}が真っ先にスプーンを取った。', taster), why: taster.name + 'のNP・FC' });
+            text: ctx.t('「毒見なら{一人称}がやる｜＝｜毒見なら{一人称}がやります」{a}が真っ先にスプーンを取った。', taster), why: taster.name + 'のNP・FC' });
         }
         var poisoned = rng.pick(P);
         var nose = ctx.most(ctx.others(poisoned), function (o) { return o.tr.a; });

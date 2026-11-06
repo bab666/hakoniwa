@@ -469,7 +469,7 @@
   }
   function investigate(S) {
     var rng = S.rng;
-    if (S.lateHeir) { var h = S.lateHeir; S.lateHeir = null; ST.say(S, { actors: [h], tag: '探偵役', text: S.cul.name + 'の推理は、どこか事件から目を逸らさせようとしているように聞こえた。' + h.name + 'は手帳を開いた。「……私が、調べる｜＝｜……私が、調べます」', why: (S.cul.fakeDet ? '探偵の' + S.cul.name + 'が犯人なので、' : '') + h.name + 'が探偵役になった', mag: 30 }); }
+    if (S.lateHeir) { var h = S.lateHeir; S.lateHeir = null; ST.say(S, { actors: [h], tag: '探偵役', text: S.cul.name + 'の推理は、どこか事件から目を逸らさせようとしているように聞こえた。' + h.name + 'は手帳を開いた。「……{一人称}が、調べる｜＝｜……{一人称}が、調べます」', why: (S.cul.fakeDet ? '探偵の' + S.cul.name + 'が犯人なので、' : '') + h.name + 'が探偵役になった', mag: 30 }); }
     inv(S).filter(function (d) { return !d.mad; }).forEach(function (d) {
       if (!alive(d)) return;
       var left = S.pool.filter(function (c) { return !c.found && !c.lost; });
@@ -681,7 +681,7 @@
     }
     ST.say(S, { actors: [c], tag: '告白', text: c.name + '「' + conf.replace(/^「|」$/g, '') + '」', why: '動機：' + S.mot.cat + '「' + S.mot.label + '」' + (S.motSrc || ''), mag: 40 });
     /* 共犯：告白してから縛る。もう縛られて（閉じ込められて）いる共犯は、その場で告白の主役にしない（state-audit の S30。2026-10-29 担当MI） */
-    if (S.acc && alive(S.acc)) { var accHeld = !!S.acc.bound; S.acc.fate = '共犯として捕まった'; if (!accHeld) ST.say(S, { actors: [S.acc, c], tag: '共犯', text: S.acc.name + 'は、うなだれた。「……私も、手を貸した｜＝｜……私も、手を貸しました」', why: S.acc.name + 'は共犯だった（' + (relLabel(S, S.acc, c) || '協力者') + '）', mag: 30 }); S.acc.bound = true; }
+    if (S.acc && alive(S.acc)) { var accHeld = !!S.acc.bound; S.acc.fate = '共犯として捕まった'; if (!accHeld) ST.say(S, { actors: [S.acc, c], tag: '共犯', text: S.acc.name + 'は、うなだれた。「……{一人称}も、手を貸した｜＝｜……{一人称}も、手を貸しました」', why: S.acc.name + 'は共犯だった（' + (relLabel(S, S.acc, c) || '協力者') + '）', mag: 30 }); S.acc.bound = true; }
     reveal(S, c, d);
     /* 犯人の最後の動き */
     var t2 = c.tr, n = c.stats.nerve || 3;

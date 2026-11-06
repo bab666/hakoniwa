@@ -558,7 +558,7 @@
         if (lostP.length) t += pickT(['帰り道、{d}の分の席を空けて、一行は黙って杯を掲げた。', '{d}の名前を口にすると、誰もが少しだけ黙り込んだ。', '{d}を迷宮に残してきたことを、誰も忘れなかった。']);
         if (capP.length) t += pickT(['塔に囚われた{c}を取り戻す日を、一行は心に誓った。', '{c}はまだ、魔術師の塔に囚われたままだった。']);
         if (ended === 'clear' && P.some(function (p) { return /解放/.test(p.fate); })) t += '囚われていた仲間も、主が倒れたことで解き放たれた。';
-        if (mvp.alive && !mvp.mad) t += pickT(['いちばんの働きは{m}だった。皆にそう言われて、{m}は照れくさそうに頭をかいた。', '持ち帰った{g}Gを前に、{m}「次は、どこへ行く？｜次は、どこへ行く｜次は、どこへ行きますか？」', '{m}「みんな、お疲れさま。私、この仲間で良かった｜みんな、ご苦労だった。この仲間で良かった｜みんな、お疲れさまでした。私、この仲間で良かったです」']);
+        if (mvp.alive && !mvp.mad) t += pickT(['いちばんの働きは{m}だった。皆にそう言われて、{m}は照れくさそうに頭をかいた。', '持ち帰った{g}Gを前に、{m}「次は、どこへ行く？｜次は、どこへ行く｜次は、どこへ行きますか？」', '{m}「みんな、お疲れさま。{一人称}、この仲間で良かった｜みんな、ご苦労だった。この仲間で良かった｜みんな、お疲れさまでした。{一人称}、この仲間で良かったです」']);
       }
       ST.step(S, ended === 'clear' ? '踏破 ― 地上へ' : ended === 'retreat' ? '帰還 ― 地上へ' : ended === 'eternal' ? '戦いは永遠に続く' : '全滅');
       ST.say(S, { actors: (ended === 'wipe' ? P : A4).map(function (p) { return p.i; }), tag: ended === 'clear' ? '凱旋' : ended === 'retreat' ? '帰還' : ended === 'eternal' ? '永遠' : '全滅', kind: 'climax', text: fillT(t.replace(/\{l\}/g, v.l).replace(/\{f\}/g, v.f).replace(/\{g\}/g, v.g).replace(/\{m\}/g, v.m).replace(/\{d\}/g, v.d).replace(/\{c\}/g, v.c).replace(/\{x\}/g, v.x), mvp), why: ended === 'eternal' ? '冒険の締めくくり（誰も地上に戻らなかった。拾ったお金 ' + gold + 'G は迷宮に残った）' : '冒険の締めくくり（持ち帰ったお金 ' + banked + 'G）' });

@@ -141,7 +141,7 @@
     if (JS.UNPC) JS.UNPC.arrive(S);
     JS.REL.arrive(S);
     if (S.reporter) ST.say(S, { tag: '記者', text: '民宿には先客がいた。' + JS.REPORTER.name + 'だと名乗る男は、一行を見るなり嬉しそうに手帳を開いた。「いやあ、仲間がいて心強い。この村のことなら、何でも聞いてください」', why: '混乱要素：この記者は偽の情報を持ち込む' });
-    if (S.police) ST.say(S, { tag: '警察官', text: '村の駐在所から、制服の警察官が出てきた。「よそ者の方ですね。祭りの間は、私の指示に従ってもらいます」', why: '混乱要素：場を仕切りたがる警察官' });
+    if (S.police) ST.say(S, { tag: '警察官', text: '村の駐在所から、制服の警察官が出てきた。「よそ者の方ですね。祭りの間は、{一人称}の指示に従ってもらいます」', why: '混乱要素：場を仕切りたがる警察官' });
     if (JS.R18 && JS.R18.on(S)) JS.R18.arrive(S);
     ST.snap(S, keys);
 
