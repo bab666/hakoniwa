@@ -365,7 +365,7 @@
       if (MO && typeof r0 === 'string') Object.keys(MO).forEach(function (k) { if (MO[k].test(r0)) usedM[k] = 1; });
       return r0;
     };
-    S._trainScene = o.car ? 'car' : '';
+    S._trainScene = o.car ? 'car' : ''; S._trainGrab = '';
     var opt = { S: S, ctx: S, pick: pick, rng: S.rng, a: a, b: b, style: HK.ThickSex.style(a), open: o.open, after: o.after, again: false };
     if (o.car) opt.spot = 'car';
     /* 車内：本体の組み立てのいちばん外（流れの管理の包みの最後。sex-flow-r18.js の opt.post）で、脱がせる段・受け止める一文・焦らしのあとの反応を足す（2026-11-06） */
@@ -444,7 +444,7 @@
     var an = a.mob ? a.short || a.name : a.name, bn = b.mob ? b.short || b.name : b.name;
     t = t.replace(/\{a\}/g, an).replace(/\{b\}/g, bn);
     /* 本体の場所の直し・モブの呼びかけの直し */
-    if (o.car) t = carFix(t, o.flavor === 'sweet');
+    if (o.car) t = carFix(t, o.flavor === 'sweet', S);
     if (!a.mob !== !b.mob && HK.SexFlow && HK.SexFlow.mobName) t = HK.SexFlow.mobName(t, a.mob ? b.name : a.name);
     return t;
   }
@@ -794,8 +794,19 @@
     return out;
   }
   var DEAL_RE = /音を上げ|貸し一つ|主導権|強引なほど|値踏み|負けを認め|勝ち誇|取引/;
-  function carFix(t, sweet) {
+  /* つかまる物（2026-11-06）：一つの場面で、受けがつかまる物（扉の手すり・吊り革）を途中で替えない（「手すりを握らせ」のあとに「吊り革に縋りついて」と飛んでいた）。
+     場面の最初に出たつかまる物を S._trainGrab に持ち、あとの文のつかまる物をそれにそろえる（場面ごとに消す） */
+  /* 最初のつかまる物：握らせる・握りしめる・縋る（周りの乗客の「吊り革を握ったまま」は数えない）。そろえるのは、縋る・しがみつく・握りしめる文だけ */
+  var GRAB_1 = /(手すり|吊り革)(?=を握らせ|を握りしめ|を握る手|を掴ん|をつかん|に(?:縋|すが|つかま|しがみ))/, GRAB_RE = /(手すり|吊り革)(?=に(?:縋|すが|つかま|しがみ)|を握りしめ|を握る手)/g;
+  function grabFix(t, S) {
+    var m = GRAB_1.exec(t), g = (S && S._trainGrab) || (m ? m[1] : '');
+    if (!g) return t;
+    if (S) S._trainGrab = g;
+    return t.replace(GRAB_RE, g);
+  }
+  function carFix(t, sweet, S) {
     if (HK.SexSpot) t = HK.SexSpot.fix(t, 'car');
+    t = grabFix(t, S);
     if (!sweet) return t;
     return t.split('\n\n').map(function (p) { return sents(p).filter(function (x) { return !DEAL_RE.test(x); }).join(''); }).filter(function (p) { return /\S/.test(p); }).join('\n\n');
   }
@@ -905,7 +916,59 @@
       });
       ST.snap(S, keys);
     }
-    return finish(S, input);
+    var res = finish(S, input);
+    if (res && typeof res === 'object') Object.defineProperty(res, '_trainS', { value: S, enumerable: false, configurable: true, writable: true });
+    return res;
+  }
+  /* 結果の見直し（2026-11-07。点検 audit/cons.js の C5・C6 と同じ読み方）：
+     ・つかまる物：同じ区切りの続いた記録で、同じ住人（文の主語）が手を離す語なしに、扉の手すり ⇔ 吊り革 を替えない（最初に握った物にそろえる。「〜に手すりを握らせ」は相手が握るので見ない）
+     ・車内の記録（寝台・個室・降りたあとの記録は除く）の寝床・明かりの語は、本体の場所の直し（HK.SexSpot.fix(…, 'car')）を当てる */
+  var G_GRIP = /(手すり|吊り革|つり革)(?:を|に)(?:[^。]{0,6})(?:握|掴|つか|すが|縋|しがみ)/g, G_REL = /手を離|手が離れ|離し|持ち替|手を伸ばし|移っ|次の駅|扉が開|降り|乗り換/;
+  var G_VEH = /吊り革|つり革|車内|車両|電車の揺れ|乗客|満員電車|扉のガラス|ドアのガラス/, G_VEH_OK = /寝台|個室|コンパートメント|降りた|降りて|扉が閉まると|部屋(?:に|の|で|へ)|ホテル|宿の|宿に|自宅|家に着|家に帰|まだ[^。]{0,10}残|思い出|あの(?:夜|日)/;
+  var G_BED = /ベッド|シーツ|布団|(?<![のな])(?:明かり|灯り)[^。」]{0,10}(?:暗く|消して|落として|を消|を落と)|電気を消/;
+  /* 記録の最後の見直し（女性どうし・女性の攻めの組の直し HK.FF.fix・HK.FM.fix が記録を書き換えたあと）に当てる。
+     台詞の区分（voice-seg.js の包み。通し番号 502）より内側に置くので、番号 501 で包む（区分は直したあとの文で作られる） */
+  if (HK.wrap && HK.simulate) HK.wrap(HK, 'simulate', function (sim0) {
+    return function (input) {
+      var r = sim0.apply(this, arguments);
+      if (r && r._trainS) { var S0 = r._trainS; delete r._trainS; gripTidy(r, S0); }
+      return r;
+    };
+  }, 501);
+  function gripTidy(res, S) {
+    if (!res || !Array.isArray(res.log)) return res;
+    var names = (S.P || []).map(function (p) { return p && p.name; }).filter(Boolean);
+    var FIRST = names.length ? new RegExp('^[^。]*?(' + names.map(HK.reEsc).join('|') + ')(?:は|が|の(?:手|指|両手))') : null;
+    var H = {}, prevK = -2, prevSt = null;
+    res.log.forEach(function (e, k) {
+      if (!e || typeof e.text !== 'string') return;
+      var why = String(e.why || ''), tag = String(e.tag || '');
+      if (HK.SexSpot && G_VEH.test(e.text) && !G_VEH_OK.test(e.text) && !/寝台|夜行/.test(why + tag) && G_BED.test(e.text)) e.text = HK.SexSpot.fix(e.text, 'car');
+      if (!FIRST) return;
+      if (!(k === prevK + 1 && e.step === prevSt)) H = {};
+      prevK = k; prevSt = e.step;
+      var d = 0, st = 0, out = [], t = e.text;
+      for (var i = 0; i < t.length; i++) { var c = t.charAt(i); if (c === '「') d++; else if (c === '」') d = Math.max(0, d - 1); else if (!d && c === '。') { out.push(t.slice(st, i + 1)); st = i + 1; } }
+      if (st < t.length) out.push(t.slice(st));
+      e.text = out.map(function (x) {
+        var nar = x.replace(/「[^」]*」/g, function (q) { return new Array(q.length + 1).join('\u3000'); }), f = nar.match(FIRST);
+        if (!f) return x;
+        var who = f[1];
+        if (G_REL.test(nar)) delete H[who];
+        var y = x, m; G_GRIP.lastIndex = 0;
+        while ((m = G_GRIP.exec(nar))) {
+          if (m.index < nar.indexOf(who)) continue;
+          if (/^[^。]{0,8}(?:握らせ|掴ませ|つかませ|すがらせ)/.test(nar.slice(m.index + m[1].length))) continue;
+          var obj = m[1] === 'つり革' ? '吊り革' : m[1];
+          if (H[who] && H[who] !== obj) y = y.slice(0, m.index) + H[who] + y.slice(m.index + m[1].length);
+          else H[who] = obj;
+          nar = y.replace(/「[^」]*」/g, function (q) { return new Array(q.length + 1).join('\u3000'); });
+          G_GRIP.lastIndex = m.index + 2;
+        }
+        return y;
+      }).join('');
+    });
+    return res;
   }
   function pickOpt(S, p, list, pick) {
     if (pick && pick !== 'auto') for (var i = 0; i < list.length; i++) if (list[i].id === pick) return list[i];
@@ -1582,7 +1645,8 @@
       text = carPQ(S, text, A, B, mode, false);
       text = text.replace(/\{a\}/g, an).replace(/\{b\}/g, bn);
       text += '\n\n' + fm(pk(S, crowdPool(S)), V) + fm(rx(S, (top ? X.PEAK_A : X.PEAK_B)[ps(p)]), V);
-      text = carFix(HK.SexFlow && HK.SexFlow.mobName ? HK.SexFlow.mobName(text, p.name) : text);
+      S._trainGrab = '';
+      text = carFix(HK.SexFlow && HK.SexFlow.mobName ? HK.SexFlow.mobName(text, p.name) : text, false, S);
     }
     else {
       /* その日の触れ合いで直に触れる段まで進んでいたら、山場の始まりで「服を一枚も乱さないまま」「布の上から」に戻さない（通し読み 1105） */

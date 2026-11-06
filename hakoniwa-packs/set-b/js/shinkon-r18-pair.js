@@ -79,7 +79,7 @@
     var er = ctx.rng() < 0.6 ? fresh(ctx, (X.ENDR || {})[pb] || (X.ENDR || {}).gentle, a, b) : '';
     var body = op + '\n\n' + br + md + mr + '\n\n' + peak;
     /* 夜の性格の一文・夜の主導の段（共通の部品と同じ差し方） */
-    body = PR.insert1(body, PR.nightAdd(ctx, a, b, sh, ero, o.entry, { jealous: !!o.jealTop, leadB: !!o.leadB }));
+    body = PR.insert1(body, PR.nightAdd(ctx, a, b, sh, ero, o.entry, { jealous: !!o.jealTop, leadB: !!o.leadB }, body));
     /* 描写の長さ「数行で短く」：もう一度の段は付けず、一つの段落にまとめる（2026-11-05 報告「数行で短くなのに 5 段落」） */
     var oneP = env.lewdLen === 'short';
     if (o.high && !oneP && HK.ThickEro) body += '\n\n' + HK.ThickEro.again(ctx, pk, a, b, ero && form === 'mid', form === 'short' && sh !== 'ff');

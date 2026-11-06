@@ -31,6 +31,7 @@
   ];
   /* 寝具の語（台詞の中も見る）・寝て・跨る体勢・膝の上 */
   var BEDW = /寝床|ベッド|シーツ|布団|毛布|枕|寝台|敷布/, BEDQ = /寝床|ベッド|シーツ|布団|枕|寝台|敷布/;
+  var LIGHT_Q = /明かり[^」。]{0,4}(?:少しだけ、?)?暗く|明かりを[…‥、]*(?:落と|消)|電気を[…‥、]*(?:消|落と)|灯りを[…‥、]*(?:落と|消)/;
   var LIE = /うつ伏せ|仰向け|横たえ|押し倒|寝かせ|組み敷|四つん這い|腰の上|跨が|跨っ|跨り|跨い|馬乗り|寝バック|覆いかぶさ/;
   var LAP = /膝の上|膝に跨|膝へ跨|膝をまたが|向かい合わせに膝/;
   var STAND_SUB = [
@@ -43,7 +44,7 @@
   /* 車内：手すり・扉（電車の報告 1・8。solo-train.js の置き換えを本体へ） */
   var CAR_SUB = [
     [/毛布を引き寄せて顔を隠した/g, '相手の胸に顔を埋めて隠した'], [/シーツを握りしめ/g, '手すりを握りしめ'], [/シーツを掴/g, '手すりを掴'], [/指がシーツを/g, '指が手すりを'],
-    [/爪先がシーツを掻き/g, '爪先が床を掻き'], [/シーツの擦れる音/g, '服の擦れる音'], [/握っていたシーツ/g, '握っていた手すり'], [/寝床の端を掴/g, '扉の手すりを掴'],
+    [/爪先がシーツを掻/g, '爪先が床を掻'], [/シーツの擦れる音/g, '服の擦れる音'], [/握っていたシーツ/g, '握っていた手すり'], [/寝床の端を掴/g, '扉の手すりを掴'],
     [/寝床から浮/g, '扉から浮'], [/背中がシーツから浮/g, '背中が扉から浮'], [/シーツに顔を埋めて/g, '扉に額を押し当てて'],
     [/をうつ伏せに返し、/g, 'を扉のほうへ向かせ、'], [/をうつ伏せにさせ、/g, 'に扉へ手をつかせ、'], [/をうつ伏せにして、/g, 'を扉のほうへ向かせて、'],
     [/腰だけを引き上げさせた/g, '腰を突き出させた'], [/腰だけを引き上げて/g, '腰を突き出させて'],
@@ -68,7 +69,8 @@
     kitchen: { ja: '台所', allow: ['kitchen', 'wall'], ng: new RegExp(LIE.source + '|' + LAP.source), ngQ: BEDW, pos: ['tachi'], entryNG: ['nekomi', 'push'], propNG: ['kagami'], sub: STAND_SUB },
     bath: { ja: '風呂', allow: ['bath', 'wall'], ng: new RegExp(LIE.source + '|' + LAP.source), ngQ: BEDW, pos: ['tachi'], entryNG: ['nekomi', 'push'], propNG: ['chakui'], sub: STAND_SUB },
     stand: { ja: '立ったまま', allow: ['wall', 'door'], ng: new RegExp(LIE.source + '|' + LAP.source), ngQ: BEDW, pos: ['tachi', 'back', 'kakae'], entryNG: ['nekomi', 'push'], propNG: [], sub: STAND_SUB },
-    car: { ja: '車内', allow: [], ng: new RegExp(LIE.source + '|' + LAP.source + '|ソファ|目隠し'), ngQ: BEDW, pos: ['tachi', 'back'], entryNG: ['nekomi', 'push', 'bath'], propNG: ['mekakushi', 'kagami', 'lotion'], sub: CAR_SUB },
+    /* 車内の台詞に、寝室向きの明かりの頼み（「明かり……少しだけ、暗く」「明かりを落として」）を出さない（2026-11-06。場所の札） */
+    car: { ja: '車内', allow: [], ng: new RegExp(LIE.source + '|' + LAP.source + '|ソファ|目隠し'), ngQ: new RegExp(BEDW.source + '|' + LIGHT_Q.source), pos: ['tachi', 'back'], entryNG: ['nekomi', 'push', 'bath'], propNG: ['mekakushi', 'kagami', 'lotion'], sub: CAR_SUB },
     /* 宿の種類（2026-11-05）：寝具の語は通し、宿に合わない設えの語を外す（置き換えで直せる言い回しは直す） */
     hotel: { ja: 'ホテルの部屋', allow: ['bed', 'sofa', 'bath', 'wall', 'desk', 'floor'], ng: WAFU, ngQ: /浴衣|布団|障子/, pos: ['seijo', 'back', 'kijo', 'zai', 'osae', 'nebak', 'tachi', 'kakae'], entryNG: [], propNG: [], sub: HOTEL_SUB },
     ryokan: { ja: '旅館の和室', allow: ['bed', 'floor', 'bath', 'wall'], ng: /ベッド|寝台|ソファ|長椅子|ホテル|バスローブ|カーテン|ネオン/, ngQ: /ベッド|ソファ/, pos: ['seijo', 'back', 'kijo', 'zai', 'osae', 'nebak'], entryNG: [], propNG: [], sub: RYOKAN_SUB },

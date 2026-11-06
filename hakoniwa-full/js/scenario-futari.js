@@ -580,6 +580,9 @@
     unit: '日', perUnit: 4, preRel: 0, lethal: false, minCast: 2, maxCast: 4, noKiss: true,
     catBias: { romance: 1.1, bond: 1.2, help: 1.1, conflict: 0.5, combat: 0, betray: 0.2 },
     decay: 0.995, miniShare: 1.0,
+    /* 帰ってきた場面でない夜は、本体の夜の攻めの台詞から帰宅の前提の一言（「ただいまの口づけ」）を外す（R18版の ero-top-lines-r18.js が読む口。2026-11-06）。
+       遅く帰った恋人を待っていた夜（futari-r18.js の夜の種 late）だけは残す */
+    eroNoHome: function (ctx) { return !(ctx && ctx.ft && ctx.ft.curKind === 'late'); },
     derived: ['warmth', 'honesty', 'jealous', 'impulse'],
     env: [
       { id: 'days', label: '日数', min: 7, max: 30, def: 10, lo: '1週間', hi: '30日', unit: '日', desc: '見守る日数（既定は10日）。1日は朝・昼・夕方・夜の4区切り。長いほど、ぎこちなさがほどけていく過程と、その先の恋をじっくり見られます' },
