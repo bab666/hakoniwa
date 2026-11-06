@@ -1594,7 +1594,7 @@
     /* 終わったあとの乗客の一言（性格のまま） */
     if (S.lv !== 'low' && mpk) { var ma = fresh(S, mpk.a, []); if (ma) text += '\n\n' + mobFmt(fm(ma, V), m); }
     /* 住人が乗客に話しかける台詞の「あなた」は、乗客への呼びかけの印にする（mob.js の HK.Mob.addr。ほかの住人の名前で呼ばないように） */
-    if (HK.Mob && HK.Mob.addr) text = text.replace(/あなた/g, function () { return mobAddr(m); });
+    if (HK.Mob && HK.Mob.addr) text = text.replace(HK.Voice.reMk(/あなた/g), function () { return mobAddr(m); });
     text = dedupQuote(text);
     p.cnt.peak++; p.peakToday = true; (p.peakDays = p.peakDays || {})[S.day] = 1;
     p.m.plea = 20; p.m.imm = clamp(p.m.imm + (p.branch === 'thrill' ? 0 : 8), 0, 98); p.m.reason = clamp(p.m.reason - 6, 0, 100);

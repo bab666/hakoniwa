@@ -580,7 +580,7 @@
   /* 本筋の乱数を使わない、庇い展開だけの乱数（その時点までの記録から決まる） */
   function cvRng(S) {
     if (!S._cvR) {
-      var src = (S.log || []).slice(-6).map(function (o) { return (o && o.text) || ''; }).join('') + '#' + (S.log || []).length, h = 2166136261;
+      var src = HK.Voice.markOut((S.log || []).slice(-6).map(function (o) { return (o && o.text) || ''; }).join('')) + '#' + (S.log || []).length, h = 2166136261;
       for (var i = 0; i < src.length; i++) h = Math.imul(h ^ src.charCodeAt(i), 16777619);
       S._cvR = HK.rng(h >>> 0);
     }

@@ -11,7 +11,7 @@
   var HK = window.HK, E = HK && HK.Endings;
   if (!E || !E.island) return;
   function L(s) { return s.split('|'); }
-  function hash(s) { var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 99991; return h; }
+  function hash(s) { if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 99991; return h; }
   /* 同じ結末の中では同じ文を二度使わない（used に使った文を覚える） */
   function pick(arr, key, used) { var h = hash(key); for (var k = 0; k < arr.length; k++) { var t = arr[(h + k) % arr.length]; if (!used[t]) { used[t] = 1; return t; } } return arr[h % arr.length]; }
   function topOf(c) { var eg = c.eg || {}, best = 'NP', bv = -1; ['CP', 'NP', 'A', 'FC', 'AC'].forEach(function (k) { if ((eg[k] || 0) > bv) { bv = eg[k] || 0; best = k; } }); return best; }

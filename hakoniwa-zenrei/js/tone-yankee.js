@@ -13,7 +13,7 @@
   var YOU = /(?:あなた|あんた|おまえ|貴様)(?!さん|方)|(?:きみ|(?<![大姫主父母諸細若暴ァ-ヶー一-鿿A-Za-z])君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なら|だけ|たち|ら|だ|じゃ|か|な|から|へ|や|しか|まで|より|一人|自身))/g;
   var B = '(?=[よなねぞかってしけどのだこんもと。！？!?…‥、」っ]|$)';
   function re(s, f) { return new RegExp(s + B, f || 'g'); }
-  function hash(s) { var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100003; return h; }
+  function hash(s) { if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100003; return h; }
 
   /* 形容詞・「ない」の崩し（知らない→知らねえ、すごい→すげえ） */
   var KUZU = [

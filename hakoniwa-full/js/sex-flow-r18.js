@@ -28,7 +28,7 @@
   function TX() { return HK.SexFlowText || {}; }
 
   /* ---------- 乱数（本筋の乱数を使わない） ---------- */
-  function hashOf(s) { var h = 2166136261; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function hashOf(s) { var h = 2166136261; s = String(s); if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function rngOf(seed) { var h = seed >>> 0; return function () { h = (h + 0x6D2B79F5) >>> 0; var t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
   /* ---------- 文の判定（{a}＝攻め・{b}＝受けに名前をそろえた本文で見る） ---------- */
@@ -256,7 +256,7 @@
     blOff: /目隠しを?[^。]{0,8}(?:外|取|解|ずら|ほど|剥)/,
     look: /\{b\}[はが][^。「]{0,30}(?:見つめ|見上げ|目を合わせ|見返|睨|見下ろ|見入|視線を(?:合わせ|向け|上げ)|目で追|見て(?:い|しま))/,
     /* 2026-11-05：「目を見て」「顔を見せて」「見つめて」も（電車の報告の申し送り。目隠しのあとの見る台詞） */
-    lookLine: /(?:こっち|こちら|私|前)を?見(?:ろ|て|な|よ|なさい|るんだ)|目を(?:開け|逸らす|見て|見ろ|閉じるな)|目、見て|見つめ(?:て|ろ|返して)|顔(?:を|、)?(?:見せ|上げ|よく見せ)(?:て|ろ|な|なさい)|顔(?:を|、)?隠す(?:な|んじゃない)/,
+    lookLine: HK.Voice.reMk(/(?:こっち|こちら|私|前)を?見(?:ろ|て|な|よ|なさい|るんだ)|目を(?:開け|逸らす|見て|見ろ|閉じるな)|目、見て|見つめ(?:て|ろ|返して)|顔(?:を|、)?(?:見せ|上げ|よく見せ)(?:て|ろ|な|なさい)|顔(?:を|、)?隠す(?:な|んじゃない)/),
     rearFace: /見上げ|(?:顔|目|瞳)を[^。]{0,6}(?:じっと)?(?:見つめ|覗き込|のぞき込|見下ろ|のぞ)|見つめ合|目を合わせ|視線を合わせ|視線が絡|額を(?:つけ|合わせ|くっつけ|押し当て|寄せ)|額と額|額をこつん|鼻先を(?:すり|擦|寄せ)|まぶたに|唇を重ね/,
     rearOk: /振り向|振り返|肩越し|鏡|横顔|首をひね|後ろを向かせ(?:たまま)?顔|体を返|向き合|仰向け|向かい合|(?:シーツ|枕|敷布|布団|壁|腕)に額/,
     /* 受けが上のときの、攻めが上にいる言い回し（攻めが見下ろす・攻めの額の汗が受けに落ちる） */
@@ -938,7 +938,7 @@
     var S = {
       units: sp.units, mode: mode, a: a, b: b, thick: !!info.thick, usedText: {}, play: info.play || null, lock: info.play && info.play.lock || null, posIdx: -1,
       parts: (info.parts || []).map(function (p) { return { role: p.role, t: normNames(p.t, a, b) }; }).filter(function (p) { return p.t && p.t.length >= 8; }),
-      R: rngOf(hashOf((a && a.name) + '|' + (b && b.name) + '|' + t.length + '|' + t.slice(0, 60)))
+      R: rngOf(hashOf((a && a.name) + '|' + (b && b.name) + '|' + HK.Voice.markOut(t).length + '|' + HK.Voice.markOut(t).slice(0, 60)))
     };
     S.firstInsert = function () { for (var i = 0; i < S.units.length; i++) { var f = S.units[i].f || (S.units[i].f = feat(S.units[i], mode)); if (f.insert || f.inside || f.climax) return i; } return -1; };
     S.firstClimax = function () { for (var i = 0; i < S.units.length; i++) { var f = S.units[i].f || (S.units[i].f = feat(S.units[i], mode)); if (f.climax) return i; } return -1; };
@@ -1079,7 +1079,7 @@
       body = body.replace(inQ, function (w, nm, pun, i) { return i === 0 || /^[…‥\s　]*$/.test(body.slice(0, i)) ? '' : 'あなた' + pun; });
       return pre + '「' + head + body + '」';
     });
-    return t.replace(/名前を呼ぼうとして/g, '何か言おうとして').replace(/私の名前を[、]?呼んで/g, 'もっと声を聞かせて').replace(/名前で呼んで/g, '声を聞かせて').replace(/名前をひとつ呼んだ/g, '短く囁いた').replace(/名前をもう一度呼んだ/g, 'もう一度囁いた').replace(/名前を呼んだ/g, '囁いた').replace(/名前を呼ばれ/g, '囁かれ').replace(/名前を呼ぶ/g, '囁く').replace(/名前を呼び/g, '囁き');
+    return t.replace(/名前を呼ぼうとして/g, '何か言おうとして').replace(HK.Voice.reMk(/私の名前を[、]?呼んで/g), 'もっと声を聞かせて').replace(/名前で呼んで/g, '声を聞かせて').replace(/名前をひとつ呼んだ/g, '短く囁いた').replace(/名前をもう一度呼んだ/g, 'もう一度囁いた').replace(/名前を呼んだ/g, '囁いた').replace(/名前を呼ばれ/g, '囁かれ').replace(/名前を呼ぶ/g, '囁く').replace(/名前を呼び/g, '囁き');
   };
   /* ---------- 場面をまたぐ付け足しの繰り返し（2026-11-05。通し読み F16：同じ人の「律儀に名前を呼んだ」が別の夜の場面で繰り返された） ----------
      一回の遊び（F.memo）のあいだ、長い場面の地の文の一文（台詞を含まない 16 字以上の文）を数え、同じ文の三度目は外す（2 回まで）。

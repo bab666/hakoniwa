@@ -380,7 +380,7 @@
 
   /* ---------- 乱数（本筋の乱数は使わない） ---------- */
   var RUN = { seed: '', n: 0, last: {}, cnt: {}, env: null, scen: '', used: {} };
-  function hstr(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function hstr(s) { if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function mkRng(key) {
     var h = hstr(key) || 1;
     var r = function () { h = (Math.imul(h ^ (h >>> 15), 2246822507) + 0x6D2B79F5) >>> 0; h ^= h >>> 13; return (h >>> 8) / 16777216; };

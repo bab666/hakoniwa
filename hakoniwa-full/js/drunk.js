@@ -8,7 +8,7 @@
   'use strict';
   var HK = window.HK;
   function L(s) { return s.split('|'); }
-  function hash(s) { var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973; return h / 9973; }
+  function hash(s) { if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973; return h / 9973; }
   /* いちばん強い因子（同率なら箱庭の中ではその中から選ぶ。口調で決まる人はその因子。core.js の HK.topPick） */
   function top(c) { return HK.topPick ? HK.topPick(c) : HK.voiceTop ? HK.voiceTop(c) : HK.egoType(c.eg).top; }
 

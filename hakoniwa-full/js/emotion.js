@@ -28,7 +28,7 @@
   function clamp(v) { return v < 0 ? 0 : v > 100 ? 100 : v; }
   function L(s) { return s.split('|'); }
   /* 文の選び方は種から決める（ctx.rng を使わないので、ほかの乱数の流れを変えない） */
-  function hash(s) { s = String(s); var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
+  function hash(s) { s = String(s); if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
   function pickH(arr, key) { return arr && arr.length ? arr[Math.floor(hash(key) * arr.length) % arr.length] : ''; }
 
   /* ---------- 地の文に挿す一句（{a}＝その人）。態度9種 × 気分（calm は落ち着きを取り戻したとき） ---------- */

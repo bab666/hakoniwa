@@ -111,7 +111,7 @@
   var TENSE = /^(rp_|r_resolve$|r_negotiate$|r_dilemma$|r_clock$|r_one_|r_whoWith$|r_refuse$|r_protect_cond$|discuss$|consent$|push$|panic$|resign$|pick_one$|sacrifice$|grab$|cond_kill$)/;
   /* 進行役（pri）の出来事のうち、楽しげな交流のもの（質問ごっこ。room-know.js） */
   var FUN_PRI = { r_ask: 1, r_answer_later: 1 };
-  function hashOf(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 10000) / 10000; }
+  function hashOf(s) { if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return ((h >>> 0) % 10000) / 10000; }
   function funEv(e) { return !!e && !e.sex && (!e.pri || FUN_PRI[e.id] === 1) && (e.cat === 'bond' || e.cat === 'romance') && !TENSE.test(e.id || ''); }
   if (HK.Ctx && HK.Ctx.prototype.bias) HK.wrap(HK.Ctx.prototype, 'bias', function (b0) {
     return function (a, cat, e) {

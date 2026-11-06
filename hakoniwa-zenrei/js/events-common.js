@@ -42,7 +42,7 @@
   /* 同じ型（決め台詞の型）を一回の遊びで何回出したか。上限（既定 2）に達したら、呼ぶ側は別の型へ（2026-11-05。通し読みの申し送り：
      「〇〇は『知ってる』と笑った」が 2 日続けて、「で、どうしたいの」が左右を入れ替えて数日あけて出ていた） */
   /* 本筋の乱数を使わずに選ぶ（言い回しを増やしても、ほかの出来事の流れが変わらないように。回の seed と呼んだ回数から決める）：まだ使っていない文から */
-  function hq(s) { var h = 2166136261; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function hq(s) { var h = 2166136261; s = String(s); if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function freshQ(ctx, arr, salt) {
     var u = ctx._ecUsed || (ctx._ecUsed = {}), rest = arr.filter(function (t) { return !u[t]; }), l = rest.length ? rest : arr;
     ctx._ecQ = (ctx._ecQ || 0) + 1;

@@ -24,7 +24,7 @@
   function psOf(c) { var p = HK.personaOf ? HK.personaOf(c) : c && c.persona; return PS.indexOf(p) >= 0 ? p : 'gentle'; }
   /* 返事を引く乱数は、箱庭の乱数（S.rng）を使わず、台詞と二人の名前から作る（返事を足しても、そのあとの展開を変えない） */
   function hashRng(str) {
-    var h = 2166136261; str = String(str);
+    var h = 2166136261; str = String(str); if (HK.Voice && HK.Voice.markOut) str = HK.Voice.markOut(str);
     for (var k = 0; k < str.length; k++) h = Math.imul(h ^ str.charCodeAt(k), 16777619) >>> 0;
     var r = function () { h = (Math.imul(h ^ (h >>> 15), 2246822507) + 0x6D2B79F5) >>> 0; return (h >>> 8) / 16777216; };
     r.int = function (m) { return Math.floor(r() * m); };

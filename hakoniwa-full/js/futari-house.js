@@ -137,7 +137,7 @@
       else if (h.reason === 'work') h.sub = /貸してくれた/.test(raw) ? 'lend' : /借り上げ|寮|会社が用意/.test(raw) ? 'company' : null;
     }
     if (h.owner != null || !A || !B) return;
-    var ob = /\{b\}の(?:家|部屋の空いた|祖父母の家|住む街)|\{b\}は(?:迷わず、)?自分の家|\{b\}が空いた部屋|私の家に来|\{a\}の(?:部屋の水漏れ|部屋の給湯器|住んでいたアパート|部屋が、上の階)/.test(raw), oa = /\{a\}の(?:親が持っている|遠い親戚)|\{a\}が預かる|\{a\}は、恋人の\{b\}に鍵/.test(raw);
+    var ob = HK.Voice.reMk(/\{b\}の(?:家|部屋の空いた|祖父母の家|住む街)|\{b\}は(?:迷わず、)?自分の家|\{b\}が空いた部屋|私の家に来|\{a\}の(?:部屋の水漏れ|部屋の給湯器|住んでいたアパート|部屋が、上の階)/).test(raw), oa = /\{a\}の(?:親が持っている|遠い親戚)|\{a\}が預かる|\{a\}は、恋人の\{b\}に鍵/.test(raw);
     if (ob) { h.owner = B.i; h.mover = A.i; } else if (oa) { h.owner = A.i; h.mover = B.i; }
   }
   H.reasonMeta = reasonMeta;
@@ -233,9 +233,10 @@
   function back(ctx, c, o, w) {
     var f = ctx.ft, h = hs(ctx), T = TX();
     c.gone = false; delete h.away[c.i];
+    var RE_MYHOUSE = HK.Voice.reMk(/私の家/);
     /* 家の持ち主が決まっていて、帰ってきた人がその人でなければ「ここ、私の家だし」を選ばない（A3） */
     var ow = H.owner(ctx), BK = T.BACK;
-    if (ow && ow !== c) { BK = {}; Object.keys(T.BACK).forEach(function (k) { BK[k] = T.BACK[k].filter(function (z) { return !/私の家/.test(z); }); }); }
+    if (ow && ow !== c) { BK = {}; Object.keys(T.BACK).forEach(function (k) { BK[k] = T.BACK[k].filter(function (z) { return !RE_MYHOUSE.test(z); }); }); }
     var x = FC.stOf(ctx, c, o), t = FC.freshP(ctx, BK, c) + (o.gone ? '' : FC.fresh(ctx, T.TAKE));
     var who = o.gone ? ctx.present().filter(function (y) { return y !== c; })[0] : o;
     emitT(ctx, who ? [c, who] : [c], 'help', t, FC.W(ctx, '自宅の玄関') + c.name + 'が' + w.w + 'から帰ってきた（' + (f.day - w.day) + '日ぶり）。仲直り', { b: o.name }, 'back',

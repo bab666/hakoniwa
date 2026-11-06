@@ -21,7 +21,7 @@
   var HK = window.HK, T = HK && HK.Tone;
   if (!HK || !T) return;
   var E = HK.Ending = {};
-  function hash(s) { var x = 7; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0; return Math.abs(x).toString(36); }
+  function hash(s) { if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var x = 7; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0; return Math.abs(x).toString(36); }
   var FIELDS = { plain: 12, ask: 12, add: 12, surprise: 40, laugh: 40, lead: 40 };
   var FORM_TONE = { K: 'gentle', F: 'stern', P: 'polite' };
   var FORM_LABEL = { K: 'くだけた常体', F: '硬い常体', P: '敬語' };

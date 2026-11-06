@@ -1099,7 +1099,7 @@
   var DIR_A = { crush: 1, host: 1, rank: 1, master: 1, obsess: 1, fear: 1, apathy: 1 };
   var COUPLE = /^(lover|mate|fated|spouse|fiance)$/;
 
-  function hash(s) { s = String(s); var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function hash(s) { s = String(s); if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function mkRng(seed, salt) { return HK.rng((Math.imul(((+seed || 0) >>> 0) ^ 0x9e3779b9, 2654435761) + hash(salt || 'trap')) >>> 0); }
   function wpick(rng, list, wf) {
     var t = 0; list.forEach(function (x) { t += Math.max(0, wf(x)); });

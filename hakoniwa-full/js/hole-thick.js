@@ -150,7 +150,7 @@
   function R(S) {
     if (!S.lwH) {
       /* 物語の乱数には触れない。種は、この回の記録の中身（人・場所・出来事の数）から作る */
-      var src = (S.log || []).map(function (e) { return e.text || ''; }).join('').slice(0, 400), n = 0;
+      var src = HK.Voice.markOut((S.log || []).map(function (e) { return e.text || ''; }).join('')).slice(0, 400), n = 0;
       for (var i = 0; i < src.length; i++) n = (n * 31 + src.charCodeAt(i)) >>> 0;
       /* 喘ぎの「最近使った」は本文と共有する（同じ喘ぎが続かないように。乱数は別） */
       S.lwH = { rng: HK.rng((n + (S.log || []).length * 7919 + ((S.env && S.env.hours) || 1) * 131 + 2027) >>> 0), _eroSeen: S._eroSeen = S._eroSeen || {} };

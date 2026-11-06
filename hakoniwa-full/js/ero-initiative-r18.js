@@ -73,7 +73,7 @@
   };
 
   /* ---------- 本筋に触れない乱数（名前と本文から） ---------- */
-  function hashOf(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function hashOf(str) { if (HK.Voice && HK.Voice.markOut) str = HK.Voice.markOut(str); var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function rngOf(seed) {
     var h = seed >>> 0;
     var f = function () { h = (h + 0x6D2B79F5) >>> 0; var t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -81,7 +81,7 @@
     f.float = f;
     return f;
   }
-  I.rngFor = function (T, U, text) { var t = String(text || ''); return rngOf(hashOf((T && T.name) + '\u0001' + (U && U.name) + '\u0001' + t.length + '\u0001' + t.slice(0, 80) + t.slice(-80))); };
+  I.rngFor = function (T, U, text) { var t = HK.Voice.markOut(String(text || '')); return rngOf(hashOf((T && T.name) + '\u0001' + (U && U.name) + '\u0001' + t.length + '\u0001' + t.slice(0, 80) + t.slice(-80))); };
   function pickR(r, arr) { return arr && arr.length ? arr[r.int(arr.length)] : ''; }
   /* 導入の台詞・応じ方は、一回の遊び（シミュレーション）の中で同じものを続けて出さない（使ったものを HK.SexFlow.memo に覚え、全部使ったら戻す。2026-11-03） */
   /* who を渡すと、その住人ごとに使った文を覚える（2026-11-03：皆で一つの覚えだと、ほかの住人が使い切ったところで戻り、同じ人に同じ導入の台詞が二度出ていた） */
@@ -192,7 +192,8 @@
   var NOM = /\{b\}の\{男性器\}|出したら|出しちゃ|イっちゃだめ|イかないで/;
   function okBody(arr, pl) { if (pl.mode !== 'fm' || P.hasM(pl.b)) return arr; return arr.filter(function (s) { return !NOM.test(s) && !/\{b\}の\{男性器\}/.test(s); }); }
   /* 受けが主導を取る台詞（主導だけが移る場面では、受けが下にいることもあるので「私が上」「乗る」の台詞を使わない） */
-  function sayUe(T, U, ch) { var l = T.SAY.ue[persona(U)] || T.SAY.ue.gentle; if (ch === 'shift') { var f = l.filter(function (x) { return !/私が上|上から|上に|乗る|乗り|見下ろ/.test(x); }); if (f.length) l = f; } return l; }
+  var RE_UE = HK.Voice.reMk(/私が上|上から|上に|乗る|乗り|見下ろ/);
+  function sayUe(T, U, ch) { var l = T.SAY.ue[persona(U)] || T.SAY.ue.gentle; if (ch === 'shift') { var f = l.filter(function (x) { return !RE_UE.test(x); }); if (f.length) l = f; } return l; }
   function parts(pl) {
     var T = X(), r = pl.r, out = { lead: '', mid: '', end: '', after: '' }, e = pl.ero, m = pl.mode, U = pl.b;
     /* 受けの誘い方・襲い方＋攻めの応じ方 */

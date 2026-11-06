@@ -56,6 +56,12 @@
   var MK1 = '\uE0F1', MK2 = '\uE0F2', MK_LIT = /\{(一|二)人称\}/g, MK_ANY = /[\uE0F1\uE0F2]|\{[一二]人称\}/;
   V.MK1 = MK1; V.MK2 = MK2;
   V.hasMark = function (s) { return typeof s === 'string' && MK_ANY.test(s); };
+  /* 本文の「私」「あなた」を見て行を選ぶ正規表現を、印でも当たる形にする（2026-11-06 の一括移行。生成のときの本文は印 {一人称}・{二人称} のまま、
+     processText の中では 1 字の印なので、両方に当てる）。V.reFP()・V.reYou() は正規表現の部品（文字列）、V.reMk(/…私…/) は「私」「あなた」を部品に替えた写し */
+  var RE_FP = '(?:私|\\{一人称\\}|\\uE0F1)', RE_YOU = '(?:あなた|\\{二人称\\}|\\uE0F2)';
+  V.reFP = function () { return RE_FP; };
+  V.reYou = function () { return RE_YOU; };
+  V.reMk = function (re) { return new RegExp(re.source.replace(/私/g, RE_FP).replace(/あなた/g, RE_YOU), re.flags); };
   /* ソースの書き方 {一人称}・{二人称} → 1 字の印 */
   V.markIn = function (s) { return typeof s === 'string' && s.indexOf('人称}') >= 0 ? s.replace(MK_LIT, function (m, k) { return k === '一' ? MK1 : MK2; }) : s; };
   /* 残った印（1 字の印・ソースの書き方の両方）→「私」「あなた」 */
@@ -1021,13 +1027,15 @@
       return NS.dec(pt0.call(this, t2, P2, A2));
     };
   })();
-  /* 一人称・二人称の印（いちばん外の包み）：入口で {一人称}・{二人称} を 1 字の印にし（名前の伏せ字より前に。名前の字が印の字と重なっても壊れない）、
+  /* 一人称・二人称の印（いちばん外の包み）：入口で {一人称} を 1 字の印にし（名前の伏せ字より前に。名前の字が印の字と重なっても壊れない）、
+     {二人称} は「あなた」にする（2026-11-06 の一括移行：二人称は「あなた」と同じ道を通す。辞書の語彙・口調の仕上げ・どもり・くじの種が「あなた」で書いた台詞と同じに当たり、
+     V.applyYou が話し手の二人称にそろえる。敬語の相手・名詞の引用・二人称が空なら「あなた」のまま。「{二人称}さん」「{二人称}様」は「あなた」と同じく替えない）、
      出口で残った印を「私」「あなた」に戻す（話し手が決まらない台詞・名詞の引用・地の文。印が画面に残ることを無くす） */
   (function () {
     var pt0 = V.processText;
     V.processText = function (text, people, actors) {
       if (!V.hasMark(text)) return pt0.apply(this, arguments);
-      return V.markOut(pt0.call(this, V.markIn(text), people, actors));
+      return V.markOut(pt0.call(this, V.markIn(text).replace(/\uE0F2/g, 'あなた'), people, actors));
     };
   })();
   /* ---------- ♡を外す（住人の設定「♡喘ぎ（男性向け）」を外した人・全体の「喘ぎ声の調整」の「♡：全員なし」。2026-10-30 担当HT） ----------

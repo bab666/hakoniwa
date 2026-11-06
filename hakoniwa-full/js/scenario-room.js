@@ -825,7 +825,7 @@
   var ACT_RE = { hand: /手を(繋|つな|握)|手を探り当て|指を絡/, hug: /抱きしめ|抱き合|ハグ/, lap: /膝枕/, kiss: /キスを?し|唇を重ね|口づけ/ };
   var NO_RE = /身を引いた|振り払った|振りほどいた|手を引っ込め|払いのけ|拒んだ/;
   var FL_NOUN = { hand: '手繋ぎ' };
-  function snip(t) { t = String(t); return t.length > 28 ? t.slice(0, 27) + '…' : t; }
+  function snip(t) { t = HK.Voice.markOut(String(t)); return t.length > 28 ? t.slice(0, 27) + '…' : t; }
   /* ほかの出来事の中の条件2の行為・言葉（条件の順番で、まだ数えない）：数えずに残し、組と条件ごとに一度だけ「まだ数えない」と書く */
   function preSeen(ctx, r, a, b, e) {
     var p = prog(ctx, a, b);

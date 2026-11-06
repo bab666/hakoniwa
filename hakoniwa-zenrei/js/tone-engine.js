@@ -52,7 +52,7 @@
   var HK = window.HK;
   if (!HK) return;
   var T = HK.Tone = { dicts: {}, user: {}, userText: '', ending: {} };
-  function hash(s) { var x = 7; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0; return Math.abs(x); }
+  function hash(s) { if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var x = 7; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0; return Math.abs(x); }
   function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   function choose(list, seed) { return list.length === 1 ? list[0] : list[hash(seed) % list.length]; }
   function yes(v) { return /^(はい|on|1|true|yes|○|する)$/i.test(String(v || '').trim()); }

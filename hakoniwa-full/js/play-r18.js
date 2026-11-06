@@ -41,7 +41,7 @@
   P.POSTURE = { seijo: 'aUp', back: 'rear', kijo: 'bUp', zai: 'sit', tachi: null, osae: 'aUp', nebak: 'rear', kakae: null };
 
   /* ---------- 乱数（本筋の乱数を使わない） ---------- */
-  function hashOf(s) { var h = 2166136261; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function hashOf(s) { var h = 2166136261; s = String(s); if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function rngOf(seed) { var h = seed >>> 0; var f = function () { h = (h + 0x6D2B79F5) >>> 0; var t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; f.int = function (n) { return Math.floor(f() * n); }; return f; }
   P.rngOf = rngOf; P.hashOf = hashOf;
   /* 一回の遊び（シミュレーション）の覚え書き：HK.SexFlow.memo（シミュレーションごとに作り直される） */

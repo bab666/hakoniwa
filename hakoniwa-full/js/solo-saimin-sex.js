@@ -216,7 +216,7 @@
   };
   Object.keys(V).forEach(function (k) { var g = SM.SUG[k]; if (!g) return; Object.keys(V[k]).forEach(function (f) { g[f] = V[k][f]; }); });
   /* 攻めの文から、受け身の一文を外す（obey は元の二つ目「私が使うから」を、pet は首輪の一文を差し替え） */
-  if (SM.SUG.obey && SM.SUG.obey.fullTop) SM.SUG.obey.fullTop = SM.SUG.obey.fullTop.filter(function (s) { return !/私が使う/.test(s); }).concat(L('{h}は「私を、好きにしなさい。それが命令」と囁いた。{a}は命令どおり{h}をベッドに押し倒し、許しを待たずに奥まで沈めた。命令に従うたびに、{a}の目はうっとりと潤んだ。'));
+  if (SM.SUG.obey && SM.SUG.obey.fullTop) SM.SUG.obey.fullTop = SM.SUG.obey.fullTop.filter(function (s) { return !HK.Voice.reMk(/私が使う/).test(s); }).concat(L('{h}は「私を、好きにしなさい。それが命令」と囁いた。{a}は命令どおり{h}をベッドに押し倒し、許しを待たずに奥まで沈めた。命令に従うたびに、{a}の目はうっとりと潤んだ。'));
   if (SM.SUG.pet && SM.SUG.pet.fullTop) SM.SUG.pet.fullTop = SM.SUG.pet.fullTop.filter(function (s) { return !/首輪/.test(s); }).concat(L('{a}は四つん這いになり、{h}の足元にすり寄った。じゃれつくように{h}を押し倒すと、犬のように{h}の首筋を舐め回し、そのまま後ろから{h}にのしかかった。'));
 
   /* 我に返る場面：かけられた側が攻めのとき・女性どうしのとき */

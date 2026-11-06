@@ -38,7 +38,7 @@
   function nm(c) { return String((c && c.name) || ''); }
   function pid(a, b) { return [nm(a), nm(b)].sort().join('\u0001'); }
   function h01(s) {
-    var h = 2166136261; s = String(s);
+    var h = 2166136261; s = String(s); if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s);
     for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
     h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15;
     return (h >>> 0) / 4294967296;

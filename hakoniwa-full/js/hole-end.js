@@ -231,7 +231,7 @@
   function R(S) {
     if (!S.hEndR) {
       /* 物語の乱数には触れない。種は、この回の記録の中身から作る */
-      var src = (S.log || []).map(function (e) { return e.text || ''; }).join('').slice(-400), n = 0;
+      var src = HK.Voice.markOut((S.log || []).map(function (e) { return e.text || ''; }).join('')).slice(-400), n = 0;
       for (var i = 0; i < src.length; i++) n = (n * 31 + src.charCodeAt(i)) >>> 0;
       S.hEndR = { rng: HK.rng((n + (S.log || []).length * 7177 + 4049) >>> 0), used: {} };
     }

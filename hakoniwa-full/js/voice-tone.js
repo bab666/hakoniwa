@@ -13,7 +13,7 @@
   var HK = window.HK, V = HK.Voice;
   if (!V) return;
 
-  function hash(s) { var x = 7; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0; return Math.abs(x); }
+  function hash(s) { if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var x = 7; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) | 0; return Math.abs(x); }
   function isKanji(ch) { return /[一-鿿々]/.test(ch || ''); }
   var WH = /(なんで|どうして|何|なに|誰|だれ|どこ|いつ|どう|どれ|どっち|なぜ)/;
 

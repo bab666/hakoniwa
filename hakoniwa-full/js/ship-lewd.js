@@ -276,7 +276,7 @@
   }
   /* その回の記録から作る乱数の種（S.rng を引かない） */
   function seedOf(S, a) {
-    var lt = S.log && S.log.length ? String(S.log[S.log.length - 1].text || '').slice(-48) : '';
+    var lt = S.log && S.log.length ? HK.Voice.markOut(String(S.log[S.log.length - 1].text || '')).slice(-48) : '';
     var s = (S.log ? S.log.length : 0) + '|' + (S.m || 0) + '|' + a.name + '|' + lt, h = 2166136261;
     for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
     return h >>> 0;

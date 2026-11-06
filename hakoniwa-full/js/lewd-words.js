@@ -65,7 +65,7 @@
   /* 判定用の直接の語（HK.Pos.MALE_RE・pos-nogen.js の FEM などに当たる語） */
   var DIRECT = { '男性器': 'ちんぽ', '亀頭': '亀頭', '女性器': 'まんこ', '陰核': '陰核', 'ナカ': 'ナカ', '胸': '胸', '乳首': '乳首', '尻': '尻', '後ろ': 'アナル', '精液': '精液', '愛液': '愛液', '股間': '股間', '前立腺': '前立腺', '結腸': '結腸' };
   function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-  function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0); }
+  function hash(s) { if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0); }
   var P = function () { return HK.Pos; };
   function hasM(c) { var Q = P(); if (Q && Q.hasM) return Q.hasM(c); return c.gender === 'm'; }
   function hasF(c) { var Q = P(); if (Q && Q.hasF) return Q.hasF(c); return c.gender === 'f'; }
@@ -226,8 +226,8 @@
   }
   /* 台詞の中の印の持ち主（自由記入を使ってよいか）：「名前の」→その人、「私の・俺の…」→話し手、「あなたの・お前の…」→話し手でない、
      それ以外は、その場の住人のうち、その体を持つ人がただ一人ならその人（話し手を含む）。住人でない人を指す「〇〇の」なら持ち主なし */
-  var FP_OWN = /(?:私|わたし|あたし|俺|おれ|オレ|僕|ぼく|ボク|自分|うち|ウチ|わし|わらわ|拙者|我|あたい|わたくし|それがし)の$/;
-  var YOU_OWN = /(?:あなた|あんた|お前|おまえ|君|きみ|キミ|おぬし|貴方|貴女|そなた|てめえ|テメエ|お客様|お客さん)の$/;
+  var FP_OWN = HK.Voice.reMk(/(?:私|わたし|あたし|俺|おれ|オレ|僕|ぼく|ボク|自分|うち|ウチ|わし|わらわ|拙者|我|あたい|わたくし|それがし)の$/);
+  var YOU_OWN = HK.Voice.reMk(/(?:あなた|あんた|お前|おまえ|君|きみ|キミ|おぬし|貴方|貴女|そなた|てめえ|テメエ|お客様|お客さん)の$/);
   function quoteOwner(q, off, key, who, ctx) {
     var before = q.slice(Math.max(0, off - 12), off).split(MARK).join('');
     var named = null, bi = -1;

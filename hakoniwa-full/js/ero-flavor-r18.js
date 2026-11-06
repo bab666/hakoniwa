@@ -65,7 +65,7 @@
   function pairId(a, b) { return [nm(a), nm(b)].sort().join('\u0001'); }
   /* 種から 0〜1（FNV-1a ＋混ぜ） */
   function h01(s) {
-    var h = 2166136261;
+    if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var h = 2166136261;
     for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
     h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15;
     return (h >>> 0) / 4294967296;
