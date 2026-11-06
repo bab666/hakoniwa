@@ -220,3 +220,20 @@ acorn で字句に分け、文字列リテラル・テンプレートの文字�
 3. もう一度両ビルドを build する。
 4. regress（R18版・全年齢モード・全年齢版）とパックの指紋が 1 と一致することを確かめる（`node hakoniwa-tools/check.js --since=<1 のコミット>`。base-lint の直書きは 0 になる）。
    一致しなければ、新しく足された「本文の私・あなたを見る正規表現」か「本文から作るくじの種」が原因（8-3 の形で `HK.Voice.reMk`・`V.markOut` を通す）。
+
+### 8-6. 最終統合での再実行の結果（2026-11-06。作業ブランチの先頭 16b35a11 の上）
+
+- **取り込んだもの**：`work/next-mig` の道具と手の直しのコミット 11 本（道具の出力 79572095 は取り込まず、先頭で道具を回し直した）。
+  衝突はビルドの出力（index.html・js/c・.prev.json）と CHANGELOG だけで、ソースは自動で重なった（sex-flow-r18・trio-talk-r18・lewd-words・solo-train・after-reply-r18・ero-initiative-r18・voice.js・check.js などは、ほかの担当の変更と移行の担当の `HK.Voice.reMk`・`V.markOut` の両方が残っている）。
+  ビルドの出力は先頭のものに戻し、最後に両ビルドを build し直した。CHANGELOG は両方の項目を残した。
+- **3b81411 のあとに足された所の直し（8-3 と同じ形）**：本文の「私」「あなた」を見る正規表現 3 か所（play-r18.js の `WARM`・play-act-r18.js の `LOVER_B`・`MOB_L`。相手の種類で台詞を絞る）を `HK.Voice.reMk` に、
+  本文から作るくじの種 1 か所（sex-flow-react-r18.js の焦らしのあとの反応の選び：本文の長さ）を `V.markOut` の写しの長さに。
+  探し方：3b81411..16b35a11 で変わった js を acorn で字句に分け、「私」「あなた」を含む正規表現リテラルで `reMk(` に包まれていないものを、3b81411 の同じファイルと比べて新しいものだけ拾った（新しいのは上の 3 か所。tone-plus.js の 10 か所は processText の中の口調の仕上げで、見なくてよいもの）。
+  くじの種は、足された行の `charCodeAt`・`hash`・`.length`・`slice(0, n)` を目で見た（本文に当たるのは上の 1 か所）。
+- **移した数**：`fp-migrate.js --dry` は 3b81411 のときと同じ数（「私」22,192・「あなた」10,642・683 ファイル・除いた所 85）。3b81411 のあとに足された台詞は、ほかの担当がもう印で書いていた（足された行の直書きの「私」「あなた」は台詞の 1〜2 行だけで、ほかは正規表現とコメント）。
+  移したあとの `--dry` は 0 件、base-lint の直書きは R18版・全年齢版・set-b とも 0。
+- **指紋**（scratchpad の道具。regress の配役・seed で 20 回、パックは試しのフォルダを `HK_PACK_CODES` で開いて 4 部屋 × 3 モード × 6 回）：移す前（手の直しのあとの build）と移したあとで、R18版 21・全年齢モード 15・全年齢版 17 箱庭（hash・hash2 とも）とパック 4 部屋 × 3 モードが**すべて一致**。
+- **手の直しで変わった所（16b35a11 → 移す前）**：R18版の futari・omega・hole・kaihen・succubus・variety と、パックの date（3 モード）・haishin（R18版）。8-4 の omega・hole・kaihen と同じ理由で、先に印で書かれていた台詞（デート・配信の部屋の台詞など）のくじの種（口調の仕上げの `HK.lineLot`・`rngFor`・hole の種など）が「{一人称}」「{二人称}」の字数のまま数えられていたのが、「私」「あなた」と同じに数えるようになったため（例：デートの「そこから来てるのかよ」→「そこから来てるのか」の語尾のくじ）。全年齢モード・全年齢版の本体は一致。
+- **check.js**（`--since=16b35a11 --pack=set-b`）：最初の回は audit-all の state S10（succubus の追加の関係の配役で「互いの額が触れるほど近くで…深く繋がり直す」が 3 つの記録に）だけが合格でなかった（常識改変 kaihen#37 の misc FI は 0）。
+  ero-initiative-r18.js の攻めの展開・体位の変化の文（ATT_TAIL・NEU・DEV・SHIFT／RIDE_B）を、一回の遊びで同じ文 2 回までにした（`pickD`。2 回使った文が無いときは `pickR` と同じ引き方）。regress（20 回）は whiteroom の 3 回だけが変わった（同じ文の 3 回目が別の文に）。点検は足していない。
+- **パック**：`build-pack.js hakoniwa-packs/set-b --codes=hakoniwa-packs/codes.example.json` は両ビルドとも通った（表示名の無い出来事 0。書き出した pack.js・packs/index.js はコミットしない）。出来事の一覧（event-catalog.md・pack-event-catalog.md）は作り直して差が無く、catalog-check 0。
