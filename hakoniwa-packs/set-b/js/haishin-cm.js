@@ -126,7 +126,7 @@
     var on = onList(S); tgt = tgt || on[0];
     if (typeof it === 'object') {
       if (arr(it.need).some(function (n) { return !needOk(ctx, S, n, tgt); })) return false;
-      if (it.kind && it.kind !== S.kind) return false;
+      if (it.kind && it.kind !== (S.kindLive || S.kind)) return false;
       if (it.cook && !cookOk(S)) return false;
       var isEnd = it.end || arr(it.tag).indexOf('end') >= 0;
       if (isEnd && !(opt && opt.end)) return false;
@@ -275,7 +275,7 @@
         var r = rnd(ctx) * 100, pool;
         if (r < 40) pool = opt.sleep ? G.sleep : stageTable(S, stage);
         else if (r < 65) pool = G.all;
-        else if (r < 80) pool = G.kind && G.kind[S.kind];
+        else if (r < 80) pool = G.kind && G.kind[S.kindLive || S.kind];
         else if (r < 90) pool = G.size && G.size[S.size];
         else pool = tt || G.all;
         var d2 = draw(ctx, pool, rt, opt, local) || draw(ctx, G.all, rt, opt, local);
@@ -359,6 +359,8 @@
     /* 使っていない文を先に。続けて同じ種類を出さず、出した回数の少ない種類を重く */
     var fresh = cs.filter(function (x) { return x.u === 0; }); if (fresh.length) cs = fresh;
     var KU = S.reqK = S.reqK || {}, last = S.reqLast || '', nl = cs.filter(function (x) { return x.it.k !== last; }); if (nl.length) cs = nl;
+    /* 段 1〜3 の質問は、一回の配信で同じ種類を二度聞かない（「告白はどっちから」を二度聞かれて、二人の答えが食い違った。2026-11-06 P15b の通し読み） */
+    if (stage <= 3) { var nu = cs.filter(function (x) { return !KU[x.it.k]; }); if (nu.length) cs = nu; }
     var x = HK.weighted ? HK.weighted(ctx.rng, cs, function (c) { return 1 / (1 + (KU[c.it.k] || 0)); }) : pick(ctx, cs);
     var t = txt(x.it), U = S.cmUsed; U[t] = (U[t] || 0) + 1;
     KU[x.it.k] = (KU[x.it.k] || 0) + 1; S.reqLast = x.it.k;

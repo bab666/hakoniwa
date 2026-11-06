@@ -127,10 +127,14 @@
   /* ---------- 場面の組み立て（HK.PairR18.scene に渡す部屋の文。haishin-r18-room.js の HK.HaishinR18Room） ---------- */
   var ROWS_FB = { BOTTOM: [{ k: '首すじ', t: '首すじに触れられて震える' }], TOP: [{ k: '名前を呼ぶ', t: '何度も相手の名前を呼ぶ' }] };
   /* 本体の長い場面に部屋の専用の場面（HK.Play.addScene）を乗せる回は、口づけの無い書き出し（OPEN_SOFT）を渡す（専用の場面の lead が口づけをするので、重ねない） */
-  var NO_OPEN = false;
+  var NO_OPEN = false, CUR = null;
   var SRC = {
     TX: function () { return RM().TX || {}; },
-    MO: function () { var M = RM().MO || {}, op = M.OPEN && M.OPEN.length ? M.OPEN : null, sop = M.OPEN_SOFT && M.OPEN_SOFT.length ? M.OPEN_SOFT : op; return { OPEN: NO_OPEN ? sop : op, REOPEN: op, FADE: M.FADE && M.FADE.length ? M.FADE : null, PEAK_E: PR.FB.peakE }; },
+    MO: function () {
+      /* 書き出しも部屋の文の決まり（okText：ソロ配信のお仕置きのあとに「配信のあいだ隣に座っていた」を出さない・場所に合う文）で絞る（2026-11-06 P15b の通し読み） */
+      var M0 = RM().MO || {}, okT = RM().okText, S0 = CUR && CUR.hs, f = function (l) { if (!l || !okT || !CUR || !S0) return l; var o = l.filter(function (t) { try { return okT(CUR, t, S0.top, S0.bot); } catch (e) { return true; } }); return o.length ? o : l; };
+      var M = { OPEN: f(M0.OPEN), OPEN_SOFT: f(M0.OPEN_SOFT), FADE: M0.FADE };
+      var op = M.OPEN && M.OPEN.length ? M.OPEN : null, sop = M.OPEN_SOFT && M.OPEN_SOFT.length ? M.OPEN_SOFT : op; return { OPEN: NO_OPEN ? sop : op, REOPEN: op, FADE: M.FADE && M.FADE.length ? M.FADE : null, PEAK_E: PR.FB.peakE }; },
     R: null, ok: function () { return RM().okText || null; }
   };
   function srcOf() { var T = RM().TX || {}; SRC.R = { BOTTOM: T.BOTTOM_ROWS && T.BOTTOM_ROWS.length ? T.BOTTOM_ROWS : ROWS_FB.BOTTOM, TOP: T.TOP_ROWS && T.TOP_ROWS.length ? T.TOP_ROWS : ROWS_FB.TOP }; return SRC; }
@@ -160,12 +164,14 @@
     if (sh === 'fm' && form === 'short') opt.ero = false;
     var PL = HK.Play, off0 = PL ? PL.off : null;
     if (PL && sh === 'fm') PL.off = true;
-    S.hsEntry = entry; NO_OPEN = !!opt.noRoom;
+    S.hsEntry = entry; NO_OPEN = !!opt.noRoom; CUR = ctx;
     var full;
-    try { full = PR.scene(ctx, S.px, env, a, b, sh, form, opt, srcOf()); } finally { S.hsEntry = ''; NO_OPEN = false; if (PL) PL.off = off0; }
+    try { full = PR.scene(ctx, S.px, env, a, b, sh, form, opt, srcOf()); } finally { S.hsEntry = ''; NO_OPEN = false; CUR = null; if (PL) PL.off = off0; }
     if (!full || !full.text) return null;
     var text = full.text.replace(/\s+$/, '');
     if (spot && HK.SexSpot && HK.SexSpot.fix) text = HK.SexSpot.fix(text, spot) || text;
+    /* 朝・昼の場面（24 時間の寝落ち配信で朝に起きたあとなど）では、共通の部品の「夜が明けるまで」を言い換える（2026-11-06 P15b の計測で 11 時の場面に出た） */
+    if (S.hour != null && S.hour >= 5 && S.hour < 18) text = text.replace(/夜が明けるまで/g, '気が済むまで').replace(/朝が来るまで/g, '気が済むまで');
     form = full.form || form;
     var e = ctx.act2({ actors: [a, b], cat: rcat(S), text: text, why: '配信の部屋：本番（' + ENTRY[entry] + '・' + FORM[form] + (full.room ? '・部屋の段' : '') + (spot ? '・' + spot : '') + '）', sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
@@ -218,15 +224,17 @@
   /* 切るか、切り忘れるか（7.2。p＝0.15＋0.45×night/100）。戻り値 'cut'／'leak' */
   function cutOrLeak(ctx, S, x, y, s) {
     var R = RX(), leak = ctx.rng() < 0.15 + 0.45 * Math.min(100, S.night || 0) / 100;
+    /* 朝・昼（5〜17 時）に切るときは「おやすみ」の文を使わない（24 時間の寝落ち配信で朝に起きたあとなど。2026-11-06 P15b の通し読み） */
+    var day = S.hour != null && S.hour >= 5 && S.hour < 18, noNight = function (l) { var o = (l || []).filter(function (t) { return !day || !/おやすみ/.test(t); }); return o.length ? o : l; };
     if (leak) {
-      rec(ctx, [x, y], fill(ctx, pickAny(ctx, R.LEAKCUT, x, y) || pickAny(ctx, FB.leakcut, x, y), x, y), '配信を切ったつもり（切れていない。二人は気づかない）', 'bond', { tag: '配信終了のつもり' });
+      rec(ctx, [x, y], fill(ctx, pickAny(ctx, noNight(R.LEAKCUT), x, y) || pickAny(ctx, FB.leakcut, x, y), x, y), '配信を切ったつもり（切れていない。二人は気づかない）', 'bond', { tag: '配信終了のつもり' });
       S.leak = 'on'; S.leakFate = fateOf(ctx, S); S.leakAt = s;
       /* 事後の区切り（次の区切り）で機材が落ちる。先に終わりの印を置いて、次の区切りの様子・要求を出さない（haishin.js の after） */
       S.ended = 'leak'; S.endAt = s + 1;
       cmLeak(ctx, S, 'start');
       return 'leak';
     }
-    rec(ctx, [x, y], fill(ctx, pickAny(ctx, R.CUT, x, y) || pickAny(ctx, FB.cut, x, y), x, y), '配信を切った（本番の前）', 'bond', { tag: '配信終了' });
+    rec(ctx, [x, y], fill(ctx, pickAny(ctx, noNight(R.CUT), x, y) || pickAny(ctx, FB.cut, x, y), x, y), '配信を切った（本番の前）', 'bond', { tag: '配信終了' });
     S.ended = 'cut'; S.endAt = s;
     return 'cut';
   }

@@ -10,6 +10,8 @@
        HK.Haishin.end  = { finish(ctx, S) }                                          … haishin-end.js（P3：結末・後日談・結果欄・目標の判定）
        HK.Haishin.r18  = { init(ctx, S), step(ctx, S, o), answer(ctx, S, q, how, a, b) } … haishin-r18.js（P11：段 4〜6 の応え・ソロの中盤・本番。R18 版だけ）
    ・本体に入る途中の口（コメントタブ e.ch・HK.Face・HK.Chart・HK.Play.addValue・chair・HK.Shared.addMap）は、無い本体でも落ちないように HK.X && … で書く
+   ・（2026-11-06 P15b の計測と通し読みで直したもの）夜 100 のカップルの段の上げ方（一区切り一度）・渋りの確率の係数・料理とゲームの区切りの様子の順（STEP_ORD）・
+     12／24 時間の寝落ちは朝に起きて雑談を続ける（S.kindLive）・らしくない一面は 2 回まで・本体の glance を外す・作れない人の料理の失敗の文。数字は設計 11.1、指摘は haishin-playtest.md
    登場人物はすべて成人として扱う */
 /* @event scen=set-b-haishin id=hs_stop cat=bond tie=- label=恋人か夫婦でないので配信を始めない */
 /* @event scen=set-b-haishin id=hs_start cat=bond tie=lover label=二人が配信を始める */
@@ -116,6 +118,7 @@
     if (n === 'top') return S.form === 'couple' ? c === S.top : !!(P && P.hardTop && P.hardTop(c));
     return true;
   }
+  function isFail(t) { return dig(TX().COOKFAIL, 'fail').some(function (x) { return (typeof x === 'string' ? x : x && x.t) === t; }); }
   function elOk(ctx, x, a, b) {
     var S = st(ctx);
     if (!x) return '';
@@ -124,7 +127,7 @@
     if (typeof x === 'object') {
       if (x.cook && !(LF && a && LF.canCook(a))) return '';
       if (x.cook === 0 && LF && a && LF.canCook(a)) return '';
-      if (x.kind && (Array.isArray(x.kind) ? x.kind.indexOf(S.kind) < 0 : x.kind !== S.kind)) return '';
+      if (x.kind && (Array.isArray(x.kind) ? x.kind.indexOf(liveKind(S)) < 0 : x.kind !== liveKind(S))) return '';
       if (x.home && (x.home === 'with' || x.home === 'together') !== !!S.home) return '';
       if (x.form && x.form !== S.form) return '';
       if (x.rk && x.rk !== S.rk) return '';
@@ -140,8 +143,9 @@
       if (x.need && !needOk(S, a, x.need)) return '';
       if (typeof x.when === 'function' && !x.when(ctx, a, b, S)) return '';
     }
-    /* 家事・料理の担い手（家事をしない設定の人を主語にしない） */
-    if (!K.choreOk(t, a, b)) return '';
+    /* 家事・料理の担い手（家事をしない設定の人を主語にしない）。ただし作れる人がいない料理配信の失敗の文（T.COOKFAIL.fail）は、作れない人が失敗する文なので通す
+       （通さないと失敗の文が 1 本しか残らず、どの回も同じ文になった。2026-11-06 P15b の計測） */
+    if (!(S.kind === 'cook' && !S.cooks.length && isFail(t)) && !K.choreOk(t, a, b)) return '';
     /* 結婚の語は夫婦だけ（地の文。台詞・コメントの中は問わない） */
     if (S.rk !== 'spouse' && K.WED && K.WED.test(t.replace(/「[^」]*」/g, ''))) return '';
     return t;
@@ -457,17 +461,28 @@
 
   /* ---------- 渋り（6.5） ---------- */
   function stallP(ctx, S, who) {
-    var p = per(who), nk = nightKind(who, other(S, who)), m = /^(shy|stern|polite)$/.test(p) || nk === 'shy' ? 1.3 : /^(gentle|devoted|free)$/.test(p) || nk === 'sweet' ? 0.7 : 1;
+    /* 性格：態度（恥ずかしがり・堅い・丁寧は渋りやすく、穏やか・尽くす・自由は渋りにくい）と夜の性格（恥じらいは強く渋る、甘々は渋りにくい）を掛け合わせる */
+    var p = per(who), nk = nightKind(who, other(S, who));
+    var m = (/^(shy|stern|polite)$/.test(p) ? 1.2 : /^(gentle|devoted|free)$/.test(p) ? 0.75 : 1) * (nk === 'shy' ? 2 : nk === 'sweet' ? 0.8 : 1);
     var base = S.r18 ? (100 - S.night) / 100 : 0.25;
-    /* 続けて渋るほど、次も渋る見込みは下がる（3 区切り続けての途中終了を、設計 11 章の目安の回数に収める。数は P15 の計測で直す） */
-    return clamp(base * m * (1 - 0.25 * S.stall), 0, 0.9);
+    /* 続けて渋るほど、次も渋る見込みは下がる。場が温まる（発情度が上がる）ほども下がる（3 回続けての途中終了を、設計 11 章の目安：
+       二人とも恥じらいの配信で 3〜8／20、ほかは 0〜3／20 に収める。2026-11-06 P15b の計測で係数を決めた） */
+    return clamp(base * m * (1 - 0.4 * S.stall) * (1 - S.heat / 500), 0, 0.9);
   }
   /* 段の判定：上がる（'up'）／渋る（'stall'）／そのまま（''）。夜 100 は渋らず、残りの区切りで段 6 に届くよう線を見ずに上げる */
   function stageJudge(ctx, S, s) {
     S.pt = ptOf(S);
     if (S.stage >= S.capSt) { S.capped = true; return ''; }
     var r = S.N - s, need = S.capSt - S.stage;
-    if (S.n100 && r - 2 <= need) { S.stage += Math.min(3, need); S.stall = 0; return 'up'; }
+    /* 夜 100：残りの区切りで段 6 に届くよう線を見ずに上げる。カップルは一区切りに一度だけ、残りの区切りに割って上げる（配信開始の区切りでいきなり本番に
+       ならないように。2026-11-06 P15b の通し読み）。ソロは段 6 のあとの中盤（玩具→電話→…）に区切りが要るので、一区切りで続けて上げてよい */
+    if (S.n100 && r - 2 <= need) {
+      if (S.form === 'couple') {
+        if (S.upAt === s) return '';
+        S.upAt = s; S.stage += Math.min(3, need, Math.ceil(need / Math.max(1, r - 1)));
+      } else S.stage += Math.min(3, need);
+      S.stall = 0; return 'up';
+    }
     if (!S.ansSt[S.stage] || S.pt < LINE[S.stage]) return '';
     /* 渋った直後の区切りは、次の段を持ちかけない（同じ渋りが続けて並ばないように） */
     if (S.stallCool != null && s < S.stallCool) return '';
@@ -656,13 +671,21 @@
 
   /* ---------- 区切りの様子・始まり（3.3。T.START[種類][形]・T.STEP[種類][種]） ---------- */
   function stepA(S) { return S.kind === 'cook' && S.cooks.length ? S.cooks[0] : S.on[0]; }
+  /* 今の配信の種類（寝落ち配信で朝に目を覚ましたあとは雑談の表） */
+  function liveKind(S) { return S.kindLive || S.kind; }
+  H.liveKind = liveKind;
   /* 区切りの様子：種類の種（6 種）を一巡ずつ使う。一巡したら長い配信は耐久の出来事（T.SET.hours.long）を挟み、それでも足りなければ二巡目（同じ文は 2 回まで。2026-11-06 まとめ役の決定） */
+  var STEP_ORD = { cook: { prep: 1, fire: 2, taste: 3, plate: 4, eat: 5, wash: 6 }, game: { begin: 1, die: 2, help: 2, hard: 2, clear: 3, next: 4 } };
   function stepPick(ctx, S, a, b) {
-    var ST0 = (TX().STEP || {})[S.kind] || {}, keys = Object.keys(ST0), seen = S.stepSeen = S.stepSeen || {};
+    var ST0 = (TX().STEP || {})[liveKind(S)] || {}, keys = Object.keys(ST0), seen = S.stepSeen = S.stepSeen || {};
     if (Array.isArray(ST0)) return pickT(ctx, ST0, a, b) || pickT(ctx, ST0, a, b, true);
     var fresh = keys.filter(function (k) { return !seen[k]; });
     if (!fresh.length) { S.stepSeen = seen = {}; fresh = keys.slice(); S.stepRound = (S.stepRound || 1) + 1; }
-    fresh.sort(function () { return ctx.rng() - 0.5; });
+    /* 料理とゲームは進む順がある（下ごしらえ→…→盛り付け→食べる→洗い物、開始→…→クリア→次のゲーム）。順の札 STEP_ORD の数の小さい種から、
+       同じ数の種どうしは混ぜて引く（盛り付けのあとに「材料を並べて」が出ないように。2026-11-06 P15b の通し読み） */
+    var ord = STEP_ORD[liveKind(S)] || {}, rk = {};
+    fresh.forEach(function (k) { rk[k] = ctx.rng(); });
+    fresh.sort(function (x, y) { return ((ord[x] || 0) - (ord[y] || 0)) || (rk[x] - rk[y]); });
     for (var i = 0; i < fresh.length; i++) { var t = pickT(ctx, ST0[fresh[i]], a, b); if (t) { seen[fresh[i]] = 1; return t; } }
     return '';
   }
@@ -678,9 +701,9 @@
     if (!t && S.kind === 'cook' && !S.cooks.length) { t = pickT(ctx, dig(T0.COOKFAIL, 'fail'), a, b); if (t) S.ev.push('fail'); }
     /* 種を使い切った：長い配信は耐久の出来事を区切りの様子の代わりに */
     if (!t && S.hours >= 12 && setEvent(ctx, S, s, 'hours')) return;
-    if (!t) t = pickT(ctx, flat((T0.STEP || {})[S.kind]), a, b, true) || fbT(ctx, FB.step, a, b);
+    if (!t) t = pickT(ctx, flat((T0.STEP || {})[liveKind(S)]), a, b, true) || fbT(ctx, FB.step, a, b);
     /* ゲームの勝ち負けの数え（res の札） */
-    var me = null; flat((T0.STEP || {})[S.kind]).forEach(function (x) { if (x && typeof x === 'object' && x.t === t) me = x; });
+    var me = null; flat((T0.STEP || {})[liveKind(S)]).forEach(function (x) { if (x && typeof x === 'object' && x.t === t) me = x; });
     if (me && me.res && S.gameRes[me.res] != null) { S.gameRes[me.res]++; if (me.res === 'lose') S.ev.push('lose'); }
     rec(ctx, [a, b], fill(ctx, t, a, b), '配信の様子（' + KIND[S.kind].label + '・' + clockW(clk(S, s)) + '・同接 ' + comma(S.v) + ' 人）', 'bond');
   }
@@ -713,7 +736,7 @@
     var T0 = TX(), SET = T0.SET || {}, a = S.on[ctx.rng() < 0.5 ? 0 : S.on.length - 1], b = S.form === 'couple' ? other(S, a) : S.off;
     var on0 = S.on[0], off0 = S.form === 'couple' ? S.on[1] : S.off;
     var c = [
-      ['kind', S.kind, a, b], ['size', S.size, a, b], ['sc', S.sc, a, b], ['hours', hoursKey(S), a, b], ['form', S.form, a, b], ['hname', hasName(S, a) ? 'set' : 'none', a, b]
+      ['kind', liveKind(S), a, b], ['size', S.size, a, b], ['sc', S.sc, a, b], ['hours', hoursKey(S), a, b], ['form', S.form, a, b], ['hname', hasName(S, a) ? 'set' : 'none', a, b]
     ];
     var ck = charmKey(S, a); if (ck) c.push(['charm', ck, a, b]);
     if (S.form === 'solo') c.push(['role', 'off', on0, off0]);
@@ -759,7 +782,8 @@
       opts.push(['jeal', jb, tgt]);
     }
     if (S.heat >= 60 || last.indexOf('kiss') >= 0) { var sa = pickOf(ctx, S.on); opts.push(['sunao', sa, S.form === 'couple' ? other(S, sa) : S.off]); }
-    var oa = pickOf(ctx, S.on); opts.push(['odd', oa, S.form === 'couple' ? other(S, oa) : S.off]);
+    /* らしくない一面は一回の配信で 2 回まで（通し読みで 4 回並んだ。2026-11-06 P15b） */
+    var oa = pickOf(ctx, S.on); if ((S.beh.odd || 0) < 2) opts.push(['odd', oa, S.form === 'couple' ? other(S, oa) : S.off]);
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i], a = o[1], b = o[2];
       /* ソロ：嫉妬は画面の外の人のメッセージ（jealOff。{a}＝画面の外の人）、素に戻るのは配信者が画面の外の人を思って（sunaoSolo） */
@@ -786,6 +810,17 @@
       S.asleep = 1; return 'fall';
     }
     S.asleep++;
+    /* 12・24 時間の配信は、朝（7〜9 時）に目を覚まして、そのあとは朝の雑談として続ける（S.kindLive＝'zatsu'。区切りの様子・設定の出来事・コメントの種類の表を雑談に）。
+       夜中から翌日の夜まで眠り続けないように（2026-11-06 P15b の通し読み） */
+    var hr = Math.floor((clk(S, s) % 1440) / 60);
+    if (!last && S.N >= 24 && S.asleep >= 9 && hr >= 7 && hr < 10 && flat(SL.wakeMid).length) {
+      var wm = pickT(ctx, flat(SL.wakeMid), a, b);
+      if (wm) {
+        S.woke = true; S.kindLive = 'zatsu'; S.wokeAt = s;
+        rec(ctx, S.form === 'couple' ? [a, b] : [a], fill(ctx, wm, a, b), '寝落ち配信の朝に目を覚ました（' + a.name + '・配信は続ける）', 'bond', { tag: '目覚め' });
+        return 'wake';
+      }
+    }
     if (last) {
       S.woke = true;
       var w = pickT(ctx, flat(SL.wake), a, b) || fbT(ctx, FB.wake, a, b);
@@ -822,7 +857,7 @@
     }
     var G = CM().GEN || {}, n = o.n, out = [], used = {};
     var norm = function (l) { return flat(l).map(function (x) { return typeof x === 'string' ? { t: x } : x; }).filter(function (x) { return x && x.t && (!x.need || needOk(S, S.on[0], x.need)) && (S.stage <= 3 || !/\{(?:男性器|女性器|ナカ|胸|乳首|陰核|精液)\}/.test(x.t) || S.r18); }); };
-    var pool = norm(G.all).concat(norm((G[S.form] || {})[Math.min(S.stage, S.r18 ? 6 : 3)]), norm((G.kind || {})[S.kind]), norm((G.size || {})[S.size]), o.sleep ? norm(G.sleep) : [], S.tm === 'late' ? norm(G.late) : [], S.tm === 'morning' ? norm(G.morning) : []);
+    var pool = norm(G.all).concat(norm((G[S.form] || {})[Math.min(S.stage, S.r18 ? 6 : 3)]), norm((G.kind || {})[liveKind(S)]), norm((G.size || {})[S.size]), o.sleep ? norm(G.sleep) : [], S.tm === 'late' ? norm(G.late) : [], S.tm === 'morning' ? norm(G.morning) : []);
     if (!pool.length) pool = FB_CM.map(function (t) { return { t: t }; });
     for (var i = 0; i < n && out.length < n; i++) {
       var l = cmLine(ctx, S, pool); if (!l || used[l]) continue; used[l] = 1;
@@ -895,7 +930,8 @@
     if (stepH && s > 0 && S.endS == null && (S.ended === 'cut' || S.ended === 'leak')) stepDrop(ctx, S, stepH);
     /* 5. 設定の出来事（55%）・性格の行動（30%）。段 4 以上の行為に応えた区切り・中盤と本番の区切りは出さない */
     if (!took && !S.bigAns && !S.ended && !wantSleep) {
-      if (s > 0 && ctx.rng() < 0.55) setEvent(ctx, S, s);
+      /* 3 時間までの配信は区切りが少ないので、設定の出来事を出しやすくする（設定が 2 区切り目以降に効く回数を、短い配信でも 1〜3 回に。2026-11-06 P15b の計測） */
+      if (s > 0 && ctx.rng() < (S.N <= 6 ? 0.85 : 0.55)) setEvent(ctx, S, s);
       if (ctx.rng() < 0.3) behave(ctx, S);
     }
     /* 区切りが 1 件だけ（様子だけ）にならないよう、設定の出来事を一つ足す */
@@ -1002,7 +1038,8 @@
     events: []
   };
   /* 本体の共通の出来事から外すもの：体の関係・合意のない展開・三人以上の恋愛・告白・別れ（新婚・デートと同じ並び＋告白・別れ） */
-  var EX_ID = /^(?:confess|take_charge|brood|lighten|mob_after|tie_spouse|grp_|poly_|ct_|cf_|break|split|cheat)/;
+  /* glance（気づけば相手を目で追っていた）は、恋人・夫婦だけのこの部屋では段階の逆戻りになるので外す（2026-11-06 P15b の通し読み） */
+  var EX_ID = /^(?:confess|take_charge|brood|lighten|mob_after|tie_spouse|grp_|poly_|ct_|cf_|break|split|cheat|glance$)/;
   function exList() { return (HK.COMMON || []).filter(function (e) { return e.sex || e.force || EX_ID.test(e.id); }).map(function (e) { return e.id; }); }
   Object.defineProperty(scen, 'exclude', { get: exList, enumerable: true, configurable: true });
   HK.SCENARIOS[ID] = scen;
