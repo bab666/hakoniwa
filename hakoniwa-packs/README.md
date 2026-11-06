@@ -85,6 +85,27 @@ HK.PairR18.addRoom('<部屋の id>', {
 - 書くときの決まり（sex-flow を 0 件にするため）：場所は一つ（寝室ならベッド。玄関・台所・脱衣所・ソファなど場所の語を最中の一幕に書かない）。後ろからの繋がる段（うつ伏せ・後ろから・背中から）のあとは、顔を合わせる文（見つめ・額・頬・見下ろす…）を自動で外す。最中の一幕は 3 文で、性感が閾値に届くように「動き」「揺れ」などの最中の言葉を入れる（fm は指の文だけだと前戯に数えられるので、受けの「腰を揺らす」などを 1 文）。描写の長さ「数行で短く」の場面は一つの段落にまとまる（部屋の段は使わない）。
 - 確かめ方：`HK.PairR18.trace = []` にして回すと、部屋の段で組んだ場面（印の解決前）がたまるので、`HK.SexFlow.analyze(text, a, b, sh, after)` で数える（新婚部屋の計測は `docs/reports/2026-11-03/shinkon-design.md` の 10）。
 
+## 温度（HK.Heat・2026-11-06）
+
+本体の温度 6 段（`HK.Heat`。`hakoniwa-full/js/heat.js`・かたまり pack-sim。設計は `docs/reports/2026-11-06/heat-design.md`）：初々しい fresh／甘い sweet／じゃれ合い play／ドライ dry／荒い rough／歪んだ warped。
+温度は部屋が登録したときだけ働く（既存の箱庭は夜の色 `HK.EroFlavor` のまま）。パックは本体の「かたまりの名前」にだけ頼るので、`HK.Heat` が無くても落ちないように書く。
+
+```js
+/* r18:begin */
+if (HK.Heat && HK.Heat.use) HK.Heat.use('<部屋の id>');          /* 温度を読む部屋にする（合意なし寄りの部屋は { forceGate: true }：荒い・歪んだは内容のスイッチ「無理矢理」が入のときだけ） */
+var H = HK.Heat && HK.Heat.enabled && HK.Heat.enabled('<部屋の id>') ? HK.Heat : null;
+var h = H ? H.of(ctx, 攻め, 受け, { first: 初めてか（分かれば）, rel: 'lover'|'casual', kind: 'naka'（仲直り）|'jeal'（やきもち）, scen: '<部屋の id>' }) : null;
+/* 場面のあいだ H.scope を置く：本体の型（HK.Play）の重み・飽きない決まり・体の特徴の溶かした文・候補の絞り込み（H.pickWrap(pick)・H.trim(list)）が温度を読む */
+var r = h ? H.scope(ctx, a, b, h, function () { return 場面を組む({ flavor: H.flavor(h.key, a, b), … }); }) : 場面を組む({ … });
+/* 着地：変化の一文（前回と違う温度のとき）・事後の型の一文・仕上げの絞り込み・気分・覚える */
+if (h) { var chg = H.change(ctx, h, a, b), aft = H.after(ctx, h, 組, { spot: 場所 }); r.text = H.strip(r.text, h.key); …; H.move(ctx, h, a, b); H.note(ctx, h, a, b, { text: r.text }); H.remember(ctx, a, b, h.key); }
+/* r18:end */
+```
+
+- セット B の 3 部屋は、共通の部品 `kit-r18.js` の `HK.PairR18.scene` がこの形で温度を読む（部屋の段の候補の絞り込み `H.trim`・前戯の段の数・長い場面の夜の色・事後の型・変化の一文）。部屋の r18 のファイルは何もしなくてよい。
+- 部屋だけの新しい型の値は `HK.Play.addValue(部屋の id, 軸, { key, label, weight, text, mid, short })`（文は本体の `HK.PlayText` と同じ形、3 組 × 3 文以上）。温度を読む部屋は、同じ組の前の夜と同じ入り方・主な責めを選ばず、道具は一回の遊びに 2 回まで（`HK.Play.strict`）。
+- 確かめ方：check.js が試しのフォルダで `heat-audit.js` を回す（温度の矛盾 0 件で合格）。
+
 ## 恋愛と夜の可否（2026-11-05）
 
 恋愛と夜の可否は住人の設定（恋愛相手の固定・性行為の相手＝体の相手の固定・恋愛にしない相手 `loveNo`・R18にしない相手 `r18No`・R18に参加しない）だけで決める。関係の欄の `t.love`（恋愛：あり／なし）・`t.body`（恐怖の体の関係）は画面から外したので、パックでも `ctx.input.ties` の `love`・`body` を見ず、本体の関数を使う（決まりは `docs/reports/2026-10-31/rel-consistency.md` の「恋愛と夜の可否は住人の設定で」）。

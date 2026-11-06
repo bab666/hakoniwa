@@ -1,3 +1,4 @@
+/* @event-ok 寝室の夜の前戯の長さを温度で変えた（既にある夜の場面の言い回し。2026-11-06） */
 /* @event-ok 長い夜の台詞・一幕・受けの一文の本数を増やし、一回の遊びで同じ文は 2 回まで（2026-11-05 担当R2。新しい出来事ではない） */
 /* @event-ok 二度目の文を書き直した（既にある夜の場面の言い回し。2026-11-05） */
 /* @event-ok 女性の攻め×男性の受けの繋がる段・最中・二度目を指と手・ペニバンの文に書き直した（既にある夜の場面の言い回し。2026-11-05 担当FM） */
@@ -213,7 +214,15 @@
   };
   FR.again = function (ctx, mode) { var P0 = FR.POOLS || {}; return mode === 'ff' ? cap(ctx, P0.AGAIN_FF) : cap(ctx, md(AGAIN, fk(ctx, mode))); };
   function att(c) { var k = HK.Emo && HK.Emo.att ? HK.Emo.att(c) : c && c.persona; return REACT9[k] ? k : 'gentle'; }
-  var foreStep = { stage: 'fore', fn: function (ctx, a, b, mode) { return rp(ctx, md(FORE, mode)); } };
+  /* 前戯の長さは温度で（heat.js の HK.Heat。温度の場面のあいだだけ）：初々しい・甘い＝前戯の文を二つ続けてゆっくり、ドライ＝初めの二文だけ */
+  function heatFore(ctx, mode) {
+    var t = rp(ctx, md(FORE, mode)), hk = HK.Heat && HK.Heat.cur ? HK.Heat.cur.key : '';
+    if (!t || !hk) return t;
+    if (hk === 'sweet' || hk === 'fresh') { var t2 = cap(ctx, md(FORE, mode).filter(function (x) { return x !== t; })); return t2 ? t + t2 : t; }
+    if (hk === 'dry') { var ss = t.match(/[^。]+。/g) || [t]; return ss.length > 2 ? ss.slice(0, 2).join('') : t; }
+    return t;
+  }
+  var foreStep = { stage: 'fore', fn: function (ctx, a, b, mode) { return heatFore(ctx, mode); } };
   var insStep = { stage: 'insert', fn: function (ctx, a, b, mode) { var p = (ctx && ctx.ft && ctx.ft.curPos) || 'seijo', T = INS[p] || INS.seijo; return rp(ctx, md(T, fk(ctx, mode))); } };
   var RK = /^(kabe|rusu|bath|sofa|kitchen|late)$/;
   /* 寝室の夜：入り方の段は置かない（lead が空）。前戯・繋がる段・最中・事後はこの部屋の文 */
