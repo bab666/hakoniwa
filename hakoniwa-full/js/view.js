@@ -912,7 +912,7 @@
 
   /* ---------- 全体 ---------- */
   V.resetFilter = function () { tl = { who: [], keyOnly: false, cat: 'all', lewd: false, off: {}, ch: 'main' }; };
-  /* 記録の欄の切り替え「本編｜コメント欄（n件）」（e.ch のある記録のときだけ。経過の見出しの横） */
+  /* 記録の欄の切り替え（本編／コメント欄 n件）（e.ch のある記録のときだけ。経過の見出しの横） */
   function chSeg(res) {
     var L = chList(res);
     if (!L.length) return '';
