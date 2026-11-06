@@ -78,7 +78,9 @@
   function flatS(o) { return o ? Object.keys(o).reduce(function (r, k) { return r.concat(lst(o[k])); }, []) : []; }
   function pickAny(ctx, list, a, b) { var l = lst(list); return pickT(ctx, l, a, b) || pickT(ctx, l, a, b, true) || pickOf(ctx, l.map(function (x) { return typeof x === 'string' ? x : x && x.t; }).filter(Boolean)) || ''; }
   /* ソロの体の添字：t＝攻め（配信者が攻め）・b＝受け（リバ・おまかせも受け）、M＝男性器のある人・F＝ない人 */
-  function bodyK(S, c) { return (c === S.top ? 't' : 'b') + (hasM(c) ? 'M' : 'F'); }
+  /* 性器の無い体の配信者（HK.Pos.noGen）は nX（性器の語・挿入を書かない文） */
+  function noGenC(c) { var P = HK.Pos; return !HK.SAFE_ON && !!(P && P.noGen && c && P.noGen(c)); }
+  function bodyK(S, c) { if (noGenC(c)) return 'nX'; return (c === S.top ? 't' : 'b') + (hasM(c) ? 'M' : 'F'); }
   /* 表の {a}{b}：カップルは攻め・受け、ソロは配信者・画面の外の人 */
   function AB(S) { return S.form === 'couple' ? [S.top, S.bot] : [S.on[0], S.off]; }
   function zoneEx(S, c) { return c && S.zones && S.zones[c.i] && S.zones[c.i].length ? { zone: S.zones[c.i].join('と') } : null; }
@@ -115,6 +117,8 @@
       '{b}の声が低くなるたびに、{a}の{後ろ}が玩具をきゅっと締めつけた。{a}は{男性器}の先を親指で擦り、スマホを肩と耳で挟んだまま息を乱す。画面の向こうの数字も、もう目に入っていなかった。{m}'],
     tM: ['{a}は{b}の息づかいを聞きながら、{男性器}を握る手を根元から先まで大きく動かした。受話口の向こうで{b}が名前を呼ぶと、手の中のそれがびくりと跳ねる。{a}は歯を食いしばって、最後の数回を一気に追い上げた。{m}',
       '{a}は筒の玩具を{男性器}にかぶせたまま、{b}の声に合わせて上下させた。ぬちゅ、ぬちゅという湿った音が、マイクにも受話口にも乗ってしまう。{a}は{b}の名前を低く呼んで、椅子の背に体を預けた。{m}'],
+    nX: ['{a}は{b}の声を聞きながら、振動の玩具を胸の先に強く押し当てた。受話口の向こうで{b}が名前を呼ぶたびに、肌の奥がじんと痺れていく。{a}は椅子の肘掛けをつかんで、小さく背中を反らした。{m}',
+      '{b}の吐息が耳の奥で重なって、{a}の体の芯が一気に熱くなった。{a}は自分の首すじと内ももを交互に撫でながら、{b}の名前を何度も呼んだ。スマホを頬に押し当てたまま、{a}は小さく震えた。{m}'],
     tF: ['{a}は{b}の声を聞きながら、ローターを{陰核}に強く押し当てた。もう片方の手で{乳首}をつまむと、受話口の向こうの{b}が息を呑むのが分かる。{a}は腰を浮かせたまま、{b}の名前を何度も呼んだ。{m}',
       '{a}は{胸}を揉みしだきながら、下着の上から{陰核}を指で円を描くように擦った。{b}の吐息が耳の奥で重なって、体の芯が一気に熱くなる。{a}は椅子の肘掛けをつかんで、小さく背中を反らした。{m}']
   };
