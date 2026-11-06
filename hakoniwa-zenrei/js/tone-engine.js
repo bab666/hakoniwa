@@ -101,7 +101,7 @@
     /* 規則「ため口を混ぜる」（敬語まじりのため口）：敬語のベースの文を、文ごとに くだけた常体（K）の同じ文と入れ替える。
        書き下ろしは元の文で引くので、選ばなかった P を alts の先頭に置く（これまでどおり P で引いた書き下ろしが先に当たる） */
     if (d && b === 'P' && d.rules && d.rules.mixK && s.K && s.P && s.K !== s.P) {
-      var seed = q + '#' + ((who && who.name) || '');
+      var seed = (HK.Voice && HK.Voice.markOut ? HK.Voice.markOut(q) : q) + '#' + ((who && who.name) || '');
       if (HK.NameGuard && HK.NameGuard.stack.length) seed = HK.NameGuard.decAll(seed);
       var qm = mixKP(s.K, s.P, d.rules.mixK, seed, d.rules.shortCasual);
       if (qm !== q1) { alts = [s.P].concat(alts.filter(function (x) { return x !== s.P; })); q1 = qm; }

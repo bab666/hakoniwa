@@ -1,7 +1,7 @@
 {
  "cur": {
-  "core": "core.e944e3587e.js",
-  "late": "late.1653dd21a9.js",
+  "core": "core.10b875b871.js",
+  "late": "late.6e1702d335.js",
   "pack-rel": "pack-rel.85d76e6abe.js",
   "pack-sim": "pack-sim.41754d01f0.js",
   "scen-goukon": "scen-goukon.3a334e3b6a.js",
@@ -67,9 +67,9 @@
   "tone-yankee": "tone-yankee.e0d71e22d8.js"
  },
  "prev": {
-  "core": "core.01cd31c017.js",
+  "core": "core.e944e3587e.js",
   "late": "late.1653dd21a9.js",
-  "pack-rel": "pack-rel.f2ae2b4c99.js",
+  "pack-rel": "pack-rel.85d76e6abe.js",
   "pack-sim": "pack-sim.41754d01f0.js",
   "scen-goukon": "scen-goukon.3a334e3b6a.js",
   "scen-classroom": "scen-classroom.f847599bc8.js",
@@ -183,8 +183,8 @@
    11984
   ],
   "js/voice.js": [
-   68952,
-   22177
+   70255,
+   22465
   ],
   "js/voice-tone.js": [
    36646,
@@ -199,8 +199,8 @@
    15550
   ],
   "js/tone-engine.js": [
-   68789,
-   22094
+   68838,
+   22107
   ],
   "js/tone-dict-builtin.js": [
    90832,
@@ -551,8 +551,8 @@
    2182
   ],
   "js/lewd-mark.js": [
-   1482,
-   762
+   1577,
+   811
   ],
   "js/ero-scene.js": [
    2337,

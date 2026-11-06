@@ -12,7 +12,7 @@
   var GEN = /\{([ぁ-ヿ一-鿿]{1,3})\}/g;
   var NOT = { 'る': 1, 'た': 1, 'て': 1, 'ない': 1, 'よう': 1, 'なかった': 1, '役': 1 };
   /* 無難な語（印の名前 → 語。ない印は「そこ」） */
-  var SAFE = { '胸': '胸', '尻': '腰', '後ろ': '後ろ', 'ナカ': '奥' };
+  var SAFE = { '胸': '胸', '尻': '腰', '後ろ': '後ろ', 'ナカ': '奥', '一人称': '私', '二人称': 'あなた' };
   function safeText(t) {
     return t.replace(GEN, function (m, k) { return NOT[k] ? m : SAFE[k] || 'そこ'; });
   }
@@ -25,6 +25,8 @@
     return hit;
   }
   function fix(t, env) {
+    /* 一人称・二人称の印（voice.js）が台詞の外に残っていたら「私」「あなた」に */
+    if (HK.Voice && HK.Voice.markOut) t = HK.Voice.markOut(t);
     if (!has(t)) return t;
     var LW = HK.LewdWords;
     if (!HK.SAFE_ON && LW && LW.plain) { try { t = LW.plain(t, env); } catch (e) { /* 下で無難な語に */ } }

@@ -45,11 +45,31 @@
     for (var key in FP_READ) if (w.indexOf(key) === 0) return FP_READ[key];
     return null;
   }
+  /* ---------- 一人称・二人称の印 {一人称}・{二人称}（2026-11-06。決まりは docs/reports/2026-11-06/fp-marker-design.md） ----------
+     ソースの台詞に {一人称}・{二人称} と書くと、話し手の一人称・二人称になる。processText の入口（いちばん外の包み）で 1 字の印
+     （私用領域 U+E0F1・U+E0F2）に替えて運び、{一人称} は V.replaceFP の位置で V.fpFor(話し手)（相手ごとの fpFor・状況の fpSwap も効く）、
+     {二人称} は V.applyYou の位置で二人称（敬語の相手で二人称をそろえない台詞・二人称が空なら「あなた」）にする。
+     話し手が決まらない台詞・名詞の引用・地の文など、展開を通らなかった印は、出口で必ず「私」「あなた」に戻す（V.markOut）。
+     書き下ろしの鍵は「私」「あなた」の本文なので、引くときは印を戻した写しで引く */
+  var MK1 = '\uE0F1', MK2 = '\uE0F2', MK_LIT = /\{(一|二)人称\}/g, MK_ANY = /[\uE0F1\uE0F2]|\{[一二]人称\}/;
+  V.MK1 = MK1; V.MK2 = MK2;
+  V.hasMark = function (s) { return typeof s === 'string' && MK_ANY.test(s); };
+  /* ソースの書き方 {一人称}・{二人称} → 1 字の印 */
+  V.markIn = function (s) { return typeof s === 'string' && s.indexOf('人称}') >= 0 ? s.replace(MK_LIT, function (m, k) { return k === '一' ? MK1 : MK2; }) : s; };
+  /* 残った印（1 字の印・ソースの書き方の両方）→「私」「あなた」 */
+  V.markOut = function (s) {
+    if (typeof s !== 'string' || !MK_ANY.test(s)) return s;
+    return s.replace(MK_LIT, function (m, k) { return k === '一' ? '私' : 'あなた'; }).replace(/\uE0F1/g, '私').replace(/\uE0F2/g, 'あなた');
+  };
+  var FP_RE_MK = new RegExp(MK1 + '|' + FP_RE.source, 'g');
   V.replaceFP = function (q, c) {
-    var fp = V.fpFor(c), out = '', last = 0, m;
-    FP_RE.lastIndex = 0;
-    while ((m = FP_RE.exec(q))) {
-      var w = m[0], rep = w === 'うち' && !(c && c.fp) ? w : fp, pre = q.slice(last, m.index);
+    if (typeof q !== 'string') return q;
+    q = V.markIn(q);
+    var fp = V.fpFor(c), out = '', last = 0, m, RE = q.indexOf(MK1) >= 0 ? FP_RE_MK : FP_RE;
+    RE.lastIndex = 0;
+    while ((m = RE.exec(q))) {
+      /* 印 {一人称} は、後ろの語を問わず必ず話し手の一人称に（どもりの読みは「私」＝「わ」として見る） */
+      var mk = m[0] === MK1, w = mk ? '私' : m[0], rep = mk ? fp : w === 'うち' && !(c && c.fp) ? w : fp, pre = q.slice(last, m.index);
       /* 「今のうち」「職務のうち」の「うち」は一人称ではない */
       if (/^(うち|ウチ)$/.test(w) && /(の|[一-鿿々])$/.test(pre)) rep = w;
       /* 「うちへ帰る」「そのうち一人」の「うち」も一人称ではない（へ・一人の続きは、ほかの一人称だけで見る） */
@@ -64,7 +84,7 @@
           pre = pre.slice(0, pre.length - sm[2].length) + (rd ? bits.map(function (b) { return rd + b.replace(/^[ぁ-ゖァ-ヶ][ぁぃぅぇぉゃゅょァィゥェォャュョ]?/, ''); }).join('') : '');
         }
       }
-      out += pre + rep; last = m.index + w.length;
+      out += pre + rep; last = m.index + m[0].length;
     }
     return out + q.slice(last);
   };
@@ -575,7 +595,12 @@
   /* 二人称を、設定した言い方にそろえる（「あなた」「お前」「きみ」「あんた」「おぬし」など → 設定の二人称）。
      名前のあとの「君」（アキラ君）や「大君」などの言葉は変えない */
   var YOU2 = /(?:あなた|あんた|お前|おまえ|てめえ|貴様|おぬし|そなた|お主)(?!さん|方|様)|(?:きみ|(?<![大姫主父母諸細若暴ァ-ヶー一-鿿A-Za-z])君)(?=(?:は|が|も|の|を|に|と|で|って|、|。|！|？|…|」|$|さ|ね|よ|なら|だけ|たち|ら|だ|じゃ|か|な|から|へ|や|しか|まで|より|一人|自身|こそ|最高|大好き|好き|〜|～|ー|ったら|たって))/g;
-  V.applyYou = function (q, you) { return you ? q.replace(YOU2, you) : q; };
+  /* 印 {二人称} は二人称に（二人称が空なら「あなた」） */
+  V.applyYou = function (q, you) {
+    if (you) q = q.replace(YOU2, you);
+    if (typeof q === 'string' && (q.indexOf(MK2) >= 0 || q.indexOf('{二人称}') >= 0)) { var y = you || 'あなた'; q = q.replace(/\uE0F2|\{二人称\}/g, function () { return y; }); }
+    return q;
+  };
   function keigoHere(text, s, e, q, who, people, actors) {
     if (!who || who.persona === 'polite') return false;
     /* 「年上には敬語」：年齢が分かっていて、相手のほうが年上なら敬語 */
@@ -698,7 +723,7 @@
         /* 心の声（（……））：一人称だけそろえる */
         var close = text.indexOf('）', i);
         if (close > i) {
-          var mq = text.slice(i + 1, close), who2 = mq.length < 120 && FP_RE.test(mq) ? speakerOf(text, i, close + 1, people) : null;
+          var mq = text.slice(i + 1, close), who2 = mq.length < 120 && (FP_RE.test(mq) || mq.indexOf(MK1) >= 0) ? speakerOf(text, i, close + 1, people) : null;
           FP_RE.lastIndex = 0;
           if (who2) { out += text.slice(last, i + 1) + V.replaceFP(mq, who2) + '）'; last = close + 1; }
           i = close; continue;
@@ -736,7 +761,7 @@
             var nb = q.indexOf('｜') >= 0 && HK.Tone && HK.Tone.pick ? HK.Tone.pick(q, who, kg) : null;
             if (nb) { q = nb.q; q0 = q; if (nounQ) nb = null; }
             /* 書き下ろし辞書は元の文（1本）で引いてあるので、3本の台詞では選んだベースで引けなければ残りのベースでも引く（既存の書き下ろしをそのまま生かす） */
-            var ovFor = function (w) { var r = V.overrideFor(q, w, people); if (r == null && nb && nb.alts) for (var ai = 0; ai < nb.alts.length && r == null; ai++) r = V.overrideFor(nb.alts[ai], w, people); return r; };
+            var ovFor = function (w) { var r = V.overrideFor(V.markOut(q), w, people); if (r == null && nb && nb.alts) for (var ai = 0; ai < nb.alts.length && r == null; ai++) r = V.overrideFor(V.markOut(nb.alts[ai]), w, people); return r; };
             var ov = pre ? null : !nounQ && V.overrideFor ? ovFor(kg ? Object.assign({}, who, { tone: 'polite' }) : who) : null;
             /* 別の口調から派生する口調（tone-registry.js の derive。後輩・お嬢様など）：その口調名の書き下ろし・直しがあれば完成形としてそのまま使い、
                なければ元の口調の書き下ろしを引いて、最後に語尾を付け替える */
@@ -751,7 +776,8 @@
             }
             /* 派生元のない仕上げつきの口調（ヤンキーなど）も、その口調名の書き下ろし・直しは完成形として使う */
             else if (ov != null && !kg && HK.TONE_FINISH && HK.TONE_FINISH[who.tone]) own = true;
-            q = V.replaceFP(ov != null ? ov : q, who);
+            /* 名詞の引用（話し手の言葉ではない）の印 {一人称} は「私」のまま（出口の V.markOut で戻す） */
+            q = nounQ ? V.replaceFP(V.markIn(ov != null ? ov : q).replace(/\uE0F1/g, '\uE0F3'), who).replace(/\uE0F3/g, MK1) : V.replaceFP(ov != null ? ov : q, who);
             var byDict = ov == null && !pre && nb && nb.dict;
             /* 辞書だけで作る口調（tone-registry.js の dictOnly）の1本の台詞：常体か敬語かを見て辞書を当てる（従来の言い換え・keigoUnify・仕上げは通さない。性別の語尾は通す） */
             var d1 = !byDict && ov == null && !pre && !nb && !kg && !nounQ && HK.toneOpt && HK.toneOpt(who.tone, 'dictOnly') && HK.Tone && HK.Tone.apply1 ? HK.Tone.dictOf(who.tone) : null;
@@ -780,7 +806,9 @@
             /* 二人称の設定（敬語の相手への台詞は除く）。設定が空なら、口調と性別の既定（tone-registry.js の HK.TONE_YOU）でそろえる */
             var youW = who.you || (HK.toneYou ? HK.toneYou(who.tone, who.gender) : '');
             if (youW && (!kg || yf1) && !nounQ) q = V.applyYou(q, youW);
-            if (YOU_ST.test(q0)) q = fixYouStutter(q);
+            /* 二人称をそろえない台詞（敬語の相手・名詞の引用・二人称が空）の印 {二人称} は「あなた」に */
+            else if (q.indexOf(MK2) >= 0 || q.indexOf('{二人称}') >= 0) q = V.applyYou(q, '');
+            if (YOU_ST.test(V.markOut(q0))) q = fixYouStutter(q);
             if (V.applyCalls) q = V.applyCalls(q, who, people);
             /* 呼び方を決めてある相手に向けた台詞は、二人称を呼び方にし、ときどき呼びかけを足す（tone-plus.js の callAddress） */
             V._callK = qn; V._actN = Array.isArray(actors) ? actors.length : 0;
@@ -983,6 +1011,15 @@
       var t2 = text;
       order.forEach(function (n) { t2 = t2.split(n).join(ren[n]); });
       return NS.dec(pt0.call(this, t2, P2, A2));
+    };
+  })();
+  /* 一人称・二人称の印（いちばん外の包み）：入口で {一人称}・{二人称} を 1 字の印にし（名前の伏せ字より前に。名前の字が印の字と重なっても壊れない）、
+     出口で残った印を「私」「あなた」に戻す（話し手が決まらない台詞・名詞の引用・地の文。印が画面に残ることを無くす） */
+  (function () {
+    var pt0 = V.processText;
+    V.processText = function (text, people, actors) {
+      if (!V.hasMark(text)) return pt0.apply(this, arguments);
+      return V.markOut(pt0.call(this, V.markIn(text), people, actors));
     };
   })();
   /* ---------- ♡を外す（住人の設定「♡喘ぎ（男性向け）」を外した人・全体の「喘ぎ声の調整」の「♡：全員なし」。2026-10-30 担当HT） ----------

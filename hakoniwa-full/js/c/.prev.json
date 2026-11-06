@@ -1,10 +1,10 @@
 {
  "cur": {
-  "core": "core.2714482158.js",
-  "late": "late.e9c10f8c26.js",
+  "core": "core.e01d5f3729.js",
+  "late": "late.2a7f7cb281.js",
   "pack-sim": "pack-sim.80d98a9ab6.js",
   "pack-rel": "pack-rel.cbf63a0548.js",
-  "pack-lewd": "pack-lewd.ee0a13730d.js",
+  "pack-lewd": "pack-lewd.83c42bb9cf.js",
   "scen-goukon": "scen-goukon.bf3baa0d32.js",
   "scen-classroom": "scen-classroom.ecb33c629d.js",
   "scen-island": "scen-island.f41d7e0a37.js",
@@ -78,7 +78,7 @@
   "core": "core.2714482158.js",
   "late": "late.e9c10f8c26.js",
   "pack-sim": "pack-sim.80d98a9ab6.js",
-  "pack-rel": "pack-rel.3f64c9fc77.js",
+  "pack-rel": "pack-rel.cbf63a0548.js",
   "pack-lewd": "pack-lewd.ee0a13730d.js",
   "scen-goukon": "scen-goukon.bf3baa0d32.js",
   "scen-classroom": "scen-classroom.ecb33c629d.js",
@@ -199,8 +199,8 @@
    11984
   ],
   "js/voice.js": [
-   69038,
-   22205
+   70341,
+   22493
   ],
   "js/voice-tone.js": [
    36717,
@@ -215,8 +215,8 @@
    15550
   ],
   "js/tone-engine.js": [
-   68789,
-   22094
+   68838,
+   22107
   ],
   "js/tone-dict-builtin.js": [
    90832,
@@ -591,8 +591,8 @@
    3420
   ],
   "js/lewd-mark.js": [
-   1482,
-   762
+   1577,
+   811
   ],
   "js/ero-scene.js": [
    2354,
