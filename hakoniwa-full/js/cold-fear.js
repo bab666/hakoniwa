@@ -4,8 +4,8 @@
    見捨てる・「私は悪くない……」と売り渡す、性格によっては逃れる・歪んだ庇護欲・まれに愛。決まり：docs/reports/2026-10-28/apathy-fear-rules.md
    ■ 進みづらさ（エンジン型。Ctx.prototype.mod を包む）
      ・無関心（a→b）：「恋愛：自動」は今までどおり値を凍結（ties.js の freezeInit）。「恋愛：あり」は凍結を外し、すべての値の動きを ×0.25（CF.K.apathy）
-     ・恐怖（a→b）：惹かれ・好意・信頼の上がりを ×0.1（関係の伸びの倍率 modsA と合わせて）、好意・信頼の下がりを ×1.5、緊張の上がりを ×1.3、緊張の下がりを ×0.5
-     ・物語型（関係の値が二人で一つの S.relD）：区切りごとに、組の値の上がりを ×0.25（無関心）／×0.1（恐怖）に戻す
+     ・恐怖（a→b）：惹かれ・好意・信頼の上がりを ×0.6、和らいだあとは普段どおり（関係の伸びの倍率 modsA と合わせて。2026-11-06 まで ×0.1）、好意・信頼の下がりを ×1.5、緊張の上がりを ×1.3、緊張の下がりを ×0.5
+     ・物語型（関係の値が二人で一つの S.relD）：区切りごとに、組の値の上がりを ×0.25（無関心）／×0.6（恐怖。和らいだあとは抑えない）に戻す
    ■ 引き金（出来事として記録し、理由に「無関心の変化：…」「恐怖の変化：…」）。変化のときだけ ctx._cfRaw で抑えを外してまとめて動かす
      ・強引な性的行為（R18版だけ。cold-fear-r18.js の cf_force_r18）：無関心 → 憎悪か動揺（無関心は解ける）、恐怖 → 深まる
      ・劇的なこと：弱ったときに相手に助けられた（cf_tend）／ほかの出来事で相手に庇われた・救われた（理由・本文から拾う → cf_moved）：無関心 → 心が動く（解ける）、恐怖 → 少し和らぐ
@@ -32,7 +32,8 @@
   if (!HK || !HK.addTo || !HK.wrap || !HK.COMMON || !HK.ColdFearText) return;
   var X = HK.ColdFearText;
   var CF = HK.ColdFear = HK.ColdFear || {};
-  CF.K = { apathy: 0.25, fear: 0.1 };
+  /* 恐怖の上がりの倍率（2026-11-06 利用者の指示「恐怖を持っている側の好感度の上がりが制限されるだけ」）：和らぐ前 ×0.6、和らいだあと（p.freed）は普段どおり。前は ×0.1 で、和らいでも恋愛に届かなかった */
+  CF.K = { apathy: 0.25, fear: 0.6, fearFree: 1 };
   /* 極限系の箱庭（命が懸かっていて、見捨てる・突き落とす・売り渡すが起きうる） */
   CF.EXT = { zombie: 1, island: 1, br: 1, trial: 1, jashin: 1, yakata: 1, jinro: 1, ship: 1 };
   CF.trace = null;
@@ -169,10 +170,13 @@
       return p.slow ? CF.K.apathy : 1;
     }
     if (!fearOn(p)) return 1;
-    if (f === 'att') return v > 0 ? CF.K.fear : 1;
-    /* 好意・信頼は関係の伸びの倍率（恐怖の modsA：好意 0.6・信頼 0.5）と合わせて、上がりがおよそ ×0.1 になるように */
-    if (f === 'aff') return v > 0 ? CF.K.fear / 0.6 : 1.5;
-    if (f === 'trust') return v > 0 ? CF.K.fear / 0.5 : 1.5;
+    /* 和らいだあと（恋愛の止めが外れた）は、関係の伸びの倍率（modsA：好意 0.6・信頼 0.5）も打ち消して、普段の二人と同じに動かす */
+    if (p.freed) return f === 'aff' ? (v > 0 ? 1 / 0.6 : 1) : f === 'trust' ? (v > 0 ? 1 / 0.5 : 1) : 1;
+    var kf = CF.K.fear;
+    if (f === 'att') return v > 0 ? kf : 1;
+    /* 好意・信頼は関係の伸びの倍率（恐怖の modsA：好意 0.6・信頼 0.5）と合わせて、上がりがおよそ ×kf になるように（1 を超えない） */
+    if (f === 'aff') return v > 0 ? Math.min(1, kf / 0.6) : 1.25;
+    if (f === 'trust') return v > 0 ? Math.min(1, kf / 0.5) : 1.25;
     if (f === 'ten') return v > 0 ? 1.3 : 0.5;
     return 1;
   }
@@ -224,7 +228,14 @@
     if (!a || !b || !HK.fearRelease) return '';
     HK.fearRelease(a, b);
     p.freed = true; note(Z, p, 'freed');
-    return '／恐怖の和らぎ：' + a.name + 'の' + b.name + 'への恐怖が和らいだ（「恋愛：あり」の二人なので、ここから恋愛になりうる）';
+    /* 和らいだ：怖さで押し下げていた好意・信頼を少し戻す（2026-11-06。和らいでも初めの値のままでは恋愛に届かなかった） */
+    if (isCtx(Z)) {
+      /* 相性の倍率（chem）を通さず、直接戻す（怖さで押し下げていた分） */
+      var r0 = Z.R(a, b); r0.aff = clamp(r0.aff + 18, -100, 100); r0.trust = clamp(r0.trust + 12, -100, 100); r0.att = clamp(r0.att + 22, 0, 100); r0.ten = clamp(r0.ten - 14, 0, 100);
+      /* 避ける重み（engine.js）は少しだけに */
+      if (Z._fear && Z._fear[p.h + '>' + p.t]) Z._fear[p.h + '>' + p.t] = 2;
+    }
+    return '／恐怖の和らぎ：' + a.name + 'の' + b.name + 'への恐怖が和らいだ（ここから' + a.name + 'の側からも近づける）';
   };
   /* 和らいだか（「恋愛：あり」の恐怖の止めが外れたか） */
   CF.freed = function (Z, a, b) { var p = CF.pairOf(Z, a, b); return !!(p && p.freed); };
@@ -551,7 +562,7 @@
     Object.keys(S._cf).forEach(function (k) {
       var p = S._cf[k], a = S.P[p.h], b = S.P[p.t]; if (!a || !b) return;
       var key = rk(a, b), cur = S.relD[key] || 0, prev = last[key];
-      var slow = p.type === 'apathy' ? (apaOn(p) ? CF.K.apathy : 0) : (fearOn(p) ? CF.K.fear : 0);
+      var slow = p.type === 'apathy' ? (apaOn(p) ? CF.K.apathy : 0) : (fearOn(p) ? (p.freed ? CF.K.fearFree : CF.K.fear) : 0);
       if (slow && prev != null && cur > prev) S.relD[key] = prev + (cur - prev) * slow;
       last[key] = S.relD[key] || 0;
     });

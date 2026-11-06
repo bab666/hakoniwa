@@ -272,14 +272,15 @@
   /* 二人のあいだの関係の「恋愛：自動／あり／なし」で見た恋愛の可否（ties.js の HK.tiesLove。2026-10-28 担当MB）。
      ctx：エンジン型の ctx（省略時は回している ctx。住人が ctx の住人そのものなら、その関係の並び）か、物語型の S（関係の並び S.ties）。
      どちらでもなければ、住人の写しに付けた印 loveOff（ties.js の HK.Ties.after・HK.loveOffMark）で見る */
-  /* 恐怖の「恋愛：あり」（2026-11-03 利用者の指示「恋愛ありは、恐怖が和らぐ可能性があるという意味」）：恐怖が和らぐまで恋愛しない印 fearHold（相手の番号）。
-     loveOff にも入れる（体の関係は止めない。体の関係の欄が「あり」なら、体だけの場面の組として扱う）。和らいだら cold-fear.js が HK.fearRelease で外す */
+  /* 恐怖の二人の印 fearHold（相手の番号。和らいだら cold-fear.js が HK.fearRelease で外す）。
+     2026-11-06 利用者の指示「恐怖を持っている側からのアプローチや好感度の上がりが制限されるだけで、恋愛イベント自体は発生させてほしい」：
+     恋愛は止めない（loveOff に入れない）。和らぐまでは、恐れる側が主役の恋愛の出来事（告白・誘い・触れる）だけを止め（HK.fearLead）、
+     恐れる側の惹かれの上がりを小さくする（cold-fear.js の CF.K）。合意の夜は HK.fearSexHold で止める。恋人になったら和らいだ扱い（fear-love.js） */
   HK.fearHold = function (a, b) {
     if (!a || !b || a === b) return;
     [[a, b], [b, a]].forEach(function (q) {
-      var h = q[0].fearHold = Array.isArray(q[0].fearHold) ? q[0].fearHold : [], l = q[0].loveOff = Array.isArray(q[0].loveOff) ? q[0].loveOff : [];
+      var h = q[0].fearHold = Array.isArray(q[0].fearHold) ? q[0].fearHold : [];
       if (h.indexOf(q[1].i) < 0) h.push(q[1].i);
-      if (l.indexOf(q[1].i) < 0) { l.push(q[1].i); (q[0]._fhOff = q[0]._fhOff || []).push(q[1].i); }
     });
   };
   /* 恐怖の二人の合意の夜の止め（2026-11-05 まとめ役の決定）：恐怖は和らぐまで恋愛も合意の夜も起こさない（関係の種類の傾向として残す）。
@@ -313,7 +314,6 @@
   HK.loveOffPair = function (a, b) { return !!(a && b && a !== b && ((Array.isArray(a.loveOff) && a.loveOff.indexOf(b.i) >= 0) || (Array.isArray(b.loveOff) && b.loveOff.indexOf(a.i) >= 0))); };
   HK.tieLovePair = function (a, b, ctx) {
     if (!a || !b || a === b || !HK.tiesLove) return true;
-    if (HK.fearHeld(a, b)) return false;
     if (!HK.TIE_LOVE_GATE && HK.loveOffPair(a, b)) return false;
     var c0 = ctx && typeof ctx === 'object' ? ctx : HK._curCtx;
     if (c0 && c0.tiesAll && c0.chars && c0.chars[a.i] === a) return HK.tiesLove(c0.tiesAll[key(a, b)]);
@@ -327,7 +327,6 @@
     if (!HK.TIE_LOVE_GATE && HK.loveOffPair(a, b)) return true;
     var l = ctx && ctx.tiesAll && a && b && a !== b ? ctx.tiesAll[key(a, b)] : null;
     if (!l || !l.length) return false;
-    if (HK.fearHeld(a, b)) return true;
     if (HK.TIE_LOVE_GATE && l.some(function (t) { return t.love === 'no'; })) return true;
     if (!HK.tiesLove) return false;
     var s0 = HK._softLove; if (ctx._tlScope) HK._softLove = true;
@@ -498,6 +497,7 @@
     /* 恋愛が起きない組の恋愛の出来事は、記録に残さない（呼び出し側が e.n などを使えるよう、空の出来事を返す） */
     if (o.cat === 'romance' && o.kind !== 'phase' && !this.romanceOk(o.actors, sexEv(this, o))) return { n: this.log.length, step: this.stepIndex, cat: 'romance', actors: [], text: '', mag: 0, kind: 'event', skipped: true };
     if (this._apathy && o.kind !== 'step' && o.kind !== 'phase' && apathyLead(this, o)) return { n: this.log.length, step: this.stepIndex, cat: o.cat, actors: [], text: '', mag: 0, kind: 'event', skipped: true };
+    if (HK.fearLead(this, o)) return { n: this.log.length, step: this.stepIndex, cat: o.cat, actors: [], text: '', mag: 0, kind: 'event', skipped: true };
     /* 監禁（執着の暴走）されている人は場に出てこない：執着の出来事（監禁の日々・逃走・救出・解放）と死のほかは、記録に残さない
        （present() から外れているが、名簿を直接たどる箱庭の出来事もあるので、ここで最後に止める） */
     if (!o.cageOk && o.kind !== 'step' && o.kind !== 'phase' && o.kind !== 'death' && (o.actors || []).some(function (c) { return c && c.flags && c.flags.caged != null; }))
@@ -574,10 +574,18 @@
     return !(a && a.likes === 'none');
   };
   /* 無関心な人（a→b）が、b を相手にした助け合い・恋愛の出来事の主役になるか（箱庭の進行の出来事も止める） */
+  /* 恐怖が和らぐ前の二人で、恐れる側（fearOf）が主役（一人目）の恋愛の出来事か（2026-11-06。告白・誘い・触れるのは和らいでから。恐れられる側からは普段どおり） */
+  HK.fearLead = function (ctx, o) {
+    var L = (o && o.actors || []).filter(Boolean), a = L[0];
+    if (!a || L.length < 2 || o.cat !== 'romance' || o.kind === 'phase' || !Array.isArray(a.fearOf) || !a.fearOf.length) return false;
+    if (sexEv(ctx, o).force) return false;
+    return L.slice(1).some(function (y) { return a.fearOf.indexOf(y.i) >= 0 && HK.fearHeld(a, y); });
+  };
   function apathyLead(ctx, o) { var L = (o.actors || []).filter(Boolean); return !!(ctx._apathy && L.length >= 2 && (o.cat === 'help' || o.cat === 'romance') && L.slice(1).some(function (y) { return HK.Ties.apathy(ctx, L[0], y); })); }
   Ctx.prototype.act2 = function (o) {
     if (o.cat === 'romance' && !this.romanceOk(o.actors, sexEv(this, o))) return null;
     if (this._apathy && apathyLead(this, o)) return null;
+    if (HK.fearLead(this, o)) return null;
     this.k = o.k || (0.8 + this.rng() * 0.4);
     this._mag = 0; this._touched = {};
     var r = o.fx ? o.fx() : null;
@@ -940,7 +948,8 @@
         if (ctx.fac && ctx.fac.of[a.i] != null && ctx.fac.of[a.i] === ctx.fac.of[o.i]) w += 1; else if (ctx._ring && ctx._ring[a.i] != null && ctx._ring[a.i] === ctx._ring[o.i]) w += 1;   /* 派閥なしの設定では仲の良い輪（factions.js の ring） */
         if (HK.Ties) w += HK.Ties.pull(ctx, a, o);
         /* 恐怖：恐れる側は、恐れている相手のそばに寄らない（関係のない回では何もしない） */
-        if (ctx._fear && ctx._fear[a.i + '>' + o.i]) w *= 0.3;
+        /* 恐れる側は相手を避ける（和らいだあと＝値 2 は少しだけ。cold-fear.js の CF.soften） */
+        if (ctx._fear && ctx._fear[a.i + '>' + o.i]) w *= ctx._fear[a.i + '>' + o.i] === 2 ? 0.8 : 0.3;
         return w;
       });
     }

@@ -72,7 +72,8 @@
   function tieWhy(x, a, b) {
     var l = tieList(x, a, b), w = '';
     for (var i = 0; i < l.length; i++) {
-      if (l[i].type === 'fear' && l[i].a === a.i) return '恐怖';
+      /* 恐怖は和らぐ（HK.fearRelease で印 fearHold が外れる）までは迫らない。和らいだあとは避けない（2026-11-06。恋愛は恐れる側からも進む） */
+      if (l[i].type === 'fear' && l[i].a === a.i && (!Array.isArray(a.fearHold) || !HK.fearHeld || HK.fearHeld(a, b))) return '恐怖';
       if (l[i].type === 'apathy' && l[i].a === a.i) return '無関心';
     }
     for (var j = 0; j < l.length; j++) {
