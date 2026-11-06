@@ -535,8 +535,11 @@
     var o = scen.env.filter(function (e) { return e.id === 'dest'; })[0];
     PL().list.forEach(function (d) { o.options.push({ v: d.id, label: d.name + '（' + yen(d.cost) + '〜' + (d.size === 'L' ? '・大型' : d.size === 'V' ? '・人や予算で長さが変わる' : '') + (d.trip ? '・泊まり' : '') + '）' }); });
   })();
-  /* 本体の共通の出来事から外すもの：体の関係の出来事・合意のない展開・三人以上の恋愛・告白（結末で扱う）など */
-  var EX_ID = /^(?:confess|take_charge|brood|lighten|mob_after|tie_spouse|grp_|poly_|ct_|cf_)/;
+  /* 本体の共通の出来事から外すもの：体の関係の出来事・合意のない展開・三人以上の恋愛・告白（結末で扱う）など。
+     関係を条件にした出来事（tie_*・rt_*・同一人物・恐怖の和らぎ・関係ごとのキス kiss_*）と、関係の段階に寄りかかった小さな出来事（目で追う glance・指先が触れる touch・
+     らしくない一面に近づく unl_spark・嫉妬 jealous）も外し、関係性ごとの出来事はこの部屋の文（date-rel.js の HK.DateRel）で出す（2026-11-06 利用者の指示「関係性ごとのイベントをその箱庭オリジナルイベントに差し替えて」）。
+     残す小さな共通の出来事（関係を問わない）は設計の 14 章の一覧 */
+  var EX_ID = /^(?:confess|take_charge|brood|lighten|mob_after|tie_|rt_|om_tie|attr_mirror_|fs_soften|kiss_|glance$|touch$|unl_spark$|jealous$|grp_|poly_|ct_|cf_)/;
   function exList() { return (HK.COMMON || []).filter(function (e) { return e.sex || e.force || EX_ID.test(e.id); }).map(function (e) { return e.id; }); }
   Object.defineProperty(scen, 'exclude', { get: exList, enumerable: true, configurable: true });
 
@@ -711,6 +714,8 @@
   }
   /* 追加の出来事（関係性ごと・性格・アクシデント・季節。date-more.js の HK.DateMore）に渡す部品 */
   function more(ctx, day, part) { if (HK.DateMore && HK.DateMore.run && day && !day.over) HK.DateMore.run(ctx, day, part, { f: f, setO: setO, lead2: lead2, pickT: pickT, relPick: relPick, attPick: attPick, fill: fill, per: per, rcat: rcat, cands: cands, relList: relList }); }
+  /* 関係性ごとのデートの出来事（date-rel.js の HK.DateRel。dest＝行き先の段のあと／back＝帰り道／next＝次のデートの前） */
+  function relEv(ctx, day, part) { if (HK.DateRel && HK.DateRel.run && day) HK.DateRel.run(ctx, day, part, { f: f, setO: setO, lead2: lead2, pickT: pickT, fill: fill, rcat: rcat, placeName: placeName }); }
   /* 文の中の行き先の名前（「高級ホテルで過ごす」のような動詞で終わる名前は、文に埋めるときの名詞 D.noun を使う。2026-11-05 通し読み「高級ホテルで過ごすの地図」） */
   function placeName(D) { return D ? D.noun || D.name : 'デートの行き先'; }
   /* その日の最初・最後の行き先（待ち合わせ・計画・行きの道中は最初、帰りは最後） */
@@ -723,6 +728,7 @@
   function morning(ctx, day) {
     var S = f(ctx), A = S.A, B = S.B, P = day.P, Tx = TX();
     /* 前のデートを喧嘩で切り上げた：謝って仲直り（謝るのは、帰った人か、言い過ぎた人） */
+    relEv(ctx, day, 'next');
     if (S.sorry) sorry(ctx, day);
     if (S.mita) mitaLater(ctx, day);
     if (S.c3 && S.c3role === 'guest' && S.c3mita && S.c3mita === day.d) c3Mita(ctx, day);
@@ -735,6 +741,7 @@
     visit(ctx, day, 'am');
     if (ctx.rng() < 0.3) gen(ctx, day);
     more(ctx, day, 'am');
+    relEv(ctx, day, 'dest');
     toki(ctx, day, 'am', 0.2);
     if (S.p2) dblRun(ctx, day, 'am');
     if (S.trio) trioRun(ctx, day, 'am');
@@ -748,7 +755,7 @@
     visit(ctx, day, 'pm');
     if (day.over) return;
     /* 計画した人の性格で分かれる行動・汎用の出来事・やらしい雰囲気・他の住人（順は乱数で） */
-    var acts = [behave, gen, heat, others, budgetLine, function (c, d) { toki(c, d, 'pm', 0.3); }, function (c, d) { more(c, d, 'pm'); }];
+    var acts = [behave, gen, heat, others, budgetLine, function (c, d) { toki(c, d, 'pm', 0.3); }, function (c, d) { more(c, d, 'pm'); }, function (c, d) { relEv(c, d, 'dest'); }];
     for (var i = acts.length - 1; i > 0; i--) { var j = Math.floor(ctx.rng() * (i + 1)), x = acts[i]; acts[i] = acts[j]; acts[j] = x; }
     acts.forEach(function (fn) { if (!day.over) fn(ctx, day); });
     if (S.dbl && S.dbl[day.d] && !day.over) doubleDate(ctx, day, 'mid');
@@ -793,6 +800,7 @@
     if (cp && cp.at === 'dest') climax(ctx, day, cp);
     /* その日の終わりぎわ（帰り際の靴の故障など） */
     more(ctx, day, 'end');
+    relEv(ctx, day, 'back');
     if (!P.trip && !P.home) move(ctx, day, 'back');
     if (cp && cp.at !== 'dest') climax(ctx, day, cp);
     /* ダブルデートの四人の夜（R18版。四人の輪がそろっていれば、夜の分かれ道の代わりに。date-r18.js の HK.DateR18.quad） */
@@ -1650,6 +1658,7 @@
     return t ? fill(ctx, t, c, o, { goal: g.t }) : '';
   }
   function goalDayEnd(ctx, S, day) {
+    S.kAll = Object.assign(S.kAll || {}, day.k || {});
     [S.A, S.B].forEach(function (c) {
       var G = S.goal[c.i], g = G && G.s[day.d]; if (!g) return;
       var J0 = GS_JUDGE[g.k], ok = J0 ? J0(day, S) : !day.fight;
@@ -1676,15 +1685,54 @@
     }
   }
   var GRES_NAME = { ok: '叶った', ng: '叶わなかった', done: '叶った', near: '近づいた', same: '変わらない', far: '遠のいた' };
-  /* 結末の段に足す、目標の判定の一文（最後のデートの短期＝叶った／叶わなかった、中期＝近づいた／変わらない／遠のいた。目標を持つ人の態度9種） */
-  function goalLines(ctx, S, c) {
-    var G = S.goal[c.i], Tx = TX(), o = c === S.A ? S.B : S.A, out = '';
-    if (!G) return '';
-    G.mres = goalMid(ctx, S, c);
-    var gs = G.s[S.n - 1], rs = G.r[S.n - 1];
-    if (gs && rs) { var R = (Tx.GOAL_RES || {})[rs] || {}, t = attPick(ctx, R, c, c, o, true); if (t) out += fill(ctx, t, c, o, { goal: gs.t }); }
-    if (G.m) { var R2 = (Tx.GOAL_LRES || {})[G.mres] || {}, t2 = attPick(ctx, R2, c, c, o, true); if (t2) out += fill(ctx, t2, c, o, { goal: G.m.t }); }
-    return out;
+  /* 中期の目標の判定（結果の欄の「近づいた・変わらない・遠のいた」。本文には出さない） */
+  function goalJudge(ctx, S) { [S.A, S.B].forEach(function (c) { var G = S.goal[c.i]; if (G) G.mres = goalMid(ctx, S, c); }); }
+  /* 結末の締めの一文（date-close-text.js の T.CLOSE）：関係の鍵 × その日々に実際に起きたこと（結果の型）× 回数（「1:」一回だけ・「M:」何回かの最後） */
+  var CLOSE_GRP = { spouse: 'spouse', lover: 'lover', fwb: 'fwb', almost: 'almost', crush: 'crush', friend: 'friend', childhood: 'childhood', fam: 'fam', pfam: 'fam',
+    school: 'close', work: 'work', senpai: 'work', ex: 'ex', feud: 'awk', lovehate: 'awk', first: 'first' };
+  var CLOSE_UP = { friend: 'close', childhood: 'close', ex: 'awk', lover: '', spouse: '' };
+  var CLOSE_ORD = ['propose', 'confess', 'fight', 'noconf', 'sex', 'kiss', 'te', 'plain'];
+  function closeKind(S) {
+    var k = Object.assign({}, S.kAll || {}, (S.day && S.day.k) || {});
+    if (S.proposed && /^(propose|repro)$/.test(S.endK)) return 'propose';
+    if (S.endK === 'koi' && S.confessed) return 'confess';
+    if (S.day && S.day.fight) return 'fight';
+    if (S.pine && !S.confessed && S.endK !== 'yujin') return 'noconf';
+    if (!HK.SAFE_ON && (S.sex || 0) > 0) return 'sex';
+    if (S.kissN > 0 || k.kiss) return 'kiss';
+    if (k.te && S.love) return 'te';
+    return 'plain';
+  }
+  function closeLine(ctx, S) {
+    var T = TX().CLOSE || {}, key = HK.DateRel && HK.DateRel.keyOf ? HK.DateRel.keyOf(S) : 'first', g = CLOSE_GRP[key] || 'first', up = CLOSE_UP[g] != null ? CLOSE_UP[g] : '';
+    var kind = closeKind(S), A = S.A, B = S.B, a = A, b = B;
+    /* {a}：想いを告げた人・プロポーズした人、片想いは想う側 */
+    if ((kind === 'confess' || kind === 'propose') && S.speaker) a = S.speaker;
+    else if (S.rkKey === 'crushB' || S.rkKey === 'senpaiB' || S.rkKey === 'mentorB') a = B;
+    else if (!/A$/.test(S.rkKey || '') && ctx.rng() < 0.5) a = B;
+    b = a === A ? B : A;
+    var ex = { n: S.n + '回', fw: S.famW || '家族', yosu: (S.affAvg || 0) >= 60 ? '仲の良い' : (S.affAvg || 0) < 20 ? 'ぎこちない' : '' };
+    var cnt = function (l) { return (l || []).filter(function (t) { return S.n === 1 ? !/^M:/.test(t) : !/^1:/.test(t); }).map(function (t) { return t.replace(/^(?:1|M):/, ''); }); };
+    for (var i = CLOSE_ORD.indexOf(kind); i < CLOSE_ORD.length; i++) {
+      var ty = CLOSE_ORD[i];
+      /* 型を下ろすのは、その型の文が無いときだけ（起きていないことの型には下ろさない：喧嘩・告白・キス・手は、起きた型からより弱い型へ） */
+      if (i > CLOSE_ORD.indexOf(kind) && ty !== 'plain' && !closeHas(S, ty)) continue;
+      var l = cnt((T[g] || {})[ty]);
+      if (!l.length && up) l = cnt((T[up] || {})[ty]);
+      var t = pickT(ctx, l, a, b, true, { wed: S.rk === 'spouse' });
+      if (t) { S.closeK = ty; S.cnt['close_' + ty] = 1; return fill(ctx, t, a, b, ex); }
+    }
+    return '';
+  }
+  function closeHas(S, ty) {
+    var k = Object.assign({}, S.kAll || {}, (S.day && S.day.k) || {});
+    return ty === 'sex' ? !HK.SAFE_ON && (S.sex || 0) > 0 : ty === 'kiss' ? S.kissN > 0 || !!k.kiss : ty === 'te' ? !!k.te && S.love : ty === 'noconf' ? S.pine && !S.confessed && S.endK !== 'yujin' : ty === 'fight' ? !!(S.day && S.day.fight) : false;
+  }
+  /* 住人ごとの「その後」（結果の欄の一人ずつの行）：その日々をどう受け止めたか・次に何をしようとしているか（態度9種。最後のデートで喧嘩した日は neg） */
+  function selfLine(ctx, S, c) {
+    var o = c === S.A ? S.B : S.A, T = (TX().CLOSE_SELF || {})[S.day && S.day.fight ? 'neg' : 'pos'] || {};
+    var t = attPick(ctx, T, c, c, o, true);
+    return t ? fill(ctx, t, c, o) : '';
   }
   function goalSum(S, c) {
     var G = S.goal[c.i]; if (!G) return null;
@@ -1863,8 +1911,7 @@
     Tr.res = res;
     var jeal = res === 'itami';
     var e = trioAct(ctx, null, E[res] || E.all, jeal, '締めくくり', null, true);
-    var gl = withPair(ctx, Tr.S, function () { return goalLines(ctx, Tr.S, Tr.C); });
-    if (e && gl) e.text += gl;
+    withPair(ctx, Tr.S, function () { var G = Tr.S.goal[Tr.C.i]; if (G) G.mres = goalMid(ctx, Tr.S, Tr.C); });
   }
 
   /* ---------- 結末 ---------- */
@@ -1879,8 +1926,10 @@
     S.ended = true;
     var E = (TX().END || {})[ek] || {}, t = relPick(ctx, E, A, B, true, { wed: ek === 'propose' || ek === 'repro' });
     if (!t) t = '{a}と{b}の{date}の日々は、こうして一区切りがついた。';
-    /* 二人の目標の判定の一文（短期：叶った／叶わなかった、中期：近づいた／変わらない／遠のいた。目標を持つ人の態度9種） */
-    var tail = goalLines(ctx, S, A) + goalLines(ctx, S, B);
+    /* 目標の判定（叶った・遠のいた）は本文に書かず、結果の欄にだけ残す（goalMid）。本文には、その日々に実際に起きたことを踏まえた締めの一文（closeLine。2026-11-06 利用者の指示
+       「目標が達成されたか・なぜ達成されなかったかは結構どうでもいい。結果を踏まえた描写を入れてほしい」） */
+    goalJudge(ctx, S);
+    var tail = closeLine(ctx, S);
     var e = ctx.act2({ actors: [A, B], cat: /koi|propose|repro|tomari/.test(ek) ? rcat(ctx, A, B) : 'bond', text: fill(ctx, t, A, B, { n: S.n + '回' }) + tail, why: 'デートの日々：結末（' + endName(S) + '）', fx: function () { ctx.mod2(A, B, { aff: 3, trust: 3 }, { aff: 3, trust: 3 }); } });
     if (e && !e.tag) e.tag = '結末';
     if (S.trio) trioEnd(ctx);
@@ -1903,7 +1952,7 @@
     var D = pairSum(ctx, S);
     ctx.flags.date = Object.assign(D, { n: S.n, grp: S.grp, plans: plans, gone: S.goneDays || [], visits: S.visits, outN: S.outN || 0, odd: S.odd, behs: S.behs, c3role: S.c3role || '', mode: S.mode, castNG: S.castNG || '',
       p2: S.p2 ? pairSum(ctx, S.p2) : null, trio: S.trio ? { c: S.trio.C.i, k: S.trio.k, t: S.trio.t ? S.trio.t.i : null, res: S.trio.res || '', cnt: S.trio.cnt, goal: goalSum(S.trio.S, S.trio.C) } : null });
-    var mates = function (c, o) { return o.name + 'と' + S.n + '回の' + S.dword; };
+    var mates = function (c, o) { var sl = selfLine(ctx, S, c); return o.name + 'と' + S.n + '回の' + S.dword + (sl ? '。' + sl : ''); };
     A.fate = 'デートした人'; A.fateNote = mates(A, B);
     B.fate = 'デートした人'; B.fateNote = mates(B, A);
     if (S.p2) { S.p2.A.fate = S.p2.B.fate = 'ダブルデートのもう一組'; S.p2.A.fateNote = S.p2.B.name + 'と二組で' + S.n + '回の' + S.p2.dword; S.p2.B.fateNote = S.p2.A.name + 'と二組で' + S.n + '回の' + S.p2.dword; }
@@ -1939,7 +1988,8 @@
     if (P2) { pl(P2, X.nm(P2.a) + 'と' + X.nm(P2.b) + '　'); (P2.goals || []).forEach(function (g, i) { var l = goalLine(X, g, X.nm(i ? P2.b : P2.a)); if (l) lines.push(l); }); }
     if (Tr) { lines.push(X.nm(Tr.c) + '：' + ({ itami: '二人を見送って、身を引いた', iwau: '二人を祝った', mada: '三人のまま', sannin: '三人の恋人のまま', ouen: '二人を応援した' }[Tr.res] || '')); var l3 = goalLine(X, Tr.goal, X.nm(Tr.c)); if (l3) lines.push(l3); }
     X.C.forEach(function (c) { c.afterDone = true; });
-    return { headline: (res.outcome || '') + '。', stats: [['回数', R.n + '回'], ['喧嘩', R.fights + '回'], ['結末', R.end]].concat(HK.SAFE_ON ? [] : [['エッチ', R.sex + '回']]), lines: lines };
+    var gst = (R.goals || []).map(function (g, i) { return g && g.m ? X.nm(i ? R.b : R.a) + '：' + g.mres : ''; }).filter(Boolean).join('・');
+    return { headline: (res.outcome || '') + '。', stats: [['回数', R.n + '回'], ['喧嘩', R.fights + '回'], ['結末', R.end]].concat(HK.SAFE_ON ? [] : [['エッチ', R.sex + '回']], gst ? [['目標', gst]] : []), lines: lines };
   };
   HK.Date = { okText: okText, pickT: pickT, relPick: relPick, attPick: attPick, per: per, fill: fill, RK_NAME: RK_NAME, BR_NAME: BR_NAME, has: has, yen: yen, rcat: rcat, withPair: withPair, loveOk: loveOk };
   HK.SCENARIOS[ID] = scen;
