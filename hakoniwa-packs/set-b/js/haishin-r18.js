@@ -156,7 +156,7 @@
     /* 長い場面：半分は部屋の段（HK.PairR18.compose）、半分は本体の長い場面に部屋の専用の場面（HK.Play.addScene：切り忘れ・お仕置き・リクエスト）を乗せる */
     /* 濃い（lv high）の「もう一度」は、切り忘れでは事後の区切りに別の一件で出す（leakAfter）ので、場面の中には入れない。もう一度の場面の中にも入れない */
     var lv2 = entry === 'again' || (entry === 'leak' && lv === 'high') ? 'mid' : lv;
-    var opt = { lv: lv2, ero: ero, nogen: nogen, pi: PI[entry] || 0, afi: 0, jealTop: !!o.jealTop, leadB: x === b, entry: entry, resume: false, spot: spot, couple: true, noRoom: form === 'long' && !!HK.Play && ctx.rng() < 0.5 };
+    var opt = { lv: lv2, ero: ero, nogen: nogen, pi: PI[entry] || 0, afi: 0, jealTop: !!o.jealTop, leadB: x === b, entry: entry, resume: false, spot: spot, couple: true, noRoom: form === 'long' && !!HK.Play && sh !== 'fm' && ctx.rng() < 0.5 };   /* fm は型（HK.Play）を切るので、専用の場面は乗らない：いつも部屋の段で組む */
     if (sh === 'fm' && form === 'short') opt.ero = false;
     var PL = HK.Play, off0 = PL ? PL.off : null;
     if (PL && sh === 'fm') PL.off = true;
