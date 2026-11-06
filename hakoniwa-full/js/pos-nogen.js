@@ -398,7 +398,7 @@
     var rp = function (a) { return a[rng ? rng.int(a.length) : Math.floor(Math.random() * a.length)]; };
     var ctx = { S: S, ero: ero, scen: input.scenId || '', pick: function (a) { var f = a.filter(function (x) { var k = typeof x === 'string' ? seg(x) : ''; return !k || big.indexOf(k) < 0; }); var r = rp(f.length ? f : a); if (typeof r === 'string') big += '\n' + r.replace(/\{[^}]+\}/g, '|'); return r; } };
     var chg = {};
-    (res.log || []).forEach(function (e, n) { if (e && typeof e.text === 'string') { var t0 = e.text; e.text = NG.fixText(ctx, e.text, cs, Ns); if (t0 !== e.text) chg[n] = 1; if (NG.debug && t0 !== e.text) NG.debug.push({ before: t0, after: e.text }); } });
+    (res.log || []).forEach(function (e, n) { if (e && typeof e.text === 'string' && !e.apart) { var t0 = e.text; e.text = NG.fixText(ctx, e.text, cs, Ns); if (t0 !== e.text) chg[n] = 1; if (NG.debug && t0 !== e.text) NG.debug.push({ before: t0, after: e.text }); } });
     /* 差し替えた文の喘ぎが、同じ記録にもう出ている喘ぎと重なったら引き直す（ero-kit.js の HK.Ero.dedupeLog。2026-10-29 担当MR：宇宙船の恋人の夜） */
     if (HK.Ero && HK.Ero.dedupeLog && Object.keys(chg).length) HK.Ero.dedupeLog(res, input, chg);
     if (res.ending && Array.isArray(res.ending.lines)) res.ending.lines = res.ending.lines.map(function (l) { return typeof l === 'string' ? NG.fixText(ctx, l, cs, Ns) : l; });

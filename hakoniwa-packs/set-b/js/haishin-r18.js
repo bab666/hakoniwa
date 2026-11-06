@@ -204,7 +204,7 @@
     var f = pickT(ctx, dig(R.FANS, att(y, x)), x, y) || pickAny(ctx, dig(R.FANS, att(y, x)), x, y) || pickAny(ctx, FB.fans, x, y);
     if (!t) return null;
     var e = ctx.say({ kind: 'event', cat: rcat(S), actors: [x, y], text: fill(ctx, t, x, y) + (f ? '\n\n' + fill(ctx, f, x, y) : ''), why: 'きっかけ：' + ENTRY[entry] + '（' + x.name + 'から・' + why + '）', mag: 0 });
-    if (e) { e.tag = 'きっかけ'; S.nMain++; }
+    if (e) { e.tag = 'きっかけ'; S.nMain++; if (S.apart) e.apart = true; }
     return e;
   }
   function dropE(ctx, e) { if (!e) return; var L = ctx.log, i = L.indexOf(e); if (i >= 0) L.splice(i, 1); }
@@ -338,7 +338,7 @@
     var t = pickT(ctx, l, x, y) || pickAny(ctx, l.length ? l : all, x, y);
     if (!t) return null;
     var e = ctx.say({ kind: 'event', cat: rcat(S), actors: [x, y], text: (q && q.text ? q.text : '') + fill(ctx, t, x, y), why: 'きっかけ：ソロの中盤（' + (key === 'toy' ? (x === S.top ? '自分の体に触れる' : '玩具を使う') : '画面の外の相手に電話する') + '・' + x.name + 'から）', mag: 0 });
-    if (e) { e.tag = 'きっかけ'; S.nMain++; S.midLeadN = (S.midLeadN || 0) + 1; }
+    if (e) { e.tag = 'きっかけ'; S.nMain++; S.midLeadN = (S.midLeadN || 0) + 1; if (S.apart) e.apart = true; }
     return e;
   }
   /* 性格による渋り：恥ずかしがり・堅い態度は 1〜2 区切り、丁寧・ツンデレは半分の回で 1 区切り渋ってから応える（張り切る態度はすぐ）。夜の性格が恥じらいなら 1 区切り多く */
@@ -453,7 +453,7 @@
     if (!b0 || !w) return false;
     S.callDir = 'in'; S.callWhy = why;
     var e = ctx.say({ kind: 'event', cat: rcat(S), actors: [y, x], text: fill(ctx, b0, x, y) + '\n\n' + fill(ctx, w, y, x), why: 'きっかけ：ソロの中盤（' + y.name + 'から電話がかかってきた・' + CALLWHY[why] + (H.goalJa && H.offGoal && H.offGoal(S) ? '・' + y.name + 'の目標：' + H.goalJa(S, y) : '') + '）', mag: 0 });
-    if (e) { e.tag = 'きっかけ'; S.nMain++; S.midLeadN = (S.midLeadN || 0) + 1; }
+    if (e) { e.tag = 'きっかけ'; S.nMain++; S.midLeadN = (S.midLeadN || 0) + 1; if (S.apart) e.apart = true; }
     rec(ctx, [x, y], (re ? fill(ctx, re, x, y) : '') + (H.offIn && H.offIn(S) ? nearCall(ctx, S, x, y, true) : ''), 'ソロの中盤：画面の外の相手から電話がかかってきた（' + CALLWHY[why] + '）', rcat(S), { tag: '電話' });
     return true;
   }
@@ -472,7 +472,7 @@
     var body = pickAny(ctx, TELBODY[k] || TELBODY.bF, x, y).replace('{m}', moanOf(ctx, x, true));
     var e = ctx.act2({ actors: [x, y], cat: rcat(S), text: fill(ctx, body, x, y), why: '配信の部屋：電話越しの山場（' + x.name + '・' + (x === S.top ? '攻めの配信者は穴に入れない' : '受けの配信者') + '）', lewd: true,
       fx: function () { ctx.mod2(x, y, { aff: 3, att: 4 }, { aff: 3, att: 4 }); } });
-    if (e) { e.tag = '電話'; S.nMain++; }
+    if (e) { e.tag = '電話'; S.nMain++; if (S.apart) e.apart = true; }
     after(ctx, S, 'tel', x, y);
     rec(ctx, [x, y], fill(ctx, pickAny(ctx, SOLOCLOSE, x, y), x, y), '電話を終えて配信を閉じた', 'bond', { tag: '配信終了' });
     S.sexDone = 1; S.ended = 'cut'; S.endAt = o.s;

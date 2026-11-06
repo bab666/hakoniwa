@@ -209,6 +209,8 @@
     if (cat === 'romance' && !st(ctx).romOk) cat = 'bond';
     var e = ctx.act2({ actors: actors, cat: cat || 'bond', text: text, why: '配信の部屋：' + why, odd: !!o.odd, fx: o.fx });
     if (e && o.tag) e.tag = o.tag;
+    /* 離れている二人の一件（ソロ配信で相手が来る前）：結果を見直す本体の部品（pos-nogen.js の差し替えなど）が、二人が触れ合う文に直さないように */
+    if (e && st(ctx) && st(ctx).apart) e.apart = true;
     if (e) { var S0 = st(ctx); S0.nMain++; if (o.ev) { S0.ev.push(o.ev); S0.evBy[o.ev] = { doer: o.doer || actors[0] || null, taker: o.taker || actors[1] || null }; } }
     return e;
   }

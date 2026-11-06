@@ -43,6 +43,8 @@
     return c.length > 1 && Z.rng() < 0.5 ? c[1] : c[0];
   }
   function apply(Z, e, o) {
+    /* 離れている二人（配信の部屋のソロ配信で、相手が画面の外・電話の向こうにいるあいだ。ctx.apart／e.apart）には、体の触れ合いの一文を差さない（2026-11-06） */
+    if ((Z && Z.apart) || (e && e.apart) || (o && o.apart)) return;
     if (HK.SAFE_ON || !e || e.skipped || !e.lewd || e.kind === 'step' || typeof e.text !== 'string' || !e.text) return;
     if ((o && o.force) || FORCE_RE.test(String(e.why || ''))) return;
     var P = isCtx(Z) ? Z.chars : Z.P, ids = (e.actors || []).map(function (x) { return typeof x === 'number' ? x : x && x.i; }).filter(function (x) { return x != null; });

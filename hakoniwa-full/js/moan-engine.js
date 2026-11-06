@@ -487,6 +487,8 @@
     }
     /* 厳格（stern）：のじゃの語尾（〜ぬ・〜じゃ・〜のう）と乱暴語の「〜んな」を、厳格の言い方（〜ない・〜だ・〜な・〜るな）に（2026-11-06 の利用者の報告「堪え、られ……ぬ」「ふざけ、んな」） */
     if (t === 'stern') q = runR(q, FIT_STERN_R);
+    /* 敬語・厳格・冷静・無口の口調（お嬢様のような女性的な口調を除く）に女言葉の「いいわ」を残さない（moan-tone の「敬語の口調に女言葉のわ」。2026-11-06） */
+    if (!FIT_FEM[t] && (FIT_POLITE[t] || /^(?:stern|cool|cool_soft|calm|mukuchi|mukuchi_ne)$/.test(t))) q = q.replace(new RegExp('いいわ' + FE, 'g'), 'いい');
     if (t === 'mukuchi' && !light) q = quietFit(q);
     if (soft) {
       q = daro(runR(q, FIT_SOFT_R.concat(FIT_MASC_R)));

@@ -163,10 +163,13 @@
   }
 
   /* ---------- 2 回までの引き方 ---------- */
+  var KISS_REF = /(?:キス|ちゅー|チュー)(?:きた|キタ|来た|長|多すぎ|しすぎ|の音|顔|して(?:る|た))|(?:さっき|今|(?<!ただ)いま)の(?:キス|ちゅー|チュー|口づけ)/, KISS_ASK = /(?:カメラ|画面|レンズ)に(?:キス|ちゅー)|キス(?:して|ちょうだい|を(?:せが|ねだ))|キスを?ちょうだい/;
   function draw(ctx, pool, tgtOf, opt, local) {
     var S = st(ctx), U = S.cmUsed = S.cmUsed || {}, c0 = [], c1 = [];
     (pool || []).forEach(function (it) {
       var t = txt(it); if (!t || local[t]) return;
+      /* 「今のキス」「キス長くない？」などキスへの言及は、その区切りで実際にキスがあったときだけ（反応の表 C.REACT.kiss と同じ考え。2026-11-06） */
+      if (KISS_REF.test(t) && !KISS_ASK.test(t) && !(S.ev && S.ev.indexOf('kiss') >= 0)) return;
       var tg = tgtOf(it); if (tg === false) return;
       var o2 = tg && tg.am ? Object.assign({}, opt || {}, { actMode: true }) : opt; if (tg && tg.am) tg = tg.c;
       if (!okFor(ctx, it, tg, o2)) return;
