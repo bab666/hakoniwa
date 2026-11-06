@@ -59,10 +59,11 @@
 ## 5. regress（結果の指紋）
 
 - regress の配役（全箱庭 × 6 回）で台詞が変わったのは、指紋2（口調の割り当てを箱庭の id から決める配役）の出られない部屋の 1 本だけ（「最近、泣いたのはいつなの？　答えろ、暇なんだから」→「最近、泣いたのはいつだ？　答えろ、暇なんだから」）。
-  check.js が比べる指紋1 は、R18版・全年齢モード・全年齢版の全箱庭で 3b81411 と一致の見込み（数字は check.js の一覧。報告に書く）。
+  check.js が比べる指紋1 は、R18版 21・全年齢モード 15・全年齢版 17 の全箱庭で 3b81411 と一致（`--regress-ok=whiteroom` に挙げた出られない部屋も指紋1 は一致）。
 - 回数を増やした参考（指紋1 の配役 × 30 回、全箱庭）では、出られない部屋の 1 本（「力を抜きなさい。……動くな」→「力を抜け。……動くな」）が変わり、その記録の文字が変わったことで、
   同じ回のあとの記録の体の語の言い回し（「熱いもの」↔「昂り」。`lewd-words.js` が記録の文字から語を回す）が 2 か所変わった。ほかの文・出来事は同じ。
 
 ## 6. 点検
 
-`node hakoniwa-tools/check.js --since=3b81411 --regress-ok=whiteroom`（一覧は報告）。
+`node hakoniwa-tools/check.js --since=3b81411 --regress-ok=whiteroom --keep-going`：すべて合格（回した 27・キャッシュ 6・飛ばした 11）。tone-feel 49 口調 ◯、fp-audit 0、chunk-regress 両ビルド不一致 0（R18版の口調の閉包 21/21）、chunk-audit 両方 0、audit-all（＋name・sexflow）すべて 0、catalog-check 0、meta-tone 0、パック set-b の audit-all・rel-word 0。
+check.js が飛ばした moan-tone は単独で回して 0 件（喘ぎ 83,984）。
