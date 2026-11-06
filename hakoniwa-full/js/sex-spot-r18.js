@@ -74,6 +74,8 @@
     ryokan: { ja: '旅館の和室', allow: ['bed', 'floor', 'bath', 'wall'], ng: /ベッド|寝台|ソファ|長椅子|ホテル|バスローブ|カーテン|ネオン/, ngQ: /ベッド|ソファ/, pos: ['seijo', 'back', 'kijo', 'zai', 'osae', 'nebak'], entryNG: [], propNG: [], sub: RYOKAN_SUB },
     ship: { ja: '客船の船室', allow: ['bed', 'sofa', 'bath', 'wall', 'desk'], ng: new RegExp(WAFU.source + '|ネオン|街の灯'), ngQ: /浴衣|布団|障子/, pos: ['seijo', 'back', 'kijo', 'zai', 'osae', 'nebak'], entryNG: [], propNG: [], sub: HOTEL_SUB },
     tent: { ja: 'テント', allow: ['bed'], ng: new RegExp(WAFU.source + '|ソファ|長椅子|浴室|湯船|浴槽|シャワー|ネオン|壁'), ngQ: /浴衣|障子/, pos: ['seijo', 'back', 'kijo', 'zai', 'nebak'], entryNG: ['bath'], propNG: [], sub: TENT_SUB },
+    /* 配信用の椅子（2026-11-06。追加パックの配信の部屋）：カメラの前の椅子に座った・座らせた形。机は通し、寝具の語・寝そべる体位を外す。体位は座位・対面座位（騎乗位）・椅子に手をついて後ろから */
+    chair: { ja: '配信用の椅子', allow: ['desk'], ng: /ベッド|寝床|布団|シーツ|敷布|枕|寝台|毛布|ソファ|長椅子|寝室|うつ伏せ|仰向け|四つん這い|寝バック|横たえ|寝かせ|組み敷|押し倒|床に|浴室|湯船/, ngQ: BEDW, pos: ['zai', 'kijo', 'back'], entryNG: ['nekomi', 'push', 'bath'], propNG: [], sub: SEAT_SUB.map(function (x) { return [x[0], x[1].replace(/シート/g, '椅子の座面').replace(/足元/g, '床')]; }) },
     seat: { ja: '車の座席', allow: [], ng: /ベッド|寝床|布団|シーツ|敷布|枕|寝台|毛布|ソファ|長椅子|寝室|うつ伏せ|四つん這い|寝バック|横たえ|寝かせ|組み敷|壁|床に|目隠し/, ngQ: BEDW, pos: ['zai', 'kijo'], entryNG: ['nekomi', 'push', 'bath'], propNG: ['mekakushi', 'kagami', 'lotion'], sub: SEAT_SUB }
   };
   /* 呼ぶ側の書き方の揺れ（'standing'・'train' など）をそろえる */

@@ -32,6 +32,9 @@
   ];
   var BY = {};
   SH.GROUPS.forEach(function (g) { BY[g.k] = g; });
+  /* 追加パックの箱庭の欄を共通の項目に足す（2026-11-06）：HK.Shared.addMap('charm', 'set-b-haishin', 'charm')。その箱庭の欄が住人の設定の値（c.ab）と同じになる。
+     既にある項目だけ（新しい項目は作らない）・既にある箱庭の対応は書き換えない */
+  SH.addMap = function (k, sid, id) { var g = BY[k]; if (!g || !sid || !id || g.m[sid]) return false; g.m[sid] = String(id); return true; };
   /* その箱庭のその欄が共通の項目なら、その項目（なければ null） */
   SH.groupOf = function (sid, id, pick) {
     for (var i = 0; i < SH.GROUPS.length; i++) {

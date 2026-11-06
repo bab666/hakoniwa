@@ -134,6 +134,11 @@ if (e && !e.skipped) e.ch = 'cm';
 - 出来事の札（`e.tag`）・出来事の id・関係の節目から鍵を決めるときは `HK.Face.addTag('嫉妬の見せつけ', 'jealous')`（欄を決めるなら第 3 引数に `'tag'`・`'ev'`・`'mark'`。id は正規表現も可）。印の無い台詞は、出来事の種類 → 話し手のその時の気分 → 恋人・家族の前の笑顔 → 通常 の順で決まる。
 - 喘ぎの段は本体の喘ぎ（`HK.Moan`・`HK.Ero.moan`）が決めるので、喘ぎに印を書かなくてよい。
 
+## 場所 `chair`・共有の能力値（2026-11-06）
+
+- 長い場面の場所（`opt.spot`。R18版の `HK.SexSpot`）に `chair`（配信用の椅子：カメラの前の椅子に座った・座らせた形。机の語は通し、寝具の語・寝そべる体位を外す。体位は座位・騎乗位（対面座位）・後ろから）を足した。無い本体のために `HK.SexSpot && HK.SexSpot.KIND.chair ? 'chair' : 'sofa'` で渡す。
+- 住人の設定と共有する能力値（体力・運・魅力・色気など。`HK.Shared.GROUPS` の項目）を部屋の能力値の欄に写すときは、登録のあとで `HK.Shared && HK.Shared.addMap && HK.Shared.addMap('charm', 'set-b-haishin', 'charm')`（項目・箱庭の id・`scen.stats` の欄の id。既にある項目だけ。無い本体では部屋の中だけの値として動く）。
+
 ## グラフの部品 `HK.Chart.line`（2026-11-06）
 
 結果の結末のカードに折れ線を出すときは、本体の `HK.Chart.line(series, opt)`（`js/chart.js`。かたまり pack-sim で、どのパックからも使える）で SVG の文字列を作り、`HK.Endings[箱庭の id]` の戻り値の `after` に入れる（`after` は結末のカードの最後にそのまま入る。テキストの書き出し・共有の札には出ないので、数字は `lines`・`stats` にも書く）。
