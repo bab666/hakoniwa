@@ -123,6 +123,8 @@
     if (typeof t !== 'string' || !t) return '';
     if (typeof x === 'object') {
       if (x.cook && !(LF && a && LF.canCook(a))) return '';
+      if (x.cook === 0 && LF && a && LF.canCook(a)) return '';
+      if (x.kind && (Array.isArray(x.kind) ? x.kind.indexOf(S.kind) < 0 : x.kind !== S.kind)) return '';
       if (x.home && (x.home === 'with' || x.home === 'together') !== !!S.home) return '';
       if (x.form && x.form !== S.form) return '';
       if (x.rk && x.rk !== S.rk) return '';
@@ -561,11 +563,25 @@
     return fill(ctx, intro, a, b, o) + '「＠' + cm + '」';
   }
   /* 応えの文：T.ANS[段][種類][応え方]（段 3 のカップルは { top: [...], bot: [...] } のこともある） */
+  /* 表の値 x から文の配列：配列ならそのまま、{ top, bot } なら答える人の役（受け攻め）の側、ほかは中をつなぐ */
+  function byRole(S, x, who) {
+    if (!x) return [];
+    if (Array.isArray(x)) return x;
+    if (typeof x === 'object' && (x.top || x.bot)) return x[who === S.top ? 'top' : 'bot'] || [];
+    return flat(x);
+  }
   function ansList(S, stg, k, how, who) {
     var T0 = TX(), x = ((T0.ANS || {})[stg] || {})[k];
-    x = x && !Array.isArray(x) && (x[how] || x.all) ? x[how] || x.all : x;
-    if (x && !Array.isArray(x) && typeof x === 'object') x = S.form === 'couple' && x[who === S.top ? 'top' : 'bot'] ? x[who === S.top ? 'top' : 'bot'] : flat(x);
-    return x || [];
+    x = x && !Array.isArray(x) && !(x.top || x.bot) && (x[how] || x.all) ? x[how] || x.all : x;
+    return byRole(S, x, who);
+  }
+  /* 二人目の返し：T.ANS2[段][種類][応え方]（段 3 は { top, bot }＝返す人の役） */
+  function ans2List(S, stg, k, how, who) {
+    var A2 = (TX().ANS2 || {})[stg] || {}, x = A2[k];
+    if (x && !Array.isArray(x) && !(x.top || x.bot)) x = x[how] || x.all || flat(x);
+    var l = byRole(S, x, who);
+    if (!l.length) l = byRole(S, A2[how], who).concat(byRole(S, A2.all, who));
+    return l;
   }
   function foodEx(ctx, c) {
     var F = HK.Food; if (!F || !F.like) return null;
@@ -603,12 +619,13 @@
     }
     /* 段 1〜3 の質問 */
     var ex = null;
-    if (k === 'food') { ex = foodEx(ctx, a); if (!ex) k = 'food_none'; }
+    /* 好きな食べ物：好物の登録あり → food（{food}）、好きな味だけ → food_t（{taste}）、どちらも無し → food_none */
+    if (/^food(?:_t|_none)?$/.test(k)) { ex = foodEx(ctx, a); k = ex && ex.food ? 'food' : ex && ex.taste ? 'food_t' : 'food_none'; }
     var t = pickT(ctx, ansList(S, stg, k, how, a), a, b) || pickT(ctx, ansList(S, stg, k, 'serve', a).concat(ansList(S, stg, k, 'shy', a), ansList(S, stg, k, 'sunao', a)), a, b) || fbT(ctx, FB.ans, a, b);
     var txt = head + fill(ctx, t, a, b, ex);
     /* カップルの段 1〜2 は二人目も返す（段 3 は宛て先の人が主に） */
     if (S.form === 'couple' && stg <= 3 && (stg < 3 || ctx.rng() < 0.5)) {
-      var A2 = T0.ANS2 || {}, l2 = flat(A2[k] && !Array.isArray(A2[k]) ? A2[k][how] : A2[k]).concat(flat(A2[how]), flat(A2.all));
+      var l2 = ans2List(S, stg, k, how, b);
       var t2 = pickT(ctx, l2, b, a) || (stg < 3 ? fbT(ctx, FB.ans2, b, a) : '');
       if (t2) txt += fill(ctx, t2, b, a, ex);
     }
@@ -628,8 +645,10 @@
   }
   /* 途中終了（停滞 3 回）：T.QUIT[種]（kimazui 気まずくなって切る・kaisen 回線が落ちたことに・aikata 相方が止める・nakiwarai 泣き笑いで閉じる） */
   function quit(ctx, S, s) {
-    var keys = ['kimazui', 'kaisen', 'nakiwarai'].concat(S.form === 'couple' ? ['aikata'] : []), k = pickOf(ctx, keys), a = S.on[0], b = S.form === 'couple' ? S.on[1] : S.off;
-    if (k === 'aikata') { a = S.on[1]; b = S.on[0]; }
+    /* T.QUIT[種]：kimazu 気まずくなって切る・kaisen 回線が落ちたことにする・tomeru 相方（ソロは画面の外の人）が止める・nakiwarai 泣き笑いで閉じる。{a}＝配信者、{b}＝相方 */
+    var keys = ['kimazu', 'kaisen', 'nakiwarai', 'tomeru'], a = S.on[0], b = S.form === 'couple' ? S.on[1] : S.off;
+    keys = keys.filter(function (x) { return hasT(ctx, dig(TX().QUIT, x), a, b); });
+    var k = pickOf(ctx, keys.length ? keys : ['kimazu']);
     var T0 = TX(), t = pickT(ctx, dig(T0.QUIT, k), a, b) || pickT(ctx, flat(T0.QUIT), a, b) || fbT(ctx, FB.quit, a, b);
     rec(ctx, [a, b], fill(ctx, t, a, b), '配信を途中で終えた（' + k + '）', 'bond', { tag: '途中終了' });
     S.quit = k; S.ended = 'stall'; S.endAt = s;
@@ -724,11 +743,16 @@
     var oa = pickOf(ctx, S.on); opts.push(['odd', oa, S.form === 'couple' ? other(S, oa) : S.off]);
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i], a = o[1], b = o[2];
-      var list = o[0] === 'odd' ? dig(T0.ODD, per(a)).concat(Array.isArray(T0.ODD) ? T0.ODD : []) : dig(BEH, o[0], per(a));
+      /* ソロ：嫉妬は画面の外の人のメッセージ（jealOff。{a}＝画面の外の人）、素に戻るのは配信者が画面の外の人を思って（sunaoSolo） */
+      var bk = S.form === 'solo' ? { jeal: 'jealOff', sunao: 'sunaoSolo' }[o[0]] : o[0];
+      var list = o[0] === 'odd' ? dig(T0.ODD, per(a)).concat(Array.isArray(T0.ODD) ? T0.ODD : []) : dig(BEH, bk, per(a)).concat(dig(BEH, bk, 'gentle').length && !dig(BEH, bk, per(a)).length ? dig(BEH, bk, 'gentle') : []);
       var t = pickT(ctx, list, a, b);
       if (!t) continue;
       if (o[0] === 'jeal') { S.beh.jeal++; S.beh.jealBy = a.i; } else if (o[0] === 'sunao') S.beh.sunao++; else S.beh.odd++;
-      rec(ctx, [a, b], fill(ctx, t, a, b), o[0] === 'jeal' ? 'リスナーに嫉妬した（' + a.name + '）' : o[0] === 'sunao' ? '配信を忘れて素に戻った（' + a.name + '）' : 'らしくない一面（' + a.name + '）', o[0] === 'odd' ? 'bond' : 'romance', { odd: o[0] === 'odd', ev: o[0] === 'odd' ? '' : o[0] });
+      var tx = fill(ctx, t, a, b);
+      /* カップルの受け止め方（T.BEH_RE[jeal|sunao][受け止める人の態度]。{a}＝受け止める人、{b}＝嫉妬した人／素に戻った人） */
+      if (S.form === 'couple' && o[0] !== 'odd') { var rt = pickT(ctx, dig(T0.BEH_RE, o[0], per(b)), b, a); if (rt) tx += fill(ctx, rt, b, a); }
+      rec(ctx, [a, b], tx, o[0] === 'jeal' ? 'リスナーに嫉妬した（' + a.name + '）' : o[0] === 'sunao' ? '配信を忘れて素に戻った（' + a.name + '）' : 'らしくない一面（' + a.name + '）', o[0] === 'odd' ? 'bond' : 'romance', { odd: o[0] === 'odd', ev: o[0] === 'odd' ? '' : o[0] });
       return true;
     }
     return false;
