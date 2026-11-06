@@ -855,9 +855,12 @@
     /* タグの列の先頭に足す札：R18 の描写が入る条件（R18版の、常には R18 でない箱庭）と、注意書き（死の描写・パロディなど） */
     var pre = [], r18s = !HK.SAFE_ON ? scenR18(s, id) : '', nh = cardNote(s.note);
     if (r18s) pre.push({ html: esc(r18s), text: r18s, title: 'R18：' + r18s });
-    if (nh) pre.push({ html: esc(nh), text: nh, title: snote || nh, warn: true });
+    /* 死・ホラー・パロディの注意は、タグ（死ネタあり・ホラー・パロディ）と同じなので札を重ねない（注意書きの全文は説明と title に） */
+    if (nh && !(HK.ScenTags && HK.ScenTags.covers(id, nh))) pre.push({ html: esc(nh), text: nh, title: snote || nh, warn: true });
     var minor = !HK.SAFE_ON && /未成年/.test(s.note || '') ? '<div class="note">※未成年の職業を選んだ人以外は成人として扱います</div>' : '';
-    return { s: s, adult: adult, r18only: r18only, kt: kt, cnt: cnt, cl: cl, cd: cd, snote: snote || '', full: full, pre: pre, minor: minor };
+    /* 肩の行は分類の文（kt）の代わりにタグの札（scen-tags.js の keyHtml。3P 可・4P 可・恋人推奨・W デートは必ず）。分類の文は説明の頭（kick）と title に残す */
+    var keys = HK.ScenTags ? HK.ScenTags.keyHtml(id, esc) : '', kick = kt ? '<span class="bxkick">' + esc(kt) + '</span>' : '';
+    return { s: s, adult: adult, r18only: r18only, kt: kt, keys: keys, kick: kick, cnt: cnt, cl: cl, cd: cd, snote: snote || '', full: (kt ? '〔' + kt + '〕' : '') + full, pre: pre, minor: minor };
   }
   /* 1. 選んだ箱庭のカード（見本 05 の上）：分類・人数、題名、説明、札、効く気質。右に「箱庭を変える」「この箱庭のTIPS」「出来事の一覧」（tips.js の scenBtn。late を読んだら描き直す） */
   function selCard(id, scen, busy) {
@@ -868,9 +871,9 @@
     }
     var adultNote = !HK.SAFE_ON && !/成人として扱/.test(ci.snote) ? '<span class="bxadn">' + ADULT_NOTE + '</span>' : '';
     var mo = !!(HK.MobileUI && HK.MobileUI.selOpen); return '<section class="bxsel' + (mo ? ' bxopen' : '') + '" aria-label="選んだ箱庭"><div class="bxsel-m">' +
-      '<div class="bxk"><span>' + esc(ci.kt) + '</span><span>' + ci.cnt + '</span>' + adultNote + '</div>' +
+      '<div class="bxk"><span class="sckr">' + ci.keys + '</span><span>' + ci.cnt + '</span>' + adultNote + '</div>' +
       '<h2 class="bxsel-n">' + esc(s.name) + (ci.adult ? '<span class="r18tag">R18</span>' : '') + (busy ? scLoadBadge(id) : '') + '</h2>' +
-      '<p class="bxsel-d">' + esc(ci.cl) + '</p>' + (ci.snote ? '<div class="note">' + esc(ci.snote) + '</div>' : '') + ci.minor + (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') +
+      '<p class="bxsel-d">' + ci.kick + esc(ci.cl) + '</p>' + (ci.snote ? '<div class="note">' + esc(ci.snote) + '</div>' : '') + ci.minor + (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') +
       (uses ? '<div class="bxuses"><span class="bxuses-h">効く気質' + (HK.Tips ? HK.Tips.btn('uses') : '') + '</span>' + uses + '</div>' : '') +
       '</div><div class="bxsel-a"><button type="button" class="bxbtn bxgorun" data-act="run">' + ICON_PLAY + '<span>箱庭を動かす</span></button><button type="button" class="bxbtn bxchg" data-act="pickopen" aria-haspopup="dialog">' + ICON_GRID + '<span><span class="bxlong">箱庭を</span>変える</span></button><button type="button" class="bxbtn bxmore" data-act="bxselmore" aria-expanded="' + mo + '">' + (mo ? '説明を閉じる' : '説明・TIPS') + '</button>' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</div></section>';
   }
@@ -878,8 +881,8 @@
   function pickSide(id) {
     var ci = cardInfo(id), s = ci.s, n = S.chars.length, mn = smin(id), cur = scenOf(S.scenId);
     return '<div class="bxsh-h"><button type="button" class="bxsh-grip" data-act="sheetclose" aria-label="説明を閉じる"></button><button type="button" class="bxx bxsh-x" data-act="sheetclose" aria-label="説明を閉じる">×</button></div>' +
-      '<div class="bxk"><span>' + esc(ci.kt) + '</span><span>' + ci.cnt + '</span></div><h3>' + esc(s.name) + (ci.adult ? '<span class="r18tag">R18</span>' : '') + '</h3>' +
-      '<p class="bxside-d">' + esc(ci.cl) + '</p>' + (ci.snote ? '<p class="note">' + esc(ci.snote) + '</p>' : '') + ci.minor + (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') +
+      '<div class="bxk"><span class="sckr">' + ci.keys + '</span><span>' + ci.cnt + '</span></div><h3>' + esc(s.name) + (ci.adult ? '<span class="r18tag">R18</span>' : '') + '</h3>' +
+      '<p class="bxside-d">' + ci.kick + esc(ci.cl) + '</p>' + (ci.snote ? '<p class="note">' + esc(ci.snote) + '</p>' : '') + ci.minor + (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') +
       '<div class="bxside-b">' + (HK.Tips ? HK.Tips.scenBtn(id) : '') + '</div>' +
       (n && n < mn ? '<p class="bxwarnt" style="margin:0">いまの住人は' + n + '人です。この箱庭は' + mn + '人から遊べます。</p>' : '') +
       '<span class="bxsp"></span><button type="button" class="bxgo" data-act="pickgo" data-id="' + esc(id) + '">この箱庭にする</button>' +
@@ -975,13 +978,13 @@
       order.splice.apply(order, [order.indexOf('zombie') + 1, 0].concat(mv));
     }
     /* カードの HTML は、選択と読み込み中の印を除いて箱庭ごとに1回だけ作る（かたまり・TIPS を読んだら作り直す） */
-    var ckey = (HK.Load ? HK.Load.gen : 0) + '|' + !!HK.SAFE_ON + '|' + Object.keys(HK.TIPS_SCEN || {}).length;
+    var ckey = (HK.Load ? HK.Load.gen : 0) + '|' + !!HK.SAFE_ON + '|' + Object.keys(HK.TIPS_SCEN || {}).length + '|' + !!HK.ScenTags;
     var cards = order.map(function (id) { return BD ? BD.card(id, ckey, function () { return cardOf(id, false); }) : cardOf(id, true); }).join('');
     /* 窓の中のカード：肩見出し＋人数・名前（R18 の札）・注意（死の描写などの札・人数の不足 .bxwarn）。説明・タグは右の欄に（CSS で窓の中では隠す。カードの HTML は選択によらず同じ） */
     function cardOf(id, mark) {
       var ci = cardInfo(id), s = ci.s, on = mark && id === S.scenId;
       return '<label class="scen' + (ci.adult ? ' adult' : '') + (ci.r18only ? ' r18only' : '') + (on ? ' on' : '') + '" title="' + esc(ci.full) + '"><input type="radio" name="scen" id="sc-' + id + '" value="' + id + '" data-f="scen"' + (on ? ' checked' : '') + '>' + ((wait || loadSel) && on ? scLoadBadge(id) : '') +
-        '<div class="k"><span class="kt">' + esc(ci.kt) + '</span><span class="kn">' + ci.cnt + '</span></div><div class="n">' + esc(s.name) + (ci.adult ? '<span class="r18tag">R18</span>' : '') + '</div>' +
+        '<div class="k"><span class="kt sckr">' + ci.keys + '</span><span class="kn">' + ci.cnt + '</span></div><div class="n">' + esc(s.name) + (ci.adult ? '<span class="r18tag">R18</span>' : '') + '</div>' +
         '<div class="d' + (ci.cl !== ci.cd ? ' hasl' : '') + '">' + esc(ci.cd) + '</div>' + (ci.cl !== ci.cd ? '<div class="dl">' + esc(ci.cl) + '</div>' : '') +
         (HK.ScenTags ? HK.ScenTags.html(id, esc, ci.pre) : '') + ci.minor + '<span class="bxwarn"></span></label>';
     }
