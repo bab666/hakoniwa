@@ -18,7 +18,26 @@
   /* 二人ともその場にいるときだけ（亡くなった人・場を離れた人・閉じ込められた人の見た目や仕草を、弔い・看病などの場面に書かない） */
   function here2(a, b) { var H = HK.State && HK.State.here; return !H || (H(a) && H(b) && !((a.bound || b.bound) && !(HK.Story && HK.Story._cur && HK.Story._cur.scen && HK.Story._cur.scen.id === 'locker'))); }
   function has(a, b) { return !!(a && b && a !== b && here2(a, b) && (A.sizeDiff(a, b) || A.hasLook(a) || A.hasLook(b) || (A.heightDiff && A.heightDiff(a, b)))); }
-  function add(o, line) { if (!line) return; o.text = o.text.replace(/\s+$/, '') + line; o.look = true; }
+  /* 飾りの一文の気分の札（2026-11-06 利用者の報告「不穏な出来事に『冷たい手を胸の前で合わせて、嬉しそうに笑った』が付く」）：
+     HK.Attr.lineMood(文) が 'happy'（嬉しい・笑う・はしゃぐ・甘える…）／'calm'（落ち着く・静か）／'any' を返す（文の言い回しから付ける札）。
+     不穏な場面（cat が conflict・betray・combat・death か、本文・理由に不安・素っ気ない・すれ違い・喧嘩・別れ・涙…、
+     または出演者の気分が悲しみ・恐れ・怒りで強い）には、'happy' の飾りを付けない（合う文が無ければ付けない）。
+     飾りの文は今までどおり選んでから外すので、乱数の流れと「連続させない」決まりの数え方は変わらない（変わるのは、外した一文が無くなることだけ） */
+  var HAPPY_RE = /嬉し|うれし|笑っ|笑い|笑み|笑う|微笑|はしゃ|楽しげ|楽しそう|愉快|弾む|弾ま|弾んで|上機嫌|得意げ|甘え|すり寄|擦り寄|頬を緩|きらめ|明るく光|ぱっと明る|胸を張|浮かれ/;
+  var CALM_RE = /落ち着|静か|穏や|凪/;
+  A.lineMood = function (t) { t = String(t || ''); return HAPPY_RE.test(t) ? 'happy' : CALM_RE.test(t) ? 'calm' : 'any'; };
+  /* 本文の不穏な言い回し（「すれ違いざま」「気まずくない」「言い合いながら」のような穏やかな文には当てない）と、理由の欄の不穏な出来事の名前（仲直り・笑い話・決まりで収まった出来事は除く） */
+  var DARK_RE = /不安|不穏|胸騒ぎ|素っ気なかった|素っ気ない(?:返事|態度|声)|いつになく静か|黙り込ん|冷たい(?:声|態度|返事|目)|まだ少し気まず|言い合いに|言い合いの|口論|泣いて|泣き出|涙をこぼ|落ち込ん|苛立|怯え|別れ話|距離を感じ|噛み合わ/;
+  var DARK_WHY = /喧嘩|ケンカ|口論|言い合い|不安|素っ気ない|嫉妬|別れ/, SOFT_WHY = /仲直り|笑い話|決まり|一緒に何とか/;
+  A.darkScene = function (o) {
+    if (!o) return false;
+    if (/^(?:conflict|betray|combat|death)$/.test(o.cat || '')) return true;
+    var why = String(o.why || '') + '\n' + String(o.tag || '');
+    if (DARK_RE.test(String(o.text || '')) || (DARK_WHY.test(why) && !SOFT_WHY.test(why))) return true;
+    var E = HK.Emo;
+    return !!(E && E.mood && (o.actors || []).some(function (c) { var m = c && typeof c === 'object' && c.emo ? E.mood(c) : ''; return /^(?:grief|fear|anger)$/.test(m) && (c.emo[m] || 0) >= 50; }));
+  };
+  function add(o, line) { if (!line) return; if (A.lineMood(line) === 'happy' && A.darkScene(o)) return; o.text = o.text.replace(/\s+$/, '') + line; o.look = true; }
   /* 気分の種族文（種族と強い気分のある人だけ。いなければ乱数を使わずに ''） */
   function moodLine(a, b, pk, owner) {
     if (!A.raceMood || !A.moodKey) return '';

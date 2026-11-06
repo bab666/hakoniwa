@@ -47,6 +47,7 @@
         "js/shinkon-text-a.js",
         "js/shinkon-text-b.js",
         "js/shinkon-text-c.js",
+        "js/shinkon-mood-text.js",
         "js/shinkon-trouble.js",
         "js/shinkon-visit.js",
         "js/shinkon-sick.js",

@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.fe234ee63b.js",
+  "core": "core.3d85d25498.js",
   "late": "late.7a81443bc7.js",
   "pack-sim": "pack-sim.74e4293e1b.js",
   "pack-rel": "pack-rel.c5f1bd1095.js",
@@ -75,7 +75,7 @@
   "tone-yankee": "tone-yankee.ba68e12a36.js"
  },
  "prev": {
-  "core": "core.fe234ee63b.js",
+  "core": "core.f5b4ecd8fc.js",
   "late": "late.7a81443bc7.js",
   "pack-sim": "pack-sim.74e4293e1b.js",
   "pack-rel": "pack-rel.c5f1bd1095.js",
@@ -91,7 +91,7 @@
   "scen-dungeon": "scen-dungeon.ffbf770512.js",
   "scen-massage": "scen-massage.7531fe9778.js",
   "scen-hole": "scen-hole.be611daf48.js",
-  "scen-futari": "scen-futari.76ae05da90.js",
+  "scen-futari": "scen-futari.58e3533bda.js",
   "scen-zombie": "scen-zombie.f82b6d0d3b.js",
   "scen-rpg": "scen-rpg.496cad0ce4.js",
   "scen-kaihen": "scen-kaihen.1f104108fb.js",
@@ -431,8 +431,8 @@
    2516
   ],
   "js/attr-look.js": [
-   3685,
-   1765
+   5053,
+   2505
   ],
   "js/attr-race.js": [
    24809,
