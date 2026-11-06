@@ -1,9 +1,11 @@
 {
-  "_説明": "これを codes.local.json に写して、本物のコードに書き換える（codes.local.json は git に入れない）。キーはパックの id、\"*\" はまとめ用（全部のパックに入る）。コードは空白・- を除いて大文字にしたとき6文字以上",
+  "_説明": "これを codes.local.json に写して、本物のコードに書き換える（codes.local.json は git に入れない）。キーはパックの id、\"*\" はまとめ用（全部のパックに入る）。接尾辞の無いキーは R18版のコード、\"<id>@zen\"・\"*@zen\" は全年齢版のコード（無ければ全年齢版も R18版のコードで封をする）。コードは空白・- を除いて大文字にしたとき6文字以上",
   "set-a": ["AAAA-BBBB-CCCC"],
   "set-b": ["DDDD-EEEE-FFFF"],
   "set-c": ["GGGG-HHHH-IIII"],
   "set-d": ["JJJJ-KKKK-LLLL"],
   "sample": ["SAMPLE-1234"],
-  "*": ["ALLS-ETSS-2026"]
+  "*": ["ALLS-ETSS-2026"],
+  "set-b@zen": ["ZENB-EEEE-FFFF"],
+  "*@zen": ["ZALL-SETS-2026"]
 }

@@ -995,7 +995,7 @@
       '<div class="bxr18c-b" id="bxr18c-b" hidden><p class="bxr18c-d">R-18版（BOOTH・noteで頒布中・18歳以上向け）では成人向けの箱庭を5つ追加。夜の場面もぼかさずに描きます。</p><p class="bxr18c-a">' +
       '<a href="' + esc(HK.CONF.r18Url) + '" target="_blank" rel="noopener">BOOTHで買う ↗</a>' + (HK.CONF.noteUrl ? '<a href="' + esc(HK.CONF.noteUrl) + '" target="_blank" rel="noopener">noteで買う ↗</a>' : '') + '</p></div></div>';
     /* 追加パック：まだ開けていないセットがあれば「箱庭を追加」のカード（js/packs-ui.js） */
-    if (HK.PacksUI) cards += HK.PacksUI.card();
+    if (HK.PacksUI) cards += HK.PacksUI.card() + (HK.PacksUI.guideCard ? HK.PacksUI.guideCard() : '');   /* 追加パックはこちら（販売ページ。2026-11-07） */
     /* R18版は「※成人として扱います」を窓の見出しの横に1行だけ */
     var head = '<div class="bxpick" id="bxpick" hidden><div class="bxpick-bg" data-act="pickclose"></div><div class="bxpick-dlg" role="dialog" aria-modal="true" aria-labelledby="bxpick-t">' +
       '<div class="bxpick-h"><h2 id="bxpick-t">箱庭を選ぶ</h2><span class="bxmu">' + order.length + '種類</span>' + (HK.SAFE_ON ? '' : '<span class="bxmu">' + ADULT_NOTE + '</span>') + '<span class="bxsp"></span><button type="button" class="bxx" data-act="pickclose" aria-label="閉じる">×</button></div>' +
