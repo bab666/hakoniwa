@@ -356,8 +356,7 @@
     var ft = HK.Daily && HK.Daily.famTie ? HK.Daily.famTie(ctx, a, b) : null;
     return !!(ft && (!HK.tieNoLove || HK.tieNoLove(ft.t)));
   }
-  /* 性行為の相手に互いを指定し合っただけの二人（R18版。HK.Quad.bodyOnly）は、体だけの夜だけで関係を進めない（告白・恋人にしない。2026-11-06 利用者の指示） */
-  function loveOk(ctx, a, b) { return HK.canLove(a, b) && HK.canLove(b, a) && !HK.ngPair(a, b) && !famTie(ctx, a, b) && !bodyBond(ctx, a, b); }
+  function loveOk(ctx, a, b) { return HK.canLove(a, b) && HK.canLove(b, a) && !HK.ngPair(a, b) && !famTie(ctx, a, b); }
   /* 血縁・家族の二人（親子・きょうだい・親戚・擬似親子など。2026-11-04 の利用者の指示）：関係の歩みの「友人」には当てず、血縁の種類＋様子で表す */
   function kinOf(ctx, a, b) { return stOf(ctx, a, b).kin || null; }
   function kinMood(ctx, a, b) {
@@ -919,7 +918,7 @@
        性行為の相手に互いを指定し合っただけの組（HK.Quad.bodyOnly）は、体だけの組として輪に入れる（2026-11-06 利用者の指示「勢いの夜とかは発生させてほしい」） */
     return want ? (couple(ctx, x, y) && loveOk(ctx, x, y)) || bodyBond(ctx, x, y) : true;
   }
-  /* 輪をつなぐ組：恋人か、性行為の相手に互いを指定し合っただけの組（R18版。体だけの夜。関係は進めない） */
+  /* 輪をつなぐ組：恋人か、性行為の相手に互いを指定し合っただけの組（R18版。まだ恋人でない間の体だけの夜） */
   function bodyBond(ctx, x, y) { return !HK.SAFE_ON && !!(HK.Quad && HK.Quad.bodyOnly && HK.Quad.bodyOnly(ctx, x, y) && HK.bodyOK(x, y)); }
   function bondOf(ctx, x, y) { return couple(ctx, x, y) || bodyBond(ctx, x, y); }
   function trioOf(ctx, det) {
@@ -1029,7 +1028,7 @@
       if (!f.sexTonight && !couple(ctx, a, b) && HK.State.freeSex && HK.State.freeSex(ctx, a, b) && onTrip(ctx, a) === onTrip(ctx, b)) {
         var fch = (together(ctx, a, b) ? 0.2 : 0.1) * HK.FreeSex.factor(ctx, a, b);
         /* 性行為の相手に選んだ二人（体の相手。free-sex.js の kind 'body'）は、恋人の夜と同じ起こりやすさで（2026-11-06 利用者の指示「二人だとしても起きて欲しい」）。
-           関係はそのまま（体だけの夜。恋人にはしない） */
+           まだ恋人でない間は体だけの夜。恋愛は住人の設定どおり普段どおりに進み、恋人になったら恋人の夜に切り替わる（free-sex.js は恋人どうしを体だけの経路に入れない） */
         if (HK.FreeSex.kind && HK.FreeSex.kind(ctx, a, b) === 'body' && together(ctx, a, b)) fch = Math.min(1, (f.r18[k] ? 0.32 : 0.6) * nk * fkOf(a, b) * HK.FreeSex.factor(ctx, a, b));
         if (nk >= 1.69) fch = f.r18[k] ? Math.min(1, fch * nk) : 1;
         if (rng() < fch && freeNight(ctx, a, b)) return;

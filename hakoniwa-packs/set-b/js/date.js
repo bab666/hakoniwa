@@ -556,7 +556,7 @@
     /* セフレ（体だけの関係の友人。2026-11-05 報告「セフレが気の合う友人どうしで始まり、目標が友人の一線を越える」）：関係ごとの文は fwb の文だけ、友人の語の文は出さない */
     S.fwb = rk === 'friend' && (HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, A, B) || [] : []).some(function (t) { return t && t.type === 'fwb'; }) && !/^(lover|spouse)$/.test(rk);
     /* 性行為の相手に互いを指定し合っただけの二人（恋人・夫婦・家族でなく、恋愛相手の固定も無い。本体の HK.Quad.bodyOnly。R18版）：セフレと同じ扱いの「体だけ」の二人。
-       夜は恋人どうしと同じ重みで起き、関係は進めない（告白の結末にしない。2026-11-06 利用者の指示「二人だとしても起きて欲しい」） */
+       夜は恋人どうしと同じ重みで起きる。恋愛は住人の設定どおりで、結末で恋人になれば END.koi.fwb（体から始まった二人が恋人に）（2026-11-06 利用者の指示「二人だとしても起きて欲しい」） */
     S.body = !HK.SAFE_ON && !/^(lover|spouse|fam|pfam)$/.test(rk) && !!(HK.Quad && HK.Quad.bodyOnly && HK.Quad.bodyOnly(ctx, A, B) && HK.bodyOK(A, B));
     if (S.body) S.fwb = true;
     /* 一緒に暮らしているか：夫婦はいつも、家族は半々、恋人はときどき（同棲） */
@@ -1428,7 +1428,6 @@
     S.endScore = Math.round(sc);
     S.attAvg = ((r.att || 0) + (q.att || 0)) / 2;
     S.affAvg = ((r.aff || 0) + (q.aff || 0)) / 2;
-    if (S.body) return (S.endK = 'mama');
     if (!S.love) return (S.endK = S.grp === 'first' && sc >= 85 ? 'yujin_new' : 'mama');
     /* 目標：プロポーズしたい人がいれば線を下げ、付き合いたい・想いを伝えたい人がいれば告白の線を下げ、距離を縮めすぎたくない人がいれば上げる */
     var gp = hasPG(S, 'propose'), gl = hasPG(S, 'tsukiau') || hasPG(S, 'kokuhaku') || hasPG(S, 'yarinaoshi'), gky = hasPG(S, 'kyori') || hasPG(S, 'tomodachi');
