@@ -433,7 +433,14 @@
   }
   function leadOf(ctx, A, B, kind, info) {
     var upk0 = upkOf(ctx), a = A, b = B, okT = nightOk(info, kind), U0 = ctx.ft.used;
-    var upk = function (arr) { var l = (arr || []).filter(function (t) { return !U0[t] && okT(t); }); if (!l.length) l = (arr || []).filter(okT); return l.length ? upk0(l) : ''; };
+    /* 使い切ったら、出た回数のいちばん少ない文から（一回の遊びで同じきっかけの一言が 3 回以上出ないように。2026-11-06 の計測で「こっちへ来い。……待たせるな」が 4 回） */
+    var LN = ctx.ft.leadN = ctx.ft.leadN || {};
+    var upk = function (arr) {
+      var l = (arr || []).filter(function (t) { return !U0[t] && okT(t); }), t;
+      if (l.length) t = upk0(l);
+      else { l = (arr || []).filter(okT); if (!l.length) return ''; var mn = Math.min.apply(null, l.map(function (x) { return LN[x] || 0; })); l = l.filter(function (x) { return (LN[x] || 0) === mn; }); t = l[Math.floor(ctx.rng() * l.length)]; }
+      LN[t] = (LN[t] || 0) + 1; return t;
+    };
     /* 言い出した人：受けから誘う夜は受け、やきもちの夜は妬いた人（info.jealBy）、私もしたかったは加わらなかった人、ほかは攻めか受けのどちらか */
     if (kind === 'ini') { a = B; b = A; }
     else if (kind === 'wanted') { a = info.who || A; b = a === A ? B : A; }
@@ -591,6 +598,10 @@
         if (open) o.open = open;
         if (kind === 'free' || kind === 'impulse') o.rel = 'casual';
         if (heat) o.flavor = HT.flavor(heat.key, A, B);
+        /* この部屋だけの受けの崩れ方・攻めの快感の一文（futari-r18-own.js。部屋のオリジナルの文 8 割の決まり。2026-11-06） */
+        if (HK.FutariR18.react) o.react = function (pk1, bb, again) { var t = HK.FutariR18.react(ctx, bb, again); return t && okT(t) ? t : ''; };
+        if (HK.FutariR18.FEEL_A) o.feelA = fP9(HK.FutariR18.FEEL_A);
+        if (HK.FutariR18.FEEL) o.feel = fP9(HK.FutariR18.FEEL);
         /* 部屋の場面の種（壁の薄い夜・留守・風呂上がり・ソファ・台所・玄関）：導入はその場面の入り方だけ（始まりの段は場所を言わない文）。
            ほかの夜：始まりの段（寝室・布団）が導入。どちらも場所を本体の場所の口（o.spot）に渡し、場所に合わない段・体位・入り方は本体が選ばない */
         if (rk) {

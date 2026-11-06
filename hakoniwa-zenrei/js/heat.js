@@ -161,11 +161,19 @@
     var L = H.lines.LEAD && H.lines.LEAD[h.key];
     return fill(pickK(ctx, L, 'lead' + seedOf(ctx) + pid(a, b) + h.key), a, b);
   };
+  /* 部屋だけの事後の型（2026-11-06。部屋のオリジナルの文 8 割の決まり）：H.addAfter(部屋の id, 温度, 組, [文…])。
+     登録した部屋・温度・組では、共通の 3 文の代わりにその部屋の文から選ぶ（車内の文・登録の無い温度と組は共通の文のまま） */
+  H.ROOM_AFTER = {};
+  H.addAfter = function (scenId, key, mode, list) {
+    if (!scenId || !key || !list || !list.length) return;
+    var r = H.ROOM_AFTER[scenId] = H.ROOM_AFTER[scenId] || {}, k = r[key] = r[key] || {};
+    (k[mode || 'mf'] = k[mode || 'mf'] || []).push.apply(k[mode || 'mf'], list);
+  };
   /* 事後の型の一文：温度 × 組（mf・ff・fm）。opt.spot が車内なら車内の文 */
   H.after = function (ctx, h, mode, opt) {
     if (HK.SAFE_ON || !h) return '';
-    var A = H.lines.AFTER || {}, sp = opt && opt.spot;
-    var L = sp === 'car' ? (H.lines.AFTER_CAR || {})[h.key] : (A[h.key] || {})[mode || 'mf'];
+    var A = H.lines.AFTER || {}, sp = opt && opt.spot, RA = ((H.ROOM_AFTER[h.scen || scenOf(ctx)] || {})[h.key] || {})[mode || 'mf'];
+    var L = sp === 'car' ? (H.lines.AFTER_CAR || {})[h.key] : RA && RA.length ? RA : (A[h.key] || {})[mode || 'mf'];
     if (L && sp && sp !== 'car' && HK.SexSpot && HK.SexSpot.filter) { var f = HK.SexSpot.filter(L, sp); if (f && f.length) L = f; }
     var t = pickK(ctx, L, 'after' + seedOf(ctx) + h.key + (mode || ''));
     if (H.cur) H.cur.after = t;
