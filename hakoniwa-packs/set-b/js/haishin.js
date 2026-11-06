@@ -30,6 +30,7 @@
 /* @event scen=set-b-haishin id=hs_goal cat=bond tie=lover label=目標を意識して配信で動く */
 /* @event scen=set-b-haishin id=hs_off cat=bond tie=lover label=画面の外の相手から連絡や差し入れ */
 /* @event scen=set-b-haishin id=hs_off_hap cat=bond tie=lover label=同じ家にいる相手が配信中にうっかり顔を出す */
+/* @event scen=set-b-haishin id=hs_goal_why cat=bond tie=lover label=目標のために要求に応える */
 /* @event scen=set-b-haishin id=hs_cookfail cat=bond tie=lover label=料理配信で失敗して騒ぐ */
 /* @event scen=set-b-haishin id=hs_sleep_fall cat=bond tie=lover label=寝落ち配信で眠りに落ちる */
 /* @event scen=set-b-haishin id=hs_sleep_breath cat=bond tie=lover label=寝落ち配信の寝息と寝言 */
@@ -515,6 +516,37 @@
   }
   function ptOf(S) { return 20 * log10(S.v) + 0.6 * S.heat + SCB[S.sc]; }
 
+  /* ---------- 目標が行動に効く（2026-11-06 の利用者の指示「目標でキャラの動きが変わるのが面白いところ」。設計 8 章） ----------
+     住人の短期・長期の目標の種（haishin-end.js の S.goal[c.i].s.k・l.k）を組に分ける：
+       up（viewers・money・pop・public・boast・tease）＝応じやすく・渋りにくい（態度が硬くても）
+       guard（safe・quit・hitori・kind）＝渋りやすく、すごく踏み込んだ要求（段 5〜）の手前で止めやすい
+       sweet（kiss・amaya・sunao・wed・kinen）＝素直に応えやすい（段 4 の軽い要求を自分から）
+       stay（last・awake）＝途中終了しにくい（停滞 4 回まで続ける）　task（cook・clear）＝ほかの組に効かせない */
+  var GOAL_GRP = { viewers: 'up', money: 'up', pop: 'up', public: 'up', boast: 'up', tease: 'up', safe: 'guard', quit: 'guard', hitori: 'guard', kind: 'guard',
+    kiss: 'sweet', amaya: 'sweet', sunao: 'sweet', wed: 'sweet', kinen: 'sweet', last: 'stay', awake: 'stay', cook: 'task', clear: 'task' };
+  /* c の目標の組（短期を先に見る。どちらも効かなければ ''）と、その種 */
+  function goalG(S, c) {
+    var g = c && S.goal && S.goal[c.i]; if (!g) return { g: '', k: '' };
+    var ks = g.s && g.s.k, kl = g.l && g.l.k;
+    if (GOAL_GRP[ks] && GOAL_GRP[ks] !== 'task') return { g: GOAL_GRP[ks], k: ks };
+    if (GOAL_GRP[kl]) return { g: GOAL_GRP[kl], k: kl };
+    return { g: GOAL_GRP[ks] || '', k: ks || '' };
+  }
+  var GOAL_STALL = { up: 0.35, guard: 1.7, sweet: 0.8, stay: 1, task: 1 };
+  /* 目標が理由になった応え・渋りの台詞（T.GOALWHY[組][態度]。{gw}＝種の言い方）。目標が効いた区切りで、一回の配信に組ごと 2 回まで */
+  var GW = { viewers: '同接の', money: 'スパチャの', pop: '人気配信者になる', public: '二人のことを知ってもらう', boast: '自慢する', tease: '照れた顔を見る',
+    safe: '恥ずかしいことはしない', quit: '配信はほどほどにする', hitori: '本気の顔は一人にしか見せない', kind: 'リスナーに無理はさせない',
+    kiss: 'キスまで行く', amaya: 'うんと甘やかす', sunao: '素直になる', wed: '大事なことを伝える', kinen: '記念の配信にする', last: '最後まで配信する', awake: '先に寝ない' };
+  function goalWhy(ctx, S, c, o, grp) {
+    var G = goalG(S, c); if (G.g !== grp) return '';
+    var n = S.goalWhyN = S.goalWhyN || {}; if ((n[grp] || 0) >= 2) return '';
+    var l = dig(TX().GOALWHY, grp, per(c)), t = pickT(ctx, l, c, o) || pickT(ctx, dig(TX().GOALWHY, grp), c, o);
+    if (!t) return '';
+    n[grp] = (n[grp] || 0) + 1; S.goalHitN = (S.goalHitN || 0) + 1;
+    return fill(ctx, t, c, o, { gw: GW[G.k] || '目標' });
+  }
+  function goalJa(S, c) { var G = goalG(S, c), T = TX(), o = ((T.GOAL_OPT || {}).s || []).concat((T.GOAL_OPT || {}).l || []).filter(function (x) { return x[1] === G.k; })[0]; return o ? o[2] : G.k; }
+
   /* ---------- 渋り（6.5） ---------- */
   function stallP(ctx, S, who) {
     /* 性格：態度（恥ずかしがり・堅い・丁寧は渋りやすく、穏やか・尽くす・自由は渋りにくい）と夜の性格（恥じらいは強く渋る、甘々は渋りにくい）を掛け合わせる */
@@ -523,7 +555,10 @@
     var base = S.r18 ? (100 - S.night) / 100 : 0.25;
     /* 続けて渋るほど、次も渋る見込みは下がる。場が温まる（発情度が上がる）ほども下がる（3 回続けての途中終了を、設計 11 章の目安：
        二人とも恥じらいの配信で 3〜8／20、ほかは 0〜3／20 に収める。2026-11-06 P15b の計測で係数を決めた） */
-    return clamp(base * m * (1 - 0.4 * S.stall) * (1 - S.heat / 500), 0, 0.9);
+    /* 目標：応じやすい組は渋りにくく、守る組は渋りやすい（段 5 以上はさらに） */
+    var gg = goalG(S, who).g, gm = GOAL_STALL[gg] || 1;
+    if (gg === 'guard' && S.stage + 1 >= 5) gm *= 1.4;
+    return clamp(base * m * gm * (1 - 0.4 * S.stall) * (1 - S.heat / 500), 0, 0.9);
   }
   /* 段の判定：上がる（'up'）／渋る（'stall'）／そのまま（''）。夜 100 は渋らず、残りの区切りで段 6 に届くよう線を見ずに上げる */
   function stageJudge(ctx, S, s) {
@@ -557,6 +592,9 @@
     Object.keys(HOW_W).forEach(function (k) { w[k] = HOW_W[k][p] || 1; });
     if (nk === 'sweet') w.sunao += 1; if (nk === 'sadist' || nk === 'mean' || nk === 'maso') w.serve += 1; if (nk === 'shy') w.shy += 2;
     if (S.heat >= 60) w.sunao += 1;
+    /* 目標：up は張り切って応える（serve）、guard は照れて控えめに（shy）、sweet は素直に（sunao） */
+    var gg = goalG(S, c).g;
+    if (gg === 'up') w.serve += 2; else if (gg === 'guard') w.shy += 1.5; else if (gg === 'sweet') w.sunao += 1.5;
     var keys = Object.keys(w), sum = keys.reduce(function (s, k) { return s + w[k]; }, 0), r = ctx.rng() * sum, i = 0;
     for (; i < keys.length - 1; i++) { r -= w[keys[i]]; if (r <= 0) break; }
     var how = keys[i], odd = HK.PairReact && HK.PairReact.pOdd && ctx.rng() < HK.PairReact.pOdd(ctx) * 0.5;
@@ -715,7 +753,8 @@
     var b = S.form === 'couple' ? other(S, who) : S.off, T0 = TX();
     var t = pickT(ctx, dig(T0.STALL, per(who)), who, b) || pickT(ctx, flat(T0.STALL), who, b) || fbT(ctx, FB.stall, who, b);
     S.stall++; S.stallTot++; S.stallCool = (S.s || 0) + 2;
-    rec(ctx, [who, b], (q ? askText(ctx, S, q, who, b) : '') + fill(ctx, t, who, b), '要求を渋った（停滞 ' + S.stall + ' 回目）', 'bond', { tag: '渋り', ev: 'stall' });
+    var gw = goalWhy(ctx, S, who, b, 'guard') || (S.stall >= 2 ? goalWhy(ctx, S, who, b, 'stay') : '');
+    rec(ctx, [who, b], (q ? askText(ctx, S, q, who, b) : '') + fill(ctx, t, who, b) + (gw ? '\n\n' + gw : ''), '要求を渋った（停滞 ' + S.stall + ' 回目' + (gw ? '・目標：' + goalJa(S, who) : '') + '）', 'bond', { tag: '渋り', ev: 'stall' });
   }
   /* 途中終了（停滞 3 回）：T.QUIT[種]（kimazui 気まずくなって切る・kaisen 回線が落ちたことに・aikata 相方が止める・nakiwarai 泣き笑いで閉じる） */
   function quit(ctx, S, s) {
@@ -857,7 +896,7 @@
       l.forEach(function (x) { if (x && typeof x === 'object' && x.t === t0) el0 = x; });
       if (el0 && el0.out && S.home) S.offOut = true;
       S.offN = (S.offN || 0) + 1;
-      rec(ctx, [on0, off0], fill(ctx, t0, on0, off0), '画面の外の人の様子（' + off0.name + '' + '）', 'bond', {});
+      rec(ctx, [on0, off0], fill(ctx, t0, on0, off0), '画面の外の人の様子（' + off0.name + (offGoal(S) ? '・目標：' + goalJa(S, off0) : '') + '）', 'bond', {});
       return true;
     }
     var a = S.on[0], b = S.off, t = pickT(ctx, TX().OFF_HAP, a, b);
@@ -1061,12 +1100,17 @@
       var nq = S.N >= 5 ? 1 : 2 + (ctx.rng() < 0.5 ? 1 : 0);
       for (var qi = 0; qi < nq && !S.ended; qi++) {
         var j = stageJudge(ctx, S, s);
-        if (j && j.stall) { stall(ctx, S, j.stall); if (S.stall >= 3) quit(ctx, S, s); break; }
+        if (j && j.stall) { stall(ctx, S, j.stall); if (S.stall >= (S.on.some(function (c) { return goalG(S, c).g === 'stay'; }) ? 4 : 3)) quit(ctx, S, s); break; }
         if (S.stage >= 6 && S.r18 && H.r18 && H.r18.step && !S.sexDone && S.mid === 'none') { if (H.r18.step(ctx, S, { s: s, last: last, n: S.N, enter: true })) { took = true; break; } }
         var q = askOf(ctx, S, S.stage) || (S.stage > 1 ? askOf(ctx, S, S.stage - 1) : null);
         if (!q) break;
         var r = answer(ctx, S, q, S.stage);
         if (r) { o.ans++; o.ansSt += S.stage; if (r === 'big') o.big = true; }
+        /* 目標が理由になった応え（段 3 以上。up＝同接・スパチャ・人気のため／sweet＝素直になる・甘やかす）。本番に入った区切りは出さない */
+        if (r && S.stage >= 3 && !S.ended && q.who) {
+          var qb = S.form === 'couple' ? other(S, q.who) : S.off, gx = goalWhy(ctx, S, q.who, qb, 'up') || goalWhy(ctx, S, q.who, qb, 'sweet');
+          if (gx) rec(ctx, [q.who, qb], gx, '目標が理由で要求に応えた（目標：' + goalJa(S, q.who) + '）', 'bond', { tag: '目標' });
+        }
       }
     }
     /* 本番の区切り（この区切りで配信を切った／切ったつもりになった：S.ended が cut・leak になった）は、先に出した区切りの様子を外す（本番の区切りは本番の段だけ） */
@@ -1254,7 +1298,7 @@
 
   /* ---------- ほかの担当が読む口（16 章） ---------- */
   Object.assign(H, {
-    ID: ID, st: st, offIn: offIn, offGoal: offGoal, pickT: pickT, hasT: hasT, elOk: elOk, fill: fill, rec: rec, dig: dig, flat: flat, hn: hn, aikata: aikata, chName: chName, other: other, per: per, nightKind: nightKind,
+    ID: ID, st: st, offIn: offIn, offGoal: offGoal, goalJa: goalJa, pickT: pickT, hasT: hasT, elOk: elOk, fill: fill, rec: rec, dig: dig, flat: flat, hn: hn, aikata: aikata, chName: chName, other: other, per: per, nightKind: nightKind,
     howOf: howOf, setAct: setAct, kJa: kJa, howJa: howJa, askOf: askOf, askText: askText, needOk: needOk, targetOf: targetOf, reqOk: reqOk, handle: handle, cmCount: cmCount, cmPost: cmPost, clockW: clockW, clk: clk, comma: comma, yen: yen,
     formOf: formOf, blockOf: blockOf, topTop: topTop, relIn: relIn, KIND: KIND, SIZE: SIZE, SCB: SCB, HOURS: HOURS, LINE: LINE, STAGE_NAME: STAGE_NAME, LIGHT_K: LIGHT_K, GOAL_OPT: GOAL_OPT, FB_HANDLE: FB_HANDLE
   });
