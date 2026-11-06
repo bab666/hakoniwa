@@ -737,10 +737,11 @@
       /* 会話は吹き出しにせず、「」の引用だけ少し太く（.q） */
       var talk = !!(avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)));
       /* 吹き出しの見え方（V.bubble）：発話のある出来事は本文を吹き出しと地の文に分ける（顔は吹き出しの側に出すので、行の頭の顔は出さない） */
-      var bb = V.bubble(e, sg, { who: function (i) { return res.chars[i]; }, av: function (i, s) { return av(res, i, s); }, paint: function (s) { return paint(s, res); } });
+      var bb = V.bubble(e, sg, { who: function (i) { return res.chars[i]; }, av: function (i, s) { return av(res, i, s); }, paint: function (s) { return paint(s, res); }, face: function (k) { return HK.Face ? HK.Face.of(e, k, res) : null; } });
       if (bb) { avs = ''; talk = false; }
       var body = bb || paint(e.text, res, sg);
-      if (talk) body = body.replace(/「[^「」]*」/g, '<span class="q">$&</span>');
+      /* 表情の鍵（face.js）：「」の順に data-face を付ける（見た目は変えない。画像の差し込み口。入れ子の「」がある文は付けない） */
+      if (talk) { var fl = HK.Face && HK.Seg ? HK.Face.list(e, res) : null, fq = 0, nst = fl && HK.Seg.quotes(e.text).length !== (e.text.match(/「[^「」]*」/g) || []).length; body = body.replace(/「[^「」]*」/g, function (m) { var f = fl && !nst ? fl[fq++] : null; return '<span class="q"' + (f ? ' data-face="' + f + '"' : '') + '>' + m + '</span>'; }); }
       /* 段落の箱と、出られない部屋の札（まとめての見出しは囲みに。段が一つだけなら札に） */
       var pw = bb ? { html: bb, dg: false } : paraWrap(body, rm && rm.dg);
       body = pw.html;
@@ -805,8 +806,10 @@
       if (!g) return;
       var w = g.w, col = w ? (HK.Icons && HK.Icons.color && HK.Icons.color(w.name)) || pc(w.i != null ? w.i : g.k) : '';
       var face = w ? o.av(g.k, 24) : '<span class="av bbmob" aria-hidden="true"><b>' + esc(g.mob) + '</b></span>';
-      out.push('<div class="bbg' + (w ? '' : ' bbg0') + '"' + (w ? ' style="--c:' + col + '"' : '') + '>' + face + '<div class="bbs">' + g.items.map(function (h, k) {
-        return '<div class="bb' + (h.m ? ' bbm' : '') + '">' + (k === 0 && w ? '<b class="bbnm">' + esc(w.name) + '</b>' : '') + h.h + '</div>';
+      /* 表情の鍵（face.js）：顔の側は最後の吹き出しの鍵、吹き出しはそれぞれの鍵（data-face。見た目は変えない。画像の差し込み口） */
+      var gf = g.items.length ? g.items[g.items.length - 1].f : null;
+      out.push('<div class="bbg' + (w ? '' : ' bbg0') + '"' + (w ? ' style="--c:' + col + '"' : '') + (gf ? ' data-face="' + gf + '"' : '') + '>' + face + '<div class="bbs">' + g.items.map(function (h, k) {
+        return '<div class="bb' + (h.m ? ' bbm' : '') + '"' + (h.f ? ' data-face="' + h.f + '"' : '') + '>' + (k === 0 && w ? '<b class="bbnm">' + esc(w.name) + '</b>' : '') + h.h + '</div>';
       }).join('') + '</div></div>');
       g = null;
     }
@@ -817,8 +820,9 @@
       closeG();
       s.split(/\n\s*\n+/).forEach(function (p) { p = p.replace(/^\s+|\s+$/g, ''); if (p) out.push('<p class="bbn">' + o.paint(p) + '</p>'); });
     }
-    var prevC = false;
+    var prevC = false, qi = -1;
     sg.forEach(function (x) {
+      if (x.t !== 'n') qi++;
       /* 話し手の決まらない「」が名詞の引用のすぐ後ろに続くとき（「頭が良くなる」「レモンが甘く感じる」の並び）は、引用の続きとして地の文に */
       var asN = !BB_TALK.test(x.t) || (x.t === 'u' && !(x.who >= 0) && prevC && /」\s*$/.test(nar));
       prevC = x.t === 'c' || (asN && x.t === 'u');
@@ -830,7 +834,8 @@
       flushN();
       var m = /^「([\s\S]*)」$/.exec(t), key = w ? 'p' + x.who : 'm' + bbMob(pre, isName);
       if (!g || g.key !== key) { closeG(); g = { key: key, k: x.who, w: w, mob: w ? '' : key.slice(1), items: [] }; }
-      g.items.push({ h: o.paint(m ? m[1] : t), m: x.t === 'm' });
+      var fk = o.face ? o.face(qi) : x.face || null;
+      g.items.push({ h: o.paint(m ? m[1] : t), m: x.t === 'm', f: fk && /^[a-z_0-9]+$/.test(fk) ? fk : null });
     });
     flushN();
     closeG();

@@ -38,7 +38,10 @@ const FP = function (arg) {
       const ties = s % 2 ? [{ a: 0, b: 1, type: 'lover' }, { a: 1, b: Math.min(2, n - 1), type: 'yan' }].filter(t => t.a !== t.b && t.b < n) : [];
       /* arg.cast：回さずに配役（住人の写し）だけを返す（chunk-regress が口調の閉包を読むのに使う） */
       if (arg.cast) { parts.push(chars); continue; }
-      let r; try { r = JSON.stringify(HK.simulate({ scenId: id, seed: 777 + s * 131, env, chars, perChar, ties })); } catch (e) { r = 'ERR ' + e.message; }
+      /* 記録の表情の欄（e.fc 表情の鍵・e.md 作った時点の気分・e.ev 出来事の id。2026-11-06 の face.js）は指紋に入れない：
+         本文・結果は変えずに記録に足しただけの欄なので、足す前のコミットのビルドと比べられるように（足した欄のほかはすべて今までどおり比べる） */
+      const NOFP = { fc: 1, md: 1, ev: 1 };
+      let r; try { const rr = HK.simulate({ scenId: id, seed: 777 + s * 131, env, chars, perChar, ties }); r = JSON.stringify(rr, function (k, v) { return NOFP[k] && this && typeof this.text === 'string' && 'kind' in this ? undefined : v; }); } catch (e) { r = 'ERR ' + e.message; }
       parts.push(r);
     }
     res[id] = parts;

@@ -511,6 +511,8 @@
       odd: !!o.odd, mag: o.mag || 0, kind: o.kind || 'phase'
     };
     if (lw) e.lewd = true;
+    /* いま起こしている出来事の id（表情の鍵の出来事の種類に使う。face.js。新しい記録だけ） */
+    if (this._ev && this._ev.id && o.kind !== 'step') e.ev = String(this._ev.id);
     /* 夜の起こりやすさ 0 でも起きた場面（条件の夜・合意のない展開・モブ）は、止めなかった理由を理由の欄に添える（pos.js の HK.Pos.nightNote） */
     if (lw && HK.Pos && HK.Pos.nightNote) { var nn = HK.Pos.nightNote(this, o); if (nn) e.why = (e.why ? e.why + '／' : '') + nn; }
     /* その時点で生きて場にいる人数（2026-10-31 担当CL。三人以上の配役で二人だけ残った回の第三者の文を外すのに使う。記録には残さない＝数えない印） */
