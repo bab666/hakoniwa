@@ -259,6 +259,8 @@
         var it = pool.splice(Math.floor(rnd(ctx) * pool.length), 1)[0], t = typeof it === 'string' ? it : it.t;
         U[t] = (U[t] || 0) + 1;
         var h = K && K.handle ? K.handle(ctx, used) : '名無しのリスナー';
+        for (var hi = 0; nc && hi < 4 && K && K.handle && /切り抜き|アーカイブ/.test(h); hi++) h = K.handle(ctx, used);
+        if (nc && /切り抜き|アーカイブ/.test(h)) h = '名無しのリスナー';
         out.push(h + '：' + (K && K.fill ? K.fill(ctx, t, A) : t));
       }
     });
