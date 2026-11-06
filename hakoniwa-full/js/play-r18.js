@@ -327,6 +327,8 @@
     } catch (e) { /* 喘ぎの部品が無ければ短い吐息 */ }
     return '……っ、ん……';
   }
+  /* 受けのこらえる声（性格が目立つ行為の段の、相手がモブ・恋人でない二人の受けの反応が使う。2026-11-06） */
+  P.moanOf = moanPre;
   function fillE(t, a, b) { var X = HK.ThickEro; try { return X && X.fill ? X.fill(fakeS(), t, a, b) : t; } catch (e) { return t; } }
   /* 女性の攻め×男性で受けに男性器が無い組の文は使わない（P.ok で外しているが、念のため） */
   var NOM = /根元|竿|\{男性器\}|\{亀頭\}|ものが|ものを|吐き出|射精/;
@@ -582,7 +584,7 @@
       if (midT) midT = 'そのまま、' + midT.replace(/^そのまま、?/, '');
     }
     /* 性格が目立つ行為の段（攻めの態度 × 夜の性格・受けの反応） */
-    var actT = AC() && AC().unit ? AC().unit(R, a, b, mode, t, { press: info.press, rough: !!(opt.force || opt.hate), pick: function (l) { return pickL(R, l); } }) : '';
+    var actT = AC() && AC().unit ? AC().unit(R, a, b, mode, t, { press: info.press, rough: !!(opt.force || opt.hate), force: !!opt.force, ctx: ctx, ero: ero, pick: function (l) { return pickL(R, l); } }) : '';
     /* 攻めの夜の性格の一文（attr-r18.js）は、性格が目立つ行為の段と役割が重なるので外す（受けの夜の性格・相手に合わせる人の一文があるときは残す） */
     if (actT) {
       var A = HK.Attr, kdA = A && A.nightKind ? A.nightKind(a, b) : '', kdB = A && A.nightKind ? A.nightKind(b, a) : '';
