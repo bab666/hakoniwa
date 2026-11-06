@@ -21,7 +21,7 @@
   var SIZE_NAME = { s10: '10人くらい', s100: '100人くらい', s1k: '1,000人くらい', s10k: '1万人くらい' };
   var SC_NAME = { few: '少なめ', mid: 'ふつう', whale: '太客がいる' };
   var SC_LINE = { few: 3000, mid: 30000, whale: 200000 };
-  var END_NAME = { big: '人気配信者への道（大ブレイク）', slow: '人気配信者への道（じわじわ伸びる）', small: '常連の小さな箱', quit: '配信をやめて二人だけに', ban: 'アカウント停止で笑い話', wed: 'リスナーの前で結婚報告', maboroshi: '幻の配信（途中終了）' };
+  var END_NAME = { big: '人気配信者への道（大ブレイク）', slow: '人気配信者への道（じわじわ伸びる）', small: '常連の小さな箱', quit: '配信をやめて二人だけに', ban: 'アカウント停止で笑い話', wed: 'リスナーの前で結婚報告', pub: 'リスナーの前で二人の関係を公表', maboroshi: '幻の配信（途中終了）' };
   var STAGE_NAME = ['', '一般', '質問', 'ちょっと踏み込んだ質問', '踏み込んだ要求', '', ''];
 /* r18:begin */
   STAGE_NAME[5] = 'すごく踏み込んだ要求'; STAGE_NAME[6] = 'エロい要求';
@@ -155,12 +155,12 @@
     var d = affUp(ctx, S), e = S.endK, base = d >= 15 ? 'near' : d < 0 ? 'far' : 'same';
     switch (k) {
       case 'pop': return e === 'big' || e === 'slow' ? 'near' : e === 'ban' || e === 'maboroshi' || e === 'quit' ? 'far' : 'same';
-      case 'public': return e === 'wed' || (!solo(S) && num(S.stage) >= 3) ? 'near' : e === 'ban' ? 'far' : 'same';
+      case 'public': return e === 'wed' || e === 'pub' || (!solo(S) && num(S.stage) >= 3) ? 'near' : e === 'ban' ? 'far' : 'same';
       case 'wed': return e === 'wed' ? 'near' : base === 'near' ? 'same' : base;
       case 'quit': return e === 'quit' ? 'near' : e === 'big' ? 'far' : 'same';
       case 'sunao': return beh(S, 'sunao') > 0 ? 'near' : base;
       case 'hitori': return beh(S, 'jeal') > 0 || e === 'quit' ? 'near' : e === 'big' ? 'far' : base;
-      case 'kinen': return e === 'wed' ? 'near' : e === 'maboroshi' || e === 'ban' ? 'far' : base === 'far' ? 'same' : base;
+      case 'kinen': return e === 'wed' || e === 'pub' ? 'near' : e === 'maboroshi' || e === 'ban' ? 'far' : base === 'far' ? 'same' : base;
       default: return base;
     }
   }
@@ -203,6 +203,12 @@
       /* 同点は wed → pop → quit の順（0 点どうしは続ける） */
       k = wed > 0 && wed >= pop && wed >= quit ? 'wed' : quit > pop && quit > 0 ? 'quit' : 'pop';
       /* 常連の小さな箱は、同接が千人に届かない配信だけ（規模 1 万で同接 7 千人の配信に「少人数だからこそ」の文が出ないように。2026-11-06 P15b） */
+      /* 恋人・夫婦でない二人（この部屋ではカップルとして扱う）は、結婚報告の代わりに二人の関係の公表 */
+      if (k === 'wed' && S.relOther) k = 'pub';
+      /* 無関心・恐怖の二人（haishin.js の S.cold）は、結婚報告も公表もしない */
+      if ((k === 'wed' || k === 'pub' || k === 'quit') && S.cold) k = 'pop';
+      /* 恋愛にならない「体だけの二人」（S.bodyOnly）は、結婚報告も公表もしない */
+      if ((k === 'wed' || k === 'pub') && S.bodyOnly) k = 'pop';
       if (k === 'pop') { var n = sizeN(S); k = Vp >= n * 5 || Vp >= 10000 ? 'big' : Vp >= n * 1.5 || Vp >= 1000 ? 'slow' : 'small'; }
     }
     S.endK = k;
@@ -217,7 +223,7 @@
       case 'slow': d = Vp * r(0.3, 0.6) + 1; break;
       case 'small': d = Math.max(1, Vp * r(0.05, 0.15)); break;
       case 'quit': d = Vp * 0.2 + 1; break;
-      case 'wed': d = Vp * r(0.5, 1) + 1; break;
+      case 'wed': case 'pub': d = Vp * r(0.5, 1) + 1; break;
       default: d = Math.max(1, num(S.v0)) * r(-0.05, 0.05); break;
     }
     if (spread(S) && k !== 'maboroshi') d += n * r(1, 3);
@@ -250,6 +256,8 @@
   function endList(ctx, S, k) {
     var E = (TX().END || {})[k];
     if (E && !Array.isArray(E)) E = E[married(ctx, S) ? 'spouse' : 'lover'] || E.lover || [];
+    /* 結婚報告：本編の最後の区切りで報告した回（S.wedLive）は at 'live' の文、報告していない回は 'next'（次の配信で）の文（札の無い文はどちらでも） */
+    if (k === 'wed' || k === 'pub') { var at = S.wedLive ? 'live' : 'next', E2 = (E || []).filter(function (x) { return typeof x === 'string' || !x.at || x.at === at; }); if (E2.length) E = E2; }
     return E || [];
   }
   function snsLines(ctx, S, k, A) {
@@ -284,6 +292,7 @@
     /* @event scen=set-b-haishin id=hs_end_small cat=phase tie=- label=後日談：常連の集まる小さな配信 */
     /* @event scen=set-b-haishin id=hs_end_quit cat=phase tie=- label=後日談：配信をやめて二人だけに */
     /* @event scen=set-b-haishin id=hs_end_wed cat=phase tie=- label=後日談：リスナーの前で結婚報告 */
+    /* @event scen=set-b-haishin id=hs_end_pub cat=phase tie=- label=後日談：リスナーの前で二人の関係を公表 */
     /* @event scen=set-b-haishin id=hs_end_maboroshi cat=phase tie=- label=後日談：途中で終わった幻の配信 */
     var t1 = '';
     if (S.leak && (S.leakFate === 'spread' || S.leakFate === 'none')) t1 += fill(ctx, pickT(ctx, (T.LEAKNEWS || {})[S.leakFate]), A, B, ex);
@@ -349,7 +358,7 @@
     [A, B].forEach(function (c, i) {
       if (!c) return;
       var o = i ? A : B;
-      c.fate = k === 'wed' ? (w ? '改めて夫婦の報告をした' : '結婚を報告した') : (w ? '夫婦のまま' : '恋人のまま');
+      c.fate = k === 'wed' ? (w ? '改めて夫婦の報告をした' : '結婚を報告した') : k === 'pub' ? '二人のことを公表した' : S.relOther ? '二人の関係のまま' : (w ? '夫婦のまま' : '恋人のまま');
       var t = FT.length ? FT[(i + Math.floor(rnd(ctx) * FT.length)) % FT.length] : '';
       c.fateNote = (solo(S) ? (c === S.off ? '画面の外から配信を見守った。' : '一人で配信した。') : '二人で配信した。') + (t ? t.split('{b}').join(o ? o.name : '') : '');
       goalLabel(c, S.goal[c.i], R[c.i]);

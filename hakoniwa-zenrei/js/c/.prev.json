@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.4edcfed681.js",
+  "core": "core.b781b9cbdf.js",
   "late": "late.9ba787b283.js",
   "pack-rel": "pack-rel.e46ac111f7.js",
   "pack-sim": "pack-sim.5a68a9e80d.js",
@@ -139,8 +139,8 @@
    5965
   ],
   "js/load-order.js": [
-   1812,
-   801
+   2591,
+   1120
   ],
   "js/ui-guard.js": [
    13051,
@@ -199,8 +199,8 @@
    5134
   ],
   "js/tone-plus.js": [
-   50962,
-   15550
+   53439,
+   16266
   ],
   "js/tone-engine.js": [
    68838,
@@ -367,8 +367,8 @@
    1231
   ],
   "js/view.js": [
-   82727,
-   25970
+   85039,
+   27576
   ],
   "js/view-map.js": [
    34484,
@@ -543,8 +543,8 @@
    1872
   ],
   "js/ui-result-style.js": [
-   34755,
-   6809
+   37097,
+   7147
   ],
   "js/ui-scroll-style.js": [
    1236,

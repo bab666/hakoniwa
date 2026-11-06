@@ -13,15 +13,16 @@
   var KGRP = { love: 'love', obsess: 'love', pine: 'pine', friend: 'friend', partner: 'partner', guard: 'guard', enemy: 'enemy', kill: 'kill', night: 'night', none: 'none' };
   var KNAME = [['love', '恋人・執着'], ['pine', '片想い'], ['friend', '友人'], ['partner', '相棒'], ['guard', '守護'], ['enemy', '気まずい・敵対'], ['kill', '殺害'], ['night', '一夜'], ['none', 'そのほか']];
   var mapCnt = {};
-  /* ch：記録の欄（e.ch。2026-11-06）の切り替え 'main' 本編（e.ch の無い記録）／'cm' コメント欄（e.ch が 'cm' の記録）。区切りの行はどちらにも。設計は docs/reports/2026-11-06/log-channel-design.md */
-  var tl = { who: [], keyOnly: false, cat: 'all', lewd: false, off: {}, ch: 'main' };
+  /* ch：記録の欄（e.ch。2026-11-06）の見え方 'side' 並べる（本編とコメント欄を区切りごとに並べる。既定）／'main' 本編だけ（e.ch の無い記録）／'cm' コメント欄だけ（e.ch が 'cm' の記録）。
+     区切りの行はどれにも。選んだ見え方は rv.chv としてブラウザに残す。設計は docs/reports/2026-11-06/log-channel-design.md の 5 章 */
+  var tl = { who: [], keyOnly: false, cat: 'all', lewd: false, off: {}, ch: 'side' };
   /* 記録の欄の名前（いまはコメント欄だけ）と、その欄の記録の数 */
   var CH_NAME = { cm: 'コメント欄' };
   function chOf(e) { return e && e.ch ? String(e.ch) : 'main'; }
   function chCount(res, ch) { return (res.log || []).filter(function (e) { return e && e.kind !== 'step' && chOf(e) === ch; }).length; }
   function chList(res) { var s = {}; (res.log || []).forEach(function (e) { if (e && e.ch && e.kind !== 'step' && CH_NAME[e.ch]) s[e.ch] = 1; }); return Object.keys(s); }
-  /* いまの欄（その記録に無い欄なら本編） */
-  function curCh(res) { var c = tl.ch || 'main'; return c === 'main' || chList(res).indexOf(c) >= 0 ? c : 'main'; }
+  /* いまの見え方（欄の無い記録はいつも本編。その記録に無い欄なら並べる） */
+  function curCh(res) { var L = chList(res), c = tl.ch || 'side'; if (!L.length) return 'main'; return c === 'side' || c === 'main' || L.indexOf(c) >= 0 ? c : 'side'; }
   var lastRes = null, lastHost = null, lastOpts = null;
   /* ---------- 結果の画面の並び（2026-11-01 担当UC。参考デザインの「経過と結末」：頭＋切替「結末｜経過｜関係図｜二人ずつ｜住人ごと」。表示だけで、記録・結果は変えない） ----------
      rv.tab（今の切替）・fs（経過の文字の大きさ s/m/l）・why（理由を表示）・open（区切りを全部開く）は画面の設定としてブラウザに残す（新しい鍵 hakoniwa:rv。今までの鍵は変えない）。
@@ -35,11 +36,12 @@
   var rv = (function () {
     var o = {};
     try { o = JSON.parse(window.localStorage.getItem(RV_KEY) || '{}') || {}; } catch (e) { o = {}; }
-    return { tab: typeof o.tab === 'string' ? o.tab : 'end', fs: /^[sml]$/.test(o.fs || '') ? o.fs : 'm', why: o.why !== false, open: !!o.open, tlv: o.tlv === 'line' || o.tlv === 'bubble' ? o.tlv : 'card', sec: {}, pair: null, who: null, off: {}, lab: false, line: null, side: false, plist: 'all' };
+    return { tab: typeof o.tab === 'string' ? o.tab : 'end', fs: /^[sml]$/.test(o.fs || '') ? o.fs : 'm', why: o.why !== false, open: !!o.open, tlv: o.tlv === 'line' || o.tlv === 'bubble' ? o.tlv : 'card', chv: /^(side|main|cm)$/.test(o.chv || '') ? o.chv : 'side', cmAll: true, cmsec: {}, sec: {}, pair: null, who: null, off: {}, lab: false, line: null, side: false, plist: 'all' };
   })();
-  function rvSave() { try { window.localStorage.setItem(RV_KEY, JSON.stringify({ tab: rv.tab, fs: rv.fs, why: rv.why, open: rv.open, tlv: rv.tlv })); } catch (e) { /* 残せなくても表示はできる */ } }
+  function rvSave() { try { window.localStorage.setItem(RV_KEY, JSON.stringify({ tab: rv.tab, fs: rv.fs, why: rv.why, open: rv.open, tlv: rv.tlv, chv: rv.chv })); } catch (e) { /* 残せなくても表示はできる */ } }
   /* 結果が変わったら、結果ごとの選択を戻す */
-  function rvFresh() { tl.ch = 'main'; rv.sec = {}; rv.pair = null; rv.who = null; rv.off = {}; rv.lab = false; rv.line = null; rv.side = false; rv.plist = 'all'; }
+  tl.ch = rv.chv;
+  function rvFresh() { tl.ch = rv.chv; rv.cmAll = true; rv.cmsec = {}; rv.sec = {}; rv.pair = null; rv.who = null; rv.off = {}; rv.lab = false; rv.line = null; rv.side = false; rv.plist = 'all'; }
 
   function pc(i) { return 'var(--p' + (i % 30) + ')'; }
   function dot(i) { return '<span class="dot" style="background:' + pc(i) + '"></span>'; }
@@ -178,6 +180,14 @@
       for (var k = 0; k < list.length; k++) if (list[k].n === m) return '<span class="name" style="color:' + pc(list[k].i) + '">' + m + '</span>';
       return m;
     });
+  }
+
+  /* 記録の欄（e.ch）の本文：1 行 1 コメント。「名前［額］：本文」の名前と額を薄く（.cmh）、本文はいつもの塗り */
+  function chatBody(e, res) {
+    return String(e.text || '').split(/\n+/).filter(function (l) { return l.trim(); }).map(function (l) {
+      var m = /^([^：「」\n]{1,30}?)(［[^］]*］)?：([\s\S]*)$/.exec(l);
+      return '<span class="evp cmr">' + (m ? '<span class="cmh">' + esc(m[1]) + (m[2] ? '<span class="cmy">' + esc(m[2]) + '</span>' : '') + '：</span>' + paint(m[3], res) : paint(l, res)) + '</span>';
+    }).join('');
   }
 
   function fateCls(f) {
@@ -625,12 +635,13 @@
   function tlGroups(res) {
     var ks = keySet(res), H = hotInfo(res), groups = [], cur = null;
     /* 似た派閥の出来事が続くときは畳む（factions.js の HK.Factions.foldSet。表示だけ。人で絞り込んでいるときは畳まない） */
-    var fold = res.factions && HK.Factions && HK.Factions.foldSet && !tl.who.length ? HK.Factions.foldSet(res) : null, ch = curCh(res);
+    var fold = res.factions && HK.Factions && HK.Factions.foldSet && !tl.who.length ? HK.Factions.foldSet(res) : null, ch = curCh(res), side = ch === 'side';
     res.log.forEach(function (e, li) {
       if (e.kind === 'step') { cur = { label: e.label, step: e.step, items: [], end: e.text === '結末' || e.label === '結末' }; groups.push(cur); return; }
       if (!cur) { cur = { label: '', step: null, items: [] }; groups.push(cur); }
-      /* 記録の欄（本編／コメント欄）：いまの欄の記録だけ */
-      if (chOf(e) !== ch) return;
+      /* 記録の欄：並べるときは欄の記録を区切りの cm に（絞り込みは本編にだけ当てる）。ほかはいまの欄の記録だけ */
+      if (side && e.ch) { (cur.cm || (cur.cm = [])).push(e); return; }
+      if (!side && chOf(e) !== ch) return;
       if (tl.who.length) {
         var all = tl.who.every(function (w) { return e.actors.indexOf(w) >= 0; });
         if (!all) return;
@@ -644,7 +655,9 @@
       if (fold && fold[e.n] && !isHot(e, H)) { if (!cur.fold) { cur.fold = { fold: [] }; cur.items.push(cur.fold); } cur.fold.fold.push(e); return; }
       cur.items.push(e);
     });
-    var gs = groups.filter(function (g) { return g.items.length; });
+    /* 並べるとき：コメントだけの区切りは絞り込んでいないときだけ出す */
+    var act = tlActive();
+    var gs = groups.filter(function (g) { return g.items.length || (side && g.cm && g.cm.length && !act); });
     var seen = {};
     gs.forEach(function (g, k) {
       /* 区切りの鍵（同じ番号の区切りが続く箱庭もあるので、2つめからは印を足す） */
@@ -654,7 +667,7 @@
       g.hot = g.items.some(function (e) { return !e.fold && isHot(e, H); });
       g.n = g.items.reduce(function (m, e) { return m + (e.fold ? e.fold.length : 1); }, 0);
     });
-    return { ks: ks, H: H, groups: gs, days: dayGroups(res, gs) };
+    return { ks: ks, H: H, groups: gs, days: dayGroups(res, gs), side: side };
   }
   /* ---------- 日ごとのまとめ（2026-11-03。箱庭が任意で持つ scen.stepGroup(区切りの名前, 区切りの番号) → { group: 'DAY1（月）', sub: '朝' } か null） ----------
      持つ箱庭だけ、経過の目次と区切りの開け閉めを group（日）ごとにまとめ、sub を日の中の中見出しにする。null を返した区切り（結末など）は今までどおり 1 区切り。
@@ -705,10 +718,7 @@
         '<span class="rvsecm">' + (g.hot ? '<span class="rvimp">重要</span>' : '') + '<span class="rvsecn">' + g.n + '件</span></span>' +
         '<button type="button" class="rvfoldbtn" data-act="rvfold" data-s="' + g.key + '" aria-expanded="' + open + '">' + (open ? '畳む' : '開く') + '</button></div>';
       inEnd = !!g.end;
-      return '<div class="stepblk' + (g.hot ? ' hasHot' : '') + (open ? '' : ' rvfold') + '" id="rvs-' + g.key + '" data-s="' + g.key + '">' + when + '<ol>' + g.items.map(function (e) {
-        if (e.fold) return '<li class="ev phase facfold"><details><summary style="cursor:pointer;color:var(--muted);font-size:12px">似た派閥の動き ' + e.fold.length + '件（続くので畳んでいます）</summary><ol style="padding-bottom:0">' + e.fold.map(evLi).join('') + '</ol></details></li>';
-        return evLi(e);
-      }).join('') + '</ol>' + (nx ? '<div class="rvnext"><button type="button" class="rvlink" data-act="rvjump" data-s="' + nx.key + '">次の区切り：' + esc(secName(nx.one ? nx.subs[0] : nx)) + ' ›</button></div>' : '') + '</div>';
+      return '<div class="stepblk' + (g.hot ? ' hasHot' : '') + (open ? '' : ' rvfold') + '" id="rvs-' + g.key + '" data-s="' + g.key + '">' + when + blkBody(g) + (nx ? '<div class="rvnext"><button type="button" class="rvlink" data-act="rvjump" data-s="' + nx.key + '">次の区切り：' + esc(secName(nx.one ? nx.subs[0] : nx)) + ' ›</button></div>' : '') + '</div>';
     }).join('');
     return html || '<p class="hint">条件に合う出来事はありません。</p>';
     function items(g) {
@@ -716,6 +726,15 @@
         if (e.fold) return '<li class="ev phase facfold"><details><summary style="cursor:pointer;color:var(--muted);font-size:12px">似た派閥の動き ' + e.fold.length + '件（続くので畳んでいます）</summary><ol style="padding-bottom:0">' + e.fold.map(evLi).join('') + '</ol></details></li>';
         return evLi(e);
       }).join('') + '</ol>';
+    }
+    /* 区切りの中身：並べるときは左に本編・右にコメント欄（.chsp の格子。同じ区切りで高さが揃う。スマホ幅は本編の下に畳めるコメント欄。ui-result-style.js） */
+    function blkBody(g) {
+      if (!G.side) return items(g);
+      /* 件数はコメントの行の数（記録の 1 件に 1 区切り分の行が入っている） */
+      var cm = g.cm || [], op = cmOpen(g.key), nl = cm.reduce(function (m, e) { return m + String(e.text || '').split(/\n+/).filter(function (l) { return l.trim(); }).length; }, 0);
+      var col = cm.length ? '<div class="chc' + (op ? '' : ' cmfold') + '" data-k="' + g.key + '"><div class="chch"><span class="chcl">コメント欄<small>' + nl + '件</small></span>' +
+        '<button type="button" class="chcbtn" data-act="rvcmfold" data-k="' + g.key + '" aria-expanded="' + op + '">コメント欄<small>' + nl + '件</small></button></div><ol>' + cm.map(evLi).join('') + '</ol></div>' : '<div class="chc chc0"></div>';
+      return '<div class="chsp"><div class="chm">' + (g.items.length ? items(g) : '<p class="chnone">本編の出来事はありません</p>') + '</div>' + col + '</div>';
     }
     /* 日のカード：頭は日の名前・重要の札・日の合計の件数・畳む／開く。中に区切りごとの中見出し（朝・日中・夜。ターン番号と件数）と出来事 */
     function dayBlk(d, k) {
@@ -726,7 +745,7 @@
       var body = d.subs.map(function (g) {
         inEnd = !!g.end;
         var tn = tno(g.step);
-        return '<div class="rvsubh' + (g.hot ? ' hot' : '') + '" id="rvs-' + g.key + '" data-s="' + g.key + '">' + (tn ? '<span class="tn">' + tn + '</span>' : '') + '<span class="ph">' + esc(g.sub || g.label || '') + '</span><span class="rvsecn">' + g.n + '件</span></div>' + items(g);
+        return '<div class="rvsubh' + (g.hot ? ' hot' : '') + '" id="rvs-' + g.key + '" data-s="' + g.key + '">' + (tn ? '<span class="tn">' + tn + '</span>' : '') + '<span class="ph">' + esc(g.sub || g.label || '') + '</span><span class="rvsecn">' + g.n + '件</span></div>' + blkBody(g);
       }).join('');
       return '<div class="stepblk rvday' + (d.hot ? ' hasHot' : '') + (open ? '' : ' rvfold') + '" id="rvs-' + d.key + '" data-s="' + d.key + '">' + when + '<div class="rvdb">' + body + '</div>' +
         (nx ? '<div class="rvnext"><button type="button" class="rvlink" data-act="rvjump" data-s="' + nx.key + '">次の区切り：' + esc(secName(nx.one ? nx.subs[0] : nx)) + ' ›</button></div>' : '') + '</div>';
@@ -747,13 +766,13 @@
       /* 会話は吹き出しにせず、「」の引用だけ少し太く（.q） */
       var talk = !!(avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)));
       /* 吹き出しの見え方（V.bubble）：発話のある出来事は本文を吹き出しと地の文に分ける（顔は吹き出しの側に出すので、行の頭の顔は出さない） */
-      var bb = V.bubble(e, sg, { who: function (i) { return res.chars[i]; }, av: function (i, s) { return av(res, i, s); }, paint: function (s) { return paint(s, res); }, face: function (k) { return HK.Face ? HK.Face.of(e, k, res) : null; } });
+      var bb = e.ch ? null : V.bubble(e, sg, { who: function (i) { return res.chars[i]; }, av: function (i, s) { return av(res, i, s); }, paint: function (s) { return paint(s, res); }, face: function (k) { return HK.Face ? HK.Face.of(e, k, res) : null; } });
       if (bb) { avs = ''; talk = false; }
-      var body = bb || paint(e.text, res, sg);
+      var body = bb || (e.ch ? chatBody(e, res) : paint(e.text, res, sg));
       /* 表情の鍵（face.js）：「」の順に data-face を付ける（見た目は変えない。画像の差し込み口。入れ子の「」がある文は付けない） */
       if (talk) { var fl = HK.Face && HK.Seg ? HK.Face.list(e, res) : null, fq = 0, nst = fl && HK.Seg.quotes(e.text).length !== (e.text.match(/「[^「」]*」/g) || []).length; body = body.replace(/「[^「」]*」/g, function (m) { var f = fl && !nst ? fl[fq++] : null; return '<span class="q"' + (f ? ' data-face="' + f + '"' : '') + '>' + m + '</span>'; }); }
       /* 段落の箱と、出られない部屋の札（まとめての見出しは囲みに。段が一つだけなら札に） */
-      var pw = bb ? { html: bb, dg: false } : paraWrap(body, rm && rm.dg);
+      var pw = bb ? { html: bb, dg: false } : e.ch ? { html: body, dg: false } : paraWrap(body, rm && rm.dg);
       body = pw.html;
       if (rm) chip = rm.chips.concat(rm.dg && !pw.dg ? [['dg', rm.dg]] : []).map(function (c) { return '<span class="rmb" data-k="' + c[0] + '">' + esc(c[1]) + '</span>'; }).join('') + chip;
       /* 出来事の頭の行：重要の札（種類つき）・節目などの札・種類・らしくない */
@@ -911,19 +930,29 @@
   }
 
   /* ---------- 全体 ---------- */
-  V.resetFilter = function () { tl = { who: [], keyOnly: false, cat: 'all', lewd: false, off: {}, ch: 'main' }; };
+  V.resetFilter = function () { tl = { who: [], keyOnly: false, cat: 'all', lewd: false, off: {}, ch: rv.chv }; };
   /* 記録の欄の切り替え（本編／コメント欄 n件）（e.ch のある記録のときだけ。経過の見出しの横） */
   function chSeg(res) {
     var L = chList(res);
     if (!L.length) return '';
-    var opts = [['main', '本編', chCount(res, 'main')]].concat(L.map(function (c) { return [c, CH_NAME[c], chCount(res, c)]; }));
-    return '<div class="rvseg rvch" role="radiogroup" aria-label="記録の欄">' + opts.map(function (x) {
-      return '<button type="button" role="radio" data-act="rvch" data-v="' + esc(x[0]) + '" aria-checked="' + (curCh(res) === x[0]) + '">' + esc(x[1]) + (x[0] === 'main' ? '' : '<small>（' + x[2] + '件）</small>') + '</button>';
-    }).join('') + '</div>';
+    var opts = [['side', '並べる'], ['main', '本編だけ']].concat(L.map(function (c) { return [c, CH_NAME[c] + 'だけ', chCount(res, c)]; }));
+    return '<div class="rvseg rvch" role="radiogroup" aria-label="記録の欄の見え方">' + opts.map(function (x) {
+      return '<button type="button" role="radio" data-act="rvch" data-v="' + esc(x[0]) + '" aria-checked="' + (curCh(res) === x[0]) + '">' + esc(x[1]) + (x[2] == null ? '' : '<small>（' + x[2] + '件）</small>') + '</button>';
+    }).join('') + '</div>' +
+      /* 並べるときのコメント欄を全部畳む／開く（スマホ幅だけ見える。PC は右の列にいつも出す） */
+      '<button type="button" class="btn small rvcmall" data-act="rvcmall" aria-pressed="' + !rv.cmAll + '"' + (curCh(res) === 'side' ? '' : ' hidden') + '>' + (rv.cmAll ? 'コメントを全部畳む' : 'コメントを全部開く') + '</button>';
+  }
+  /* 並べるときの区切りのコメント欄の開け閉め（押して変えたものはそのまま。ほかは全部の開け閉め） */
+  function cmOpen(k) { return rv.cmsec[k] != null ? rv.cmsec[k] : rv.cmAll; }
+  function setCm(el, open) {
+    el.classList.toggle('cmfold', !open);
+    var b = el.querySelector('.chcbtn');
+    if (b) b.setAttribute('aria-expanded', String(open));
+    rv.cmsec[el.getAttribute('data-k')] = open;
   }
   V.chSeg = chSeg;
-  V.setCh = function (c) { tl.ch = c || 'main'; chSync(); V.refreshTimeline(); };
-  V.ch = function () { return tl.ch || 'main'; };
+  V.setCh = function (c) { tl.ch = c || 'side'; chSync(); V.refreshTimeline(); };
+  V.ch = function () { return tl.ch || 'side'; };
   /* 印刷（export-out.js の PDF）：本編を出し、そのあとに記録の欄（コメント欄など）を区切りごとに足す。戻す関数を返す（欄の無い記録は null） */
   V.chPrint = function () {
     var res = lastRes, h = lastHost, t = h && h.querySelector('#tl');
@@ -1201,10 +1230,11 @@
   function gotoEv(n) {
     if (!V.showTab('log', true)) return;
     var h = rvHost(), q = '#tl li.ev[data-n="' + n + '"]', li = h.querySelector(q);
-    if (!li) { tl.who = []; tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; tl.off = {}; tl.ch = lastRes && lastRes.log[n] ? chOf(lastRes.log[n]) : 'main'; chSync(); V.refreshTimeline(); li = h.querySelector(q); }
+    if (!li) { tl.who = []; tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; tl.off = {}; if (tl.ch !== 'side') tl.ch = lastRes && lastRes.log[n] ? chOf(lastRes.log[n]) : 'main'; chSync(); V.refreshTimeline(); li = h.querySelector(q); }
     if (!li) return;
-    var sb = li.closest('.stepblk'), d = li.closest('details');
+    var sb = li.closest('.stepblk'), d = li.closest('details'), cc = li.closest('.chc');
     if (sb) setSec(sb, true);
+    if (cc) setCm(cc, true);
     if (d) d.open = true;
     li.classList.add('rvflash');
     setTimeout(function () { li.classList.remove('rvflash'); }, 1800);
@@ -1247,7 +1277,9 @@
     var h = rvHost();
     if (h) Array.prototype.forEach.call(h.querySelectorAll('[data-act="rvch"]'), function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-v') === (tl.ch || 'main'))); });
     var w = rvWrap();
-    if (w) w.setAttribute('data-ch', tl.ch || 'main');
+    if (w) w.setAttribute('data-ch', tl.ch || 'side');
+    var ca = h && h.querySelector('[data-act="rvcmall"]');
+    if (ca) ca.hidden = !(lastRes && !lastRes.solo && curCh(lastRes) === 'side');
   }
   document.addEventListener('click', function (ev) {
     var t = ev.target && ev.target.closest && ev.target.closest('[data-act]');
@@ -1281,7 +1313,14 @@
         break;
       case 'rvside': rv.side = !rv.side; wrapAttr('data-side', rv.side ? 1 : 0); t.setAttribute('aria-expanded', String(rv.side)); break;
       case 'rvreset': tl.who = []; tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; tl.off = {}; V.refreshTimeline(); break;
-      case 'rvch': tl.ch = t.getAttribute('data-v') || 'main'; chSync(); V.refreshTimeline(); break;
+      case 'rvch': tl.ch = rv.chv = /^(side|main|cm)$/.test(t.getAttribute('data-v') || '') ? t.getAttribute('data-v') : 'side'; rvSave(); chSync(); V.refreshTimeline(); break;
+      case 'rvcmfold': var cc = t.closest('.chc'); if (cc) setCm(cc, cc.classList.contains('cmfold')); break;
+      case 'rvcmall':
+        rv.cmAll = !rv.cmAll; rv.cmsec = {};
+        Array.prototype.forEach.call(rvHost().querySelectorAll('#tl .chc[data-k]'), function (el) { setCm(el, rv.cmAll); });
+        rv.cmsec = {};
+        t.setAttribute('aria-pressed', String(!rv.cmAll)); t.textContent = rv.cmAll ? 'コメントを全部畳む' : 'コメントを全部開く';
+        break;
       case 'rvpair':
         if (t.hasAttribute('data-p')) pickPair(+t.getAttribute('data-p'));
         break;

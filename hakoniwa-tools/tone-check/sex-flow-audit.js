@@ -13,6 +13,8 @@
      (i)〜(n) 文ごとの状態（2026-11-04。HK.SexFlow.walk。呼ぶ側の事後の段も見る）：(i) 入れていない・抜いたあとの「抜かないまま」・入れていない指を抜く／(j) 目隠し中に見る・「こっちを見ろ」／
          (k) 後ろからの体位のまま顔を合わせる／(l) 移る文なしに場所が変わる（山場まで）／(m) 別れの台詞のあとの会話・寄り添い／(n) 体の組に合わない語（男性器の無い人の男性器・女性どうしの男性器の語・受けが入れる側）
      (o) 山場の無いまま終わる（2026-11-05）：段が 3 つ以上あるのに果てる段が一度も無い／前戯で果てたあと挿れて、そのまま終わる
+     (p) 布越しのあと脱がせずに挿れる（2026-11-06）：服の上から・布越しに触れたあと、脱がせる・ずらす・はだける文を挟まずに挿れる（指なら下着の中・素肌の文があればよい）
+     (q) 焦らしの直後に受けの反応が無い（2026-11-06）：寸止め・止める・お預けの段のあと（その段の残りか次の段）に、腰が動く・息を詰める・ねだる・睨む・受けの声が無い
      (h) 型の矛盾（エッチの型 HK.Play。2026-11-03）：着衣の型なのに脱がせる、型の体位の段のあと（山場まで）に別の体位へ変える動き。型の内訳（入り方・主な責め・道具・体位・終わり方）も出す
    ほかに、段数（段＝地の文の段落と、それに続く台詞だけの段落）と段落数の分布、夜の主導の設定 × きっかけ ごとの始まり方の内訳（受けから／攻めから／どちらともなく）を出す。
    配役：pos-audit と同じ範囲（3 組＋男性どうし・態度 9 種が出る気質・夜の性格・受け攻めの指定・夜の主導）。audit-all.js の追加の配役パス（--extra=sexflow）からも呼べる */
@@ -58,7 +60,7 @@ const PASS = function* (HK, opt) {
 /* ---------- 判定 sexflow（ページの中）：opt = { why, raw } ---------- */
 const JUDGE = function (HK, opt) {
   const WHY = !!opt.why, F = HK.SexFlow;
-  const out = { dump: [], scenes: 0, v: { a: 0, b: 0, c: 0, d: 0, e: 0, f: 0, g: 0, h: 0, i: 0, j: 0, k: 0, l: 0, m: 0, n: 0, o: 0 }, ex: { a: [], b: [], c: [], d: [], e: [], f: [], g: [], h: [], i: [], j: [], k: [], l: [], m: [], n: [], o: [] }, units: [], paras: [], start: {}, bySc: {}, noFlow: !F, play: { n: 0, none: 0, entry: {}, focus: {}, prop: {}, pos: {}, finish: {}, act: 0 } };
+  const out = { dump: [], scenes: 0, v: { a: 0, b: 0, c: 0, d: 0, e: 0, f: 0, g: 0, h: 0, i: 0, j: 0, k: 0, l: 0, m: 0, n: 0, o: 0, p: 0, q: 0 }, ex: { a: [], b: [], c: [], d: [], e: [], f: [], g: [], h: [], i: [], j: [], k: [], l: [], m: [], n: [], o: [], p: [], q: [] }, units: [], paras: [], start: {}, bySc: {}, pqOther: {}, pqEx: [], noFlow: !F, play: { n: 0, none: 0, entry: {}, focus: {}, prop: {}, pos: {}, finish: {}, act: 0 } };
   if (!F) return { accept() { return false; }, finish() { return out; } };
   F.off = !!opt.raw;
   if (opt.dump) F.trace = true;
@@ -109,6 +111,8 @@ const JUDGE = function (HK, opt) {
         if (opt.dump && out.dump.length < opt.dump) out.dump.push({ sc: run.sc + '#' + run.s, set: x.set, flow: x.r.flow || null, trace: x.r._trace || null, mode: mode, aM: !!(HK.Pos && HK.Pos.hasM && HK.Pos.hasM(a)), bM: !!(HK.Pos && HK.Pos.hasM && HK.Pos.hasM(b)), v: an.check.v.map(v => v.k + ':' + v.i + ':' + v.why + (v.s ? '｜' + v.s : '')), stages: an.check.stages, units: an.units.map(u => u.paras.join(' ⏎ ')), tail: an.tail.join(' ⏎ ') });
         out.units.push(an.units.length + (an.tail.length ? 1 : 0));
         out.paras.push(String(x.text).split(/\n\n+/).length);
+        /* (p)・(q)（2026-11-06）は、直した部屋（HK.SexFlow.pqOn で登録した部屋。今は電車）だけ合否に数え、ほかの部屋は参考の件数（out.pqOther）に */
+        an.check.v = an.check.v.filter(v => { if ((v.k === 'p' || v.k === 'q') && !(F.PQ_ROOMS && F.PQ_ROOMS[run.sc])) { const o = out.pqOther[v.k] || (out.pqOther[v.k] = {}); o[run.sc] = (o[run.sc] || 0) + 1; if (WHY && out.pqEx.length < 12) out.pqEx.push(run.sc + '#' + run.s + '（' + v.k + '）：' + v.why + (v.s ? '｜文：' + v.s.slice(0, 100) : '')); return false; } return true; });
         an.check.v.forEach(v => { bs.v++; const u = v.i >= an.units.length && an.tail.length ? { paras: an.tail } : an.units[Math.min(v.i, an.units.length - 1)]; add(v.k, v.why + (v.s ? '｜文：' + v.s.slice(0, 120) : ''), run.sc + '#' + run.s, u ? u.paras.join(' ') : ''); });
         /* 始まり方：夜の主導の部品が残っていれば受けから。なければ頭の段の主語 */
         const fl = x.r.flow || {}, roles = fl.parts || [];
@@ -160,7 +164,7 @@ function dist(a) {
   const s = a.slice().sort((x, y) => x - y);
   return '最小 ' + s[0] + '・中央 ' + s[s.length >> 1] + '・最大 ' + s[s.length - 1] + '（13 以上 ' + s.filter(x => x >= 13).length + ' 件・20 以上 ' + s.filter(x => x >= 20).length + ' 件）';
 }
-const LABEL = { h: '型の矛盾（着衣なのに脱がせる・型の体位のあとに別の体位）', a: '段階の逆戻り', b: '体位の矛盾', c: '同じ台詞・動きの二度出し', d: '応答待ちのあとリアクション無し', e: '閾値前の山場', f: '導入の台詞の二度出し・嫉妬で受けから', g: '似た役割の重ね（焦らし・主導の段）', i: '挿入の状態の矛盾（抜いたあとの「抜かないまま」・入れていない指を抜く）', j: '目隠し中に見る・「こっちを見ろ」', k: '後ろからの体位のまま顔を合わせる', l: '場所の飛び（移る文なしに場所が変わる）', m: '終わりの台詞のあとの会話・寄り添い', n: '体の組に合わない語（男性器の無い人の男性器・受けが入れる側）', o: '山場の無いまま終わる（果てる段が無い・前戯で果てたあと挿れて終わる）' };
+const LABEL = { h: '型の矛盾（着衣なのに脱がせる・型の体位のあとに別の体位）', a: '段階の逆戻り', b: '体位の矛盾', c: '同じ台詞・動きの二度出し', d: '応答待ちのあとリアクション無し', e: '閾値前の山場', f: '導入の台詞の二度出し・嫉妬で受けから', g: '似た役割の重ね（焦らし・主導の段）', i: '挿入の状態の矛盾（抜いたあとの「抜かないまま」・入れていない指を抜く）', j: '目隠し中に見る・「こっちを見ろ」', k: '後ろからの体位のまま顔を合わせる', l: '場所の飛び（移る文なしに場所が変わる）', m: '終わりの台詞のあとの会話・寄り添い', n: '体の組に合わない語（男性器の無い人の男性器・受けが入れる側）', o: '山場の無いまま終わる（果てる段が無い・前戯で果てたあと挿れて終わる）', p: '布越しのあと脱がせずに挿れる（服の上から触れたあと、脱がせる・ずらす段なしの挿入）', q: '焦らしの直後に受けの反応が無い' };
 function print(r, errors, o) {
   if (!r) { console.log('結果なし'); return; }
   if (r.noFlow) console.log('（HK.SexFlow がありません：数えるだけ）');
@@ -169,6 +173,11 @@ function print(r, errors, o) {
     console.log('(' + k + ') ' + LABEL[k] + '：' + r.v[k]);
     if (o.why) r.ex[k].forEach(x => console.log('    ' + x));
   });
+  if (r.pqOther) {
+    const po = r.pqOther, f = k => Object.keys(po[k] || {}).map(s => s + " " + po[k][s]).join("・") || "0";
+    console.log('（参考）(p)・(q) を合否に数えない部屋の件数：(p) ' + f('p') + '／(q) ' + f('q'));
+    if (r.pqEx) r.pqEx.forEach(x => console.log('    ' + x));
+  }
   if (r.play) {
     const P = r.play, fmt = o => Object.keys(o).sort((x, y) => o[y] - o[x]).map(k => k + ' ' + o[k]).join('・');
     console.log('エッチの型', P.n, '件（型なし ' + P.none + '・性格が目立つ行為の段が残った ' + P.act + '）');
@@ -184,7 +193,8 @@ function print(r, errors, o) {
 function summarize(r) {
   const items = {}, ex = {};
   Object.keys(LABEL).forEach(k => { items[LABEL[k]] = r ? r.v[k] : 0; ex[LABEL[k]] = r ? r.ex[k] : []; });
-  return { items, ex, info: { 長い場面: r ? r.scenes : 0, 段数: r ? dist(r.units) : '' }, err: 0 };
+  const po = r && r.pqOther ? Object.keys(r.pqOther).map(k => '(' + k + ') ' + Object.keys(r.pqOther[k]).map(s => s + ' ' + r.pqOther[k][s]).join('・')).join('／') : '';
+  return { items, ex, info: { 長い場面: r ? r.scenes : 0, 段数: r ? dist(r.units) : '', '(p)(q) の参考（合否に数えない部屋）': po || '0' }, err: 0 };
 }
 module.exports = { passes: { sexflow: PASS }, judges: { sexflow: JUDGE }, print, summarize, LABEL, DEF_SCEN };
 
