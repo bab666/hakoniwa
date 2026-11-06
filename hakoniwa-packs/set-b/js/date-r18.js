@@ -1,4 +1,5 @@
 /* r18:begin */
+/* @event-ok 夜・三人・四人の夜に、性行為の相手に選び合っただけの二人・輪（恋人ではない）の体だけの版のきっかけ・事後の文を足した（新しい出来事ではない。2026-11-06） */
 /* @event scen=set-b-date id=dt_night_ouchi cat=romance tie=- tags=night label=デート帰りに寄ったお家で結ばれる夜 */
 /* @event scen=set-b-date id=dt_night_tomari cat=romance tie=- tags=night label=デートの夜にそのまま泊まって求め合う */
 /* @event scen=set-b-date id=dt_night_hotel cat=romance tie=- tags=night label=デートの帰りにラブホテルへ入る夜 */
@@ -234,11 +235,13 @@
     if (first && br === 'hotel' && L0) L0 += DT.pickT(ctx, T.FIRST_ADD, x, y, true) || '';
     var FE = T.FEEL || {}, fe = DT.pickT(ctx, FE[PR.att(x, y)] || FE.gentle, x, y) || DT.pickT(ctx, FE.gentle, x, y, true);
     var FA = T.FANS || {}, fa = DT.pickT(ctx, FA[PR.att(y, x)] || FA.gentle, x, y) || DT.pickT(ctx, FA.gentle, x, y, true);
+    /* 性行為の相手に選び合っただけの二人（S.body。date.js の mkPair）：体だけの夜と分かる一文を足し、恋人の語の一言は使わない（2026-11-06） */
+    if (S.body && L0) { var bl = DT.pickT(ctx, T.LEAD_BODY, x, y) || DT.pickT(ctx, T.LEAD_BODY, x, y, true); if (bl) L0 += bl; if (LOVE_W.test(fe || '')) fe = ''; if (LOVE_W.test(fa || '')) fa = ''; }
     if (!L0) return false;
     var lt = DT.fill(ctx, L0 + (fe || '') + (fa || ''), x, y, { dest: dest });
     var lcat = S.love && (!ctx.romanceOk || ctx.romanceOk([x, y], false)) ? 'romance' : 'bond';
     var KN = RM ? RM.NAME : {};
-    var le = ctx.say({ kind: 'event', cat: lcat, actors: [x, y], text: lt, why: 'きっかけ：' + (first ? ENTRY.first + (br === 'hotel' ? '・ラブホ' : '') : ENTRY[entry] || ENTRY[br]) + '（' + x.name + 'から・' + (dest ? dest + 'の' : '') + (S.love ? 'デートの余韻' : 'お出かけのあと') + (br === 'yado' && KN[kind] ? '・' + KN[kind] : '') + (yo && T.YO_NAME ? '・' + T.YO_NAME[yo] : '') + '）', mag: 0 });
+    var le = ctx.say({ kind: 'event', cat: lcat, actors: [x, y], text: lt, why: 'きっかけ：' + (S.body ? '体だけの夜（関係はそのまま）・' : '') + (first ? ENTRY.first + (br === 'hotel' ? '・ラブホ' : '') : ENTRY[entry] || ENTRY[br]) + '（' + x.name + 'から・' + (dest ? dest + 'の' : '') + (S.love ? 'デートの余韻' : 'お出かけのあと') + (br === 'yado' && KN[kind] ? '・' + KN[kind] : '') + (yo && T.YO_NAME ? '・' + T.YO_NAME[yo] : '') + '）', mag: 0 });
     if (le) le.tag = 'きっかけ';
     /* 2. 場面 */
     var lv = LV ? LV.lv(env) : 'mid', ero = !!(LV && LV.ero(env) && HK.ThickEro), nogen = !!(HK.NoGen && HK.NoGen.on && HK.NoGen.on(a, b));
@@ -337,6 +340,8 @@
   };
 
   /* ---------- 三人の恋人の三人デートの夜（本体の HK.Pos.trioPlan・HK.Trio3。直接の行為は plan の組だけ。形は受け攻めの設定から） ---------- */
+  /* 恋人の語（体だけの夜には出さない） */
+  var LOVE_W = /恋人|大好き|好きだ|好きって|愛して|ずっと一緒/;
   function okPair(ctx) { return function (x, y) { return PR.sexOk(ctx, x, y); }; }
   function trioPlan(ctx) {
     var S = ctx.dt, T = S && S.trio, P = HK.Pos;
@@ -361,24 +366,27 @@
     var pk = function (arr) { return arr[Math.floor(ctx.rng() * arr.length)]; };
     var dest = day.P && day.P.main ? day.P.main.noun || day.P.main.name : '';
     var say3 = function (arr) { var t = DT.pickT(ctx, arr, a, bc[0]) || DT.pickT(ctx, arr, a, bc[0], true); return t ? DT.fill(ctx, t, a, bc[0], { c: bc[1].name, dest: dest }) : ''; };
-    var lt = say3(TT.LEAD), fl = TT.FORM_LEAD[touch ? 'touch' : sp.p];
+    /* 性行為の相手に選び合っただけの輪の三人（Tr.body。date.js の trioKind）：体だけのきっかけ・事後、恋人の語の形の文は使わない（2026-11-06） */
+    var bd = !!Tr.body, TB = TT.BODY || {};
+    var lt = say3(bd && TB.LEAD ? TB.LEAD : TT.LEAD), fl = (TT.FORM_LEAD[touch ? 'touch' : sp.p] || []).filter(function (x) { return !bd || !LOVE_W.test(x); });
     if (!lt) return false;
-    if (fl) lt += sub(pk(fl));
-    var le = ctx.say({ kind: 'event', cat: 'romance', actors: g, text: lt, why: 'きっかけ：三人の夜（' + a.name + 'から・' + (dest ? dest + 'の' : '') + 'デートの余韻）', mag: 0, trioPairs: pl ? pl.pairs : null });
+    if (fl.length) lt += sub(pk(fl));
+    var le = ctx.say({ kind: 'event', cat: 'romance', actors: g, text: lt, why: 'きっかけ：' + (bd ? '体だけの三人の夜（関係はそのまま。' : '三人の夜（') + a.name + 'から・' + (dest ? dest + 'の' : '') + 'デートの余韻）', mag: 0, trioPairs: pl ? pl.pairs : null });
     if (le) le.tag = 'きっかけ';
     var text, why;
     if (touch) { text = X3.touchScene(ctx, [a, bc[0], bc[1]]); why = '三人とも攻めなので、口づけと手だけ'; }
     else if (lv === 'low') { text = say3(TT.FADE); why = 'ほのめかす'; }
     else {
       var short = !!(LV && LV.short && LV.short(env, ctx.rng));
-      var body = X3.quick(ctx, g, { sp: sp, plan: pl, env: env, ero: !!(LV && LV.ero && LV.ero(env)), short: short, mid: short ? '' : sub(pk(TT.MID[sp.p] || TT.MID.ring)) });
+      var mids = (TT.MID[sp.p] || TT.MID.ring).filter(function (x) { return !bd || !LOVE_W.test(x); });
+      var body = X3.quick(ctx, g, { sp: sp, plan: pl, env: env, ero: !!(LV && LV.ero && LV.ero(env)), short: short, body: bd, mid: short || !mids.length ? '' : sub(pk(mids)) });
       if (!body) { if (le) { var L0 = ctx.log, i0 = L0.indexOf(le); if (i0 >= 0) L0.splice(i0, 1); } return false; }
-      text = body + '\n\n' + say3(TT.AFTER);
+      text = body + '\n\n' + say3(bd && TB.AFTER ? TB.AFTER : TT.AFTER);
       why = (X3.FORM_JA && X3.FORM_JA[sp.p] || '') + '：' + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: '真ん中の' + sp.m.name + 'を挟んで', ring: '輪になって', show: sp.t.name + 'と' + sp.m.name + '、' + sp.u.name + 'は見守る' }[sp.p];
     }
     if (!text) return false;
-    var e = ctx.act2({ actors: g, cat: 'romance', text: text, why: 'デートの日々：三人の夜（' + why + '）', sex: !touch, lewd: lv !== 'low', trioPairs: pl ? pl.pairs : [],
-      fx: function () { ctx.mod2(g[0], g[1], { att: 4, aff: 2 }, { att: 4, aff: 2 }); ctx.mod2(g[0], g[2], { att: 4, aff: 2 }, { att: 4, aff: 2 }); ctx.mod2(g[1], g[2], { att: 4, aff: 2 }, { att: 4, aff: 2 }); } });
+    var e = ctx.act2({ actors: g, cat: 'romance', text: text, why: 'デートの日々：' + (bd ? '体だけの三人の夜（関係はそのまま。' : '三人の夜（') + why + '）', sex: !touch, lewd: lv !== 'low', trioPairs: pl ? pl.pairs : [], free: bd,
+      fx: function () { var d = bd ? { aff: 1 } : { att: 4, aff: 2 }; ctx.mod2(g[0], g[1], d, d); ctx.mod2(g[0], g[2], d, d); ctx.mod2(g[1], g[2], d, d); } });
     if (!e || e.skipped) { if (le) { var L = ctx.log, i = L.indexOf(le); if (i >= 0) L.splice(i, 1); } return false; }
     Tr.nights = (Tr.nights || 0) + 1;
     if (!touch) { S.sex++; S.entries.trio = (S.entries.trio || 0) + 1; }
@@ -395,6 +403,10 @@
     '一日じゅう二組で歩き回ったあと、四人は{a}の部屋に転がり込んだ。缶を開ける音が四つ重なって、笑い声が少しずつ小さくなる。{a}が明かりを一段落とすと、{b}も{c}も{d}も、立ち上がろうとしなかった。',
     '別れ際の改札の前で、{c}が「＠{c}＠まだ帰りたくない｜まだ帰りたくない｜まだ帰りたくないです」と言った。{a}と{b}が目を見交わし、{d}が小さくうなずいた。四人は来た道を引き返し、灯りの多い通りの宿に入った。'
   ];
+  var QLEAD_BODY = [
+    '四人のうち誰と誰が付き合っている、というわけではなかった。体の相手として互いを選んだ四人が、今日は二組に分かれて歩いていただけだった。{dest}からの帰り道、{a}が宿の看板の前で足を止めると、{b}と{c}と{d}も黙って並んだ。',
+    '別れ際、{a}が「＠{a}＠今夜は四人で。……明日には、いつもどおり｜今夜は四人で。……明日には、いつもどおりだ｜今夜は四人で。……明日には、いつもどおりです」と言った。{b}も{c}も{d}も、それ以上の言葉は求めなかった。四人は灯りの多い通りの宿に入った。'
+  ];
   /* DR.quadRoll(ctx, day)：その日に四人の夜にするか（条件と、夜の起こりやすさの一振り）。夜の別行動の段より前に決める（通し読み：「夜は別行動」のあとに四人の夜） */
   DR.quadRoll = function (ctx, day) {
     var S = ctx.dt, Q = HK.Quad;
@@ -410,11 +422,13 @@
     var g = [S.A, S.B, S.p2.A, S.p2.B];
     var LW = HK.Lewd, short = ctx.env.lewdLen === 'short' || (LW && LW.lv(ctx.env) === 'low') || !!(LW && LW.short && LW.short(ctx.env, ctx.rng));
     var a = g[Math.floor(ctx.rng() * 4)], rest = g.filter(function (c) { return c !== a; });
-    var U = S.used || {}, q = QLEAD.filter(function (x) { return !U['r18q:' + x]; }); if (!q.length) q = QLEAD;
+    /* 性行為の相手に選び合っただけの輪の四人（HK.Quad.bodyRing）：体だけのきっかけ（2026-11-06） */
+    var bq = !!(Q.bodyRing && Q.bodyRing(ctx, g)), QL = bq ? QLEAD_BODY : QLEAD;
+    var U = S.used || {}, q = QL.filter(function (x) { return !U['r18q:' + x]; }); if (!q.length) q = QL;
     var t0 = q[Math.floor(ctx.rng() * q.length)]; U['r18q:' + t0] = 1;
     var dest = day.P && day.P.main ? day.P.main.noun || day.P.main.name : 'デートの行き先';
     var lt = DT.fill(ctx, String(t0).split('{dest}').join(dest), a, rest[0], { c: rest[1].name, d: rest[2].name });
-    var r = Q.scene(ctx, g.map(function (c) { return c.i; }), { len: short ? 'short' : 'long', lead: lt, leadWhy: '四人の夜（' + g.map(function (c) { return c.name; }).join('・') + '・ダブルデートの帰りに）', why: 'デートの日々：' });
+    var r = Q.scene(ctx, g.map(function (c) { return c.i; }), { len: short ? 'short' : 'long', lead: lt, leadWhy: (bq ? '体だけの四人の夜（関係はそのまま。' : '四人の夜（') + g.map(function (c) { return c.name; }).join('・') + '・ダブルデートの帰りに）', why: 'デートの日々：' });
     if (!r) return false;
     S.sex++; S.p2.sex = (S.p2.sex || 0) + 1; S.quadN = (S.quadN || 0) + 1;
     return true;

@@ -356,7 +356,8 @@
     var ft = HK.Daily && HK.Daily.famTie ? HK.Daily.famTie(ctx, a, b) : null;
     return !!(ft && (!HK.tieNoLove || HK.tieNoLove(ft.t)));
   }
-  function loveOk(ctx, a, b) { return HK.canLove(a, b) && HK.canLove(b, a) && !HK.ngPair(a, b) && !famTie(ctx, a, b); }
+  /* 性行為の相手に互いを指定し合っただけの二人（R18版。HK.Quad.bodyOnly）は、体だけの夜だけで関係を進めない（告白・恋人にしない。2026-11-06 利用者の指示） */
+  function loveOk(ctx, a, b) { return HK.canLove(a, b) && HK.canLove(b, a) && !HK.ngPair(a, b) && !famTie(ctx, a, b) && !bodyBond(ctx, a, b); }
   /* 血縁・家族の二人（親子・きょうだい・親戚・擬似親子など。2026-11-04 の利用者の指示）：関係の歩みの「友人」には当てず、血縁の種類＋様子で表す */
   function kinOf(ctx, a, b) { return stOf(ctx, a, b).kin || null; }
   function kinMood(ctx, a, b) {
@@ -914,17 +915,21 @@
     /* 受けを中心にした輪（残りの二組が恋人で、真ん中の人を共有している）なら、輪の外側の組は恋人でなくてよい（2026-11-05 の利用者の指摘：
        A×B・C×B の恋人で、A と C が互いに対象になりうる組（おまかせどうし・リバと攻めなど）でも三人の夜が出なかった。A×C は三人の場面でも触れ合わない） */
     if (hubRing) return true;
-    /* 対象にならない組（攻め同士など）は、恋人でなくてよい（関係の設定に恋人と書いてあっても、恋愛対象の判定で恋人にならない組） */
-    return want ? couple(ctx, x, y) && loveOk(ctx, x, y) : true;
+    /* 対象にならない組（攻め同士など）は、恋人でなくてよい（関係の設定に恋人と書いてあっても、恋愛対象の判定で恋人にならない組）。
+       性行為の相手に互いを指定し合っただけの組（HK.Quad.bodyOnly）は、体だけの組として輪に入れる（2026-11-06 利用者の指示「勢いの夜とかは発生させてほしい」） */
+    return want ? (couple(ctx, x, y) && loveOk(ctx, x, y)) || bodyBond(ctx, x, y) : true;
   }
+  /* 輪をつなぐ組：恋人か、性行為の相手に互いを指定し合っただけの組（R18版。体だけの夜。関係は進めない） */
+  function bodyBond(ctx, x, y) { return !HK.SAFE_ON && !!(HK.Quad && HK.Quad.bodyOnly && HK.Quad.bodyOnly(ctx, x, y) && HK.bodyOK(x, y)); }
+  function bondOf(ctx, x, y) { return couple(ctx, x, y) || bodyBond(ctx, x, y); }
   function trioOf(ctx, det) {
     var P = ctx.present(), out = [];
     if (P.length < 3) return null;
     for (var i = 0; i < P.length; i++) for (var j = i + 1; j < P.length; j++) for (var k = j + 1; k < P.length; k++) {
       var M = [P[i], P[j], P[k]], Q3 = [[M[0], M[1]], [M[0], M[2]], [M[1], M[2]]];
-      var nc = Q3.filter(function (q) { return couple(ctx, q[0], q[1]); }).length;
+      var nc = Q3.filter(function (q) { return bondOf(ctx, q[0], q[1]); }).length;
       if (nc < 2) continue;
-      if (!Q3.every(function (q) { return trioPairOk(ctx, q[0], q[1], nc === 2 && !couple(ctx, q[0], q[1])); })) continue;
+      if (!Q3.every(function (q) { return trioPairOk(ctx, q[0], q[1], nc === 2 && !bondOf(ctx, q[0], q[1])); })) continue;
       /* 輪の判定は本体の HK.Quad.ringOk に一本化（同居・新婚部屋・デートの日々で同じ。R18版） */
       if (HK.Quad && HK.Quad.ringOk && !HK.SAFE_ON && !HK.Quad.ringOk(ctx, M)) continue;
       out.push(M);
@@ -932,9 +937,10 @@
     if (!out.length) return null;
     var g = out.length === 1 || det ? out[0] : out[Math.floor(ctx.rng() * out.length)];
     var left = P.length > 3 ? P.filter(function (c) { return g.indexOf(c) < 0; })[0] || null : null;
-    var all = [[g[0], g[1]], [g[0], g[2]], [g[1], g[2]]].every(function (q) { return couple(ctx, q[0], q[1]); });
-    var hub = all ? null : g.filter(function (c) { return g.every(function (o) { return o === c || couple(ctx, c, o); }); })[0] || null;
-    return { g: g, left: left, all: all, hub: hub };
+    var all = [[g[0], g[1]], [g[0], g[2]], [g[1], g[2]]].every(function (q) { return bondOf(ctx, q[0], q[1]); });
+    var hub = all ? null : g.filter(function (c) { return g.every(function (o) { return o === c || bondOf(ctx, c, o); }); })[0] || null;
+    var body = !!(HK.Quad && HK.Quad.bodyRing && !HK.SAFE_ON && HK.Quad.bodyRing(ctx, g));
+    return { g: g, left: left, all: all, hub: hub, body: body };
   }
   /* きっかけの段（R18 の夜の直前に必ず出す。記録の一件。理由の欄は「きっかけ：…」、e.tag＝'きっかけ'） */
   function sayLead(ctx, actors, L0) {
@@ -966,7 +972,7 @@
   /* 四人の夜（本体の HK.Quad.scene）。出せたら真 */
   function quadNight(ctx, P4, R) {
     var f = ctx.ft, rng = ctx.rng, LW = HK.Lewd, lv0 = LW ? LW.lv(ctx.env) : 'mid', shortQ = lv0 === 'low' || (f.quadN || 0) >= 1 || !!(LW && LW.short && LW.short(ctx.env, rng));
-    var rq = HK.Quad.scene(ctx, P4.map(function (c) { return c.i; }), { len: shortQ ? 'short' : 'long', lead: R.quadLead ? R.quadLead(ctx, P4) : null, leadWhy: '四人の夜（' + P4.map(function (c) { return c.name; }).join('・') + '・同じ家の居間で）', why: W(ctx, '自宅の居間') });
+    var rq = HK.Quad.scene(ctx, P4.map(function (c) { return c.i; }), { len: shortQ ? 'short' : 'long', lead: R.quadLead ? R.quadLead(ctx, P4) : null, leadWhy: (HK.Quad.bodyRing && HK.Quad.bodyRing(ctx, P4) ? '体だけの四人の夜（関係はそのまま。' : '四人の夜（') + P4.map(function (c) { return c.name; }).join('・') + '・同じ家の居間で）', why: W(ctx, '自宅の居間') });
     if (!rq) return false;
     if (rq.kind === 'three' && !shortQ && rq.e && typeof quadHold === 'function') rq.e.text = quadHold(rq.e.text, rq.pairs);
     f.sexTonight = true; f.quadDay = f.day; f.quadN = (f.quadN || 0) + 1;
@@ -977,7 +983,7 @@
   /* 三人の夜（R18版）か、三人で並んで眠る（全年齢の一文）。出せたら真 */
   function groupTrio(ctx, tg, R) {
     var f = ctx.ft, g = tg.g, did = false;
-    if (R && R.trio) did = trioNight(ctx, g, tg.left);
+    if (R && R.trio) did = trioNight(ctx, g, tg.left, tg.body);
     if (!did) {
       var t3 = fresh(ctx, NIGHT3);
       if (t3) { emit(ctx, { actors: g.slice(), cat: 'bond', text: fill(ctx, t3, g[0], g[1], g[2]), why: W(ctx, '自宅の寝室') + '三人の場面・円満（仲良し）：同じ部屋で眠った' + (tg.left ? '（' + tg.left.name + 'は自分の部屋で）' : '') }); did = true; }
@@ -1022,6 +1028,9 @@
       /* 夜の起こりやすさ 100（nk が 1.7）なら、まだ体だけの夜のない二人には必ず起こす（2026-11-05。夜 100 で一度も起きない回があった） */
       if (!f.sexTonight && !couple(ctx, a, b) && HK.State.freeSex && HK.State.freeSex(ctx, a, b) && onTrip(ctx, a) === onTrip(ctx, b)) {
         var fch = (together(ctx, a, b) ? 0.2 : 0.1) * HK.FreeSex.factor(ctx, a, b);
+        /* 性行為の相手に選んだ二人（体の相手。free-sex.js の kind 'body'）は、恋人の夜と同じ起こりやすさで（2026-11-06 利用者の指示「二人だとしても起きて欲しい」）。
+           関係はそのまま（体だけの夜。恋人にはしない） */
+        if (HK.FreeSex.kind && HK.FreeSex.kind(ctx, a, b) === 'body' && together(ctx, a, b)) fch = Math.min(1, (f.r18[k] ? 0.32 : 0.6) * nk * fkOf(a, b) * HK.FreeSex.factor(ctx, a, b));
         if (nk >= 1.69) fch = f.r18[k] ? Math.min(1, fch * nk) : 1;
         if (rng() < fch && freeNight(ctx, a, b)) return;
       }
@@ -1040,11 +1049,14 @@
     });
   }
   /* 三人の夜（R18版の futari-r18.js）：きっかけの段 → 三人の場面。四人目（left）は加わらない */
-  function trioNight(ctx, g, left) {
-    var f = ctx.ft, R = HK.FutariR18, r = R.trio(ctx, g, { left: left });
+  function trioNight(ctx, g, left, body) {
+    var f = ctx.ft, R = HK.FutariR18, r = R.trio(ctx, g, { left: left, body: body });
     if (!r || !r.text) return false;
     var le = sayLead(ctx, g.slice(), r.lead);
-    var e = emit(ctx, { actors: g.slice(), cat: 'romance', sex: !r.touch, trioPairs: r.pairs || null, lewd: r.lewd, text: r.text, why: W(ctx, '自宅の寝室') + r.why, mag: 12, tag: 'night3', fx: function () { ctx.mod2(g[0], g[1], { att: 3, aff: 2 }, { att: 3, aff: 2 }); ctx.mod2(g[0], g[2], { att: 3, aff: 2 }, { att: 3, aff: 2 }); ctx.mod2(g[1], g[2], { att: 3, aff: 2 }, { att: 3, aff: 2 }); } });
+    var e = emit(ctx, { actors: g.slice(), cat: 'romance', sex: !r.touch, trioPairs: r.pairs || null, lewd: r.lewd, text: r.text, free: !!body, why: W(ctx, '自宅の寝室') + r.why, mag: 12, tag: 'night3', fx: function () {
+      /* 体だけの輪の夜は関係を進めない（惹かれは上げず、気安さだけ少し） */
+      var d = body ? { aff: 1 } : { att: 3, aff: 2 };
+      ctx.mod2(g[0], g[1], d, d); ctx.mod2(g[0], g[2], d, d); ctx.mod2(g[1], g[2], d, d); } });
     if (!e) { unLead(ctx, le); return false; }
     f.sexTonight = true; f.trioN = (f.trioN || 0) + 1;
     (r.pairs && r.pairs.length ? r.pairs : []).forEach(function (q) { var kk = K(q[0], q[1]), pf = ctx.pair(q[0], q[1]); f.r18[kk] = (f.r18[kk] || 0) + 1; pf.nights = (pf.nights || 0) + 1; pf.night = true; });
@@ -1599,7 +1611,7 @@
   /* 箱庭タブの参加者の節の下の案内（ui.js の HK.ScenUI） */
   if (HK.ScenUI && HK.ScenUI.add) HK.ScenUI.add('futari', { joinNote: function () { return '<p class="hint" style="margin-top:8px">2〜4人で同じ家に住みます。知らない人どうし・友人どうしなら、同居の理由と初対面の挨拶から。関係で恋人を二組つけると、恋人が二組の同居になります。住人ごとの「家事・生活時間・片づけ」は、下の住人ごとの欄で選べます。</p>'; } });
   /* 開始前の注意：三人・四人の夜が起きない配役（本体の HK.Quad.groupWarn。同居生活・新婚部屋・デートの日々で同じ文言。R18版だけ。2026-11-05 利用者の報告「同居で 3P・4P をしない」） */
-  if (HK.SoloWarn && HK.SoloWarn.add) HK.SoloWarn.add('futari', function (input) { return HK.Quad && HK.Quad.groupWarn ? HK.Quad.groupWarn(input, { grow: true, body: false }) : []; });
+  if (HK.SoloWarn && HK.SoloWarn.add) HK.SoloWarn.add('futari', function (input) { return HK.Quad && HK.Quad.groupWarn ? HK.Quad.groupWarn(input, { grow: true }) : []; });
 
   /* 同居の仕組み（futari-house.js）と夜（futari-r18.js）が使う部品 */
   HK.FutariCore = { kinOf: kinOf, kinName: kinName, scen: scen, EV: EV, ev: ev, K: K, att: att, NEAR: NEAR, PK: PK, L: L, P9: P9, TL: TL, TC: TC,

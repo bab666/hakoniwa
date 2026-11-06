@@ -1,3 +1,4 @@
+/* @event-ok 三人・四人の夜に、性行為の相手だけで組んだ輪（恋人ではない）の体だけの版のきっかけ・事後の文を足した（新しい出来事ではない。2026-11-06） */
 /* @event-ok 長い夜の台詞・一幕・受けの一文の本数を増やし、一回の遊びで同じ文は 2 回まで（2026-11-05 担当R2。新しい出来事ではない） */
 /* @event-ok 攻めの始まり・事後の台詞・口論のあとのきっかけの文を足した（既にある夜の出来事の言い回し。2026-11-05） */
 /* @event-ok 女性の攻め×男性の受けの始まり・短い版を指と手・ペニバンの文に書き直した（既にある夜の出来事の言い回し。2026-11-05 担当FM） */
@@ -315,6 +316,17 @@
   var TRIO_FADE = L('布団の中で、三人の影がゆっくりと重なった。それから先のことは、三人しか知らない。翌朝、{a}と{b}と{c}は、誰からともなく照れくさそうに笑い合った。|寝室の扉が静かに閉まった。三人の小さな笑い声と息づかいが、しばらく廊下に漏れていた。翌朝の食卓は、いつもより少しだけ静かだった。');
   var TRIO_AFTER = L('事のあと、三人は汗ばんだ体を寄せ合ったまま、くすくすと笑い合った。同じ家で暮らす三人の夜は、まだ始まったばかりだった。|三人は布団に川の字になって、天井を見上げた。{b}が「＠{b}＠三人だと、布団が狭い｜三人だと、布団が狭いな｜三人だと、布団が狭いですね」と言うと、{c}が吹き出し、{a}もつられて笑った。');
 
+  /* 性行為の相手に互いを指定し合っただけの輪（恋人ではない。HK.Quad.bodyRing）の三人・四人の夜：関係はそのままの体だけの夜（2026-11-06 利用者の指示「勢いの夜とかは発生させてほしい」）。
+     恋人の語（恋人・好き・愛して・ずっと一緒）を使わない。{a}＝言い出した人 */
+  var TRIO_LEAD_BODY = L('{a}と{b}と{c}は、付き合っているわけではなかった。体の相手として互いを選んだ三人が、同じ家にいるだけだった。夜が更けて、{a}が二人の部屋の扉を順に叩いた。{a}「今夜、三人で。……それだけ｜今夜、三人で。……それだけだ｜今夜、三人で。……それだけです」|' +
+    '居間で缶を開けたまま、三人とも自分の部屋に戻らなかった。名前のつく関係ではない。それでも体の相手としてなら、遠慮はいらなかった。{a}が明かりを落とすと、{b}も{c}も黙って立ち上がった。|' +
+    '{a}「明日になったら、いつもどおり。……いいよね｜明日になったら、いつもどおりだ。……いいな｜明日になったら、いつもどおりです。……いいですね」――{b}と{c}は、目を見交わしてから頷いた。恋ではないから、三人で同じ部屋にいても、誰も気まずくならなかった。');
+  var TRIO_AFTER_BODY = L('事のあと、三人はしばらく天井を見ていた。最初に起き上がったのは{a}で、脱いだ服を拾って、何も言わずに自分の部屋へ戻っていった。関係は、何も変わらなかった。|' +
+    '三人は汗の引いた体を離して、順番にシャワーを使った。{b}が「＠{b}＠明日、朝早いから｜明日は朝が早い｜明日は朝が早いので」とだけ言って部屋に戻り、{c}も、それに続いた。|' +
+    '翌朝の食卓で、三人はいつもどおりの顔をしていた。{c}が{a}のコーヒーを黙って注ぎ足した。夜のことは、誰も口にしなかった。');
+  var QUAD_LEAD_BODY = L('四人のうち誰と誰が付き合っている、というわけではなかった。体の相手として互いを選んだ四人が、同じ家に住んでいるだけだった。夕飯のあと、{a}が居間の明かりを一つ落とした。{b}も{c}も{d}も、立ち上がらなかった。|' +
+    '週末の夜、四人は居間で遅くまで飲んでいた。{a}「今夜は、四人で。……明日には、いつもどおり｜今夜は、四人で。……明日には、いつもどおりだ｜今夜は、四人で。……明日には、いつもどおりです」――それを合図に、誰も自分の部屋に戻らなかった。');
+
   /* ======================= 体の関係にしてよい二人か ======================= */
   function sexOk(ctx, a, b) {
     if (HK.SAFE_ON || !a || !b || a === b) return false;
@@ -448,6 +460,8 @@
   HK.FutariR18 = {
     quadLead: function (ctx, g) {
       var upk = upkOf(ctx), a = g[Math.floor(ctx.rng() * g.length)], r = g.filter(function (c) { return c !== a; });
+      /* 体だけの輪の四人：体だけの文と、体だけの夜の言い出しの一言（LEAD_QFREE） */
+      if (HK.Quad && HK.Quad.bodyRing && HK.Quad.bodyRing(ctx, g)) return ctx.t(fillN(upk(QUAD_LEAD_BODY), { a: a, b: r[0], c: r[1], d: r[2] }), a, r[0], r[1]);
       /* 曜日に合わない文（平日の「週末の夜」「雨の週末」・休みでない日の「明日は休み」）は選ばない（通し読み 2026-11-05：木曜の夜に「雨の週末」） */
       var okQ = nightOk({ nth: 9, stage: 3 }, 'lover'), ql = QUAD_LEAD.filter(okQ);
       return ctx.t(fillN(upk(ql.length ? ql : QUAD_LEAD) + upk((LEAD_Q[att(a)] || LEAD_Q.gentle).filter(okQ)), { a: a, b: r[0], c: r[1], d: r[2] }), a, r[0], r[1]);
@@ -600,7 +614,8 @@
     trio: function (ctx, g, opt) {
       var P = HK.Pos, X3 = HK.Trio3, LW = HK.Lewd, env = ctx.env, lv = LW ? LW.lv(env) : 'mid', upk = upkOf(ctx);
       if (HK.SAFE_ON || !P || !P.trioPlan || !X3 || !g || g.length !== 3) return null;
-      var okp = function (x, y) { return sexOk(ctx, x, y) && HK.canLove(x, y) && HK.canLove(y, x) && ctx.pair(x, y).couple; };
+      var body = !!(opt && opt.body);
+      var okp = function (x, y) { return sexOk(ctx, x, y) && HK.canLove(x, y) && HK.canLove(y, x) && (ctx.pair(x, y).couple || (body && HK.Quad && HK.Quad.bodyOnly && HK.Quad.bodyOnly(ctx, x, y))); };
       var pl = P.trioPlan(g[0], g[1], g[2], { ok: okp });
       var touch = !(pl && pl.pairs && pl.pairs.length >= 2) && X3.touchOk && X3.touchOk(g, okp);
       if (!(pl && pl.pairs && pl.pairs.length >= 2) && !touch) return null;
@@ -611,25 +626,27 @@
       if (sp) { m.t = sp.t; m.m = sp.m; m.u = sp.u; }
       var allC = [[g[0], g[1]], [g[0], g[2]], [g[1], g[2]]].every(function (q) { return ctx.pair(q[0], q[1]).couple; });
       var hub = allC ? null : g.filter(function (c) { return g.every(function (o) { return o === c || ctx.pair(c, o).couple; }); })[0];
-      var hubL = hub ? fillN(upk(TRIO_LEAD_HUB), { h: hub, x: g.filter(function (c) { return c !== hub; })[0], y: g.filter(function (c) { return c !== hub; })[1] }) : '';
-      var lt = (hubL || upk(TRIO_LEAD)) + upk(TRIO_FORM[touch ? 'touch' : sp.p] || TRIO_FORM.ring), left = opt && opt.left;
+      var hubL = hub && !body ? fillN(upk(TRIO_LEAD_HUB), { h: hub, x: g.filter(function (c) { return c !== hub; })[0], y: g.filter(function (c) { return c !== hub; })[1] }) : '';
+      /* 体だけの輪：体だけのきっかけ。形の文は恋人の語の無いもの */
+      var fl = (TRIO_FORM[touch ? 'touch' : sp.p] || TRIO_FORM.ring).filter(function (x) { return !body || !/恋人/.test(x); });
+      var lt = (hubL || upk(body ? TRIO_LEAD_BODY : TRIO_LEAD)) + upk(fl.length ? fl : TRIO_FORM.ring), left = opt && opt.left;
       if (left) { m.d = left; lt += upk(TRIO_LEFT[ctx.rng() < 0.5 ? 'skip' : 'watch']); }
-      var lead = { text: ctx.t(fillN(lt, m), a, bc[0], bc[1]), why: '三人の夜（' + g.map(function (c) { return c.name; }).join('・') + (left ? '。' + left.name + 'は加わらない' : '') + '）' };
+      var lead = { text: ctx.t(fillN(lt, m), a, bc[0], bc[1]), why: (body ? '体だけの三人の夜（' : '三人の夜（') + g.map(function (c) { return c.name; }).join('・') + (left ? '。' + left.name + 'は加わらない' : '') + '）' };
       var text, why;
       if (touch) { text = X3.touchScene(ctx, [a, bc[0], bc[1]]); why = '三人とも攻めなので、口づけと手だけ'; }
       else if (lv === 'low') { text = ctx.t(fillN(upk(TRIO_FADE), m), a, bc[0], bc[1]); why = 'ほのめかす'; }
       else {
         var short = !!(LW && LW.short && LW.short(env, ctx.rng));
-        var body = X3.quick(ctx, g, { sp: sp, plan: pl, env: env, ero: !!(LW && LW.ero && LW.ero(env)), short: short });
-        if (!body) return null;
+        var body3 = X3.quick(ctx, g, { sp: sp, plan: pl, env: env, ero: !!(LW && LW.ero && LW.ero(env)), short: short, body: body });
+        if (!body3) return null;
         /* 三人の事後の文は、一回の遊びで同じ文を二度使わない（使い切ったら書かない） */
-        var U3 = ctx.ft.used, ta = TRIO_AFTER.filter(function (x) { return !U3[x]; }), ta1 = ta.length ? ta[Math.floor(ctx.rng() * ta.length)] : '';
+        var U3 = ctx.ft.used, ta = (body ? TRIO_AFTER_BODY : TRIO_AFTER).filter(function (x) { return !U3[x]; }), ta1 = ta.length ? ta[Math.floor(ctx.rng() * ta.length)] : '';
         if (ta1) U3[ta1] = 1;
-        text = body + (ta1 ? '\n\n' + ctx.t(fillN(ta1, m), a, bc[0], bc[1]) : '');
+        text = body3 + (ta1 ? '\n\n' + ctx.t(fillN(ta1, m), a, bc[0], bc[1]) : '');
         why = (X3.FORM_JA && X3.FORM_JA[sp.p] || '') + '：' + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: '真ん中の' + sp.m.name + 'を挟んで', ring: '輪になって', show: sp.t.name + 'と' + sp.m.name + '、' + sp.u.name + 'は見守る' }[sp.p];
       }
       if (!text) return null;
-      return { lead: lead, text: text, why: '三人の夜（' + why + '）', pairs: pl ? pl.pairs : [], touch: !!touch, lewd: lv !== 'low' };
+      return { lead: lead, text: text, why: (body ? '体だけの三人の夜（関係はそのまま。' : '三人の夜（') + why + '）', pairs: pl ? pl.pairs : [], touch: !!touch, lewd: lv !== 'low' };
     }
   };
 

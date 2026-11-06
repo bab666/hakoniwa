@@ -1660,12 +1660,12 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
 <!-- 古いブラウザの知らせ（2026-11-04）：本体は正規表現の後読み（iOS 16.4・Safari 16.4 から）を使うので、それより前の版では読み込みの段階で止まり、何も表示されない。そのときだけ、何が要るかを画面の上に出す -->
 <script>(function(){try{new RegExp('(?<=a)b');}catch(e){document.addEventListener('DOMContentLoaded',function(){var d=document.createElement('p');d.setAttribute('role','alert');d.style.cssText='margin:12px 16px;padding:12px 14px;border:1px solid #c33;border-radius:8px;background:#fff;color:#16233b;font-size:14px;line-height:1.7';d.textContent='このブラウザの版では箱庭シミュレーターが動きません。iPhone・iPad は iOS 16.4 以降、Mac の Safari は 16.4 以降に更新してください（Chrome・Edge・Firefox の新しい版でも動きます）。';document.body.insertBefore(d,document.body.firstChild);});}})();</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"84ac52867e","api":1,"build":"full","core":"js/c/core.c6a911604e.js",
+<script>window.HK_MANIFEST={"v":"3f8a0827ea","api":1,"build":"full","core":"js/c/core.c6a911604e.js",
 "chunks":{
   "late":{"src":"js/c/late.c64e1f593b.js","br":238034,"deps":["pack-sim","pack-lewd"]},
   "pack-sim":{"src":"js/c/pack-sim.fb095ac016.js","br":155698,"deps":[]},
   "pack-rel":{"src":"js/c/pack-rel.0edf020d99.js","br":385302,"deps":["pack-sim","pack-lewd"]},
-  "pack-lewd":{"src":"js/c/pack-lewd.96d92ae671.js","br":551956,"deps":["pack-sim"]},
+  "pack-lewd":{"src":"js/c/pack-lewd.09bb4da0fc.js","br":552267,"deps":["pack-sim"]},
   "scen-goukon":{"src":"js/c/scen-goukon.4e403a91af.js","br":92901,"deps":["pack-sim","pack-rel"]},
   "scen-classroom":{"src":"js/c/scen-classroom.0a19ef11a5.js","br":102667,"deps":["pack-sim","pack-rel"]},
   "scen-island":{"src":"js/c/scen-island.98b8038a87.js","br":91549,"deps":["pack-sim","pack-rel"]},
@@ -1677,7 +1677,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "scen-dungeon":{"src":"js/c/scen-dungeon.6318b5e38a.js","br":121752,"deps":["pack-sim","pack-story"]},
   "scen-massage":{"src":"js/c/scen-massage.8d0fbdcf3f.js","br":99515,"deps":["pack-sim","pack-solo"]},
   "scen-hole":{"src":"js/c/scen-hole.46fcceb3f8.js","br":92734,"deps":["pack-sim","pack-solo"]},
-  "scen-futari":{"src":"js/c/scen-futari.4686f1a48e.js","br":153546,"deps":["pack-sim","pack-rel"]},
+  "scen-futari":{"src":"js/c/scen-futari.cb47a1d730.js","br":154237,"deps":["pack-sim","pack-rel"]},
   "scen-zombie":{"src":"js/c/scen-zombie.63e6abc965.js","br":173909,"deps":["pack-sim","pack-rel"]},
   "scen-rpg":{"src":"js/c/scen-rpg.b4e34a326f.js","br":27438,"deps":["pack-sim","pack-story"]},
   "scen-kaihen":{"src":"js/c/scen-kaihen.401c99f524.js","br":155895,"deps":["pack-sim","pack-rel","pack-solo"]},

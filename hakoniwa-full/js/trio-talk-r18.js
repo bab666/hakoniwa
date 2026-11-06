@@ -1,3 +1,4 @@
+/* @event-ok 三人の場面の文の選び方に、体だけの輪（恋人ではない三人）で恋人の語の文を外す決まりを足した（新しい出来事ではない。2026-11-06） */
 /* @event-ok 女性の攻め（男性器なし）×男性の受けの跨る・受け入れる文を、指と手（ペニバン）の文に直した（新しい出来事ではない。2026-11-05） */
 /* @event-ok 三人の夜の女性の攻め×男性の受けの跨る文・後ろが埋まった受けへの指の文を、形と場面の状態で選ぶ文に直した（新しい出来事ではない。2026-11-05） */
 /* @event-ok 名前の呼びかけを減らした（2026-11-01 担当NC） */
@@ -390,8 +391,11 @@
     if (r && r.int) return function () { return r.int(1000000) / 1000000; };
     return Math.random;
   }
+  /* 体だけの輪の三人の夜（o.body。恋人ではない三人。2026-11-06）：恋人の語の文（恋人・好きだ・愛して・ずっと一緒）を選ばない。残らなければ元の表から */
+  var LOVE_W = /恋人|大好き|好きだ|好きって|愛して|ずっと一緒/;
   function pick(S, arr) {
     if (!arr || !arr.length) return '';
+    if (X._noLove) { var nl = arr.filter(function (t) { return !LOVE_W.test(t); }); if (nl.length) arr = nl; }
     var r = rngOf(S), base = function (l) { return l[Math.floor(r() * l.length)]; };
     return E.fresh && S ? E.fresh(S, arr, base) : base(arr);
   }
@@ -1126,6 +1130,7 @@
   /* ---------- 呼ぶ側の文がない三人の場面（吹雪の館の媚薬の夜・出られない部屋の輪）：前置きの文 head を前戯に置いて組み立てる ---------- */
   X.quick = function (S, g, o) {
     o = o || {};
+    if (o.body && !X._noLove) { X._noLove = true; try { return X.quick(S, g, o); } finally { X._noLove = false; } }
     var sp = o.sp || X.shapeOf(S, g, o.plan, o);
     if (!sp) return '';
     var pl = o.plan || (P() && P().trioPlan ? P().trioPlan(g[0], g[1], g[2]) : null);

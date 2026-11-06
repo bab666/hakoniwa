@@ -555,6 +555,10 @@
     S.dword = S.love ? 'デート' : 'お出かけ';
     /* セフレ（体だけの関係の友人。2026-11-05 報告「セフレが気の合う友人どうしで始まり、目標が友人の一線を越える」）：関係ごとの文は fwb の文だけ、友人の語の文は出さない */
     S.fwb = rk === 'friend' && (HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, A, B) || [] : []).some(function (t) { return t && t.type === 'fwb'; }) && !/^(lover|spouse)$/.test(rk);
+    /* 性行為の相手に互いを指定し合っただけの二人（恋人・夫婦・家族でなく、恋愛相手の固定も無い。本体の HK.Quad.bodyOnly。R18版）：セフレと同じ扱いの「体だけ」の二人。
+       夜は恋人どうしと同じ重みで起き、関係は進めない（告白の結末にしない。2026-11-06 利用者の指示「二人だとしても起きて欲しい」） */
+    S.body = !HK.SAFE_ON && !/^(lover|spouse|fam|pfam)$/.test(rk) && !!(HK.Quad && HK.Quad.bodyOnly && HK.Quad.bodyOnly(ctx, A, B) && HK.bodyOK(A, B));
+    if (S.body) S.fwb = true;
     /* 一緒に暮らしているか：夫婦はいつも、家族は半々、恋人はときどき（同棲） */
     S.cohab = rk === 'spouse' || (/^(fam|pfam)$/.test(rk) && ctx.rng() < 0.5) || (rk === 'lover' && ctx.rng() < 0.25);
     /* 誘った人（最初のデートを言い出した人）：片想いは想う側、ほかは気質（行動力・外向き）から */
@@ -565,14 +569,17 @@
   /* 三人デートの三人目と二人の関係：poly 三人とも恋人どうし／tri 三人目が二人のどちらかに想いを寄せる（三角）／friend 友人・家族などが混ざる */
   function trioKind(ctx, A, B, C) {
     /* 恋人（関係）か、互いに恋愛相手を固定し合った二人（住人の設定。2026-11-05 同居・新婚部屋と同じ輪の判定） */
-    var lc = function (x, y) { return (/^(spouse|lover)$/.test(relKind(ctx, x, y)) || !!(HK.lockTo && HK.lockTo(x, y) && HK.lockTo(y, x))) && loveOk(ctx, x, y); };
-    if (lc(A, B) && lc(C, A) && lc(C, B)) return { k: 'poly', C: C, t: ctx.rng() < 0.5 ? A : B };
+    /* 性行為の相手に互いを指定し合っただけの組（HK.Quad.bodyOnly。R18版）も輪をつなぐ組に数え、体だけの三人の夜にする（body。2026-11-06 利用者の指示） */
+    var bo = function (x, y) { return !HK.SAFE_ON && !!(HK.Quad && HK.Quad.bodyOnly && HK.Quad.bodyOnly(ctx, x, y) && HK.bodyOK(x, y)); };
+    var lc = function (x, y) { return ((/^(spouse|lover)$/.test(relKind(ctx, x, y)) || !!(HK.lockTo && HK.lockTo(x, y) && HK.lockTo(y, x))) && loveOk(ctx, x, y)) || bo(x, y); };
+    var bdy = !HK.SAFE_ON && !!(HK.Quad && HK.Quad.bodyRing && HK.Quad.bodyRing(ctx, [A, B, C]));
+    if (lc(A, B) && lc(C, A) && lc(C, B)) return { k: 'poly', C: C, t: ctx.rng() < 0.5 ? A : B, body: bdy };
     /* 受けを中心にした輪（2026-11-05 利用者の報告「デートでも 3P を」）：恋人の組が二つ以上あり、残りの組が性的に対象にならない（攻めどうし・受けどうしなど）か
        輪の外側の組なら、三人の恋人として扱う。判定は本体の HK.Quad.ringOk（同居・新婚部屋と同じ。R18版）。全年齢では、残りの組が恋愛にならない組のとき */
     var L3 = [[A, B], [C, A], [C, B]], nL = L3.filter(function (q) { return lc(q[0], q[1]); }).length;
     if (nL >= 2 && (HK.Quad && HK.Quad.ringOk && !HK.SAFE_ON ? HK.Quad.ringOk(ctx, [A, B, C]) : L3.every(function (q) { return lc(q[0], q[1]) || !loveOk(ctx, q[0], q[1]); }))) {
       var hub = [A, B, C].filter(function (x) { return [A, B, C].every(function (y) { return y === x || lc(x, y); }); })[0];
-      return { k: 'poly', C: C, t: lc(C, A) && lc(C, B) ? (ctx.rng() < 0.5 ? A : B) : lc(C, A) ? A : B, hub: hub || null };
+      return { k: 'poly', C: C, t: lc(C, A) && lc(C, B) ? (ctx.rng() < 0.5 ? A : B) : lc(C, A) ? A : B, hub: hub || null, body: bdy };
     }
     var lt = function (x, y) { return /^(spouse|lover|almost|crush|ex|lovehate)$/.test(relKind(ctx, x, y)) && loveOk(ctx, x, y); };
     var tA = lt(C, A), tB = lt(C, B);
@@ -1421,6 +1428,7 @@
     S.endScore = Math.round(sc);
     S.attAvg = ((r.att || 0) + (q.att || 0)) / 2;
     S.affAvg = ((r.aff || 0) + (q.aff || 0)) / 2;
+    if (S.body) return (S.endK = 'mama');
     if (!S.love) return (S.endK = S.grp === 'first' && sc >= 85 ? 'yujin_new' : 'mama');
     /* 目標：プロポーズしたい人がいれば線を下げ、付き合いたい・想いを伝えたい人がいれば告白の線を下げ、距離を縮めすぎたくない人がいれば上げる */
     var gp = hasPG(S, 'propose'), gl = hasPG(S, 'tsukiau') || hasPG(S, 'kokuhaku') || hasPG(S, 'yarinaoshi'), gky = hasPG(S, 'kyori') || hasPG(S, 'tomodachi');
@@ -1937,6 +1945,6 @@
   HK.Date = { okText: okText, pickT: pickT, relPick: relPick, attPick: attPick, per: per, fill: fill, RK_NAME: RK_NAME, BR_NAME: BR_NAME, has: has, yen: yen, rcat: rcat, withPair: withPair, loveOk: loveOk };
   HK.SCENARIOS[ID] = scen;
   /* 開始前の注意：三人・四人の夜が起きない配役（本体の HK.Quad.groupWarn。同居生活・新婚部屋・デートの日々で同じ文言。R18版だけ。2026-11-05 利用者の報告「同居で 3P・4P をしない」） */
-  if (HK.SoloWarn && HK.SoloWarn.add) HK.SoloWarn.add(ID, function (input) { return HK.Quad && HK.Quad.groupWarn ? HK.Quad.groupWarn(input, { body: false }) : []; });
+  if (HK.SoloWarn && HK.SoloWarn.add) HK.SoloWarn.add(ID, function (input) { return HK.Quad && HK.Quad.groupWarn ? HK.Quad.groupWarn(input, {}) : []; });
   if (HK.Lewd && HK.Lewd.install) HK.Lewd.install(ID, { lenDef: 'mix', desc: HK.SAFE_BUILD ? '' : '夜の場面の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();

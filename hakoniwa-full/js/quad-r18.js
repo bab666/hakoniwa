@@ -85,6 +85,21 @@
   }
   /* 繋がってよい組：同じ場にいてよく、性的に対象で、体の関係のある関係 */
   function pairOk(ctx, a, b) { return hardOk(ctx, a, b) && wantOk(ctx, a, b) && (!HK.State || !HK.State.pairSex || HK.State.pairSex(a, b)) && bodyTie(ctx, a, b); }
+  /* 性行為の相手に互いを指定し合っただけの二人（恋人・夫婦などの関係も、互いの恋愛相手の固定も無い）。輪の中の体だけの組（2026-11-06 利用者の指示
+     「『性行為の相手』だけで組んだ三人・四人・二人でも、勢いの夜を」）。Q.bodyRing(ctx, g)：輪の中の性的に対象になる組に、体だけの組が一つでもあるか（きっかけ・事後を体だけの文に） */
+  function bodyOnly(ctx, a, b) {
+    if (!a || !b || a === b || loverTie(ctx, a, b) || ctx.pair(a, b).couple) return false;
+    if (HK.lockTo && HK.lockTo(a, b) && HK.lockTo(b, a)) return false;
+    var ts = HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, a, b) || [] : [];
+    if (ts.some(function (t) { return BODY.test(t.type) && t.cold !== 'separated' && t.cold !== 'divorced'; })) return false;
+    return lockBond(a, b);
+  }
+  Q.bodyOnly = bodyOnly;
+  Q.bodyRing = function (ctx, g) {
+    g = chars(ctx, g);
+    for (var i = 0; i < g.length; i++) for (var j = i + 1; j < g.length; j++) if (wantOk(ctx, g[i], g[j]) && bodyOnly(ctx, g[i], g[j])) return true;
+    return false;
+  };
   Q.hardOk = hardOk; Q.wantOk = wantOk; Q.bodyTie = bodyTie; Q.pairOk = pairOk; Q.lockBond = lockBond; Q.loverTie = loverTie;
   /* 輪が完成しているか（g は何人でも）：全組が hardOk（性的に対象にならない組は緊張を見ない）、性的に対象になる組はすべて体の関係、体の関係の組が人数−2 以上 */
   /* 三人のときは、受けを中心にした輪（真ん中の人が二人と体の関係で、その二組が性的に対象）なら、外側の組は体の関係でなくてよい
@@ -129,7 +144,7 @@
     var T3 = [];
     for (var a = 0; a < n; a++) for (var b = a + 1; b < n; b++) for (var c = b + 1; c < n; c++) T3.push(judge([C[a], C[b], C[c]]));
     var out = [], ok3 = T3.some(function (x) { return x.ok; });
-    var RULE = '三人・四人の夜は、性的に対象になる組（恋愛対象と受け攻めが合う組）がすべて、恋人（関係の設定）か、住人の設定の「恋愛相手を固定」' + (opt.body !== false ? '・「性行為の相手」' : '') + 'で互いに指定し合った相手のときに起きます（攻めどうし・受けどうしは問いません）';
+    var RULE = '三人・四人の夜は、性的に対象になる組（恋愛対象と受け攻めが合う組）がすべて、恋人（関係の設定）か、住人の設定の「恋愛相手を固定」' + (opt.body !== false ? '・「性行為の相手」' : '') + 'で互いに指定し合った相手のときに起きます（攻めどうし・受けどうしは問いません' + (opt.body !== false ? '。「性行為の相手」だけの組は、関係はそのままの体だけの夜になります' : '') + '）';
     var tail = opt.grow ? '。遊びの途中で恋人になれば起きることがあります' : '';
     if (!ok3) {
       var best = T3.filter(function (x) { return x.W.length >= 2; }).sort(function (x, y) { return y.nb - x.nb; })[0];
