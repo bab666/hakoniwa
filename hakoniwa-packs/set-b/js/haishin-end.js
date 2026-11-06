@@ -48,6 +48,9 @@
   function married(ctx, S) { var K = CM(); if (K && K.married) return K.married(ctx, S); return S && (S.married || S.rk === 'spouse'); }
   function beh(S, k) { return num(S && S.beh && S.beh[k]); }
   function spread(S) { return !!(S && S.leak && S.leakFate === 'spread'); }
+  /* 切り忘れを誰も保存していなかった回（T.LEAKNEWS.none）：そのあとの評判・投稿・SNS に「切り抜き」「アーカイブ」の文を続けない（切り抜きが広まるのは spread の回だけ。C.SNS.spread も同じ） */
+  function noClip(S) { return !!(S && S.leak && S.leakFate === 'none'); }
+  function clipOk(S, f) { var nc = noClip(S); return function (x) { var t = typeof x === 'string' ? x : x && x.t; return (!f || f(x)) && !(nc && /切り抜き|アーカイブ/.test(t || '')); }; }
   /* 文を埋める（{a}{b} は本体の ctx.t、台詞の目印は HK.PairKit.fill。{ch}・{peak} などの数は ex で） */
   function fill(ctx, t, a, b, ex) {
     if (!t) return '';
@@ -138,7 +141,8 @@
       case 'safe': return num(S.stage) < 5 && !S.sexDone && !S.leak;
       case 'boast': return !solo(S) && num(S.stage) >= 3 && S.ended !== 'stall';
       case 'kind': return S.ended !== 'stall' && beh(S, 'jeal') < 2;
-      case 'last': return S.ended === 'time' || S.ended === 'leak';
+      /* 最後まで＝予定の時間どおりに閉じた回だけ（切ってから・切り忘れで早く終わった回は未達） */
+      case 'last': return S.ended === 'time';
       case 'cook': return S.kind === 'cook' && !S.cookFail;
       case 'clear': return S.kind === 'game' && !!(S.gameWin || S.gameRes === 'win');
       case 'awake': return S.kind === 'neochi' && S.sleepFirst !== c && !(S.sleepFirst && S.sleepFirst.i === c.i);
@@ -250,7 +254,7 @@
     if (spread(S) && C0.spread) src.unshift([C0.spread, 2]);
     if (S.leak && S.leakFate === 'none' && k !== 'maboroshi' && C0.maboroshi) src.unshift([C0.maboroshi, 1]);
     src.forEach(function (s) {
-      var pool = s[0].filter(function (it) { var t = typeof it === 'string' ? it : it && it.t; return t && !U[t] && (!K || !K.okFor || K.okFor(ctx, it, A)); });
+      var nc = noClip(S), pool = s[0].filter(function (it) { var t = typeof it === 'string' ? it : it && it.t; return t && !U[t] && !(nc && /切り抜き|アーカイブ/.test(t)) && (!K || !K.okFor || K.okFor(ctx, it, A)); });
       for (var i = 0; i < s[1] && pool.length && out.length < n; i++) {
         var it = pool.splice(Math.floor(rnd(ctx) * pool.length), 1)[0], t = typeof it === 'string' ? it : it.t;
         U[t] = (U[t] || 0) + 1;
@@ -277,7 +281,7 @@
     /* @event scen=set-b-haishin id=hs_end_maboroshi cat=phase tie=- label=後日談：途中で終わった幻の配信 */
     var t1 = '';
     if (S.leak && (S.leakFate === 'spread' || S.leakFate === 'none')) t1 += fill(ctx, pickT(ctx, (T.LEAKNEWS || {})[S.leakFate]), A, B, ex);
-    t1 += fill(ctx, pickT(ctx, endList(ctx, S, k), formOk(S)), A, B, ex);
+    t1 += fill(ctx, pickT(ctx, endList(ctx, S, k), clipOk(S, formOk(S))), A, B, ex);
     if (S.ended === 'cut') t1 += fill(ctx, pickT(ctx, T.EARLY), A, B, ex);
     t1 += fill(ctx, pickT(ctx, (T.SUBS || {})[k]), A, B, ex);
     if (!t1) t1 = fill(ctx, '配信から数日が経った。{a}と{b}は、あの夜のことを思い出しては、ときどき笑い合った。', A, B, ex);
@@ -288,7 +292,7 @@
     if (sl.length) { var e2 = ctx.say({ kind: 'phase', cat: 'phase', actors: [], text: 'SNSには、あの配信の話がいくつも流れていた。\n' + sl.join('\n'), why: '配信の部屋：後日談（SNS の反応）', mag: 0, lewd: false }); if (e2) e2.tag = '後日談'; }
     /* 3. 二人自身の投稿・二人の一言・目標の一文（物語の文で 1〜2 文。目標をかぎかっこで並べない） */
     var sp = !solo(S) && B && rnd(ctx) < 0.5 ? B : A, ot = sp === A ? B : A;
-    var t3 = fill(ctx, pickT(ctx, (T.POST || {})[k]), A, B, ex);
+    var t3 = fill(ctx, pickT(ctx, (T.POST || {})[k], clipOk(S)), A, B, ex);
     t3 += fill(ctx, pickT(ctx, ((T.LAST || {})[k] || {})[per(sp)] || ((T.LAST || {})[k] || {}).gentle), sp, ot, ex);
     t3 += goalStory(ctx, S);
     if (t3) { var e3 = ctx.say({ kind: 'phase', cat: 'phase', actors: B ? [A, B] : [A], text: t3, why: '配信の部屋：後日談（二人の一言）', mag: 0 }); if (e3) e3.tag = '後日談'; }
