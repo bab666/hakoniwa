@@ -962,6 +962,8 @@
     unit: '時間', perUnit: 2, preRel: 0, lethal: false, minCast: 2, maxCast: 2,
     catBias: { romance: 1, bond: 1.2, help: 1, conflict: 0.2, combat: 0, betray: 0, kill: 0 },
     decay: 0.999, actRate: 0.02,
+    /* 帰ってきた場面でない夜（配信の夜）なので、本体の夜の攻めの台詞から帰宅の前提の一言（「ただいまのキス」）を外す（R18版の ero-top-lines-r18.js が読む口） */
+    eroNoHome: true,
     derived: ['warmth', 'honesty', 'jealous', 'impulse'],
     env: [
       { id: 'kind', label: '配信の種類', type: 'select', def: 'zatsu', options: [{ v: 'zatsu', label: '雑談' }, { v: 'cook', label: '料理' }, { v: 'game', label: 'ゲーム' }, { v: 'neochi', label: '寝落ち' }], desc: '配信の種類で始まる時刻が変わります（雑談 21 時・料理 19 時・ゲーム 22 時・寝落ち 24 時）。区切りの様子と、種類ならではの出来事が変わります' },
