@@ -683,8 +683,8 @@
     /* 候補の出来事：[欄, 値, 出来事の id, 文の配列, {a}, {b}] */
     var ev = [];
     c.forEach(function (x) { var L = (SET[x[0]] || {})[x[1]]; if (!Array.isArray(L)) return; L.forEach(function (e, k) { var id = 'hs_set_' + x[0] + '_' + x[1] + '_' + (k + 1); if (!S.setUsed[id] && Array.isArray(e)) ev.push([x[0], x[1], id, e, x[2], x[3]]); }); });
-    /* R18 の性欲の出来事（R.LIB[値]）・画面の外の人（T.OFF）・料理の失敗（T.COOKFAIL）・目標（T.GOALACT）は文の配列のまま */
-    if (S.r18 && !only) { var lb2 = HK.Pos && HK.Pos.libOf ? HK.Pos.libOf(a) : ''; if (lb2) ev.push(['lib', 'r18', '', dig(RX().LIB, lb2 === 'high' ? 'high' : 'low'), a, b]); }
+    /* R18 の性欲の出来事（R.LIB[none|low|high][couple|solo]）・画面の外の人（T.OFF）・料理の失敗（T.COOKFAIL）・目標（T.GOALACT）は文の配列のまま */
+    if (S.r18 && !only) { var lb2 = HK.Pos && HK.Pos.libOf ? HK.Pos.libOf(a) : ''; if (lb2) ev.push(['lib', 'r18', '', dig(RX().LIB, lb2, S.form), a, b]); }
     if (S.form === 'solo' && !only) ev.push(['role', 'off', '', flat(T0.OFF), on0, off0]);
     if (S.kind === 'cook' && !only) {
       var nc = S.on.filter(function (x) { return S.cooks.indexOf(x) < 0; })[0];
