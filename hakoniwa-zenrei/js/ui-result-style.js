@@ -281,6 +281,31 @@
     '#view-saves .saveitem.noresult{border-style:dashed;box-shadow:none}' +
     '#view-saves .savelist+.hint,#view-saves .empty+.hint{margin-top:14px}' +
     '@media (max-width:600px){#view-saves .saveitem{grid-template-columns:minmax(0,1fr)}#view-saves .saveact{flex-direction:row;flex-wrap:wrap;min-width:0}}' +
+    /* 記録の欄を並べる（view.js の body・.rvw の data-ch="side"。2026-11-06）：区切りの中を 本編 3：コメント欄 2 の格子にする。区切りの見出し（.when）は格子の上で左右をまたぎ、
+       同じ区切りの本編とコメントが横に並ぶ（行の高さは長いほうに揃う）。コメント欄は細い列・小さめの字・名前（.cmh）を薄く・詰めた行間。
+       スマホ幅（760px 以下）は 1 列にして本編の下に畳めるコメント欄（.chcbtn。既定は開く・経過の見出しの右の .rvcmall で全部を畳む／開く）。PC は畳まない。
+       記録を画像で保存（export-out.js）の写しは .rvw の外なので縦に並ぶ（ボタンは写さない） */
+    '.rvw .tl .chsp{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:0 16px;min-width:0}.rvw .tl .chm{min-width:0}' +
+    '.rvw .tl .chc{min-width:0;border-left:1px solid var(--rl);padding:0 0 4px 12px}' +
+    '.rvw .tl .chch{display:flex;align-items:baseline;gap:6px;padding:6px 0 2px;font-size:11.5px;font-weight:700;color:var(--rm);line-height:1.4}.rvw .tl .chch small{margin-left:5px;font-size:10.5px;font-weight:400}' +
+    '.rvw .tl .chcbtn{display:none}' +
+    '.rvw[data-tlv] .tl .chc ol{display:block;border-left:0;padding:0;gap:0}.rvw[data-tlv] .tl .chc ol>.ev.chat{padding:1px 0 3px;border-top:0;font-size:12.5px;line-height:1.5}.rvw[data-tlv] .tl .chc ol>.ev.chat::before{display:none}' +
+    '.rvw[data-tlv][data-fs="s"] .tl .chc ol>.ev.chat{font-size:12px}.rvw[data-tlv][data-fs="l"] .tl .chc ol>.ev.chat{font-size:14px}' +
+    '.rvw .tl .chc li.ev.chat .evb{font-size:inherit;line-height:inherit}.rvw .tl .chc li.ev.chat .evh{display:none}' +
+    '.rvw .tl li.ev.chat .cmr{display:block;margin:0;padding:1px 0}.rvw .tl li.ev.chat .cmh{color:var(--rm);font-size:.92em;margin-right:2px}.rvw .tl li.ev.chat .cmy{color:var(--hot);margin-left:2px}' +
+    '.rvw .tl .chnone{margin:6px 0;font-size:12px;color:var(--rm)}' +
+    '.rvw .tl .rvdb>.chsp+.rvsubh{border-top:1px solid var(--rl);margin-top:2px}' +
+    '.rvw .rvcmall{display:none}' +
+    '@media (max-width:760px){' +
+      '.rvw .tl .chsp{grid-template-columns:minmax(0,1fr)}.rvw .tl .chc0,.rvw .tl .chnone{display:none}' +
+      '.rvw .tl .chc{border-left:0;border-top:1px dashed var(--rl);padding:0 0 4px;margin-top:2px}' +
+      '.rvw .tl .chcl{display:none}.rvw .tl .chch{padding:0}' +
+      '.rvw .tl .chcbtn{appearance:none;-webkit-appearance:none;background:none;border:0;font:inherit;font-size:12px;font-weight:700;color:var(--rm);cursor:pointer;display:flex;align-items:center;gap:6px;width:100%;min-height:36px;padding:2px 0;text-align:left}' +
+      '.rvw .tl .chcbtn small{font-weight:400;font-size:11px}.rvw .tl .chcbtn::after{content:"";margin-left:auto;width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(2px) rotate(-135deg)}' +
+      '.rvw .tl .chc.cmfold .chcbtn::after{transform:translateY(-2px) rotate(45deg)}.rvw .tl .chc.cmfold>ol{display:none}' +
+      '.rvw .rvcmall:not([hidden]){display:inline-flex;min-height:34px}' +
+    '}' +
+    '.rvw .tl .stepblk.rvfold>.chsp{display:none}' +
     /* 印刷（PDF で保存）：切替を全部開いて縦に */
     '@media print{' +
       '.rvw .rvpane[hidden]{display:block!important}.rvw .rvpane+.rvpane{margin-top:18px}' +
