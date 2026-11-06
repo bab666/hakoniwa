@@ -47,6 +47,8 @@
   function CM() { return HK.HaishinCm || {}; }
   function RX() { return HK.HaishinR18Text || {}; }
   function st(ctx) { return ctx && ctx.hs; }
+  /* コメント欄の組み立て（haishin-cm.js の HK.HaishinCmKit。このファイルより後に読まれる） */
+  function CK() { return HK.HaishinCmKit || null; }
   var H = HK.Haishin = HK.Haishin || {};
 
   /* ---------- 決まった値（設計 1・2・6 章） ---------- */
@@ -281,7 +283,10 @@
     ]
   };
   var GOAL_GRP = { on: '配信する側の目標', off: '画面の外の側の目標', b: 'どちらでも' };
-  function goalOpts(kind) { return GOAL_OPT[kind].map(function (o) { return { id: o[1], label: o[2], group: GOAL_GRP[o[0]] }; }); }
+  function goalOpts(kind) {
+    var T0 = TX();
+    if (T0.GOAL_OPT && T0.GOAL_OPT[kind]) return T0.GOAL_OPT[kind].map(function (o) { return { id: o[1], label: o[2], group: (T0.GOAL_GRP || GOAL_GRP)[o[0]] || '' }; });
+    return GOAL_OPT[kind].map(function (o) { return { id: o[1], label: o[2], group: GOAL_GRP[o[0]] }; }); }
   function goalDef(kind, k) { return GOAL_OPT[kind].filter(function (o) { return o[1] === k; })[0] || null; }
   /* 設定に合う種か（料理・ゲーム・寝落ち・カップル・ソロの画面の外） */
   function goalFits(S, k, side) {
@@ -334,7 +339,7 @@
     var C = ctx.chars, A = C[0], B = C[1] || C[0], env = ctx.env;
     var S = ctx.hs = { A: A, B: B, used: {}, cmUsed: {}, nMain: 0, ev: [], lastEv: [], series: [], setHits: {}, beh: { serve: 0, shy: 0, jeal: 0, sunao: 0, odd: 0, jealBy: null }, kiss: 0,
       stage: 1, ansSt: {}, stall: 0, stallTot: 0, mid: 'none', leak: null, leakFate: null, sexDone: 0, again: 0, ended: null, endAt: 999, asleep: 0, sleepAt: -1, sleeper: null,
-      scSum: 0, scMax: 0, scNow: [], setUsed: {}, stepSc: 0, trend: 0, s: 0, gameRes: { win: 0, lose: 0 }, heat: 0, pt: 0, zones: {}, goal: {}, regulars: [], capped: false, bigAns: false, quit: null, hits: 0 };
+      scSum: 0, scMax: 0, scNow: [], setUsed: {}, stepSc: 0, trend: 0, s: 0, gameRes: { win: 0, lose: 0 }, heat: 0, pt: 0, zones: {}, regulars: [], capped: false, bigAns: false, quit: null, hits: 0 };
     S.rk = A !== B ? relKind(ctx, A, B) : '';
     /* 恋人・夫婦で、二人が恋愛してよい組（恋愛対象など）のときだけ配信する。ほかは始めの区切りで案内して終える（画面からは scen.check が止める） */
     S.stop = !S.rk || A === B || !(HK.loveOK ? HK.loveOK(A, B) : true) && !topTop(A, B);
@@ -394,8 +399,12 @@
       var lv = function (c) { return (c.life && /morning|asa/.test(String(c.life.time || '')) ? -50 : 0) + (S.heat || 0); };
       S.sleeper = S.on.length > 1 && lv(S.on[1]) < lv(S.on[0]) ? S.on[1] : S.on[0];
     }
-    /* 目標（短期・長期）。立場：配信する人 'on'／画面の外 'off' */
-    [A, B].forEach(function (c) {
+    /* P2・P3 が読む欄 */
+    S.married = S.rk === 'spouse'; S.hour = Math.floor((S.t0 % 1440) / 60); S.sleepFirst = S.sleeper || null; S.offCame = false; S.gameWin = false;
+    /* 目標（短期・長期）は haishin-end.js の HK.HaishinEnd.init（S.goal・S.rel0E・c.goal）。無い本体の組み合わせでは下の代わり。立場：配信する人 'on'／画面の外 'off' */
+    if (!S.stop && HK.HaishinEnd && HK.HaishinEnd.init) HK.HaishinEnd.init(ctx);
+    if (!S.goal) S.goal = {};
+    if (!(HK.HaishinEnd && HK.HaishinEnd.init)) [A, B].forEach(function (c) {
       var side = S.on.indexOf(c) >= 0 ? 'on' : 'off';
       var gs = goalOf(ctx, c, side, 's'), gl = goalOf(ctx, c, side, 'l');
       S.goal[c.i] = { s: gs, l: gl, side: side };
@@ -405,7 +414,7 @@
     ctx.place = S.home ? '二人の家の配信部屋' : hn(S, S.on[0]) + 'の配信部屋';
     S.warn = fo.warn;
     if (!S.stop) {
-      if (H.cm && H.cm.init) H.cm.init(ctx, S);
+      if (CK() && CK().regulars && !(S.regulars && S.regulars.length)) { try { CK().regulars(ctx); } catch (e) { /* 常連が決まらなくても動く */ } }
       if (S.r18 && H.r18 && H.r18.init) H.r18.init(ctx, S);
     }
   }
@@ -521,7 +530,13 @@
     return q.pick || S.on[0];
   }
   function askOf(ctx, S, stg) {
-    if (H.cm && H.cm.ask) { var r = H.cm.ask(ctx, S, { stage: stg }); if (r && r.t) return r; }
+    var K2 = CK();
+    if (K2 && K2.main) {
+      if (K2.has && !K2.has(ctx, stg)) return null;
+      var y0 = S.scNow.length && ctx.rng() < 0.5 ? S.scNow.shift() : 0, r = K2.main(ctx, { stage: stg, yen: y0 });
+      if (!r || !r.text) { if (y0) S.scNow.unshift(y0); return null; }
+      return { t: r.text, head: r.text, k: r.ak || r.k, k0: r.k, who: r.tgt || S.on[0], other: r.other, to: r.sub, yen: r.yen || 0, handle: r.handle };
+    }
     var pool = reqPool(ctx, S, stg).filter(function (q) { return reqOk(ctx, S, q, stg); });
     var fresh = pool.filter(function (q) { return !S.cmUsed[q.t]; });
     var q = pickOf(ctx, fresh.length ? fresh : pool);
@@ -536,6 +551,7 @@
   }
   /* 導入の地の文＋「＠コメント」（話し手なし・口調を変えない） */
   function askText(ctx, S, q, a, b) {
+    if (q.head) return q.head;
     var I = CM().INTRO, intro = '';
     var pool = flat(I).filter(function (x) { var t = typeof x === 'string' ? x : x && x.t; return t && (q.yen ? /\{yen\}/.test(t) : !/\{yen\}/.test(t)); });
     intro = pickT(ctx, pool, a, b, true);
@@ -604,7 +620,7 @@
   /* 渋る（停滞）：次の段の要求を出して、渋りの文（T.STALL[態度]）で応える */
   function stall(ctx, S, who) {
     var stg = Math.min(6, S.stage + 1), q = askOf(ctx, S, stg) || askOf(ctx, S, S.stage);
-    if (q) q.who = who;
+    if (q && q.head) who = q.who; else if (q) q.who = who;
     var b = S.form === 'couple' ? other(S, who) : S.off, T0 = TX();
     var t = pickT(ctx, dig(T0.STALL, per(who)), who, b) || pickT(ctx, flat(T0.STALL), who, b) || fbT(ctx, FB.stall, who, b);
     S.stall++; S.stallTot++; S.stallCool = (S.s || 0) + 2;
@@ -698,7 +714,7 @@
   /* 性格の行動（30%）：嫉妬（直前の区切りにガチ恋のコメント・太客の名指し）・素に戻る（発情度 60 以上かキスの直後）・らしくない */
   function behave(ctx, S) {
     var T0 = TX(), BEH = T0.BEH || {}, last = S.lastEv || [];
-    var gari = last.indexOf('gari') >= 0 || last.indexOf('whale') >= 0 || (!(H.cm && H.cm.post) && Object.keys(S.charm).some(function (k) { return S.charm[k] >= 4; }) && ctx.rng() < 0.3);
+    var gari = last.indexOf('gari') >= 0 || last.indexOf('whale') >= 0 || (!CK() && Object.keys(S.charm).some(function (k) { return S.charm[k] >= 4; }) && ctx.rng() < 0.3);
     var opts = [];
     if (gari) {
       var tgt = S.on.filter(function (c) { return S.charm[c.i] >= 4; })[0] || S.on[0], jb = S.form === 'couple' ? other(S, tgt) : S.off;
@@ -753,7 +769,14 @@
     return x.t.replace(/\{h\}/g, hn(S, who)).replace(/\{h2\}/g, hn(S, other(S, who))).replace(/\{ch\}/g, chName(S)).split('{相方}').join(aikata(S, other(S, who)));
   }
   function cmPost(ctx, S, o) {
-    if (H.cm && H.cm.post) return H.cm.post(ctx, S, o);
+    var K2 = CK();
+    if (K2 && K2.post) {
+      var sc = S.scNow.map(function (y) { return { yen: y, whale: y >= 10000 }; }); S.scNow = [];
+      var r = K2.post(ctx, { stage: S.stage, sleep: !!o.sleep, end: !!o.end, leak: S.leakPh || null, stall: !!o.stall, sc: sc, react: S.lastEv, hour: S.hour });
+      if (r && r.garikoi) S.ev.push('gari');
+      if (r && r.wed) S.ev.push('wed');
+      return r && r.e;
+    }
     var G = CM().GEN || {}, n = o.n, out = [], used = {};
     var norm = function (l) { return flat(l).map(function (x) { return typeof x === 'string' ? { t: x } : x; }).filter(function (x) { return x && x.t && (!x.need || needOk(S, S.on[0], x.need)) && (S.stage <= 3 || !/\{(?:男性器|女性器|ナカ|胸|乳首|陰核|精液)\}/.test(x.t) || S.r18); }); };
     var pool = norm(G.all).concat(norm((G[S.form] || {})[Math.min(S.stage, S.r18 ? 6 : 3)]), norm((G.kind || {})[S.kind]), norm((G.size || {})[S.size]), o.sleep ? norm(G.sleep) : [], S.tm === 'late' ? norm(G.late) : [], S.tm === 'morning' ? norm(G.morning) : []);
@@ -781,12 +804,14 @@
       return;
     }
     var last = s === S.N - 1, m = clk(S, s);
-    S.tm = tmOf(m); S.ev = []; S.bigAns = false; S.nMain = 0; S.s = s; S.stepSc = 0; S.trend = 0;
+    S.tm = tmOf(m); S.ev = []; S.bigAns = false; S.nMain = 0; S.s = s; S.stepSc = 0; S.trend = 0; S.hour = Math.floor((m % 1440) / 60);
     /* 1. スパチャ（この区切りの分を先に決め、メインの質問とコメントに付ける） */
     var sleeping = S.kind === 'neochi' && S.asleep > 0 && !S.woke;
     /* 本体の共通の出来事：寝ている区切り・最後の区切りでは混ぜない */
     scen.actRate = sleeping || last || S.ended ? 1e-9 : 0.02;
-    var scs = scStep(ctx, S, sleeping), stepSum = scs.reduce(function (x, y) { return x + y; }, 0);
+    var K3 = CK(), scs = K3 && K3.scBatch ? (K3.scBatch(ctx) || []).map(function (x) { return Math.min(50000, +(x && x.yen != null ? x.yen : x) || 0); }).filter(Boolean) : scStep(ctx, S, sleeping);
+    if (sleeping && K3 && K3.scBatch) scs = scs.slice(0, Math.floor(scs.length / 2));
+    var stepSum = scs.reduce(function (x, y) { return x + y; }, 0);
     S.scNow = scs.slice(); S.scSum += stepSum; scs.forEach(function (y) { S.scMax = Math.max(S.scMax, y); });
     if (scs.length) S.ev.push('sc');
     if (scs.some(function (y) { return y >= 10000; })) S.ev.push('whale');
@@ -839,15 +864,18 @@
     o.trend = S.trend; stepSum += S.stepSc;
     vStep(ctx, S, o); heatStep(S, o);
     /* 7. コメントの一件 */
-    cmPost(ctx, S, { n: cmCount(S, false), sleep: false, react: S.lastEv, leak: S.leak, stall: S.ev.indexOf('stall') >= 0, beg: S.capped && S.pt >= LINE[Math.min(5, S.capSt)] });
+    cmPost(ctx, S, { n: cmCount(S, false), sleep: false, end: last || (S.ended === 'cut' && s >= S.endAt), react: S.lastEv, leak: S.leak, stall: S.ev.indexOf('stall') >= 0, beg: S.capped && S.pt >= LINE[Math.min(5, S.capSt)] });
     endStep(ctx, S, s, last, stepSum);
   }
   /* 8〜9. 推移の点と終わりの判定 */
   function endStep(ctx, S, s, last, stepSum) {
     S.series.push({ t: clockW(clk(S, s)), v: S.v, sc: stepSum, sum: S.scSum, st: S.stage });
     S.lastEv = S.ev.slice();
+    S.gameWin = S.gameRes.win > S.gameRes.lose;
     if (S.ended && S.endS == null) S.endS = s;
     if (last && !S.ended) { S.ended = 'time'; S.endAt = s; }
+    /* 最後の区切りのあと：後日談（haishin-end.js。結末のあとに出来事を続けない） */
+    if (S.ended && s >= S.endAt && HK.HaishinEnd && HK.HaishinEnd.epilogue) HK.HaishinEnd.epilogue(ctx);
   }
   function endNow(ctx, s) { var S = st(ctx); return !!(S && S.ended && s >= S.endAt); }
 
@@ -871,7 +899,7 @@
     if (!S) return;
     if (S.stop) { ctx.flags.haishin = { stop: true, a: S.A.i, b: S.B.i }; ctx.flags.outcome = '配信は始まらなかった'; return; }
     var F = ctx.flags.haishin = flagsOf(S);
-    if (H.end && H.end.finish) { H.end.finish(ctx, S); return; }
+    if (HK.HaishinEnd && HK.HaishinEnd.finish) { HK.HaishinEnd.finish(ctx); return; }
     var ek = fbEnd(S); F.endK = ek[0]; F.end = ek[1];
     var a = S.on[0], b = S.form === 'couple' ? S.on[1] : S.off;
     rec(ctx, [a, b], fill(ctx, fbT(ctx, FB.end, a, b), a, b), '後日談（' + ek[1] + '）', 'bond', { tag: '後日談' });

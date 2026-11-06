@@ -182,7 +182,14 @@
         ]
       },
       "files": [
+        "js/haishin-cm-text-a.js",
+        "js/haishin-cm-text-b.js",
+        "js/haishin-r18-cm-text.js",
+        "js/haishin-text-c.js",
+        "js/haishin-end-text.js",
         "js/haishin.js",
+        "js/haishin-cm.js",
+        "js/haishin-end.js",
         "js/solo-warn-set-b-haishin.js"
       ]
     }
