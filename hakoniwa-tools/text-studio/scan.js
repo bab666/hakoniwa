@@ -41,7 +41,8 @@ function readOrder(dir) {
   const p = path.join(dir, 'js/_order.txt');
   if (!fs.existsSync(p)) throw new Error('js/_order.txt がありません: ' + dir);
   return fs.readFileSync(p, 'utf8').split('\n').map(l => l.replace(/#.*$/, '').trim()).filter(l => l && !/^@/.test(l))
-    .map(l => { const m = l.match(/^(late\s+)?(js\/\S+\.js)(?:\s+@\S+)*$/); return m ? { late: !!m[1], f: m[2] } : null; }).filter(Boolean);
+    /* 「tone js/…」の行（口調の書き下ろし。build が口調のかたまりに書き出す）も読む。読む順は late の後ろ（build の実行順と同じ）なので late として扱う（2026-11-06。前は行の形が合わず、書き下ろしの表 tone-fix*.js が一覧にも試し読みにも入っていなかった） */
+    .map(l => { const m = l.match(/^((?:late|tone)\s+)?(js\/\S+\.js)(?:\s+@\S+)*$/); return m ? { late: !!m[1], f: m[2] } : null; }).filter(Boolean);
 }
 
 /* ---------- 一つのファイルを読む ---------- */
