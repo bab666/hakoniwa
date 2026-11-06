@@ -446,6 +446,12 @@
   };
 
   function scenOf(id) { return (HK.SCENARIOS && HK.SCENARIOS[id]) || (HK.Load && HK.Load.info ? HK.Load.info(id) : null); }
+  /* 追加パックの部屋の TIPS は部屋のかたまりの中（HK.TIPS_SCEN に足す）。箱庭に印 tips: true（目録にも入る）があれば、まだ読んでいなくてもボタンを出し、押したら読んでから開く（2026-11-07） */
+  function lazyTip(id) { var sc = scenOf(id); return !HK.TIPS_SCEN[id] && !!(sc && sc.tips); }
+  function later(key, from) {
+    var id = key.indexOf('scen:') === 0 ? key.slice(5) : '';
+    if (id && lazyTip(id) && HK.Load && HK.Load.ensure) HK.Load.ensure(id).then(function () { if (HK.TIPS_SCEN[id]) open(key, from); }, function () { });
+  }
   function get(key) {
     if (key.indexOf('scen:') === 0) {
       /* 箱庭の名前は、まだ本体を読んでいない箱庭なら目録から（load.js の HK.Load.info。TIPS の中身は late にある） */
@@ -490,7 +496,7 @@
   function onKey(e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } }
   function open(key, from) {
     var T = get(key);
-    if (!T) return;
+    if (!T) { later(key, from); return; }
     close();
     opener = from || document.activeElement;
     ov = document.createElement('div');
@@ -519,7 +525,7 @@
       return '<button type="button" class="tipbtn" data-tip="' + esc(key) + '" aria-label="' + esc(label || T.title || 'TIPS') + 'のヒント" title="ヒント">？</button>';
     },
     scenBtn: function (id) {
-      if (!HK.TIPS_SCEN[id]) return '';
+      if (!HK.TIPS_SCEN[id] && !lazyTip(id)) return '';
       var sc = scenOf(id);
       return '<button type="button" class="tipscen" data-tip="scen:' + esc(id) + '" aria-label="' + esc(sc ? sc.name : id) + 'のTIPS"><span class="q" aria-hidden="true">？</span>この箱庭のTIPS</button>';
     }

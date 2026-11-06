@@ -124,9 +124,9 @@ const CHECKS = [
   { id: 'catalog', name: '出来事の一覧（catalog-check）', stage: 'post', tags: ['js', 'event'], after: ['build', 'pack-catalog'], est: 6, tools: [BD + 'catalog-check.js', BD + 'event-catalog.js'], why: 'build のあと。一覧が古い・表示名の無い出来事・印の無い新しい場面' },
   /* 重い点検（ページを開く。並べて回す） */
   { id: 'audit-all', name: '点検の一式（audit-all）', stage: 'heavy', tags: ['sim', 'ui', 'zen', 'moan', 'thick', 'trio', 'force', 'sexgate', 'feud', 'group', 'death', 'name', 'rel', 'pair'], after: ['build'], est: 240, weight: 2, tools: [TC + 'audit-all.js', TC + 'pair-only-audit.js'],
-    why: '既定の一式（orient・pos×3・state・loveflag・seg・qa・call・misc）。印で追加の配役パス（--extra）を足す。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN）' },
+    why: '既定の一式（orient・pos×3・state・loveflag・seg・qa・call・misc・cons（場面の辻褄。2026-11-07））。印で追加の配役パス（--extra）を足す。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN）' },
   { id: 'tone-feel', name: '口調の違和感（tone-feel）', stage: 'heavy', tags: ['serifu', 'tone'], after: ['build'], est: 155, weight: 1, tools: [TC + 'tone-feel.js'], why: '変えた箱庭だけ（--scen=）。本体の共通の文なら既定の 3 箱庭' },
-  { id: 'moan-tone', name: '喘ぎの口調（moan-tone-audit）', stage: 'heavy', tags: ['moan'], after: ['build'], est: 420, weight: 1, tools: [TC + 'moan-tone-audit.js', TC + 'moan-audit.js'], why: '箱庭のかたまりだけ変えたときは --scen=' },
+  { id: 'moan-tone', name: '喘ぎの口調（moan-tone-audit）', stage: 'heavy', tags: ['moan'], after: ['build'], est: 420, weight: 1, tools: [TC + 'moan-tone-audit.js', TC + 'moan-audit.js'], why: '49 口調ごとの付いてはいけない語尾の表（ぬ・じゃ・のう・女言葉の「わ」・っす・ぜ・乱暴語・敬語化の崩れ。2026-11-07）も当てる。箱庭のかたまりだけ変えたときは --scen=' },
   { id: 'sex-flow', name: '長い場面の流れ（sex-flow-audit）', stage: 'heavy', tags: ['thick'], after: ['build'], est: 10, weight: 1, tools: [TC + 'sex-flow-audit.js'], why: 'audit-all を全箱庭で回すときは --extra=sexflow に入れる（同じ関数。ページを開き直さない）' },
   { id: 'trio-shape', name: '三人の場面の形（trio-shape-audit）', stage: 'heavy', tags: ['trio'], after: ['build'], est: 10, weight: 1, tools: [TC + 'trio-shape-audit.js'], why: 'audit-all を全箱庭で回すときは --extra=trio に入れる' },
   { id: 'force-repeat', name: '無理やりの二回目・三回目（force-repeat-audit）', stage: 'heavy', tags: ['force'], after: ['build'], est: 10, weight: 1, tools: [TC + 'force-repeat-audit.js'], why: '' },
