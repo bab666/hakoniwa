@@ -160,6 +160,7 @@
         "js/date-text-g.js",
         "js/date-more-text.js",
         "js/date-more.js",
+        "js/date-rel.js",
         "js/date-tone.js",
         "js/date.js",
         "js/date-r18-text.js",

@@ -535,8 +535,11 @@
     var o = scen.env.filter(function (e) { return e.id === 'dest'; })[0];
     PL().list.forEach(function (d) { o.options.push({ v: d.id, label: d.name + '（' + yen(d.cost) + '〜' + (d.size === 'L' ? '・大型' : d.size === 'V' ? '・人や予算で長さが変わる' : '') + (d.trip ? '・泊まり' : '') + '）' }); });
   })();
-  /* 本体の共通の出来事から外すもの：体の関係の出来事・合意のない展開・三人以上の恋愛・告白（結末で扱う）など */
-  var EX_ID = /^(?:confess|take_charge|brood|lighten|mob_after|tie_spouse|grp_|poly_|ct_|cf_)/;
+  /* 本体の共通の出来事から外すもの：体の関係の出来事・合意のない展開・三人以上の恋愛・告白（結末で扱う）など。
+     関係を条件にした出来事（tie_*・rt_*・同一人物・恐怖の和らぎ・関係ごとのキス kiss_*）と、関係の段階に寄りかかった小さな出来事（目で追う glance・指先が触れる touch・
+     らしくない一面に近づく unl_spark・嫉妬 jealous）も外し、関係性ごとの出来事はこの部屋の文（date-rel.js の HK.DateRel）で出す（2026-11-06 利用者の指示「関係性ごとのイベントをその箱庭オリジナルイベントに差し替えて」）。
+     残す小さな共通の出来事（関係を問わない）は設計の 14 章の一覧 */
+  var EX_ID = /^(?:confess|take_charge|brood|lighten|mob_after|tie_|rt_|om_tie|attr_mirror_|fs_soften|kiss_|glance$|touch$|unl_spark$|jealous$|grp_|poly_|ct_|cf_)/;
   function exList() { return (HK.COMMON || []).filter(function (e) { return e.sex || e.force || EX_ID.test(e.id); }).map(function (e) { return e.id; }); }
   Object.defineProperty(scen, 'exclude', { get: exList, enumerable: true, configurable: true });
 
@@ -711,6 +714,8 @@
   }
   /* 追加の出来事（関係性ごと・性格・アクシデント・季節。date-more.js の HK.DateMore）に渡す部品 */
   function more(ctx, day, part) { if (HK.DateMore && HK.DateMore.run && day && !day.over) HK.DateMore.run(ctx, day, part, { f: f, setO: setO, lead2: lead2, pickT: pickT, relPick: relPick, attPick: attPick, fill: fill, per: per, rcat: rcat, cands: cands, relList: relList }); }
+  /* 関係性ごとのデートの出来事（date-rel.js の HK.DateRel。dest＝行き先の段のあと／back＝帰り道／next＝次のデートの前） */
+  function relEv(ctx, day, part) { if (HK.DateRel && HK.DateRel.run && day) HK.DateRel.run(ctx, day, part, { f: f, setO: setO, lead2: lead2, pickT: pickT, fill: fill, rcat: rcat, placeName: placeName }); }
   /* 文の中の行き先の名前（「高級ホテルで過ごす」のような動詞で終わる名前は、文に埋めるときの名詞 D.noun を使う。2026-11-05 通し読み「高級ホテルで過ごすの地図」） */
   function placeName(D) { return D ? D.noun || D.name : 'デートの行き先'; }
   /* その日の最初・最後の行き先（待ち合わせ・計画・行きの道中は最初、帰りは最後） */
@@ -723,6 +728,7 @@
   function morning(ctx, day) {
     var S = f(ctx), A = S.A, B = S.B, P = day.P, Tx = TX();
     /* 前のデートを喧嘩で切り上げた：謝って仲直り（謝るのは、帰った人か、言い過ぎた人） */
+    relEv(ctx, day, 'next');
     if (S.sorry) sorry(ctx, day);
     if (S.mita) mitaLater(ctx, day);
     if (S.c3 && S.c3role === 'guest' && S.c3mita && S.c3mita === day.d) c3Mita(ctx, day);
@@ -735,6 +741,7 @@
     visit(ctx, day, 'am');
     if (ctx.rng() < 0.3) gen(ctx, day);
     more(ctx, day, 'am');
+    relEv(ctx, day, 'dest');
     toki(ctx, day, 'am', 0.2);
     if (S.p2) dblRun(ctx, day, 'am');
     if (S.trio) trioRun(ctx, day, 'am');
@@ -748,7 +755,7 @@
     visit(ctx, day, 'pm');
     if (day.over) return;
     /* 計画した人の性格で分かれる行動・汎用の出来事・やらしい雰囲気・他の住人（順は乱数で） */
-    var acts = [behave, gen, heat, others, budgetLine, function (c, d) { toki(c, d, 'pm', 0.3); }, function (c, d) { more(c, d, 'pm'); }];
+    var acts = [behave, gen, heat, others, budgetLine, function (c, d) { toki(c, d, 'pm', 0.3); }, function (c, d) { more(c, d, 'pm'); }, function (c, d) { relEv(c, d, 'dest'); }];
     for (var i = acts.length - 1; i > 0; i--) { var j = Math.floor(ctx.rng() * (i + 1)), x = acts[i]; acts[i] = acts[j]; acts[j] = x; }
     acts.forEach(function (fn) { if (!day.over) fn(ctx, day); });
     if (S.dbl && S.dbl[day.d] && !day.over) doubleDate(ctx, day, 'mid');
@@ -793,6 +800,7 @@
     if (cp && cp.at === 'dest') climax(ctx, day, cp);
     /* その日の終わりぎわ（帰り際の靴の故障など） */
     more(ctx, day, 'end');
+    relEv(ctx, day, 'back');
     if (!P.trip && !P.home) move(ctx, day, 'back');
     if (cp && cp.at !== 'dest') climax(ctx, day, cp);
     /* ダブルデートの四人の夜（R18版。四人の輪がそろっていれば、夜の分かれ道の代わりに。date-r18.js の HK.DateR18.quad） */
