@@ -204,9 +204,9 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | 3 本の台詞の約束（base-lint）（`base-lint`） | pre | `serifu` `tone` | — | 0 | 6 秒 | 比べる相手のコミットに無かった問題だけを数える（今ある誤検出 9 件は数えない）。「私」「あなた」の直書き（すべての台詞・書き下ろしの値。fp-migrate.js と同じ見つけ方）はいつも数える（2026-11-06 に一括で移した） |
 | build（両ビルド）（`build`） | build | `js` | — | 1 | 40 秒 | ビルドのフォルダの js・_order.txt・index.html を変えたビルドだけ。入力が前回の build と同じで出力も同じなら飛ばす。中核（core）の br（かたまり・ファイルごとの目安の合計）が 900KB を超えたら不合格（2026-11-04） |
 | 出来事の一覧（catalog-check）（`catalog`） | post | `js` `event` | build・pack-catalog | 0 | 6 秒 | build のあと。一覧が古い・表示名の無い出来事・印の無い新しい場面 |
-| 点検の一式（audit-all）（`audit-all`） | heavy | `sim` `ui` `zen` `moan` `thick` `trio` `force` `sexgate` `feud` `group` `death` `name` `rel` `pair` | build | 2 | 240 秒 | 既定の一式（orient・pos×3・state・loveflag・seg・qa・call・misc）。印で追加の配役パス（--extra）を足す。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN） |
+| 点検の一式（audit-all）（`audit-all`） | heavy | `sim` `ui` `zen` `moan` `thick` `trio` `force` `sexgate` `feud` `group` `death` `name` `rel` `pair` | build | 2 | 240 秒 | 既定の一式（orient・pos×3・state・loveflag・seg・qa・call・misc・cons（場面の辻褄。2026-11-07））。印で追加の配役パス（--extra）を足す。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN） |
 | 口調の違和感（tone-feel）（`tone-feel`） | heavy | `serifu` `tone` | build | 1 | 155 秒 | 変えた箱庭だけ（--scen=）。本体の共通の文なら既定の 3 箱庭 |
-| 喘ぎの口調（moan-tone-audit）（`moan-tone`） | heavy | `moan` | build | 1 | 420 秒 | 箱庭のかたまりだけ変えたときは --scen= |
+| 喘ぎの口調（moan-tone-audit）（`moan-tone`） | heavy | `moan` | build | 1 | 420 秒 | 49 口調ごとの付いてはいけない語尾の表（ぬ・じゃ・のう・女言葉の「わ」・っす・ぜ・乱暴語・敬語化の崩れ。2026-11-07）も当てる。箱庭のかたまりだけ変えたときは --scen= |
 | 長い場面の流れ（sex-flow-audit）（`sex-flow`） | heavy | `thick` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=sexflow に入れる（同じ関数。ページを開き直さない） |
 | 三人の場面の形（trio-shape-audit）（`trio-shape`） | heavy | `trio` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=trio に入れる |
 | 無理やりの二回目・三回目（force-repeat-audit）（`force-repeat`） | heavy | `force` | build | 1 | 10 秒 |  |
@@ -305,3 +305,4 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | pos-audit V16（足した） | 女性の攻め（男性器なし・フタナリでない）が、二人の向きで受けになる男性器のある相手に跨って自分の中へ受け入れる文（三人以上の文も。指・舌・張り型の文は除く）。V2 は女性の攻めが跨って迎える文を攻めのままとして数えないので別に数える | 素・--hot：直す前のビルドでも 0 件（pos のパスは三人の夜が少なく、仕上がった記録では HK.FM.fix が跨る文を直していた）。直したあとも 0 件 |
 | trio-shape fmRide・backDbl（足した） | 仕上がった記録の文で、女性の攻め × 男性の受けの組の攻めが跨る・受け入れる文（fmRide）／後ろが埋まる受け（twoOne でもう一人も同じ受けを抱く）に ero-play の前立腺・結腸の段を差した（backDbl。HK.EroPlay.log で見る） | 直す前 fmRide 1・backDbl 13 → 直したあと 0・0（既定の 4 箱庭・N=4、672 回） |
 | loveflag Y0（2026-11-06） | 開始の可否で止める箱庭（`scen.loveflagSkip` が真か、`scen.check` が止める理由を返す配役。恋人・夫婦でないと始まらない配信の部屋）の「ありの回」「自動の回」を Y・Z に数えない（その回は箱庭が始まらないので恋愛のしるしが出ない）。本体の箱庭で `scen.check` を持つ催眠・電車は、この点検の配役（役割・触る側の指定なし）では止めないので変わらない | 配信の部屋だけの audit-all（3 通り）で Y0 1 → 0 ×3。全箱庭の Y は変わらない |
+| 整合性の判定（2026-11-07。足した。利用者の指示） | moan-tone：49 口調ごとの付いてはいけない語尾の表（`TONE_NG`：ぬ・じゃ・のう・女言葉の「わ」・っす・ぜ・乱暴語・敬語化の崩れ。今までの規則が当たらない喘ぎだけ）／audit-all の既定の一式：場面の辻褄 cons（`audit/cons.js`。C1〜C7・K1。misc と同じく全部のパスの回に当てる。新しいパス・道具・依存の表の回し方は足していない） | 0e775b73 で moan-tone 0 → 71（1 種の声）、cons 0 → 本体 R18版・パックの部屋で 0 でない（`docs/reports/2026-11-07/consistency-audit.md`） |
