@@ -138,7 +138,7 @@
   HK.toneYou = function (tone, gender) { var v = HK.TONE_YOU[tone]; if (!v) return ''; if (typeof v === 'string') return v; return v[gender === 'f' ? 'f' : gender === 'x' ? 'x' : 'm'] || ''; };
   HK.toneFinish = function (k, fn) { HK.TONE_FINISH[k] = fn; };   /* fn(台詞, 話し手, { kg: 敬語の相手か, raw: 元の台詞 }) */
   /* 台詞ごとに決まる「くじ」（同じ台詞はいつも同じ結果）。n 回に 1 回 true */
-  HK.lineLot = function (q, n) { var h = 7; for (var i = 0; i < q.length; i++) h = (h * 31 + q.charCodeAt(i)) % 100003; return h % n === 0; };
+  HK.lineLot = function (q, n) { if (HK.Voice && HK.Voice.markOut) q = HK.Voice.markOut(q); var h = 7; for (var i = 0; i < q.length; i++) h = (h * 31 + q.charCodeAt(i)) % 100003; return h % n === 0; };
   /* 「あらあら」「あら」を口調の感嘆詞に替えるときの間引き。
      喘ぎの台詞では「あ」にする。台詞がその感嘆詞だけなら替える。続きがある台詞は三回に一回だけ替え、残りは感嘆詞ごと外す
      rep = { 'あらあら': 'おやおや', 'あらまあ': 'おやまあ', 'あら': 'おや' } */

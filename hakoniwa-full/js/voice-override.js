@@ -397,7 +397,7 @@
 
   /* ---------- 引き方 ---------- */
   function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-  function hash(s) { var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100003; return h; }
+  function hash(s) { if (HK.Voice && HK.Voice.markOut) s = HK.Voice.markOut(s); var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100003; return h; }
   function choose(v, seed) { return Array.isArray(v) ? v[hash(seed) % v.length] : v; }
   /* 台詞の中の住人の名前を〈〉にして、出てきた順の名前の並びと一緒に返す */
   function normalize(q, people) {

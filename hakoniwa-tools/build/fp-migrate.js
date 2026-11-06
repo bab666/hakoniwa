@@ -9,7 +9,8 @@
    (b) 書き下ろし（tone-fix*・tone-brush*・voice-override*・パックの *-tone*.js）：値の列だけ（鍵は「私」「あなた」のまま。voice.js が印を戻した写しで引く）
        タブ区切りの行は、頭が口調の id なら 3 列目から（tone-fix の形）、そうでなければ 2 列目から（voice-override-rows の形）が値。
        オブジェクトの値（「鍵: 値」の値・値の配列の中）も値。関数の引数の頭（add('鍵', {…}) の鍵）・オブジェクトの鍵・
-       値の配列の中の [鍵, 値] の対の頭（HK.Load.toneData の F: [[元, 書き下ろし], …] の元）・3 本の形（｜を含む）の文字列（鍵）は見ない
+       値の配列の中の [鍵, 値] の対の頭（HK.Load.toneData の F: [[元, 書き下ろし], …] の元）・3 本の形（｜を含む）の文字列（鍵）・
+       名前の鍵の配列（K = { tail: ['K', 'F', 'P'] } の元の台詞）は見ない
    置き換える語（出力が変わらないことが条件）：
    ・「私」→ {一人称}：voice.js の FP_RE が一人称として当たる「私」だけ（後ろが漢字の 私物・私語・私用・私的・私情・私生活・私服・私見・私立 と、前が 公・滅・無 の 公私 などは当たらないので除く）。
      どもり「わ、私」は「わ、{一人称}」（展開がどもりの頭を直す）
@@ -135,7 +136,13 @@ function doFile(dir, f) {
   for (let ti = 0; ti < toks.length; ti++) {
     const t = toks[ti], L = t.type.label, prev = toks[ti - 1], next = toks[ti + 1];
     const pl = prev ? prev.type.label : '', nl = next ? next.type.label : '';
-    if (L === '[') { const up = stack[stack.length - 1], inArr = !!(up && up.c === '[' && up.val); stack.push({ c: '[', val: pl === ':' || inArr, pair: inArr, ix: 0 }); continue; }
+    if (L === '[') {
+      const up = stack[stack.length - 1], inArr = !!(up && up.c === '[' && up.val);
+      /* 名前の鍵の配列（tone-brush8c-r18.js の K = { tail: ['K', 'F', 'P'] } のように、元の台詞＝鍵を並べたもの）は値でない。
+         値の配列は文字列の鍵（OVR の '元の台詞': ['書き下ろし', …]）か、HK.Load.toneData の F・S・O の中 */
+      const kt = pl === ':' ? toks[ti - 2] : null, named = !!(kt && kt.type.label === 'name' && !/^[FSOMNI]$/.test(kt.value));
+      stack.push({ c: '[', val: (pl === ':' && !named) || inArr, pair: inArr, ix: 0 }); continue;
+    }
     if (L === ',' && stack.length && stack[stack.length - 1].c === '[') { stack[stack.length - 1].ix++; continue; }
     if (L === '{' || L === '${') { stack.push({ c: '{' }); continue; }
     if (L === '(') { stack.push({ c: '(' }); continue; }
