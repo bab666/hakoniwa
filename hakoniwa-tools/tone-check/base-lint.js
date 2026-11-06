@@ -6,10 +6,14 @@
    ・K と F の文末に敬語（です・ます）が残っていないか
    ・F の文末に くだけた語尾（だよ・だね・じゃん・でしょ・かな・の？ など）が残っていないか（F は 〜だ／〜か／〜な／〜だろう／命令形）
    ・一人称が「私」以外（俺・僕・あたし）になっていないか、二人称が「あなた」以外（お前・きみ・あんた）になっていないか
+   ・一人称・二人称は印 {一人称}・{二人称} で書く（2026-11-06。docs/reports/2026-11-06/fp-marker-design.md）。印は正しい書き方として通し、
+     3 本で印の数が違ってもよい（敬語では一人称を省くなど）。「私」「あなた」の直書き（古い書き方）は、--base=<比べる相手のビルドのフォルダ> を渡したとき、
+     比べる相手に無かった台詞（新しく足した・書き直した 3 本）だけを問題にする（既存の行は問題にしない。check.js が比べる相手のコミットの js を渡す）
    体言止め・あいさつ・相づち・感嘆（！のみ）・言いさし（……）は P の判定から外す。--all で全部の行を出す */
 'use strict';
 const fs = require('fs'), path = require('path');
 const dir = path.resolve(process.argv[2] || '../../hakoniwa-full'), ALL = process.argv.includes('--all');
+const BASE = (process.argv.find(a => a.startsWith('--base=')) || '').slice(7);
 const P_END = /(?:です|ます|ません|ました|でしょう|ください|ましょう|でした|ございます|ございました|なさい|ませ|いたします|いただきます|いただけますか|ませんか|でしょうか|ましたか|ますか|ですか|ませんでした|ございません)(?:か|ね|よ|わ|から|けど|けれど|し|ので|のに|って|っけ|よね|かね)?$/;
 const K_BAD = /(?:です|ます|ません|ました|ございます|なさい|ください)(?:か|ね|よ|から|けど)?$/;
 const F_BAD = /(?:だよ|だね|だよね|じゃん|でしょ|かな|かしら|(?<!も)の|のよ|わよ|(?<![一-鿿])わ|もん|てね|てよ|ないで|ないでよ|ないでね|だってば|ってば|かも|なの|んだよね|だし)$/;
@@ -18,7 +22,21 @@ const F_BAD_Q = /(?:の|かな|でしょ|よね|かも|じゃん)$/;
 const NEUT = /(?:[一-鿿々ァ-ヶーA-Za-z0-9０-９]|さん|様|ちゃん|くん|を|に|へ|は|も|と|で|ので|のに|なら|たら|れば|ても|でも|から|けど|けれど|し|って|とか|など|だけ|まで|ほど|くらい|ぐらい|ずつ|こそ|……|…|ー|〜|っ|、|ありがとう|おはよう|おやすみ|ごめん|すみません|よろしく|おかえり|ただいま|いただきます|ごちそうさま|さようなら|はい|いいえ|うん|ええ|ああ|おう|へえ|ふうん|さあ|まあ|ほら|ねえ|おい|あの|えっ|あれ|なに|そう|うそ|もう|よし|はいはい|こっち|そっち|どっち|あっち|たぶん|べつに|別に|たまたま|まだ|もっと|あと|いつか|いつでも|どうぞ|お先に|おつかれ|お疲れ|乾杯|次|せーの|わかる|ダメ|だめ|無理|天才|親切|賛成|時効|毒見|当たり前|それだけ|こっちも|こちらも)$/;
 const FP_BAD = /(?:^|[^ぁ-ゖァ-ヶ一-鿿])(俺|僕|ぼく|オレ|ボク|あたし|わたくし|拙者|わし|わらわ|うち|ウチ)(?=[はがもをにのとで、。！？」]|$)/;
 const YOU_BAD = /(?:^|[^ぁ-ゖァ-ヶ一-鿿])(お前|おまえ|あんた|てめえ|貴様|おぬし|きみ|君)(?=[はがもをにのとで、。！？」]|$)/;
-function marks(s) { return (s.match(/\{[^}]+\}|〈〉/g) || []).sort().join(' '); }
+/* 印の一致を見るときは、一人称・二人称の印を外す（3 本で省き方が違ってよい） */
+function marks(s) { return (s.match(/\{[^}]+\}|〈〉/g) || []).filter(m => !/^\{[一二]人称\}$/.test(m)).sort().join(' '); }
+/* 「私」「あなた」の直書き（一人称・二人称として。公私・私物などの熟語は除く） */
+const FP_DIRECT = /(?<![公滅無])私(?![語用的情生物服見立鉄設財産])/, YOU_DIRECT = /あなた(?!さま|様|方|がた)/;
+/* 比べる相手の 3 本の台詞（本文の集まり） */
+function bodiesOf(d) {
+  const set = new Set();
+  try {
+    for (const f of fs.readdirSync(path.join(d, 'js')).filter(f => f.endsWith('.js') && !f.startsWith('bundle'))) {
+      ((fs.readFileSync(path.join(d, 'js', f), 'utf8')).match(/「[^」]*｜[^」]*」/g) || []).forEach(q => set.add(q.slice(1, -1).replace(/^＠[^＠「」｜。、！？\s]{0,16}＠/, '')));
+    }
+  } catch (e) { return null; }
+  return set;
+}
+const baseBodies = BASE ? bodiesOf(path.resolve(BASE)) : null;
 function sents(s) { return s.split(/[。！？!?]+/).map(t => t.replace(/[…‥、っー〜♡\s　]+$/, '').replace(/^[…‥、\s　]+/, '')).filter(t => t.length >= 2); }
 function lastSent(s) { const a = sents(s); return a.length ? a[a.length - 1] : ''; }
 let files = 0, triples = 0, bad = 0;
@@ -48,8 +66,13 @@ for (const f of fs.readdirSync(path.join(dir, 'js')).filter(f => f.endsWith('.js
     if (kl && K_BAD.test(kl) && !NEUT.test(kl) && K !== P) probs.push('K の文末が敬語：' + kl);
     if (fl && K_BAD.test(fl) && !NEUT.test(fl)) probs.push('F の文末が敬語：' + fl);
     if (fl && !allSame && F !== K && (F_BAD.test(fl) || (/[？?]$/.test(F) && F_BAD_Q.test(fl)))) probs.push('F の文末がくだけている：' + fl);
-    [K, F, P].forEach((x, i) => { const m = x.match(FP_BAD); if (m && !/^(?:うち|ウチ)$/.test(m[1])) probs.push('KFP'[i] + ' に一人称「' + m[1] + '」（私で書く）'); });   /* 「うち、ここから近い」の うち は家 */
-    [K, F, P].forEach((x, i) => { const m = x.match(YOU_BAD); if (m) probs.push('KFP'[i] + ' に二人称「' + m[1] + '」（あなたで書く）'); });
+    [K, F, P].forEach((x, i) => { const m = x.match(FP_BAD); if (m && !/^(?:うち|ウチ)$/.test(m[1])) probs.push('KFP'[i] + ' に一人称「' + m[1] + '」（{一人称}で書く）'); });   /* 「うち、ここから近い」の うち は家 */
+    [K, F, P].forEach((x, i) => { const m = x.match(YOU_BAD); if (m) probs.push('KFP'[i] + ' に二人称「' + m[1] + '」（{二人称}で書く）'); });
+    /* 新しく足した台詞の「私」「あなた」の直書き（比べる相手に同じ本文の台詞があれば、古い書き方として問題にしない） */
+    if (baseBodies && !baseBodies.has(body)) {
+      if ([K, F, P].some(x => FP_DIRECT.test(x))) probs.push('「私」の直書き（新しい台詞は {一人称} で書く）');
+      if ([K, F, P].some(x => YOU_DIRECT.test(x))) probs.push('「あなた」の直書き（新しい台詞は {二人称} で書く）');
+    }
     if (probs.length) { bad++; out.push(f + '\t' + body + '\n   ' + probs.join('／')); }
     else if (ALL) out.push(f + '\t' + body);
   });
