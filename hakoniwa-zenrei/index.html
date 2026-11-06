@@ -1657,7 +1657,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
 <!-- 古いブラウザの知らせ（2026-11-04）：本体は正規表現の後読み（iOS 16.4・Safari 16.4 から）を使うので、それより前の版では読み込みの段階で止まり、何も表示されない。そのときだけ、何が要るかを画面の上に出す -->
 <script>(function(){try{new RegExp('(?<=a)b');}catch(e){document.addEventListener('DOMContentLoaded',function(){var d=document.createElement('p');d.setAttribute('role','alert');d.style.cssText='margin:12px 16px;padding:12px 14px;border:1px solid #c33;border-radius:8px;background:#fff;color:#16233b;font-size:14px;line-height:1.7';d.textContent='このブラウザの版では箱庭シミュレーターが動きません。iPhone・iPad は iOS 16.4 以降、Mac の Safari は 16.4 以降に更新してください（Chrome・Edge・Firefox の新しい版でも動きます）。';document.body.insertBefore(d,document.body.firstChild);});}})();</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"96dbb65c78","api":1,"build":"zenrei","core":"js/c/core.565aa5ea00.js",
+<script>window.HK_MANIFEST={"v":"38c2a33580","api":1,"build":"zenrei","core":"js/c/core.565aa5ea00.js",
 "chunks":{
   "late":{"src":"js/c/late.2d10e86b04.js","br":154176,"deps":["pack-sim"]},
   "pack-rel":{"src":"js/c/pack-rel.17a42c62ac.js","br":286933,"deps":["pack-sim"]},
@@ -1671,7 +1671,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "scen-trial":{"src":"js/c/scen-trial.0dc4b6528b.js","br":53849,"deps":["pack-sim","pack-rel"]},
   "scen-omega":{"src":"js/c/scen-omega.c723a3635f.js","br":136489,"deps":["pack-sim","pack-rel"]},
   "scen-massage":{"src":"js/c/scen-massage.76430be52f.js","br":54462,"deps":["pack-sim"]},
-  "scen-futari":{"src":"js/c/scen-futari.b01f4214dc.js","br":107421,"deps":["pack-sim","pack-rel"]},
+  "scen-futari":{"src":"js/c/scen-futari.367fb25089.js","br":107436,"deps":["pack-sim","pack-rel"]},
   "scen-zombie":{"src":"js/c/scen-zombie.cd9c9135c9.js","br":143032,"deps":["pack-sim","pack-rel"]},
   "scen-rpg":{"src":"js/c/scen-rpg.765a7cfb59.js","br":27507,"deps":["pack-sim","pack-story"]},
   "scen-saimin":{"src":"js/c/scen-saimin.96ca63c124.js","br":55888,"deps":["pack-sim"]},
