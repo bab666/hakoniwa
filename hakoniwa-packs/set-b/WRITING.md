@@ -234,3 +234,6 @@ node hakoniwa-tools/build/pack-site.js hakoniwa-packs/set-b --out=<試しのフ�
 - **コメントの向きの札**：段 4〜6 のカップルの熱いコメント・反応（`C.REACT`）・切り忘れ（`C.LEAK`）で、誰が何をした／されたを言う文には `#dir=doer`（`{h}` がした側）か `#dir=taker`（`{h}` がされた側）、行為の種類を限るときは `#ak=kuchi` などを付ける（haishin-cm-text-a.js は `dr(…, 'doer')`）。`#n=top`／`#n=bot` も向きの札として読む（top＝した側）。向きを言わない文には付けない。足したら h2 の点検 `dirlint.js`（札の無い名前入りの文）と `an2.js`（逆向き 0）を回す。
 - **甘やかし** `R.AMAE[来た人の態度 9]`（各 3 本。`{a}`＝来た人・画面の外、`{b}`＝配信者。責めない）・`R.LEAD.amae[配信者の態度 9]`・`R.AFTER.amae`（4 本）。お仕置き（`R.PUNISH`）と対。
 - **本編の結婚報告** `T.WEDLIVE[couple|solo][lover|spouse]`（各 3 本。閉じる挨拶の直前）。後日談の `T.END.wed` は `{ t, at: 'live'|'next' }`（本編で報告した回／していない回）。
+- **ソロの中盤のきっかけ** `R.MIDLEAD[toy|call][配信者の態度 9]`（文字列一本。haishin-r18.js が toy・call の直前に必ず出す。toy は要求のコメントの「＠…」のあとに続くので、コメントを読んで迷い・決心する書き方。体の語は書かない）。
+- **恋人・夫婦でない二人の結末** `pub`（二人の関係の公表）：`T.END.pub`・`T.WEDLIVE[couple|solo].other`・`T.SUBS.pub`・`T.POST.pub`・`T.LAST.pub`・`T.FATE.pub`・`C.SNS.pub`。関係の札の名前と結婚の語を書かない。
+- **理由の欄（e.why）に内部の鍵を書かない**：要求の種類・応え方は haishin.js の `kJa`・`howJa`（`HK.Haishin.kJa`）で日本語にする。出来事の id・英字の場所も書かない。

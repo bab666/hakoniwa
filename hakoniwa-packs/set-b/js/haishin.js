@@ -1,5 +1,5 @@
 /* 配信の部屋（追加パック set-b の 4 部屋目。エンジン型。両方のビルド。2026-11-06。設計は docs/reports/2026-11-06/haishin-design.md。担当 P1：骨組み）
-   恋人か夫婦の二人が配信をする。一回の配信を 30 分ごとの区切りで進め（1〜24 時間＝2〜48 区切り）、視聴者（モブ）のコメントとスパチャに応えていく。
+   二人が配信をする（どんな関係でもカップルとして扱う。2026-11-06 まで恋人・夫婦だけ）。一回の配信を 30 分ごとの区切りで進め（1〜24 時間＝2〜48 区切り）、視聴者（モブ）のコメントとスパチャに応えていく。
    ・形：カップル配信（二人で）／ソロ配信（一人が配信、もう一人は画面の外）。攻め×攻めのカップル配信は、どの版でも始められない（scen.check）
    ・要求の段 1〜6（一般→質問→ちょっと踏み込んだ質問→踏み込んだ要求→すごく踏み込んだ要求→エロい要求）は戻らない。盛り上がり点＝同接（対数）＋発情度＋スパチャの太さ。
      段が上がるときに渋ると停滞し、3 区切り続くと途中終了。上限は全年齢・夜の起こりやすさ 0・体の関係にならない二人なら「段 3 ＋段 4 の軽い要求（キスまで）」
@@ -13,7 +13,7 @@
    ・（2026-11-06 P15b の計測と通し読みで直したもの）夜 100 のカップルの段の上げ方（一区切り一度）・渋りの確率の係数・料理とゲームの区切りの様子の順（STEP_ORD）・
      12／24 時間の寝落ちは朝に起きて雑談を続ける（S.kindLive）・らしくない一面は 2 回まで・本体の glance を外す・作れない人の料理の失敗の文。数字は設計 11.1、指摘は haishin-playtest.md
    登場人物はすべて成人として扱う */
-/* @event scen=set-b-haishin id=hs_stop cat=bond tie=- label=恋人か夫婦でないので配信を始めない */
+/* @event scen=set-b-haishin id=hs_stop cat=bond tie=- label=二人で並べず配信が始まらない */
 /* @event scen=set-b-haishin id=hs_start cat=bond tie=lover label=二人が配信を始める */
 /* @event scen=set-b-haishin id=hs_step cat=bond tie=lover label=配信の合間の様子（種類ごと） */
 /* @event scen=set-b-haishin id=hs_q1 cat=bond tie=lover label=視聴者の挨拶やお願いに応える */
@@ -72,6 +72,17 @@
     shy: { shy: 3, tsun: 3, polite: 2, stern: 2, gentle: 1.5, cool: 1, devoted: 1, proud: 1, free: 0.5 },
     sunao: { cool: 2.5, gentle: 1.5, free: 1.5, devoted: 1.5, polite: 1, stern: 1, proud: 1, tsun: 1, shy: 1 }
   };
+
+  /* 理由の欄（e.why。画面に出る）に内部の鍵（serve・shy・k の英字）を出さないための言い方（2026-11-06 の利用者の指摘「（…の耳・shy）」） */
+  var HOW_JA = { serve: '張り切って', shy: '照れながら', sunao: '素に戻って' };
+  var K_JA = { greet: '挨拶', wave: '手を振る', praise: 'ほめる', name: '名前を呼ぶ', kindq: '配信の種類のお願い', thanks: 'お礼', food: '好きな食べ物', food_t: '好きな味', food_none: '好きな食べ物',
+    buy: '買ってよかったもの', holiday: '休日', date: 'デート', hobby: '趣味', media: '好きな作品', morning: '朝型か夜型か', cook: '得意料理', hate: '苦手なもの', hamari: '最近ハマっていること', pet: '動物', trip: '行きたい場所',
+    start: '配信を始めたきっかけ', meet: '出会い', suki: '好きなところ', first: '第一印象', firstdate: '初デート', kenka: '喧嘩', yobi: '呼び方', shigusa: '好きな仕草', kuse: '相手の癖', kokuhaku: '告白', kinen: '記念日',
+    jeal: '嫉妬', amae: '甘える方', future: 'これから', kiss: 'キス', hug: 'ハグ', hiza: '膝枕', aan: 'あーん', nade: '頭を撫でる', hand: '手をつなぐ', kiss_cam: 'カメラにキス', sasayaki_l: 'カメラに甘い言葉',
+    seikan: '性感帯', mimi: '耳元で囁く', kubi: '首筋にキス', deep: '深いキス', sawaru: '性感帯に触れる', koe: '声を聴かせる', shitagi: '下着', nugu: '一枚脱ぐ', chikubi: '胸を責める', onani: '自慰を見せる',
+    kuchi: '口でする', ana: '指で弄る', vibe: '玩具', tel: '電話する', ireru: 'そのまま入れる' };
+  function kJa(k) { return K_JA[k] || '―'; }
+  function howJa(h) { return HOW_JA[h] || ''; }
 
   /* ---------- 小さな道具 ---------- */
   function pickOf(ctx, arr) { return arr && arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : null; }
@@ -273,12 +284,15 @@
   }
   function couple(C) { return C.slice(0, 2); }
 
+  /* 恋愛にはならないが、体の関係にはなってよい二人（関係ごとの「恋愛：なし」など。恋愛対象・受け攻め・R18 にしない相手は HK.sexBlocked・HK.Pos.okSex が見る。版を問わない） */
+  function bodyPair(A, B) { var P = HK.Pos; return !!(A && B && A !== B && !(HK.sexBlocked && HK.sexBlocked(A, B)) && (!P || !P.okSex || P.okSex(A, B))); }
   /* ---------- 始める前の検査（2.3・2.4。どの版でも止める） ---------- */
   function blockOf(input) {
     var C = ((input && input.chars) || []).map(function (c, i) { var o = Object.assign({}, c); o.i = i; return o; });
     if (C.length < 2) return '';
     var A = C[0], B = C[1];
-    if (!relIn(input, 0, 1)) return 'この箱庭は、恋人か夫婦の二人で配信します。二人の関係を恋人か夫婦にしてください';
+    /* 恋愛対象の設定で恋愛にならない二人（関係の種類ではなく住人の設定）は始めない */
+    try { if (HK.loveOK && !topTop(A, B) && !(HK.loveOK(A, B) && HK.loveOK(B, A)) && !bodyPair(A, B)) return HK.SAFE_ON ? 'この二人は住人の設定（恋愛対象など）では恋愛にならないので、この部屋のカップルとして配信できません。恋愛対象の設定を見直してください' : 'この二人は住人の設定（恋愛対象・恋愛にしない相手など）では恋愛にならないので、この部屋のカップルとして配信できません。設定を見直してください'; } catch (e) { /* 判定できない名簿では止めない */ }
     var env = (input && input.env) || {};
     if (env.form === 'couple' && topTop(A, B)) return HK.SAFE_ON ? '二人とも「攻め」の設定なので、カップル配信は始められません。ソロ配信にするか、どちらかの設定を変えてください' : '二人とも攻めなので、カップル配信は始められません。ソロ配信にするか、どちらかを受けかリバ、おまかせにしてください';
     return '';
@@ -358,7 +372,19 @@
     H._dirLog = S.dirLog;   /* 点検の道具だけが読む控え（記録には入らない） */
     S.rk = A !== B ? relKind(ctx, A, B) : '';
     /* 恋人・夫婦で、二人が恋愛してよい組（恋愛対象など）のときだけ配信する。ほかは始めの区切りで案内して終える（画面からは scen.check が止める） */
-    S.stop = !S.rk || A === B || !(HK.loveOK ? HK.loveOK(A, B) : true) && !topTop(A, B);
+    /* どんな関係の二人でも配信する（この部屋ではカップルとして扱う。2026-11-06 の利用者の指示）。恋人・夫婦でない二人は文の上では恋人の扱い（S.rk＝'lover'）で、
+       結末の結婚報告だけは恋人・夫婦のときだけ（ほかは「二人の関係を公表」。haishin-end.js）。恋愛の対象の設定で恋愛にならない二人（HK.loveOK が片方でも偽）は、
+       関係ではなく住人の設定の問題なので、今までどおり始めない（カップルとして扱うと恋愛対象に合わない二人の恋愛・夜になる。scen.check も止める） */
+    S.rkReal = S.rk; S.relOther = !S.rk; if (!S.rk) S.rk = 'lover';
+    S.loveOk = A !== B && (HK.loveOK ? HK.loveOK(A, B) && HK.loveOK(B, A) : true);
+    /* 恋愛にならない二人でも、体の関係になってよい二人（関係の「恋愛：なし」など）は「体だけの二人」として配信する（恋愛の出来事・関係性の出来事・結婚報告は出さない。
+       全年齢版・全年齢モードは段 2 まで）。恋愛対象・受け攻めの設定で体の関係にもならない二人は始めない */
+    S.bodyOnly = !S.loveOk && bodyPair(A, B);
+    S.stop = A === B || (!S.loveOk && !S.bodyOnly && !topTop(A, B));
+    /* 無関心・和らぐ前の恐怖の二人（関係の札 apathy・HK.fearHeld）は、カップルとして配信はするが、恋愛の出来事に入らない：段 2 の質問まで（S.cap＝'talk'。
+       段 3 の好きなところ・嫉妬の質問、キス、性格の行動の嫉妬・素に戻る、関係性の出来事、結末の結婚報告・公表を出さない） */
+    S.cold = A !== B && (((HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, A, B) || [] : []).some(function (t) { return t && t.type === 'apathy'; })) || !!(HK.fearHeld && HK.fearHeld(A, B)));
+    if (S.cold) S.loveOk = false;
     S.romOk = !S.stop && (!ctx.romanceOk || ctx.romanceOk([A, B], false));
     S.kind = KIND[env.kind] ? env.kind : 'zatsu';
     S.size = SIZE[env.size] ? env.size : 's100';
@@ -404,8 +430,8 @@
     };
     S.heat = clamp(Math.round(S.on.reduce(function (s, c) { return s + heat0(c); }, 0) / S.on.length), 0, 100);
     /* 段の上限（6.4）：全年齢・夜 0・体の関係にならない二人・R18 に参加しない人がいる → 'kiss'（段 3 ＋段 4 の軽い要求） */
-    S.cap = !S.r18 || (P && P.nightOff && P.nightOff(ctx)) || !(HK.bodyOK ? HK.bodyOK(A, B) : false) || A.noR18 || B.noR18 ? 'kiss' : 6;
-    S.capSt = S.cap === 'kiss' ? 4 : 6;
+    S.cap = S.cold || (S.bodyOnly && !(HK.bodyOK && HK.bodyOK(A, B))) ? 'talk' : !S.r18 || (P && P.nightOff && P.nightOff(ctx)) || !(HK.bodyOK ? HK.bodyOK(A, B) : false) || A.noR18 || B.noR18 ? 'kiss' : 6;
+    S.capSt = S.cap === 'talk' ? 2 : S.cap === 'kiss' ? 4 : 6;
     S.n100 = S.r18 && S.cap === 6 && S.night >= 100;
     if (S.r18) [A, B].forEach(function (c) { S.zones[c.i] = zonesOf(ctx, c, other(S, c)); });
     S.heatT = HK.Heat && HK.Heat.of ? HK.Heat.of(ctx, A, B) : '';
@@ -640,7 +666,7 @@
       /* 軽い要求（ハグ・膝枕・あーん・撫でる・手をつなぐ）は、応えた人がする側かされる側かが文によって違う（あーんは食べさせてもらう側が応えることもある）ので、
          行為の向きを置かない（向きを言うコメントは出さない。通し読みで「あーん」を食べた側に「手が早い」が出た） */
       if (KISS_K[k]) setAct(S, a, b, k); else S.actMix = true;
-      rec(ctx, [a, b], head + fill(ctx, lt, a, b), '軽い要求に応えた（' + k + '・' + how + '）', S.form === 'couple' ? 'romance' : 'bond', { tag: 'リクエスト', odd: hw.odd, ev: KISS_K[k] ? 'kiss' : how === 'sunao' ? 'sunao' : '' });
+      rec(ctx, [a, b], head + fill(ctx, lt, a, b), '軽い要求に応えた（' + kJa(k) + '・' + howJa(how) + '）', S.form === 'couple' ? 'romance' : 'bond', { tag: 'リクエスト', odd: hw.odd, ev: KISS_K[k] ? 'kiss' : how === 'sunao' ? 'sunao' : '' });
       if (KISS_K[k]) S.kiss++;
       S.ansSt[stg] = true;
       return 'ans';
@@ -657,7 +683,7 @@
       var t2 = pickT(ctx, l2, b, a) || (stg < 3 ? fbT(ctx, FB.ans2, b, a) : '');
       if (t2) txt += fill(ctx, t2, b, a, ex);
     }
-    rec(ctx, [a, b], txt, (stg === 1 ? '視聴者のお願い' : stg === 2 ? '視聴者の質問' : 'ちょっと踏み込んだ質問') + '（' + (k || '―') + '・' + how + '）', stg === 3 && S.form === 'couple' ? 'romance' : 'bond', { tag: stg === 1 ? 'コメント' : '質問', odd: hw.odd });
+    rec(ctx, [a, b], txt, (stg === 1 ? '視聴者のお願い' : stg === 2 ? '視聴者の質問' : 'ちょっと踏み込んだ質問') + '（' + kJa(k) + '・' + howJa(how) + '）', stg === 3 && S.form === 'couple' ? 'romance' : 'bond', { tag: stg === 1 ? 'コメント' : '質問', odd: hw.odd });
     if (q.yen) S.ev.push('sc');
     S.ansSt[stg] = true;
     return 'ans';
@@ -678,7 +704,7 @@
     keys = keys.filter(function (x) { return hasT(ctx, dig(TX().QUIT, x), a, b); });
     var k = pickOf(ctx, keys.length ? keys : ['kimazu']);
     var T0 = TX(), t = pickT(ctx, dig(T0.QUIT, k), a, b) || pickT(ctx, flat(T0.QUIT), a, b) || fbT(ctx, FB.quit, a, b);
-    rec(ctx, [a, b], fill(ctx, t, a, b), '配信を途中で終えた（' + k + '）', 'bond', { tag: '途中終了' });
+    rec(ctx, [a, b], fill(ctx, t, a, b), '配信を途中で終えた（' + ({ kimazu: '気まずくなって', kaisen: '回線のせいにして', nakiwarai: '泣き笑いで', tomeru: '相手が止めて' }[k] || '気まずくなって') + '）', 'bond', { tag: '途中終了' });
     S.quit = k; S.ended = 'stall'; S.endAt = s;
   }
 
@@ -788,7 +814,7 @@
     if (f[2] === 'hs_set_size_s10k_1') S.trend = 0.3;
     if (f[0] === 'cookfail') S.ev.push('fail');
     var WHY = { kind: '配信の種類', size: 'リスナーの規模', sc: 'スパチャの太さ', hours: '配信時間', form: '形', hname: '配信の名前', charm: '魅力', role: '画面の外の人', cookfail: '料理の失敗', goal: '目標', lib: '性欲' };
-    rec(ctx, [f[4], f[5]].filter(Boolean), fill(ctx, t, f[4], f[5]), '設定の出来事（' + WHY[f[0]] + (f[2] ? '・' + f[2] : '') + '）', 'bond');
+    rec(ctx, [f[4], f[5]].filter(Boolean), fill(ctx, t, f[4], f[5]), '設定の出来事（' + WHY[f[0]] + '）', 'bond');
     return true;
   }
   /* 性格の行動（30%）：嫉妬（直前の区切りにガチ恋のコメント・太客の名指し）・素に戻る（発情度 60 以上かキスの直後）・らしくない */
@@ -796,11 +822,11 @@
     var T0 = TX(), BEH = T0.BEH || {}, last = S.lastEv || [];
     var gari = last.indexOf('gari') >= 0 || last.indexOf('whale') >= 0 || (!CK() && Object.keys(S.charm).some(function (k) { return S.charm[k] >= 4; }) && ctx.rng() < 0.3);
     var opts = [];
-    if (gari) {
+    if (gari && S.loveOk) {
       var tgt = S.on.filter(function (c) { return S.charm[c.i] >= 4; })[0] || S.on[0], jb = S.form === 'couple' ? other(S, tgt) : S.off;
       opts.push(['jeal', jb, tgt]);
     }
-    if (S.heat >= 60 || last.indexOf('kiss') >= 0) { var sa = pickOf(ctx, S.on); opts.push(['sunao', sa, S.form === 'couple' ? other(S, sa) : S.off]); }
+    if (S.loveOk && (S.heat >= 60 || last.indexOf('kiss') >= 0)) { var sa = pickOf(ctx, S.on); opts.push(['sunao', sa, S.form === 'couple' ? other(S, sa) : S.off]); }
     /* らしくない一面は一回の配信で 2 回まで（通し読みで 4 回並んだ。2026-11-06 P15b） */
     var oa = pickOf(ctx, S.on); if ((S.beh.odd || 0) < 2) opts.push(['odd', oa, S.form === 'couple' ? other(S, oa) : S.off]);
     for (var i = 0; i < opts.length; i++) {
@@ -827,7 +853,7 @@
      一回の配信に 1 時間あたり 1 回まで・区切りの 2 割（すれ違いのあとは仲直りを 6 割で次の区切りに）。{a}＝配信する人（カップルはどちらか）、{b}＝相手（ソロは画面の外の人） */
   function relEvent(ctx, S, s) {
     var REL = HK.HaishinRel, L = REL && REL[S.rk];
-    if (!L || !L.length || s <= 0) return false;
+    if (!L || !L.length || s <= 0 || !S.loveOk) return false;
     var R0 = S.rel, cap = Math.max(1, Math.floor(S.hours));
     if (R0.n >= cap || s - R0.last < 2) return false;
     var wantNaka = !!R0.fight && s - R0.fight.s <= 6;
@@ -848,7 +874,7 @@
     if (!t) return false;
     R0.used[e.id] = 1; R0.n++; R0.last = s;
     if (e.k === 'sure' || e.k === 'jeal') R0.fight = { s: s, a: a, b: b, id: e.id }; else if (e.k === 'naka') R0.fight = null;
-    rec(ctx, [a, b], fill(ctx, t, a, b), '関係の出来事（' + (REL.KIND && REL.KIND[e.k] || e.k) + '・' + e.id + '）', e.k === 'sure' || e.k === 'jeal' ? 'conflict' : 'romance', { tag: '二人のこと', ev: e.k === 'jeal' ? 'rjeal' : '' });
+    rec(ctx, [a, b], fill(ctx, t, a, b), '関係の出来事（' + (REL.KIND && REL.KIND[e.k] || '二人のこと') + '）', e.k === 'sure' || e.k === 'jeal' ? 'conflict' : 'romance', { tag: '二人のこと', ev: e.k === 'jeal' ? 'rjeal' : '' });
     return true;
   }
 
@@ -928,7 +954,7 @@
     if (!S) return;
     if (ctx.stepIndex != null) ctx._emoWS = ctx.stepIndex;   /* 本体の気分の一句は付けない */
     if (S.stop) {
-      if (s === 0) rec(ctx, [S.A, S.B].filter(function (c, i, l) { return l.indexOf(c) === i; }), S.A === S.B ? '配信の準備は整っていたが、一緒に配信する相手がいなかった。カメラの明かりは、つかないままだった。' : S.A.name + 'と' + S.B.name + 'は、二人で配信を始める間柄ではなかった。この配信は、恋人か夫婦の二人で始まる。', '恋人か夫婦でないので配信しない', 'bond');
+      if (s === 0) rec(ctx, [S.A, S.B].filter(function (c, i, l) { return l.indexOf(c) === i; }), S.A === S.B ? '配信の準備は整っていたが、一緒に配信する相手がいなかった。カメラの明かりは、つかないままだった。' : '配信の準備は整っていたが、' + S.A.name + 'と' + S.B.name + 'が二人で並ぶことはなかった。カメラの明かりは、つかないままだった。', S.A === S.B ? '一緒に配信する相手がいない' : '恋愛対象の設定で二人が恋愛にならない', 'bond');
       S.ended = 'none'; S.endAt = 0;
       return;
     }
@@ -1012,10 +1038,12 @@
      配信を切った・寝落ちで閉じた回は本編で報告しないので、後日談は「次の配信で」の文。2026-11-06 の利用者の指示） */
   function wedLive(ctx, S, a, b) {
     var E = HK.HaishinEnd;
-    if (!E || !E.decide || E.decide(ctx) !== 'wed') return false;
-    var t = pickT(ctx, dig(TX().WEDLIVE, S.form, S.rk === 'spouse' ? 'spouse' : 'lover'), a, b);
+    var k = E && E.decide ? E.decide(ctx) : '';
+    if (k !== 'wed' && k !== 'pub') return false;
+    /* 恋人・夫婦でない二人は、結婚ではなく二人のことの公表（pub） */
+    var t = pickT(ctx, dig(TX().WEDLIVE, S.form, k === 'pub' ? 'other' : S.rk === 'spouse' ? 'spouse' : 'lover'), a, b);
     if (!t) return false;
-    rec(ctx, [a, b], fill(ctx, t, a, b), '配信の終わりにリスナーへ結婚を報告した（結末：結婚報告）', 'romance', { tag: '報告' });
+    rec(ctx, [a, b], fill(ctx, t, a, b), k === 'pub' ? '配信の終わりにリスナーへ二人のことを公表した' : '配信の終わりにリスナーへ結婚を報告した（結末：結婚報告）', 'romance', { tag: '報告' });
     S.wedLive = true;
     return true;
   }
@@ -1037,7 +1065,7 @@
     var g = function (c) { var x = S.goal[c.i] || {}; return { s: x.s ? x.s.t : '', sk: x.s ? x.s.k : '', l: x.l ? x.l.t : '', lk: x.l ? x.l.k : '', side: x.side }; };
     return { a: S.A.i, b: S.B.i, rk: S.rk, form: S.form, kind: S.kind, size: S.size, sc: S.sc, hours: S.hours, N: S.N, on: S.on.map(function (c) { return c.i; }), off: S.off ? S.off.i : null,
       hn: S.hn, v0: S.v0, vPeak: S.vPeak, v: S.v, scSum: S.scSum, scMax: S.scMax, stage: S.stage, stageName: STAGE_NAME[S.stage], cap: S.cap, ended: S.ended, endS: S.endS, leak: S.leak, leakFate: S.leakFate,
-      sexDone: S.sexDone, again: S.again, mid: S.mid, beh: S.beh, kiss: S.kiss, stallTot: S.stallTot, quit: S.quit, asleep: S.asleep, series: S.series, setHits: S.setHits, setUsed: Object.keys(S.setUsed), gameRes: S.gameRes, game: S.game, dish: S.dish, goalA: g(S.A), goalB: g(S.B), setN: S.setN || 0, wedLive: !!S.wedLive, comeMode: S.comeMode || '', relN: S.rel ? S.rel.n : 0, relUsed: S.rel ? Object.keys(S.rel.used) : [], endK: null, end: '' };
+      sexDone: S.sexDone, again: S.again, mid: S.mid, beh: S.beh, kiss: S.kiss, stallTot: S.stallTot, quit: S.quit, asleep: S.asleep, series: S.series, setHits: S.setHits, setUsed: Object.keys(S.setUsed), gameRes: S.gameRes, game: S.game, dish: S.dish, goalA: g(S.A), goalB: g(S.B), setN: S.setN || 0, wedLive: !!S.wedLive, midStallN: S.midStallN || 0, midStallNeed: S.midStallNeed == null ? null : S.midStallNeed, midLeadN: S.midLeadN || 0, onPer: S.on && S.on[0] ? per(S.on[0]) : '', relOther: !!S.relOther, cap2: S.cap, comeMode: S.comeMode || '', relN: S.rel ? S.rel.n : 0, relUsed: S.rel ? Object.keys(S.rel.used) : [], endK: null, end: '' };
   }
   function fbEnd(S) {
     if (S.ended === 'stall') return ['maboroshi', '幻の配信'];
@@ -1064,8 +1092,8 @@
   /* ---------- 箱庭 ---------- */
   var scen = {
     id: ID, name: '配信', kicker: 'ふたり・配信',
-    desc: '恋人か夫婦の二人が、カメラの前で配信をする。視聴者のコメントとスパチャに応えるうちに、質問はだんだん踏み込んだものになっていく。二人で並ぶカップル配信も、一人が配信して相手は画面の外にいるソロ配信も選べる。人気配信者への道か、二人だけの時間か、笑い話になる結末か――配信が終わったあとの評判まで眺める。',
-    note: '※参加は2人（恋人か夫婦の二人）。形は「カップル配信」「ソロ配信」「おまかせ」から選べ、住人ごとの「配信での立場」で配信する人・画面の外の人を決められます。「配信の名前」は視聴者が呼ぶ名前です（空なら住人の名前）。「短期目標」（この配信で何をしたいか）と「長期目標」（二人の先に何を望むか）も住人ごとに選べます。登場人物はすべて成人として扱います。',
+    desc: '二人が、カメラの前で配信をする（どんな関係でも、この部屋ではカップルとして扱う）。視聴者のコメントとスパチャに応えるうちに、質問はだんだん踏み込んだものになっていく。二人で並ぶカップル配信も、一人が配信して相手は画面の外にいるソロ配信も選べる。人気配信者への道か、二人だけの時間か、笑い話になる結末か――配信が終わったあとの評判まで眺める。',
+    note: '※参加は2人。どんな関係でも、この部屋ではカップルとして扱います（結末の結婚報告は、恋人か夫婦の二人のときだけ）。形は「カップル配信」「ソロ配信」「おまかせ」から選べ、住人ごとの「配信での立場」で配信する人・画面の外の人を決められます。「配信の名前」は視聴者が呼ぶ名前です（空なら住人の名前）。「短期目標」（この配信で何をしたいか）と「長期目標」（二人の先に何を望むか）も住人ごとに選べます。登場人物はすべて成人として扱います。',
     unit: '時間', perUnit: 2, preRel: 0, lethal: false, minCast: 2, maxCast: 2,
     catBias: { romance: 1, bond: 1.2, help: 1, conflict: 0.2, combat: 0, betray: 0, kill: 0 },
     decay: 0.999, actRate: 0.02,
@@ -1139,7 +1167,7 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function nowInput() { var UI = HK.UI; try { return UI && UI.buildInput ? UI.buildInput(0) : null; } catch (e) { return null; } }
   function noteHtml(input, head) {
-    var h = head ? '' : '<p class="hint" style="margin-top:8px">この箱庭は、恋人か夫婦の二人で配信します（関係の設定で二人を恋人か夫婦にしてください）。住人ごとの「配信での立場」で、ソロ配信のときに配信する人・画面の外の人を選べます。「配信の名前」は視聴者のコメントが呼ぶ名前です。</p>';
+    var h = head ? '' : '<p class="hint" style="margin-top:8px">どんな関係でも、この部屋ではカップルとして扱います（結末の結婚報告は、恋人か夫婦の二人のときだけ）。住人ごとの「配信での立場」で、ソロ配信のときに配信する人・画面の外の人を選べます。「配信の名前」は視聴者のコメントが呼ぶ名前です。</p>';
     if (!input) return '<div id="' + (head ? 'hsnote2' : 'hsnote') + '">' + h + '</div>';
     var b = blockOf(input), C = (input.chars || []).map(function (c, i) { var o = Object.assign({}, c); o.i = i; return o; });
     if (b) h += '<p class="hint" role="alert" style="margin-top:6px;color:var(--warn,#b45309);font-weight:600">※このままでは始められません：' + esc(b) + '</p>';
@@ -1159,7 +1187,7 @@
   /* ---------- ほかの担当が読む口（16 章） ---------- */
   Object.assign(H, {
     ID: ID, st: st, pickT: pickT, hasT: hasT, elOk: elOk, fill: fill, rec: rec, dig: dig, flat: flat, hn: hn, aikata: aikata, chName: chName, other: other, per: per, nightKind: nightKind,
-    howOf: howOf, setAct: setAct, askOf: askOf, askText: askText, needOk: needOk, targetOf: targetOf, reqOk: reqOk, handle: handle, cmCount: cmCount, cmPost: cmPost, clockW: clockW, clk: clk, comma: comma, yen: yen,
+    howOf: howOf, setAct: setAct, kJa: kJa, howJa: howJa, askOf: askOf, askText: askText, needOk: needOk, targetOf: targetOf, reqOk: reqOk, handle: handle, cmCount: cmCount, cmPost: cmPost, clockW: clockW, clk: clk, comma: comma, yen: yen,
     formOf: formOf, blockOf: blockOf, topTop: topTop, relIn: relIn, KIND: KIND, SIZE: SIZE, SCB: SCB, HOURS: HOURS, LINE: LINE, STAGE_NAME: STAGE_NAME, LIGHT_K: LIGHT_K, GOAL_OPT: GOAL_OPT, FB_HANDLE: FB_HANDLE
   });
 })();

@@ -31,6 +31,8 @@
 /* @event scen=set-b-haishin id=hs_r18_tel cat=romance tie=- tags=night label=相手に電話する要求に応える */
 /* @event scen=set-b-haishin id=hs_r18_ireru cat=romance tie=- tags=night label=そのまま入れてという要求に応える */
 /* @event scen=set-b-haishin id=hs_r18_out cat=romance tie=- tags=night label=画面の外へ消えて音と声だけが届く */
+/* @event scen=set-b-haishin id=hs_mid_lead cat=romance tie=- tags=night label=リクエストや寂しさから一人の配信が熱を帯びる */
+/* @event scen=set-b-haishin id=hs_mid_stall cat=bond tie=- tags=night label=一人の配信で踏み込んだ要求を渋る */
 /* @event scen=set-b-haishin id=hs_mid_toy cat=romance tie=- tags=night label=ソロ配信で玩具を使い体に触れる */
 /* @event scen=set-b-haishin id=hs_mid_call cat=romance tie=- tags=night label=配信中に画面の外の相手へ電話をかける */
 /* @event scen=set-b-haishin id=hs_mid_self cat=romance tie=- tags=night label=通話をつないだまま自慰を続ける */
@@ -178,7 +180,7 @@
     /* 朝・昼の場面（24 時間の寝落ち配信で朝に起きたあとなど）では、共通の部品の「夜が明けるまで」を言い換える（2026-11-06 P15b の計測で 11 時の場面に出た） */
     if (S.hour != null && S.hour >= 5 && S.hour < 18) text = text.replace(/夜が明けるまで/g, '気が済むまで').replace(/朝が来るまで/g, '気が済むまで');
     form = full.form || form;
-    var e = ctx.act2({ actors: [a, b], cat: rcat(S), text: text, why: '配信の部屋：本番（' + ENTRY[entry] + '・' + FORM[form] + (full.room ? '・部屋の段' : '') + (spot ? '・' + spot : '') + '）', sex: true, lewd: form !== 'fade',
+    var e = ctx.act2({ actors: [a, b], cat: rcat(S), text: text, why: '配信の部屋：本番（' + ENTRY[entry] + '・' + FORM[form] + (full.room ? '・部屋の段' : '') + (spot ? '・' + ({ bed: 'ベッドの前', chair: '配信用の椅子', sofa: 'ソファ', floor: '画面の外の床' }[spot] || '配信部屋') : '') + '）', sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
     if (!e) return null;
     e.tag = entry === 'again' ? 'もう一度' : '本番';
@@ -318,15 +320,48 @@
   var CHAIN = ['toy', 'call', 'self', 'notice', 'come', 'punish', 'sex'];
   function midText(ctx, S, key, x, y) { var k = bodyK(S, x), R = RX(), l = dig(R.MID, key, k); return pickT(ctx, l, x, y) || pickT(ctx, l, x, y, true) || pickAny(ctx, l, x, y); }
   function telLine(ctx, S, i, x, y) { var l = dig(RX().TEL, att(y, x)); var t = l[i] || l[l.length - 1] || ''; return t ? '\n\n' + fill(ctx, t, y, x) : ''; }
+  /* ソロの中盤のきっかけ（toy・call の直前に必ず別の一件。e.tag＝'きっかけ'。2026-11-06 の利用者の指示「玩具を入れる・電話をかけるが急に始まる」）
+     玩具：視聴者の要求のコメント（C.REQ の段 6 の vibe → 段 5 の onani・sawaru）を読み上げる流れ ＋ R.MIDLEAD.toy[態度]（迷い・渋り・決心の台詞）。電話：R.MIDLEAD.call[態度]（理由） */
+  var MIDQ = { toy: [[6, 'vibe'], [5, 'onani'], [5, 'sawaru']], call: [] };
+  function midLead(ctx, S, key, x, y) {
+    var C = CK(), q = null;
+    (MIDQ[key] || []).forEach(function (z) { if (!q && C && C.main) { try { q = C.main(ctx, { stage: z[0], k: z[1] }); } catch (e) { q = null; } } });
+    /* R.MIDLEAD[段][態度] は文字列一本（lst で配列に） */
+    var M0 = (RX().MIDLEAD || {})[key] || {}, l = lst(M0[att(x, y)]), all = Object.keys(M0).reduce(function (o2, k2) { return o2.concat(lst(M0[k2])); }, []);
+    var t = pickT(ctx, l, x, y) || pickAny(ctx, l.length ? l : all, x, y);
+    if (!t) return null;
+    var e = ctx.say({ kind: 'event', cat: rcat(S), actors: [x, y], text: (q && q.text ? q.text : '') + fill(ctx, t, x, y), why: 'きっかけ：ソロの中盤（' + (key === 'toy' ? (x === S.top ? '自分の体に触れる' : '玩具を使う') : '画面の外の相手に電話する') + '・' + x.name + 'から）', mag: 0 });
+    if (e) { e.tag = 'きっかけ'; S.nMain++; S.midLeadN = (S.midLeadN || 0) + 1; }
+    return e;
+  }
+  /* 性格による渋り：恥ずかしがり・堅い態度は 1〜2 区切り、丁寧・ツンデレは半分の回で 1 区切り渋ってから応える（張り切る態度はすぐ）。夜の性格が恥じらいなら 1 区切り多く */
+  function midStallNeed(ctx, S, x) {
+    var p = H.per ? H.per(x) : 'gentle', nk = H.nightKind ? H.nightKind(x, S.off) : '', n = 0;
+    if (p === 'shy' || p === 'stern') n = 1 + (ctx.rng() < 0.5 ? 1 : 0);
+    else if (p === 'polite' || p === 'tsun') n = ctx.rng() < 0.5 ? 1 : 0;
+    if (nk === 'shy') n = Math.min(2, n + 1);
+    return n;
+  }
+  function midStall(ctx, S, o) {
+    var x = S.on[0], y = S.off, C = CK(), q = null, T0 = HK.HaishinText || {};
+    (MIDQ.toy || []).forEach(function (z) { if (!q && C && C.main) { try { q = C.main(ctx, { stage: z[0], k: z[1] }); } catch (e) { q = null; } } });
+    var p = H.per ? H.per(x) : 'gentle', t = pickT(ctx, dig(T0.STALL, p), x, y) || pickT(ctx, flat(T0.STALL), x, y) || pickAny(ctx, flat(T0.STALL), x, y);
+    if (!t) return false;
+    S.midStallN = (S.midStallN || 0) + 1; S.stallTot = (S.stallTot || 0) + 1;
+    rec(ctx, [x, y], (q && q.text ? q.text : '') + fill(ctx, t, x, y), '踏み込んだ要求を渋った（ソロの中盤の前・' + S.midStallN + ' 回目）', 'bond', { tag: '渋り', ev: 'stall' });
+    return true;
+  }
   function stage1(ctx, S, o, key) {
     var x = S.on[0], y = S.off, cat = rcat(S), t;
     switch (key) {
       case 'toy':
         t = midText(ctx, S, 'toy', x, y); if (!t) return false;
+        midLead(ctx, S, 'toy', x, y);
         rec(ctx, [x, y], fill(ctx, t, x, y), 'ソロの中盤：' + (x === S.top ? '体に触れる（攻め。穴には入れない）' : '玩具を入れる'), cat, { tag: '中盤' });
         S.mid = 'toy'; return true;
       case 'call':
         t = midText(ctx, S, 'call', x, y); if (!t) return false;
+        midLead(ctx, S, 'call', x, y);
         rec(ctx, [x, y], fill(ctx, t, x, y) + telLine(ctx, S, 0, x, y), 'ソロの中盤：画面の外の相手に電話をかけた', cat, { tag: '電話' });
         S.mid = 'call'; return true;
       case 'self':
@@ -407,6 +442,11 @@
     /* 中盤の始まり：夜 100 でも、残りが 8 区切りより多ければ 30%（段 6 の要求を何回か出してから）。ほかは 50% */
     if (S.midI === 0 && S.mid === 'none' && !o.last) { var lf = o.n - o.s; if (ctx.rng() >= (S.n100 ? (lf <= 8 ? 1 : 0.3) : 0.5)) return false; }
     if (!pairOk(ctx, S) && S.midI === 0 && !S.n100) { if (o.last) hint(ctx, S); return !!o.last; }
+    /* 中盤の前の渋り（性格。残りの区切りが足りるときだけ） */
+    if (S.midI === 0 && S.mid === 'none') {
+      if (S.midStallNeed == null) S.midStallNeed = midStallNeed(ctx, S, S.on[0]);
+      if ((S.midStallN || 0) < S.midStallNeed && !o.last && (!S.n100 || o.n - o.s >= 3) && midStall(ctx, S, o)) return true;
+    }
     /* 中盤のあいだ（電話・自慰・お仕置き）の区切りの「配信の様子」は、haishin.js（骨組み）が出さない */
     var left = Math.max(1, o.n - o.s), need = CHAIN.length - S.midI;
     var k = S.n100 ? Math.max(1, Math.ceil(need / left)) : (left <= 1 ? 1 : (ctx.rng() < 0.3 ? 2 : 1));
@@ -456,12 +496,12 @@
     if (!t) return false;
     act(S, dd, tk, k);
     var ex = zoneEx(S, k === 'seikan' || k === 'sawaru' ? (S.form === 'couple' ? y : x) : null);
-    var txt = (head || '') + fill(ctx, t, x, y, ex), why = '踏み込んだ要求に応えた（' + k + '・' + how + '）', tag = 'リクエスト', ev = how === 'sunao' ? 'sunao' : '';
+    var txt = (head || '') + fill(ctx, t, x, y, ex), why = '踏み込んだ要求に応えた（' + (H.kJa ? H.kJa(k) : '') + '・' + (H.howJa ? H.howJa(how) : '') + '）', tag = 'リクエスト', ev = how === 'sunao' ? 'sunao' : '';
     /* 性感帯の発表：前置き → R.ZONE[形][{a} の態度] */
     if (k === 'seikan') {
       var z = pickT(ctx, dig(R.ZONE, S.form, att(x, y)), x, y) || pickAny(ctx, dig(R.ZONE, S.form), x, y);
       if (z) txt += '\n\n' + fill(ctx, z, x, y, ex);
-      why = '性感帯を発表した（' + (S.form === 'couple' ? y.name : x.name) + 'の' + (ex ? ex.zone : '') + '・' + how + '）';
+      why = '性感帯を発表した（' + (S.form === 'couple' ? y.name : x.name) + 'の' + (ex ? ex.zone.replace(/[{}]/g, '') : '') + '・' + (H.howJa ? H.howJa(how) : '') + '）';
     }
     /* 深いキス（カップル）：HK.Kiss の長いキス。前置きの文を始まりの段に */
     if (k === 'deep' && S.form === 'couple' && HK.Kiss && HK.Kiss.scene) {
@@ -476,7 +516,7 @@
       if (oo) {
         U['out:' + oo.go] = 1;
         rec(ctx, [x, y], txt + '\n\n' + fill(ctx, oo.go, x, y), why, cat, { tag: tag, ev: ev });
-        rec(ctx, [x, y], fill(ctx, oo.snd, x, y) + '\n\n' + fill(ctx, oo.back, x, y), '画面の外の行為（' + k + '）：音と声だけが届き、戻ってきた', cat, { tag: '画面の外', ev: 'out', doer: dd, taker: tk });
+        rec(ctx, [x, y], fill(ctx, oo.snd, x, y) + '\n\n' + fill(ctx, oo.back, x, y), '画面の外の行為（' + (H.kJa ? H.kJa(k) : '') + '）：音と声だけが届き、戻ってきた', cat, { tag: '画面の外', ev: 'out', doer: dd, taker: tk });
         if (q.yen) S.ev.push('sc');
         return true;
       }

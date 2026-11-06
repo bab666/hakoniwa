@@ -12,7 +12,9 @@
   /* r18:begin */
   HK.SoloWarn.add('set-b-haishin', function (input, T) {
     var C = T.C, out = [];
-    if (C.length < 2 || !H.relIn(input, 0, 1)) return out;
+    if (C.length < 2) return out;
+    /* どんな関係の二人でも始められる（この部屋ではカップルとして扱う。2026-11-06 の利用者の指示） */
+    if (!H.relIn(input, 0, 1)) out.push({ level: 'warn', text: 'どんな関係でも、この部屋ではカップルとして扱います（結末の結婚報告は、恋人か夫婦の二人のときだけ）' });
     var A = C[0], B = C[1], f = T.env.form, tt = T.hard(A, B) && T.hard(B, A);
     if (tt && f === 'couple') return [{ level: 'block', text: '二人とも攻めなので、カップル配信は始められません。ソロ配信にするか、どちらかを受けかリバ、おまかせにしてください' }];
     if (tt && f !== 'solo') out.push({ level: 'warn', text: '二人とも攻めなので、ソロ配信になります' });

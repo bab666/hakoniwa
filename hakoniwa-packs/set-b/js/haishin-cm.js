@@ -63,7 +63,7 @@
     return tl.some(function (t) { return t && (t.type === 'spouse' || t.spouse) && t.married !== 'divorced'; });
   }
   function hourOf(S, opt) { var h = opt && opt.hour != null ? opt.hour : S && S.hour; return h == null ? null : ((+h % 24) + 24) % 24; }
-  function capKiss(S) { return HK.SAFE_ON || HK.SAFE_BUILD || !S || S.cap === 'kiss'; }
+  function capKiss(S) { return HK.SAFE_ON || HK.SAFE_BUILD || !S || (S.cap === 'kiss' || S.cap === 'talk'); }
   function cookOk(S) {
     if (!S || S.kind !== 'cook') return false;
     if (S.cookFail || S.cookNg) return false;
