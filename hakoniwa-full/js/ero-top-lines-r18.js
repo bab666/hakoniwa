@@ -241,7 +241,21 @@
      伝えていない箱庭は今までどおり（結果は変わらない）。2026-11-06 */
   var HOME_NG = /ただいま/;
   /* scen.eroNoHome は真偽か、ctx を受けて真偽を返す関数（同居生活：帰宅の夜の種のときだけ偽） */
-  function noHome(S) { var c = S && S.scen ? S : HK._curCtx, v = c && c.scen ? c.scen.eroNoHome : false; if (typeof v === 'function') { try { return !!v(c); } catch (e) { return false; } } return !!v; }
+  /* 2026-11-07：箱庭の口に加えて、全箱庭で一律に、直前（記録の最後の 3 件の本文・理由・札）に帰宅の出来事が無ければ帰宅の前提の台詞を外す（宇宙船・オメガ・ゾンビ・邪神村などで帰宅の無い夜に出ていた。
+     帰宅の語は点検（audit/cons.js の C3）と同じ。記録が読めないとき（物語型の箱庭の一部）も外す） */
+  var HOME_EV = /自宅|部屋に着|家に着|帰り着|ドアが閉ま|扉が閉ま|帰宅|帰って(?:き|来|く)|帰り(?:を待|が遅|道)|戻って(?:き|来)|ただいま(?!の)|おかえり|お帰り|玄関|出迎え|仕事から|鍵を開け|ドアを開け|扉を開け|帰る(?:なり|と)|遅く帰/;
+  function homeRecent(S, c) {
+    var L = (S && Array.isArray(S.log) && S.log) || (c && Array.isArray(c.log) && c.log) || null;
+    if (!L) return false;
+    for (var i = L.length - 1, n = 0; i >= 0 && n < 3; i--, n++) { var e = L[i]; if (e && (HOME_EV.test(String(e.text || '')) || HOME_EV.test(String(e.why || '')) || HOME_EV.test(String(e.tag || '')))) return true; }
+    return false;
+  }
+  function noHome(S) {
+    var c = S && S.scen ? S : HK._curCtx, v = c && c.scen ? c.scen.eroNoHome : false;
+    if (typeof v === 'function') { try { if (v(c)) return true; } catch (e) { /* 口が読めなければ次へ */ } }
+    else if (v) return true;
+    return !homeRecent(S && typeof S === 'object' ? S : null, c);
+  }
   function pools(top, bot, stage, opt, S) {
     opt = opt || {};
     var st = stageOf(stage), out = [];
