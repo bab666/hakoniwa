@@ -21,9 +21,11 @@
   if (!HK || !HK.Journal) return;
   var J = HK.Journal, K = HK.PairKit, PR0 = {};
   function L(s) { return s.split('|'); }
-  function pickOf(ctx, arr) { return arr && arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : ''; }
+  /* 場面の時刻（本体の HK.SceneTime。2026-11-06）：昼の場面に夜だけの文（月明かり・真夜中…）を選ばない */
+  function tf(arr) { var ST = HK.SceneTime; return ST && ST.cur && arr && arr.length > 1 ? ST.filter(arr) : arr; }
+  function pickOf(ctx, arr) { arr = tf(arr); return arr && arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : ''; }
   /* 一回の遊びで同じ文を続けて使わない（山場の文。2026-11-04：三人・四人で暮らす家の昼の場面で場面の数が増え、同じ山場の文が 3 回出ることがあった） */
-  function fresh(ctx, arr) { if (!arr || !arr.length) return ''; var U = ctx._prUsed = ctx._prUsed || {}, q = arr.filter(function (x) { return !U[x]; }), t = pickOf(ctx, q.length ? q : arr); U[t] = 1; return t; }
+  function fresh(ctx, arr) { if (!arr || !arr.length) return ''; arr = tf(arr); var U = ctx._prUsed = ctx._prUsed || {}, q = arr.filter(function (x) { return !U[x]; }), t = pickOf(ctx, q.length ? q : arr); U[t] = 1; return t; }
   function fill(ctx, t, a, b, ex) {
     t = String(t || '');
     if (ex) Object.keys(ex).forEach(function (k) { t = t.split('{' + k + '}').join(ex[k]); });
@@ -88,9 +90,11 @@
   function att(c, o) { var A0 = HK.Attr; var v = A0 && A0.nightAtt ? A0.nightAtt(c, o) : ''; return v || per(c); }
   /* 夜の性格の一文と夜の主導の段（短い・中くらいの場面に差す。長い場面は本体の山場の組み立ての包み（attr-r18.js・pos-lead-r18.js・ero-initiative-r18.js）が入れる） */
   /* lo：{ jealous（攻めが妬いた夜＝攻めから）, leadB（受けの側のきっかけ＝受けから） }。夜の主導は傾向（本体の HK.SexFlow.leadTonight。設計は docs/reports/2026-11-03/sex-flow-design.md の 3） */
-  function nightAdd(ctx, a, b, sh, ero, entry, lo) {
+  /* body：差し込む先の本文。本文の体位（「後ろから」など。本体の HK.Play.postureOf）と合わない体位の語の夜の性格の一文は選ばない（2026-11-06。お仕置きの短い場面で「向かい合って」と「後ろから」が並んだ） */
+  function nightAdd(ctx, a, b, sh, ero, entry, lo, body) {
     var pk = HK.Ero && HK.Ero.freshPick ? HK.Ero.freshPick(ctx, null) : function (arr) { return pickOf(ctx, arr); };
-    var t = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(a, b, sh, pk, ero) : '';
+    var A0 = HK.Attr, PL0 = HK.Play, hint = body && PL0 && PL0.postureOf ? PL0.postureOf(body, a, b) : '';
+    var t = A0 && A0.nightText ? (hint && A0.withPos ? A0.withPos(hint, function () { return A0.nightText(a, b, sh, pk, ero); }) : A0.nightText(a, b, sh, pk, ero)) : '';
     var l = entry !== 'ini' && HK.PosLead && HK.PosLead.text ? HK.PosLead.text(a, b, sh, pk, lo || null) : '';
     return l + t;
   }
@@ -99,6 +103,8 @@
   var STAND_INS = /寝床まで辿り着く|壁に押しつけられた|立ったまま|爪先立ち|宙に浮いたまま|抱え上げたまま|壁際で/, BED_BODY = /ベッド|布団|シーツ|寝床|枕/;
   function insert1(text, ins) {
     if (ins && STAND_INS.test(ins) && BED_BODY.test(text || '')) ins = ins.split(/(?<=。)/).filter(function (x) { return !STAND_INS.test(x); }).join('');
+    /* 本文の体位と合わない体位の語の文は外す（本体の HK.Play.fitPos。2026-11-06） */
+    if (ins && HK.Play && HK.Play.fitPos) ins = HK.Play.fitPos(ins, text || '');
     if (!ins) return text;
     var i = text.indexOf('\n\n');
     if (i >= 0) return text.slice(0, i) + '\n\n' + ins + text.slice(i);
@@ -151,7 +157,7 @@
       return { text: ctx.t(rr.text, a, b), form: form };
     } else if (form === 'short' && ero && HK.ThickEro && HK.ThickEro.short) {
       body = HK.ThickEro.short({ S: ctx, pick: pk, a: a, b: b, open: '', again: high, after: '' }).text;
-      body = insert1(body, nightAdd(ctx, a, b, sh, true, o.entry, lo));
+      body = insert1(body, nightAdd(ctx, a, b, sh, true, o.entry, lo, body));
     } else {
       /* 邪魔が入ったあとの続き（resume）は、場所や状況の決まった種（脱衣所・ベランダなど）を使わず、寝室の続きの文に */
       body = o.resume ? pickOf(ctx, FB.short[sh]) : text(ctx, 'PLAY', o.pi, sh, pickOf(ctx, FB.short[sh]), a, b);
@@ -174,7 +180,7 @@
         if (!fo && sh !== 'ff' && /指/.test(bx) && /沈め|入れ|入って|入ってる|中を|ナカ|何本/.test(bx) && !/指を(?:抜|引き抜)/.test(bx + body)) fo = pickOf(ctx, FB.fingerOut);
         body = bx + (fo ? fo : '') + '\n\n' + body + '\n\n' + peak + '\n\n' + tx;
       }
-      if (!o.nogen) body = insert1(body, nightAdd(ctx, a, b, sh, ero, o.entry, lo));
+      if (!o.nogen) body = insert1(body, nightAdd(ctx, a, b, sh, ero, o.entry, lo, body));
       /* 濃い：もう一度（短い版の一文は形を問わない書き方なので、女性どうしは段落の版にする） */
       if (high && HK.ThickEro) body += '\n\n' + HK.ThickEro.again(ctx, pk, a, b, ero && form === 'mid', form === 'short' && sh !== 'ff');
     }
@@ -352,7 +358,13 @@
      （本体の型の一文 HK.Play.shortLine と、本体の組み立ての候補が場所に合わないものを外す。すでに置かれていれば上書きしない） */
   /* 温度（本体の HK.Heat。2026-11-06）：温度を読む部屋（HK.Heat.use）の場面は、関係と気分から温度を決め、その場面のあいだ HK.Heat.cur を置く。
      場面のあとに、変化の一文（前回と違う温度のとき。始まりの段のあと）と事後の型の一文を足し、気分を動かして温度を覚える。本体に HK.Heat が無ければ今までどおり */
+  /* 場面の時刻（2026-11-06）：o.when・S.hour・S.part から時間帯を決め、組み立てのあいだ本体の HK.SceneTime.cur に入れ、場面のあと言い換えのきく時刻の語を直す */
   function sceneAt(ctx, S, env, a, b, sh, form, o, src) {
+    var ST = HK.SceneTime, w = ST ? ST.of(S, o) : '';
+    if (!w || HK.SAFE_ON) return sceneAt1(ctx, S, env, a, b, sh, form, o, src);
+    return ST.run(w, function () { var r = sceneAt1(ctx, S, env, a, b, sh, form, o, src); if (r && typeof r.text === 'string') r.text = ST.fix(r.text, w); return r; });
+  }
+  function sceneAt1(ctx, S, env, a, b, sh, form, o, src) {
     var HT = HK.Heat, rid = roomOf(ctx);
     if (!HT || !HT.enabled || !HT.enabled(rid) || HK.SAFE_ON) return sceneAt0(ctx, S, env, a, b, sh, form, o, src);
     var cpl = !!((ctx.pair && ctx.pair(a, b).couple) || (ctx.sk && (ctx.sk.wed || ctx.sk.love)) || (o && o.couple));

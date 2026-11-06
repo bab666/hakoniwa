@@ -151,6 +151,12 @@
     return fresh(ctx, l, true);
   }
   function reactB(ctx, p) { var R = T().B_REACT || {}; return fresh(ctx, R[p.pb] || R.gentle, true); }
+  /* 反応の段は一つのキスに 1 つ（2026-11-06。短い型で、喜ぶ反応のすぐあとに終わり方の「急にしないで」が続いていた）：
+     短い型は、終わり方の文にもう受けの反応（{b} が主語・話し手の文）があれば受けの反応の段を出さない。中くらい・長い型は、終わり方が受けの拒む反応
+     （「急にしないで」・そっぽを向く・胸を押して離れる）のとき、喜ぶ反応と並べない。乱数の引き方は変えないよう、選んでから捨てる */
+  var B_REACTS = /\{b\}(?:は|が|も|「)/, B_PROTEST = /急に|そっぽを向|胸を[^。]{0,4}押して離れ|にらん|睨/;
+  function reactOnce(ctx, p, last, all) { var r = reactB(ctx, p); if (!last) return r; return (all ? B_REACTS.test(last) : B_PROTEST.test(last) && !B_PROTEST.test(r)) ? '' : r; }
+  K.reactOnce = reactOnce;
   function step(ctx, d, a, b, hot) {
     var X0 = T(), l = (X0.STEP || {})[d] || [];
     if (d === 'deep' && hot && r18() && X0.STEP_R18 && X0.STEP_R18.deep && ctx.rng() < 0.7) l = X0.STEP_R18.deep;
@@ -181,7 +187,7 @@
       if (p.len === 's') {
         /* 短い：触れるだけ・ついばむの一段（お預けは、触れる前に止める） */
         if (!oz) p1 += step(ctx, ctx.rng() < 0.6 ? 'touch' : 'peck', top, bot);
-        if (!oz && p.end !== 'promise' && ctx.rng() < 0.35) p1 += reactB(ctx, p);
+        if (!oz && p.end !== 'promise' && ctx.rng() < 0.35) p1 += reactOnce(ctx, p, last, true);
         paras.push(p1 + last);
       } else if (p.len === 'm') {
         /* 中くらい：きっかけ → 深まる段（攻めの一言）→ 受けの反応と終わり方 */
@@ -190,13 +196,13 @@
         if (ctx.rng() < 0.4) p2 += stepR(ctx, 'press', p.hot);
         if (ctx.rng() < 0.6) p2 += lineA(ctx, p);
         paras.push(p2);
-        paras.push(reactB(ctx, p) + last);
+        paras.push(reactOnce(ctx, p, last) + last);
       } else {
         /* 長い：きっかけ → 重ねる → 深い（攻めの一言）→ 息が上がる（受けの反応）→ 名残惜しい → 終わり方 */
         paras.push(p1);
         paras.push(step(ctx, 'press', top, bot) + fresh(ctx, (X0.LONG || {}).more));
         paras.push(step(ctx, 'deep', top, bot, p.hot) + lineA(ctx, p));
-        paras.push(fresh(ctx, (X0.LONG || {}).iki) + reactB(ctx, p));
+        paras.push(fresh(ctx, (X0.LONG || {}).iki) + reactOnce(ctx, p, last));
         if (p.end !== 'nagori' && p.end !== 'oazuke' && ctx.rng() < 0.75) paras.push(fresh(ctx, (X0.LONG || {}).nagori) + last);
         else paras.push(last);
       }
