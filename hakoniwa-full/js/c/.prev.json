@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.51883cd638.js",
+  "core": "core.a638ff8cd0.js",
   "late": "late.aaadd330ed.js",
   "pack-sim": "pack-sim.77d906942d.js",
   "pack-rel": "pack-rel.6363b309f9.js",
@@ -79,7 +79,7 @@
   "late": "late.aaadd330ed.js",
   "pack-sim": "pack-sim.77d906942d.js",
   "pack-rel": "pack-rel.6363b309f9.js",
-  "pack-lewd": "pack-lewd.c9476193a2.js",
+  "pack-lewd": "pack-lewd.3d42999bdd.js",
   "scen-goukon": "scen-goukon.818f629f1e.js",
   "scen-classroom": "scen-classroom.7348c556eb.js",
   "scen-island": "scen-island.4f93802b61.js",
@@ -223,8 +223,8 @@
    22123
   ],
   "js/tone-dict-builtin.js": [
-   90832,
-   16803
+   90845,
+   16811
   ],
   "js/tone-ending.js": [
    31795,
