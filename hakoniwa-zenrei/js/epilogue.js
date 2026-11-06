@@ -146,7 +146,15 @@
     q = q.replace(/\{to\}/g, to ? to.name + '、' : '').replace(/\{t\}/g, to ? to.name + '、' : '');
     return soften(q);
   }
-  var X = HK.Epilogue = { LW: LW, LW_TO: LW_TO, LW_BETRAY: LW_BETRAY, kind: P_kind, hash: hash };
+  /* 結果の住人の欄（lastWords）に入れる最期の言葉：印 {一人称}・{二人称} を本人の一人称・二人称にする（2026-11-06）。
+     欄は記録の言い換えを通らないので（通らないと出口で「私」になる）、ここで展開する。覚え書き（notes）と記録の文は印のまま渡す
+     （言い換えの中で展開する。先に展開すると、書き下ろしの鍵（「私」の本文）に当たらなくなる） */
+  function lwOut(line, who) {
+    var V = HK.Voice;
+    if (!V || !V.hasMark || !V.hasMark(line) || !V.replaceFP) return line;
+    try { var r = V.replaceFP(line, who); return V.applyYou && V.hasMark(r) ? V.applyYou(r, (who && who.you) || '') : r; } catch (e) { return line; }
+  }
+  var X = HK.Epilogue = { LW: LW, LW_TO: LW_TO, LW_BETRAY: LW_BETRAY, kind: P_kind, hash: hash, lwOut: lwOut };
   /* 蘇る人（不死・吸血鬼。special.js の HK.Special.canRevive）は遺言を残さない。代わりに蘇ったときの一言（SP.reviveLine）が記録に残る */
   function revives(c) { return !!(HK.Special && HK.Special.canRevive && HK.Special.canRevive(c)); }
   X.revives = revives;
@@ -180,7 +188,7 @@
     (ctx.chars || []).forEach(function (c, k) {
       var s = chars[k];
       if (!s || !c.lastWords || revives(c)) return;
-      s.lastWords = c.lastWords; s.lastTo = c.lastTo; s.lastKind = c.lastKind;
+      s.lastWords = lwOut(c.lastWords, c); s.lastTo = c.lastTo; s.lastKind = c.lastKind;
       if (Array.isArray(s.notes)) s.notes.push('最期の言葉：' + c.lastWords);
     });
   };
@@ -493,7 +501,7 @@
         if (p._emoDeathN != null && S.log[p._emoDeathN] && typeof S.log[p._emoDeathN].text === 'string' && hash(key0 + '|lw|' + p.i) < 0.6) S.log[p._emoDeathN].text += '　――' + line;
         if (lastL.length < 3) lastL.push(line);
         var h = res.heroes && res.heroes[p.i];
-        if (h) h.lastWords = p.lastWords;
+        if (h) h.lastWords = lwOut(p.lastWords, p);
       });
       lastL.forEach(function (l) { res.ending.lines.push(l); });
       /* 一人ずつの「その後」（結末の行にもう「〇〇のその後」がある人は飛ばす） */
