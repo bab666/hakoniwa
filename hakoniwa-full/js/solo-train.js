@@ -365,7 +365,7 @@
       if (MO && typeof r0 === 'string') Object.keys(MO).forEach(function (k) { if (MO[k].test(r0)) usedM[k] = 1; });
       return r0;
     };
-    S._trainScene = o.car ? 'car' : '';
+    S._trainScene = o.car ? 'car' : ''; S._trainGrab = '';
     var opt = { S: S, ctx: S, pick: pick, rng: S.rng, a: a, b: b, style: HK.ThickSex.style(a), open: o.open, after: o.after, again: false };
     if (o.car) opt.spot = 'car';
     /* 車内：本体の組み立てのいちばん外（流れの管理の包みの最後。sex-flow-r18.js の opt.post）で、脱がせる段・受け止める一文・焦らしのあとの反応を足す（2026-11-06） */
@@ -444,7 +444,7 @@
     var an = a.mob ? a.short || a.name : a.name, bn = b.mob ? b.short || b.name : b.name;
     t = t.replace(/\{a\}/g, an).replace(/\{b\}/g, bn);
     /* 本体の場所の直し・モブの呼びかけの直し */
-    if (o.car) t = carFix(t, o.flavor === 'sweet');
+    if (o.car) t = carFix(t, o.flavor === 'sweet', S);
     if (!a.mob !== !b.mob && HK.SexFlow && HK.SexFlow.mobName) t = HK.SexFlow.mobName(t, a.mob ? b.name : a.name);
     return t;
   }
@@ -794,8 +794,19 @@
     return out;
   }
   var DEAL_RE = /音を上げ|貸し一つ|主導権|強引なほど|値踏み|負けを認め|勝ち誇|取引/;
-  function carFix(t, sweet) {
+  /* つかまる物（2026-11-06）：一つの場面で、受けがつかまる物（扉の手すり・吊り革）を途中で替えない（「手すりを握らせ」のあとに「吊り革に縋りついて」と飛んでいた）。
+     場面の最初に出たつかまる物を S._trainGrab に持ち、あとの文のつかまる物をそれにそろえる（場面ごとに消す） */
+  /* 最初のつかまる物：握らせる・握りしめる・縋る（周りの乗客の「吊り革を握ったまま」は数えない）。そろえるのは、縋る・しがみつく・握りしめる文だけ */
+  var GRAB_1 = /(手すり|吊り革)(?=を握らせ|を握りしめ|を握る手|を掴ん|をつかん|に(?:縋|すが|つかま|しがみ))/, GRAB_RE = /(手すり|吊り革)(?=に(?:縋|すが|つかま|しがみ)|を握りしめ|を握る手)/g;
+  function grabFix(t, S) {
+    var m = GRAB_1.exec(t), g = (S && S._trainGrab) || (m ? m[1] : '');
+    if (!g) return t;
+    if (S) S._trainGrab = g;
+    return t.replace(GRAB_RE, g);
+  }
+  function carFix(t, sweet, S) {
     if (HK.SexSpot) t = HK.SexSpot.fix(t, 'car');
+    t = grabFix(t, S);
     if (!sweet) return t;
     return t.split('\n\n').map(function (p) { return sents(p).filter(function (x) { return !DEAL_RE.test(x); }).join(''); }).filter(function (p) { return /\S/.test(p); }).join('\n\n');
   }
@@ -1582,7 +1593,8 @@
       text = carPQ(S, text, A, B, mode, false);
       text = text.replace(/\{a\}/g, an).replace(/\{b\}/g, bn);
       text += '\n\n' + fm(pk(S, crowdPool(S)), V) + fm(rx(S, (top ? X.PEAK_A : X.PEAK_B)[ps(p)]), V);
-      text = carFix(HK.SexFlow && HK.SexFlow.mobName ? HK.SexFlow.mobName(text, p.name) : text);
+      S._trainGrab = '';
+      text = carFix(HK.SexFlow && HK.SexFlow.mobName ? HK.SexFlow.mobName(text, p.name) : text, false, S);
     }
     else {
       /* その日の触れ合いで直に触れる段まで進んでいたら、山場の始まりで「服を一枚も乱さないまま」「布の上から」に戻さない（通し読み 1105） */
