@@ -262,7 +262,8 @@ function cleanHead(code) {
   const re = /'((?:[^'\\\n]|\\.){6,})'|"((?:[^"\\\n]|\\.){6,})"/g;
   let m, fall = null;
   while ((m = re.exec(code))) {
-    const raw0 = (m[1] || m[2] || '').replace(/\\(.)/g, '$1');
+    /* 一人称・二人称の印（{一人称}・{二人称}。2026-11-06 に台詞を一括で印へ移した）は、表示名では「私」「あなた」として読む（ほかの {…} の印の文字列は使わない） */
+    const raw0 = (m[1] || m[2] || '').replace(/\\(.)/g, '$1').replace(/\{一人称\}/g, '私').replace(/\{二人称\}/g, 'あなた');
     if (!JP.test(raw0) || BM.EXPLICIT.test(raw0) || /\{[^{}a-z]+\}/.test(raw0)) continue;
     /* 文字列の連結（'…' + x + '…'）の後半は使わない */
     if (/\+\s*$/.test(code.slice(Math.max(0, m.index - 12), m.index))) continue;
