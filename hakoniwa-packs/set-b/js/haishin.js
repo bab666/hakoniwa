@@ -533,16 +533,17 @@
     return { g: GOAL_GRP[ks] || '', k: ks || '' };
   }
   var GOAL_STALL = { up: 0.35, guard: 1.7, sweet: 0.8, stay: 1, task: 1 };
-  /* 目標が理由になった応え・渋りの台詞（T.GOALWHY[組][態度]。{gw}＝種の言い方）。目標が効いた区切りで、一回の配信に組ごと 2 回まで */
+  /* 目標が理由になった応え・渋りの一文（T.GOALWHY[組]。本人の目線の地の文。{gw}＝種の言い方）。目標が効いた区切りで、組ごとに 2 回・一回の配信で 3 回まで */
   var GW = { viewers: '同接の', money: 'スパチャの', pop: '人気配信者になる', public: '二人のことを知ってもらう', boast: '自慢する', tease: '照れた顔を見る',
     safe: '恥ずかしいことはしない', quit: '配信はほどほどにする', hitori: '本気の顔は一人にしか見せない', kind: 'リスナーに無理はさせない',
     kiss: 'キスまで行く', amaya: 'うんと甘やかす', sunao: '素直になる', wed: '大事なことを伝える', kinen: '記念の配信にする', last: '最後まで配信する', awake: '先に寝ない' };
   function goalWhy(ctx, S, c, o, grp) {
     var G = goalG(S, c); if (G.g !== grp) return '';
-    var n = S.goalWhyN = S.goalWhyN || {}; if ((n[grp] || 0) >= 2) return '';
+    /* 組ごとに 2 回・一回の配信で 3 回まで */
+    var n = S.goalWhyN = S.goalWhyN || {}; if ((n[grp] || 0) >= 2 || (n.all || 0) >= 3) return '';
     var l = dig(TX().GOALWHY, grp, per(c)), t = pickT(ctx, l, c, o) || pickT(ctx, dig(TX().GOALWHY, grp), c, o);
     if (!t) return '';
-    n[grp] = (n[grp] || 0) + 1; S.goalHitN = (S.goalHitN || 0) + 1;
+    n[grp] = (n[grp] || 0) + 1; n.all = (n.all || 0) + 1; S.goalHitN = (S.goalHitN || 0) + 1;
     return fill(ctx, t, c, o, { gw: GW[G.k] || '目標' });
   }
   function goalJa(S, c) { var G = goalG(S, c), T = TX(), o = ((T.GOAL_OPT || {}).s || []).concat((T.GOAL_OPT || {}).l || []).filter(function (x) { return x[1] === G.k; })[0]; return o ? o[2] : G.k; }
@@ -593,7 +594,8 @@
     if (nk === 'sweet') w.sunao += 1; if (nk === 'sadist' || nk === 'mean' || nk === 'maso') w.serve += 1; if (nk === 'shy') w.shy += 2;
     if (S.heat >= 60) w.sunao += 1;
     /* 目標：up は張り切って応える（serve）、guard は照れて控えめに（shy）、sweet は素直に（sunao） */
-    var gg = goalG(S, c).g;
+    /* 段 4 以上の要求（踏み込んだ応え）にだけ効かせる（段 1〜3 の質問の答え方は態度のまま） */
+    var gg = S.stage >= 4 ? goalG(S, c).g : '';
     if (gg === 'up') w.serve += 2; else if (gg === 'guard') w.shy += 1.5; else if (gg === 'sweet') w.sunao += 1.5;
     var keys = Object.keys(w), sum = keys.reduce(function (s, k) { return s + w[k]; }, 0), r = ctx.rng() * sum, i = 0;
     for (; i < keys.length - 1; i++) { r -= w[keys[i]]; if (r <= 0) break; }
