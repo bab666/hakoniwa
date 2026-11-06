@@ -201,7 +201,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | r18 の印の対応（`r18mark`） | pre | `js` | — | 0 | 1 秒 | 変えた本体の js で /* r18:begin */ と /* r18:end */ が行全体・交互・入れ子なし |
 | 2000 行の上限（`lines`） | pre | `js` | — | 0 | 1 秒 | 変えた js が 2000 行を超えた（もともと超えていて増えたものは警告だけ） |
 | 両ビルドの同名ファイル（`twin`） | pre | `js` | — | 0 | 1 秒 | 前は同じだった hakoniwa-full と hakoniwa-zenrei の同名ファイルが、片方だけ変わった |
-| 3 本の台詞の約束（base-lint）（`base-lint`） | pre | `serifu` `tone` | — | 0 | 6 秒 | 比べる相手のコミットに無かった問題だけを数える（今ある誤検出 9 件は数えない） |
+| 3 本の台詞の約束（base-lint）（`base-lint`） | pre | `serifu` `tone` | — | 0 | 6 秒 | 比べる相手のコミットに無かった問題だけを数える（今ある誤検出 9 件は数えない）。「私」「あなた」の直書き（すべての台詞・書き下ろしの値。fp-migrate.js と同じ見つけ方）はいつも数える（2026-11-06 に一括で移した） |
 | build（両ビルド）（`build`） | build | `js` | — | 1 | 40 秒 | ビルドのフォルダの js・_order.txt・index.html を変えたビルドだけ。入力が前回の build と同じで出力も同じなら飛ばす。中核（core）の br（かたまり・ファイルごとの目安の合計）が 900KB を超えたら不合格（2026-11-04） |
 | 出来事の一覧（catalog-check）（`catalog`） | post | `js` `event` | build・pack-catalog | 0 | 6 秒 | build のあと。一覧が古い・表示名の無い出来事・印の無い新しい場面 |
 | 点検の一式（audit-all）（`audit-all`） | heavy | `sim` `ui` `zen` `moan` `thick` `trio` `force` `sexgate` `feud` `group` `death` `name` `rel` `pair` | build | 2 | 240 秒 | 既定の一式（orient・pos×3・state・loveflag・seg・qa・call・misc）。印で追加の配役パス（--extra）を足す。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN） |
