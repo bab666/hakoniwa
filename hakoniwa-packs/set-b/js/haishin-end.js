@@ -194,12 +194,16 @@
       var v0 = Math.max(1, num(S.v0)), Vp = Math.max(v0, num(S.vPeak)), lg = function (x) { return Math.log(x) / Math.LN10; };
       var gl = function (key) { return pair(S).some(function (c) { var G = c && S.goal && S.goal[c.i]; return G && G.l && G.l.k === key; }); };
       var pop = 30 * lg(Vp / v0) + 10 * lg(1 + num(S.scSum) / 1000) + shortHits(ctx, S) * 10 + (spread(S) ? 15 : 0);
-      var quit = beh(S, 'jeal') * 12 + beh(S, 'sunao') * 6 + (gl('quit') ? 40 : 0) + (spread(S) ? 10 : 0);
-      var wed = (affUp(ctx, S) >= 15 ? 20 : 0) + (gl('wed') ? 40 : 0) + num(S.kiss) * 5 + num(S.wedCm) * 3;
+      /* 係数は 2026-11-06 P15b の計測（500 回）で直した：長期目標「結婚の報告」はおまかせで選ばれやすく、+40 だと目標だけで結婚報告が半分を占めた。
+         目標の重みを下げ、配信の中で実際にあったこと（キス・親しさ・お祝いのコメント・嫉妬・素に戻る）の重みを上げる。
+         嫉妬・素に戻るは 3 回までで数える（12・24 時間の配信で回数が積み上がり、やめて二人だけにばかりになったため） */
+      var quit = Math.min(3, beh(S, 'jeal')) * 15 + Math.min(3, beh(S, 'sunao')) * 8 + (gl('quit') ? 40 : 0) + (spread(S) ? 10 : 0);
+      var wed = (affUp(ctx, S) >= 15 ? 14 : 0) + (gl('wed') ? 24 : 0) + num(S.kiss) * 7 + num(S.wedCm) * 4;
       S.endScore = { pop: Math.round(pop), quit: Math.round(quit), wed: Math.round(wed) };
       /* 同点は wed → pop → quit の順（0 点どうしは続ける） */
       k = wed > 0 && wed >= pop && wed >= quit ? 'wed' : quit > pop && quit > 0 ? 'quit' : 'pop';
-      if (k === 'pop') { var n = sizeN(S); k = Vp >= n * 5 || Vp >= 10000 ? 'big' : Vp >= n * 1.5 ? 'slow' : 'small'; }
+      /* 常連の小さな箱は、同接が千人に届かない配信だけ（規模 1 万で同接 7 千人の配信に「少人数だからこそ」の文が出ないように。2026-11-06 P15b） */
+      if (k === 'pop') { var n = sizeN(S); k = Vp >= n * 5 || Vp >= 10000 ? 'big' : Vp >= n * 1.5 || Vp >= 1000 ? 'slow' : 'small'; }
     }
     S.endK = k;
     S.subs = subsOf(ctx, S, k);
