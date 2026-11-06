@@ -1,3 +1,4 @@
+/* @event-ok 一人しか残っていないときの討伐か回避かの決め方を足した（既にある出来事の分岐。2026-11-06） */
 /* 箱庭診断: 無人島の危険生物（毒蛇など）―― 気配 → 襲撃 → 会議 → 武器づくり → 討伐 */
 /* 出来事の一覧の印（hakoniwa-tools/build/event-catalog.js が数える。決まりは docs/reports/2026-10-28/event-catalog.md） */
 /* @event scen=island id=is_hazard cat=ハプニング tags=death cond=HK.Dark.f(ctx, 'kill') label=危険生物（毒・獣の襲撃・討伐） */
@@ -81,6 +82,11 @@
       var vote = P.reduce(function (s, c) { return s + c.tr.aggr + c.tr.cp * 0.5 + sk(ctx, c, 'hunt') * 0.12 - c.tr.caution * 0.8; }, 0) / P.length + (H.attacks >= 2 ? 0.4 : 0);
       var go = vote > 0.2 || rng() < 0.25;
       H.stage = go ? 'arm' : 'avoid';
+      /* 一人しか残っていない（ほかの人が死んだ・いない）ときは、一人で決める（force-repeat の点検で shy が null になり落ちた。2026-11-06） */
+      if (!shy) {
+        ctx.act2({ actors: [lead], cat: 'solo', text: ctx.t(go ? '{a}は一人で考えた末に、' + B.name + 'をこちらから仕留めに行くと決めた。待っていても、また襲われるだけだった。' : '{a}は一人で考えた末に、' + B.name + 'には近づかないことにした。拠点の周りを見回って、気配のする方角を避けた。', lead), why: '討伐か回避か（一人で決めた）' });
+        return;
+      }
       ctx.act2({ actors: [lead, shy], cat: go ? 'bond' : 'conflict', fx: function () { ctx.mod2(lead, shy, { ten: go ? 3 : 8 }, { ten: go ? 5 : 3 }); },
         text: go ? lead.name + '「このままじゃ、また誰かがやられる。こっちから' + B.name + 'を仕留めに行こう｜このままでは、また誰かがやられる。こちらから' + B.name + 'を仕留めに行こう｜このままでは、また誰かがやられます。こちらから' + B.name + 'を仕留めに行きましょう」' + shy.name + '「…本気？｜…本気か？｜…本気ですか？」' + lead.name + '「本気。まずは武器｜本気だ。まずは武器だ｜本気です。まずは武器からです」' :
           lead.name + '「' + B.name + 'を退治しに行くべきだ｜＝｜' + B.name + 'を退治しに行くべきです」' + shy.name + '「危なすぎる。近づかなければいいだけでしょ｜危なすぎる。近づかなければいいだけだろう｜危なすぎます。近づかなければいいだけでしょう」結局、拠点の周りに近づかないことになった。',
