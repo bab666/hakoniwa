@@ -94,6 +94,15 @@
     if (!f.length) { arr.forEach(function (x) { delete u[x]; }); f = arr.filter(function (x) { return x !== u._last; }); if (!f.length) f = arr; }
     var v = pickR(r, f); u[v] = 1; u._last = v; return v;
   }
+  /* 攻めの展開・体位の変化の文は、一回の遊び（シミュレーション）の中で同じ文を 2 回までにする（使い切ったら戻す。I._runLine は回の頭で作り直す。
+     2026-11-06：サキュバスの追加の関係の配役で「互いの額が触れるほど近くで…深く繋がり直す」が 3 つの記録に出た（点検 state の S10））。
+     まだ 2 回使った文が無いときは pickR と同じ引き方なので、結果は変わらない */
+  function pickD(r, arr) {
+    var C = I._runLine;
+    if (!C || !arr || arr.length < 2) return pickR(r, arr);
+    var f = arr.filter(function (x) { return (C[x] || 0) < 2; });
+    var v = pickR(r, f.length ? f : arr); C[v] = (C[v] || 0) + 1; return v;
+  }
   function tagOf(s) { var m = /^(ride|lap|back|face|side|H)>/.exec(s); return m ? m[1] : ''; }
   function untag(s) { return String(s).replace(/^(?:ride|lap|back|face|side|H)>/, ''); }
 
@@ -212,17 +221,17 @@
     var mid = [];
     /* 攻めの展開 */
     if (pl.dev === 'att') {
-      var a1 = pickR(r, T.ATT_TOP[pl.att] || T.ATT_TOP.gentle), tl = pickR(r, okBody((e ? T.ATT_TAIL_E : T.ATT_TAIL)[m], pl));
+      var a1 = pickR(r, T.ATT_TOP[pl.att] || T.ATT_TOP.gentle), tl = pickD(r, okBody((e ? T.ATT_TAIL_E : T.ATT_TAIL)[m], pl));
       pl.pose = tagOf(tl);
       mid.push(a1 + untag(tl));
     } else if (pl.dev === 'neu') {
-      var nt = pickR(r, okBody((e ? T.NEU_E : T.NEU)[m], pl));
+      var nt = pickD(r, okBody((e ? T.NEU_E : T.NEU)[m], pl));
       pl.pose = tagOf(nt);
       mid.push(untag(nt));
     } else if (pl.dev) {
       var dl = okBody(((e ? T.DEV_E : T.DEV)[pl.dev] || T.DEV[pl.dev])[m], pl);
       if (!dl.length) dl = okBody(T.DEV[pl.dev][m], pl);
-      var dt = pickR(r, dl);
+      var dt = pickD(r, dl);
       if (dt) { pl.pose = tagOf(dt); mid.push(untag(dt)); }
     }
     /* 型の変化（跨る・主導が移る） */
@@ -231,7 +240,7 @@
       var cl = poolH(okBody(tab[m], pl), pl.H);
       if (!cl.length) cl = poolH(okBody((pl.change === 'ride_b' ? T.RIDE_B : T.SHIFT)[m], pl), pl.H);
       if (cl.length) {
-        var ct = untag(pickR(r, cl));
+        var ct = untag(pickD(r, cl));
         ct = ct.replace('{why}', pickR(r, T.WHY[pl.why] || T.WHY.lead)).replace('{say}', e ? '' : '{b}' + pickU(r, sayUe(T, U, pl.change), U));
         if (pl.change === 'ride_b') ct = ct.replace(/\{b\}「\{mb\}」$/, '{b}「{mb}」' + pickR(r, T.RIDE_END[m]));
         pl.pose = pl.change === 'ride_b' ? (m === 'fm' ? 'face' : 'ride') : pl.pose;
@@ -456,7 +465,7 @@
   if (HK.simulate && !HK.simulate._ini) HK.wrap(HK, 'simulate', function (sim0) {
     /* 一回のシミュレーションのあいだ、型の段で使った喘ぎを覚えておく（同じ喘ぎを別の記録で繰り返さない） */
     /* 分割読み込み：このファイルは喘ぎのかたまり pack-lewd（中核のあと）にあるので、包みは HK.wrap で書く（素の代入だと、後から来るかたまりの HK.wrap（safe-room.js など）の並べ直しが切れる） */
-    var f = function () { install(); I._runSeen = {}; I._runMoan = {}; return sim0.apply(this, arguments); };
+    var f = function () { install(); I._runSeen = {}; I._runMoan = {}; I._runLine = {}; return sim0.apply(this, arguments); };
     f._ini = true;
     return f;
   });
