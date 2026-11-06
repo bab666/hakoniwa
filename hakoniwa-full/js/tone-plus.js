@@ -204,6 +204,42 @@
         return w + 'んだ';
       });
   }
+  /* 男性の話し手の女性的な語尾の残り（2026-11-06。利用者の判断「女性の口調なら女言葉は残していい。男のときに混ざらなければ」で一度だけ数えた残り。docs/reports/2026-11-06/tone-female-command.md の 7）：
+     書き下ろし・3 本の敬語の台詞・1 本の台詞から来る、文頭の「あら」「あらあら」（ほんわか・敬語まじりの書き下ろし）、敬語の「〜ませんものね」「〜ですものね」、
+     命令の「〜なさいよ」（意地っ張り（柔らかい）の 1 本の台詞）、関西弁の「〜なんなの」を男性の言い方に。お姉さん・お嬢様（女性語が口調）と、「〜なさい」が口調の偉そうな敬語・紳士・尊大・神の命令の「なさいよ」は除く */
+  var MX_FEM = { ane: 1, ojou: 1 }, MX_NASAI = { ane: 1, ojou: 1, keigo_bossy: 1, gentleman: 1, sondai: 1, god: 1, polite: 1, devoted: 1, kohai: 1, genki: 1, keigo_sarc: 1, keigo_flat: 1, keigo_twist: 1, chara_down: 1, otaku: 1, mixed: 1 };
+  var MX_I2E = { 'い': 'え', 'き': 'け', 'ぎ': 'げ', 'ち': 'て', 'に': 'ね', 'び': 'べ', 'み': 'め', 'り': 'れ' };
+  var MX_ICHI_I = /(?:起き|生き|降り|借り|浴び|伸び|落ち|閉じ|信じ|感じ|過ぎ|飽き|尽き|できる|似|居|見|着|煮)$/;
+  /* 命令の「〜なさい」の語幹を男性の命令形に（倒れ→倒れろ・見→見ろ・言い→言え・掴まって→掴まってろ・ついてき→ついてこい・勉強し→勉強しろ）。分からなければ null */
+  function mxImp(st) {
+    var k = st.match(/^(.*?)((?:[一-鿿々]|[ぁ-ゖ]{1,4}))$/);
+    if (NASAI[st]) return NASAI[st];
+    var m;
+    if ((m = st.match(/^(.*[てで])$/))) return m[1] + 'ろ';
+    if ((m = st.match(/^(.*[てっ])き$/))) return m[1] + 'こい';
+    if (/来$/.test(st)) return st + 'い';
+    if (/[一-鿿々]し$/.test(st)) return st + 'ろ';
+    if (/[えけげせてねべめれ]$/.test(st) || /(?:^|[^一-鿿々])[見寝着居出]$/.test(st)) return st + 'ろ';
+    if (MX_ICHI_I.test(st)) return st + 'ろ';
+    var last = st.slice(-1);
+    if (MX_I2E[last] && /[一-鿿々ぁ-ゖ]{2,}$/.test(st)) return st.slice(0, -1) + MX_I2E[last];
+    return k ? null : null;
+  }
+  var MX_NASAI_RE = /([一-鿿々ぁ-ゖ]{1,8}?)なさい(よ(?:ね)?)?(?=[。！？!?…‥、」　っ〜]|$)/g;
+  function mascExtra(q, who) {
+    var t = who.tone || (HK.toneOf ? HK.toneOf(who) : '');
+    if (MX_FEM[t]) return q;
+    q = q.replace(/(^|[「。！？!?　\s])あら(?:あら)?[、…‥]+/g, '$1').replace(/(ませ|ではありませ|じゃありませ)んものね/g, '$1んからね').replace(/ですものね/g, 'ですからね')
+      .replace(/(^|[「、…‥。！？!?　\s])な、?なによ(?=[、。！？!?…‥」　]|$)/g, '$1な、なんだよ').replace(/(^|[「、…‥。！？!?　\s])なによ(?=[、。！？!?…‥」　]|$)/g, '$1なんだよ')
+      .replace(/(だった|した|てた|でた)のね(?=[。！!…‥」　]|$)/g, '$1んだね');
+    if (!MX_NASAI[t]) q = q.replace(MX_NASAI_RE, function (m, st, yo) {
+      if (/(?:ごめん|おやすみ|お休み|おかえり|お帰り|いらっしゃ|ごらん|ご覧)$/.test(st)) return m;
+      var w = mxImp(st);
+      return w ? w + (yo ? 'よ' : '') : m;
+    });
+    if (t === 'kansai') q = q.replace(/なんなの(?=[。！!…‥」]|$)/g, 'なんやねん').replace(/(?<![なん])なの(?=[…‥。！!」]|$)/g, 'なんや');
+    return q;
+  }
   /* 意地っ張り（中性的）：意地っ張り（女性的）の決まった語尾を、性別によらず中性的に（2026-10-31 TS7。利用者の報告「意地っ張り（中性的）の台詞が意地っ張りのまま」）。
      意地っ張りの表・くだけた常体（K）の台詞をそのまま借りるので、「勘違いしないでよね」「〜なんだから」「〜だからね」「〜だもん」が残っていた。
      「〜ないでよね」→「〜ないでよ」、「〜てよね」→「〜てよ」、文末の「〜なんだから（ね）」→「〜だから」、「〜んだからね」→「〜んだから」、「〜だからね」→「〜だから」、
@@ -265,6 +301,7 @@
     if (TEIRU_CUT[who.tone]) q = teiruCut(q);
     if (who.tone === 'tsun_n') q = tsunNeutral(q);
     if (who.gender === 'm' && MASC_FIX[who.tone]) q = mascFix(q);
+    if (who.gender === 'm') q = mascExtra(q, who);
     var T = HK.TONES && HK.TONES[who.tone];
     if (T && T.neutral && who.gender !== 'f') {
       q = q.replace(/(^|[「、…‥\s])おや、あら(?:あら)?/g, '$1おや')
