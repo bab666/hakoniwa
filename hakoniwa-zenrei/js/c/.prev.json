@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.565aa5ea00.js",
+  "core": "core.c543e4d50f.js",
   "late": "late.2d10e86b04.js",
   "pack-rel": "pack-rel.17a42c62ac.js",
   "pack-sim": "pack-sim.57d7ce1824.js",
@@ -80,7 +80,7 @@
   "scen-trial": "scen-trial.0dc4b6528b.js",
   "scen-omega": "scen-omega.c723a3635f.js",
   "scen-massage": "scen-massage.76430be52f.js",
-  "scen-futari": "scen-futari.b01f4214dc.js",
+  "scen-futari": "scen-futari.367fb25089.js",
   "scen-zombie": "scen-zombie.cd9c9135c9.js",
   "scen-rpg": "scen-rpg.765a7cfb59.js",
   "scen-saimin": "scen-saimin.96ca63c124.js",
@@ -291,8 +291,8 @@
    4092
   ],
   "js/engine.js": [
-   57986,
-   19419
+   58003,
+   20172
   ],
   "js/sib-word.js": [
    12833,

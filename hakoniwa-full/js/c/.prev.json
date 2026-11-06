@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.413d304035.js",
+  "core": "core.13b05780d4.js",
   "late": "late.fc6b00ad72.js",
   "pack-sim": "pack-sim.63c47e2028.js",
   "pack-rel": "pack-rel.b7700a8d2b.js",
@@ -79,7 +79,7 @@
   "late": "late.fc6b00ad72.js",
   "pack-sim": "pack-sim.63c47e2028.js",
   "pack-rel": "pack-rel.b7700a8d2b.js",
-  "pack-lewd": "pack-lewd.2795c046ec.js",
+  "pack-lewd": "pack-lewd.12859d7976.js",
   "scen-goukon": "scen-goukon.c102009880.js",
   "scen-classroom": "scen-classroom.b1d20d1e78.js",
   "scen-island": "scen-island.085fbdc71f.js",
@@ -307,8 +307,8 @@
    4092
   ],
   "js/engine.js": [
-   57986,
-   19419
+   58003,
+   20172
   ],
   "js/sib-word.js": [
    12833,
