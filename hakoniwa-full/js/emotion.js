@@ -253,6 +253,10 @@
     var kind = e.kind;
     if (kind === 'step') return;
     var A = (o.actors || []).filter(function (c) { return c && c.i != null && ctx.chars[c.i] === c; });
+    /* 記録を作った時点の出演者の、平静でない気分（表情の鍵の (3)。face.js が話し手の分を引く。新しい記録だけ） */
+    var md = null;
+    A.forEach(function (c) { var m = X.mood(c); if (m !== 'calm') (md = md || {})[c.i] = m; });
+    if (md) e.md = md;
     if (ctx._emoWhy && kind !== 'phase') { e.why = (e.why ? e.why + '／' : '') + '気分：' + ctx._emoWhy.join('、'); ctx._emoWhy = null; }
     if (kind !== 'event' || /^(?:death|phase)$/.test(e.cat)) return;
     var a = A[0];

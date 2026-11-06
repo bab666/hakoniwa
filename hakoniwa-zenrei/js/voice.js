@@ -707,9 +707,12 @@
   };
   /* people: [{name, fp, tone, persona, gender, keigo}]。actors（任意）はその出来事の登場人物
      台詞の頭の \u2062 は「書き下ろしの敬語の行（tone-lines.js）」。言い換えず、一人称と呼び方だけそろえる */
+  /* 表情の鍵の印（face.js）：頭の印を読む／残った印を消す（face.js が無ければ何もしない） */
+  function FR(q) { return HK.Face && HK.Face.read ? HK.Face.read(q) : null; }
+  function FS(s) { return HK.Face && HK.Face.strip ? HK.Face.strip(s) : s; }
   V.processText = function (text, people, actors) {
     if (typeof text === 'string' && text.indexOf('\u2062') >= 0 && (text.indexOf('「') < 0 || !people || !people.length)) text = text.replace(/\u2062/g, '');
-    if (!text || typeof text !== 'string' || (text.indexOf('「') < 0 && text.indexOf('（') < 0) || !people || !people.length) return text;
+    if (!text || typeof text !== 'string' || (text.indexOf('「') < 0 && text.indexOf('（') < 0) || !people || !people.length) return FS(text);
     var out = '', last = 0, depth = 0, start = -1, rec = Array.isArray(V._segBuf) ? V._segBuf : null;
     /* 場面（この文ひとつ）ごとの覚え：ひねくれ敬語の「〜よ？」を続けない（tone-engine.js の T.scene）・呼びかけの名前を続けない（tone-plus.js の callAddress） */
     if (HK.Tone) HK.Tone.scene = {};
@@ -732,8 +735,14 @@
       else if (ch === '」' && depth > 0) {
         depth--;
         if (depth === 0 && start >= 0) {
-          var q = text.slice(start + 1, i), fix = marked(q, people);
+          /* 表情の鍵の印「〈照れ〉」（face.js の HK.Face.read）：「＠名前＠」の前でも後ろでも読んで消す（書き下ろしの照合より前に。fc は記録の e.fc に残る） */
+          var q = text.slice(start + 1, i), fm = FR(q);
+          if (fm) q = fm.q;
+          var fix = marked(q, people);
           if (fix) q = fix.q;
+          if (!fm && (fm = FR(q))) q = fm.q;
+          /* 喘ぎの段（R18版の moan-engine.js が出した声。印を文に入れずに覚えてある） */
+          var fc = fm ? fm.fc : HK.Moan && HK.Moan.faceOf ? HK.Moan.faceOf(q) : null;
           var who = fix ? fix.who : q.charAt(0) === '\u2060' ? null : speakerOf(text, start, i + 1, people);
           /* 区分（seg）：s 話し手のある発話（l・q は voice-seg.js が文の形で分ける）／c 名詞の引用／m 喘ぎ・モブ／u 話し手が決まらない */
           var kind = fix ? fix.k : q.charAt(0) === '\u2060' ? 'm' : who ? 's' : spMob ? 'm' : nounQOf(text, start, i, q, null) ? 'c' : 'u';
@@ -821,13 +830,13 @@
           }
           q = q.replace(/([！？!?])。/g, '$1');   /* 「ごめんごめん！。」のような重なりを整える */
           /* f:1 … 目印「＠名前＠」で話し手を固定した台詞（推定ではない。点検 seg-audit が推定の失敗と区別する） */
-          if (rec) rec.push({ k: kind, w: who ? people.indexOf(who) : kind === 'm' ? nameBefore(text, start, people) : -1, f: fix && fix.k === 's' ? 1 : 0 });
+          if (rec) { var rr = { k: kind, w: who ? people.indexOf(who) : kind === 'm' ? nameBefore(text, start, people) : -1, f: fix && fix.k === 's' ? 1 : 0 }; if (fc) rr.fc = fc; rec.push(rr); }
           out += text.slice(last, start + 1) + q + '」';
           last = i + 1; start = -1;
         }
       }
     }
-    return (out + text.slice(last)).replace(/\u2062/g, '');
+    return FS((out + text.slice(last)).replace(/\u2062/g, ''));
   };
   /* ---------- 名前の伏せ字（HK.NameGuard）：住人の名前・呼び名を、言い換えから守る（2026-10-28 担当HV） ----------
      名前の中の字が言い換えの語と重なると、名前が壊れていた（「飯塚」→「ご飯塚」（やわらかい口調の 飯→ご飯）、「君島」→「あなた島」（二人称）、

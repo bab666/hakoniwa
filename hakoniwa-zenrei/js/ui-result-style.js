@@ -101,6 +101,9 @@
     '.rvw .rvloghd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 -4px}' +
     '.rvw .rvloghd h2.sec,.rvw .rvsolo h2.sec#tlhead{margin:0;padding:0;border:0;font-size:14px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}.rvw .rvloghd h2.sec .hotleg{margin-left:4px}' +
     '.rvw .rvsidebtn{display:none}' +
+    /* 記録の欄の切り替え（本編／コメント欄 n件）（view.js の chSeg。2026-11-06）と、コメント欄の詰めた一覧（li.ev.chat。PC とスマホで同じ） */
+    '.rvw .rvloghd{flex-wrap:wrap}.rvw .rvseg.rvch{flex:0 0 auto;margin-left:auto}.rvw .rvseg.rvch button{flex:0 0 auto;padding:4px 12px;min-height:34px;font-size:12.5px}.rvw .rvseg.rvch small{font-size:11px;color:var(--rm);margin-left:2px;font-weight:400}' +
+    '.rvw .tl li.ev.chat{padding-top:3px;padding-bottom:3px}.rvw .tl li.ev.chat .evb{font-size:.9em;line-height:1.6;color:var(--ri)}.rvw .tl li.ev.chat .evp{display:block;margin:0}' +
     /* 経過の見え方（2026-11-02 担当UE）：.rvw の data-tlv（view.js の rv.tlv）で「カード」と「線」を切り替える。HTML は同じ。
        吹き出し（data-tlv="bubble"。2026-11-02 担当UH）は区切りの面・出来事の頭と足がカードと同じ（下のカードの規則を :is で共有）で、発話のある出来事の本文だけが吹き出し（.bbx）
        線＝前の見え方（index.html の .tl・.stepblk・.ev のまま：左の縦の線と点、顔アイコン、重要な出来事の種類の線の形と薄い背景）を、新しい殻（切替・目次・右の絞り込み）の中で 1 枚の面に置く。

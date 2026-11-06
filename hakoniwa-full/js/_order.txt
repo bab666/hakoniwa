@@ -68,6 +68,8 @@ js/tie-master-r18.js @pack:rel
 js/tie-warm-r18.js @pack:rel
 js/tie-order-r18.js @pack:rel
 js/mob-after.js @pack:rel
+# 表情の鍵（HK.Face。台詞の印「〈照れ〉」・出来事・気分から鍵を決める。2026-11-06。設計は docs/reports/2026-11-06/face-design.md）
+js/face.js
 js/voice.js
 js/voice-tone.js
 js/tone-registry.js
@@ -253,6 +255,8 @@ js/classroom-staff.js @scen:classroom
 js/classroom-teacher-love.js @scen:classroom
 js/classroom-cheer.js @scen:classroom
 js/endings.js @pack:sim
+# 折れ線のグラフの部品（HK.Chart.line。結末のカードの after に入れる SVG。2026-11-06）
+js/chart.js @pack:sim
 js/epilogue.js @pack:sim
 js/futari-text.js @scen:futari
 js/scenario-futari.js @scen:futari
