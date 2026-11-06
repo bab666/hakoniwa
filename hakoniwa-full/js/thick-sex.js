@@ -517,10 +517,15 @@
     /* 女性の攻め×男性で、受けに男性器がない組（性器の指定）には、受けの男性器を前提にした感じ方の文（根元・もの など）を使わない */
     var NOM = /根元|竿|\{男性器\}|\{亀頭\}|ものが|ものを|硬く|吐き出|射精|搾/;
     var fmL = mode === 'fm' && P && P.hasM && !P.hasM(b) ? T.FEEL_FM.filter(function (l) { return !NOM.test(l); }) : T.FEEL_FM;
-    var feel = pick(mode === 'ff' ? T.FEEL_FF : mode === 'fm' ? (fmL.length ? fmL : T.FEEL_FM) : T.FEEL).replace('{mb}', T.moan(pick, b, false, opt.rng));
+    /* 部屋だけの感じていく段（opt.feel[組]。2026-11-06。部屋のオリジナルの文 8 割の決まり）：あればそちらから（fm で受けに男性器がなければ、男性器を前提にした文を外す） */
+    var rfe = opt.feel && opt.feel[mode] && opt.feel[mode].length ? (mode === 'fm' && P && P.hasM && !P.hasM(b) ? opt.feel[mode].filter(function (l) { return !NOM.test(l); }) : opt.feel[mode]) : null;
+    var feel = pick(rfe && rfe.length ? rfe : mode === 'ff' ? T.FEEL_FF : mode === 'fm' ? (fmL.length ? fmL : T.FEEL_FM) : T.FEEL).replace('{mb}', T.moan(pick, b, false, opt.rng));
     /* 攻めの快感の一文：始まり・繋がる段ですでに攻めが2本以上喋っていれば、声のない文にする（攻めの台詞は全部で3本ほどまで） */
     var preQ = (String(open0 + body).match(/\{a\}「|\{a\}は[^。「]{0,12}「/g) || []).length;
     var faL = preQ >= 2 ? T.FEEL_A[mode].filter(function (l) { return !/「/.test(l); }) : [];
+    /* 部屋だけの攻めの快感の一文（opt.feelA[組]。2026-11-06。部屋のオリジナルの文 8 割の決まり。今日から同居生活など）：あればそちらから */
+    var rfa = opt.feelA && opt.feelA[mode] && opt.feelA[mode].length ? (preQ >= 2 ? opt.feelA[mode].filter(function (l) { return !/「/.test(l); }) : opt.feelA[mode]) : null;
+    if (rfa && rfa.length) faL = rfa;
     var fa = pick(faL.length ? faL : T.FEEL_A[mode]), pl = opt.place && T.PLACE[opt.place] ? pick(T.PLACE[opt.place]) : '';
     /* 夜の性格の一文（attr-r18.js：攻めの振る舞いと受けの崩れ方。どちらも決めていなければ空） */
     var ntx = HK.Attr && HK.Attr.nightText ? HK.Attr.nightText(a, b, mode, pick, false) : '';
@@ -539,7 +544,9 @@
     /* 最中の一言（言葉責め・焦らし・攻めの崩れが足した段。moan-cut.js の HK.Moan.slotsFix） */
     out.push(ntx + feel + (sl.mid ? tsay('mid') : ''));
     /* 体の感触の段：住人の体格・種族・胸の一文（attr.js。何も決めていなければ空） */
-    out.push((pl ? pl : '') + fa + T.react(pick, b, nth >= 2) + (HK.Attr ? HK.Attr.pairLine(a, b, 'touch', pick) : ''));
+    /* 受けの崩れ方：部屋だけの文（opt.react(pick, b, again) が文を返せばそれ。無ければ本体の態度 9 種の表） */
+    var rct = (typeof opt.react === 'function' && opt.react(pick, b, nth >= 2)) || T.react(pick, b, nth >= 2);
+    out.push((pl ? pl : '') + fa + rct + (HK.Attr ? HK.Attr.pairLine(a, b, 'touch', pick) : ''));
     /* 果てたあとの受けの余韻の声（moan-engine.js の HK.Moan.say の after＝e0。呼ぶ側の事後の文がないときに 3 割5分） */
     var e0 = !opt.after && HK.Moan && HK.Moan.say && opt.rng && !HK.SAFE_ON && opt.rng() < 0.35 ? HK.Moan.say(opt.rng, b, 'after', { novel: true, top: a }, null) : '';
     /* 受けの余韻の声が問い（「……まだ、くっついてて、いい……？」）なら、攻めの返事を続ける（after-reply-top-r18.js。問いでなければ乱数を引かない） */

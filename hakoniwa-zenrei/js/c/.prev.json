@@ -1,9 +1,9 @@
 {
  "cur": {
-  "core": "core.b781b9cbdf.js",
+  "core": "core.3d26f0539a.js",
   "late": "late.9ba787b283.js",
   "pack-rel": "pack-rel.e46ac111f7.js",
-  "pack-sim": "pack-sim.5a68a9e80d.js",
+  "pack-sim": "pack-sim.2d5c936ed9.js",
   "scen-goukon": "scen-goukon.1ccaaecb06.js",
   "scen-classroom": "scen-classroom.75d1a13496.js",
   "scen-island": "scen-island.42ac697424.js",
@@ -67,9 +67,9 @@
   "tone-yankee": "tone-yankee.d917a8b52b.js"
  },
  "prev": {
-  "core": "core.4edcfed681.js",
+  "core": "core.3d26f0539a.js",
   "late": "late.9ba787b283.js",
-  "pack-rel": "pack-rel.17a42c62ac.js",
+  "pack-rel": "pack-rel.e46ac111f7.js",
   "pack-sim": "pack-sim.5a68a9e80d.js",
   "scen-goukon": "scen-goukon.1ccaaecb06.js",
   "scen-classroom": "scen-classroom.75d1a13496.js",
@@ -199,8 +199,8 @@
    5134
   ],
   "js/tone-plus.js": [
-   53439,
-   16266
+   55665,
+   16863
   ],
   "js/tone-engine.js": [
    68838,
@@ -387,8 +387,8 @@
    2516
   ],
   "js/attr-look.js": [
-   3685,
-   1765
+   5053,
+   2505
   ],
   "js/attr-race.js": [
    24809,

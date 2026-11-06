@@ -1,3 +1,4 @@
+/* @event-ok 朝の種「やけに優しい／素っ気ない」を優しい朝と素っ気ない朝に分け、不穏な朝・日中・一日の終わりの気分と好意の向きを直した（新しい出来事ではない。2026-11-06） */
 /* 新婚部屋（追加パック set-b の部屋。エンジン型。両方のビルド）
    結婚したばかりの二人（か、元の関係のまま一緒に暮らし始めた二人）の毎日を、朝・日中・夜の3区切りで眺める。最後の夜は幸せなキスで一区切り。
    2026-11-03 利用者のフィードバックで作り直し（docs/reports/2026-11-03/shinkon-feedback.md・shinkon-design.md）：
@@ -1014,8 +1015,15 @@
       if (!day.recover) {
         var it = day.introI, who = day.introWho || (it === 9 || it === 2 || it === 3 ? (ctx.rng() < 0.5 ? A : B) : day.hi);
         var other = who === A ? B : A;
-        var tx = prose(ctx, 'INTRO', it, '{a}の朝――' + (day.intro ? day.intro.t : '') + '。', who, other);
-        ctx.act2({ actors: [who, other], cat: S.love && it !== 7 ? 'romance' : 'bond', text: fill(ctx, tx, who, other, { special: day.special || '' }), why: '新婚部屋：朝（' + (day.intro ? day.intro.t : '') + '）' });
+        /* 朝の種 6「なぜか今日は相手がやけに優しい／素っ気ない」：どちらの朝かをここで決める（優しい：素っ気ない ≒ 6：4。前の日に喧嘩があった・相手（{b}）の怒りや悲しみが強いと素っ気ない寄り、
+           相手の喜びが強いと優しい寄り。2026-11-06 利用者の報告「素っ気ない側が一度も出ない」）。素っ気ない朝は shinkon-mood-text.js の文と、気づいた人（{a}）の態度ごとの受け止め方 */
+        var cold = it === 6 && coldMorning(ctx, S, day, other), tx;
+        if (cold) tx = coldText(ctx, who, other);
+        else if (it === 6) { var k6 = (TX().INTRO || [])[6]; tx = pickT(ctx, TX().INTRO6_KIND || [], who, other) || (k6 && k6[0] && okText(ctx, k6[0], who, other) ? k6[0] : prose(ctx, 'INTRO', it, '{a}の朝――' + day.intro.t + '。', who, other)); }
+        else tx = prose(ctx, 'INTRO', it, '{a}の朝――' + (day.intro ? day.intro.t : '') + '。', who, other);
+        /* 不穏な朝（前の晩の言い合いのあと・素っ気ない朝）は恋愛の出来事にせず、気分を不安・沈む向きに動かす（数値の向きは shinkon-design.md の 15 章） */
+        var darkM = cold || it === 0;
+        ctx.act2({ actors: [who, other], cat: darkM ? 'bond' : S.love && it !== 7 ? 'romance' : 'bond', text: fill(ctx, tx, who, other, { special: day.special || '' }), why: '新婚部屋：朝（' + (day.intro ? (it === 6 ? (cold ? 'なぜか今日は相手が素っ気ない' : 'なぜか今日は相手がやけに優しい') : day.intro.t) : '') + '）', fx: darkM ? function () { uneasy(ctx, who, other, cold ? 'cold' : 'awk'); } : null });
         if (day.sick) { day.pend = []; return; }
         var k1 = gain(ctx, who, it === 9 ? 1 + Math.floor(ctx.rng() * 10) : 1 + Math.floor(ctx.rng() * 3)), k2 = gain(ctx, other, 1 + Math.floor(ctx.rng() * 2));
         day.pend = [[who, k1], [other, k2]];
@@ -1057,7 +1065,9 @@
       var re = rk ? withReact(ctx, rk[0], rk[1], rk[2], 0.55) : { text: '', odd: false };
       /* 恋の相手どうしでない伴侶の日（NO 22）に、その行の文がすべて外れて見出しだけの文（「AとBの一日――…」）になるときは出さない（二人の一幕は nlDay が出す） */
       var nlSkip = dt === fb && nlPair(ctx, a, b);
-      var e = nlSkip ? null : ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: body + re.text, odd: re.odd, why: '新婚部屋：' + SRC_NAME[day2.src] + '（' + soft(dailyText(day2)) + '）', fx: function () { var kw = rk && rk[0] === 'warm' ? persK(rk[1], 'warm') : 1; ctx.mod2(a, b, { aff: 2, att: S.love ? 2 : 0 }, { aff: 1 + kw, att: S.love ? 1 + kw * 0.5 : 0 }); } });
+      /* 不穏な日中の出来事（不安・喧嘩・嫉妬・会話できなかった日）は、恋愛の出来事にせず、好意を上げない（喧嘩は少し下げる）。気分は uneasy で */
+      var dk = dl && day2.src === 'DAILY' ? darkKind(dl.t) : '';
+      var e = nlSkip ? null : ctx.act2({ actors: [a, b], cat: dk ? 'bond' : S.love ? 'romance' : 'bond', text: body + re.text, odd: re.odd, why: '新婚部屋：' + SRC_NAME[day2.src] + '（' + soft(dailyText(day2)) + '）', fx: function () { if (dk) { if (dk === 'fight') ctx.mod2(a, b, { aff: -1, ten: 2 }, { aff: -1, ten: 2 }); uneasy(ctx, a, b, dk); return; } var kw = rk && rk[0] === 'warm' ? persK(rk[1], 'warm') : 1; ctx.mod2(a, b, { aff: 2, att: S.love ? 2 : 0 }, { aff: 1 + kw, att: S.love ? 1 + kw * 0.5 : 0 }); } });
       if (re.odd && e) S.odd++;
       if (day2.fight) {
         S.fights++;
@@ -1187,9 +1197,44 @@
       var et = prose(ctx, 'END', D.END.indexOf(en), '一日の終わりに、{a}は思った――' + en.t.replace(/。$/, '') + '。', day2.hi, day2.lo);
       /* 心の距離の一文は、一日の終わりの文の向き（不安・すれ違い）に合うときだけ（2026-11-04 報告「心の距離が縮まった」が不安の文のあとに付いた） */
       if (dist && SAD_RE.test(et) && !SAD_RE.test(dist)) dist = '';
-      ctx.act2({ actors: [day2.hi, day2.lo], cat: S.love ? 'romance' : 'bond', text: fill(ctx, et, day2.hi, day2.lo) + (dist && d !== S.days - 1 ? dist : ''), why: '新婚部屋：一日の終わり（' + en.k + '）' });
+      /* 不穏な一日の終わり（不安・距離・噛み合わない・泣いてしまった）は、恋愛の出来事にせず、気分を不安の向きに */
+      var dEnd = DARK_END.test(en.t);
+      ctx.act2({ actors: [day2.hi, day2.lo], cat: dEnd ? 'bond' : S.love ? 'romance' : 'bond', text: fill(ctx, et, day2.hi, day2.lo) + (dist && d !== S.days - 1 ? dist : ''), why: '新婚部屋：一日の終わり（' + en.k + '）', fx: dEnd ? function () { uneasy(ctx, day2.hi, day2.lo, 'worry'); } : null });
     } else if (dist && d !== S.days - 1) ctx.act2({ actors: [A, B], cat: 'bond', text: dist, why: '新婚部屋：離れて過ごした一日' });
     if (d === S.days - 1) { ending(ctx); return; }
+  }
+  /* ---------- 不穏な日常の出来事（2026-11-06）：数値の向き ----------
+     不安・すれ違い・小さな喧嘩・嫉妬の出来事は、恋愛の出来事（cat romance：本体の気分が喜び +12・+10 に動く）にせず cat bond（喜び +6）にして、
+     ここで気分を不安・沈む向きに動かす（気づいた人 {a} と相手 {b}。HK.Emo の fear＝不安・恐れ、joy＝喜び、anger＝怒り、grief＝悲しみ）。
+     関係の値（好意 aff・信頼 trust）は上げない（喧嘩だけ好意 -1・張りつめ +2） */
+  var UNEASY = {
+    cold: [{ fear: 12, joy: -16 }, { joy: -6 }],
+    awk: [{ fear: 4, joy: -12 }, { joy: -10 }],
+    worry: [{ fear: 10, joy: -14 }, { joy: -6 }],
+    fight: [{ anger: 8, joy: -12 }, { anger: 8, joy: -12 }],
+    jeal: [{ anger: 6, fear: 4, joy: -12 }, { joy: -6 }],
+    lonely: [{ grief: 6, joy: -12 }, { joy: -6 }]
+  };
+  function uneasy(ctx, a, b, k) {
+    var E = HK.Emo, d = UNEASY[k]; if (!E || !E.bump || !d) return;
+    if (a) E.bump(ctx, a, d[0]); if (b) E.bump(ctx, b, d[1]);
+  }
+  /* 日中の出来事・一日の終わりの文が不穏か（その種の向き） */
+  var DARK_DAILY = /喧嘩/, DARK_JEAL = /嫉妬/, DARK_WORRY = /不安|すれ違|気まず|踏み込/, DARK_LONE = /会話できなかった/;
+  var DARK_END = /不安|距離を感じ|噛み合わ|泣いて/;
+  function darkKind(t) { return !t ? '' : DARK_DAILY.test(t) ? 'fight' : DARK_JEAL.test(t) ? 'jeal' : DARK_WORRY.test(t) ? 'worry' : DARK_LONE.test(t) ? 'lonely' : ''; }
+  /* 朝の種 6：素っ気ない朝か（{b}＝素っ気ない人） */
+  function coldMorning(ctx, S, day, b) {
+    var p = 0.42, e = (b && b.emo) || {};
+    if (S.foughtDay != null && S.foughtDay === day.d - 1) p = 0.7;
+    if ((e.anger || 0) >= 40 || (e.grief || 0) >= 40) p += 0.15;
+    if ((e.joy || 0) >= 85) p -= 0.1;
+    return ctx.rng() < Math.max(0.15, Math.min(0.85, p));
+  }
+  function coldText(ctx, a, b) {
+    var T = TX(), t = pickT(ctx, T.INTRO6_COLD || [], a, b) || ((T.INTRO || [])[6] || [])[1] || '';
+    var R = T.INTRO6_COLD_R || {}, k = RC() ? RC().per(a) : 'gentle', r = pickT(ctx, R[k] || R.gentle || [], a, b);
+    return t + (r || '');
   }
   /* ---------- 体調を崩した人を看る段・出張で離れて迎える朝（文は shinkon-sick.js。{a}＝看る人、{b}＝体調の悪い人） ---------- */
   function SK() { return HK.ShinkonSick || {}; }
