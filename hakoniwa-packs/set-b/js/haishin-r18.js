@@ -258,7 +258,8 @@
       var le = lead(ctx, S, 'again', x, y, '濃い夜・事後の熱');
       if (!scene(ctx, S, 'again', x, { spot: 'bed', form: ctx.rng() < 0.5 ? 'short' : 'mid' })) dropE(ctx, le);
     }
-    after(ctx, S, 'leak', a, b);
+    /* 事後の一言：ソロ（お仕置きのあと）はお仕置きの入口の文、カップルは切り忘れの文 */
+    after(ctx, S, S.form === 'solo' ? 'punish' : 'leak', a, b);
     rec(ctx, [a, b], fill(ctx, pickAny(ctx, LEAKEND, a, b), a, b), '切り忘れた配信が落ちた（' + (S.leakFate === 'ban' ? '停止' : S.leakFate === 'spread' ? '切り抜きが広まる' : '誰も保存していなかった') + '）', 'bond', { tag: '配信終了' });
     S.leak = 'after'; S.ended = 'leak'; S.endAt = o.s;
     return true;
