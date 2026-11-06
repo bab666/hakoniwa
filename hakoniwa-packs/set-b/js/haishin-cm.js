@@ -106,6 +106,7 @@
 
   /* ---------- その文を出してよいか ---------- */
   /* 札 need（文字列か配列。配列は全部を満たすときだけ）：M/F＝{h} に男性器／女性器、M2/F2＝{h2} に、top/bot＝{h} が攻め／受けかリバ、solo/couple＝形 */
+  var opt0 = null;   /* okFor の opt（向きで当てた行は、受け攻めの設定の top／bot を見ない） */
   function needOk(ctx, S, n, tgt) {
     var o = partner(S, tgt);
     switch (n) {
@@ -115,8 +116,8 @@
       case 'F': case 'f': return hasF(tgt);
       case 'M2': return !isSolo(S) && hasM(o);
       case 'F2': return !isSolo(S) && hasF(o);
-      case 'bot': return isBot(S, tgt);
-      case 'top': return !isBot(S, tgt);
+      case 'bot': return !!(opt0 && opt0.actMode) || isBot(S, tgt);
+      case 'top': return !!(opt0 && opt0.actMode) || !isBot(S, tgt);
       default: return true;
     }
   }
@@ -125,7 +126,10 @@
     var t = txt(it); if (!t) return false;
     var on = onList(S); tgt = tgt || on[0];
     if (typeof it === 'object') {
-      if (arr(it.need).some(function (n) { return !needOk(ctx, S, n, tgt); })) return false;
+      opt0 = opt || null;
+      var nb = arr(it.need).some(function (n) { return !needOk(ctx, S, n, tgt); });
+      opt0 = null;
+      if (nb) return false;
       if (it.kind && it.kind !== (S.kindLive || S.kind)) return false;
       if (it.cook && !cookOk(S)) return false;
       var isEnd = it.end || arr(it.tag).indexOf('end') >= 0;
@@ -163,7 +167,9 @@
     var S = st(ctx), U = S.cmUsed = S.cmUsed || {}, c0 = [], c1 = [];
     (pool || []).forEach(function (it) {
       var t = txt(it); if (!t || local[t]) return;
-      var tg = tgtOf(it); if (!okFor(ctx, it, tg, opt)) return;
+      var tg = tgtOf(it); if (tg === false) return;
+      var o2 = tg && tg.am ? Object.assign({}, opt || {}, { actMode: true }) : opt; if (tg && tg.am) tg = tg.c;
+      if (!okFor(ctx, it, tg, o2)) return;
       var u = U[t] || 0;
       if (u === 0) c0.push([it, tg]); else if (u === 1) c1.push([it, tg]);
     });
@@ -173,6 +179,29 @@
     return { it: c[0], tgt: c[1], t: t0 };
   }
   function tgtRand(ctx) { var S = st(ctx), on = onList(S); return function () { return on.length > 1 ? on[Math.floor(rnd(ctx) * on.length)] : on[0]; }; }
+  /* 行為の向きでコメントの {h}／{h2} を当てる（2026-11-06 の利用者の指示「逆 CP としてコメントしないように」。設計 4.5）。
+     向きを言う文＝札 dir（'doer'＝{h} が行為をする側・'taker'＝{h} がされる側）か、need の top（→ doer）・bot（→ taker）。ak＝行為の種類の限定（kuchi・sex など）。
+     act＝その区切りの { doer, taker, k }（haishin.js の setAct。反応の表は、その出来事をした人 S.lastEvBy[鍵]）。向きの無い区切り（act が null）は向きを言う文を出さない。
+     向きを言わない文は今までどおり配信者のどちらかを当てる。ソロ配信は {h}＝配信者だけなので当てない。戻り値：false（出さない）／{ c, am }（am＝向きで当てた） */
+  function dirOf(it) {
+    if (!it || typeof it !== 'object') return '';
+    if (it.dir) return it.dir;
+    var nd = arr(it.need);
+    return nd.indexOf('top') >= 0 ? 'doer' : nd.indexOf('bot') >= 0 ? 'taker' : '';
+  }
+  function tgtAct(ctx, act) {
+    var S = st(ctx), on = onList(S), rt = tgtRand(ctx);
+    return function (it) {
+      var d = dirOf(it);
+      if (isSolo(S)) return on[0];
+      if (!d) return it && it.ak ? false : rt();
+      if (!act || !act.doer) return false;
+      if (it.ak && arr(it.ak).indexOf(act.k) < 0) return false;
+      var c = d === 'doer' ? act.doer : act.taker;
+      if (!c || on.indexOf(c) < 0) return false;
+      return { c: c, am: true };
+    };
+  }
 
   /* ---------- ハンドル名・常連 ---------- */
   function handles() { var l = HK.Mob && HK.Mob.list ? HK.Mob.list('haishin-h') : []; if (!l || !l.length) l = C().HANDLES || []; return l && l.length ? l : FALLBACK_H; }
@@ -238,14 +267,15 @@
   function post(ctx, opt) {
     opt = opt || {};
     var S = st(ctx); if (!S) return null;
-    var CC = C(), G = CC.GEN || {}, stage = opt.stage || S.stage || 1, local = {}, used = {}, lines = [], rt = tgtRand(ctx);
+    var CC = C(), G = CC.GEN || {}, stage = opt.stage || S.stage || 1, local = {}, used = {}, lines = [];
+    var act = S.actMix ? null : S.act || null, rt = tgtAct(ctx, act), evBy = S.lastEvBy || {};
     var v = Math.max(S.v || 10, 1);
     var n = opt.n || Math.max(3, Math.min(12, Math.round(3 + 2.2 * Math.log(v) / Math.LN10 + 0.5 * stage)));
     if (opt.sleep && !opt.n) n = Math.min(12, Math.round(n * 1.5));
     if (opt.end && !opt.n) n = 3;
     regulars(ctx);
     var res = { garikoi: false, wed: 0 };
-    function add(o, h, y) { if (!o) return false; lines.push({ h: h || handle(ctx, used), y: y || 0, t: fill(ctx, o.t, o.tgt), reg: o.reg || '' }); return true; }
+    function add(o, h, y) { if (!o) return false; lines.push({ h: h || handle(ctx, used), y: y || 0, t: fill(ctx, o.t, o.tgt), reg: o.reg || '', d: dirOf(o.it), tg: o.tgt, src: o.t, ak: o.it && o.it.ak || '', act: o.act === undefined ? act : o.act }); return true; }
     /* 配信を切る前の最後のコメント：end の札の文だけ */
     if (opt.end) {
       var ends = stageTable(S, 6).concat(stageTable(S, stage), G.all || []);
@@ -253,7 +283,10 @@
     } else {
       /* 直前の出来事への反応（2 本まで） */
       var ev = arr(opt.react != null ? opt.react : S.lastEv).filter(function (k) { return CC.REACT && CC.REACT[k]; }), rc = 0;
-      ev.forEach(function (k) { if (rc < 2 && add(draw(ctx, CC.REACT[k], rt, opt, local))) rc++; });
+      ev.forEach(function (k) {
+        var ea = evBy[k] || null, d0 = rc < 2 ? draw(ctx, CC.REACT[k], tgtAct(ctx, ea), opt, local) : null;
+        if (d0) { d0.act = ea; if (add(d0)) rc++; }
+      });
       if (opt.stall && CC.STALL) for (var s0 = 0; s0 < 2; s0++) add(draw(ctx, CC.STALL, rt, opt, local));
       /* 切り忘れ：最高潮のコメントを主に */
       if (opt.leak && CC.LEAK && CC.LEAK[opt.leak]) { var lk = Math.ceil(n * 0.7); for (var l0 = 0; l0 < lk && lines.length < n; l0++) if (!add(draw(ctx, CC.LEAK[opt.leak], rt, opt, local))) break; }
@@ -263,10 +296,10 @@
       var regs = (S.regulars || []).filter(function (r) { return CC.REG && CC.REG[r.type]; });
       for (var r0 = 0; r0 < rk && regs.length && lines.length < n; r0++) {
         var R = pick(ctx, regs), d = draw(ctx, CC.REG[R.type], rt, opt, local);
-        if (d && add({ t: d.t, tgt: d.tgt, reg: R.type }, R.h)) {
+        if (d && add({ t: d.t, tgt: d.tgt, it: d.it, reg: R.type }, R.h)) {
           if (R.type === 'garikoi') res.garikoi = true;
           var md = regOf(S, 'mod');
-          if (R.type === 'arashi' && md) { var dm = draw(ctx, CC.REG.mod, rt, opt, local); if (dm) add({ t: dm.t, tgt: dm.tgt, reg: 'mod' }, md.h); }
+          if (R.type === 'arashi' && md) { var dm = draw(ctx, CC.REG.mod, rt, opt, local); if (dm) add({ t: dm.t, tgt: dm.tgt, it: dm.it, reg: 'mod' }, md.h); }
         }
       }
       /* 残り：段の表 40・共通 25・種類 15・規模 10・時間帯 10（寝落ちの区切りは段の表の代わりに寝落ちの表） */
@@ -290,12 +323,18 @@
       var L0 = pick(ctx, cand);
       if (L0) { L0.y = y; return; }
       var d3 = draw(ctx, (CC.REACT && CC.REACT.sc) || G.all, rt, opt, local) || draw(ctx, G.all, rt, opt, local);
-      if (d3) lines.push({ h: wh ? wh.h : handle(ctx, used), y: y, t: fill(ctx, d3.t, d3.tgt), reg: wh ? 'whale' : '' });
+      if (d3) lines.push({ h: wh ? wh.h : handle(ctx, used), y: y, t: fill(ctx, d3.t, d3.tgt), reg: wh ? 'whale' : '', d: dirOf(d3.it), tg: d3.tgt, src: d3.t, ak: d3.it && d3.it.ak || '', act: act });
     });
     if (!lines.length) return null;
     /* 並びを混ぜる（荒らし→モデレーターの順は崩さない） */
     for (var i = lines.length - 1; i > 0; i--) { var j = Math.floor(rnd(ctx) * (i + 1)); if (lines[i].reg === 'mod' || lines[j].reg === 'mod') continue; var tmp = lines[i]; lines[i] = lines[j]; lines[j] = tmp; }
     var out = lines.map(function (l) { return l.h + (l.y ? '［' + yenStr(l.y) + '］' : '') + '：' + l.t; });
+    /* 点検用の控え（記録には書かない。S.dirLog は ctx.hs の中だけ。点検の道具が HK.Haishin._dirLog から読む） */
+    if (S.dirLog) {
+      var nm = function (c) { return c ? c.name : ''; };
+      S.dirLog.push({ s: S.s, step: ctx.stepIndex, form: S.form, act: act ? { doer: nm(act.doer), taker: nm(act.taker), k: act.k } : null, mix: !!S.actMix,
+        lines: lines.map(function (l) { return { t: l.t, src: l.src || '', d: l.d || '', ak: l.ak || '', h: nm(l.tg), act: l.act ? { doer: nm(l.act.doer), taker: nm(l.act.taker), k: l.act.k } : null }; }) });
+    }
     out.forEach(function (l) { if (/結婚/.test(l)) res.wed++; });
     S.wedCm = (S.wedCm || 0) + res.wed;
     S.cmLast = { garikoi: res.garikoi, wed: res.wed, step: ctx.stepIndex };

@@ -250,6 +250,8 @@
   function endList(ctx, S, k) {
     var E = (TX().END || {})[k];
     if (E && !Array.isArray(E)) E = E[married(ctx, S) ? 'spouse' : 'lover'] || E.lover || [];
+    /* 結婚報告：本編の最後の区切りで報告した回（S.wedLive）は at 'live' の文、報告していない回は 'next'（次の配信で）の文（札の無い文はどちらでも） */
+    if (k === 'wed') { var at = S.wedLive ? 'live' : 'next', E2 = (E || []).filter(function (x) { return typeof x === 'string' || !x.at || x.at === at; }); if (E2.length) E = E2; }
     return E || [];
   }
   function snsLines(ctx, S, k, A) {

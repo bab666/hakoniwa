@@ -39,6 +39,8 @@
 /* @event scen=set-b-haishin id=hs_mid_come cat=romance tie=- tags=night label=電話の相手が配信部屋までやって来る */
 /* @event scen=set-b-haishin id=hs_mid_stay cat=romance tie=- tags=night label=相手は来られず声だけで続ける */
 /* @event scen=set-b-haishin id=hs_mid_punish cat=romance tie=- tags=night label=配信をつけたままのお仕置き */
+/* @event scen=set-b-haishin id=hs_mid_amae cat=romance tie=- tags=night label=来てくれた相手に配信中に甘やかされる */
+/* @event scen=set-b-haishin id=hs_r18_amae cat=romance tie=- tags=night label=甘やかされたあとの本番 */
 /* @event scen=set-b-haishin id=hs_r18_cutoff cat=bond tie=- tags=night label=配信を切ってから二人きりになる */
 /* @event scen=set-b-haishin id=hs_r18_leakcut cat=bond tie=- tags=night label=配信を切ったつもりで切れていない */
 /* @event scen=set-b-haishin id=hs_r18_lead cat=romance tie=- tags=night label=配信の夜が本番に向かうきっかけ */
@@ -57,6 +59,8 @@
   if (!H || !PR || !HK.Journal) return;
   var ID = 'set-b-haishin', K = HK.PairKit;
   var pickT = H.pickT, fill = H.fill, rec = H.rec, dig = H.dig, flat = H.flat;
+  /* 行為の向き（haishin.js の setAct。コメント欄が {h}／{h2} を行為のする側・される側で当てる） */
+  function act(S, d, t, k, over) { if (H.setAct) H.setAct(S, d, t, k, over); }
   function RX() { return HK.HaishinR18Text || {}; }
   function RM() { return HK.HaishinR18Room || {}; }
   function CK() { return HK.HaishinCmKit || null; }
@@ -81,7 +85,7 @@
   }
   /* 場所：配信用の椅子は本体に chair があればそれ、無ければ sofa に落とす */
   function spotOf(k) { var SP = HK.SexSpot; if (!SP) return ''; if (k === 'chair') return SP.KIND && SP.KIND.chair ? 'chair' : 'sofa'; return k; }
-  var ENTRY = { cut: '配信を切ってから', leak: '切り忘れたまま', punish: 'お仕置きのあと', tel: '電話越しの山場', again: 'まだ映っているとも知らずにもう一度' };
+  var ENTRY = { cut: '配信を切ってから', leak: '切り忘れたまま', punish: 'お仕置きのあと', amae: '甘やかされたあと', tel: '電話越しの山場', again: 'まだ映っているとも知らずにもう一度' };
   var FORM = { fade: 'ほのめかす', short: '短い場面', mid: '中くらいの場面', long: '長い場面' };
   var STG = { seikan: 4, mimi: 4, kubi: 4, deep: 4, sawaru: 5, koe: 5, shitagi: 5, nugu: 5, chikubi: 5, onani: 5, kuchi: 6, ana: 6, vibe: 6, tel: 6, ireru: 6 };
 
@@ -160,7 +164,8 @@
     /* 長い場面：半分は部屋の段（HK.PairR18.compose）、半分は本体の長い場面に部屋の専用の場面（HK.Play.addScene：切り忘れ・お仕置き・リクエスト）を乗せる */
     /* 濃い（lv high）の「もう一度」は、切り忘れでは事後の区切りに別の一件で出す（leakAfter）ので、場面の中には入れない。もう一度の場面の中にも入れない */
     var lv2 = entry === 'again' || (entry === 'leak' && lv === 'high') ? 'mid' : lv;
-    var opt = { lv: lv2, ero: ero, nogen: nogen, pi: PI[entry] || 0, afi: 0, jealTop: !!o.jealTop, leadB: x === b, entry: entry, resume: false, spot: spot, couple: true, noRoom: form === 'long' && !!HK.Play && sh !== 'fm' && ctx.rng() < 0.5 };   /* fm は型（HK.Play）を切るので、専用の場面は乗らない：いつも部屋の段で組む */
+    act(S, a, b, entry === 'again' ? 'again' : 'sex', true);
+    var opt = { lv: lv2, ero: ero, nogen: nogen, pi: o.pi != null ? o.pi : PI[entry] || 0, afi: 0, jealTop: !!o.jealTop, leadB: x === b, entry: entry, resume: false, spot: spot, couple: true, noRoom: form === 'long' && !!HK.Play && sh !== 'fm' && ctx.rng() < 0.5 };   /* fm は型（HK.Play）を切るので、専用の場面は乗らない：いつも部屋の段で組む */
     if (sh === 'fm' && form === 'short') opt.ero = false;
     var PL = HK.Play, off0 = PL ? PL.off : null;
     if (PL && sh === 'fm') PL.off = true;
@@ -203,7 +208,7 @@
     return p.join('・');
   }
   /* 事後の一言（R.AFTER[入口]）＋関係と気分が動く */
-  var EMO = { cut: { joy: 20, lust: 10 }, leak: { joy: 18, lust: 12 }, punish: { shame: 15, joy: 15 }, tel: { joy: 10, lust: 12 }, again: { joy: 12 } };
+  var EMO = { cut: { joy: 20, lust: 10 }, leak: { joy: 18, lust: 12 }, punish: { shame: 15, joy: 15 }, amae: { joy: 22, lust: 8 }, tel: { joy: 10, lust: 12 }, again: { joy: 12 } };
   function after(ctx, S, entry, a, b) {
     var R = RX(), t = pickAny(ctx, dig(R.AFTER, entry === 'again' ? 'leak' : entry), a, b) || pickAny(ctx, FB.after, a, b);
     var e = rec(ctx, [a, b], fill(ctx, t, a, b), '事後の一言（' + ENTRY[entry] + '）', rcat(S), { tag: '事後', fx: function () { ctx.mod2(a, b, { aff: 3, att: 2, trust: 2 }, { aff: 3, att: 2, trust: 2 }); } });
@@ -240,11 +245,14 @@
   }
   /* 本番の一式：切る／切り忘れ → きっかけ → 場面 → 事後（切り忘れの事後は次の区切り）。entry0＝'couple'（段 6 から）か 'punish'（お仕置きのあと） */
   function doSex(ctx, S, o, entry0, x, y, why) {
-    var s = o.s, kind = cutOrLeak(ctx, S, x, y, s), entry = entry0 === 'punish' ? 'punish' : kind;
+    /* 本番の向き（攻めが受けを抱く）を先に置く（切り忘れのコメント欄は場面の前から流れるため） */
+    act(S, S.top, S.bot, 'sex', true);
+    var s = o.s, kind = cutOrLeak(ctx, S, x, y, s), entry = entry0 === 'punish' || entry0 === 'amae' ? entry0 : kind;
     var le = lead(ctx, S, entry, x, y, why);
     if (kind === 'leak') cmLeak(ctx, S, 'mid');
     var spot = entry0 === 'punish' ? 'chair' : kind === 'leak' ? (ctx.rng() < 0.4 ? 'chair' : 'bed') : 'bed';
-    var e = scene(ctx, S, entry, x, { spot: spot, jealTop: entry0 === 'punish' && S.off === S.top });
+    /* 甘やかしのあと：場面の部屋の段は、切ってから／切り忘れの短い場面（お仕置きの言葉の応酬の文を使わない） */
+    var e = scene(ctx, S, entry, x, { spot: spot, jealTop: entry0 === 'punish' && S.off === S.top, pi: entry0 === 'amae' ? PI[kind] : null });
     if (!e) {
       /* 場面が組めなかった（本体の門で止まった）：きっかけは残さず、配信はそのまま続ける */
       dropE(ctx, le);
@@ -254,20 +262,21 @@
       return false;
     }
     if (kind === 'leak') { S.leakPh = 'peak'; if (o.last) leakAfter(ctx, S, o); }
-    else after(ctx, S, entry, entry0 === 'punish' ? S.on[0] : S.top, entry0 === 'punish' ? S.off : S.bot);
+    else after(ctx, S, entry, entry0 === 'punish' || entry0 === 'amae' ? S.on[0] : S.top, entry0 === 'punish' || entry0 === 'amae' ? S.off : S.bot);
     return true;
   }
   /* 切り忘れの事後の区切り：（濃いときはもう一度）→ 事後の一言 → 機材が落ちる。コメント欄は C.LEAK の事後 */
   function leakAfter(ctx, S, o) {
     var LV = HK.Lewd, a = S.form === 'couple' ? S.top : S.on[0], b = S.form === 'couple' ? S.bot : S.off;
     S.leakPh = 'after';
+    act(S, S.top, S.bot, 'sex', true);
     if (LV && LV.lv(ctx.env) === 'high' && !S.again && ctx.env.lewdLen !== 'short') {
       var x = ctx.rng() < 0.5 ? S.top : S.bot, y = x === S.top ? S.bot : S.top;
       var le = lead(ctx, S, 'again', x, y, '濃い夜・事後の熱');
       if (!scene(ctx, S, 'again', x, { spot: 'bed', form: ctx.rng() < 0.5 ? 'short' : 'mid' })) dropE(ctx, le);
     }
     /* 事後の一言：ソロ（お仕置きのあと）はお仕置きの入口の文、カップルは切り忘れの文 */
-    after(ctx, S, S.form === 'solo' ? 'punish' : 'leak', a, b);
+    after(ctx, S, S.form === 'solo' ? (S.comeMode === 'amae' ? 'amae' : 'punish') : 'leak', a, b);
     rec(ctx, [a, b], fill(ctx, pickAny(ctx, LEAKEND, a, b), a, b), '切り忘れた配信が落ちた（' + (S.leakFate === 'ban' ? '停止' : S.leakFate === 'spread' ? '切り抜きが広まる' : '誰も保存していなかった') + '）', 'bond', { tag: '配信終了' });
     S.leak = 'after'; S.ended = 'leak'; S.endAt = o.s;
     return true;
@@ -333,12 +342,13 @@
         rec(ctx, [x, y], fill(ctx, t, x, y) + (nt ? telLine(ctx, S, 2, x, y) : ''), nt ? 'ソロの中盤：電話の相手が気づいた' : 'ソロの中盤：通話が切れた', cat, { tag: '電話' });
         S.mid = nt ? 'notice' : 'hangup'; return true;
       case 'come':
-        var pc = S.n100 ? 1 : 0.4 + Math.min(100, S.night || 0) / 250 + 0.1 * ((S.beh && S.beh.jeal) || 0);
+        /* 夜 100 でも 4 回に 1 回は来ない（電話越しの山場で一人で閉じる。2026-11-06 の利用者の指示「20 回とも来訪→お仕置き」の直し） */
+        var pc = S.n100 ? 0.75 : 0.4 + Math.min(100, S.night || 0) / 250 + 0.1 * ((S.beh && S.beh.jeal) || 0);
         if (!pairOk(ctx, S)) pc = 0;
         if (ctx.rng() < pc) {
           t = midText(ctx, S, 'come', x, y); if (!t) return false;
           rec(ctx, [x, y], fill(ctx, t, x, y), 'ソロの中盤：' + y.name + 'が' + (S.home ? '帰ってきた' : '家に来た'), cat, { tag: '来訪' });
-          S.mid = 'come'; return true;
+          S.mid = 'come'; S.comeMode = comeMode(ctx, S, y, x); return true;
         }
         /* 来ない：声だけで続け、電話越しの山場で配信を閉じる */
         t = midText(ctx, S, 'stay', x, y);
@@ -347,17 +357,36 @@
         telPeak(ctx, S, o);
         return true;
       case 'punish':
+        /* 来た人の態度で、お仕置き（言葉で責める）か甘やかし（R.AMAE）に分かれる */
+        if (S.comeMode === 'amae') {
+          var al = dig(RX().AMAE, att(y, x)), a1 = pickT(ctx, al, y, x) || pickAny(ctx, al, y, x), a2 = pickT(ctx, al, y, x);
+          if (a1) {
+            act(S, y, x, 'amae');
+            rec(ctx, [x, y], fill(ctx, a1, y, x) + (a2 ? '\n\n' + fill(ctx, a2, y, x) : ''), 'ソロの中盤：配信をつけたまま甘やかされる（' + y.name + 'が' + x.name + 'を甘やかす）', cat, { tag: '甘やかし' });
+            S.mid = 'punish'; return true;
+          }
+          S.comeMode = 'punish';
+        }
         t = midText(ctx, S, 'punish', x, y); if (!t) return false;
+        act(S, y, x, 'punish');
         var pl = dig(RX().PUNISH, att(y, x)), p1 = pickT(ctx, pl, y, x) || pickAny(ctx, pl, y, x), p2 = ctx.rng() < 0.5 ? pickT(ctx, pl, y, x) : '';
         rec(ctx, [x, y], fill(ctx, t, x, y) + (p1 ? '\n\n' + fill(ctx, p1, y, x) : '') + (p2 ? fill(ctx, p2, y, x) : ''), 'ソロの中盤：配信をつけたままのお仕置き（' + (x === S.top ? y.name + 'が焦らして言葉で責め、最後は' + x.name + 'が抱く' : y.name + 'が言葉で責めて主導') + '）', cat, { tag: 'お仕置き' });
         S.mid = 'punish'; return true;
       case 'sex':
         if (!pairOk(ctx, S)) { S.mid = 'done'; return true; }
         /* きっかけは配信者から（電話越しに見つかって）。場面の攻め・受けは S.top・S.bot（攻めを受けにしない） */
-        doSex(ctx, S, o, 'punish', x, y, '電話越しに見つかって・' + whyOf(S));
+        doSex(ctx, S, o, S.comeMode === 'amae' ? 'amae' : 'punish', x, y, (S.comeMode === 'amae' ? '電話越しに見つかって甘やかされて・' : '電話越しに見つかって・') + whyOf(S));
         S.mid = 'done'; return true;
     }
     return false;
+  }
+  /* 来た人がお仕置きをするか甘やかすか（態度 9 種と夜の性格。来た人＝c、配信者＝o）。甘やかしの表（R.AMAE）が無ければいつもお仕置き */
+  var AMAE_W = { gentle: 0.85, devoted: 0.8, shy: 0.7, polite: 0.65, free: 0.45, cool: 0.3, tsun: 0.3, stern: 0.2, proud: 0.15 };
+  function comeMode(ctx, S, c, o) {
+    if (!dig(RX().AMAE).length) return 'punish';
+    var p = AMAE_W[att(c, o)] != null ? AMAE_W[att(c, o)] : 0.5, nk = H.nightKind ? H.nightKind(c, o) : '';
+    if (nk === 'sweet') p += 0.25; else if (nk === 'sadist' || nk === 'mean') p -= 0.3;
+    return ctx.rng() < Math.max(0.05, Math.min(0.95, p)) ? 'amae' : 'punish';
   }
   /* 電話越しの山場（来ない夜。本番の代わり。{a}＝配信者） */
   function telPeak(ctx, S, o) {
@@ -400,7 +429,7 @@
   /* ---------- 口 ---------- */
   var R18 = H.r18 = H.r18 || {};
   R18.init = function (ctx, S) {
-    S.mid = 'none'; S.midI = null; S.leak = null; S.leakPh = null; S.leakFate = null; S.sexDone = 0; S.again = 0; S.px = { sex: 0, lewdMax: 2, longN: 0 }; S.hsEntry = ''; S.hinted = 0; S.ireru = 0; S.noSex = 0;
+    S.mid = 'none'; S.midI = null; S.comeMode = ''; S.leak = null; S.leakPh = null; S.leakFate = null; S.sexDone = 0; S.again = 0; S.px = { sex: 0, lewdMax: 2, longN: 0 }; S.hsEntry = ''; S.hinted = 0; S.ireru = 0; S.noSex = 0;
   };
   R18.step = function (ctx, S, o) {
     if (!S || !S.r18 || S.cap !== 6) return false;
@@ -418,11 +447,14 @@
     var R = RX(), k = q && q.k || '';
     if (!R.ANS || !R.ANS[k]) return false;
     var ab = AB(S), x = ab[0], y = ab[1], key = S.form === 'couple' ? S.sh : bodyK(S, x), cat = rcat(S);
+    /* 行為の向き：カップルは攻めが受けにする（口の奉仕 kuchi だけは受けが攻めに）。ソロは配信者が自分に */
+    var dd = S.form === 'couple' ? (k === 'kuchi' ? y : x) : x, tk = S.form === 'couple' ? (k === 'kuchi' ? x : y) : x;
     /* 攻めのソロに玩具を入れる要求・ソロでないのに二人の行為は出さない（haishin.js の reqOk でも止めるが、表の側でも守る） */
     if (S.form === 'solo' && /^(kuchi|ana|ireru)$/.test(k)) return false;
     if (S.form === 'couple' && /^(onani|tel)$/.test(k)) return false;
     var l = dig(R.ANS, k, key, how), t = pickT(ctx, l, x, y) || pickT(ctx, dig(R.ANS, k, key), x, y) || pickT(ctx, dig(R.ANS, k, key), x, y, true);
     if (!t) return false;
+    act(S, dd, tk, k);
     var ex = zoneEx(S, k === 'seikan' || k === 'sawaru' ? (S.form === 'couple' ? y : x) : null);
     var txt = (head || '') + fill(ctx, t, x, y, ex), why = '踏み込んだ要求に応えた（' + k + '・' + how + '）', tag = 'リクエスト', ev = how === 'sunao' ? 'sunao' : '';
     /* 性感帯の発表：前置き → R.ZONE[形][{a} の態度] */
@@ -435,7 +467,7 @@
     if (k === 'deep' && S.form === 'couple' && HK.Kiss && HK.Kiss.scene) {
       var T0 = HK.HaishinText || {}, tl = pickT(ctx, T0.KISS_TAIL, x, y);
       var kr = HK.Kiss.scene(ctx, x, y, { trig: q.yen ? 'hobi' : how === 'shy' ? 'karakai' : 'amae', len: 'l', lead: K.mark(txt), tail: tl ? ' ' + fill(ctx, tl, x, y) : undefined, whyPre: '配信の部屋：深いキスの要求に応えて：', tag: 'キス' });
-      if (kr && kr.e) { S.kiss++; S.ev.push('kiss'); S.nMain++; if (q.yen) S.ev.push('sc'); return true; }
+      if (kr && kr.e) { S.kiss++; S.ev.push('kiss'); S.evBy.kiss = { doer: x, taker: y }; S.nMain++; if (q.yen) S.ev.push('sc'); return true; }
     }
     /* 画面の外の行為：go（消える）→ snd（音と声だけ）→ back（戻ってくる）。コメントの反応は次の区切りの 'out' */
     if (/^(kuchi|ana|vibe)$/.test(k) && S.form === 'couple') {
@@ -444,12 +476,12 @@
       if (oo) {
         U['out:' + oo.go] = 1;
         rec(ctx, [x, y], txt + '\n\n' + fill(ctx, oo.go, x, y), why, cat, { tag: tag, ev: ev });
-        rec(ctx, [x, y], fill(ctx, oo.snd, x, y) + '\n\n' + fill(ctx, oo.back, x, y), '画面の外の行為（' + k + '）：音と声だけが届き、戻ってきた', cat, { tag: '画面の外', ev: 'out' });
+        rec(ctx, [x, y], fill(ctx, oo.snd, x, y) + '\n\n' + fill(ctx, oo.back, x, y), '画面の外の行為（' + k + '）：音と声だけが届き、戻ってきた', cat, { tag: '画面の外', ev: 'out', doer: dd, taker: tk });
         if (q.yen) S.ev.push('sc');
         return true;
       }
     }
-    rec(ctx, [x, y], txt, why, cat, { tag: tag, ev: ev });
+    rec(ctx, [x, y], txt, why, cat, { tag: tag, ev: ev, doer: dd, taker: tk });
     if (q.yen) S.ev.push('sc');
     /* そのまま入れて（カップル）：本番の判定の直前まで。ここで判定 */
     if (k === 'ireru' && S.form === 'couple') {
