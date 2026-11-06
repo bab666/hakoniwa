@@ -1660,12 +1660,12 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
 <!-- 古いブラウザの知らせ（2026-11-04）：本体は正規表現の後読み（iOS 16.4・Safari 16.4 から）を使うので、それより前の版では読み込みの段階で止まり、何も表示されない。そのときだけ、何が要るかを画面の上に出す -->
 <script>(function(){try{new RegExp('(?<=a)b');}catch(e){document.addEventListener('DOMContentLoaded',function(){var d=document.createElement('p');d.setAttribute('role','alert');d.style.cssText='margin:12px 16px;padding:12px 14px;border:1px solid #c33;border-radius:8px;background:#fff;color:#16233b;font-size:14px;line-height:1.7';d.textContent='このブラウザの版では箱庭シミュレーターが動きません。iPhone・iPad は iOS 16.4 以降、Mac の Safari は 16.4 以降に更新してください（Chrome・Edge・Firefox の新しい版でも動きます）。';document.body.insertBefore(d,document.body.firstChild);});}})();</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"a4125afdd6","api":1,"build":"full","core":"js/c/core.2714482158.js",
+<script>window.HK_MANIFEST={"v":"31ad62eb2a","api":1,"build":"full","core":"js/c/core.2714482158.js",
 "chunks":{
   "late":{"src":"js/c/late.b4ec1da7bc.js","br":238034,"deps":["pack-sim","pack-lewd"]},
   "pack-sim":{"src":"js/c/pack-sim.acfa26232c.js","br":164630,"deps":[]},
   "pack-rel":{"src":"js/c/pack-rel.cbf63a0548.js","br":386850,"deps":["pack-sim","pack-lewd"]},
-  "pack-lewd":{"src":"js/c/pack-lewd.1a33d27bbe.js","br":552322,"deps":["pack-sim"]},
+  "pack-lewd":{"src":"js/c/pack-lewd.8d3e16d6e6.js","br":552980,"deps":["pack-sim"]},
   "scen-goukon":{"src":"js/c/scen-goukon.bf3baa0d32.js","br":92913,"deps":["pack-sim","pack-rel"]},
   "scen-classroom":{"src":"js/c/scen-classroom.ecb33c629d.js","br":102674,"deps":["pack-sim","pack-rel"]},
   "scen-island":{"src":"js/c/scen-island.f41d7e0a37.js","br":91548,"deps":["pack-sim","pack-rel"]},

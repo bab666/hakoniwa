@@ -1,4 +1,4 @@
-/* @event-ok 温度の重みを足した（2026-11-06。新しい出来事ではない） */
+/* @event-ok 温度の重み・飽きない決まり（同じ組の入り方・責めを続けない・道具は 2 回まで）・部屋だけの新しい値の口 addValue を足した（2026-11-06。新しい出来事ではない） */
 /* @event-ok エッチの型（入り方・主な責め・道具・体位・終わり方）と性格が目立つ行為の段を、既にある長い場面に差すだけ。部屋ごとの場面の登録口（HK.Play.addScene）も、登録した部屋の側で @event を付ける。2026-11-03 */
 /* 箱庭シミュレーター（R18版のみ）: エッチの型（HK.Play）
    設計：docs/reports/2026-11-03/play-design.md（仕様書の「エッチの型：入り方・主な責め・道具・体位・終わり方の 5 つを組み合わせて一回のエッチを作る」）
@@ -137,8 +137,10 @@
     var A = HK.Attr, size = A && A.sizeDiff ? A.sizeDiff(a, b) : '', tall = A && A.heightDiff ? A.heightDiff(a, b) : '';
     var why = [];
     var fix = opt.play || {};
-    /* 温度（heat.js の HK.Heat）：温度の場面のあいだは温度の重みを掛ける（温度を読む部屋 HK.Heat.use だけ。既存の箱庭は今までどおり） */
-    var HS = HK.Heat && HK.Heat.cur && HK.Heat.cur.key ? HK.Heat.cur : null;
+    /* 温度（heat.js の HK.Heat）：温度の場面のあいだは温度の重みを掛け、飽きない決まり（同じ組の前の夜と同じ入り方・主な責めを選ばない・道具は一回の遊びに 2 回まで）を守る。
+       温度を読む部屋（HK.Heat.use）・P.strict の部屋だけ。既存の箱庭は今までどおり（前の夜と同じ値は ×0.25） */
+    var HS = HK.Heat && HK.Heat.cur && HK.Heat.cur.key ? HK.Heat.cur : null, strict = !!HS || P.strict(sid);
+    var propN = m.propN = m.propN || {};
     var SPK = HK.SexSpot, spot = SPK ? SPK.of(opt) || SPK.cur || '' : '';
     /* 場所（opt.spot）：その場所で使わない値と、文の候補が一つも場所に合わない値は選ばない（全部 0 になるなら場所の絞りはしない） */
     function spotOk(axis, k) {
@@ -152,11 +154,15 @@
     }
     function done(axis, w) {
       (ng[axis] || []).forEach(function (k) { if (w[k] != null) w[k] = 0; });
-      var rw = room[axis]; if (rw) Object.keys(rw).forEach(function (k) { if (w[k] != null || (TX()[axis.toUpperCase()] || {})[k]) w[k] = (w[k] || 0) + rw[k]; });
+      var rw = room[axis]; if (rw) Object.keys(rw).forEach(function (k) { if (w[k] != null || (TX()[axis.toUpperCase()] || {})[k] || ((P.VALUES[sid] || {})[axis] || {})[k]) w[k] = (w[k] || 0) + rw[k]; });
       if (HS) HK.Heat.weigh(axis, w);
+      if (strict && axis === 'prop') Object.keys(w).forEach(function (k) { if (k !== 'none' && (propN[k] || 0) >= 2) w[k] = 0; });
       if (spot) { var w2 = {}, any = false; Object.keys(w).forEach(function (k) { w2[k] = spotOk(axis, k) ? w[k] : 0; if (w2[k] > 0) any = true; }); if (any) Object.keys(w2).forEach(function (k) { w[k] = w2[k]; }); }
       /* 前の夜と同じ値は選ばれにくく */
-      if (last && last[axis] && w[last[axis]] > 0) w[last[axis]] *= 0.25;
+      if (last && last[axis] && w[last[axis]] > 0) {
+        var others = Object.keys(w).some(function (k) { return k !== last[axis] && w[k] > 0; });
+        w[last[axis]] *= strict && (axis === 'entry' || axis === 'focus') && last[axis] !== 'lead' && others ? 0 : 0.25;
+      }
       if (fix[axis] && w[fix[axis]] != null) return fix[axis];
       return wpick(R, w);
     }
@@ -258,7 +264,9 @@
     var finish = done('finish', wn);
     var play = { entry: entry, focus: focus, prop: prop, pos: pos, finish: finish, mode: mode };
     m.pair[key] = play;
+    if (strict && prop && prop !== 'none') propN[prop] = (propN[prop] || 0) + 1;
     if (HS) HS.plays.push({ entry: entry, focus: focus, prop: prop, pos: pos, finish: finish, a: a.name, b: b.name });
+    if (strict && HK.Heat && Array.isArray(HK.Heat.playLog)) HK.Heat.playLog.push({ entry: entry, focus: focus, prop: prop, a: a.name, b: b.name, heat: HS ? HS.key : '' });
     play.R = R;
     return play;
   };
@@ -405,6 +413,33 @@
     var l = P.SCENES[scenId] || (P.SCENES[scenId] = []);
     for (var i = 0; i < l.length; i++) if (l[i].id === def.id) { l[i] = def; return; }
     l.push(def);
+  };
+  /* 飽きない決まりを守る部屋（温度を読む部屋 HK.Heat.use と、P.strict(id, true) で登録した部屋。2026-11-06） */
+  P.STRICT = {};
+  P.strict = function (scenId, on) {
+    if (on != null) { if (scenId) P.STRICT[scenId] = !!on; return !!on; }
+    return !!(scenId && (P.STRICT[scenId] || (HK.Heat && HK.Heat.enabled && HK.Heat.enabled(scenId))));
+  };
+  /* 部屋だけの新しい値（2026-11-06。CLAUDE.md の「部屋の小道具は部屋だけの候補として足す」）：
+     P.addValue(scenId, axis, { key, label, weight, text, mid, short })。その部屋の P.choose にだけ候補として入る（P.ROOM の重み）。
+     文は本体の表 HK.PlayText と同じ形：entry→ENTRY[key][組]／focus→FOCUS（mid→FOCUS_MID・short→SHORT_FOCUS）／prop→PROP[key]（{ fore, mid } の形のまま text に）／
+     pos→POS（mid→POS_MID・short→SHORT_POS）／finish→FIN（mid→FIN_E。男性向け）。組は mf・ff・fm で各 3 文以上（足りなければ P.VALUE_ERR に残る） */
+  P.VALUES = {}; P.VALUE_ERR = [];
+  var VAL_T = { entry: ['ENTRY'], focus: ['FOCUS', 'FOCUS_MID', 'SHORT_FOCUS'], prop: ['PROP'], pos: ['POS', 'POS_MID', 'SHORT_POS'], finish: ['FIN', 'FIN_E'] };
+  P.addValue = function (scenId, axis, def) {
+    if (!scenId || !VAL_T[axis] || !def || !def.key) return false;
+    var k = def.key, T0 = HK.PlayText = HK.PlayText || {}, names = VAL_T[axis];
+    if (P.AXES[axis] && P.AXES[axis][k] && !((P.VALUES[scenId] || {})[axis] || {})[k] && !Object.keys(P.VALUES).some(function (s) { return ((P.VALUES[s] || {})[axis] || {})[k]; })) { P.VALUE_ERR.push(scenId + '・' + axis + '・' + k + '：本体の値と同じ鍵'); return false; }
+    var V = P.VALUES[scenId] = P.VALUES[scenId] || {};
+    (V[axis] = V[axis] || {})[k] = def;
+    if (P.AXES[axis]) P.AXES[axis][k] = def.label || k;
+    [def.text, def.mid, def.short].forEach(function (t, i) { if (t && names[i]) { var tb = T0[names[i]] = T0[names[i]] || {}; tb[k] = t; } });
+    /* 3 組 × 3 文の点検（道具は前戯の頭 fore の組ごと） */
+    var chk = axis === 'prop' ? def.text && def.text.fore : def.text;
+    ['mf', 'ff', 'fm'].forEach(function (md) { var l = chk && (Array.isArray(chk) ? chk : chk[md] || chk.all); if (!l || l.length < 3) P.VALUE_ERR.push(scenId + '・' + axis + '・' + k + '・' + md + '：' + (l ? l.length : 0) + ' 文'); });
+    var w = {}; w[axis] = {}; w[axis][k] = def.weight != null ? def.weight : 1;
+    P.addRoom(scenId, w);
+    return true;
   };
   P.addRoom = function (scenId, w) {
     if (!scenId || !w) return;
