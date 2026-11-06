@@ -242,8 +242,7 @@ function classify(files) {
       if ([...f.tags].some(t => t !== 'doc' && t !== 'event' && t !== 'serifu' && t !== 'tone' && t !== 'dict' && t !== 'js')) {
         R.mainScen[bk] = R.mainScen[bk] === 'all' || sc === 'all' ? 'all' : [...new Set((R.mainScen[bk] || []).concat(sc))];
       }
-      /* tone-feel は R18版で回すので、全年齢版だけの箱庭（br・trial）は数えない（2026-11-06。全年齢版だけのファイルの台詞を変えると「知らない箱庭」で止まっていた） */
-      if (f.tags.has('serifu') && bk === 'full') { if (/^scen-/.test(chunk)) R.feelScen.add(chunk.slice(5)); else T.FEEL_DEF.forEach(x => R.feelScen.add(x)); }
+      if (f.tags.has('serifu')) { if (/^scen-/.test(chunk)) R.feelScen.add(chunk.slice(5)); else T.FEEL_DEF.forEach(x => R.feelScen.add(x)); }
       f.scen = sc;
       /* パックが頼る本体のかたまり（pack-roomkit・pack-lewd など。core・late は数えない） */
       if (!f.commentOnly) packIds().forEach(id => { const pk = pack(id); if (pk && pk.mainDeps.some(d => d === chunk)) { const X = R.packs[id] = R.packs[id] || { rooms: new Set(), tags: new Set(), why: [] }; pk.rooms.forEach(r => X.rooms.add(r)); X.tags.add('sim'); X.why.push(b + '（' + chunk + '）'); } });
@@ -337,7 +336,8 @@ function decide(R) {
       why: O.all ? '--all' : why(AA.tags) || '道具を変えた', scope, extra: [...extra], onlyExtra: !needDef, modes: onlyZen ? ['zen'] : ['r18', 'safe', 'zen'], weight: Math.min(2, O.jobs), est: AA.est * (scope === 'all' ? 1 : 0.15) + (extra.size ? 60 : 0) });
   } else skip('audit-all', 'シミュレーションの結果に触れる js を変えていない');
   const sScope = scenAll();
-  const feelS = O.all ? T.FEEL_DEF : [...R.feelScen];
+  /* tone-feel は R18版で回すので、R18版に無い箱庭（全年齢版だけの br・trial）は外す（2026-11-06。外さないと「知らない箱庭」で止まっていた） */
+  const feelS = O.all ? T.FEEL_DEF : [...R.feelScen].filter(id => !manifest('full') || !manifest('full').scen || manifest('full').scen[id]);
   if (anyOn(['serifu', 'tone']) || toolOn('tone-feel')) add({ id: 'tone-feel', stage: 'heavy', label: CHECK['tone-feel'].name + '（' + (feelS.length ? feelS.join(',') : T.FEEL_DEF.join(',')) + '）', why: O.all ? '--all' : why(['serifu', 'tone']) || '道具を変えた', scen: feelS.length ? feelS : T.FEEL_DEF, weight: 1, est: 40 * Math.max(1, feelS.length) });
   else skip('tone-feel', '台詞・口調を変えていない');
   if (on('moan') || toolOn('moan-tone')) add({ id: 'moan-tone', stage: 'heavy', label: CHECK['moan-tone'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['moan']) || '道具を変えた', scope: sScope, weight: 1, est: sScope === 'all' ? 540 : 120 });
