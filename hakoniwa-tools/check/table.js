@@ -30,6 +30,7 @@ const TAGS = {
   order: '読み込み順・かたまりの振り分け',
   buildtool: 'build の道具',
   butt: '体の語の印（lewd-words.js）・喘ぎ・R18 の文（お尻の語の点検）',
+  heat: '温度（HK.Heat）の部品・温度を読む部屋（同居生活・電車・新婚・看病・デート）の夜の場面・型の選び方',
   doc: '文書・コメントだけ（何も回さない）'
 };
 
@@ -60,6 +61,8 @@ const FILE_RULES = [
   { b: /^(?:moan-|ero-moan-tone|novel-moan-tone|solo-r18-moan)/, tags: ['moan', 'sim'] },
   { b: /^(?:sex-flow-|play-|pos-lead|ero-initiative-|tie-order|moan-tease|room-thick|thick-sex|r18-thick)/, tags: ['thick', 'sim'] },
   { b: /trio/, tags: ['trio', 'sim'] },
+  /* 温度（2026-11-06）：温度の部品・型の選び方・体の特徴の文・温度を読む部屋の夜の場面（本体の同居生活・電車、set-b の kit-r18 と 3 部屋の r18） */
+  { b: /^(?:heat|play-r18|attr|futari-r18|solo-train|kit-r18|shinkon-r18|kanbyo-r18|date-r18|emotion)(?:[-.])/, tags: ['heat', 'sim'] },
   { b: /^(?:force-|hate-sex)/, tags: ['force', 'sim'] },
   { b: /^(?:engine|attr|attr-r18|free-sex|pos|pos-ff|pos-fm|pos-nogen|content|content-events-r18|emotion-r18|esteem-r18|fwb|cold-fear|cold-fear-r18|fear-body-r18|tie-master-r18|sex-lead-r18)\.js$/, tags: ['sexgate', 'sim'] },
   { b: /feud|^rel-bad|^hate-|^unlike|^sib-/, tags: ['feud', 'sim'] },
@@ -85,6 +88,7 @@ const LINE_RULES = [
   { re: /♡|[ぁぃぅぇぉ]{2}|[あんっ]っ[、…♡！]|イっ|イく/, tags: ['moan'], toneR18: true },
   { re: /ThickSex\.scene|ThickEro\.scene|Play\.addScene|HK\.SexFlow|HK\.Play\b/, tags: ['thick'] },
   { re: /HK\.Trio3|trio/i, tags: ['trio'] },
+  { re: /HK\.Heat\b/, tags: ['heat'] },
   { re: /ForceRep|'force'|"force"/, tags: ['force'] },
   { re: /okSex|canSex|sexGate|libido|tieBodyOK|fearHeld|理性|性欲/, tags: ['sexgate'] },
   { re: /不仲|敵対|険悪|feud|'enemy'|"enemy"/, tags: ['feud'] },
@@ -128,6 +132,7 @@ const CHECKS = [
   { id: 'force-repeat', name: '無理やりの二回目・三回目（force-repeat-audit）', stage: 'heavy', tags: ['force'], after: ['build'], est: 10, weight: 1, tools: [TC + 'force-repeat-audit.js'], why: '' },
   { id: 'butt-word', name: '女性の受けのお尻の語（butt-word-audit）', stage: 'heavy', tags: ['butt'], after: ['build'], est: 60, weight: 1, tools: [TC + 'butt-word-audit.js'], why: '受けが女性の体の組（男×女・女×女）の記録に「ケツ」が 0 件（男性の受けの件数は参考）。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN）' },
   { id: 'meta-tone', name: '自分の口調に言及する台詞（meta-tone-audit）', stage: 'heavy', tags: ['moan', 'serifu', 'tone'], after: ['build'], est: 25, weight: 1, tools: [TC + 'meta-tone-audit.js'], why: '台詞・喘ぎで本人が自分の話し方（敬語・言葉遣い・口調・タメ口…）に触れるもの 0 件。R18版・全年齢版の記録と、喘ぎの表・書き下ろし・「」の中のソース（静的。本体の両ビルドと全パック）。箱庭のかたまりだけ変えたときは記録はその箱庭だけ' },
+  { id: 'fp-audit', name: '一人称の置き換え（fp-audit）', stage: 'heavy', tags: ['serifu', 'tone', 'dict', 'moan'], after: ['build'], est: 90, weight: 1, tools: [TC + 'fp-audit.js'], why: '住人全員に一人称を設定（男 俺・女 あたし・性別なし 僕）して全口調 × 4 箱庭（whiteroom・locker・omega・massage）× N=12 × 種 2。一人称でない語の置き換え（冷めない「うち」・公私の「私」・交わしの「わし」）・画面に残った {一人称}・{二人称}・同じ住人の台詞の一人称のブレが 0 件' },
   { id: 'regress', name: '結果の指紋（regress。比べる相手のコミットと）', stage: 'heavy', tags: ['ui', 'order', 'buildtool'], after: ['build'], est: 15, weight: 1, tools: [BD + 'regress.js'], why: 'R18版・全年齢モード・全年齢版。比べる相手の指紋は、そのコミットのビルドを取り出して取る（キャッシュに残る）' },
   { id: 'chunk-regress', name: '単独・乱順の読み込み（chunk-regress）', stage: 'heavy', tags: ['order', 'buildtool'], after: ['build'], est: 450, weight: 1, tools: [BD + 'chunk-regress.js'], why: '両ビルド' },
   { id: 'chunk-audit', name: 'かたまりの境目（chunk-audit）', stage: 'heavy', tags: ['order', 'buildtool'], after: ['build'], est: 60, weight: 1, tools: [BD + 'chunk-audit.js'], why: '両ビルド' },
@@ -136,6 +141,7 @@ const CHECKS = [
   { id: 'dict-regress', name: '口調の辞書の成績（dict-regress。参考）', stage: 'heavy', tags: ['dict'], after: [], est: 10, weight: 1, tools: [TC + 'dict-regress.js'], info: true, why: '終了コードに入れない（成績を出すだけ）' },
   /* 追加パック（変えたパック、本体の「パックが頼るかたまり」を変えたときはそのパック） */
   { id: 'date-setting', name: 'デートの舞台と段（date-setting-audit）', stage: 'pre', tags: ['pack'], est: 1, tools: [TC + 'date-setting-audit.js'], why: 'set-b のデートの日々を変えたとき。行き先 52 か所 × 汎用の出来事の舞台の矛盾・段の付いていない行（ページを開かない）' },
+  { id: 'heat', name: '温度の矛盾（heat-audit）', stage: 'heavy', tags: ['heat'], after: ['pack-site'], est: 60, weight: 1, tools: [TC + 'heat-audit.js'], why: '温度を読む 5 部屋（同居生活・電車・新婚・看病・デート）を関係 6 種 × 3 組で回し、温度と入り方・事後・変化の一文・型の飽きない決まり・体の特徴の文の矛盾を数える（0 件で合格）。試しのフォルダ（pack-site）で回す' },
   { id: 'kanbyo-role', name: '看病の部屋の役と状態（kanbyo-role-audit）', stage: 'heavy', tags: ['pack'], after: ['pack-site'], est: 30, weight: 1, tools: [TC + 'kanbyo-role-audit.js'], why: 'set-b の看病の部屋を変えたとき。報告の 16 通りで、看る人・看られる人の取り違え・通いの行き来・熱の数字と言葉・関係の取り違え・三人目・結末のあとが 0 件' },
   { id: 'pack-catalog', name: 'パックの出来事の一覧（event-catalog --pack）', stage: 'build', tags: ['pack'], after: [], est: 3, weight: 1, tools: [BD + 'event-catalog.js'], why: '作り直してから catalog-check' },
   { id: 'pack-site', name: 'パックの試しのフォルダ（pack-site）', stage: 'build', tags: ['pack'], after: ['build'], est: 40, weight: 1, tools: [BD + 'pack-site.js', BD + 'build-pack.js'], why: '本体を写してパックを組み立てる（呼び出しごとのフォルダ .check-cache/runs/…/site に作る）' },

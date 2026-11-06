@@ -468,7 +468,8 @@
         while ((m = re.exec(it.text))) {
           /* 「＠…」は村人など、住人ではない人の台詞（口調の言い換えを通らない）なので並べない */
           if (/^[＠\u2060]/.test(m[1])) continue;
-          var key = m[1].replace(/\{[a-z0-9_]+\}|〔[^〕]*〕/g, '〈〉');
+          /* 書き下ろしの鍵は「私」「あなた」の本文で引く（voice.js の V.markOut と同じ）ので、印 {一人称}・{二人称} は鍵では「私」「あなた」に戻す */
+          var key = m[1].replace(/\{[a-z0-9_]+\}|〔[^〕]*〕/g, '〈〉').replace(/\{一人称\}/g, '私').replace(/\{二人称\}/g, 'あなた');
           if (jaN(key) < 2) continue;
           var o = map[key];
           if (!o) { o = map[key] = { key: key, srcs: [], r18: false, n: 0, ord: list.length }; list.push(o); }
@@ -541,7 +542,7 @@
       '<label class="muted">回す回数 <input type="number" id="cn" min="1" max="300" value="' + TU.runs + '" style="width:60px"></label><button class="btn small" id="cgo">回して出る回数を数える</button>' +
       '<span class="muted" id="stat"></span></div><div class="muted" id="fstat"></div>' +
       '<div class="muted">「」の中の台詞を、この口調の人が話したときの出来上がりで並べます（見本の名前：話し手 ' + SP + '、ほかの名前は ' + OT.join('・') + '）。' +
-      '右の欄に書いて「保存」すると、この口調の書き直しとして js/tone-fix.js（R18専用の箱庭の台詞は js/tone-fix-r18.js）に入り、次からその文がそのまま使われます。名前は〈〉、一人称は「私」で書いてください。</div>' +
+      '右の欄に書いて「保存」すると、この口調の書き直しとして js/tone-fix.js（R18専用の箱庭の台詞は js/tone-fix-r18.js）に入り、次からその文がそのまま使われます。名前は〈〉、一人称は {一人称}、二人称は {二人称} で書いてください（「私」と書いても今までどおり置き換わります）。</div>' +
       '<table class="t" id="tl"><thead><tr><th style="width:34%">元の台詞</th><th>この口調で（直すなら書き換えて保存）</th><th style="width:120px">出どころ</th><th class="num" style="width:70px" id="fh">回数</th><th class="num" style="width:50px">字数</th></tr></thead><tbody></tbody></table><div class="pager" id="pgr"></div>';
     $('#st').value = TU.st; $('#so').value = TU.so;
     var PER = 60;
@@ -566,7 +567,10 @@
       $('#stat').textContent = '台詞 ' + L.length.toLocaleString() + (L.length !== all.length ? ' / ' + all.length.toLocaleString() : '') + '（同じ台詞はまとめて数える）';
       $('#tl tbody').innerHTML = part.map(function (o, n) {
         judge(o);
-        var cur = o.dict ? o.dict.g.items[o.dict.i].cols[2] : unfill(o.out).split(fp && fp !== '私' ? fp : '\u0000').join('私');
+        /* 書き直しの欄の下書き：出来上がりの一人称を印 {一人称} に戻す。元の台詞の一人称の数と出来上がりの数が合うときだけ
+           （「うち」「わし」など一人称と同じ字の語を印にしない。合わなければ出来上がりのまま出し、書き手が直す） */
+        var cur = o.dict ? o.dict.g.items[o.dict.i].cols[2] : unfill(o.out);
+        if (!o.dict && fp && (o.key.match(/私/g) || []).length > 0 && cur.split(fp).length === o.key.split('私').length) cur = cur.split(fp).join('{一人称}');
         var src = o.srcs[0];
         return '<tr data-n="' + n + '"><td>' + fmtText(o.key) + '<div class="muted"><a href="#" data-src>' + esc(src.g.file.f) + ':' + src.g.line + '</a>' + (o.srcs.length > 1 ? '　ほか ' + (o.srcs.length - 1) + ' か所' : '') + (o.r18 ? ' <span class="tag r18">R18</span>' : '') + '</div></td>' +
           '<td>' + (cur !== o.out ? '<div class="prev0" title="出来上がり（一人称・名前を入れたもの）">' + esc(o.out) + '</div>' : '') +

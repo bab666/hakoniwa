@@ -94,6 +94,10 @@ node hakoniwa-tools/check.js --dry           # 何を回すか・飛ばす理由
 node hakoniwa-tools/check.js --table         # 依存の表を md で出す（下の 3-3 はこの出力）
 ```
 
+**結果を意図して変えた箱庭（2026-11-06）**：読み込み順を変えたコミットで、ある箱庭の結果をわざと変えたとき（温度を読む部屋など）は `--regress-ok=futari,train` のように挙げる。regress はその箱庭の指紋が違っても不合格にせず、一覧に「変わってよい箱庭（--regress-ok）が違った：…」と出す（ほかの箱庭が一致しているかはそのまま見る）。
+
+**温度の矛盾（heat-audit。2026-11-06）**：印 `heat`（`heat.js`・`play-r18.js`・`attr*.js`・同居生活・電車・set-b の夜の場面・`HK.Heat` を書いた行）か、set-b を回すときに、試しのフォルダ（pack-site）で `heat-audit.js` を回す（温度を読む 5 部屋 × 関係 6 種 × 3 組。0 件で合格）。
+
 ほかに `--files=a,b`（git の差の代わりにこのファイルを変えたものとして決める。表の確かめ用）、`--force`（キャッシュを使わない）、`--jobs=N`（同時に使うページの数。既定は CPU の数。audit-all は 1 本で 2 ページ）、`--keep-going`（前置きが落ちても続ける）、`--cache=…`／`HK_CHECK_CACHE`、`--site=…`／`HK_CHECK_SITE`、`-v`。終了コードは 0（すべて合格）／1。
 
 **試しのフォルダとログは呼び出しごとに分かれる（2026-11-04）**：パックの試しのフォルダ（pack-site）と点検のログは、`hakoniwa-tools/.check-cache/runs/<作業フォルダの実体パスのハッシュ 8 桁>-<プロセス id>/site/`・`…/logs/<点検>.log` に作る（始めに置き場所を 1 行出す）。どの worktree から何本並べて回しても互いに上書きしないので、並行して回してよい。置き場所を決めたいときは `--site=<フォルダ>`（または環境変数 `HK_CHECK_SITE`。その下に `site/`・`logs/` を作り、終わっても消さない）。キャッシュ本体（`results/`・`build/`・`regress-*/`・`base-*/`）は今までどおり主の作業フォルダの 1 か所を共有する。終わるたびに `runs/` を掃除し、動いていない（プロセスの無い）呼び出しのフォルダは作業フォルダごとに最新の 1 つだけ残す（動いている呼び出しのものは消さない）。単独の道具でパックを点検するときは `node hakoniwa-tools/build/pack-site.js hakoniwa-packs/<パック> --out=<自分のフォルダ> --codes=…` で作ったフォルダを渡す。
@@ -135,6 +139,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `order` | 読み込み順・かたまりの振り分け |
 | `buildtool` | build の道具 |
 | `butt` | 体の語の印（lewd-words.js）・喘ぎ・R18 の文（お尻の語の点検） |
+| `heat` | 温度（HK.Heat）の部品・温度を読む部屋（同居生活・電車・新婚・看病・デート）の夜の場面・型の選び方 |
 | `doc` | 文書・コメントだけ（何も回さない） |
 
 | ファイルの場所・名前 | 付く印 |
@@ -157,6 +162,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `/^(?:moan-\|ero-moan-tone\|novel-moan-tone\|solo-r18-moan)/`（js の名前） | `moan` `sim` |
 | `/^(?:sex-flow-\|play-\|pos-lead\|ero-initiative-\|tie-order\|moan-tease\|room-thick\|thick-sex\|r18-thick)/`（js の名前） | `thick` `sim` |
 | `/trio/`（js の名前） | `trio` `sim` |
+| `/^(?:heat\|play-r18\|attr\|futari-r18\|solo-train\|kit-r18\|shinkon-r18\|kanbyo-r18\|date-r18\|emotion)(?:[-.])/`（js の名前） | `heat` `sim` |
 | `/^(?:force-\|hate-sex)/`（js の名前） | `force` `sim` |
 | `/^(?:engine\|attr\|attr-r18\|free-sex\|pos\|pos-ff\|pos-fm\|pos-nogen\|content\|content-events-r18\|emotion-r18\|esteem-r18\|fwb\|cold-fear\|cold-fear-r18\|fear-body-r18\|tie-master-r18\|sex-lead-r18)\.js$/`（js の名前） | `sexgate` `sim` |
 | `/feud\|^rel-bad\|^hate-\|^unlike\|^sib-/`（js の名前） | `feud` `sim` |
@@ -175,6 +181,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | `/♡\|[ぁぃぅぇぉ]{2}\|[あんっ]っ[、…♡！]\|イっ\|イく/` | `moan` |
 | `/ThickSex\.scene\|ThickEro\.scene\|Play\.addScene\|HK\.SexFlow\|HK\.Play\b/` | `thick` |
 | `/HK\.Trio3\|trio/i` | `trio` |
+| `/HK\.Heat\b/` | `heat` |
 | `/ForceRep\|'force'\|"force"/` | `force` |
 | `/okSex\|canSex\|sexGate\|libido\|tieBodyOK\|fearHeld\|理性\|性欲/` | `sexgate` |
 | `/不仲\|敵対\|険悪\|feud\|'enemy'\|"enemy"/` | `feud` |
@@ -201,10 +208,11 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | 口調の違和感（tone-feel）（`tone-feel`） | heavy | `serifu` `tone` | build | 1 | 155 秒 | 変えた箱庭だけ（--scen=）。本体の共通の文なら既定の 3 箱庭 |
 | 喘ぎの口調（moan-tone-audit）（`moan-tone`） | heavy | `moan` | build | 1 | 420 秒 | 箱庭のかたまりだけ変えたときは --scen= |
 | 長い場面の流れ（sex-flow-audit）（`sex-flow`） | heavy | `thick` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=sexflow に入れる（同じ関数。ページを開き直さない） |
-| 三人の場面の形（trio-shape-audit）（`trio-shape`） | heavy | `trio` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=trio に入れる。2026-11-05 から fmRide（女性の攻めが跨る）・backDbl（後ろの二重）も数える |
+| 三人の場面の形（trio-shape-audit）（`trio-shape`） | heavy | `trio` | build | 1 | 10 秒 | audit-all を全箱庭で回すときは --extra=trio に入れる |
 | 無理やりの二回目・三回目（force-repeat-audit）（`force-repeat`） | heavy | `force` | build | 1 | 10 秒 |  |
 | 女性の受けのお尻の語（butt-word-audit）（`butt-word`） | heavy | `butt` | build | 1 | 60 秒 | 受けが女性の体の組（男×女・女×女）の記録に「ケツ」が 0 件（男性の受けの件数は参考）。箱庭のかたまりだけ変えたときはその箱庭だけ（HK_ONLY_SCEN） |
 | 自分の口調に言及する台詞（meta-tone-audit）（`meta-tone`） | heavy | `moan` `serifu` `tone` | build | 1 | 25 秒 | 台詞・喘ぎで本人が自分の話し方（敬語・言葉遣い・口調・タメ口…）に触れるもの 0 件。R18版・全年齢版の記録と、喘ぎの表・書き下ろし・「」の中のソース（静的。本体の両ビルドと全パック）。箱庭のかたまりだけ変えたときは記録はその箱庭だけ |
+| 一人称の置き換え（fp-audit）（`fp-audit`） | heavy | `serifu` `tone` `dict` `moan` | build | 1 | 90 秒 | 住人全員に一人称を設定（男 俺・女 あたし・性別なし 僕）して全口調 × 4 箱庭（whiteroom・locker・omega・massage）× N=12 × 種 2。一人称でない語の置き換え（冷めない「うち」・公私の「私」・交わしの「わし」）・画面に残った {一人称}・{二人称}・同じ住人の台詞の一人称のブレが 0 件 |
 | 結果の指紋（regress。比べる相手のコミットと）（`regress`） | heavy | `ui` `order` `buildtool` | build | 1 | 15 秒 | R18版・全年齢モード・全年齢版。比べる相手の指紋は、そのコミットのビルドを取り出して取る（キャッシュに残る） |
 | 単独・乱順の読み込み（chunk-regress）（`chunk-regress`） | heavy | `order` `buildtool` | build | 1 | 450 秒 | 両ビルド |
 | かたまりの境目（chunk-audit）（`chunk-audit`） | heavy | `order` `buildtool` | build | 1 | 60 秒 | 両ビルド |
@@ -212,6 +220,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | 関係の名前の語（rel-word-audit）（`rel-word`） | heavy | `kin` | build | 1 | 150 秒 | 擬似親子・義理の兄弟・セフレ・元恋人・友達以上恋人未満・敵対の二人の台詞・本人の視点の地の文に、関係の種類の内部の名前（擬似親子・義理のきょうだい・親代わり・セフレ・友達以上恋人未満・両片想い など）が 0 件（R18版・全年齢モード・全年齢版。記録の区分 seg で、名詞の引用・理由の欄・結果欄・関係図の札は数えない）。箱庭のかたまりだけ変えたときはその箱庭だけ |
 | 口調の辞書の成績（dict-regress。参考）（`dict-regress`） | heavy | `dict` | — | 1 | 10 秒 | 終了コードに入れない（成績を出すだけ） |
 | デートの舞台と段（date-setting-audit）（`date-setting`） | pre | `pack` | — | 0 | 1 秒 | set-b のデートの日々を変えたとき。行き先 52 か所 × 汎用の出来事の舞台の矛盾・段の付いていない行（ページを開かない） |
+| 温度の矛盾（heat-audit）（`heat`） | heavy | `heat` | pack-site | 1 | 60 秒 | 温度を読む 5 部屋（同居生活・電車・新婚・看病・デート）を関係 6 種 × 3 組で回し、温度と入り方・事後・変化の一文・型の飽きない決まり・体の特徴の文の矛盾を数える（0 件で合格）。試しのフォルダ（pack-site）で回す |
 | 看病の部屋の役と状態（kanbyo-role-audit）（`kanbyo-role`） | heavy | `pack` | pack-site | 1 | 30 秒 | set-b の看病の部屋を変えたとき。報告の 16 通りで、看る人・看られる人の取り違え・通いの行き来・熱の数字と言葉・関係の取り違え・三人目・結末のあとが 0 件 |
 | パックの出来事の一覧（event-catalog --pack）（`pack-catalog`） | build | `pack` | — | 1 | 3 秒 | 作り直してから catalog-check |
 | パックの試しのフォルダ（pack-site）（`pack-site`） | build | `pack` | build | 1 | 40 秒 | 本体を写してパックを組み立てる（呼び出しごとのフォルダ .check-cache/runs/…/site に作る） |
@@ -228,6 +237,7 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 - 文書（*.md・docs/）・CLAUDE.md は何も回さない。
 - 血縁の二人の札（kin-label。2026-11-04）：結末の分類・関係図・関係の出来事・共通の小さな出来事・結末の js か、友人の語・`HK.Kin` に触れた行で回す。親子・きょうだい・親戚・双子・擬似親子の二人を全箱庭で回し、結末・関係図の札・台詞・地の文に「友人・友達・親友」が 0 件で合格（`docs/reports/2026-11-04/kin-and-topics.md`）。
 - 関係の名前の語（rel-word。2026-11-05）：同じ印 kin（関係の種類の名前・`{rel}`・`tieLabel`・`roleA` に触れた行も kin）で回す。擬似親子・義理の兄弟・セフレ・元恋人・友達以上恋人未満・敵対の二人の台詞・本人の視点の地の文に関係の種類の内部の名前が 0 件で合格。パックは部屋ごとの pack-relword（`docs/reports/2026-11-04/kin-and-topics.md` の 3 節）。
+- 一人称の置き換え（fp-audit。2026-11-06）：台詞・口調・辞書・喘ぎの印（serifu・tone・dict・moan）で回る。住人全員に一人称を設定して、一人称でない語の置き換え・画面に残った `{一人称}`・`{二人称}`・同じ住人の一人称のブレを数え、0 件で合格（設計は `docs/reports/2026-11-06/fp-marker-design.md`）。base-lint は、比べる相手のコミットの js を `--base=` で渡し、新しく足した 3 本の台詞の「私」「あなた」の直書きも問題にする。
 
 ## 4. 重複の解消で変えた道具（判定は変えていない）
 
@@ -294,3 +304,4 @@ node hakoniwa-tools/check.js --table         # 依存の表を md で出す（�
 | sex-flow (j) | 目隠し中の台詞に「目を見て」「顔を見せて」「見つめて」などを足し、受けの台詞も数える | `--raw` N=48 既定の 6 箱庭・N=96 電車と同居生活で 0 → 0 |
 | pos-audit V16（足した） | 女性の攻め（男性器なし・フタナリでない）が、二人の向きで受けになる男性器のある相手に跨って自分の中へ受け入れる文（三人以上の文も。指・舌・張り型の文は除く）。V2 は女性の攻めが跨って迎える文を攻めのままとして数えないので別に数える | 素・--hot：直す前のビルドでも 0 件（pos のパスは三人の夜が少なく、仕上がった記録では HK.FM.fix が跨る文を直していた）。直したあとも 0 件 |
 | trio-shape fmRide・backDbl（足した） | 仕上がった記録の文で、女性の攻め × 男性の受けの組の攻めが跨る・受け入れる文（fmRide）／後ろが埋まる受け（twoOne でもう一人も同じ受けを抱く）に ero-play の前立腺・結腸の段を差した（backDbl。HK.EroPlay.log で見る） | 直す前 fmRide 1・backDbl 13 → 直したあと 0・0（既定の 4 箱庭・N=4、672 回） |
+| loveflag Y0（2026-11-06） | 開始の可否で止める箱庭（`scen.loveflagSkip` が真か、`scen.check` が止める理由を返す配役。恋人・夫婦でないと始まらない配信の部屋）の「ありの回」「自動の回」を Y・Z に数えない（その回は箱庭が始まらないので恋愛のしるしが出ない）。本体の箱庭で `scen.check` を持つ催眠・電車は、この点検の配役（役割・触る側の指定なし）では止めないので変わらない | 配信の部屋だけの audit-all（3 通り）で Y0 1 → 0 ×3。全箱庭の Y は変わらない |

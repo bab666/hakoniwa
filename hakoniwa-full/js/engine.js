@@ -511,6 +511,8 @@
       odd: !!o.odd, mag: o.mag || 0, kind: o.kind || 'phase'
     };
     if (lw) e.lewd = true;
+    /* いま起こしている出来事の id（表情の鍵の出来事の種類に使う。face.js。新しい記録だけ） */
+    if (this._ev && this._ev.id && o.kind !== 'step') e.ev = String(this._ev.id);
     /* 夜の起こりやすさ 0 でも起きた場面（条件の夜・合意のない展開・モブ）は、止めなかった理由を理由の欄に添える（pos.js の HK.Pos.nightNote） */
     if (lw && HK.Pos && HK.Pos.nightNote) { var nn = HK.Pos.nightNote(this, o); if (nn) e.why = (e.why ? e.why + '／' : '') + nn; }
     /* その時点で生きて場にいる人数（2026-10-31 担当CL。三人以上の配役で二人だけ残った回の第三者の文を外すのに使う。記録には残さない＝数えない印） */
@@ -724,6 +726,9 @@
     return o;
   };
   HK.simulate = function (input) {
+    /* 前の回の ctx を残さない（物語型の箱庭は Ctx を作らないので、HK._curCtx を読む包み（futari-r18.js の nightOk・play-r18.js・pos.js など）が
+       前に回したエンジン型の回の ctx を見て、回す順で結果が変わっていた。2026-11-06）。エンジン型は new Ctx がすぐに置き直す。回し終えたあとは残す（外側の包みが結果に写すため） */
+    HK._curCtx = null;
     input = HK.nameInput(input);
     var sc0 = HK.SCENARIOS[input.scenId];
     if (sc0 && sc0.simulate) return sc0.simulate(HK.fearInput(input));

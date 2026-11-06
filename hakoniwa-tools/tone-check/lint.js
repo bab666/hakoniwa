@@ -1,4 +1,4 @@
-/* 口調に合わない語尾・一人称のずれを探す
+/* 口調に合わない語尾・一人称のずれ・画面に残った一人称と二人称の印（{一人称}・{二人称}）を探す
    node lint.js <collectの出力.json> [口調] [各項目の表示件数=8] */
 'use strict';
 const fs = require('fs');
@@ -121,19 +121,25 @@ const MOAN_RULES = {
   GROUPS: MG
 };
 module.exports = { MOAN_RULES };
-if (require.main !== module) return;
-const FP = /(俺様|オレ様|俺|僕|ぼく|オレ|ボク|わたくし|ワタクシ|あたくし|あたし|アタシ|わたし|ワタシ|私|拙者|わし|わらわ)(?=[はがもをにのとで、。！？…」っ])/g;
-const hits = {};
-for (const r of d.results) for (const x of r.recs) {
-  if ((only && x.tone !== only) || x.nq) continue;
-  femCheck(r, x);
-  (RULES[x.tone] || []).forEach(([nm, re]) => { if (re.test(x.out)) (hits[x.tone + '／' + nm] = hits[x.tone + '／' + nm] || new Set()).add(r.id + '：' + (x.raw || '') + '　→　' + x.out); });
-  (x.out.match(FP) || []).forEach(f => { if (f !== x.fp && !x.out.includes(x.fp + f)) (hits[x.tone + '／一人称（' + x.fp + 'のはず）'] = hits[x.tone + '／一人称（' + x.fp + 'のはず）'] || new Set()).add(r.id + '：' + x.out); });
+/* 読み込まれただけ（moan-audit.js が規則を読む）なら何もしない（頭の階層の return は構文の点検で落ちるので、関数に包む） */
+function main() {
+  const MARK_LEFT = /\{[一二]人称\}|[\uE0F1-\uE0F3]/;
+  const FP = /(俺様|オレ様|俺|僕|ぼく|オレ|ボク|わたくし|ワタクシ|あたくし|あたし|アタシ|わたし|ワタシ|私|拙者|わし|わらわ)(?=[はがもをにのとで、。！？…」っ])/g;
+  const hits = {};
+  for (const r of d.results) for (const x of r.recs) {
+    if ((only && x.tone !== only) || x.nq) continue;
+    femCheck(r, x);
+    (RULES[x.tone] || []).forEach(([nm, re]) => { if (re.test(x.out)) (hits[x.tone + '／' + nm] = hits[x.tone + '／' + nm] || new Set()).add(r.id + '：' + (x.raw || '') + '　→　' + x.out); });
+    (x.out.match(FP) || []).forEach(f => { if (f !== x.fp && !x.out.includes(x.fp + f)) (hits[x.tone + '／一人称（' + x.fp + 'のはず）'] = hits[x.tone + '／一人称（' + x.fp + 'のはず）'] || new Set()).add(r.id + '：' + x.out); });
+    /* 画面に残った一人称・二人称の印（voice.js の {一人称}・{二人称} と、中で運ぶ 1 字の印 U+E0F1〜U+E0F3。2026-11-06） */
+    if (MARK_LEFT.test(x.out)) (hits['（全口調）／画面に残った一人称・二人称の印'] = hits['（全口調）／画面に残った一人称・二人称の印'] || new Set()).add(r.id + '：' + x.tone + '：' + x.out.replace(/[\uE0F1-\uE0F3]/g, '〔印〕'));
+  }
+  Object.keys(hits).sort().forEach(k => { const u = [...hits[k]]; console.log('### ' + k + '　' + u.length + '件'); u.slice(0, +show || 8).forEach(s => console.log('  ' + s.slice(0, 160))); });
+  /* 女性の話し手の男性的な語尾・一人称（口調別。件数／その口調の女性の台詞の数） */
+  {
+    const ks = Object.keys(femHits).sort((a, b) => femHits[b].length - femHits[a].length), tot = ks.reduce((n, k) => n + femHits[k].length, 0);
+    console.log('### 女性の話し手の男性的な語尾・一人称　' + tot + '件（' + ks.map(k => k + ' ' + femHits[k].length + '/' + femN[k]).join('、') + '）');
+    ks.forEach(k => { if (only && k !== only) return; femHits[k].slice(0, +show || 8).forEach(s => console.log('  [' + k + '] ' + s.slice(0, 200))); });
+  }
 }
-Object.keys(hits).sort().forEach(k => { const u = [...hits[k]]; console.log('### ' + k + '　' + u.length + '件'); u.slice(0, +show || 8).forEach(s => console.log('  ' + s.slice(0, 160))); });
-/* 女性の話し手の男性的な語尾・一人称（口調別。件数／その口調の女性の台詞の数） */
-{
-  const ks = Object.keys(femHits).sort((a, b) => femHits[b].length - femHits[a].length), tot = ks.reduce((n, k) => n + femHits[k].length, 0);
-  console.log('### 女性の話し手の男性的な語尾・一人称　' + tot + '件（' + ks.map(k => k + ' ' + femHits[k].length + '/' + femN[k]).join('、') + '）');
-  ks.forEach(k => { if (only && k !== only) return; femHits[k].slice(0, +show || 8).forEach(s => console.log('  [' + k + '] ' + s.slice(0, 200))); });
-}
+if (require.main === module) main();

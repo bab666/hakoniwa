@@ -13,7 +13,15 @@
   var KGRP = { love: 'love', obsess: 'love', pine: 'pine', friend: 'friend', partner: 'partner', guard: 'guard', enemy: 'enemy', kill: 'kill', night: 'night', none: 'none' };
   var KNAME = [['love', '恋人・執着'], ['pine', '片想い'], ['friend', '友人'], ['partner', '相棒'], ['guard', '守護'], ['enemy', '気まずい・敵対'], ['kill', '殺害'], ['night', '一夜'], ['none', 'そのほか']];
   var mapCnt = {};
-  var tl = { who: [], keyOnly: false, cat: 'all', lewd: false, off: {} };
+  /* ch：記録の欄（e.ch。2026-11-06）の切り替え 'main' 本編（e.ch の無い記録）／'cm' コメント欄（e.ch が 'cm' の記録）。区切りの行はどちらにも。設計は docs/reports/2026-11-06/log-channel-design.md */
+  var tl = { who: [], keyOnly: false, cat: 'all', lewd: false, off: {}, ch: 'main' };
+  /* 記録の欄の名前（いまはコメント欄だけ）と、その欄の記録の数 */
+  var CH_NAME = { cm: 'コメント欄' };
+  function chOf(e) { return e && e.ch ? String(e.ch) : 'main'; }
+  function chCount(res, ch) { return (res.log || []).filter(function (e) { return e && e.kind !== 'step' && chOf(e) === ch; }).length; }
+  function chList(res) { var s = {}; (res.log || []).forEach(function (e) { if (e && e.ch && e.kind !== 'step' && CH_NAME[e.ch]) s[e.ch] = 1; }); return Object.keys(s); }
+  /* いまの欄（その記録に無い欄なら本編） */
+  function curCh(res) { var c = tl.ch || 'main'; return c === 'main' || chList(res).indexOf(c) >= 0 ? c : 'main'; }
   var lastRes = null, lastHost = null, lastOpts = null;
   /* ---------- 結果の画面の並び（2026-11-01 担当UC。参考デザインの「経過と結末」：頭＋切替「結末｜経過｜関係図｜二人ずつ｜住人ごと」。表示だけで、記録・結果は変えない） ----------
      rv.tab（今の切替）・fs（経過の文字の大きさ s/m/l）・why（理由を表示）・open（区切りを全部開く）は画面の設定としてブラウザに残す（新しい鍵 hakoniwa:rv。今までの鍵は変えない）。
@@ -31,7 +39,7 @@
   })();
   function rvSave() { try { window.localStorage.setItem(RV_KEY, JSON.stringify({ tab: rv.tab, fs: rv.fs, why: rv.why, open: rv.open, tlv: rv.tlv })); } catch (e) { /* 残せなくても表示はできる */ } }
   /* 結果が変わったら、結果ごとの選択を戻す */
-  function rvFresh() { rv.sec = {}; rv.pair = null; rv.who = null; rv.off = {}; rv.lab = false; rv.line = null; rv.side = false; rv.plist = 'all'; }
+  function rvFresh() { tl.ch = 'main'; rv.sec = {}; rv.pair = null; rv.who = null; rv.off = {}; rv.lab = false; rv.line = null; rv.side = false; rv.plist = 'all'; }
 
   function pc(i) { return 'var(--p' + (i % 30) + ')'; }
   function dot(i) { return '<span class="dot" style="background:' + pc(i) + '"></span>'; }
@@ -212,7 +220,7 @@
   }
   /* 情事（エロシーン）は R18 版で全年齢モードでないときだけ */
   function lewdHot(e) { return !HK.SAFE_ON && !!HK.lewdEvent && HK.lewdEvent(e); }
-  function isHot(e, H) { return e.kind === 'death' || !!(e.mark && e.mark.length) || !!H.tp[e.n] || lewdHot(e); }
+  function isHot(e, H) { if (e && e.ch) return false; return e.kind === 'death' || !!(e.mark && e.mark.length) || !!H.tp[e.n] || lewdHot(e); }
   /* 重要な出来事の種類（担当HZ 2026-10-28。表示だけ）：死亡＞情事＞転機＞目標＞トラブル の順で一つに決める。li に hot-○○ と data-hot を付け、
      index.html の時系列の節が細い枠（単色・キャラ色は線の種類、フルは種類ごとの薄い背景と左の縁）を描く。.hot（赤の点・太字）は今までどおり 死亡・情事・転機 だけ */
   var HOT_ORDER = ['death', 'lewd', 'turn', 'goal', 'trouble'];
@@ -224,7 +232,7 @@
   var HOT_GOAL = /脱出|抜け出|救(?:っ|い|出|助)|成功|勝利|撃破|討伐|踏破|生還|帰還|達成|優勝|解決|判明|手がかり|真相|回避/;
   var HOT_DEATH = /^(?:死|全滅|弔い|処刑|殉|最期|陥落|発狂)/;
   function hotKind(e, H) {
-    if (!e || e.kind === 'step' || e.kind === 'phase') return '';
+    if (!e || e.kind === 'step' || e.kind === 'phase' || e.ch) return '';
     if (e.kind === 'death') return 'death';
     if (lewdHot(e)) return 'lewd';
     if ((e.mark && e.mark.length) || H.tp[e.n]) return 'turn';
@@ -617,15 +625,17 @@
   function tlGroups(res) {
     var ks = keySet(res), H = hotInfo(res), groups = [], cur = null;
     /* 似た派閥の出来事が続くときは畳む（factions.js の HK.Factions.foldSet。表示だけ。人で絞り込んでいるときは畳まない） */
-    var fold = res.factions && HK.Factions && HK.Factions.foldSet && !tl.who.length ? HK.Factions.foldSet(res) : null;
+    var fold = res.factions && HK.Factions && HK.Factions.foldSet && !tl.who.length ? HK.Factions.foldSet(res) : null, ch = curCh(res);
     res.log.forEach(function (e, li) {
       if (e.kind === 'step') { cur = { label: e.label, step: e.step, items: [], end: e.text === '結末' || e.label === '結末' }; groups.push(cur); return; }
       if (!cur) { cur = { label: '', step: null, items: [] }; groups.push(cur); }
+      /* 記録の欄（本編／コメント欄）：いまの欄の記録だけ */
+      if (chOf(e) !== ch) return;
       if (tl.who.length) {
         var all = tl.who.every(function (w) { return e.actors.indexOf(w) >= 0; });
         if (!all) return;
       }
-      if (tl.keyOnly && !(ks[e.n] || e.kind === 'death' || e.odd || e.mag >= 25 || e.goal || e.goalExit || (e.mark && e.mark.length) || isHot(e, H))) return;
+      if (tl.keyOnly && !e.ch && !(ks[e.n] || e.kind === 'death' || e.odd || e.mag >= 25 || e.goal || e.goalExit || (e.mark && e.mark.length) || isHot(e, H))) return;
       if (tl.cat !== 'all' && e.cat !== tl.cat && e.kind !== 'death') return;
       /* 種類（右の☑）：外した種類の出来事は出さない（死亡はいつも出す） */
       if (e.kind === 'event' && tl.off[e.cat]) return;
@@ -723,7 +733,7 @@
     }
     function evLi(e) {
       var hot = isHot(e, H), hk = hotKind(e, H), rm = rmInfo(e, res, inEnd);
-      var cls = 'ev' + (e.kind === 'event' && e.cat ? ' cat-' + e.cat : '') + (e.trouble ? ' trouble' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (hot ? ' hot' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '') + (hk ? ' hot-' + hk : '');
+      var cls = 'ev' + (e.ch ? ' chat ch-' + esc(chOf(e)) : '') + (e.kind === 'event' && e.cat ? ' cat-' + e.cat : '') + (e.trouble ? ' trouble' : '') + (e.kind === 'phase' ? ' phase' : '') + (e.kind === 'death' ? ' death' : '') + (ks[e.n] ? ' key' : '') + (hot ? ' hot' : '') + (e.goal || e.goalExit ? ' goal' : '') + (e.goalExit ? ' exit' : '') + (hk ? ' hot-' + hk : '');
       /* 出られない部屋の条件の行は、種類の札「脱出」を「条件」の札に任せる（同じことを二つ並べない） */
       var chip = e.kind === 'event' && !(rm && rm.k === 'cond' && e.cat === 'escape') ? '<span class="c cc-' + esc(e.cat) + '">' + esc(HK.CAT_NAME[e.cat] || e.cat) + '</span>' : '';
       /* 出られない部屋：条件を満たした・扉が開いた出来事の札 */
@@ -737,10 +747,11 @@
       /* 会話は吹き出しにせず、「」の引用だけ少し太く（.q） */
       var talk = !!(avs && e.kind === 'event' && (sg ? HK.Seg.talk(sg) : /「/.test(e.text)));
       /* 吹き出しの見え方（V.bubble）：発話のある出来事は本文を吹き出しと地の文に分ける（顔は吹き出しの側に出すので、行の頭の顔は出さない） */
-      var bb = V.bubble(e, sg, { who: function (i) { return res.chars[i]; }, av: function (i, s) { return av(res, i, s); }, paint: function (s) { return paint(s, res); } });
+      var bb = V.bubble(e, sg, { who: function (i) { return res.chars[i]; }, av: function (i, s) { return av(res, i, s); }, paint: function (s) { return paint(s, res); }, face: function (k) { return HK.Face ? HK.Face.of(e, k, res) : null; } });
       if (bb) { avs = ''; talk = false; }
       var body = bb || paint(e.text, res, sg);
-      if (talk) body = body.replace(/「[^「」]*」/g, '<span class="q">$&</span>');
+      /* 表情の鍵（face.js）：「」の順に data-face を付ける（見た目は変えない。画像の差し込み口。入れ子の「」がある文は付けない） */
+      if (talk) { var fl = HK.Face && HK.Seg ? HK.Face.list(e, res) : null, fq = 0, nst = fl && HK.Seg.quotes(e.text).length !== (e.text.match(/「[^「」]*」/g) || []).length; body = body.replace(/「[^「」]*」/g, function (m) { var f = fl && !nst ? fl[fq++] : null; return '<span class="q"' + (f ? ' data-face="' + f + '"' : '') + '>' + m + '</span>'; }); }
       /* 段落の箱と、出られない部屋の札（まとめての見出しは囲みに。段が一つだけなら札に） */
       var pw = bb ? { html: bb, dg: false } : paraWrap(body, rm && rm.dg);
       body = pw.html;
@@ -805,8 +816,10 @@
       if (!g) return;
       var w = g.w, col = w ? (HK.Icons && HK.Icons.color && HK.Icons.color(w.name)) || pc(w.i != null ? w.i : g.k) : '';
       var face = w ? o.av(g.k, 24) : '<span class="av bbmob" aria-hidden="true"><b>' + esc(g.mob) + '</b></span>';
-      out.push('<div class="bbg' + (w ? '' : ' bbg0') + '"' + (w ? ' style="--c:' + col + '"' : '') + '>' + face + '<div class="bbs">' + g.items.map(function (h, k) {
-        return '<div class="bb' + (h.m ? ' bbm' : '') + '">' + (k === 0 && w ? '<b class="bbnm">' + esc(w.name) + '</b>' : '') + h.h + '</div>';
+      /* 表情の鍵（face.js）：顔の側は最後の吹き出しの鍵、吹き出しはそれぞれの鍵（data-face。見た目は変えない。画像の差し込み口） */
+      var gf = g.items.length ? g.items[g.items.length - 1].f : null;
+      out.push('<div class="bbg' + (w ? '' : ' bbg0') + '"' + (w ? ' style="--c:' + col + '"' : '') + (gf ? ' data-face="' + gf + '"' : '') + '>' + face + '<div class="bbs">' + g.items.map(function (h, k) {
+        return '<div class="bb' + (h.m ? ' bbm' : '') + '"' + (h.f ? ' data-face="' + h.f + '"' : '') + '>' + (k === 0 && w ? '<b class="bbnm">' + esc(w.name) + '</b>' : '') + h.h + '</div>';
       }).join('') + '</div></div>');
       g = null;
     }
@@ -817,8 +830,9 @@
       closeG();
       s.split(/\n\s*\n+/).forEach(function (p) { p = p.replace(/^\s+|\s+$/g, ''); if (p) out.push('<p class="bbn">' + o.paint(p) + '</p>'); });
     }
-    var prevC = false;
+    var prevC = false, qi = -1;
     sg.forEach(function (x) {
+      if (x.t !== 'n') qi++;
       /* 話し手の決まらない「」が名詞の引用のすぐ後ろに続くとき（「頭が良くなる」「レモンが甘く感じる」の並び）は、引用の続きとして地の文に */
       var asN = !BB_TALK.test(x.t) || (x.t === 'u' && !(x.who >= 0) && prevC && /」\s*$/.test(nar));
       prevC = x.t === 'c' || (asN && x.t === 'u');
@@ -830,7 +844,8 @@
       flushN();
       var m = /^「([\s\S]*)」$/.exec(t), key = w ? 'p' + x.who : 'm' + bbMob(pre, isName);
       if (!g || g.key !== key) { closeG(); g = { key: key, k: x.who, w: w, mob: w ? '' : key.slice(1), items: [] }; }
-      g.items.push({ h: o.paint(m ? m[1] : t), m: x.t === 'm' });
+      var fk = o.face ? o.face(qi) : x.face || null;
+      g.items.push({ h: o.paint(m ? m[1] : t), m: x.t === 'm', f: fk && /^[a-z_0-9]+$/.test(fk) ? fk : null });
     });
     flushN();
     closeG();
@@ -896,7 +911,35 @@
   }
 
   /* ---------- 全体 ---------- */
-  V.resetFilter = function () { tl = { who: [], keyOnly: false, cat: 'all', lewd: false, off: {} }; };
+  V.resetFilter = function () { tl = { who: [], keyOnly: false, cat: 'all', lewd: false, off: {}, ch: 'main' }; };
+  /* 記録の欄の切り替え（本編／コメント欄 n件）（e.ch のある記録のときだけ。経過の見出しの横） */
+  function chSeg(res) {
+    var L = chList(res);
+    if (!L.length) return '';
+    var opts = [['main', '本編', chCount(res, 'main')]].concat(L.map(function (c) { return [c, CH_NAME[c], chCount(res, c)]; }));
+    return '<div class="rvseg rvch" role="radiogroup" aria-label="記録の欄">' + opts.map(function (x) {
+      return '<button type="button" role="radio" data-act="rvch" data-v="' + esc(x[0]) + '" aria-checked="' + (curCh(res) === x[0]) + '">' + esc(x[1]) + (x[0] === 'main' ? '' : '<small>（' + x[2] + '件）</small>') + '</button>';
+    }).join('') + '</div>';
+  }
+  V.chSeg = chSeg;
+  V.setCh = function (c) { tl.ch = c || 'main'; chSync(); V.refreshTimeline(); };
+  V.ch = function () { return tl.ch || 'main'; };
+  /* 印刷（export-out.js の PDF）：本編を出し、そのあとに記録の欄（コメント欄など）を区切りごとに足す。戻す関数を返す（欄の無い記録は null） */
+  V.chPrint = function () {
+    var res = lastRes, h = lastHost, t = h && h.querySelector('#tl');
+    if (!res || res.solo || !t) return null;
+    var L = chList(res);
+    if (!L.length) return null;
+    var sv = tl.ch, so = rv.open;
+    tl.ch = 'main'; chSync(); V.refreshTimeline();
+    var box = document.createElement('div');
+    box.className = 'rvchprint';
+    rv.open = true;
+    try { box.innerHTML = L.map(function (c) { tl.ch = c; return '<h2 class="sec rvh2">' + esc(CH_NAME[c]) + '</h2><div class="tl">' + timeline(res, tlGroups(res)) + '</div>'; }).join(''); }
+    finally { rv.open = so; tl.ch = 'main'; }
+    t.parentNode.insertBefore(box, t.nextSibling);
+    return function () { if (box.parentNode) box.parentNode.removeChild(box); tl.ch = sv; chSync(); V.refreshTimeline(); };
+  };
 
   /* 結果の頭（見本 09・10。一人用・ダンジョンも使う）：小さく「箱庭・人数・シード」、大きく結末の一文。右に「条件を変える」「保存・共有▾」「別の運命で動かす」。
      ボタンの行は格子の右の列に置き、結末の文の長さで位置が動かない（ui-result-style.js。スマホ幅はメタ1行と題名2行の高さを決めて、その下に置く）。
@@ -967,7 +1010,7 @@
     var scen = scenOf(res);
     var E = HK.Endings ? HK.Endings.build(res) : null;
     var sur = res.pairs.filter(function (p) { return p.surprise; });
-    var nEv = res.log.filter(function (e) { return e.kind !== 'step'; }).length;
+    var nEv = res.log.filter(function (e) { return e.kind !== 'step' && !e.ch; }).length;
     /* 頭の題名：結果の一行（res.outcome。「合コンは終電で解散 ― …」）。無ければ結末の文の最初の文 */
     var hl = res.outcome || (E && E.headline ? firstSentence(E.headline) : '');
     var meta = esc(scen.name) + '・' + res.chars.length + '人・シード <span class="num">' + res.seed + '</span>・' + esc(unitOf(res, scen));
@@ -1029,7 +1072,7 @@
   function logPane(res, scen) {
     var G = tlGroups(res);
     return '<div class="rvgrid rvg-log"><nav class="rvtoc" id="rvtoc" aria-label="目次">' + toc(res, G) + '</nav>' +
-      '<div class="rvmain"><div class="rvloghd"><h2 class="sec rvh2" id="tlhead">経過' + hotLegend(res) + '</h2><button type="button" class="btn small rvsidebtn" data-act="rvside" aria-expanded="' + rv.side + '" aria-controls="tlbar rvtoc">目次・絞り込み</button></div>' +
+      '<div class="rvmain"><div class="rvloghd"><h2 class="sec rvh2" id="tlhead">経過' + hotLegend(res) + '</h2>' + chSeg(res) + '<button type="button" class="btn small rvsidebtn" data-act="rvside" aria-expanded="' + rv.side + '" aria-controls="tlbar rvtoc">目次・絞り込み</button></div>' +
       (scen.longRun && scen.longRun(res.env) ? '<p class="hint">長期間のため、最初は重要な出来事だけの短縮版で表示しています。「重要な場面だけ」を外すと全部見られます。</p>' : '') +
       '<div class="tl" id="tl">' + timeline(res, G) + '</div></div>' +
       '<aside class="rvside rvrail" id="tlbar" aria-label="経過の絞り込み">' + tlBar(res) + '</aside></div>';
@@ -1158,7 +1201,7 @@
   function gotoEv(n) {
     if (!V.showTab('log', true)) return;
     var h = rvHost(), q = '#tl li.ev[data-n="' + n + '"]', li = h.querySelector(q);
-    if (!li) { tl.who = []; tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; tl.off = {}; V.refreshTimeline(); li = h.querySelector(q); }
+    if (!li) { tl.who = []; tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; tl.off = {}; tl.ch = lastRes && lastRes.log[n] ? chOf(lastRes.log[n]) : 'main'; chSync(); V.refreshTimeline(); li = h.querySelector(q); }
     if (!li) return;
     var sb = li.closest('.stepblk'), d = li.closest('details');
     if (sb) setSec(sb, true);
@@ -1199,6 +1242,13 @@
     Array.prototype.forEach.call(h.querySelectorAll('.rvwlist [data-act="rvwho"]'), function (b) { b.setAttribute('aria-current', String(+b.getAttribute('data-i') === i)); });
   }
   function wrapAttr(k, v) { var w = rvWrap(); if (w) w.setAttribute(k, v); }
+  /* 記録の欄の切り替えの押された印を、いまの欄に合わせる（見出しの横は描き直さないので） */
+  function chSync() {
+    var h = rvHost();
+    if (h) Array.prototype.forEach.call(h.querySelectorAll('[data-act="rvch"]'), function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-v') === (tl.ch || 'main'))); });
+    var w = rvWrap();
+    if (w) w.setAttribute('data-ch', tl.ch || 'main');
+  }
   document.addEventListener('click', function (ev) {
     var t = ev.target && ev.target.closest && ev.target.closest('[data-act]');
     /* 保存・共有の窓：外を押したら閉じる */
@@ -1231,6 +1281,7 @@
         break;
       case 'rvside': rv.side = !rv.side; wrapAttr('data-side', rv.side ? 1 : 0); t.setAttribute('aria-expanded', String(rv.side)); break;
       case 'rvreset': tl.who = []; tl.keyOnly = false; tl.lewd = false; tl.cat = 'all'; tl.off = {}; V.refreshTimeline(); break;
+      case 'rvch': tl.ch = t.getAttribute('data-v') || 'main'; chSync(); V.refreshTimeline(); break;
       case 'rvpair':
         if (t.hasAttribute('data-p')) pickPair(+t.getAttribute('data-p'));
         break;
@@ -1356,7 +1407,19 @@
     var nmList = res.chars.map(function (c) { return c.name; });
     res.log.forEach(function (e) {
       if (e.kind === 'step') L.push('― ' + e.label);
-      else L.push('　' + (HK.fmtLong ? HK.fmtLong(e.text, nmList) : e.text));
+      else if (!e.ch) L.push('　' + (HK.fmtLong ? HK.fmtLong(e.text, nmList) : e.text));
+    });
+    /* 記録の欄（e.ch。コメント欄など）：本編のあとに、区切りごとに */
+    chList(res).forEach(function (c) {
+      L.push('');
+      L.push('■ ' + CH_NAME[c]);
+      var lab = null;
+      res.log.forEach(function (e) {
+        if (e.kind === 'step') { lab = e.label; return; }
+        if (chOf(e) !== c) return;
+        if (lab != null) { L.push('― ' + lab); lab = null; }
+        String(e.text || '').split(/\n+/).forEach(function (l) { if (l.trim()) L.push('　' + l.trim()); });
+      });
     });
     return L.join('\n');
   };

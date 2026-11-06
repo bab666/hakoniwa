@@ -79,7 +79,7 @@
 
   /* SET_RATE：喘ぎの口調を決めた人は、口調の語尾・口調ごとの喘ぎを使う割合をこちらに上げる（決めた口調が聞こえるように） */
   var M = HK.Moan = { MODES: MODES, user: null, TONE_RATE: 0.25, TONE_MOAN_RATE: 0.25, SET_RATE: 0.5, map: null };
-  if (HK.wrap && HK.simulate) HK.wrap(HK, 'simulate', function (prev) { return function () { M._run = {}; return prev.apply(this, arguments); }; });
+  if (HK.wrap && HK.simulate) HK.wrap(HK, 'simulate', function (prev) { return function () { M._run = {}; M._face = Object.create(null); return prev.apply(this, arguments); }; });
   /* 鍵の種類（設定画面の「全場面の見出しを引き込む」が、範囲ごとに効く声を選ぶのに使う。ui-adv-moan.js。読むだけ） */
   M.KEY_KIND = { words: WORDS_ONLY, mix: MIX };
   M.keys = function () { var out = []; Object.keys(MODES).forEach(function (m) { MODES[m].stages.forEach(function (s, i) { out.push({ key: m + i, mode: m, stage: i, label: MODES[m].label + '・' + s }); }); }); return out; };
@@ -609,12 +609,13 @@
     if (/(?:まっしろ|まっ白|真っ白|おもしろ|面白)[…‥っッ♡！？!?。、　\s〜ー]*$/.test(tail)) return s;
     try { return head + T.apply(tail, md, who); } catch (e) { return s; }
   }
-  /* 一人称・二人称だけそろえる（基盤には書いていないが、書いたときのため。「私」「あなた」） */
+  /* 一人称・二人称だけそろえる（基盤には書いていないが、書いたときのため。印 {一人称}・{二人称}、古い書き方の「私」「あなた」） */
   function persons(s, who) {
     var V = HK.Voice;
     if (!V || !who) return s;
-    if (/私/.test(s) && V.replaceFP) s = V.replaceFP(s, who);
-    if (/あなた/.test(s) && V.applyYou) { var yw = who.you || (HK.toneYou ? HK.toneYou(toneOf(who), who.gender) : ''); if (yw) s = V.applyYou(s, yw); }
+    var mk = V.hasMark && V.hasMark(s);
+    if ((/私|\{一人称\}|\uE0F1/.test(s)) && V.replaceFP) s = V.replaceFP(s, who);
+    if ((/あなた/.test(s) || mk) && V.applyYou) { var yw = who.you || (HK.toneYou ? HK.toneYou(toneOf(who), who.gender) : ''); if (yw || mk) s = V.applyYou(s, yw); }
     return s;
   }
   /* 素の言葉の喘ぎを仕上げる：（まれに）文末の語尾だけ口調 → 一人称・二人称 → 台詞の言い換えを通さない印 */
@@ -633,7 +634,24 @@
   M.moanToneOf = moanToneOf;
   /* 箱庭の本文へ出す喘ぎ（E.moan・{m:鍵}・HK.Moan.say）は、言葉のない声も台詞の言い換えを通さない（無口の「短くする」などで崩れないように）。
      利用者の辞書の行（M.lastSrc＝'user'）だけは、これまでどおり言い換えを通す。HK.Moan.pick を直に呼ぶ所（キスの声 k0 など）は、作風（♡を残すか）が分からないので印を付けない */
-  function bare(s) { return s && s.charAt(0) !== NOTONE && M.lastSrc !== 'user' ? NOTONE + s : s; }
+  function bare(s) { faceNote(s); return s && s.charAt(0) !== NOTONE && M.lastSrc !== 'user' ? NOTONE + s : s; }
+  /* 表情の鍵の喘ぎの段（face.js の moan_1〜moan_4。2026-11-06）：本文へ出した声の段を、文に印を入れずに覚えておく（印を入れると、途中の重なりの判定や長さが変わるため）。
+     voice.js の processText が台詞の中身で引き（HK.Moan.faceOf）、記録の e.fc に残す。鍵 → 段：はじまり 1・高まり 2・山場 3・事後 4 */
+  var FACE_ST = { w0: 1, w1: 1, h0: 1, r0: 1, r1: 1, k0: 1, o0: 1, l0: 1, t0: 1, t1: 1, t2: 1, n0: 1,
+    w2: 2, h1: 2, p0: 2, b0: 2, b1: 2, b2: 2, r2: 2, l1: 2, t3: 2, n1: 2,
+    w3: 3, w4: 3, w5: 3, r3: 3, r4: 3, h2: 3, p1: 3, t4: 3, t5: 3, t6: 3, n2: 3, e0: 4 };
+  /* 覚えは一回の遊び（HK.simulate の一回。M._face は遊びの始まりで空になる）ごと。前の回の声で鍵が変わらないように */
+  function faceBox() { return M._face || (M._face = Object.create(null)); }
+  function faceKey(s) { return String(s).replace(/^\u2060+/, ''); }
+  function faceNote(s) {
+    var st = s && !HK.SAFE_ON && FACE_ST[M.lastKey];
+    if (!st) return;
+    var B = faceBox(), k = faceKey(s);
+    B[k] = 'moan_' + st;
+    /* 小説調（M.plain）は♡を落とすので、落とした形でも引けるように */
+    if (k.indexOf('♡') >= 0) B[k.replace(/♡+/g, '')] = 'moan_' + st;
+  }
+  M.faceOf = function (q) { if (!q || HK.SAFE_ON) return null; var k = faceKey(q), B = M._face; return k && B && B[k] || null; };
   function sharedPool(key) { var U = M.user, SH = HK.MOAN_SHARED || {}; if (U && U.shared[key]) return U.shared[key]; return SH[key] || null; }
   /* 部位の呼び方（{p}）を埋める。相手に男性器がなければ、その行は使わない */
   function fillPart(list, who, ctx) {
@@ -678,6 +696,7 @@
   M.pick = function (S, who, key, ctx) {
     ctx = ctx || {};
     if (!MODES[key.charAt(0)] || !MODES[key.charAt(0)].stages[+key.slice(1)]) key = 'w0';
+    M.lastKey = key;
     var U = M.user, ps = psOf(who, ctx), out = null, tag = (who && who.name) + '.' + key;
     /* 住人ごとの上書き（住人の欄の辞書 ＞ 高度設定の 住人=） */
     M.lastSrc = 'user'; M.lastEnds = false;

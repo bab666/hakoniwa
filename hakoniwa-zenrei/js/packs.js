@@ -14,7 +14,9 @@
   'use strict';
   var HK = window.HK;
   if (!HK) return;
-  var API = 1, MIN_API = 1;
+  /* API 2（2026-11-06）：台詞の印 {一人称}・{二人称} を展開できる本体（voice.js）。印を使うパックは api 2 にする（古い本体では印が画面に出るため「本体を新しくしてください」） */
+  /* API 3（2026-11-06）：記録のコメント欄 e.ch・表情の鍵の印「〈照れ〉」を本体が読む（hakoniwa-packs/README.md）。古い本体ではコメントが本編に混ざり、印が画面に出るので開かせない */
+  var API = 3, MIN_API = 1;
   var SLOTS = ['set-a', 'set-b', 'set-c', 'set-d', 'set-e', 'set-f', 'set-g', 'set-h', 'set-i', 'set-j', 'set-k', 'set-l'];
   var BASE = 'packs/';
   var MF = window.HK_MANIFEST && typeof window.HK_MANIFEST === 'object' ? window.HK_MANIFEST : null;

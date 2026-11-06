@@ -38,7 +38,7 @@
   /* ---------- 最期の言葉（「」の中身。{to}＝相手への呼びかけ「〇〇、」か空） ---------- */
   var LW = {
     kill: {
-      proud: L('{to}……くそ、こんなところで、終わりかよ|{to}ざまあねえな……あとは、勝手にやれ|{to}覚えてろ……俺は、まだ……'),
+      proud: L('{to}……くそ、こんなところで、終わりかよ|{to}ざまあねえな……あとは、勝手にやれ|{to}覚えてろ……{一人称}は、まだ……'),
       stern: L('{to}……油断した。私の、落ち度だ|{to}あとを、頼む……振り返るな|{to}……悔いは、ない。そう、思わせてくれ'),
       tsun: L('{to}……べつに、痛くなんか、ない|{to}泣くな……泣いたら、許さない|{to}……ばか。こんなときくらい、そばにいろ'),
       gentle: L('{to}……大丈夫。怖くないよ|{to}ありがとう……楽しかった、ね|{to}誰も、恨まないで……お願い'),
@@ -49,7 +49,7 @@
       polite: L('{to}……お見苦しいところを、お見せしました|{to}どうか、お元気で……|{to}……今まで、ありがとうございました')
     },
     accident: {
-      proud: L('{to}……は、こんな、間抜けな終わり方かよ|{to}来るな……俺のことは、いい|{to}……悪くねえ人生だった、ってことに、しとけ'),
+      proud: L('{to}……は、こんな、間抜けな終わり方かよ|{to}来るな……{一人称}のことは、いい|{to}……悪くねえ人生だった、ってことに、しとけ'),
       stern: L('{to}……足を、取られた……すまない|{to}構うな……先へ、進め|{to}……ここまで、か。存外、あっけない'),
       tsun: L('{to}……なによ、その顔……平気だって、言ってる|{to}……こんなの、ずるい……|{to}あんたのせいじゃ、ないから……絶対に'),
       gentle: L('{to}……あれ、なんだか、眠いや|{to}大丈夫、だから……そんな顔、しないで|{to}……空、きれいだね'),
@@ -60,18 +60,18 @@
       polite: L('{to}……申し訳ありません。お先に、失礼いたします|{to}……どうか、私のことはお気になさらず|{to}……皆さんに、よろしくお伝えください')
     },
     sacrifice: {
-      proud: L('{to}行け！　ここは、俺が止める|{to}……借りは、返したぞ|{to}振り向くんじゃねえ……走れ'),
+      proud: L('{to}行け！　ここは、{一人称}が止める|{to}……借りは、返したぞ|{to}振り向くんじゃねえ……走れ'),
       stern: L('{to}これが、私の務めだ|{to}……行け。立ち止まることは、許さん|{to}守れたなら……それでいい'),
       tsun: L('{to}か、勘違いしないでよ……あんたのためじゃ、ないんだから|{to}早く、行きなさいよ……ばか|{to}……ちゃんと生き残らなかったら、許さないから'),
       gentle: L('{to}いいんだ……こうしたかったんだよ|{to}……無事で、よかった|{to}……みんなのこと、頼んだよ'),
       devoted: L('{to}……やっと、お役に立てました|{to}私は、いいんです……どうか、生きてください|{to}……守れて、よかった……'),
       cool: L('{to}……合理的な判断だ。君が生きるほうが、いい|{to}……悪くない、交換だろう|{to}……振り返るな。時間の無駄だ'),
-      free: L('{to}へへ……かっこよかった、でしょ？|{to}……行って！　早く！|{to}……あたしの分まで、楽しんでよね'),
+      free: L('{to}へへ……かっこよかった、でしょ？|{to}……行って！　早く！|{to}……{一人称}の分まで、楽しんでよね'),
       shy: L('{to}……やっと、勇気、出せた……|{to}……こわかった、けど……よかった……|{to}……にげて……おねがい……'),
       polite: L('{to}……どうか、お先に。ここは私が|{to}……お役に立てて、光栄です|{to}……振り返らずに、お進みください')
     },
     suicide: {
-      proud: L('{to}……俺の終わりは、俺が決める|{to}止めるなよ……もう、決めたんだ|{to}……誰のせいでも、ねえ'),
+      proud: L('{to}……{一人称}の終わりは、{一人称}が決める|{to}止めるなよ……もう、決めたんだ|{to}……誰のせいでも、ねえ'),
       stern: L('{to}……始末は、自分でつける|{to}……許せとは、言わない|{to}これで償いになるとは思わない。だが……'),
       tsun: L('{to}……止めないで。お願いだから|{to}……ほんとは、もっと、ちゃんと……|{to}……ばいばい'),
       gentle: L('{to}……疲れちゃった。ごめんね|{to}……あなたは、生きてね|{to}……ありがとう。もう、いいんだ'),
@@ -82,7 +82,7 @@
       polite: L('{to}……身勝手を、お許しください|{to}……お世話に、なりました|{to}……どうか、お幸せに')
     },
     disease: {
-      proud: L('{to}……情けねえな、こんな、ことで|{to}……そんな顔、すんな。俺は、平気だ|{to}……あとは、頼んだぞ'),
+      proud: L('{to}……情けねえな、こんな、ことで|{to}……そんな顔、すんな。{一人称}は、平気だ|{to}……あとは、頼んだぞ'),
       stern: L('{to}……体が、言うことを、聞かん|{to}……看病、感謝する|{to}……私のことは、もう、いい'),
       tsun: L('{to}……べつに、つらくなんか、ない……|{to}……もうちょっと、そこにいて|{to}……看病、下手くそ……でも、ありがと'),
       gentle: L('{to}……あったかいね、その手|{to}……少し、眠るね|{to}……ありがとう。そばにいてくれて'),
@@ -101,7 +101,7 @@
     gentle: L('{t}……会えて、よかった|{t}……笑っていてね。ずっと|{t}……ありがとう。大事に思ってたよ'),
     devoted: L('{t}……あなたに会えて、幸せでした|{t}……どうか、私の分まで|{t}……ずっと、お慕いしていました'),
     cool: L('{t}……君と出会ったのは、計算外だった。いい意味で|{t}……君が生きているなら、それでいい|{t}……最後に見るのが君で、よかった'),
-    free: L('{t}……ねえ、楽しかったね|{t}……あたしのこと、忘れないでよ|{t}……また、どこかで'),
+    free: L('{t}……ねえ、楽しかったね|{t}……{一人称}のこと、忘れないでよ|{t}……また、どこかで'),
     shy: L('{t}……ずっと、そばにいたかった……|{t}……あのね……ありがとう……|{t}……泣かないで……'),
     polite: L('{t}……あなたにお会いできて、本当によかった|{t}……どうか、お幸せに|{t}……ありがとうございました。……さようなら')
   };
@@ -146,7 +146,15 @@
     q = q.replace(/\{to\}/g, to ? to.name + '、' : '').replace(/\{t\}/g, to ? to.name + '、' : '');
     return soften(q);
   }
-  var X = HK.Epilogue = { LW: LW, LW_TO: LW_TO, LW_BETRAY: LW_BETRAY, kind: P_kind, hash: hash };
+  /* 結果の住人の欄（lastWords）に入れる最期の言葉：印 {一人称}・{二人称} を本人の一人称・二人称にする（2026-11-06）。
+     欄は記録の言い換えを通らないので（通らないと出口で「私」になる）、ここで展開する。覚え書き（notes）と記録の文は印のまま渡す
+     （言い換えの中で展開する。先に展開すると、書き下ろしの鍵（「私」の本文）に当たらなくなる） */
+  function lwOut(line, who) {
+    var V = HK.Voice;
+    if (!V || !V.hasMark || !V.hasMark(line) || !V.replaceFP) return line;
+    try { var r = V.replaceFP(line, who); return V.applyYou && V.hasMark(r) ? V.applyYou(r, (who && who.you) || '') : r; } catch (e) { return line; }
+  }
+  var X = HK.Epilogue = { LW: LW, LW_TO: LW_TO, LW_BETRAY: LW_BETRAY, kind: P_kind, hash: hash, lwOut: lwOut };
   /* 蘇る人（不死・吸血鬼。special.js の HK.Special.canRevive）は遺言を残さない。代わりに蘇ったときの一言（SP.reviveLine）が記録に残る */
   function revives(c) { return !!(HK.Special && HK.Special.canRevive && HK.Special.canRevive(c)); }
   X.revives = revives;
@@ -180,7 +188,7 @@
     (ctx.chars || []).forEach(function (c, k) {
       var s = chars[k];
       if (!s || !c.lastWords || revives(c)) return;
-      s.lastWords = c.lastWords; s.lastTo = c.lastTo; s.lastKind = c.lastKind;
+      s.lastWords = lwOut(c.lastWords, c); s.lastTo = c.lastTo; s.lastKind = c.lastKind;
       if (Array.isArray(s.notes)) s.notes.push('最期の言葉：' + c.lastWords);
     });
   };
@@ -493,7 +501,7 @@
         if (p._emoDeathN != null && S.log[p._emoDeathN] && typeof S.log[p._emoDeathN].text === 'string' && hash(key0 + '|lw|' + p.i) < 0.6) S.log[p._emoDeathN].text += '　――' + line;
         if (lastL.length < 3) lastL.push(line);
         var h = res.heroes && res.heroes[p.i];
-        if (h) h.lastWords = p.lastWords;
+        if (h) h.lastWords = lwOut(p.lastWords, p);
       });
       lastL.forEach(function (l) { res.ending.lines.push(l); });
       /* 一人ずつの「その後」（結末の行にもう「〇〇のその後」がある人は飛ばす） */

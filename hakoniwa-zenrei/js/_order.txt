@@ -50,6 +50,8 @@ js/rel-core-extra.js @pack:rel
 js/tie-stage.js @pack:rel
 js/tie-abuse.js @pack:rel
 js/tie-layer.js @pack:rel
+# 表情の鍵（HK.Face。台詞の印「〈照れ〉」・出来事・気分から鍵を決める。2026-11-06。設計は docs/reports/2026-11-06/face-design.md）
+js/face.js
 js/voice.js
 js/voice-tone.js
 js/tone-registry.js
@@ -175,6 +177,8 @@ js/classroom-staff.js @scen:classroom
 js/classroom-teacher-love.js @scen:classroom
 js/classroom-cheer.js @scen:classroom
 js/endings.js @pack:sim
+# 折れ線のグラフの部品（HK.Chart.line。結末のカードの after に入れる SVG。2026-11-06）
+js/chart.js @pack:sim
 js/epilogue.js @pack:sim
 js/futari-text.js @scen:futari
 js/scenario-futari.js @scen:futari
@@ -463,6 +467,8 @@ js/jashin-place.js @scen:jashin
 js/jinro-data.js @scen:jinro
 js/jinro-after.js @scen:jinro
 js/rel-bad-story.js @pack:sim
+# 温度 6 段（HK.Heat。2026-11-06。温度を読む部屋が HK.Heat.use で登録したときだけ働く。設計は docs/reports/2026-11-06/heat-design.md）
+js/heat.js @pack:sim
 late js/tie-new-story.js
 late js/tips.js
 late js/ui-tone-lab.js

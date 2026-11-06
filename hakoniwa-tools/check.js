@@ -9,6 +9,7 @@
    ほかの指定：--files=a,b（git の差の代わりに、このファイルを変えたものとして決める。表の確かめ用）、--force（キャッシュを使わず回し直す）、
               --jobs=N（同時に使うページの数。既定は CPU の数。audit-all は 1 本で 2 ページ使う）、--keep-going（前置きの点検が落ちても続ける）、
               --cache=フォルダ（既定は主の作業フォルダの hakoniwa-tools/.check-cache。環境変数 HK_CHECK_CACHE でも）、--table（依存の表を md で出す）、
+              --regress-ok=id,id（結果を意図して変えた箱庭。regress でその箱庭の指紋が違っても不合格にせず、一覧に「変わってよい箱庭」として出す。2026-11-06）、
               --site=フォルダ（試しのフォルダとログを置く所。既定は <キャッシュ>/runs/<作業フォルダ>-<プロセス id>。環境変数 HK_CHECK_SITE でも）
    ・変わったファイル → 依存の表（check/table.js）の印 → 回す点検、の順に決める。js のコメントだけの変更は何も回さない（@event・r18 の印を変えたときは別）。
    ・箱庭のかたまり（_order.txt の @scen:・@pack:）のファイルだけを変えたときは、目録（HK_MANIFEST）の依存から、そのかたまりを読む箱庭だけで回す。
@@ -23,6 +24,8 @@ const BUILDS = { full: 'hakoniwa-full', zen: 'hakoniwa-zenrei' };
 /* ---------- 引数 ---------- */
 const argv = process.argv.slice(2);
 const opt = (k, d) => { const a = argv.find(x => x.indexOf('--' + k + '=') === 0); return a ? a.slice(k.length + 3) : d; };
+/* regress で指紋が違ってよい箱庭（結果を意図して変えた箱庭。2026-11-06） */
+const REG_OK = String(opt('regress-ok', '')).split(',').filter(Boolean);
 const has = k => argv.includes('--' + k);
 const O = {
   since: opt('since', ''), staged: has('staged'), all: has('all'), dry: has('dry'), force: has('force'), keep: has('keep-going'),
@@ -291,6 +294,9 @@ function decide(R) {
   const packWant = {};
   Object.keys(R.packs).forEach(id => { packWant[id] = R.packs[id]; });
   (O.all ? packIds() : O.packs).forEach(id => { const pk = pack(id); if (!pk) return; const X = packWant[id] = packWant[id] || { rooms: new Set(), tags: new Set(), why: [] }; pk.rooms.forEach(r => X.rooms.add(r)); X.tags.add('all'); X.why.push(O.all ? '--all' : '--pack'); });
+  /* 温度の矛盾（heat-audit。2026-11-06）：温度を読む 5 部屋のうち 3 部屋は追加パック set-b なので、試しのフォルダ（pack-site）で回す */
+  const heatOn = on('heat') || toolOn('heat') || Object.keys(packWant).some(id => packWant[id].tags.has('heat') || packWant[id].tags.has('all'));
+  if (heatOn && !packWant['set-b'] && pack('set-b')) packWant['set-b'] = { rooms: new Set(), tags: new Set(['heat']), why: ['温度の点検（heat-audit）'] };
   Object.keys(packWant).forEach(id => { const X = packWant[id]; if (X.tags.has('serifu') || X.tags.has('tone') || X.tags.has('all')) add({ id: 'base-lint', stage: 'pre', label: CHECK['base-lint'].name + '：' + id, why: X.why.slice(0, 3).join('・'), dir: path.join('hakoniwa-packs', id), weight: 0 }); });
   /* デートの日々（set-b）の舞台と段（2026-11-04） */
   if ((packWant['set-b'] && packWant['set-b'].rooms.has('set-b-date')) || toolOn('date-setting')) add({ id: 'date-setting', stage: 'pre', label: CHECK['date-setting'].name, why: O.all ? '--all' : packWant['set-b'] ? 'set-b のデートの日々' : '道具を変えた', weight: 0 });
@@ -350,6 +356,9 @@ function decide(R) {
   else skip('rel-word', '関係の名前・血縁の文に触れる js を変えていない');
   if (anyOn(['moan', 'serifu', 'tone']) || toolOn('meta-tone')) add({ id: 'meta-tone', stage: 'heavy', label: CHECK['meta-tone'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['moan', 'serifu', 'tone']) || '道具を変えた', scope: sScope, weight: 1 });
   else skip('meta-tone', '台詞・喘ぎ・口調を変えていない');
+  /* 一人称の置き換え（2026-11-06）：一人称を設定した住人で、一人称でない語の置き換え・画面に残った印・一人称のブレ */
+  if (anyOn(['serifu', 'tone', 'dict', 'moan']) || toolOn('fp-audit')) add({ id: 'fp-audit', stage: 'heavy', label: CHECK['fp-audit'].name + (sScope === 'all' ? '' : '（' + scenStr(sScope) + '）'), why: O.all ? '--all' : why(['serifu', 'tone', 'dict', 'moan']) || '道具を変えた', scope: sScope, weight: 1 });
+  else skip('fp-audit', '台詞・口調・喘ぎを変えていない');
   if (anyOn(['ui', 'order', 'buildtool']) || toolOn('regress')) ['r18', 'safe', 'zen'].forEach(m => add({ id: 'regress', stage: 'heavy', key: 'regress:' + m, label: CHECK.regress.name + '：' + ({ r18: 'R18版', safe: '全年齢モード', zen: '全年齢版' })[m], mode: m, why: O.all ? '--all' : why(['ui', 'order', 'buildtool']) || '道具を変えた', weight: 1 }));
   else skip('regress', '画面・読み込み順・build の道具を変えていない（結果が変わる変更は audit-all で見る）');
   ['chunk-regress', 'chunk-audit'].forEach(id => {
@@ -382,6 +391,8 @@ function decide(R) {
       });
     });
   } else skip('pack-site', 'パックとパックが頼る本体のかたまりを変えていない（--pack=… で回せる）');
+  if (heatOn && packWant['set-b']) add({ id: 'heat', stage: 'heavy', key: 'heat', label: CHECK.heat.name, pack: 'set-b', why: O.all ? '--all' : why(['heat']) || (packWant['set-b'].why || []).slice(0, 3).join('・') || '道具を変えた', weight: 1 });
+  else skip('heat', '温度の部品・温度を読む部屋の夜の場面を変えていない');
   tasks.forEach(t => { t.key = t.key || t.id + (t.dir ? ':' + t.dir : ''); });
   return { tasks, skipped };
 }
@@ -442,11 +453,13 @@ function keyOf(t) {
     case 'force-repeat': inp = hashFiles(chunkFiles('full', 'all')); break;
     case 'meta-tone': inp = sha(['full', 'zen'].map(b => hashFiles(chunkFiles(b, t.scope)) + manifestPart(b, t.scope)).join()); break;
     case 'butt-word': inp = hashFiles(chunkFiles('full', t.scope)) + manifestPart('full', t.scope); break;
+    case 'fp-audit': inp = hashFiles(chunkFiles('full', t.scope)) + manifestPart('full', t.scope); break;
     case 'kin-label': case 'rel-word': inp = sha(['full', 'zen'].map(b => hashFiles(chunkFiles(b, t.scope)) + manifestPart(b, t.scope)).join()); break;
-    case 'regress': { const b = t.mode === 'zen' ? 'zen' : 'full'; inp = hashFiles(chunkFiles(b, 'all')) + manifestPart(b, 'all') + (gitOk(['rev-parse', BASE_SHA + ':' + BUILDS[b]]) || ''); break; }
+    case 'regress': { const b = t.mode === 'zen' ? 'zen' : 'full'; inp = hashFiles(chunkFiles(b, 'all')) + manifestPart(b, 'all') + (gitOk(['rev-parse', BASE_SHA + ':' + BUILDS[b]]) || '') + REG_OK.join(','); break; }
     case 'chunk-regress': case 'chunk-audit': inp = hashFiles(chunkFiles(t.b, 'all')) + String(readOr(path.join(ROOT, BUILDS[t.b], 'index.html'), '')); break;
     case 'dict-regress': inp = hashFiles(fs.readdirSync(path.join(ROOT, 'hakoniwa-full/js')).filter(f => /^(?:tone-|core|ego-desc|persona)/.test(f)).map(f => 'hakoniwa-full/js/' + f)); break;
     case 'date-setting': inp = packInputs('set-b', 'set-b-date'); break;
+    case 'heat': inp = packMainInputs('set-b') + packInputs('set-b') + hashFiles(chunkFiles('full', ['futari', 'train'])) + manifestPart('full', ['futari', 'train']) + (packCodes() ? sha(JSON.stringify(packCodes().J['set-b'] || packCodes().J['*'])) : ''); break;
     case 'pack-catalog': inp = packInputs(t.pack) + String(readOr(path.join(ROOT, 'docs/reports/2026-11-03/pack-event-catalog.md'), '')); break;
     case 'pack-site': return null;   /* 試しのフォルダは毎回作る（中で build-pack を回す。数十秒） */
     case 'pack-audit': case 'pack-feel': case 'pack-moan': case 'pack-flow': case 'pack-relword': case 'kanbyo-role': inp = packMainInputs(t.pack) + packInputs(t.pack, t.room) + (packCodes() ? sha(JSON.stringify(packCodes().J[t.pack] || packCodes().J['*'])) : ''); break;
@@ -536,16 +549,17 @@ const RUN = {
     return { rc: u.length ? 1 : 0, n: u.length, sum: u.length ? '片方だけ変えた：' + u.join('・') : 'ずれなし' };
   },
   'base-lint': async (t) => {
-    const r = await spawnLog(t, N, [TCD + 'base-lint.js', t.dir]);
     const items = s => { const out = []; const ls = String(s).split('\n'); for (let i = 1; i < ls.length; i++) if (/\t/.test(ls[i])) out.push(ls[i] + '\n' + (ls[i + 1] || '')); return out; };
-    const now = items(r.text);
-    let baseSet = new Set();
+    let baseSet = new Set(), baseDir = '';
     if (t.dir === BUILDS.full && BASE_SHA) {
       const d = mkdir(path.join(CACHE, 'base-js', (gitOk(['rev-parse', BASE_SHA + ':' + t.dir + '/js']) || 'x').trim()));
       if (!fs.existsSync(path.join(d, '.ok'))) { cp.execSync('git archive ' + BASE_SHA + ' ' + t.dir + '/js | tar -x -C ' + JSON.stringify(d), { cwd: ROOT }); fs.writeFileSync(path.join(d, '.ok'), ''); }
       const b = cp.spawnSync(N, [TCD + 'base-lint.js', path.join(d, t.dir)], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 });
-      baseSet = new Set(items(b.stdout));
+      baseSet = new Set(items(b.stdout)); baseDir = path.join(d, t.dir);
     }
+    /* 比べる相手の js を渡す：新しく足した 3 本の台詞の「私」「あなた」の直書きだけを問題にする（2026-11-06。印 {一人称}・{二人称} で書く決まり） */
+    const r = await spawnLog(t, N, [TCD + 'base-lint.js', t.dir].concat(baseDir ? ['--base=' + baseDir] : []));
+    const now = items(r.text);
     const nw = now.filter(x => !baseSet.has(x));
     return { rc: nw.length ? 1 : 0, n: nw.length, sum: '問題 ' + now.length + '（比べる相手に無かったもの ' + nw.length + '）' + (nw.length ? '：' + nw.slice(0, 3).map(x => x.replace(/\s+/g, ' ').slice(0, 80)).join('／') : ''), log: r.log };
   },
@@ -580,6 +594,13 @@ const RUN = {
     const r = await spawnLog(t, N, [TCD + 'meta-tone-audit.js', '8'].concat(t.scope === 'all' ? [] : [t.scope.join(',')]).concat(['--full=' + BUILDS.full, '--zen=' + BUILDS.zen]));
     const m = r.text.match(/自分の口調に言及する台詞（合計）：(\d+) 件/);
     return { rc: r.rc, n: m ? +m[1] : null, sum: m ? '自分の口調に言及する台詞 ' + m[1] + ' 件' : lastLine(r.text), log: r.log };
+  },
+  'fp-audit': async (t) => {
+    /* 既定は 4 箱庭（whiteroom・locker・omega・massage）。箱庭のかたまりだけ変えたときはその箱庭 */
+    const r = await spawnLog(t, N, [TCD + 'fp-audit.js', BUILDS.full].concat(t.scope === 'all' ? [] : ['--scen=' + t.scope.join(',')]));
+    const m = r.text.match(/不合格（(\d+) 件）/), ok = /合格（すべて 0 件）/.test(r.text);
+    const part = (r.text.match(/\([abc]\) [^：\n]*：\d+ 件/g) || []).map(x => x.replace(/^\(([abc])\) ([^：]*)：(\d+) 件$/, '$2 $3')).join('・');
+    return { rc: r.rc, n: ok ? 0 : m ? +m[1] : null, sum: part || lastLine(r.text), log: r.log };
   },
   'kin-label': async (t) => {
     const r = await spawnLog(t, N, [TCD + 'kin-label-audit.js', BUILDS.full, '6', '--zen=' + BUILDS.zen].concat(t.scope === 'all' ? [] : ['--scen=' + t.scope.join(',')]));
@@ -618,9 +639,11 @@ const RUN = {
     const ids = Object.keys(base.hash).filter(id => now.hash[id] != null);
     const same = Object.keys(base.hash).length === Object.keys(now.hash).length;
     const k = same ? 'hash' : 'hash2';   /* 箱庭の数が変わったら、並びに左右されない指紋2で比べる */
-    const diff = ids.filter(id => (now[k] || {})[id] !== (base[k] || {})[id]);
+    const diff0 = ids.filter(id => (now[k] || {})[id] !== (base[k] || {})[id]);
+    /* --regress-ok に挙げた箱庭（結果を意図して変えた箱庭）は、違っても数えない（一覧に出す） */
+    const okd = diff0.filter(id => REG_OK.indexOf(id) >= 0), diff = diff0.filter(id => REG_OK.indexOf(id) < 0);
     const err = (now.errors || []).length;
-    return { rc: diff.length || err ? 1 : 0, n: diff.length + err, sum: (diff.length ? '指紋が違う箱庭 ' + diff.length + '：' + diff.join(',') : '全 ' + ids.length + ' 箱庭が一致（' + (same ? '指紋1' : '指紋2') + '・比べる相手 ' + BASE_SHA.slice(0, 8) + '）') + (err ? '・ページのエラー ' + err : '') };
+    return { rc: diff.length || err ? 1 : 0, n: diff.length + err, sum: (diff.length ? '指紋が違う箱庭 ' + diff.length + '：' + diff.join(',') : '全 ' + (ids.length - okd.length) + ' 箱庭が一致（' + (same ? '指紋1' : '指紋2') + '・比べる相手 ' + BASE_SHA.slice(0, 8) + '）') + (okd.length ? '・変わってよい箱庭（--regress-ok）が違った：' + okd.join(',') : '') + (REG_OK.length && !okd.length ? '・--regress-ok の箱庭は一致' : '') + (err ? '・ページのエラー ' + err : '') };
   },
   'chunk-regress': async (t, C) => {
     /* R18版：同じ回の regress（R18版）の今の指紋があれば、それを比べる相手に渡す（chunk-regress が #all を開いて同じ指紋を取り直すのを省く） */
@@ -645,6 +668,7 @@ const RUN = {
   },
   'pack-feel': async (t) => { const r = await spawnLog(t, N, [TCD + 'tone-feel.js', path.join(SITE(), BUILDS.full), '--scen=' + t.room], packEnv(t, false)); return { rc: r.rc, n: feelCount(r.text), sum: feelSum(r.text), log: r.log }; },
   'pack-moan': async (t) => { const r = await spawnLog(t, N, [TCD + 'moan-tone-audit.js', path.join(SITE(), BUILDS.full), '4', '--scen=' + t.room], packEnv(t, true)); const m = r.text.match(/口調に合わない喘ぎ：(\d+) 件/); return { rc: r.rc, n: m ? +m[1] : null, sum: lastLine(r.text, /口調に合わない喘ぎ/) || lastLine(r.text), log: r.log }; },
+  'heat': async (t) => { const r = await spawnLog(t, N, [TCD + 'heat-audit.js', path.join(SITE(), BUILDS.full)], packEnv(t, false)); const m = r.text.match(/heat-audit：(\d+) 件/); return { rc: r.rc, n: m ? +m[1] : null, sum: lastLine(r.text, /heat-audit/) || lastLine(r.text), log: r.log }; },
   'kanbyo-role': async (t) => { const r = await spawnLog(t, N, [TCD + 'kanbyo-role-audit.js', path.join(SITE(), BUILDS.full)], packEnv(t, false)); const m = r.text.match(/kanbyo-role：(\d+) 件/); return { rc: r.rc, n: m ? +m[1] : null, sum: lastLine(r.text, /kanbyo-role/) || lastLine(r.text), log: r.log }; },
   'pack-flow': async (t) => {
     const res = [];
@@ -699,7 +723,7 @@ async function schedule(tasks, C) {
     const t0 = Date.now();
     let r;
     /* 試しのフォルダ：あとの点検がすべてキャッシュにあるなら作らない */
-    const packNeed = t.id === 'pack-site' && !O.force ? tasks.filter(x => /^(?:pack-(?:audit|feel|moan|flow)|kanbyo-role)$/.test(x.id)).some(x => !cacheGet(x, keyOf(x))) : true;
+    const packNeed = t.id === 'pack-site' && !O.force ? tasks.filter(x => /^(?:pack-(?:audit|feel|moan|flow)|kanbyo-role|heat)$/.test(x.id)).some(x => !cacheGet(x, keyOf(x))) : true;
     if (t.id === 'pack-site' && !packNeed) r = { rc: 0, n: 0, sum: 'あとのパックの点検がすべてキャッシュにあるので作らない', cached: true, sec: 0 };
     else if (t.id === 'build' && buildCached(t.b)) { const J = buildCached(t.b); r = { rc: 0, n: 0, sum: '入力・出力とも前回の build と同じ（' + J.date.slice(0, 16).replace('T', ' ') + '）', cached: true, sec: 0 }; }
     else {
