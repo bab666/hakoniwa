@@ -448,6 +448,26 @@
     var r = P.ROOM[scenId] || (P.ROOM[scenId] = {});
     Object.keys(w).forEach(function (ax) { var o = r[ax] || (r[ax] = {}); Object.keys(w[ax] || {}).forEach(function (k) { o[k] = (o[k] || 0) + w[ax][k]; }); });
   };
+  /* 部屋だけの文の差し替え（2026-11-06。部屋のオリジナルの文 8 割の決まり）：P.addText(部屋の id, 表の名前, 値, { mf, ff, fm, fsp })。
+     表の名前は FIN（終わり方）・SHORT_FOCUS・SHORT_POS（短い・中くらいの場面の一文）。登録した部屋では、その値の文を部屋の文から選ぶ（型の値はそのまま。
+     部屋の表に無い組は本体の文。ペニバンの回 fsp を部屋が書いていなければ本体の fsp）。各組 3 文以上 */
+  P.RTEXT = {};
+  P.addText = function (scenId, name, key, cells) {
+    if (!scenId || !name || !key || !cells) return;
+    var r = P.RTEXT[scenId] = P.RTEXT[scenId] || {}, t = r[name] = r[name] || {}, c = t[key] = t[key] || {};
+    Object.keys(cells).forEach(function (m) { if (Array.isArray(cells[m]) && cells[m].length) c[m] = (c[m] || []).concat(cells[m]); });
+  };
+  function rtx(opt, name, key, base) {
+    var R0 = P.RTEXT[scenIdOf(opt)], c = R0 && R0[name] && R0[name][key];
+    if (!c) return base;
+    var o = {};
+    if (base && !Array.isArray(base)) Object.keys(base).forEach(function (m) { o[m] = base[m]; });
+    else if (base) o.all = base;
+    if (!o.fsp && o.fm) o.fsp = o.fm;
+    Object.keys(c).forEach(function (m) { o[m] = c[m]; });
+    return o;
+  }
+  P.rtx = rtx;
   function stepText(R, st, ctx, a, b, mode) {
     if (!st) return '';
     if (typeof st === 'function') return st(ctx, a, b, mode) || '';
@@ -598,7 +618,7 @@
     var finT = '';
     if (co && gen) {
       var FT = ero ? (T0.FIN_E || T0.FIN) : T0.FIN;
-      finT = pickT(R, (FT || {})[play.finish], tm, b);
+      finT = pickT(R, ero ? (FT || {})[play.finish] : rtx(opt, 'FIN', play.finish, (FT || {})[play.finish]), tm, b);
       if (finT && ero) finT = fillE(finT, a, b);
       if (finT && pr && pr.after) finT += pickT(R, pr.after, mode, b);
       if (finT && rs && rs.steps) { var af = rs.steps.filter(function (s) { return s.stage === 'after'; }).map(function (s) { return stepText(R, s, ctx, a, b, mode); }).filter(Boolean).join(''); if (af) finT += '\n\n' + af; }
@@ -660,7 +680,7 @@
     if (!P.ok(a, b, mode)) return '';
     var T0 = TX(); if (!T0.SHORT_FOCUS) return '';
     var play = P.choose({ a: a, b: b, mode: mode, opt: opt || {}, press: '', againAfter: true }), R = play.R; delete play.R;
-    var f = pickT(R, T0.SHORT_FOCUS[play.focus], mode, b), p = pickT(R, (T0.SHORT_POS || {})[play.pos], mode, b);
+    var f = pickT(R, rtx(opt, 'SHORT_FOCUS', play.focus, T0.SHORT_FOCUS[play.focus]), mode, b), p = pickT(R, rtx(opt, 'SHORT_POS', play.pos, (T0.SHORT_POS || {})[play.pos]), mode, b);
     if (P.log) P.log.push({ a: a.name, b: b.name, mode: mode, short: true, play: { focus: play.focus, pos: play.pos } });
     return f + p;
   };

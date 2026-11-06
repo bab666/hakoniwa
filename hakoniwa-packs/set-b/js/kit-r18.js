@@ -24,6 +24,13 @@
   function pickOf(ctx, arr) { return arr && arr.length ? arr[Math.floor(ctx.rng() * arr.length)] : ''; }
   /* 一回の遊びで同じ文を続けて使わない（山場の文。2026-11-04：三人・四人で暮らす家の昼の場面で場面の数が増え、同じ山場の文が 3 回出ることがあった） */
   function fresh(ctx, arr) { if (!arr || !arr.length) return ''; var U = ctx._prUsed = ctx._prUsed || {}, q = arr.filter(function (x) { return !U[x]; }), t = pickOf(ctx, q.length ? q : arr); U[t] = 1; return t; }
+  /* 喘ぎの声を選ぶ：一回の遊びで出た回数のいちばん少ない声から（同じ喘ぎが一回の遊びで 3 回以上出ないように。2026-11-06 の計測で「あっ……くっ、声が……」が 3 回） */
+  function moanPick(ctx, arr) {
+    if (!arr || !arr.length) return '';
+    var N = ctx._prMoanN = ctx._prMoanN || {}, mn = Infinity, sub = [];
+    arr.forEach(function (x) { var v = N[x] || 0; if (v < mn) { mn = v; sub = [x]; } else if (v === mn) sub.push(x); });
+    var t = pickOf(ctx, sub); N[t] = (N[t] || 0) + 1; return t;
+  }
   function fill(ctx, t, a, b, ex) {
     t = String(t || '');
     if (ex) Object.keys(ex).forEach(function (k) { t = t.split('{' + k + '}').join(ex[k]); });
@@ -202,7 +209,7 @@
       if (opt.short) return null;
       var m = ctx && bodyFits(sh, a, b) ? part(ctx, rid, 'mid', sh, a, b) : '';
       if (!m) return p;
-      var mo = TS && TS.moan ? String(TS.moan(function (l) { return pickOf(ctx, l); }, b, false, ctx.rng)) : '';
+      var mo = TS && TS.moan ? String(TS.moan(function (l) { return moanPick(ctx, l); }, b, false, ctx.rng)) : '';
       return m.replace(/\{mm\}/g, mo ? '{b}「' + mo.replace(/^「|」$/g, '') + '」' : '');
     }).filter(function (p) { return p != null; }).join('\n\n');
   }
@@ -307,7 +314,7 @@
     };
     var moan = function (cl) {
       if (ero && HK.ThickEro && HK.ThickEro.fill) return String(HK.ThickEro.fill(ctx, cl ? '{mb2}' : '{mb1}', a, b));
-      return T && T.moan ? String(T.moan(pk, b, cl, ctx.rng)) : '';
+      return T && T.moan ? String(T.moan(function (l) { return moanPick(ctx, l); }, b, cl, ctx.rng)) : '';
     };
     /* 女性の受けに、舌打ち・命令の荒い声を出さない（2026-11-05 報告「強気の女性が『……ちっ。好きにしろよ』」） */
     var fB = !!(HK.Pos && HK.Pos.isF && HK.Pos.isF(b)), ROUGH = /ちっ|しろよ|しやがれ|てめえ|んじゃねえ/;
