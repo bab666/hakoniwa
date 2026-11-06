@@ -549,18 +549,21 @@ const RUN = {
     return { rc: u.length ? 1 : 0, n: u.length, sum: u.length ? '片方だけ変えた：' + u.join('・') : 'ずれなし' };
   },
   'base-lint': async (t) => {
+    /* 一つの問題＝「ファイル\t本文」と次の行（問題の中身）。比べるときは印 {一人称}・{二人称} を「私」「あなた」に戻す（2026-11-06 の一括移行で本文が印になった行を、同じ行として比べる） */
     const items = s => { const out = []; const ls = String(s).split('\n'); for (let i = 1; i < ls.length; i++) if (/\t/.test(ls[i])) out.push(ls[i] + '\n' + (ls[i + 1] || '')); return out; };
+    const unmk = x => x.replace(/\{一人称\}/g, '私').replace(/\{二人称\}/g, 'あなた');
+    /* 「私」「あなた」の直書きは、比べる相手にあっても問題にする（古い書き方は移し終えたので、いつも 0 にする。直し方は fp-migrate.js） */
+    const DIRECT = x => /の直書き（/.test(x);
     let baseSet = new Set(), baseDir = '';
     if (t.dir === BUILDS.full && BASE_SHA) {
       const d = mkdir(path.join(CACHE, 'base-js', (gitOk(['rev-parse', BASE_SHA + ':' + t.dir + '/js']) || 'x').trim()));
       if (!fs.existsSync(path.join(d, '.ok'))) { cp.execSync('git archive ' + BASE_SHA + ' ' + t.dir + '/js | tar -x -C ' + JSON.stringify(d), { cwd: ROOT }); fs.writeFileSync(path.join(d, '.ok'), ''); }
       const b = cp.spawnSync(N, [TCD + 'base-lint.js', path.join(d, t.dir)], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 });
-      baseSet = new Set(items(b.stdout)); baseDir = path.join(d, t.dir);
+      baseSet = new Set(items(b.stdout).filter(x => !DIRECT(x)).map(unmk)); baseDir = path.join(d, t.dir);
     }
-    /* 比べる相手の js を渡す：新しく足した 3 本の台詞の「私」「あなた」の直書きだけを問題にする（2026-11-06。印 {一人称}・{二人称} で書く決まり） */
     const r = await spawnLog(t, N, [TCD + 'base-lint.js', t.dir].concat(baseDir ? ['--base=' + baseDir] : []));
     const now = items(r.text);
-    const nw = now.filter(x => !baseSet.has(x));
+    const nw = now.filter(x => DIRECT(x) || !baseSet.has(unmk(x)));
     return { rc: nw.length ? 1 : 0, n: nw.length, sum: '問題 ' + now.length + '（比べる相手に無かったもの ' + nw.length + '）' + (nw.length ? '：' + nw.slice(0, 3).map(x => x.replace(/\s+/g, ' ').slice(0, 80)).join('／') : ''), log: r.log };
   },
   build: async (t) => {

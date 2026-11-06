@@ -118,7 +118,7 @@ const CHECKS = [
   { id: 'r18mark', name: 'r18 の印の対応', stage: 'pre', tags: ['js'], est: 1, why: '変えた本体の js で /* r18:begin */ と /* r18:end */ が行全体・交互・入れ子なし' },
   { id: 'lines', name: '2000 行の上限', stage: 'pre', tags: ['js'], est: 1, why: '変えた js が 2000 行を超えた（もともと超えていて増えたものは警告だけ）' },
   { id: 'twin', name: '両ビルドの同名ファイル', stage: 'pre', tags: ['js'], est: 1, why: '前は同じだった hakoniwa-full と hakoniwa-zenrei の同名ファイルが、片方だけ変わった' },
-  { id: 'base-lint', name: '3 本の台詞の約束（base-lint）', stage: 'pre', tags: ['serifu', 'tone'], est: 6, tools: [TC + 'base-lint.js'], why: '比べる相手のコミットに無かった問題だけを数える（今ある誤検出 9 件は数えない）' },
+  { id: 'base-lint', name: '3 本の台詞の約束（base-lint）', stage: 'pre', tags: ['serifu', 'tone'], est: 6, tools: [TC + 'base-lint.js'], why: '比べる相手のコミットに無かった問題だけを数える（今ある誤検出 9 件は数えない）。「私」「あなた」の直書き（すべての台詞・書き下ろしの値。fp-migrate.js と同じ見つけ方）はいつも数える（2026-11-06 に一括で移した）' },
   /* build */
   { id: 'build', name: 'build（両ビルド）', stage: 'build', tags: ['js'], est: 40, weight: 1, tools: [BD + 'build.js', BD + 'event-catalog.js'], why: 'ビルドのフォルダの js・_order.txt・index.html を変えたビルドだけ。入力が前回の build と同じで出力も同じなら飛ばす。中核（core）の br（かたまり・ファイルごとの目安の合計）が 900KB を超えたら不合格（2026-11-04）' },
   { id: 'catalog', name: '出来事の一覧（catalog-check）', stage: 'post', tags: ['js', 'event'], after: ['build', 'pack-catalog'], est: 6, tools: [BD + 'catalog-check.js', BD + 'event-catalog.js'], why: 'build のあと。一覧が古い・表示名の無い出来事・印の無い新しい場面' },

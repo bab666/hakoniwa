@@ -21,15 +21,16 @@ HK.toneOf = HK.toneOf || (c => c.tone);
 load('tone-engine.js'); load('tone-dict-builtin.js');
 const T = HK.Tone;
 
-/* 書き下ろしの対を集める */
+/* 書き下ろしの対を集める。印 {一人称}・{二人称} は「私」「あなた」に戻して比べる（2026-11-06 の一括移行。値は印で、辞書の出力は「私」「あなた」のまま） */
+const unmk = x => x.replace(/\{一人称\}/g, '私').replace(/\{二人称\}/g, 'あなた');
 const rows = [];
 for (const f of fs.readdirSync(path.join(dir, 'js')).filter(f => /^tone-fix/.test(f))) {
   const s = fs.readFileSync(path.join(dir, 'js', f), 'utf8');
   const re = /'(\w+)\\t((?:[^'\\]|\\.)*)\\t((?:[^'\\]|\\.)*)'/g; let m;
-  while ((m = re.exec(s))) { const un = x => x.replace(/\\'/g, "'").replace(/\\\\/g, '\\'); rows.push([m[1], un(m[2]), un(m[3])]); }
+  while ((m = re.exec(s))) { const un = x => x.replace(/\\'/g, "'").replace(/\\\\/g, '\\'); rows.push([m[1], un(m[2]), unmk(un(m[3]))]); }
   /* 二重引用符で書いた行（tone-fix-g7d.js などの "chara_down\t元\t直し"）も読む */
   const re2 = /"(\w+)\\t((?:[^"\\]|\\.)*)\\t((?:[^"\\]|\\.)*)"/g;
-  while ((m = re2.exec(s))) { const un = x => x.replace(/\\"/g, '"').replace(/\\\\/g, '\\'); rows.push([m[1], un(m[2]), un(m[3])]); }
+  while ((m = re2.exec(s))) { const un = x => x.replace(/\\"/g, '"').replace(/\\\\/g, '\\'); rows.push([m[1], un(m[2]), unmk(un(m[3]))]); }
 }
 /* 差分の分類（元 → 正解）：文末だけ／語彙／組み替え */
 function diff(a, b) {
@@ -60,7 +61,7 @@ function classify(a, b) {
 const TRIPLE = {};
 for (const f of fs.readdirSync(path.join(dir, 'js')).filter(f => f.endsWith('.js') && !f.startsWith('bundle'))) {
   const s = fs.readFileSync(path.join(dir, 'js', f), 'utf8');
-  (s.match(/「[^」]*｜[^」]*」/g) || []).forEach(q => { const sp = T.split(q.slice(1, -1)); if (!sp) return; [sp.K, sp.F, sp.P].forEach(k => { if (k && !TRIPLE[k]) TRIPLE[k] = sp; }); });
+  (s.match(/「[^」]*｜[^」]*」/g) || []).forEach(q => { const sp = T.split(unmk(q.slice(1, -1))); if (!sp) return; [sp.K, sp.F, sp.P].forEach(k => { if (k && !TRIPLE[k]) TRIPLE[k] = sp; }); });
 }
 const tail3 = s => s.replace(/[。！？!?…‥♡っ、\s]+$/, '').slice(-3);
 const tones = (only || Object.keys(T.dicts)).filter(k => T.dictOf(k));
