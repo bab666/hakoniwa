@@ -89,8 +89,8 @@
   CONF.noteUrl = CONF.noteUrl || 'https://note.com/unimi_note/n/n6fe17bec9d5a';   /* 同じ R-18版の note の販売ページ */
   /* 追加パックの販売ページ（2026-11-07。箱庭の一覧の最後と「箱庭を追加」の窓の「追加パックはこちら」＝js/packs-ui.js が読む。両方の版に出す）。
      今は店の入口（boothUrl）と note の販売ページ（noteUrl）。追加パックの販売ページの URL が決まったらここを差し替える */
-  CONF.packBoothUrl = CONF.packBoothUrl || CONF.boothUrl;
-  CONF.packNoteUrl = CONF.packNoteUrl || CONF.noteUrl;
+  CONF.packBoothUrl = CONF.packBoothUrl || 'https://bab666.booth.pm';   /* 追加パック：BOOTH のストア（2026-11-07 の利用者の指示：ストアのリンクでよい） */
+  CONF.packNoteUrl = CONF.packNoteUrl || 'https://note.com/unimi_note';   /* 追加パック：note のストア（作者のページ） */
   function toggleUI() {
     if (BUILD) return;
     var brand = document.querySelector('header.top .brand');
