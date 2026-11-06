@@ -790,6 +790,8 @@
             }
             /* 派生元のない仕上げつきの口調（ヤンキーなど）も、その口調名の書き下ろし・直しは完成形として使う */
             else if (ov != null && !kg && HK.TONE_FINISH && HK.TONE_FINISH[who.tone]) own = true;
+            /* 書き下ろしの値の {二人称} も、台詞の本文と同じく「あなた」の道に通す（入口の包みは値を見ないので、ここで。2026-11-06 の一括移行） */
+            if (typeof ov === 'string' && (ov.indexOf('{二人称}') >= 0 || ov.indexOf(MK2) >= 0)) ov = ov.replace(/\{二人称\}|\uE0F2/g, 'あなた');
             /* 名詞の引用（話し手の言葉ではない）の印 {一人称} は「私」のまま（出口の V.markOut で戻す） */
             q = nounQ ? V.replaceFP(V.markIn(ov != null ? ov : q).replace(/\uE0F1/g, '\uE0F3'), who).replace(/\uE0F3/g, MK1) : V.replaceFP(ov != null ? ov : q, who);
             var byDict = ov == null && !pre && nb && nb.dict;
