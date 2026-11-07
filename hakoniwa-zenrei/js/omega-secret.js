@@ -356,7 +356,7 @@
           /* 同じ回の中で同じ文を繰り返さない（順に回す） */
           var RL = holder === X ? HEAT_RESIST.x : HEAT_RESIST.o, ri = ctx.om._heatResist = (ctx.om._heatResist == null ? Math.floor(ctx.rng() * 4) : ctx.om._heatResist + 1);
           var t = OM.sc(ctx.t(RL[ri % RL.length].replace(/俺／私/, X.tr.cp + X.tr.fc > 1 ? '俺' : '私'), X, O, part), X, O);
-          return { cat: 'help', text: t, why: '発情期（' + O.name + '）。' + holder.name + 'には' + relWord(ctx, holder, part) + '（' + part.name + '）がいる' + (holder.honmei === part.i ? '／本命' : '') + (OM.affairOk(ctx, X, O) ? '' : '／体の関係にならない組') + '。踏みとどまった', with: [part], mag: 14 };
+          return { cat: 'help', sex: false, text: t, why: '発情期（' + O.name + '）。' + holder.name + 'には' + relWord(ctx, holder, part) + '（' + part.name + '）がいる' + (holder.honmei === part.i ? '／本命' : '') + (OM.affairOk(ctx, X, O) ? '' : '／体の関係にならない組') + '。踏みとどまった', with: [part], mag: 14 };
         }
       }
       var n0 = ctx.pair(X, O).nights || 0;

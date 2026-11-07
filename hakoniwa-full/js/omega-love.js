@@ -49,7 +49,7 @@
       if (e.id === 'om_heat' && ctx.rng() > cap(ctx) * 1.3) {
         var O = sx(a) === 'o' && a.om.heat > 0 ? a : b, X = O === a ? b : a;
         ctx.mod2(X, O, { trust: 6, aff: 4 }, { trust: 8, aff: 5 });
-        return { cat: 'help', text: (OM.sc || function (t) { return t; })(ctx.t(pick(ctx, COOL), X, O), X, O), why: '発情期（' + O.name + '）。今回は抑制剤と看病で乗り切った' };
+        return { cat: 'help', sex: false, text: (OM.sc || function (t) { return t; })(ctx.t(pick(ctx, COOL), X, O), X, O), why: '発情期（' + O.name + '）。今回は抑制剤と看病で乗り切った' };
       }
       var pf = ctx.pair(a, b), n0 = pf.nights || 0;
       var r = r0.apply(this, arguments);

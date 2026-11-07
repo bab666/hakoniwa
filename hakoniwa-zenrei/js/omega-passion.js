@@ -290,7 +290,7 @@
       if (hold > ctx.rng() * 90) {
         ctx.mod2(a, b, { att: 2, ten: 7 }, { ten: 8, trust: -6 });
         if (pb) ctx.mod(b, pb, { trust: 5, aff: 3 });
-        return { cat: 'conflict', text: fill(ctx, ctx.pick(holder === a ? NT.refuseSelf : NT.refuse).replace(/私／俺/, I(b)), a, b, pb || pa), why: holder.name + 'は恋人（' + part.name + '）への想い（好意 ' + Math.round(rh.aff) + '・信頼 ' + Math.round(rh.trust) + '）で踏みとどまった' + fdw, with: part ? [part] : null, mag: 14 };
+        return { cat: 'conflict', sex: false, text: fill(ctx, ctx.pick(holder === a ? NT.refuseSelf : NT.refuse).replace(/私／俺/, I(b)), a, b, pb || pa), why: holder.name + 'は恋人（' + part.name + '）への想い（好意 ' + Math.round(rh.aff) + '・信頼 ' + Math.round(rh.trust) + '）で踏みとどまった' + fdw, with: part ? [part] : null, mag: 14 };
       }
       pf.night = true; pf.nights = (pf.nights || 0) + 1; pf.affair = true;
       var cheater = holder, victim = part;

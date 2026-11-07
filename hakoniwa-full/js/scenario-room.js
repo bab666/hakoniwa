@@ -1279,7 +1279,7 @@
       var dodge = b.tr.caution * 0.4 + b.tr.cp * 0.3 + b.tr.a * 0.2 + ctx.rng() * 0.5 + Math.max(0, tieWall(ctx, a, b, 3)) / 60;
       if (dodge > 0.75 || lockedOther) {
         ctx.mod2(a, b, { ten: 6 }, { ten: 22, trust: -20 });
-        return { cat: 'conflict', text: ctx.t(ctx.pick(['{a}が{b}の背後に回り込んだ瞬間、{b}は振り向きざまに{a}の手首を掴んだ。「…何するつもり？｜…何をするつもりだ？｜…何をするつもりですか？」{a}は' + tool + 'を後ろ手に隠した。', '{a}は' + tool + 'を手に{b}の隙を窺っていたが、{b}は最後まで背中を見せなかった。', '{b}は{a}の手元の' + tool + 'に気づいて、部屋の反対側まで下がった。「近づかないで｜近づくな｜近づかないでください」']), a, b), why: a.name + 'のスピード型（ドライさ・攻撃性・衝動）／' + b.name + 'の慎重さが上回った' };
+        return { cat: 'conflict', sex: false, text: ctx.t(ctx.pick(['{a}が{b}の背後に回り込んだ瞬間、{b}は振り向きざまに{a}の手首を掴んだ。「…何するつもり？｜…何をするつもりだ？｜…何をするつもりですか？」{a}は' + tool + 'を後ろ手に隠した。', '{a}は' + tool + 'を手に{b}の隙を窺っていたが、{b}は最後まで背中を見せなかった。', '{b}は{a}の手元の' + tool + 'に気づいて、部屋の反対側まで下がった。「近づかないで｜近づくな｜近づかないでください」']), a, b), why: a.name + 'のスピード型（ドライさ・攻撃性・衝動）／' + b.name + 'の慎重さが上回った' };
       }
       pf.night = pf.night || ctx.rules.some(function (r) { return r.k === 'h'; });
       pf.forced = a.i;

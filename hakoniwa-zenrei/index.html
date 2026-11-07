@@ -1657,7 +1657,7 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
 <!-- 古いブラウザの知らせ（2026-11-04）：本体は正規表現の後読み（iOS 16.4・Safari 16.4 から）を使うので、それより前の版では読み込みの段階で止まり、何も表示されない。そのときだけ、何が要るかを画面の上に出す -->
 <script>(function(){try{new RegExp('(?<=a)b');}catch(e){document.addEventListener('DOMContentLoaded',function(){var d=document.createElement('p');d.setAttribute('role','alert');d.style.cssText='margin:12px 16px;padding:12px 14px;border:1px solid #c33;border-radius:8px;background:#fff;color:#16233b;font-size:14px;line-height:1.7';d.textContent='このブラウザの版では箱庭シミュレーターが動きません。iPhone・iPad は iOS 16.4 以降、Mac の Safari は 16.4 以降に更新してください（Chrome・Edge・Firefox の新しい版でも動きます）。';document.body.insertBefore(d,document.body.firstChild);});}})();</script>
 <!-- scripts:begin（hakoniwa-tools/build/build.js が書き換える。手で直さず js/_order.txt を直して build する） -->
-<script>window.HK_MANIFEST={"v":"391b18b187","api":1,"build":"zenrei","core":"js/c/core.346d2e96b1.js",
+<script>window.HK_MANIFEST={"v":"155d85086d","api":1,"build":"zenrei","core":"js/c/core.346d2e96b1.js",
 "chunks":{
   "late":{"src":"js/c/late.f99da9d67f.js","br":160102,"deps":["pack-sim"]},
   "pack-rel":{"src":"js/c/pack-rel.b73013ea94.js","br":287564,"deps":["pack-sim"]},
@@ -1667,9 +1667,9 @@ body:has(.gearov:not([hidden])) #pagejump { display: none; }
   "scen-island":{"src":"js/c/scen-island.e73e833a1e.js","br":87652,"deps":["pack-sim","pack-rel"]},
   "scen-br":{"src":"js/c/scen-br.b16865c1ab.js","br":37201,"deps":["pack-sim","pack-rel"]},
   "pack-trap":{"src":"js/c/pack-trap.a067eb2456.js","br":33429,"deps":["pack-sim"]},
-  "scen-whiteroom":{"src":"js/c/scen-whiteroom.cd0bff9a41.js","br":225027,"deps":["pack-sim","pack-rel","pack-trap"]},
+  "scen-whiteroom":{"src":"js/c/scen-whiteroom.6b9aef0db2.js","br":225047,"deps":["pack-sim","pack-rel","pack-trap"]},
   "scen-trial":{"src":"js/c/scen-trial.bae34e0d6d.js","br":53911,"deps":["pack-sim","pack-rel"]},
-  "scen-omega":{"src":"js/c/scen-omega.51edf9d9c1.js","br":136625,"deps":["pack-sim","pack-rel"]},
+  "scen-omega":{"src":"js/c/scen-omega.0eeffa7c42.js","br":136652,"deps":["pack-sim","pack-rel"]},
   "scen-massage":{"src":"js/c/scen-massage.5fc2b21832.js","br":54477,"deps":["pack-sim"]},
   "scen-futari":{"src":"js/c/scen-futari.c64030d389.js","br":107547,"deps":["pack-sim","pack-rel"]},
   "scen-zombie":{"src":"js/c/scen-zombie.e8dd6ad92a.js","br":143215,"deps":["pack-sim","pack-rel"]},

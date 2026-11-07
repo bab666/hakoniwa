@@ -1108,7 +1108,7 @@
       if (refuser) {
         if (only(ctx)) { refuser.flags.trioNoTill = ctx.stepIndex + 2; refuser.flags.trioRefused = true; } else refuser.flags.trioNo = true;
         g.forEach(function (c) { if (c !== refuser) ctx.mod(refuser, c, { ten: 6 }); });
-        return { cat: 'conflict', text: ctx.t(ctx.pick(['{a}は「三人で、なんて絶対に無理｜三人で、というのは絶対に無理だ｜三人で、なんて絶対に無理です」と首を振った。話は、そこで終わった。', '{a}は但し書きの紙を裏返して、「見なかったことにする｜＝｜見なかったことにします」と言った。', '{a}「{一人称}は、するなら一人とだけ。それは譲れない｜{一人称}は、するなら一人とだけだ。それは譲れない｜{一人称}は、するなら一人とだけです。それは譲れません」']), refuser), why: refuser.name + 'のCP（' + Math.round(refuser.eg.CP) + '）：三人でという形には頷けなかった', mag: 12, with: g.filter(function (c) { return c !== refuser; }) };
+        return { cat: 'conflict', sex: false, text: ctx.t(ctx.pick(['{a}は「三人で、なんて絶対に無理｜三人で、というのは絶対に無理だ｜三人で、なんて絶対に無理です」と首を振った。話は、そこで終わった。', '{a}は但し書きの紙を裏返して、「見なかったことにする｜＝｜見なかったことにします」と言った。', '{a}「{一人称}は、するなら一人とだけ。それは譲れない｜{一人称}は、するなら一人とだけだ。それは譲れない｜{一人称}は、するなら一人とだけです。それは譲れません」']), refuser), why: refuser.name + 'のCP（' + Math.round(refuser.eg.CP) + '）：三人でという形には頷けなかった', mag: 12, with: g.filter(function (c) { return c !== refuser; }) };
       }
       /* 「一人だけ」と決めていた人が加わるなら、気持ちが変わったことを一言はさむ（説得されていれば、その場面がすでにある） */
       var turn = isLoveAny(pl.kind) ? '' : g.filter(function (c) { return c.flags.excl && !c.flags.exclOpen; }).map(function (c) {

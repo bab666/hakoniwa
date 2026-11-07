@@ -63,12 +63,34 @@
     if (pf.couple || ts.some(function (t) { return /^(lover|spouse|fiance|mate|fated)$/.test(t.type); })) return 'couple';
     return 'casual';
   }
+  /* その出来事で二人が実際に体を重ねたか（2026-11-07 利用者の報告：βが発情期のΩに食料を置いていく看病のすぐあとに「孕んだかもしれない」が出た）。
+     定義に sex:true の付いた出来事の、看病・拒む・耐えるなどの枝の記録には差さない：分類が help の記録は除き、
+     その組の夜の印（pf.night・pf.nights）がこの出来事の中で増えたときか、エロシーンの印（e.lewd）があるとき（オメガバースは体の場面のどれもが pf.nights を増やすので、
+     増えたときだけ。街のαに襲われたΩを庇った人のように、場面に居合わせただけの住人と取り違えないため）。
+     「この出来事の中で」は act() が出来事ごとに作り直す ctx._touched で見分け、その組の記録ごとに前の値を覚える（新しい値は足さず、既存の値で判定） */
+  function nightNow(pf) { return (pf.nights || 0) * 2 + (pf.night ? 1 : 0); }
+  function nightSeen(ctx, o) {
+    var L = (o.actors || []).filter(function (c) { return c && c.i != null && ctx.chars[c.i] === c; });
+    if (L.length !== 2) return;
+    var M = ctx._ctNt = ctx._ctNt || {}, k = Math.min(L[0].i, L[1].i) + '-' + Math.max(L[0].i, L[1].i), m = M[k], tok = ctx._touched || null;
+    var cur = nightNow(ctx.pair(L[0], L[1]));
+    if (!m) M[k] = { tok: tok, base: 0, cur: cur };
+    else if (m.tok !== tok) M[k] = { tok: tok, base: m.cur, cur: cur };
+    else m.cur = cur;
+  }
+  function didSex(ctx, o, e, Tp, B) {
+    if (o.cat === 'help' || e.cat === 'help') return false;
+    var m = ctx._ctNt && ctx._ctNt[Math.min(Tp.i, B.i) + '-' + Math.max(Tp.i, B.i)];
+    if (m && m.cur > m.base) return true;
+    return scenOf(ctx) !== 'omega' && e.lewd === true;
+  }
   function pregHook(ctx, o, e) {
     if (NO_SCEN[scenOf(ctx)] || !HK.sexEv || !HK.sexEv(ctx, o).sex) return;
     var P = HK.Pos, acts = (o.actors || []).filter(function (c) { return c && c.i != null && ctx.chars[c.i] === c; });
     if (!P || acts.length !== 2) return;
     var ord = P.order(acts[0], acts[1], [acts[0], acts[1]]), Tp = ord[0], B = ord[1];
     if (B._ctPreg || !P.okSex(Tp, B) || !P.hasM(Tp)) return;
+    if (!didSex(ctx, o, e, Tp, B)) return;
     /* オメガバースは数か月〜二年の長い遊びなので、今までどおり一回の遊びで二組まで（ほかの箱庭は、条件を満たす組すべて） */
     if (scenOf(ctx) === 'omega' && ctx._ct && ctx._ct.preg.length >= 2) return;
     var om = scenOf(ctx) === 'omega' && Tp.om && B.om, ao = om && Tp.om.sex === 'a' && B.om.sex === 'o';
@@ -106,7 +128,7 @@
         this._ctViolPend = null;
         if (e.text.indexOf(vp) < 0) { var cut = e.text.indexOf('\n\n'); e.text = cut > 0 ? e.text.slice(0, cut) + '\n\n' + vp + e.text.slice(cut) : e.text + vp; }
       }
-      if (e && !e.skipped && o && o.kind === 'event' && typeof e.text === 'string' && on(this, 'preg')) pregHook(this, o, e);
+      if (e && !e.skipped && o && o.kind === 'event' && typeof e.text === 'string' && on(this, 'preg')) { nightSeen(this, o); pregHook(this, o, e); }
       return e;
     };
   });
