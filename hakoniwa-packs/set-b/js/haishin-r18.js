@@ -331,6 +331,12 @@
   var CHAIN = ['toy', 'call', 'self', 'notice', 'come', 'punish', 'sex'];
   function midText(ctx, S, key, x, y) { var k = bodyK(S, x), R = RX(), l = dig(R.MID, key, k); return pickT(ctx, l, x, y) || pickT(ctx, l, x, y, true) || pickAny(ctx, l, x, y); }
   function telLine(ctx, S, i, x, y) { var l = dig(RX().TEL, att(y, x)); var t = l[i] || l[l.length - 1] || ''; return t ? '\n\n' + fill(ctx, t, y, x) : ''; }
+  /* かかってきた電話（S.callDir＝'in'）の self・notice：相手は配信中だと知っている。R.TEL_IN[watch（画面を見ている）|know（心配・嫉妬）][態度] の [self, notice]。表が無ければ R.TEL の i＋1 番（2026-11-07 の利用者の報告「配信を見ていて電話してきた人が『今どこにいる。一人か』」） */
+  function inWhy(S) { return S.callDir === 'in' ? (S.callWhy === 'watch' ? 'watch' : 'know') : ''; }
+  function telLineSN(ctx, S, j, x, y) {
+    var w = inWhy(S), l = w ? dig(RX().TEL_IN, w, att(y, x)) : [], t = l[j] || '';
+    return t ? '\n\n' + fill(ctx, t, y, x) : telLine(ctx, S, j + 1, x, y);
+  }
   /* ソロの中盤のきっかけ（toy・call の直前に必ず別の一件。e.tag＝'きっかけ'。2026-11-06 の利用者の指示「玩具を入れる・電話をかけるが急に始まる」）
      玩具：視聴者の要求のコメント（C.REQ の段 6 の vibe → 段 5 の onani・sawaru）を読み上げる流れ ＋ R.MIDLEAD.toy[態度]（迷い・渋り・決心の台詞）。電話：R.MIDLEAD.call[態度]（理由） */
   var MIDQ = { toy: [[6, 'vibe'], [5, 'onani'], [5, 'sawaru']], call: [] };
@@ -382,14 +388,15 @@
       case 'self':
         t = midText(ctx, S, 'self', x, y); if (!t) return false;
         var mo = moanOf(ctx, x, false);
-        rec(ctx, [x, y], fill(ctx, t, x, y) + (mo ? '\n\n' + mo : '') + telLine(ctx, S, 1, x, y), 'ソロの中盤：通話をつないだまま自慰', cat, { tag: '電話' });
+        rec(ctx, [x, y], fill(ctx, t, x, y) + (mo ? '\n\n' + mo : '') + telLineSN(ctx, S, 0, x, y), 'ソロの中盤：通話をつないだまま自慰', cat, { tag: '電話' });
         S.mid = 'self'; return true;
       case 'notice':
-        var nt = ctx.rng() < 0.65;
-        t = midText(ctx, S, nt ? 'notice' : 'hangup', x, y);
-        if (!t) { nt = !nt; t = midText(ctx, S, nt ? 'notice' : 'hangup', x, y); }
+        /* 画面を見ていて電話してきた回（watch）は、音でなく画面越しに気づく文（R.MID.notice_in） */
+        var nt = ctx.rng() < 0.65, nk = inWhy(S) === 'watch' && dig(RX().MID, 'notice_in', bodyK(S, x)).length ? 'notice_in' : 'notice';
+        t = midText(ctx, S, nt ? nk : 'hangup', x, y);
+        if (!t) { nt = !nt; t = midText(ctx, S, nt ? nk : 'hangup', x, y); }
         if (!t) return false;
-        rec(ctx, [x, y], fill(ctx, t, x, y) + (nt ? telLine(ctx, S, 2, x, y) : ''), nt ? 'ソロの中盤：電話の相手が気づいた' : 'ソロの中盤：通話が切れた', cat, { tag: '電話' });
+        rec(ctx, [x, y], fill(ctx, t, x, y) + (nt ? telLineSN(ctx, S, 1, x, y) : ''), nt ? 'ソロの中盤：電話の相手が気づいた' : 'ソロの中盤：通話が切れた', cat, { tag: '電話' });
         S.mid = nt ? 'notice' : 'hangup'; return true;
       case 'come':
         /* 夜 100 でも 4 回に 1 回は来ない（電話越しの山場で一人で閉じる。2026-11-06 の利用者の指示「20 回とも来訪→お仕置き」の直し） */
