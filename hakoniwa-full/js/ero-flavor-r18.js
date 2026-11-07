@@ -313,6 +313,9 @@
     /* 主従・上司と部下の台詞は、攻めが主・上司のときだけ */
     if (RL && (rk.rel === 'master' || rk.rel === 'boss') && rk.dir && rk.dir !== (rk.top === nm(top) ? 'a' : 'b')) RL = null;
     var rel = RL && RL[st] ? RL[st] : null, r = rngOf(S);
+    /* 恋人・夫婦・婚約の二人の事後に、ドライの色の終わり方（「悪くなかった。じゃあな」「服はそこに置いてある」）を出さない（温度を読まない部屋でも。2026-11-07。
+       空なら呼ぶ側が今までの表（甘い文を外したもの）に戻る） */
+    if (fl === 'dry' && st === 'after' && rk.rel === 'lover') return '';
     var pool = rel && r() < 0.5 ? rel : base.length ? base : rel || [];
     /* 恋人・夫婦の夜には「今夜だけ」の台詞を出さない（勢い・体だけ・一夜の夜だけ。2026-11-05。同居生活の報告の申し送り） */
     if (/^(?:lover|pine)$/.test(rk.rel) || (opt && /^(?:lover|first)$/.test(opt.rel || '') && rk.rel !== 'one')) { var lo = pool.filter(function (l) { return !ONLY_TONIGHT.test(l); }); pool = lo.length ? lo : base.filter(function (l) { return !ONLY_TONIGHT.test(l); }); }
@@ -343,11 +346,15 @@
        （2026-11-06：温度が甘い新婚の長い場面で、区切りは甘いのに攻めの事後の一言だけ二人の性格の色（駆け引き・ドライ）になり「貸し一つ」「悪くなかった。じゃあな」が出ていた。
        事後の返事 after-reply-r18.js の flOf と同じ読み方） */
     var scopeFl = function (top, bot) { var sc = F.cur(); return sc && sc.a && sc.b && ((sc.a === top && sc.b === bot) || (sc.a === bot && sc.b === top)) ? sc.fl : ''; };
+    /* 温度の場面（HK.Heat.cur。温度を読む部屋だけ）の中の一言は、区切りの色より先に温度の色（HK.Heat.flavor）を読む（2026-11-07：同居生活の婚約の夜、場面の中は甘いのに
+       1 回目と 2 回目の間の攻めの一言だけ二人の性格の色（ドライ）で「悪くなかった。じゃあな」が出ていた。新婚・看病・デートの部屋の段（ThickSex を通らない段）の一言も同じ）。
+       同じ二人のときだけ（モブ・三人目の一言は今までどおり） */
+    var heatFl = function (top, bot) { var Hc = HK.Heat && HK.Heat.cur; return Hc && Hc.key && Hc.a && Hc.b && HK.Heat.flavor && ((Hc.a === top && Hc.b === bot) || (Hc.a === bot && Hc.b === top)) ? HK.Heat.flavor(Hc.key, Hc.a, Hc.b) : ''; };
     /* 「…」だけを返す表引き（say のほか、場面の表と混ぜる呼び出し：出られない部屋・オメガバースなども直に使う） */
     if (ET.line && !ET.line._flavor) HK.wrap(ET, 'line', function (line0) {
       var f = function (S, top, bot, stage, opt) {
         if (HK.SAFE_ON || !top || !bot || top === bot) return line0.apply(this, arguments);
-        var fl = opt && opt.flavor && LABEL[opt.flavor] ? opt.flavor : opt && opt.force ? 'sweet' : scopeFl(top, bot) || F.of(S, top, bot, opt), self = this, args = arguments;
+        var fl = opt && opt.flavor && LABEL[opt.flavor] ? opt.flavor : opt && opt.force ? 'sweet' : heatFl(top, bot) || scopeFl(top, bot) || F.of(S, top, bot, opt), self = this, args = arguments;
         if (fl === 'sweet') return line0.apply(this, arguments);
         if (fl === 'rough') return light(fl, function () { return line0.apply(self, args); }, top, bot);
         var r = rngOf(S);
@@ -359,14 +366,17 @@
       f._flavor = true;
       return f;
     });
-    /* 温度が甘い・初々しいの場面（HK.Heat.cur）の事後の一言に、冷たい終わり方（「悪くなかった。じゃあな」「また、呼ぶから」「貸し一つ」）を出さない（2026-11-06。引き直しは 3 回まで、残れば言わない） */
-    var COLD_AFTER = /悪くなかった|悪くない相性|悪くありませんでした|また、?呼ぶ|また呼|お呼びします|じゃあ[なね]|では」|それだけ(?:だ|です)?」|貸し一つ|清算|交渉|割り切|ここだけの話|今夜だけ|服[はを、]?そこ|お召し物|先に(?:寝る|休)/;
-    var warmNow = function () { var Hc = HK.Heat && HK.Heat.cur; return !!(Hc && (Hc.key === 'sweet' || Hc.key === 'fresh')); };
+    /* 温度が甘い・初々しい（2026-11-07 からじゃれ合いも。駆け引きの言い合いは残す）の場面（HK.Heat.cur）の事後の一言に、冷たい終わり方（「悪くなかった。じゃあな」「また、呼ぶから」「貸し一つ」）を出さない（2026-11-06。引き直しは 3 回まで、残れば言わない） */
+    var COLD_AFTER = /悪くなかった|悪くない相性|悪くありませんでした|また、?呼ぶ|また呼|お呼びします|じゃあ[なね]|では」|それだけ(?:だ|です)?」|貸し一つ|清算|交渉|割り切|ここだけの話|今夜だけ|服[はを、]?そこ|お召し物|先に(?:寝る|休)|明日も早い|もう(?:休む|休みます|寝る)|なかったことに|すっきりした|気が向いたら|これきり|帰れ|さっさと/;
+    /* じゃれ合い（2026-11-07）：駆け引きの言い合い（貸し一つ・交渉）は温度に合うので残し、ドライ・荒いの冷たい終わり方だけを外す */
+    var COLD_DRY = /悪くなかった|悪くない相性|悪くありませんでした|じゃあ[なね]|では」|それだけ(?:だ|です)?」|割り切|ここだけの話|今夜だけ|服[はを、]?そこ|お召し物|先に(?:寝る|休)|明日も早い|もう(?:休む|休みます|寝る)|なかったことに|すっきりした|これきり|帰れ|さっさと/;
+    var warmNow = function () { var Hc = HK.Heat && HK.Heat.cur; return Hc && (Hc.key === 'sweet' || Hc.key === 'fresh') ? COLD_AFTER : Hc && Hc.key === 'play' ? COLD_DRY : null; };
     HK.wrap(ET, 'say', function (say1) {
       var f = function (S, top, bot, stage, opt) {
         var t = say1.apply(this, arguments);
-        if (!t || HK.SAFE_ON || stageOf(stage) !== 'after' || !warmNow() || !COLD_AFTER.test(t)) return t;
-        for (var i = 0; i < 3; i++) { t = say1.apply(this, arguments); if (!t || !COLD_AFTER.test(t)) return t; }
+        var re = t && !HK.SAFE_ON && stageOf(stage) === 'after' ? warmNow() : null;
+        if (!re || !re.test(t)) return t;
+        for (var i = 0; i < 3; i++) { t = say1.apply(this, arguments); if (!t || !re.test(t)) return t; }
         return '';
       };
       f._warm = true;
@@ -376,7 +386,7 @@
     HK.wrap(ET, 'say', function (say0) {
       var f = function (S, top, bot, stage, opt) {
         if (HK.SAFE_ON || !top || !bot || top === bot) return say0.apply(this, arguments);
-        var fl = opt && opt.flavor && LABEL[opt.flavor] ? opt.flavor : opt && opt.force ? 'sweet' : scopeFl(top, bot) || F.of(S, top, bot, opt), self = this, args = arguments;
+        var fl = opt && opt.flavor && LABEL[opt.flavor] ? opt.flavor : opt && opt.force ? 'sweet' : heatFl(top, bot) || scopeFl(top, bot) || F.of(S, top, bot, opt), self = this, args = arguments;
         if (Array.isArray(F.sayLog)) F.sayLog.push({ names: [nm(top), nm(bot)], fl: fl, stage: stageOf(stage) });
         if (fl === 'sweet') return say0.apply(this, arguments);
         return harden(light(fl, function () { return say0.apply(self, args); }, top, bot));

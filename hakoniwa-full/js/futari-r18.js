@@ -550,7 +550,9 @@
       /* 温度：攻めの始まり・事後の台詞も温度で絞る（甘い・初々しいに荒い台詞、荒い・ドライ・歪んだに腕枕・額にキスの台詞を出さない） */
       if (heat) ['start', 'after'].forEach(function (k) { var v = tb[k]; if (Array.isArray(v)) tb[k] = HK.Heat.trim(v, k, heat.key); else { var o4 = {}; Object.keys(v).forEach(function (p) { o4[p] = HK.Heat.trim(v[p], k, heat.key); }); tb[k] = o4; } });
       var topMark = function (said) { if (!said) return said; [tb.start, tb.after].forEach(function (v) { (Array.isArray(v) ? [v] : Object.keys(v).map(function (p) { return v[p]; })).forEach(function (l) { l.forEach(function (t) { if (said.indexOf('「' + t + '」') >= 0) TN[t] = (TN[t] || 0) + 1; }); }); }); return said; };
-      var tsay = function (stg, o) { var l = HK.EroT3 ? HK.EroT3.topSay(ctx, A, B, stg, tb, Object.assign({ rel: rel }, o || {})) : ''; return /「[^」]+」/.test(l || '') ? l : ''; };
+      /* 始まりと事後（濃いなら 1 回目と 2 回目の間）の一言も、場面と同じ温度で引く（2026-11-07：場面の外で引いていたので、温度が甘い婚約の夜に二人の性格の色（ドライ）の
+         「悪くなかった。じゃあな」が 1 回目の終わりに出ていた。温度の区切り HK.Heat.cur の中で引けば、ero-flavor-r18.js の say が温度の色を読む） */
+      var tsay = function (stg, o) { var f0 = function () { return HK.EroT3 ? HK.EroT3.topSay(ctx, A, B, stg, tb, Object.assign({ rel: rel }, o || {})) : ''; }, l = heat ? HT.scope(ctx, A, B, heat, f0) : f0(); return /「[^」]+」/.test(l || '') ? l : ''; };
       /* 体だけ・勢いの夜の「大好き」、初めての夜の「今夜も」のような、共通の部品の段落（性格が目立つ行為の段など）は外す（段落が四つ以上あるときだけ） */
       var CAS_P = /「[^」]*(?:大好き|好きだよ|愛して)[^」]*」|明日も、?隣で/, FIRST_P = /「[^」]*今夜も[^」]*」|何度も一緒に眠った/, LOVER_P = /「[^」]*今夜だけ[^」]*」/;
       function dropP(tx) {

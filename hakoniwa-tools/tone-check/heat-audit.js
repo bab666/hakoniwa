@@ -4,7 +4,9 @@
    温度を読む部屋（HK.Heat.use で登録した部屋。追加パックの部屋は HK_PACK_CODES で開く）を、関係（恋人・セフレ・幼馴染・夫婦・敵対・執着）× 組（男×女・女×女・女攻め×男）×
    N 回 × 種 で回し、温度の場面の記録（HK.Heat.log）を照らして数える（合格は 0 件）：
    (a) 甘い・初々しいに荒い入り方（型の入り方 押し倒す・嫉妬／責め 言葉責め／体位 押さえつけ／道具 目隠し、本文の始まりの 2 段・変化の一文・事後の型の一文に「押し倒・組み敷・縛・拘束…」）
-   (b) 荒い・歪んだ・ドライに甘い事後（事後の型の一文・本文の最後の 2 段に「腕枕・額にキス・髪を撫で」）
+   (b) 荒い・歪んだ・ドライに甘い事後（事後の型の一文・本文の最後の 2 段に「腕枕・額にキス・髪を撫で」）・甘い・初々しい・じゃれ合いに冷たい一言（2026-11-07 から場面の中の一言も：
+       本文のどこか（1 回目と 2 回目の間・始まり・終わり）に夜の色ドライの事後の台詞（HK.EROFLAVOR の DRY・REL_DRY の after。甘い・初々しいは駆け引きの DEAL・REL_DEAL も）、
+       または温度の区切りの中の攻めの事後の一言（HK.EroTop.say）が温度に合わない（甘い・初々しい・じゃれ合いにドライ・荒いの一言、荒い・ドライ・歪んだに腕枕・額にキス））
    (c) 怒りが高い（記録の気分 50 以上）のに甘い・初々しい、または甘い事後
    (d) 合意のない場面を内容のスイッチが許していない（force なのに forceOk が偽）
    (e) 前回と同じ温度（か前回が無い）のに変化の一文が出た
@@ -33,6 +35,12 @@ const N = +opt('N', MEASURE ? 20 : 4), SEEDS = opt('seeds', MEASURE ? '1' : '1,2
     const ROUGH_RE = H.ROUGH_RE, SWEET_RE = H.SWEET_AFTER_RE;
     const bad = { a: [], b: [], c: [], d: [], e: [], f: [], g: [], h: [], i: [], j: [] }, M = { scen: {} }, skip = [];
     const ROUGH_PLAY = H.ROUGH_PLAY;
+    /* (b) の場面の中の一言（2026-11-07）：夜の色ドライ・駆け引きの事後の台詞（3 本の各本）と、温度の区切りの中の攻めの事後の一言 */
+    const D = HK.EROFLAVOR || {}, COLD_V = { dry: [], deal: [] }, COLD_W = /帰れ|さっさと(?:服|出て|着)|これきり|用は済んだ/;
+    [[D.DRY, 'dry'], [D.REL_DRY, 'dry'], [D.DEAL, 'deal'], [D.REL_DEAL, 'deal']].forEach(([T, c]) => Object.keys(T || {}).forEach(k => ((T[k] || {}).after || []).forEach(l => l.replace(/^「|」$/g, '').split('｜').forEach(v => { if (v !== '＝' && v.length > 5) COLD_V[c].push(v); }))));
+    const coldIn = (key, tx) => (key === 'play' ? COLD_V.dry : COLD_V.dry.concat(COLD_V.deal)).find(v => tx.indexOf(v) >= 0) || ((COLD_W.exec(tx) || [])[0]);
+    let SAYS = [];
+    if (HK.EroTop && HK.EroTop.say && !HK.EroTop.say._heatAudit) { const say0 = HK.EroTop.say; HK.EroTop.say = function (S, top, bot, stage) { const t = say0.apply(this, arguments); if (t && /after/.test(stage) && H.cur && H.cur.key) SAYS.push({ key: H.cur.key, t: String(t) }); return t; }; HK.EroTop.say._heatAudit = true; }
     (P && P.VALUE_ERR || []).forEach(x => bad.j.push(x));
     let runs = 0, scenes = 0;
     for (const sc of SCEN) {
@@ -53,7 +61,7 @@ const N = +opt('N', MEASURE ? 20 : 4), SEEDS = opt('seeds', MEASURE ? '1' : '1,2
         if (sc === 'futari') env.days = 14;
         if (HK.Content && HK.Content.TAGS) env.ct = (ty === 'enemy' || ty === 'yan') && s % 2 ? HK.Content.TAGS.map(t => t.id).join(',') : '';
         const ties = [ty === 'yan' ? { a: 0, b: 1, type: 'yan', cold: 'mutual' } : { a: 0, b: 1, type: ty }];
-        H.log = []; H.playLog = [];
+        H.log = []; H.playLog = []; SAYS = [];
         let res;
         try { res = HK.simulate({ scenId: sc, seed: 31000 + sd * 7919 + ti * 997 + gi * 131 + s * 17, env, chars, perChar: chars.map(() => ({ action: 'auto', goal: 'auto', stats: {}, weapon: '', pick: {} })), ties }); }
         catch (e) { bad.d.push(sc + '：例外 ' + String(e && e.stack || e).slice(0, 300)); H.log = null; continue; }
@@ -79,6 +87,7 @@ const N = +opt('N', MEASURE ? 20 : 4), SEEDS = opt('seeds', MEASURE ? '1' : '1,2
           }
           /* (b) */
           if (hard) { const m = SWEET_RE.exec((x.after || '') + '\n' + tail); if (m) bad.b.push(tag + H.LABEL[x.key] + 'なのに事後に「' + m[0] + '」：' + ((x.after || '') + tail).slice(Math.max(0, ((x.after || '') + tail).indexOf(m[0]) - 30), ((x.after || '') + tail).indexOf(m[0]) + 15).replace(/\n/g, ' ')); }
+          if (soft || x.key === 'play') { const v = coldIn(x.key, String(x.text || '')); if (v) bad.b.push(tag + H.LABEL[x.key] + 'なのに場面の中に冷たい一言「' + v + '」'); }
           /* (c) */
           if ((x.anger || 0) >= 50 && (soft || SWEET_RE.test(x.after || ''))) bad.c.push(tag + '怒り ' + Math.round(x.anger) + ' なのに ' + H.LABEL[x.key] + '（' + x.why + '）');
           /* (d) */
@@ -91,6 +100,11 @@ const N = +opt('N', MEASURE ? 20 : 4), SEEDS = opt('seeds', MEASURE ? '1' : '1,2
           ms.feat = (ms.feat || 0) + fe.length; if (fe.length) ms.featScenes = (ms.featScenes || 0) + 1;
           if (fe.length > 2) bad.i.push(tag + '体の特徴の文が ' + fe.length + ' 文：' + fe.map(f => f.k).join(','));
           fe.forEach(f => { if ((f.kind === 'touch' || f.kind === 'hold' || f.kind === '') && !f.melt) bad.i.push(tag + '溶かした文の表にない特徴の文（' + f.k + '・' + f.kind + '）'); });
+        });
+        /* (b) の続き：温度の区切りの中で引いた攻めの事後の一言（場面の外で引いた一言は、上の本文の照らし合わせが拾う） */
+        SAYS.forEach(q => {
+          const warm = /^(?:sweet|fresh|play)$/.test(q.key), v = warm ? coldIn(q.key, q.t) : /^(?:rough|dry|warped)$/.test(q.key) ? (SWEET_RE.exec(q.t) || [])[0] : '';
+          if (v) bad.b.push(tag + H.LABEL[q.key] + 'の場面の攻めの事後の一言に「' + v + '」：' + q.t.slice(0, 40));
         });
         /* (g)(h)：温度を読む部屋の型の選び方の全部（温度の場面の外の夜も。HK.Heat.playLog） */
         (PL || []).forEach(p => {
@@ -119,7 +133,7 @@ const N = +opt('N', MEASURE ? 20 : 4), SEEDS = opt('seeds', MEASURE ? '1' : '1,2
     Object.keys(out.M.scen).forEach(sc => { const m = out.M.scen[sc]; console.log('| ' + sc + ' | ' + (m.feat || 0) + ' 文・' + (m.featScenes || 0) + ' 場面 |'); });
     console.log('');
   }
-  const NAME = { a: '(a) 甘い・初々しいに荒い入り方', b: '(b) 荒い・歪んだ・ドライに甘い事後', c: '(c) 怒りが高いのに甘い', d: '(d) 合意のない場面と内容のスイッチ・例外', e: '(e) 変化の一文の誤り', f: '(f) 同じ二人で同じ変化の一文', g: '(g) 同じ組で同じ入り方・主な責めが続いた', h: '(h) 道具が一回の遊びに 3 回以上', i: '(i) 体格差・体の特徴の文', j: '(j) 部屋だけの新しい値の文が足りない' };
+  const NAME = { a: '(a) 甘い・初々しいに荒い入り方', b: '(b) 荒い・歪んだ・ドライに甘い事後・甘い・初々しい・じゃれ合いに冷たい一言（場面の中も）', c: '(c) 怒りが高いのに甘い', d: '(d) 合意のない場面と内容のスイッチ・例外', e: '(e) 変化の一文の誤り', f: '(f) 同じ二人で同じ変化の一文', g: '(g) 同じ組で同じ入り方・主な責めが続いた', h: '(h) 道具が一回の遊びに 3 回以上', i: '(i) 体格差・体の特徴の文', j: '(j) 部屋だけの新しい値の文が足りない' };
   let tot = unread;   /* 回すはずの部屋が読めない（パックのコードが違う・試しのフォルダが壊れている）は不合格 */
   Object.keys(NAME).forEach(k => { const L = out.bad[k]; tot += L.length; console.log(NAME[k] + '：' + L.length + ' 件'); if (WHY || L.length) L.slice(0, WHY ? 30 : 4).forEach(x => console.log('   ' + x)); });
   if (errors.length) { console.log('ページのエラー：' + errors.length + '　' + errors.slice(0, 2).join(' / ')); tot += errors.length; }
