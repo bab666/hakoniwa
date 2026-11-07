@@ -10,11 +10,14 @@
   "chunks": [
     {
       "name": "kit",
-      "deps": [],
+      "deps": [
+        "pack-lewd"
+      ],
       "files": [
         "js/kit-dark.js",
         "js/kit-dark-cast.js",
-        "js/kit-dark-face.js"
+        "js/kit-dark-face.js",
+        "js/kit-dark-r18.js"
       ]
     }
   ]
