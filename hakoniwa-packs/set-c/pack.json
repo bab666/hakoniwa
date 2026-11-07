@@ -1,0 +1,21 @@
+{
+  "id": "set-c",
+  "slot": "set-c",
+  "name": "闇の過激セット",
+  "desc": "執着・支配・歪んだ関係を描く、重く暗い二人の箱庭のセットです（R18版だけ）。",
+  "builds": [
+    "full"
+  ],
+  "api": 3,
+  "chunks": [
+    {
+      "name": "kit",
+      "deps": [],
+      "files": [
+        "js/kit-dark.js",
+        "js/kit-dark-cast.js",
+        "js/kit-dark-face.js"
+      ]
+    }
+  ]
+}
