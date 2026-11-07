@@ -19,6 +19,25 @@
         "js/kit-dark-face.js",
         "js/kit-dark-r18.js"
       ]
+    },
+    {
+      "name": "kankin",
+      "deps": [
+        "kit",
+        "pack-lewd"
+      ],
+      "files": [
+        "js/kankin-text-a.js",
+        "js/kankin-text-b.js",
+        "js/kankin-text-c.js",
+        "js/kankin.js",
+        "js/kankin-r18-text-a.js",
+        "js/kankin-r18-text-b.js",
+        "js/kankin-r18.js",
+        "js/kankin-tags.js",
+        "js/kankin-tips.js",
+        "js/solo-warn-set-c-kankin.js"
+      ]
     }
   ]
 }
