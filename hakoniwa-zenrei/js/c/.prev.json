@@ -1,6 +1,6 @@
 {
  "cur": {
-  "core": "core.1e509a2c72.js",
+  "core": "core.346d2e96b1.js",
   "late": "late.f99da9d67f.js",
   "pack-rel": "pack-rel.b73013ea94.js",
   "pack-sim": "pack-sim.08823cc92c.js",
@@ -187,8 +187,8 @@
    2116
   ],
   "js/voice.js": [
-   71537,
-   22818
+   71987,
+   22982
   ],
   "js/voice-tone.js": [
    36698,
@@ -203,8 +203,8 @@
    16888
   ],
   "js/tone-engine.js": [
-   68890,
-   22123
+   69466,
+   22280
   ],
   "js/tone-dict-builtin.js": [
    90845,

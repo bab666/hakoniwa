@@ -281,11 +281,18 @@
     var M2 = { 'いる': to, 'いた': to.replace(/る$/, 'った'), 'いない': nai, 'いません': nai, 'います': to.replace(/る$/, 'ります'), 'いました': to.replace(/る$/, 'りました'), 'いれば': to.replace(/る$/, 'れば') };
     return q.replace(/(^|[がはもにとかで、\s　])(いる|いた|いない|いません|います|いました|いれば)(?=[^ぁ-ゖ]|[よねのかなぞぜさわしっ…‥〜～ー♡、。！？!?]|$)/g, function (m, p, v) { return p + (M2[v] || v); });
   }
+  /* 副詞の「まだ」「ただ」の「だ」は断定ではない（2026-11-07：「まです」「まや」「まじゃ」になっていた）。
+     s は「だ」で終わる文字列。「まだ」は前が文頭・記号・助詞・漢字・カタカナ・「いや」「けど」・「まだまだ」の だ のとき（「そのままだ」「ひまだ」は断定なので言い換える）。
+     「ただ」は文頭・記号の直後だけ。voice.js の KEEP_DA と同じ条件 */
+  var KEEP_DA = /(?:(?:^|[、。，．「」『』…‥・\s　！？!?〜～ー]|[はもがをでにとてばのら]|いや|けど|だ|[一-鿿々ァ-ヶ\uE100-\uE1FF])まだ|(?:^|[、。，．「」『』…‥・\s　！？!?])ただ)$/;
+  function keepDa(s) { return KEEP_DA.test(s.replace(new RegExp(MARK, 'g'), '')); }
+  T.keepDa = keepDa;
   function ruleCopula(body, to) {
     /* 文中の だから・だけど・だって・だった */
-    body = body.replace(/だ(から|けど|けれど|って|った|ろう|ろ)(?=[、\s　]|$|[っ…‥〜～ー♡])/g, to + '$1').replace(/だ(から|けど|けれど)/g, to + '$1');
+    var mid = function (m, p, at, all) { return keepDa(all.slice(0, at + 1)) ? m : to + p; };
+    body = body.replace(/だ(から|けど|けれど|って|った|ろう|ろ)(?=[、\s　]|$|[っ…‥〜～ー♡])/g, mid).replace(/だ(から|けど|けれど)/g, mid);
     /* 文末の だ・だよ・だね・だな・だぞ */
-    return body.replace(/(?:^|[^ん])だ(よ|ね|な|ぞ|ぜ|わ|もん|っけ)?(?=[っッ…‥〜～ー♡、\s　]*$)/, function (m, p) { return m.slice(0, m.length - 1 - (p || '').length) + to + (p || ''); }).replace(/んだ(よ|ね|な|ぞ)?(?=[っッ…‥〜～ー♡、\s　]*$)/, 'ん' + to + '$1');
+    return body.replace(/(?:^|[^ん])だ(よ|ね|な|ぞ|ぜ|わ|もん|っけ)?(?=[っッ…‥〜～ー♡、\s　]*$)/, function (m, p, at, all) { if (keepDa(all.slice(0, at + m.length - (p || '').length))) return m; return m.slice(0, m.length - 1 - (p || '').length) + to + (p || ''); }).replace(/んだ(よ|ね|な|ぞ)?(?=[っッ…‥〜～ー♡、\s　]*$)/, 'ん' + to + '$1');
   }
   /* 助詞を落とした後ろが、名詞＋助詞・断定（「〈名前〉が〈名前〉と」「弱点は右脚だ」）なら落とさない（名詞が並んで読めなくなる） */
   /* 住人の名前の伏せ字（voice.js の HK.NameGuard）：ふつうは漢字の範囲（U+9FA6〜）なので名詞として扱われる。足りないときの私用領域（U+E100〜U+E1FF）も名詞に数える */
@@ -497,6 +504,8 @@
   }
   function badEnd(head, to, punct, qm, from) {
     if (to === from) return false;   /* 元のまま（「だ=だ／だよ」の「だ」）はいつでもよい */
+    /* 「だ」で始まる項目（だ・だよ・だね）が副詞の「まだ」「ただ」に当たるときは、「だ」を残す候補（だよ・だぞ・だもん）だけ（「まじゃ」「まなのよ」「まね」にしない） */
+    if (from && from.charAt(0) === 'だ' && keepDa(head + 'だ') && to.replace(/^[\uE061]+/, '').charAt(0) !== 'だ') return true;
     /* 名詞止め・体言止めの文に「なのさ」を付けない（「二人だけの秘密なのさ」「人間なのさ」→ ほかの候補の「だよ」「さ」）。疑問詞のある「何なのさ」はよい（2026-10-26 順151） */
     if (/^[]*なのさ/.test(to) && /[一-鿿々ァ-ヶー]$/.test(head) && !/(?:何|なに|なん|どう|なぜ|どこ|いつ|誰|どれ|どんな)/.test(head)) return true;
     var t0 = to.replace(/^[\uE061]+/, '');
