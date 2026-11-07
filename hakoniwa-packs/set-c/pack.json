@@ -36,7 +36,8 @@
         "js/kankin-r18.js",
         "js/kankin-tags.js",
         "js/kankin-tips.js",
-        "js/solo-warn-set-c-kankin.js"
+        "js/solo-warn-set-c-kankin.js",
+        "js/kankin-tone.js"
       ]
     },
     {
@@ -53,6 +54,7 @@
         "js/chokyo-r18-text.js",
         "js/chokyo.js",
         "js/chokyo-r18.js",
+        "js/chokyo-tone.js",
         "js/chokyo-tags.js",
         "js/solo-warn-set-c-chokyo.js",
         "js/chokyo-tips.js"
@@ -72,9 +74,55 @@
         "js/nemuri-r18-text.js",
         "js/nemuri-r18-text-b.js",
         "js/nemuri-r18.js",
+        "js/nemuri-tone.js",
         "js/nemuri-tags.js",
         "js/solo-warn-set-c-nemuri.js",
         "js/nemuri-tips.js"
+      ]
+    },
+    {
+      "name": "stalker",
+      "deps": [
+        "kit",
+        "pack-lewd"
+      ],
+      "files": [
+        "js/stalker-text-a.js",
+        "js/stalker-text-b.js",
+        "js/stalker-text-c.js",
+        "js/stalker-text-d.js",
+        "js/stalker-text-e.js",
+        "js/stalker-text-f.js",
+        "js/stalker.js",
+        "js/stalker-events.js",
+        "js/stalker-r18-text-a.js",
+        "js/stalker-r18-text-b.js",
+        "js/stalker-r18-text-c.js",
+        "js/stalker-r18.js",
+        "js/stalker-tone.js",
+        "js/stalker-tags.js",
+        "js/solo-warn-set-c-stalker.js",
+        "js/stalker-tips.js"
+      ]
+    },
+    {
+      "name": "ninshiki",
+      "deps": [
+        "kit",
+        "pack-lewd",
+        "pack-solo"
+      ],
+      "files": [
+        "js/ninshiki-text-a.js",
+        "js/ninshiki-text-b.js",
+        "js/ninshiki-text-c.js",
+        "js/ninshiki.js",
+        "js/ninshiki-r18-text-a.js",
+        "js/ninshiki-r18-text-b.js",
+        "js/ninshiki-r18.js",
+        "js/ninshiki-tags.js",
+        "js/solo-warn-set-c-ninshiki.js",
+        "js/ninshiki-tips.js"
       ]
     }
   ]

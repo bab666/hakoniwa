@@ -211,6 +211,7 @@
     return { k: x[0], t: x[1] };
   }
   function setup(ctx) {
+    ctx.chars.forEach(function (c) { if (!c.action) c.action = { id: 'live', label: '' }; if (!c.goal) c.goal = { id: 'kk', label: '' }; c.autoAction = false; c.autoGoal = false; });
     var C = DK.cast(ctx, { field: 'part', top: 'keeper', bottom: 'kept', others: ['guest'], auto: auto });
     if (!C) return;
     var A = C.A, B = C.B, env = ctx.env;
@@ -234,6 +235,7 @@
     DK.gauge(S, 'fall', { v: 0, max: 3, dir: 'up', stages: [1, 2, 3] });
     DK.gauge(S, 'obsess', { v: Math.max(50, O && O.level ? O.level(ctx, A, B) || 0 : 0), dir: 'up', stages: [60, 80, 95] });
     S.firm = firm;
+    S.apathy = !!(HK.Ties && HK.Ties.apathy && (HK.Ties.apathy(ctx, A, B) || HK.Ties.apathy(ctx, B, A)));
     /* 分かれ道（薬が切なら「薬を飲ませる」を選ばない） */
     var aKeys = S.drug ? ['kaijo', 'drug', 'oitsume', 'hyohen'] : ['kaijo', 'oitsume', 'hyohen'], at = Object.assign({}, A_TAB);
     if (!S.drug) at.free = 'kaijo';
@@ -248,7 +250,6 @@
     var nS = S.search === 'strong' ? 3 + (ctx.rng() < 0.5 ? 1 : 0) : S.search === 'weak' ? 1 + (ctx.rng() < 0.5 ? 1 : 0) : 0;
     for (var i = 0; i < nS; i++) S.srDays[1 + Math.floor(ctx.rng() * (days - 1))] = 1;
     S.gsA = goalOf(ctx, A, 'keeper', 's'); S.glA = goalOf(ctx, A, 'keeper', 'l'); S.gsB = goalOf(ctx, B, 'kept', 's'); S.glB = goalOf(ctx, B, 'kept', 'l');
-    ctx.chars.forEach(function (c) { if (!c.action) c.action = { id: 'live', label: '' }; c.autoAction = false; c.autoGoal = false; });
     A.goal = { id: 'kk', label: '短期「' + S.gsA.t + '」／長期「' + S.glA.t + '」' }; B.goal = { id: 'kk', label: '短期「' + S.gsB.t + '」／長期「' + S.glB.t + '」' };
     S.G.forEach(function (g) { g.gone = true; });
     if (HK.KankinR18 && HK.KankinR18.setup) HK.KankinR18.setup(ctx, S);
@@ -338,6 +339,8 @@
     if (S.darkDue) {
       for (var k = (S.darkSeen || 0) + 1; k <= S.darkDue; k++) {
         if (!DK.once(S, 'dark' + k)) continue;
+        /* 無関心の向きの二人（関係の「無関心」）は、嫉妬の節目を出さない（嫉妬・心配の出来事にしない） */
+        if (k === 1 && S.apathy) continue;
         ev(ctx, S, 'dark' + k, { al: k === 1 ? 'jeal' : k === 4 ? 'hyohen' : null, mag: 15 });
         if (k === 2 && S.drug) S.cupToday = true;
       }
@@ -386,8 +389,8 @@
     slot(ctx, S, N_POOL);
   }
   function noYoru(ctx, S) {
-    var N = TX().NOYORU || {}, k = S.noBody ? 'body' : 'want', t = rnd(ctx, N[k]);
-    if (t) DK.say(ctx, { id: 'kk_noyoru', cat: 'bond', actors: [S.A, S.B], t: t, a: S.A, b: S.B, why: 'ヤンデレ監禁の部屋：体の場面にならなかった理由（' + (S.noBody ? '体の場面にしない二人' : '本音が線を越えなかった') + '）' });
+    var N = TX().NOYORU || {}, R0 = DK.R18, k = S.noBody || !(R0 && R0.ok(ctx, S, S.A, S.B)) ? 'body' : 'want', t = rnd(ctx, N[k]);
+    if (t) DK.say(ctx, { id: 'kk_noyoru', cat: 'bond', actors: [S.A, S.B], t: t, a: S.A, b: S.B, why: 'ヤンデレ監禁の部屋：体の場面にならなかった理由（' + (k === 'body' ? '体の場面にしない二人' : '本音が線を越えなかった') + '）' });
   }
 
   /* ---------- 結末 ---------- */
@@ -395,8 +398,8 @@
   function decide(ctx, S) {
     if (S.endK) return S.endK;
     var fs = DK.stage(S, 'fall'), ss = DK.stage(S, 'sane'), want = DK.val(S, 'want'), b = S.bbr.k, k;
-    if (DK.val(S, 'sane') <= 0 || (fs >= 3 && DK.val(S, 'sane') <= 15)) k = 'broken';
-    else if (shinjuOk(ctx) && /^(purge|depend)$/.test(S.ty) && ss >= 1 && ctx.rng() < 0.45) k = 'shinju';
+    if (DK.val(S, 'sane') <= 0 || (fs >= 3 && DK.val(S, 'sane') <= 35)) k = 'broken';
+    else if (shinjuOk(ctx) && /^(purge|depend)$/.test(S.ty) && (ss >= 1 || DK.stage(S, 'obsess') >= 2) && ctx.rng() < 0.3) k = 'shinju';
     else if ((S.search === 'strong' && fs < 3 && ctx.rng() < 0.65) || (S.search === 'weak' && fs < 2 && ctx.rng() < 0.3)) k = 'rescue';
     else if ((b === 'lie' && !S.lieFound && fs <= 2 && ctx.rng() < 0.75) || (S.firm && S.ty === 'depend' && DK.stage(S, 'resist') <= 1 && ctx.rng() < 0.5)) k = 'gyakuten';
     else if (/^(escape|refuse)$/.test(b) && fs < 2 || (S.esc && S.esc.caught && fs < 1)) k = 'escape';

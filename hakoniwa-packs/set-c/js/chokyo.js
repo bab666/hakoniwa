@@ -124,9 +124,10 @@
     if (Pp && S.A && A_M.test(n) && !Pp.hasM(S.A)) return false;
     if (!S.B2 && /\{g2\}/.test(n)) return false;
     /* 捕まえられてきた回に契約の文を、契約の回にさらわれた文を出さない */
-    if (S.captured && /契約|自分で選んで|望んで来た|署名|名前を書|催眠|暗示|合図の言葉|口づけ|キス|抱き寄せ|抱きしめ|膝に乗せ|膝の上|甘え/.test(n)) return false;
+    if (S.captured && /契約|自分で選んで|望んで来た|署名|名前を書|催眠|暗示|合図の言葉|聞いていた|紹介状|口づけ|キス|抱き寄せ|抱きしめ|膝に乗せ|膝の上|甘え/.test(n)) return false;
     if (!S.captured && /さらわれ|捕まえられ|攫われ|連れてこられ|逃げ道|脱出/.test(n)) return false;
     /* 心の躾けだけの二人：体に触れる文・性的な語を出さない */
+    if (S.noBody && /罰の痕/.test(n)) return false;
     if (S.noBody && /\{(?:男性器|女性器|胸|乳首|尻|後ろ|ナカ|精液|愛液|陰核|前立腺|結腸|股間|亀頭)\}|舐め|咥え|挿れ|脱が|裸/.test(n)) return false;
     return true;
   }
@@ -366,7 +367,7 @@
   function morning(ctx, d) {
     var S = f(ctx), T = TX(), A = S.A, B = S.B;
     var g = { g: 'obey' };
-    var t = pk(ctx, T.MORN, g);
+    var t = pk(ctx, T.MORN, g) || pk(ctx, T.MORN_ALL);
     if (t) say(ctx, 'ck_morn', t, { why: '朝の決まりごと' });
     if (d >= 1) {
       var dials = ['strict', 'tools', 'ratio', 'menu'], k = dials[(d - 1) % dials.length];
@@ -391,14 +392,21 @@
     return k;
   }
   var STRICT_K = { soft: 0.8, mid: 1, hard: 1.3 }, METHOD_K = { oazuke: 1, pain: 1.15, drug: 1.3, sweet: 0.9, hypno: 1.1 };
+  function partBody(ctx, k, again) { var T = TX(); return PARTS[k].mind || k === 'oazuke' ? pk(ctx, (T.PART || {})[k], { g: 'obey', again: again }) : pk(ctx, (T.PART || {})[k], { g: 'sens_' + k, again: again }); }
   function daytime(ctx, d) {
     var S = f(ctx), T = TX(), A = S.A, B = S.B, k = trainPart(ctx), sk = STRICT_K[S.strict], mk = METHOD_K[S.method];
+    /* その部位のその段の文を使い切っていたら、まだ文の残っている部位に替える（同じ文を二度出さない） */
+    var body = partBody(ctx, k, false);
+    if (!body) {
+      var want0 = DK.val(S, 'want') >= S.LINE, alt = S.parts.filter(function (x) { return x !== k && (want0 || !PARTS[x].deep); });
+      for (var ai = 0; ai < alt.length && !body; ai++) { var kk = alt[Math.floor(ctx.rng() * alt.length)]; body = partBody(ctx, kk, false); if (body) k = kk; }
+      if (!body) body = partBody(ctx, k, true);
+      S.lastPart = k;
+    }
     S.trains++; S.cnt[k] = (S.cnt[k] || 0) + 1;
     var head = pk(ctx, (T.METHOD || {})[S.method], { g: 'obey' }) || pk(ctx, (T.METHOD || {}).all, { g: 'obey' });
     var top = pk(ctx, byPer(T.TOP, A), { g: 'obey' });
-    var body, gk = 'sens_' + k, rose = null;
-    if (PARTS[k].mind || k === 'oazuke') body = pk(ctx, (T.PART || {})[k], { g: 'obey', again: true });
-    else body = pk(ctx, (T.PART || {})[k], { g: gk, again: true });
+    var gk = 'sens_' + k, rose = null;
     var react = pk(ctx, (T.REACT || {})[S.br], { g: 'obey' });
     var tx = [head, body, top, react].filter(Boolean).join('');
     var lewd = !PARTS[k].mind && !S.noBody;
@@ -627,8 +635,8 @@
     var ob = DK.stage(S, 'obey'), dp = DK.stage(S, 'dep'), cr = DK.stage(S, 'crack'), jo = DK.stage(S, 'jo'), want = DK.val(S, 'want'), pb = DK.per(B), pa = DK.per(A);
     var strong = HK.ForceRep && HK.ForceRep.holds ? HK.ForceRep.holds(B) : /^(proud|stern)$/.test(pb);
     var sc = {
-      sold: 1.2 + ob * 0.8 + (S.debutK === 'mob' ? 0.6 : 0) + (S.depth === 'full' ? 0.6 : 0),
-      own: (jo >= 1 ? 1 : 0) + jo * 0.9 + (/^(proud|devoted|tsun)$/.test(pa) ? 0.6 : 0) + (ob >= 2 ? 0.4 : 0) - 0.6,
+      sold: 0.7 + ob * 0.45 + (S.debutK === 'mob' ? 0.5 : 0) + (S.depth === 'full' ? 0.4 : 0) - (dp >= 2 ? 0.3 : 0),
+      own: (jo >= 1 ? 0.6 : 0) + jo * 0.6 + (/^(proud|devoted|tsun)$/.test(pa) ? 0.6 : 0) + (ob >= 2 ? 0.4 : 0) - 0.6,
       free: (cr === 0 ? 1.4 : cr === 1 ? 0.5 : 0) + (strong ? 0.8 : 0) + (S.br === 'defy' || S.br === 'endure' ? 0.6 : 0) - ob * 0.3,
       reverse: (/^(proud|stern|tsun|cool)$/.test(pb) ? 0.9 : 0) + (S.br === 'defy' ? 0.9 : 0) + (ob <= 1 ? 0.6 : -0.6) + (want >= 70 ? 0.3 : 0),
       love: S.love ? (dp * 0.8 + (S.care === 'many' ? 0.7 : 0) + (want >= 75 ? 0.5 : 0) + (S.rk === 'love' || S.rk === 'pine' ? 0.6 : 0)) : -9

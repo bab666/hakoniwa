@@ -45,6 +45,8 @@
   }
   function pkR(ctx, S, list, o) { return N.pk(ctx, S, (list || []).filter(function (r) { return fit(S, r); }), o); }
   function bySh(tbl, sh) { return (tbl || {})[sh] || (tbl || {}).mf || []; }
+  /* 受けの体に合わせた行を先に（男性の体の受けは、ほぐす前戯と後ろへの挿入の行。女性の体の受けは女性器への挿入の行）。無ければ全部から */
+  function prefer(S, list, key) { var l = (list || []).filter(function (r) { return r && r[key] && fit(S, r); }); return l.length ? l : list; }
 
   /* ---------- 喘ぎ（本体の HK.Moan。無いときは控えめな息） ---------- */
   var FB_MID = ['……っ', 'ん、……', 'は……っ', 'あ……'], FB_CL = ['……っ、あ……！', 'んんっ……！', 'あ、……っ！'];
@@ -61,10 +63,19 @@
 
   /* ---------- 回数 ---------- */
   NR.quota = function (ctx, S, env) { var v = env && env.lewdN; return v === 'none' ? 0 : v === 'low' ? 1 : v === 'high' ? 3 : 2; };
-  function canR18(S) { return !HK.SAFE_ON && S.lewdOn && !S.noBody && N.wantOk(S); }
-  function lead(ctx, S, t, why) {
+  /* 言い出す側：眠る側から誘う夜（invite・pull）は眠る側、ほかは触れる側 */
+  function byOf(S, kind) { return kind === 'invite' || kind === 'pull' ? S.B : S.A; }
+  function canR18(ctx, S, kind) {
+    if (HK.SAFE_ON || !S.lewdOn || S.noBody || !N.wantOk(S)) return false;
+    var x = byOf(S, kind), y = x === S.A ? S.B : S.A, AV = HK.Avoid;
+    if (x === S.A ? S.avA : S.avB) return false;
+    if (AV && AV.okSex && !AV.okSex(ctx, x, y)) return false;
+    return true;
+  }
+  function lead(ctx, S, t, why, kind) {
     if (!t) return null;
-    var e = DK.say(ctx, { id: 'nm_lead', cat: N.rcat(ctx, S), actors: [S.A, S.B], t: t, a: S.A, b: S.B, S: S, why: 'きっかけ：' + why, tag: 'きっかけ', mag: 0 });
+    var x = byOf(S, kind), y = x === S.A ? S.B : S.A;
+    var e = DK.say(ctx, { id: 'nm_lead', cat: N.rcat(ctx, S, x), actors: [x, y], t: t, a: S.A, b: S.B, S: S, why: 'きっかけ：' + why, tag: 'きっかけ', mag: 0 });
     return e;
   }
   function drop(ctx, e) { if (!e) return; var L = ctx.log, i = L.indexOf(e); if (i >= 0) L.splice(i, 1); }
@@ -72,12 +83,12 @@
 
   /* ---------- 眠っている間の愛撫 ---------- */
   NR.touch = function (ctx, S, kind) {
-    if (!canR18(S)) return false;
+    if (!canR18(ctx, S, kind)) return false;
     if ((kind === 'sleep' || kind === 'half') && !S.pact) return false;
     var T = TX(), L = (T.TLEAD || {})[kind] || [];
     var body = kind === 'feign' ? pkR(ctx, S, T.TOUCH_F, { g: 'dev' }) : kind === 'half' ? pkR(ctx, S, T.TOUCH_H) : pkR(ctx, S, T.TOUCH, { g: 'dev' });
     if (!body) return false;
-    var le = lead(ctx, S, pkR(ctx, S, L), { sleep: '前もっての約束（眠っている間なら）', feign: '寝たふりをやめなかった', half: '前もっての約束（山場の夜）' }[kind]);
+    var le = lead(ctx, S, pkR(ctx, S, L), { sleep: '前もっての約束（眠っている間なら）', feign: '寝たふりをやめなかった', half: '前もっての約束（山場の夜）' }[kind], kind);
     if (!le) return false;
     var e = DK.say(ctx, { id: { sleep: 'nm_touch', feign: 'nm_touch_f', half: 'nm_touch_h' }[kind], cat: N.rcat(ctx, S), actors: [S.A, S.B], t: body, a: S.A, b: S.B, S: S, lewd: true,
       why: '眠りの部屋：' + { sleep: '約束どおり、眠る相手に触れた夜', feign: '寝たふりの相手に触れた夜（' + S.B.name + 'は起きていた）', half: '目を覚ましかけた相手に触れた夜' }[kind],
@@ -107,26 +118,29 @@
     var P = [];
     var add = function (t) { if (t) P.push(t); };
     add(pkR(ctx, S, (T.OPEN || {})[kind]));
-    add(pkR(ctx, S, bySh(T.FORE, sh)));
+    var mB = hasM(S.B);
+    add(pkR(ctx, S, sh === 'mf' && mB ? prefer(S, bySh(T.FORE, sh), 'mb') : bySh(T.FORE, sh)));
     if (form !== 'short') add(pkR(ctx, S, (T.TOPV || {})[per] || (T.TOPV || {}).gentle));
-    add(pkR(ctx, S, bySh(T.INSERT, sh)));
-    if (form === 'short') add(pkR(ctx, S, bySh(T.SHORT, sh)));
+    add(pkR(ctx, S, sh === 'mf' ? prefer(S, bySh(T.INSERT, sh), mB ? 'mb' : 'fb') : bySh(T.INSERT, sh)));
+    /* 短い場面も、山場の前に最中の一段を挟む（受けの高まりが山場に届かないまま果てる流れにしない。流れの管理が本体の追い上げの段を足さないように） */
+    if (form === 'short') { add(pkR(ctx, S, bySh(T.SHORT, sh))); add(pkR(ctx, S, bySh(T.MID, sh))); }
     else {
-      var nMid = form === 'long' ? 4 : 2;
+      var nMid = form === 'long' ? 5 : 3;
       for (var i = 0; i < nMid; i++) {
         if (i === 2 && (S.grp === 'awk' || kind === 'wake') && ctx.rng() < 0.7) { add(pkR(ctx, S, T.RESIST)); continue; }
         add(pkR(ctx, S, bySh(T.MID, sh)));
       }
     }
     add(pkR(ctx, S, bySh(ero ? T.PEAK_E : T.PEAK, sh)) || pkR(ctx, S, bySh(T.PEAK, sh)));
-    add(pkR(ctx, S, bySh(T.END, sh)));
-    add(pkR(ctx, S, (T.AFTER || {})[kind]) || pkR(ctx, S, (T.AFTER || {})._));
+    /* 終わりと事後は一つの段に（流れの管理が事後の段を一つにまとめるため） */
+    var en = pkR(ctx, S, bySh(T.END, sh)), af = pkR(ctx, S, (T.AFTER || {})[kind]) || pkR(ctx, S, (T.AFTER || {})._);
+    add(en && af ? en + af : en || af);
     return fillMoan(ctx, S, P.join('\n\n'), hush);
   }
   NR.scene = function (ctx, S, kind) {
-    if (!canR18(S) || S.sexN >= S.quota) return false;
+    if (!canR18(ctx, S, kind) || S.sexN >= S.quota) return false;
     var T = TX(), A = S.A, B = S.B, sh = N.shOf(A, B);
-    var le = lead(ctx, S, pkR(ctx, S, (T.LEAD || {})[kind]), KIND[kind] + '・' + (kind === 'invite' || kind === 'pull' ? B.name : A.name) + 'から');
+    var by = byOf(S, kind), le = lead(ctx, S, pkR(ctx, S, (T.LEAD || {})[kind]), KIND[kind] + '・' + by.name + 'から', kind);
     if (!le) return false;
     var form = formOf(ctx, S);
     /* 女性の攻め × 男性の受けは、中くらい・長い場面で 25% だけペニバン（女性どうしは 30%） */
@@ -140,7 +154,7 @@
     } finally { S.peg = false; }
     if (!text) { drop(ctx, le); return false; }
     var fc = {}; fc[B.i] = 'shy';
-    var e = DK.say(ctx, { id: 'nm_sex_' + kind, cat: N.rcat(ctx, S), actors: [A, B], t: text, a: A, b: B, S: S, sex: true, lewd: form !== 'fade', face: fc,
+    var e = DK.say(ctx, { id: 'nm_sex_' + kind, cat: N.rcat(ctx, S, by), actors: by === A ? [A, B] : [B, A], t: text, a: A, b: B, S: S, sex: true, lewd: form !== 'fade', face: fc,
       why: '眠りの部屋：夜（' + FORM[form] + '・' + KIND[kind] + '）', fx: function () { ctx.mod2(A, B, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
     if (!e) { drop(ctx, le); return false; }
     if (h) { H.move(ctx, h, A, B); H.note(ctx, h, A, B, { text: e.text }); H.remember(ctx, A, B, h.key); }

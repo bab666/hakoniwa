@@ -56,7 +56,7 @@
   var RK_GRP = { spouse: 'love', lover: 'love', fwb: 'body', almost: 'pine', crush: 'pine', lovehate: 'awk', ex: 'awk', bad: 'awk', rival: 'awk', fam: 'close', work: 'work', close: 'close', weak: 'awk', none: 'awk' };
   var RK_NAME = { spouse: '夫婦', lover: '恋人', fwb: '体の関係', almost: '両片想い', crush: '片想い', lovehate: '愛憎', ex: '昔の恋人', bad: '不仲', rival: '張り合う仲', fam: '家族', work: '仕事の仲', close: '気心の知れた仲', weak: '知り合い', none: '特に関係なし' };
   /* 本音の始まりの値（眠る側の。0-2 章：想い合う・体の相手は高く、片想い・友人・昔の恋人は中、不仲・知らない人は低いが 0 ではない） */
-  var WANT0 = { spouse: 72, lover: 70, fwb: 64, almost: 58, crush: 44, lovehate: 50, ex: 44, bad: 26, rival: 30, fam: 16, work: 30, close: 36, weak: 22, none: 20 };
+  var WANT0 = { spouse: 72, lover: 70, fwb: 64, almost: 58, crush: 44, lovehate: 48, ex: 44, bad: 24, rival: 28, fam: 16, work: 33, close: 40, weak: 22, none: 20 };
   function relKind(ctx, A, B) {
     var tl = HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, A, B) || [] : [], best = 'none';
     tl.forEach(function (t) {
@@ -81,7 +81,8 @@
     if (ctx.pair && ctx.pair(a, b).kin) return false;
     return true;
   }
-  function rcat(ctx, S) { return S.love && (!ctx.romanceOk || ctx.romanceOk([S.A, S.B], false)) ? 'romance' : 'bond'; }
+  /* 恋愛の分類：恋愛にしてよい二人で、言い出す側（既定は触れる側）が相手を避けていないときだけ romance */
+  function rcat(ctx, S, by) { var x = by || S.A, y = x === S.A ? S.B : S.A; return S.love && !(HK.Avoid && HK.Avoid.of(ctx, x, y)) && (!ctx.romanceOk || ctx.romanceOk([S.A, S.B], false)) ? 'romance' : 'bond'; }
   /* 組（体の形）：mf 攻めに男性器（フタナリも）／ff 女性どうし／fm 女性の攻め × 男性の受け */
   function shOf(a, b) {
     var P = HK.Pos; if (!P) return 'mf';
@@ -111,7 +112,7 @@
   function pk(ctx, S, list, o) {
     o = o || {};
     var L = (list || []).filter(function (r) { var t = typeof r === 'string' ? r : r && r.t; return okRow(ctx, S, t); });
-    return DK.pick(ctx, S, L, { g: o.g, stage: o.stage, sh: o.sh, a: S.A, b: S.B, again: o.again !== false, full: o.full });
+    return DK.pick(ctx, S, L, { g: o.g, stage: o.stage, sh: o.sh, a: S.A, b: S.B, again: !!o.again, full: o.full });
   }
   /* 態度の表（tbl[態度] か tbl.gentle）から */
   function pkPer(ctx, S, tbl, per, o) { tbl = tbl || {}; return pk(ctx, S, (tbl[per] || []).concat(tbl._ || []), o) || pk(ctx, S, tbl.gentle || [], o); }
@@ -121,6 +122,7 @@
     var a = o.a || S.A, b = o.b || S.B;
     return DK.say(ctx, { id: id, cat: o.cat || 'bond', actors: o.actors || [a, b], t: t, a: a, b: b, S: S, ex: o.ex, face: o.face, why: '眠りの部屋：' + (o.why || ''), fx: o.fx, tag: o.tag, mag: o.mag });
   }
+  var AG = { again: true };
   /* 文を足し合わせて一件にする（空の文は飛ばす） */
   function join() { return [].slice.call(arguments).filter(function (x) { return x; }).join(''); }
   function faceB(S, k) { var o = {}; o[S.B.i] = k; return o; }
@@ -194,16 +196,22 @@
     var S = ctx.nm = { A: A, B: B, days: days, rk: rk, grp: grp, noBody: !!C.noBody, why: C.why, used: {},
       love: canLove2(ctx, A, B) && rk !== 'fam', couple: /^(spouse|lover)$/.test(rk), cdir: rk === 'crush' ? crushDir(ctx, A, B) : '' };
     if (S.love && ctx.romanceOk && !ctx.romanceOk([A, B], false)) S.love = false;
+    S.feud = /^(bad|rival|lovehate)$/.test(rk);
     S.reason = /^(together|stay|trip)$/.test(env.reason) ? env.reason : S.couple ? (ctx.rng() < 0.7 ? 'together' : 'trip') : grp === 'fam' || rk === 'fam' ? 'together' : ctx.rng() < 0.55 ? 'stay' : 'trip';
     S.depth = /^(tired|drug|usual)$/.test(env.depth) ? env.depth : DEPTH_OF[DK.per(B)] || 'tired';
     /* 前もっての約束：恋人・夫婦・体の相手・両片想いの二人だけ（体の場面を出せない組・全年齢モードでは約束の文だけ残し、触れるのは寝顔まで） */
     var pactOk = /^(spouse|lover|fwb|almost)$/.test(rk);
-    S.pact = pactOk && (env.pact === 'yes' || (env.pact !== 'no' && (rk !== 'almost' || ctx.rng() < 0.5)));
-    S.lewdOn = !HK.SAFE_ON && !S.noBody && env.lewdN !== 'none' && !!R18();
+    S.pact = pactOk && !S.noBody && (env.pact === 'yes' || (env.pact !== 'no' && (rk !== 'almost' || ctx.rng() < 0.5)));
+    S.lewdOn = !HK.SAFE_ON && !S.noBody && env.lewdN !== 'none' && !!R18() && !(HK.Pos && HK.Pos.libOK && !HK.Pos.libOK([A, B]));
+    /* 避けている相手には自分から迫らない（HK.Avoid）：触れる側が避けていれば触れる側からの夜は無し、眠る側が避けていれば眠る側からの夜は無し */
+    S.avA = !!(HK.Avoid && HK.Avoid.of(ctx, A, B)); S.avB = !!(HK.Avoid && HK.Avoid.of(ctx, B, A));
     /* 計器 */
     var w0 = WANT0[rk] != null ? WANT0[rk] : 24;
     if (rk === 'crush') w0 = S.cdir === 'B' ? 60 : 40;
     if (S.pact) w0 = Math.max(w0, 62);
+    /* 性欲と衝動性（性的な出来事は性欲と衝動で起こりやすく。本体の決まり）：二人の性欲の倍率と衝動性の平均で少し上下する */
+    var P0 = HK.Pos, lm = P0 && P0.libK ? P0.libK(A) * P0.libK(B) : 1, imp = HK.traits ? (HK.traits(A.eg || {}).impulse + HK.traits(B.eg || {}).impulse) / 2 : 0.5;
+    w0 += Math.round((Math.min(lm, 2.6) - 1) * 8) + Math.round((imp - 0.5) * 24);
     w0 += Math.round((ctx.rng() - 0.5) * 8);
     DK.gauge(S, 'want', { v: w0, dir: 'up', stages: [LINE] });
     DK.gauge(S, 'reach', { v: 0, dir: 'up', stages: [18, 42, 66] });
@@ -261,16 +269,16 @@
   }
   function filler(ctx, S, t) {
     var T = TX(), L = (T.FILL || {})[['m', 'd', 'n'][t]];
-    say(ctx, S, 'nm_talk', pk(ctx, S, L), { why: '二人の時間' });
+    say(ctx, S, 'nm_talk', pk(ctx, S, L, AG), { why: '二人の時間' });
   }
 
   /* 朝：前の夜の名残（夜の種類ごと）と、体（疼きの段）、暮らし方の朝 */
   function morning(ctx, S, d) {
     var T = TX(), M = T.MORN || {};
-    if (d === 0) { say(ctx, S, 'nm_morn', pk(ctx, S, M.first), { why: '最初の朝' }); return; }
-    var k = S.lastNight, t = pk(ctx, S, M[k] || M.near, { g: k === 'touch' ? 'dev' : 'reach' });
+    if (d === 0) { say(ctx, S, 'nm_morn', pk(ctx, S, M.first, AG), { why: '最初の朝' }); return; }
+    var k = S.lastNight, t = pk(ctx, S, M[k] || M.near, { g: k === 'touch' ? 'dev' : 'reach', again: true });
     var body = '';
-    if (st(S, 'uzuki') >= 1 && !S.broken && !(k === 'scene' || k === 'wake_ok')) body = pk(ctx, S, T.MORN_BODY, { g: 'uzuki' });
+    if (!S.noBody && st(S, 'uzuki') >= 1 && !S.broken && !(k === 'scene' || k === 'wake_ok')) body = pk(ctx, S, T.MORN_BODY, { g: 'uzuki' });
     say(ctx, S, 'nm_morn', join(t, body), { why: '朝（' + ({ near: '寝顔のそばの夜のあと', touch: '眠っている間に触れた夜のあと', guilt: '手を止めた夜のあと', feign: '寝たふりの夜のあと', scene: '二人で起きていた夜のあと', half: '目を覚ましかけた夜のあと', wake_ok: '目を覚まして受け入れた夜のあと', wake_ng: '目を覚まして怒った夜のあと', apart: '別々に眠った夜のあと', tender: '並んで眠った夜のあと', un: '何も知らない夜のあと' })[k] + '）',
       face: k === 'wake_ng' || k === 'apart' ? faceB(S, 'angry') : body ? faceB(S, 'shy') : null });
     /* 暮らし方の朝（2 日目以降も毎日のどこかで暮らし方を効かせる。朝に出なかった日は昼に） */
@@ -281,18 +289,19 @@
   /* 昼：眠る側の分岐・触れる側の顔・暮らし方・疼き・二人のやりとり */
   function day(ctx, S, d) {
     var T = TX();
-    if (S.broken) { for (var bi = 0; bi < 2; bi++) say(ctx, S, 'nm_post_ng', pk(ctx, S, T.POST_NG_D, { again: false }), { why: '知られてしまったあとの昼（' + ({ together: '同じ家で避け合う', stay: '' + S.B.name + 'は自分の家へ', trip: '宿の別々の部屋' })[S.reason] + '）', face: faceB(S, 'angry') }); return; }
+    if (S.broken) { for (var bi = 0; bi < 2; bi++) say(ctx, S, 'nm_post_ng', pk(ctx, S, T.POST_NG_D, { again: bi === 0 }), { why: '知られてしまったあとの昼（' + ({ together: '同じ家で避け合う', stay: '' + S.B.name + 'は自分の家へ', trip: '宿の別々の部屋' })[S.reason] + '）', face: faceB(S, 'angry') }); return; }
     if (S.accepted) {
-      say(ctx, S, 'nm_post_ok', pk(ctx, S, T.POST_OK_D, { g: 'uzuki' }), { cat: rcat(ctx, S), why: '受け入れたあとの昼' });
+      say(ctx, S, 'nm_post_ok', pk(ctx, S, T.POST_OK_D, { g: 'uzuki', again: true }), { cat: rcat(ctx, S), why: '受け入れたあとの昼' });
+      if (S.setToday) say(ctx, S, 'nm_talk', pk(ctx, S, (T.TALK || {})[S.grp]) || pk(ctx, S, (T.TALK || {})._) || pk(ctx, S, (T.FILL || {}).d, AG), { why: '二人の昼のやりとり' });
       setDay(ctx, S, T);
       return;
     }
     /* 眠る側の昼（気づきの段 1 から。約束の無い二人の「気づかない」は疼きの段で） */
     var as = st(S, 'aware'), did = false;
-    if (as >= 1 || S.bBr === 'unaware') {
+    if (d >= 1 && (as >= 1 || (S.bBr === 'unaware' && st(S, 'uzuki') >= 1))) {
       var bk = S.bBr;
       /* 本音が線の下なら、寝たふり・誘うは探るに */
-      if ((bk === 'feign' || bk === 'invite') && !wantOk(S)) bk = 'probe';
+      if ((bk === 'feign' || bk === 'invite') && (!wantOk(S) || S.noBody)) bk = 'probe';
       var bt = pk(ctx, S, (T.DAY_B || {})[bk], { g: 'aware' });
       if (bt) {
         say(ctx, S, 'nm_day_b', bt, { why: '眠る側の昼（' + ({ unaware: '疼きに気づかない', probe: '違和感を探る', feign: '寝たふりを決める', invite: '自分から誘う気配' })[bk] + (S.bOdd ? '・らしくない' : '') + '）', face: bk === 'probe' ? faceB(S, 'surprise') : bk === 'unaware' ? null : faceB(S, 'shy') });
@@ -302,18 +311,18 @@
       }
     }
     /* 触れる側の昼（態度 9 種、分岐で） */
-    var at = pkPer(ctx, S, T.DAY_A, S.aPer, { g: 'reach' });
-    var br = st(S, 'reach') >= 1 ? pk(ctx, S, (T.DAY_ABR || {})[S.aBr], { g: 'reach' }) : '';
+    var at = d >= 1 || ctx.rng() < 0.5 ? pkPer(ctx, S, T.DAY_A, S.aPer, { g: 'reach' }) : '';
+    var br = st(S, 'reach') >= 1 && ctx.rng() < 0.7 ? pk(ctx, S, (T.DAY_ABR || {})[S.aBr], { g: 'reach' }) : '';
     if (at || br) { say(ctx, S, br ? 'nm_day_br' : 'nm_day_a', join(at, br), { why: '触れる側の昼（' + ({ careful: '慎重', bold: '大胆', guilt: '罪悪感' })[S.aBr] + (S.aOdd ? '・らしくない' : '') + '）', fx: function () { ctx.mod2(S.A, S.B, { aff: 1 }, { aff: 1, trust: 1 }); } }); bumpWant(ctx, S, 2); did = true; }
     /* 疼き（段 1 から） */
-    if (st(S, 'uzuki') >= 1 && ctx.rng() < 0.75) { var ut = pk(ctx, S, T.UZUKI_D, { g: 'uzuki' }); if (ut) { say(ctx, S, 'nm_uzuki', ut, { why: '昼の疼き', face: faceB(S, 'shy') }); bumpWant(ctx, S, 3); } }
+    if (!S.noBody && st(S, 'uzuki') >= 1 && ctx.rng() < 0.75) { var ut = pk(ctx, S, T.UZUKI_D, { g: 'uzuki' }); if (ut) { say(ctx, S, 'nm_uzuki', ut, { why: '昼の疼き', face: faceB(S, 'shy') }); bumpWant(ctx, S, S.feud ? 5 : 3); } }
     /* 約束を確かめる（約束のある二人、ときどき） */
     if (S.pact && !S.flags.pactTalk && d >= 1 && ctx.rng() < 0.5) { S.flags.pactTalk = true; say(ctx, S, 'nm_pact', pk(ctx, S, T.PACT_D), { cat: rcat(ctx, S), why: '寝ている間の約束を確かめた' }); }
     /* 眠りの深さの昼 */
     if (ctx.rng() < 0.4) { var dt = pk(ctx, S, (T.DEPTH_D || {})[S.depth]); if (dt) say(ctx, S, 'nm_depth', dt, { why: '眠りの深さの昼（' + ({ tired: '疲れ', drug: '薬', usual: 'ふだん' })[S.depth] + '）' }); }
     setDay(ctx, S, T);
     /* 二人のやりとり（関係ごと） */
-    if (!did || ctx.rng() < 0.6) say(ctx, S, 'nm_talk', pk(ctx, S, (T.TALK || {})[S.grp], { g: 'reach' }) || pk(ctx, S, (T.TALK || {})._), { why: '二人の昼のやりとり' });
+    if (!did || ctx.rng() < 0.6) say(ctx, S, 'nm_talk', pk(ctx, S, (T.TALK || {})[S.grp], { g: 'reach' }) || pk(ctx, S, (T.TALK || {})._) || pk(ctx, S, (T.FILL || {}).d, AG), { why: '二人の昼のやりとり' });
   }
   /* 暮らし方の昼（朝に出なかった日は必ず） */
   function setDay(ctx, S, T) {
@@ -328,7 +337,7 @@
     /* 寝支度（暮らし方 × 眠りの深さ。山場のあと・別々の夜は別の文） */
     if (!S.broken) {
       var bt = join(pk(ctx, S, (T.BED || {})[S.reason]), S.accepted ? '' : pk(ctx, S, (T.BED_D || {})[S.depth]));
-      say(ctx, S, 'nm_bed', bt, { why: '寝支度' });
+      if (bt) say(ctx, S, 'nm_bed', bt, { why: '寝支度（' + ({ together: '同居', stay: '泊まり', trip: '旅先' })[S.reason] + '）' });
     }
     if (d < S.peakN) preNight(ctx, S, d);
     else if (d === S.peakN) peak(ctx, S, d);
@@ -343,7 +352,7 @@
     var rs = st(S, 'reach');
     /* 罪悪感：踏み込みの段 1 に届いたら、そこで手を止める夜が続く */
     if (S.aBr === 'guilt' && rs >= 1 && S.flags.guiltStart != null && d > S.flags.guiltStart) {
-      say(ctx, S, 'nm_guilt', pkPer(ctx, S, T.GUILT, S.aPer), { why: '触れかけて手を止めた夜（' + S.A.name + '）' });
+      say(ctx, S, 'nm_guilt', pkPer(ctx, S, T.GUILT, S.aPer) || pk(ctx, S, (T.GUILT || {})._, AG), { why: '触れかけて手を止めた夜（' + S.A.name + '）' });
       S.lastNight = 'guilt';
       /* 止めた手を、寝たふり・誘う側が引き寄せる（眠る側が起きていて選ぶ） */
       if ((S.bBr === 'feign' || S.bBr === 'invite') && st(S, 'aware') >= 2 && wantOk(S)) bInvite(ctx, S, d, 'pull');
@@ -354,7 +363,7 @@
     if (S.bBr === 'feign' && st(S, 'aware') >= 2 && wantOk(S)) {
       if (S.lewdOn && R && S.sexN < S.quota && S.flags.feignN >= 1 && !S.flags.feignSex) { S.flags.feignSex = true; if (R.scene(ctx, S, 'feign')) { S.lastNight = 'scene'; return; } }
       S.flags.feignN = (S.flags.feignN || 0) + 1;
-      if (!(S.lewdOn && R && R.touch(ctx, S, 'feign'))) say(ctx, S, 'nm_feign', pk(ctx, S, T.FEIGN, { g: 'reach' }), { why: '寝たふりの夜（' + S.B.name + 'は起きていた）', face: faceB(S, 'shy') });
+      if (!(S.lewdOn && R && R.touch(ctx, S, 'feign'))) say(ctx, S, 'nm_feign', pk(ctx, S, T.FEIGN, { g: 'reach', again: true }), { why: '寝たふりの夜（' + S.B.name + 'は起きていた）', face: faceB(S, 'shy') });
       DK.push(S, 'uzuki', 12); bumpWant(ctx, S, 4);
       S.lastNight = 'feign';
       return;
@@ -362,11 +371,14 @@
     /* 誘う：疼きの段 1 から、本音が線を越えていれば、眠る側から誘う（起きていて） */
     if (S.bBr === 'invite' && st(S, 'aware') >= 1 && st(S, 'uzuki') >= 1 && wantOk(S) && !S.flags.inv0) { S.flags.inv0 = true; if (bInvite(ctx, S, d, 'invite')) return; }
     /* 約束のある二人：眠っている間の愛撫（R18） */
-    if (S.pact && S.lewdOn && R && rs >= 1 && wantOk(S)) {
+    if (S.pact && S.lewdOn && R && rs >= 1 && wantOk(S) && (S.flags.lastTouch !== d - 1 || ctx.rng() < 0.45)) {
+      S.flags.lastTouch = d;
       if (R.touch(ctx, S, 'sleep')) { S.lastNight = 'touch'; return; }
     }
     /* 寝顔のそば（踏み込みの段で：見つめる → 髪・手 → 隣で添い寝・額に唇） */
-    var nt = join(pk(ctx, S, T.NEAR, { g: 'reach' }), pkPer(ctx, S, T.NEAR_A, S.aPer));
+    var nt = join(pk(ctx, S, T.NEAR, { g: 'reach', again: true }), ctx.rng() < 0.6 ? pkPer(ctx, S, T.NEAR_A, S.aPer) : '');
+    /* 張り合う二人は、気づいていても体が先に応える（本音が少しずつ上がる） */
+    if (st(S, 'aware') >= 1) bumpWant(ctx, S, S.feud ? 3 : 2);
     say(ctx, S, 'nm_near', nt, { why: '寝顔のそばの夜（' + S.A.name + '）' });
     DK.push(S, 'uzuki', 3 + 3 * rs + (S.pact ? 4 : 0));
     S.lastNight = 'near';
@@ -376,7 +388,7 @@
     var T = TX(), R = R18();
     S.invited = true; bumpWant(ctx, S, 6);
     if (S.lewdOn && R && S.sexN < S.quota) { if (R.scene(ctx, S, kind)) { S.lastNight = 'scene'; return true; } }
-    say(ctx, S, 'nm_feign', pk(ctx, S, (T.INVITE_N || {})[kind]), { cat: rcat(ctx, S), why: kind === 'pull' ? '止めた手を眠る側が引き寄せた夜' : '眠る側から誘った夜（体の場面にはならない）', face: faceB(S, 'shy') });
+    say(ctx, S, 'nm_feign', pk(ctx, S, (T.INVITE_N || {})[kind], AG), { cat: rcat(ctx, S), why: kind === 'pull' ? '止めた手を眠る側が引き寄せた夜' : '眠る側から誘った夜（体の場面にはならない）', face: faceB(S, 'shy') });
     S.lastNight = 'feign';
     return true;
   }
@@ -389,28 +401,28 @@
     if (S.pact && S.bBr === 'unaware' && st(S, 'aware') <= 1 && ctx.rng() < 0.75) {
       S.unknown = true;
       if (S.lewdOn && R) R.touch(ctx, S, 'half');
-      say(ctx, S, 'nm_peak_half', pk(ctx, S, P.half), { why: '山場：目を覚ましかけて、また眠りに落ちた（' + S.B.name + '）', tag: '山場', mag: 20 });
+      say(ctx, S, 'nm_peak_half', pk(ctx, S, P.half, AG), { why: '山場：目を覚ましかけて、また眠りに落ちた（' + S.B.name + '）', tag: '山場', mag: 20 });
       S.lastNight = 'half';
       return;
     }
     /* 目を覚ます：本音が線を越えていれば受け入れる。関係で反応が変わる */
     var ok = wantOk(S);
     var g = S.grp === 'body' ? 'love' : S.grp;
-    var open = pk(ctx, S, S.bBr === 'feign' || S.flags.feignN ? P.openF : P.open, { g: 'reach' });
+    var open = pk(ctx, S, S.flags.feignN ? P.openF : P.open, { g: 'reach', again: true });
     var re = pk(ctx, S, ((P.react || {})[g] || {})[ok ? 'ok' : 'ng']) || pk(ctx, S, ((P.react || {}).close || {})[ok ? 'ok' : 'ng']);
     var fc = {}; fc[S.B.i] = ok ? (g === 'awk' ? 'angry' : g === 'love' ? 'joy' : 'shy') : 'angry'; fc[S.A.i] = 'surprise';
     say(ctx, S, 'nm_peak', join(open, re), { cat: ok ? rcat(ctx, S) : 'bond', why: '山場：' + S.B.name + 'が途中で目を覚ました（' + (ok ? '受け入れた' : '怒って離れた') + '）', tag: '山場', mag: 30, face: fc,
       fx: function () { if (ok) ctx.mod2(S.A, S.B, { aff: 6, trust: 4, att: S.love ? 6 : 0 }, { aff: 6, trust: 3, att: S.love ? 6 : 0 }); else ctx.mod2(S.A, S.B, { trust: -12, ten: 10 }, { trust: -16, ten: 14, aff: -6 }); } });
     if (!ok) {
       S.broken = true;
-      say(ctx, S, 'nm_peak', pk(ctx, S, (P.leave || {})[S.reason]), { why: '山場：' + S.B.name + 'が離れていった', face: faceB(S, 'angry') });
+      say(ctx, S, 'nm_peak', pk(ctx, S, (P.leave || {})[S.reason], AG), { why: '山場：' + S.B.name + 'が離れていった', face: faceB(S, 'angry') });
       S.lastNight = 'wake_ng';
       return;
     }
     S.accepted = true;
     DK.push(S, 'aware', 100);
     if (S.lewdOn && R && S.sexN < S.quota && R.scene(ctx, S, 'wake')) { S.lastNight = 'scene'; return; }
-    say(ctx, S, 'nm_night_ok', pk(ctx, S, P.calm), { cat: rcat(ctx, S), why: '山場のあと、並んで眠った' });
+    say(ctx, S, 'nm_night_ok', pk(ctx, S, P.calm, AG), { cat: rcat(ctx, S), why: '山場のあと、並んで眠った' });
     S.lastNight = 'wake_ok';
   }
 
@@ -420,23 +432,23 @@
     /* 告白（受け入れたあと、恋愛にしてよく、恋人でない二人。山場の翌日の夜） */
     if (S.accepted && S.love && !S.couple && !S.confessed) {
       S.confessed = true;
-      say(ctx, S, 'nm_confess', pk(ctx, S, T.CONFESS), { cat: rcat(ctx, S), why: '想いを告げた夜', mag: 25, face: faceB(S, 'shy'), fx: function () { ctx.mod2(S.A, S.B, { aff: 8, att: 8, trust: 6 }, { aff: 8, att: 8, trust: 6 }); } });
+      say(ctx, S, 'nm_confess', pk(ctx, S, T.CONFESS, AG), { cat: rcat(ctx, S), why: '想いを告げた夜', mag: 25, face: faceB(S, 'shy'), fx: function () { ctx.mod2(S.A, S.B, { aff: 8, att: 8, trust: 6 }, { aff: 8, att: 8, trust: 6 }); } });
     }
-    if (S.broken) { say(ctx, S, 'nm_night_ng', pk(ctx, S, (T.NIGHT_NG || {})[S.reason]) || pk(ctx, S, (T.NIGHT_NG || {})._), { why: '別々に眠った夜' }); S.lastNight = 'apart'; return; }
+    if (S.broken) { say(ctx, S, 'nm_night_ng', pk(ctx, S, (T.NIGHT_NG || {})[S.reason]) || pk(ctx, S, (T.NIGHT_NG || {})._, AG), { why: '別々に眠った夜' }); S.lastNight = 'apart'; return; }
     if (S.unknown) {
       nightMove(ctx, S);
       if (S.lewdOn && R && R.touch(ctx, S, 'sleep')) { S.lastNight = 'touch'; return; }
-      say(ctx, S, 'nm_night_un', pk(ctx, S, T.NIGHT_UN), { why: '何も知らない相手の隣の夜' });
+      say(ctx, S, 'nm_night_un', pk(ctx, S, T.NIGHT_UN, AG), { why: '何も知らない相手の隣の夜' });
       S.lastNight = 'un';
       return;
     }
     /* 受け入れたあと：疼きの段 2 からは眠る側が誘う。回数が残っていれば場面 */
-    var inv = st(S, 'uzuki') >= 2 || S.bBr === 'invite' || last;
+    var inv = S.bBr === 'invite' || (st(S, 'uzuki') >= 3 && ctx.rng() < 0.6) || (st(S, 'uzuki') >= 2 && S.bBr === 'feign' && ctx.rng() < 0.4);
     if (S.lewdOn && R && S.sexN < S.quota) {
       if (R.scene(ctx, S, inv ? 'invite' : 'again')) { if (inv) S.invited = true; S.lastNight = 'scene'; return; }
     }
-    if (inv && !S.flags.invN) { S.flags.invN = true; S.invited = true; say(ctx, S, 'nm_night_ok', pk(ctx, S, (T.INVITE_N || {}).after), { cat: rcat(ctx, S), why: '眠る側から誘った夜', face: faceB(S, 'shy') }); S.lastNight = 'tender'; return; }
-    say(ctx, S, 'nm_night_ok', pk(ctx, S, T.NIGHT_OK), { cat: rcat(ctx, S), why: '打ち明けたあとの夜' });
+    if (inv && !S.flags.invN) { S.flags.invN = true; S.invited = true; say(ctx, S, 'nm_night_ok', pk(ctx, S, (T.INVITE_N || {}).after, AG), { cat: rcat(ctx, S), why: '眠る側から誘った夜', face: faceB(S, 'shy') }); S.lastNight = 'tender'; return; }
+    say(ctx, S, 'nm_night_ok', pk(ctx, S, T.NIGHT_OK, AG), { cat: rcat(ctx, S), why: '打ち明けたあとの夜' });
     S.lastNight = 'tender';
   }
 
@@ -444,8 +456,9 @@
   var END_NAME = { fall: '体が堕ちる', broken: 'バレて関係が壊れる', koi: 'バレて受け入れられる', invite: '体が疼いて自分から誘う', unknown: '何も知らないまま体だけが疼く' };
   function endKey(S) {
     if (S.broken) return 'broken';
+    if (S.noBody) return 'koi';
     if (S.unknown) return 'unknown';
-    if (S.invited && (S.bBr === 'invite' || DK.stage(S, 'uzuki') >= 2) && DK.stage(S, 'dev') < 3) return 'invite';
+    if (S.invited && S.bBr === 'invite') return 'invite';
     if (DK.stage(S, 'dev') >= 3 && S.sexN > 0) return 'fall';
     if (S.invited) return 'invite';
     return 'koi';
@@ -456,7 +469,7 @@
     if (R && !HK.SAFE_ON && ctx.env.lewdN !== 'none' && S.sexN < S.quota) R.why(ctx, S, S.noBody ? 'nobody' : S.broken ? 'broken' : S.unknown ? 'unknown' : !wantOk(S) ? 'want' : 'chance');
     var k = S.endK = endKey(S);
     var E = (T.END || {})[k] || {}, sub = k === 'koi' ? (S.couple ? 'couple' : S.love ? 'love' : 'none') : k === 'broken' ? S.reason : '_';
-    var t = pk(ctx, S, E[sub] || E._);
+    var t = pk(ctx, S, E[sub] || E._, AG);
     var fc = {}; fc[S.B.i] = { fall: 'shy', broken: 'sad', koi: S.love ? 'smile_lover' : 'joy', invite: 'shy', unknown: 'normal' }[k];
     say(ctx, S, 'nm_end', t, { cat: k === 'koi' || k === 'invite' || k === 'fall' ? rcat(ctx, S) : 'bond', why: '結末（' + END_NAME[k] + '）', mag: 20, face: fc, tag: '結末' });
     S.ended = true;

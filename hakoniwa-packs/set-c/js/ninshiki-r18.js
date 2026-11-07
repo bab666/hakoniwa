@@ -41,6 +41,8 @@
     var S = N.f(ctx); if (!S.r18) R.quota(ctx, S, ctx.env);
     var left = R.left(S); if (!left || !okPair(ctx, S)) return false;
     if (kind === 'last') return S.r18.n === 0 || ctx.rng() < 0.6;
+    /* 初日の夜は出さない（触れ合いの段を一日は見せてから） */
+    if (S.d === 0) return false;
     var remain = Math.max(1, S.days - S.d) + (S.peakDone ? 0 : 1);
     var p = Math.min(1, left / remain * 1.3);
     if (kind === 'peak') p = Math.min(1, p * 1.6 + 0.2);
@@ -51,6 +53,8 @@
   function run(ctx, kind) {
     var S = N.f(ctx), A = S.A, B = S.B, env = ctx.env || {};
     if (kind === 'last') kind = 'night';
+    /* 安全の担保：入口の前に必ず違和感を見る（線を越えていれば気づいて分かれ、離れた人には起こさない） */
+    if (!N.guard(ctx, 'r18:' + kind)) return null;
     if (!R.left(S) || !N.elig(ctx) || !okPair(ctx, S)) return null;
     var lastN = S.last && S.r18.n === 0;
     var form = R.formOf(ctx, S, env, { last: lastN || S.last });
@@ -67,6 +71,7 @@
     var e = DK.say(ctx, { id: 'ns_r18_' + kind, actors: acts, cat: 'bond', text: r.text, why: '認識阻害の部屋：夜（' + why0 + '・' + ({ short: '短い', mid: '中くらい', long: '長い', fade: 'ほのめかす' })[r.form] + '）', sex: true, lewd: r.form !== 'fade', mag: 10 });
     if (!e || e.skipped) { R.drop(ctx, le); return null; }
     S.r18.n++; if (r.form === 'long') S.r18.longN++;
+    (S.r18log = S.r18log || []).push({ d: S.d, kind: kind, pre: !!S.pre, aware: !!S.aware, stay: !!S.stay, out: !!S.out, want: DK.val(S, 'want'), iwa: DK.val(S, 'iwa'), lead: le.tag === 'きっかけ' });
     DK.push(S, 'habit', 14); DK.push(S, 'want', 3); DK.push(S, 'wear', 10);
     if (S.ak === 'res') ctx.mod2(A, B, { att: 4, aff: 1 }, { att: 4, aff: 1 });
     if (kind === 'ask') S.asked = true;

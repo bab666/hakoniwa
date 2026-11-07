@@ -28,8 +28,12 @@
   function shOf(a, b) { var P = HK.Pos; if (P && P.hasM && P.hasM(a)) return 'mf'; if (P && P.hasM && P.hasM(b)) return 'fm'; return 'ff'; }
   KR.shOf = shOf;
   /* 場面の中で同じ文を二度使わない（一回の遊びで同じ文も避ける：DK.pick の S.used） */
+  /* 張り型（ペニバン）を使う夜か（女性の攻め：道具が「薬まで」のときだけ。fm は 4 回に 1 回、ff は 3 回に 1 回）。使う夜は指で繋がる文を、使わない夜は張り型の文を出さない */
+  var PEG = /ペニバン|張り型/, FINGER_IN = /(?:\{ナカ\}|\{後ろ\})の指|指を[^。]{0,10}(?:\{ナカ\}|\{後ろ\})|沈めた指|指が\{ナカ\}|指を(?:二|三)本|指で\{前立腺\}|指が奥|指を[^。]{0,6}曲げ|指を抜|指を揃え|指の動き|指と舌/;
+  var FINGER_PREV = /指(?:を|が)(?:[^。]{0,12})(?:ねじ込|挿れ|挿し|差し入れ|入れ|沈め|埋め|潜り込|滑り込|突き入れ)|指で(?:[^。]{0,10})(?:掻き回|かき回|ほぐ|擦|こす|責め|突)|指(?:を|が)(?:[^。]{0,8})(?:動か|曲げ|抜き差し|出し入れ)/, FINGER_OUT = /指を(?:[^。]{0,8})(?:抜|引き抜|離)/;
   function part(ctx, S, list, sh, used, key) {
     var rows = (list || []).map(function (r) { return typeof r === 'string' ? { t: r } : r; });
+    if (sh !== 'mf') rows = rows.filter(function (r) { return S.peg ? !(key !== 'fore' && key !== 'open' && FINGER_IN.test(r.t)) : !PEG.test(r.t); });
     if (HK.Heat && HK.Heat.cur && HK.Heat.trim) rows = HK.Heat.trim(rows, key);
     rows = rows.filter(function (r) { return used.indexOf(r.t) < 0; });
     var t = CK.pk(ctx, rows, { sh: sh, again: true });
@@ -43,23 +47,23 @@
     m = m.replace(/^「|」$/g, '').replace(/♡+/g, '').replace(/[ 　]+$/, '');
     return m ? '{b}「' + m + '」' : '';
   }
-  /* 流れの管理（本体）が足した段（つなぎ・追い上げなど本体の文）を外す */
-  var HEADS = null;
-  function heads() {
-    if (HEADS) return HEADS;
-    HEADS = [];
-    var T = HK.SexFlowText || {}, walk = function (x) { if (typeof x === 'string') { var h = x.split('。')[0]; if (h.length >= 10) HEADS.push(h); } else if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === 'object') Object.keys(x).forEach(function (k) { walk(x[k]); }); };
-    walk(T);
-    return HEADS;
-  }
   function flow(text, a, b, sh, after) {
     var F = HK.SexFlow; if (!F || !F.fix) return text;
     var t = text;
     try { var r = F.fix(text, { a: a, b: b, mode: sh, after: after || '' }); if (r && typeof r.text === 'string' && r.text) t = r.text; } catch (e) { return text; }
     if (t === text) return t;
-    var H = heads(), nm = function (s) { return String(s).split(a.name).join('{a}').split(b.name).join('{b}'); };
-    return t.split('\n\n').filter(function (p) { var q = nm(p); return !H.some(function (h) { return q.indexOf(nm(h)) >= 0; }); }).join('\n\n');
+    /* 流れの管理が本体の文（つなぎ・追い上げ）を足したなら、足す前の本文を使う（部屋の文だけで書く決まり。組み直しで矛盾は先に避けてある） */
+    var nm = function (s) { return String(s).split(a.name).join('{a}').split(b.name).join('{b}').replace(/[\s\u2060]/g, ''); }, orig = nm(text);
+    var foreign = t.split(/[。\n]/).some(function (x) { x = nm(x); return x.length >= 8 && orig.indexOf(x) < 0; });
+    var cnt = function (x) { return (String(x).match(/。/g) || []).length; };
+    return foreign || cnt(t) > cnt(text) ? text : t;
   }
+  /* 流れの点検（本体の HK.SexFlow.analyze）で矛盾の数を数える（組み直しの目安。部屋の計測でも使う） */
+  function flowBad(text, a, b, sh, after) {
+    var F = HK.SexFlow; if (!F || !F.analyze) return 0;
+    try { var an = F.analyze(text, a, b, sh, after || '', null); return (an && an.check && an.check.v || []).length; } catch (e) { return 0; }
+  }
+  KR.flowBad = flowBad;
   /* 場面の長さ */
   function formOf(ctx, S, kind) {
     var env = ctx.env, LV = HK.Lewd, lv = LV ? LV.lv(env) : 'mid';
@@ -73,6 +77,7 @@
   }
   function heatKey(h) { return h && h.key ? h.key : 'dry'; }
   function compose(ctx, S, a, b, sh, form, kind, force, n) {
+    S.peg = sh !== 'mf' && S.tools === 'full' && ctx.rng() < (sh === 'fm' ? 0.25 : 0.34);
     var T = X(), used = [], hold = HK.ForceRep && HK.ForceRep.holds ? HK.ForceRep.holds(b) : false;
     var LV = HK.Lewd, ero = !!(LV && LV.ero && LV.ero(ctx.env)), high = LV && LV.lv(ctx.env) === 'high';
     var P = function (list, key) { return part(ctx, S, list, sh, used, key); };
@@ -81,13 +86,19 @@
     var res = force ? P((T.RESIST || {})[n >= 3 ? (hold ? 'hold' : 'give') : n], 'open') : '';
     var open = P(T.OPEN, 'open');
     paras.push(open + (res ? res : ''));
-    if (form !== 'short') { paras.push(P(T.FORE, 'fore')); if (form === 'long') paras.push(P(T.FORE, 'fore')); }
-    paras.push(P(T.INSERT, 'insert'));
-    var nm = form === 'long' ? 3 : form === 'mid' ? 1 : 0;
+    paras.push(P(T.FORE, 'fore')); if (form === 'long') paras.push(P(T.FORE, 'fore'));
+    /* 指でほぐした段のすぐあとに挿れるときは、指を抜く一文を挟む（指を抜かずに挿れない） */
+    var ins = P(T.INSERT, 'insert'), prev = String(paras[paras.length - 1] || '').replace(/「[^」]*」/g, '');
+    if (ins && FINGER_PREV.test(prev) && !FINGER_OUT.test(prev) && !FINGER_PREV.test(ins.replace(/「[^」]*」/g, ''))) ins = '{a}はゆっくりと指を抜いた。' + ins;
+    paras.push(ins);
+    /* 女性の攻め × 男性の受けは指と手で繋がるので、最中の段を一つ多く（流れの管理の性感が山場の前に届くように） */
+    var nm = (form === 'long' ? 3 : form === 'mid' ? 2 : 1) + (sh === 'fm' ? 1 : 0);
     for (var i = 0; i < nm; i++) paras.push(P(T.MID, 'mid'));
-    paras.push(ero ? P(T.PEAKE, 'peak') || P(T.PEAK, 'peak') : P(T.PEAK, 'peak'));
+    /* 濃いときのもう一度は、山場と同じ段落に続けて書く（もう一度の段で二度目の山場まで行く） */
+    var pk0 = ero ? P(T.PEAKE, 'peak') || P(T.PEAK, 'peak') : P(T.PEAK, 'peak');
+    if (high && form === 'long') { var ag = P(T.AGAIN, 'again'); if (ag) pk0 += ag; }
+    paras.push(pk0);
     if (form !== 'short') paras.push(P(T.END, 'end'));
-    if (high && form === 'long') paras.push(P(T.AGAIN, 'again'));
     var body = paras.filter(Boolean).join('\n\n');
     var top = P(((T.TOPSAY || {})[DK.per(a)]) || (T.TOPSAY || {}).gentle);
     body = body.replace(/\{t\}/g, top || '……');
@@ -98,6 +109,9 @@
   KR.night = function (ctx, S, kind) {
     var a = S.A, b = S.B, T = X(), P = HK.Pos;
     if (HK.SAFE_ON || S.noBody || !HK.bodyOK || !HK.bodyOK(a, b)) return false;
+    /* 避けている・恐れている二人（苦手・恐怖・嫌悪。本体の HK.Avoid・恐怖の和らぐ前）は夜にしない（心理劇の夜のまま） */
+    if (HK.Avoid && HK.Avoid.of && (HK.Avoid.of(ctx, a, b) || HK.Avoid.of(ctx, b, a))) return false;
+    if (HK.fearHeld && HK.fearHeld(a, b)) return false;
     var sh = shOf(a, b), force = DK.content(ctx, 'force'), FR = HK.ForceRep, n = force && FR && FR.n ? FR.n(ctx, a, b) : 1;
     var form = formOf(ctx, S, kind);
     var H = HK.Heat && HK.Heat.enabled && HK.Heat.enabled(ID) ? HK.Heat : null;
@@ -110,19 +124,33 @@
     var KN = { reward: '褒美の夜', punish: '罰の続きの夜', test: '仕上がりを確かめる夜', beg: 'ねだられた夜', debut: 'お披露目会の見せつけ' };
     var leadT = DK.fill(ctx, lead + ln, a, b) + (chg ? DK.fill(ctx, chg, a, b) : '');
     /* 本文 */
-    var body = h ? H.scope(ctx, a, b, h, function () { return compose(ctx, S, a, b, sh, form, kind, force, n); }) : compose(ctx, S, a, b, sh, form, kind, force, n);
     var hk = heatKey(h), soft = /^(sweet|fresh|play)$/.test(hk) || (S.care === 'many' && !/^(rough|warped)$/.test(hk));
     var aftL = ((T.AFTER || {})[soft ? 'soft' : 'hard']) || [];
     if (H && H.trim) aftL = H.trim(aftL, 'after', hk);
     var aft = form === 'fade' ? '' : CK.pk(ctx, aftL, { again: true });
+    /* 組んで、流れの矛盾があれば組み直す（6 回まで。使った文の印は組み直しの前に戻す） */
+    var snap = function () { return { u: Object.assign({}, S.used || {}), l: Object.assign({}, S.lru || {}), k: S._tick }; }, back = function (x) { S.used = Object.assign({}, x.u); S.lru = Object.assign({}, x.l); S._tick = x.k; };
+    var s0 = snap(), body = '', best = null;
+    for (var tr = 0; tr < 6; tr++) {
+      if (tr) back(s0);
+      body = h ? H.scope(ctx, a, b, h, function () { return compose(ctx, S, a, b, sh, form, kind, force, n); }) : compose(ctx, S, a, b, sh, form, kind, force, n);
+      var bad = form === 'fade' ? 0 : flowBad(body, a, b, sh, aft);
+      if (!best || bad < best.bad) best = { body: body, bad: bad, st: snap() };
+      if (!bad) break;
+    }
+    if (best.body !== body) { body = best.body; back(best.st); }
     if (form !== 'fade') body = flow(body, a, b, sh, aft);
     if (aft) body += '\n\n' + aft;
     if (h && H.strip) body = H.strip(body, hk);
+    if (Array.isArray(KR.trace)) KR.trace.push({ t: body, sh: sh, form: form, a: a.name, b: b.name, bad: best ? best.bad : 0 });
     var text = DK.fill(ctx, body, a, b);
     /* 記録：きっかけ → 場面 */
     var el = DK.say(ctx, { id: 'ck_lead', tag: 'きっかけ', cat: 'bond', actors: [a, b], text: leadT, why: 'きっかけ：' + KN[kind] + (S.sex ? '（' + (S.sex + 1) + '度目）' : '（初めて）') + (force ? '・合意のない展開の' + n + '回目' : ''), mag: 3, face: faceB(b, 'shy') });
-    var e = DK.say(ctx, { id: 'ck_sex_' + form, cat: 'bond', actors: [a, b], text: text, sex: true, lewd: form !== 'fade', force: force, mag: 8,
-      why: '調教の地下室：夜（' + { fade: 'ほのめかす', short: '短い場面', mid: '中くらいの場面', long: '長い場面' }[form] + '・' + KN[kind] + (h ? '・温度：' + H.label(hk) : '') + '）', face: faceB(b, 'shy') });
+    /* 本体の合意のない回数の段（HK.ForceRep の包み）を差させない：回数は下で本体の数え方にそろえて足す */
+    var fb0 = ctx._frBusy; ctx._frBusy = true;
+    var e;
+    try { e = DK.say(ctx, { id: 'ck_sex_' + form, cat: 'bond', actors: [a, b], text: text, sex: true, lewd: form !== 'fade', force: force, mag: 8,
+      why: '調教の地下室：夜（' + { fade: 'ほのめかす', short: '短い場面', mid: '中くらいの場面', long: '長い場面' }[form] + '・' + KN[kind] + (h ? '・温度：' + H.label(hk) : '') + '）', face: faceB(b, 'shy') }); } finally { ctx._frBusy = fb0; }
     if (!e) { if (el && ctx.log) { var k = ctx.log.indexOf(el); if (k >= 0) ctx.log.splice(k, 1); } return false; }
     S.sex++; if (form === 'long') S.hadLong = true;
     if (force && FR && FR.on && FR.on(ctx)) { var m = ctx._frN = ctx._frN || {}, kk = a.i < b.i ? a.i + '-' + b.i : b.i + '-' + a.i; m[kk] = (m[kk] || 0) + 1; }

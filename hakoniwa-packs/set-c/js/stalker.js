@@ -39,7 +39,7 @@
     friend: 'friend', best: 'friend', buddy: 'friend', childhood: 'friend', classmate: 'friend', comrade: 'friend', benefactor: 'friend',
     colleague: 'work', boss: 'work', senpai: 'work', teacher: 'work', mentor: 'work', master: 'work', worship: 'work',
     parent: 'fam', sibling: 'fam', sibprot: 'fam', sibclose: 'fam', sibbad: 'fam', twin: 'fam', stepsib: 'fam', relative: 'fam', pparent: 'fam',
-    enemy: 'bad', bad: 'bad', rival: 'bad', lovehate: 'bad', abuse: 'bad', acq: 'none' };
+    enemy: 'bad', bad: 'bad', rival: 'bad', lovehate: 'bad', abuse: 'bad', fear: 'bad', apathy: 'none', acq: 'none' };
   var RK_ORD = ['lover', 'fwb', 'almost', 'crush', 'ex', 'fam', 'bad', 'friend', 'work', 'none'];
   function relOf(ctx, A, B) {
     var tl = HK.Ties && HK.Ties.all ? HK.Ties.all(ctx, A, B) || [] : [], best = 'none', bt = null;
@@ -74,12 +74,12 @@
   }
 
   /* ---------- 計器の始まりの値 ---------- */
-  var WANT0 = { lover: 70, fwb: 62, almost: 66, crushB: 68, ex: 52, crushA: 38, friend: 36, work: 30, bad: 34, fam: 24, none: 18 };
+  var WANT0 = { lover: 70, fwb: 62, almost: 66, crushB: 68, ex: 52, crushA: 40, friend: 38, work: 34, bad: 36, fam: 24, none: 32 };
   var WANT_PER = { devoted: 10, free: 6, shy: 4, gentle: 2, tsun: 0, polite: -2, cool: -4, proud: -4, stern: -8 };
   var KNOWN = /^(lover|fwb|ex|crushB|almost|bad)$/;
   var BOLD_PER = { proud: 1.1, free: 1.15, devoted: 1.05, shy: 0.85, polite: 0.9, cool: 0.95, tsun: 0.9, gentle: 0.95, stern: 1 };
   var A_STYLE = { gentle: 'devote', devoted: 'devote', cool: 'watch', polite: 'watch', free: 'watch', proud: 'possess', stern: 'possess', shy: 'hide', tsun: 'hide', _: 'watch' };
-  var B_BR = { devoted: 'drawn', gentle: 'unaware', shy: 'unaware', tsun: 'meet', free: 'meet', proud: 'meet', stern: 'report', cool: 'report', polite: 'report', _: 'unaware' };
+  var B_BR = { devoted: 'drawn', gentle: 'unaware', shy: 'drawn', tsun: 'meet', free: 'meet', proud: 'meet', stern: 'report', cool: 'report', polite: 'report', _: 'unaware' };
   var BR_NAME = { unaware: '気づかないふり', report: '相談・通報', meet: '自分から会いに行く', drawn: '取り込まれる' };
   var STY_NAME = { devote: '尽くす', watch: '記録する', possess: '囲い込む', hide: '隠れる' };
   var END_NAME = { repel: '撃退', lover: '取り込まれて恋人に', lover2: '取り込まれて離れられない仲に', cage: '監禁へ', rule: '逆に支配する', trauma: '去ったあとの影', preg: '子を宿す' };
@@ -145,8 +145,8 @@
       boldDial: /^(low|mid|high)$/.test(env.bold) ? env.bold : 'mid', ally: /^(none|few|many)$/.test(env.ally) ? env.ally : 'few',
       guard: /^(low|mid|high)$/.test(env.guard) ? env.guard : 'mid', home: /^(apart|mansion|house)$/.test(env.home) ? env.home : 'apart',
       evN: {}, gSeen: {}, sexN: 0, pairN: 0, soloN: 0, insN: 0, longDone: false, kinds: {}, realized: false, realDay: -1, ended: false, setHits: 0, setDays: {}, recN: 0, abduct: false, endK: null, stageLog: [] };
-    S.love = canLove2(ctx, A, B);
     S.kin = rg === 'fam';
+    S.love = canLove2(ctx, A, B) && !S.kin;
     /* 周りの人（参加者の三人目以降と名簿から）：恋人と友人 */
     S.G.forEach(function (g) { g.gone = true; if (DK.part(ctx, g, 'outside')) g.outside = true; });
     S.lover = loverOf(ctx, S);
@@ -154,7 +154,7 @@
     /* 見つめる側の型・見つめられる側の分岐 */
     var sty = DK.branch(ctx, A, A_STYLE, ['devote', 'watch', 'possess', 'hide']);
     S.sty = sty.k; S.styOdd = sty.odd; S.perA = pa; S.perB = pb;
-    var want0 = (WANT0[rg] || 20) + (WANT_PER[pb] || 0) + Math.floor(ctx.rng() * 8);
+    var want0 = (WANT0[rg] || 30) + (WANT_PER[pb] || 0) + (B.libido === 'high' ? 6 : B.libido === 'low' || B.libido === 'none' ? -6 : 0) + Math.floor(ctx.rng() * 8);
     var br = DK.branch(ctx, B, B_BR, ['unaware', 'report', 'meet', 'drawn']), bk = br.k;
     if (want0 >= 62 && (bk === 'report' || bk === 'unaware') && ctx.rng() < 0.6) bk = bk === 'report' ? 'meet' : 'drawn';
     if (want0 < 30 && bk === 'drawn') bk = 'meet';
@@ -171,8 +171,11 @@
     DK.gauge(S, 'want', { v: clamp(want0, 5, 95), dir: 'up', stages: [40, 60, 80], label: '本音' });
     S.want0 = DK.val(S, 'want');
     /* R18 の可否：見つめる側が R18 に参加する・体の場面にしてよい組・回数の上限 */
-    S.r18 = !HK.SAFE_ON && !A.noR18;
-    S.body = S.r18 && !S.noBody && !B.noR18 && !!(HK.bodyOK && HK.bodyOK(A, B));
+    S.r18 = !HK.SAFE_ON && !A.noR18 && A.libido !== 'none';
+    S.body = S.r18 && !S.noBody && !B.noR18 && B.libido !== 'none' && !!(HK.bodyOK && HK.bodyOK(A, B));
+    /* どちらかが相手を避けている（苦手・恐怖・無関心など。HK.Avoid）二人は、二人の夜にしない（ひとりの夜は見つめる側だけなので、見つめる側が避けていなければ起きる） */
+    S.avoidA = !!(HK.Avoid && HK.Avoid.of && HK.Avoid.of(ctx, A, B)); S.avoidB = !!(HK.Avoid && HK.Avoid.of && HK.Avoid.of(ctx, B, A));
+    if (S.avoidA || S.avoidB) S.body = false;
     S.sexMax = !HK.SAFE_ON && R18() ? R18().quota(ctx, env.lewdN) : 0;
     ctx.place = { apart: B.name + 'のアパート', mansion: B.name + 'のマンション', house: B.name + 'の家' }[S.home];
     C.G.forEach(function (c) { if (!c.action) c.action = { id: 'live', label: '' }; if (!c.goal) c.goal = { id: 'st', label: '' }; c.autoAction = false; c.autoGoal = false; });
@@ -193,6 +196,8 @@
     if (typeof r === 'string') return true;
     if (r.br && (!S.realized || !inL(S.br, r.br))) return false;
     if (r.pre && S.realized) return false;
+    if (r.nobr && S.realized && inL(S.br, r.nobr)) return false;
+    if (r.noAbd && S.abduct) return false;
     if (r.sty && !inL(S.sty, r.sty)) return false;
     if (r.rg && !inL(S.rg, r.rg)) return false;
     if (r.home && !inL(S.home, r.home)) return false;
@@ -207,6 +212,7 @@
     if (r.nolov && S.lover) return false;
     if (r.friend && !S.friends.length) return false;
     if (r.body && !S.body) return false;
+    if (r.pt && S._k && String(r.pt).indexOf(S._k) < 0) return false;
     if (/\{c\}/.test(r.t) && !S._c) return false;
     return true;
   }
@@ -271,6 +277,8 @@
     if (t === 2 && R18() && !HK.SAFE_ON && R18().night(ctx, S, d)) return;
     /* 区切りの出来事：主の一件 ＋ ときどき周りの人・見つめられる側の一件 */
     daily(ctx, S, PK[t], d);
+    if (S.recN === n0) daily(ctx, S, PK[t] + 'b', d);
+    /* 表を使い切った区切り（長い期間の後半）は、使った回数の少ない古い文から戻して、空の区切りを作らない */
     if (S.recN === n0) daily(ctx, S, PK[t], d, true);
     if (t === 1 && S.G.length && S.ally !== 'none' && ctx.rng() < (S.ally === 'many' ? 0.55 : 0.3)) daily(ctx, S, 'g', d);
     else if (t === 1 && S.G.some(function (g) { return !S.gSeen[g.i]; }) && d >= Math.floor(S.days * 0.3)) daily(ctx, S, 'g', d);
@@ -322,26 +330,32 @@
     L.sort(function (x, y) { return (S.gSeen[x.i] || 0) - (S.gSeen[y.i] || 0); });
     return L[0];
   }
-  function daily(ctx, S, kind, d, retry) {
+  function daily(ctx, S, kind, d, again) {
     var T = TX(), EV = (T.EV || []).filter(function (ev) { S._c = null; if (ev.g || ev.lover) S._c = pickG(ctx, S, ev); var ok = (!(ev.g || ev.lover) || S._c) && evOk(ctx, S, ev, kind); S._c = null; return ok; });
-    for (var tries = 0; tries < 6 && EV.length; tries++) {
-      var W = EV.map(function (ev) { var n = S.evN[ev.id] || 0; return (ev.w || 1) * (n ? 0.3 / n : 1) * (retry ? 1 : 1); }), sum = 0, x, ev = EV[EV.length - 1];
+    S._k = kind.charAt(0);
+    for (var tries = 0; tries < 8 && EV.length; tries++) {
+      var W = EV.map(function (ev) { var n = S.evN[ev.id] || 0; return (ev.w || 1) * (n ? 0.3 / n : 1); }), sum = 0, x, ev = EV[EV.length - 1];
       W.forEach(function (w) { sum += w; }); x = ctx.rng() * sum;
       for (var i = 0; i < EV.length; i++) { x -= W[i]; if (x < 0) { ev = EV[i]; break; } }
       var g = ev.g || ev.lover ? pickG(ctx, S, ev) : null;
       S._c = g;
-      var row = DK.pick(ctx, S, rows(S, ev.rows), optOf(S, { full: true }));
+      var row = DK.pick(ctx, S, rows(S, ev.rows), optOf(S, { full: true, again: !!again }));
       if (!row) { S._c = null; EV.splice(EV.indexOf(ev), 1); continue; }
       var fx = ev.fx ? function () { ev.fx(ctx, S); } : function () { relFx(ctx, S); };
-      var e = sayX(ctx, S, { id: ev.id, cat: ev.cat === 'romance' && !S.love ? 'bond' : ev.cat || 'bond', t: row.t, ex: exOf(S, g), g: g, why: '君と僕の一か月：' + ev.label + whyTail(S), face: faceOf(S), fx: fx });
+      /* 見つめる側の出来事には、見つめられる側の一文（今の気づき・向き合い方）を付ける（使い切ったら付けない） */
+      var rr = null;
+      if (/^[mdn]$/.test(kind) && !ev.noReact) { var rk = !S.realized ? (DK.stage(S, 'aware') >= 1 ? 'a1' : 'a0') : S.br; rr = DK.pick(ctx, S, rows(S, ((T.REACT || {})[rk] || {})[kind]), optOf(S, { full: true })); }
+      var e = sayX(ctx, S, { id: ev.id, cat: ev.cat === 'romance' && !S.love ? 'bond' : ev.cat || 'bond', t: row.t + (rr ? rr.t : ''), ex: exOf(S, g), g: g, why: '君と僕の一か月：' + ev.label + whyTail(S), face: faceOf(S), fx: fx });
       S._c = null;
       if (!e) { EV.splice(EV.indexOf(ev), 1); continue; }
       S.evN[ev.id] = (S.evN[ev.id] || 0) + 1;
+      if (again) S.againN = (S.againN || 0) + 1;
       if (ev.push) Object.keys(ev.push).forEach(function (k) { DK.push(S, k, ev.push[k]); });
-      if (d >= 1 && (setRow(row) || setRow(ev))) { S.setHits++; S.setDays[d] = 1; }
+      if (d >= 1 && (setRow(row) || setRow(ev) || setRow(rr))) { S.setHits++; S.setDays[d] = 1; }
+      S._k = null;
       return e;
     }
-    S._c = null;
+    S._c = null; S._k = null;
     return null;
   }
   function whyTail(S) { return '（' + S.A.name + '・' + STY_NAME[S.sty] + (S.realized ? '／' + S.B.name + '・' + BR_NAME[S.br] : '') + '）'; }
@@ -361,7 +375,11 @@
     if (S.br === 'report') k = S.realized ? 'repel' : 'trauma';
     else if (S.br === 'unaware') k = w >= 70 && S.love ? 'lover' : 'trauma';
     else if (S.br === 'meet') k = /^(proud|stern|cool|tsun)$/.test(S.perB) || (B.will === 'strong') || !S.love ? 'rule' : 'lover';
-    else k = S.abduct ? 'cage' : S.love ? 'lover' : (DK.content(ctx, 'force') && DK.heavy(ctx) !== 'mild' ? 'cage' : 'rule');
+    /* 取り込まれた二人：連れ去った部屋の夜があったか、深く取り込まれて（取り込まれの段 2 以上・大胆さの段 3）内容のスイッチと展開の重さが許すなら、閉じた部屋へ */
+    else {
+      var deep = DK.stage(S, 'drawn') >= 2 && DK.stage(S, 'bold') >= 3 && DK.content(ctx, 'force') && DK.heavy(ctx) === 'dark';
+      k = S.abduct || (deep && ctx.rng() < 0.45) ? 'cage' : S.love ? 'lover' : (DK.content(ctx, 'force') && DK.heavy(ctx) !== 'mild' ? 'cage' : 'rule');
+    }
     if (k === 'lover' && !S.love) k = 'rule';
     if (/^(lover|cage|rule)$/.test(k) && S.insN > 0 && DK.content(ctx, 'preg') && P && P.hasF && P.hasF(B) && P.hasM && P.hasM(A) && ctx.rng() < 0.55) k = 'preg';
     S.endK = k;
@@ -393,7 +411,8 @@
     B.fate = '見つめられる側'; B.fateNote = A.name + 'に見つめられた一か月（' + endName(S) + '）';
     ctx.flags.stalker = { a: A.i, b: B.i, days: S.days, rg: S.rg, rel: RG_NAME[S.rg], sty: STY_NAME[S.sty], styOdd: !!S.styOdd, br: BR_NAME[S.br], brK: S.br, brOdd: !!S.brOdd, endK: S.endK, end: endName(S),
       bold: DK.val(S, 'bold'), aware: DK.val(S, 'aware'), drawn: DK.val(S, 'drawn'), want: DK.val(S, 'want'), want0: S.want0, sex: S.sexN, pair: S.pairN, solo: S.soloN, home: S.home, ally: S.ally, guard: S.guard, boldDial: S.boldDial,
-      realDay: S.realDay >= 0 ? S.realDay + 1 : null, love: S.love, setHits: S.setHits, setDays: Object.keys(S.setDays).length };
+      realDay: S.realDay >= 0 ? S.realDay + 1 : null, love: S.love, setHits: S.setHits, setDays: Object.keys(S.setDays).length, againN: S.againN || 0, leak: (ctx._dkLeak || []).length,
+      sl: (S.sexLog || []).map(function (x) { return [x.d + 1, x.kind, x.form, x.pair ? 1 : 0, Math.round(x.want), x.aware, x.br]; }) };
     ctx.flags.outcome = A.name + 'と' + B.name + 'の' + (S.days === 30 ? '一か月' : S.days + '日') + '――' + endName(S);
   }
   DK.install(ID, DK.couple('part', 'stalker', 'target', ['guest']), 'stalker');

@@ -309,7 +309,14 @@
     if (a.noR18 || b.noR18) return false;
     var P = HK.Pos;
     if (P && P.okSex && !P.okSex(a, b)) return false;
+    /* 体の関係にしてよい二人か（セット B の kit-r18.js の sexOk と同じ判定：血縁・無関心・HK.State.pairSex・性欲「なし」・HK.sexBlocked・HK.ngSexPair・避けている人） */
+    if (ctx.pair && ctx.pair(a, b).kin) return false;
+    if (HK.Ties && HK.Ties.apathy && (HK.Ties.apathy(ctx, a, b) || HK.Ties.apathy(ctx, b, a))) return false;
+    if (HK.State && HK.State.pairSex && !HK.State.pairSex(a, b)) return false;
+    if (P && P.libNone && P.libNone([a, b])) return false;
     if (HK.sexBlocked && HK.sexBlocked(a, b)) return false;
+    if (HK.ngSexPair && HK.ngSexPair(a, b)) return false;
+    if (HK.Avoid && HK.Avoid.topOk && !HK.Avoid.topOk(ctx, a, b)) return false;
     return true;
   };
 

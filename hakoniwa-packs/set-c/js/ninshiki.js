@@ -2,7 +2,11 @@
    する側（{a}：住人・モブ・触手）が「認識を阻む力」（アプリ／まじない／薬）を使い、その空間では触れられることが当たり前になっている。
    される側（{b}）が違和感に気づいたら、その場を離れられる（離れる・面と向かって断る・人に知らせる。性的な場面は止まる）。気づかないか、気づいても乗り気
    （本音の計器 want が線を越えている）なら続く。仕組みは本体の常識改変（solo-kaihen*.js）と電車（solo-train*.js）と同じ：常識の中にいる → 違和感 → 覚める → 分かれる。
-   ・計器（巻き戻らない。HK.DarkKit.gauge）：手がかり clue（30 違和感／60 気づきかけ／85 気づいた）・体の慣れ habit・大胆さ bold・本音 want（55 が線）・力の消耗 wear
+   ・計器（巻き戻らない。HK.DarkKit.gauge）：手がかり clue（25／50／75。文の段）・違和感 iwa（60 が線。安全の担保）・体の慣れ habit・大胆さ bold・本音 want（55 が線）・力の消耗 wear
+   ・安全の担保（set-c-design.md 5-1）：どの段（する側の一手・受ける側の反応・夜・山場・R18 の入口）も、始める前に guard() で違和感を見る。線を越えていれば
+     その段は「気づく → 離れる・断る・人に知らせる」になり、性的な場面は止まる（本音が線を越えていれば、気づいたうえで乗り気として続く）。
+     前もって許していない人・気づいていない人に触れるのは、肩・手・髪・隣に座る（触れ方の段 0）だけで、性的な触れ方は書かない。
+     本音 want は、気づく前は関係の重さでしか伸びない（触れ方では伸ばさない。力で気持ちを作らない）。モブ・触手の回は出口のある場所だけ
    ・する側の分岐（態度 9 種 → 既定、運命の揺らぎでらしくない）：try 少しずつ試す／public 人前で大胆に／keep 独占して囲う／guilt 罪悪感で止める
    ・される側の分岐：probe 違和感を探る／usual いつも通り／ache 体が覚えて疼く／consult 誰かに相談
    ・山場：力が切れかける瞬間（人前。認識が一瞬だけ解ける）。結末 5：hidden バレずに続く／broken バレて壊れる／accepted バレて受け入れられる／crave 自分から求める／reverse 立場が逆転
@@ -42,7 +46,7 @@
   'use strict';
   var HK = window.HK;
   if (!HK || !HK.DarkKit || HK.SAFE_ON) return;
-  var ID = 'set-c-ninshiki', DK = HK.DarkKit, LINE = 55;
+  var ID = 'set-c-ninshiki', DK = HK.DarkKit, LINE = 55, IWA_LINE = 60;
   var PART = ['朝', '日中', '夜'], WEEK = ['月', '火', '水', '木', '金', '土', '日'];
   function TX() { return HK.NinshikiText || {}; }
   function f(ctx) { return ctx.ns; }
@@ -137,7 +141,23 @@
     var S = f(ctx); if (S.aware) return 0;
     var k = { few: 0.75, mid: 1, many: 1.35 }[S.clueN] * (S.range === 'self' ? 1.2 : 0.85) * S.bClue * (0.8 + ctx.rng() * 0.45);
     var r = push(ctx, 'clue', Math.round(base * k));
+    iwaUp(ctx, r.d);
     return r.d;
+  }
+  /* 違和感（安全の担保）：手がかり・触れられた回数・周りの視線で上がる。前もって許していた二人は約束の遊びなので伸びが小さい */
+  function iwaUp(ctx, d) {
+    var S = f(ctx); if (S.aware || !d) return 0;
+    return push(ctx, 'iwa', Math.max(1, Math.round(d * (S.pre ? 0.45 : 1)))).d;
+  }
+  /* どの段も始める前に違和感を見る。線を越えていれば気づいて分かれる（乗り気でなければ離れる）。性的な段に進んでよいかを返す */
+  function guard(ctx, where) {
+    var S = f(ctx); if (!S || S.ended) return false;
+    if (!S.aware && g(S, 'iwa') >= IWA_LINE) {
+      (S.glog = S.glog || []).push({ d: S.d, t: S.t, where: where || '', iwa: g(S, 'iwa'), want: g(S, 'want'), pre: !!S.pre });
+      wake(ctx, '違和感が線を越えた');
+      S.glog[S.glog.length - 1].choice = S.choice;
+    }
+    return !S.out;
   }
   function elig(ctx) {
     var S = f(ctx);
@@ -237,10 +257,11 @@
     /* 本音の計器（上がるだけ）の始まり：関係と設定から（set-c-design.md 0-2） */
     var eg = B.eg || {}, fc = (eg.FC || 10) / 20, w0;
     if (ak === 'res') w0 = { love: 72, body: 70, pine: S.rt === 'almost' ? 62 : S.cdir === 'B' ? 60 : 38, ex: 44, close: 40, work: 30, fam: 18, awk: S.rt === 'lovehate' ? 50 : 18 }[S.grp] || 20;
-    else w0 = 22 + fc * 24 + (ak === 'tent' ? 4 : 0);
+    else w0 = 20 + fc * 26 + ((HK.Pos && HK.Pos.libK ? HK.Pos.libK(B) : 1) - 1) * 18 + (ak === 'tent' ? 3 : 0);
     w0 = Math.round(w0 + (ctx.rng() - 0.5) * 8);
     DK.gauge(S, 'want', { v: clamp(w0, 5, 90), stages: [LINE], label: '本音' });
-    DK.gauge(S, 'clue', { v: 0, stages: [30, 60, 85], label: '手がかり' });
+    DK.gauge(S, 'clue', { v: 0, stages: [25, 50, 75], label: '手がかり' });
+    DK.gauge(S, 'iwa', { v: 0, stages: [IWA_LINE], label: '違和感' });
     DK.gauge(S, 'habit', { v: 0, stages: [25, 50, 80], label: '体の慣れ' });
     DK.gauge(S, 'bold', { v: { low: 8, mid: 22, high: 40 }[S.boldD], stages: [35, 65, 90], label: '大胆さ' });
     DK.gauge(S, 'wear', { v: 0, stages: [70], label: '力の消耗' });
@@ -306,12 +327,12 @@
     var S = f(ctx), d = S.d;
     if (d === S.peakDay && !S.peakDone) { peak(ctx); return; }
     if (S.rev) { revDay(ctx, 'd'); return; }
-    if (S.out) { outDay(ctx); return; }
+    if (S.out || !guard(ctx, 'day')) { outDay(ctx); return; }
     move(ctx);
     if (S.out || S.ended) return;
     react(ctx);
     clueEv(ctx);
-    if (S.stay && S.aBr.k === 'public' && elig(ctx) && ctx.rng() < 0.35 && R18 && R18.chance(ctx, 'public')) R18.run(ctx, 'public');
+    if (S.stay && S.aBr.k === 'public' && guard(ctx, 'public') && elig(ctx) && ctx.rng() < 0.35 && R18 && R18.chance(ctx, 'public')) R18.run(ctx, 'public');
     if (ctx.rng() < 0.55) daily(ctx);
   }
   function night(ctx) {
@@ -323,19 +344,22 @@
       var nt = pick(ctx, T.NIGHT, { g: 'clue' });
       if (nt) say(ctx, 'ns_night', nt, '夜のふたり');
     }
-    if (!S.out && R18 && elig(ctx) && R18.chance(ctx, S.last ? 'last' : 'night')) R18.run(ctx, S.asked ? 'ask' : S.aBr.k === 'keep' ? 'keep' : 'night');
+    if (!S.out && guard(ctx, 'night') && R18 && elig(ctx) && R18.chance(ctx, S.last ? 'last' : 'night')) R18.run(ctx, S.asked ? 'ask' : S.aBr.k === 'keep' ? 'keep' : 'night');
     if (S.last) { if (R18 && R18.missed && R18.missed(ctx)) R18.why(ctx); ending(ctx); }
   }
 
   /* ---------- する側の一手（分岐 × 態度 9 種）と触れ方（体の慣れ・大胆さの段） ---------- */
   var MOVE_ID = { try: 'ns_move_try', public: 'ns_move_public', keep: 'ns_move_keep', guilt: 'ns_move_guilt' };
   var MOVE_W = { try: '少しずつ試す', public: '人前で大胆に', keep: '二人きりの場所に囲う', guilt: '罪悪感で止める' };
-  function touchCap(S) { return S.noBody ? 0 : S.pre || S.stay ? 3 : 1; }
+  /* 触れ方の段の上限：前もって許していた二人と、気づいたうえで乗り気の人だけ段 1〜3。ほかは段 0（肩・手・髪・隣に座る）だけ */
+  function touchCap(S) { return S.noBody ? 0 : S.pre || S.stay ? 3 : 0; }
   function move(ctx) {
     var S = f(ctx), T = TX(), k = S.aBr.k;
+    if (!guard(ctx, 'move')) return;
     /* 罪悪感で止める：二日目以降、大胆さが一段上がったら（一度だけ）手を止め、そのあと打ち明けるかもしれない */
     var p = per(S.A);
-    var act = S.ak === 'tent' ? pick(ctx, (T.TENT_ACT || {})[k], { again: true }) : pick(ctx, ((T.ACT || {})[k] || {})[p] || ((T.ACT || {})[k] || {}).gentle, { again: true });
+    var ak0 = (T.ACT || {})[k] || {};
+    var act = S.ak === 'tent' ? pick(ctx, (T.TENT_ACT || {})[k], { again: true }) : pick(ctx, (ak0[p] || ak0.gentle || []).concat(ak0._ || []), { again: true });
     var lv = Math.min(touchCap(S), st(S, 'habit') + (st(S, 'bold') >= 2 ? 1 : 0));
     var tc = pick(ctx, ((S.ak === 'tent' ? T.TOUCH_TENT : T.TOUCH) || {})['l' + lv], { again: true });
     var bl = k === 'public' || st(S, 'bold') >= 2 ? pick(ctx, (T.BOLD || {})[S.range], { g: 'bold', again: true }) : '';
@@ -344,15 +368,17 @@
     push(ctx, 'bold', Math.round(bInc));
     push(ctx, 'habit', Math.round((6 + lv * 3) * (S.bBr.k === 'ache' ? 1.35 : 1)));
     push(ctx, 'wear', Math.round(8 + (k === 'public' ? 6 : 0) + lv * 2));
-    if (!S.aware) clueUp(ctx, (k === 'public' ? 8 : 5) + (S.bBr.k === 'probe' ? 4 : 0));
+    if (!S.aware) { clueUp(ctx, (k === 'public' ? 8 : 5) + (S.bBr.k === 'probe' ? 4 : 0)); iwaUp(ctx, 4 + (k === 'public' ? 3 : 0) + (S.range === 'self' ? 2 : 0)); }
     wantUp(ctx, lv);
     checkWake(ctx);
     if (k === 'guilt' && !S.aware && S.d >= 2 && DK.once(S, 'confess') && (ctx.rng() < 0.65 || S.d >= S.peakDay - 1)) confess(ctx);
   }
   function wantUp(ctx, lv) {
     var S = f(ctx); if (S.out) return;
-    var base = { love: 3, body: 3, pine: 3, ex: 2, close: 2, work: 1.5, fam: 0.5, awk: 1, mob: 1.5, tent: 1.5 }[S.grp] || 1;
-    var d = base + (S.bBr.k === 'ache' ? 2 : 0) + lv * 0.6 + ctx.rng() * 1.5;
+    /* 気づく前は関係の重さだけで伸びる（触れ方・体の慣れでは伸ばさない）。モブ・触手はほとんど伸びない */
+    var base = { love: 3, body: 3, pine: S.cdir === 'A' ? 1.2 : 3, ex: 1.5, close: 1.2, work: 0.9, fam: 0.3, awk: 0.6, mob: 0.3, tent: 0.3 }[S.grp] || 1;
+    if (S.ak === 'res' && !S.love && S.grp !== 'body') base = Math.min(base, 0.4);
+    var d = S.aware ? base + (S.bBr.k === 'ache' ? 1.5 : 0) + lv * 0.5 + ctx.rng() * 1.5 : base + ctx.rng() * (S.ak === 'res' ? 1.5 : 0.6);
     var before = g(S, 'want'), r = push(ctx, 'want', Math.round(d));
     /* 前もって許していない人が線を越えたら、自分の気持ちから違和感に気づき始める */
     if (!S.pre && !S.aware && before < LINE && r.v >= LINE && DK.once(S, 'selfnote')) {
@@ -366,6 +392,7 @@
   function react(ctx) {
     var S = f(ctx), T = TX(), k = S.bBr.k;
     if (S.aware) { if (S.stay) stayDay(ctx); return; }
+    if (!guard(ctx, 'react')) return;
     if (k === 'consult' && !(S.G.length || S.gName === '')) k = 'probe';
     var t = pick(ctx, ((T.REACT || {})[k] || []), { g: 'clue', again: true });
     if (k === 'consult' && S.G.length && ctx.rng() < 0.6) { var tg = pick(ctx, T.CONSULT_G, { g: 'clue' }); if (tg) t = tg; }
@@ -373,6 +400,7 @@
     var acts = k === 'consult' && S.G.length && /\{g\}/.test(t) ? [S.B, S.G[0]] : k === 'probe' || k === 'ache' ? [S.B] : actorsOf(S);
     say(ctx, REACT_ID[k], t, '受ける側の反応（' + REACT_W[k] + (S.bBr.odd ? '・らしくない' : '') + '）', { odd: S.bBr.odd, both: false, actors: acts });
     if (k === 'probe') clueUp(ctx, 6); else if (k === 'consult') clueUp(ctx, 5); else if (k === 'ache') push(ctx, 'habit', 4);
+    iwaUp(ctx, k === 'usual' ? 2 : 4);
     /* もやもや：違和感の段 1 で、言いくるめられる（その日は手がかりが伸びない） */
     if (st(S, 'clue') === 1 && DK.once(S, 'moya' + Math.min(2, S.d)) && ctx.rng() < 0.5 && S.ak !== 'tent') {
       var mt = pick(ctx, T.MOYA); if (mt) { say(ctx, 'ns_moya', mt, '小さな違和感を言いくるめられた'); push(ctx, 'habit', 3); }
@@ -394,8 +422,10 @@
   /* ---------- 気づく → 離れる／乗り気 ---------- */
   function checkWake(ctx) {
     var S = f(ctx);
-    if (S.aware || S.ended || st(S, 'clue') < 3) return;
+    if (S.aware || S.ended || (g(S, 'iwa') < IWA_LINE && st(S, 'clue') < 3)) return;
+    (S.glog = S.glog || []).push({ d: S.d, t: S.t, where: 'check', iwa: g(S, 'iwa'), want: g(S, 'want'), pre: !!S.pre });
     wake(ctx, '');
+    S.glog[S.glog.length - 1].choice = S.choice;
   }
   function wake(ctx, why) {
     var S = f(ctx), T = TX();
@@ -416,7 +446,7 @@
       var tb = pick(ctx, (T.STAY_B || {})[p] || (T.STAY_B || {}).gentle);
       var fc = {}; fc[B.i] = S.pre ? 'smile_lover' : 'shy';
       say(ctx, 'ns_stay', join(t, tb), '気づいたうえで乗り気のまま続ける（本音が線を越えている）', { face: fc, fx: function () { mod(ctx, { aff: 3, att: 3 }, { aff: 2, att: 4 }); } });
-      if (rev) reverse(ctx);
+      /* 乗り気のまま続ける人は、力を奪って責める側には回らない（立場の逆転は、離れた人だけ） */
       return;
     }
     /* 線を越えていない：その場を離れる（離れる・断る・人に知らせる）。性的な場面は止まる */
@@ -487,9 +517,11 @@
   }
   /* 力を握った受けの日々 */
   function revDay(ctx, part) {
-    var S = f(ctx), T = TX();
-    var t = pick(ctx, ((T.REV_DAY || {})[S.ak]) || T.REV_DAY.res, { again: true });
-    if (t) say(ctx, 'ns_rev_day', t, '力を握った側が相手を試す（' + { m: '朝', d: '日中', n: '夜' }[part] + '）');
+    var S = f(ctx), T = TX(), t;
+    if (part === 'm') t = join(pick(ctx, (T.PLACE_M || {})[S.place], { again: true }), pick(ctx, T.REV_M, { again: true }));
+    else if (part === 'n') t = pick(ctx, T.REV_N, { again: true });
+    else t = pick(ctx, ((T.REV_DAY || {})[S.ak]) || T.REV_DAY.res, { again: true });
+    if (t) say(ctx, 'ns_rev_day', t, '力を握った側が相手を試す（' + { m: '朝', d: '日中', n: '夜' }[part] + '）', { both: S.ak === 'res' && /\{a\}/.test(t) });
     if (part === 'd' && ctx.rng() < 0.5) daily(ctx, true);
   }
 
@@ -513,7 +545,7 @@
       say(ctx, 'ns_peak', ft, '山場：離れたあとの二人が、力の切れかけた空間で鉢合わせる', { mag: 15 });
       return;
     }
-    var pl = pick(ctx, (T.PEAK_PLACE || {})[S.place]);
+    var pl = pick(ctx, ((T.PEAK_PLACE || {})[S.place] || []).filter(function (x) { return S.ak === 'tent' ? /触手|影/.test(typeof x === 'string' ? x : x.t) : !/触手/.test(typeof x === 'string' ? x : x.t); }));
     var pt = pick(ctx, (T.PEAK || {})[S.ak === 'tent' ? 'tent' : 'res']);
     var fc = {}; fc[S.B.i] = 'surprise';
     say(ctx, 'ns_peak', join(pl, pt), '山場：力が切れかける瞬間（人前・' + PLACE_W[S.place] + '）', { face: fc, mag: 15 });
@@ -521,9 +553,14 @@
     if (!S.aware) {
       /* 前もって許していない人は、この一瞬で必ず気づく（何も知らないまま終わる結末は、許していた二人だけ） */
       push(ctx, 'clue', S.pre ? 22 : 100);
-      if (st(S, 'clue') >= 3) wake(ctx, '力が切れかけた一瞬');
+      push(ctx, 'iwa', S.pre ? 20 : 100);
+      if (!S.aware && (g(S, 'iwa') >= IWA_LINE || st(S, 'clue') >= 3)) {
+        (S.glog = S.glog || []).push({ d: S.d, t: S.t, where: 'peak', iwa: g(S, 'iwa'), want: g(S, 'want'), pre: !!S.pre });
+        wake(ctx, '力が切れかけた一瞬');
+        S.glog[S.glog.length - 1].choice = S.choice;
+      }
     }
-    if (!S.out && R18 && elig(ctx) && R18.chance(ctx, 'peak')) R18.run(ctx, 'peak');
+    if (!S.out && guard(ctx, 'peak') && R18 && elig(ctx) && R18.chance(ctx, 'peak')) R18.run(ctx, 'peak');
     else if (!S.out && !S.aware) { var pr = pick(ctx, T.PEAK_PASS); if (pr) say(ctx, 'ns_peak', pr, '山場：認識が一瞬だけ解けて、また戻る'); }
   }
 
@@ -581,7 +618,7 @@
     return { headline: (res.outcome || '') + '。', stats: [['日数', R.days + '日'], ['結末', R.endW], ['エッチ', R.sex + '回']], lines: lines };
   };
   var R18 = null;
-  HK.Ninshiki = { ID: ID, LINE: LINE, f: f, pick: pick, fill: fill, say: say, elig: elig, per: per, mobGOk: mobGOk, relOf: relOf, crushDir: crushDir, setR18: function (x) { R18 = x; }, decideEnd: decideEnd, PLACE_W: PLACE_W, SRC_W: SRC_W };
+  HK.Ninshiki = { ID: ID, LINE: LINE, IWA_LINE: IWA_LINE, guard: guard, f: f, pick: pick, fill: fill, say: say, elig: elig, per: per, mobGOk: mobGOk, relOf: relOf, crushDir: crushDir, setR18: function (x) { R18 = x; }, decideEnd: decideEnd, PLACE_W: PLACE_W, SRC_W: SRC_W };
   HK.SCENARIOS[ID] = scen;
   if (HK.Lewd && HK.Lewd.install) HK.Lewd.install(ID, { lenDef: 'mix', desc: '夜の場面の描き方。ほのめかす＝ぼかした一文だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();
