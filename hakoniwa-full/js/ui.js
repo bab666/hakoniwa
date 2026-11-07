@@ -907,11 +907,12 @@
     document.documentElement.classList.toggle('bx-modal', pickOpen);
     /* 背景のスクロールを止める・戻す（ui-modal.js。描き直しで窓が作り直されても、開いているあいだは新しい窓で数える） */
     if (HK.Modal) { if (pickOpen) HK.Modal.lock(pk); else HK.Modal.unlock(pk); }
+    /* 「遊べるものだけ」は人数のほかに、箱庭が組み合わせを確かめる口（scen.fitOk。ui-box-list.js の HK.BoxList.noFit）も見る（上の一覧と同じ。2026-11-07：スマホの窓では人数しか見ていなかった） */
     var n = S.chars.length, pv = pickOpen ? pickPrev || S.scenId : S.scenId, fit = pickOpen && bxPref.fit && n > 0;
     Array.prototype.forEach.call(pk.querySelectorAll('label.scen'), function (l) {
       var inp = l.querySelector('input[data-f="scen"]');
       if (!inp) return;
-      var id = inp.value, lack = Math.max(0, smin(id) - n), off = fit && lack > 0 && id !== S.scenId && id !== pv, on = pickOpen && id === pv;
+      var id = inp.value, lack = Math.max(0, smin(id) - n), off = fit && (lack > 0 || !!(HK.BoxList && HK.BoxList.noFit && HK.BoxList.noFit(id, S))) && id !== S.scenId && id !== pv, on = pickOpen && id === pv;
       if (l.classList.contains('bxfitoff') !== off) l.classList.toggle('bxfitoff', off);
       if (l.classList.contains('pv') !== on) l.classList.toggle('pv', on);
       if (inp.checked !== (id === pv)) inp.checked = id === pv;

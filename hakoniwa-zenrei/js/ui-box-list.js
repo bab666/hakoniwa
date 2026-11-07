@@ -84,6 +84,7 @@
   var BL = HK.BoxList = {};
   /* 「いまの住人で遊べるものだけ」：人数のほかに、箱庭が住人の組み合わせを確かめる口（scen.fitOk(住人の配列)。読み込んだ箱庭だけ。配信の部屋は二人で配信できる組が一組も無ければ外す。2026-11-06） */
   function noFit(id, S) { var sc = HK.SCENARIOS && HK.SCENARIOS[id]; if (!sc || typeof sc.fitOk !== 'function') return false; try { return !sc.fitOk((S && S.chars) || []); } catch (e) { return false; } }
+  BL.noFit = noFit;   /* 「箱庭を選ぶ」の窓（ui.js の pickSync）も同じ判定で外す */
   BL.html = function (order, sel, badge) {
     if (!HK.UI || !HK.UI.cardInfo) return '';
     var S = HK.UI.state ? HK.UI.state() : { chars: [] }, n = (S.chars || []).length, smin = HK.UI.smin || function () { return 1; };
