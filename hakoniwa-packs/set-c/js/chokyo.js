@@ -474,7 +474,7 @@
   }
   function solo(ctx) {
     var S = f(ctx), T = TX(), r = ctx.rng();
-    if (r < 0.5) { var t = pk(ctx, T.ALONE_B, { g: 'want' }); if (t) say(ctx, 'ck_alone_b', t, { actors: [S.B], cat: 'solo', why: '独りの夜（' + S.B.name + '）' }); }
+    if (r < 0.5) { var t = pk(ctx, T.ALONE_B, S.captured ? { stage: 0 } : { g: 'want' }); if (t) say(ctx, 'ck_alone_b', t, { actors: [S.B], cat: 'solo', why: '独りの夜（' + S.B.name + '）' }); }
     else { var t2 = pk(ctx, byPer(T.ALONE_A, S.A), { g: 'jo' }); if (t2) say(ctx, 'ck_alone_a', t2, { actors: [S.A], cat: 'solo', why: '独りの夜（' + S.A.name + '）' }); }
   }
   /* 段の節目（巻き戻らない計器の段が上がった区切りに一件。同じ段は一度だけ） */

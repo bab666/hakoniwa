@@ -45,6 +45,7 @@
       after: function () { KK.afterSex(ctx, S, k); } };
     if (k === 'oshioki' && ctx.env.lewdLen !== 'short') o.form = 'long';
     var e = R.run(ctx, S, A, B, o);
+    if (e) S.nEv++;
     return !!e;
   };
 })();

@@ -351,12 +351,12 @@
       if (ctx.rng() < cool) { S.lieFound = true; ev(ctx, S, 'lie_found', { mag: 15 }); DK.push(S, 'fear', 15); if (S.escDay < 0 && d + 1 < S.days - 1) S.escDay = d + 1; return; }
       ev(ctx, S, 'lie_hold', { mag: 10 }); S.lieHold = true; return;
     }
-    if (S.srDays[d]) { if (ev(ctx, S, 'search', { mag: 8 })) S.setHit++; }
-    /* 分かれ道：閉じ込める側 6 割・閉じ込められる側 4 割。もう一つは日々の出来事 */
-    var useA = ctx.rng() < 0.6;
-    if (useA) { var ak = S.abr.k; if (ev(ctx, S, 'a_' + ak, { al: ak === 'drug' ? 'drug' : ak, again: true }) && ak === 'drug') S.cupToday = true; }
-    else ev(ctx, S, 'b_' + (S.lieFound && S.bbr.k === 'lie' ? 'refuse' : S.bbr.k), { bl: S.lieFound && S.bbr.k === 'lie' ? 'refuse' : S.bbr.k, again: true });
-    slot(ctx, S, D_POOL);
+    if (S.srDays[d]) { if (ev(ctx, S, 'search', { mag: 8 })) { S.setHit++; return; } }
+    /* 分かれ道は一日おき（閉じ込める側と閉じ込められる側を交互に）。ほかの日は日々の出来事。表を使い切ったら日々の出来事へ */
+    var lieGone = S.lieFound && S.bbr.k === 'lie', bk = lieGone ? 'refuse' : S.bbr.k, ak = S.abr.k, done = null;
+    if (d % 2 === 1) { done = ev(ctx, S, 'a_' + ak, { al: ak }); if (done && ak === 'drug') S.cupToday = true; }
+    else if (d % 4 === 2) done = ev(ctx, S, 'b_' + bk, { bl: bk });
+    if (!done) slot(ctx, S, D_POOL);
   }
   function escapeDay(ctx, S) {
     S.esc = { d: S.d };
