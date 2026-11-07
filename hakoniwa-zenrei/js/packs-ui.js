@@ -18,8 +18,11 @@
   var UI = HK.PacksUI = {};
   /* この版のコードの呼び名（全年齢版は「全年齢版のコード」、R18版は「R18版のコード」。2026-11-07 版ごとのコード） */
   function cname() { return HK.Packs && HK.Packs.codeName ? HK.Packs.codeName() : 'コード'; }
-  /* 覚えたコードで開かなくなったセットがあるか（全年齢版のコードが別になる前の保存など） */
-  function recode() { return locked().some(function (x) { return x.err === 'recode'; }); }
+  /* 覚えたコードで開かなくなったセットの案内（コードが変わった recode／全年齢版は別のコード recode-zen／コードを覚えていない古い保存 recode-old。2026-11-07）。無ければ '' */
+  function isRe(e) { return HK.Packs && HK.Packs.isRecode ? HK.Packs.isRecode(e) : e === 'recode'; }
+  function recode() { var x = locked().filter(function (q) { return isRe(q.err); })[0]; return x ? x.err : ''; }
+  /* 「覚えているコードで開き直す」を出すか（覚えたコードで開かないセットがあり、この端末にコードを覚えている） */
+  function canRetry() { return !!(recode() && HK.Packs.retry && HK.Packs.hasSavedCode && HK.Packs.hasSavedCode()); }
   /* ---------- 追加パックはこちら（販売ページへの誘導） ---------- */
   function shop() { var C = HK.CONF || {}; return { b: C.packBoothUrl || C.boothUrl || '', n: C.packNoteUrl || C.noteUrl || '' }; }
   function opened() { return HK.Packs ? HK.Packs.list().filter(function (x) { return x.st === 'open'; }) : []; }
@@ -52,7 +55,7 @@
   UI.card = function () {
     if (!HK.Packs || !HK.Packs.ready() || !HK.Packs.hasLocked()) return '';
     return '<div class="scen packadd"><div class="k">追加の箱庭</div><div class="n">箱庭を追加</div><div class="d">' +
-      (recode() ? esc(HK.Packs.errText('recode')) + '（' + esc(cname()) + '）' : '購入した' + esc(cname()) + 'を入れると、新しい箱庭のセットが一覧に加わります。') + '</div>' +
+      (recode() ? esc(HK.Packs.errText(recode())) : '購入した' + esc(cname()) + 'を入れると、新しい箱庭のセットが一覧に加わります。') + '</div>' +
       '<p style="margin:8px 0 0"><button type="button" class="btn small primary" data-packadd="1">コードを入れる</button></p></div>';
   };
 
@@ -90,13 +93,30 @@
       '<label for="packcode" class="hint small" style="display:block;margin:0 0 4px">' + esc(cname()) + '</label>' +
       '<input id="packcode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="latin" style="width:100%;box-sizing:border-box;font-size:16px;padding:8px 10px">' +
       '<p class="packerr hint small" role="alert" style="min-height:1.4em;margin:6px 0 0;color:var(--hot,#B4232A)"></p>' +
-      '<p style="margin:8px 0 0;display:flex;gap:8px;justify-content:flex-end"><button type="submit" class="btn primary">追加する</button></p>' +
+      '<p style="margin:8px 0 0;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">' + (canRetry() ? '<button type="button" class="btn" data-packretry="1">覚えているコードで開き直す</button>' : '') + '<button type="submit" class="btn primary">追加する</button></p>' +
       '<p class="hint small" style="margin:10px 0 0">一度入れたコードはこの端末に覚えておき、次からは入れなくても使えます。ブラウザのデータを消したときは、もう一度入れてください。</p></form>' +
       (guideOn() ? '<div class="packguide" style="margin:6px 2px 4px;padding:10px 0 0;border-top:1px solid var(--line2,#d3d9df)"><p class="hint small" style="margin:0 0 2px"><b>' + guideTitle() + '</b></p><p class="hint small" style="margin:0 0 8px">' + esc(guideText()) + '</p>' +
         '<p style="margin:0;display:flex;gap:8px;flex-wrap:wrap">' + guideLinks('btn small') + '</p></div>' : '') + '</div>';
     ov.addEventListener('click', function (e) {
       var t = e.target;
-      if (t === ov || (t.closest && t.closest('[data-packclose]'))) close();
+      if (t === ov || (t.closest && t.closest('[data-packclose]'))) { close(); return; }
+      var rb = t.closest && t.closest('[data-packretry]');
+      if (!rb) return;
+      /* 覚えているコードで開き直す（2026-11-07）：この端末に覚えたコード（ほかのセットのまとめ用のコードも）で、もう一度開けてみる */
+      var msg = ov.querySelector('.packerr');
+      msg.textContent = '確かめています…'; rb.disabled = true;
+      setTimeout(function () {
+        var got = HK.Packs.retry();
+        rb.disabled = false;
+        if (got.length) {
+          close();
+          toast('「' + got.join('」「') + '」を覚えているコードで開きました');
+          return;
+        }
+        msg.textContent = '覚えているコードでは開けませんでした。' + cname() + 'を入れてください';
+        var sb = ov.querySelector('.packsetsbox'); if (sb) sb.innerHTML = setsHtml();
+        var inp = ov.querySelector('#packcode'); if (inp) inp.focus();
+      }, 30);
     });
     ov.querySelector('form').addEventListener('submit', function (e) {
       e.preventDefault();
@@ -134,6 +154,6 @@
   if (HK.Packs) {
     HK.Packs.on(redraw); HK.Packs.onReady(redraw);
     /* 覚えたコードで開かなくなったセットがあれば、起動のときに一度だけ知らせる（覚えた分は消さない） */
-    HK.Packs.onReady(function () { if (recode()) setTimeout(function () { toast(HK.Packs.errText('recode') + '（「箱庭を追加」から' + cname() + 'を入れてください）'); }, 600); });
+    HK.Packs.onReady(function () { var r = recode(); if (r) setTimeout(function () { toast(HK.Packs.errText(r) + '（「箱庭を追加」から）'); }, 600); });
   }
 })();

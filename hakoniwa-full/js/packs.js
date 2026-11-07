@@ -5,8 +5,10 @@
      （フォルダの中身を一覧できない file:// でも動くように、fetch は使わない。読めない枠は黙って飛ばす）
    ・開けたパックの中身（かたまりと箱庭の目録）は HK.Load.addPack で本体の目録に足す。かたまりは箱庭を選んだときに読む
    ・入れたコードと開けた鍵は端末の設定（localStorage の hakoniwa-packs。全年齢版は版ごとの鍵）に覚え、次からは聞かない。
-     書き出し（portable.js）には入れない。覚えたコードで開かなくなった枠（全年齢版のコードが R18版と別になった前の保存など）は、
-     覚えた分を消さずに err 'recode'（「コードをもう一度入れてください」）にする
+     書き出し（portable.js）には入れない。パックを作り直すと封（中身の鍵）は毎回変わるが、コードが同じなら覚えたコードで開け直すので聞かない。
+     覚えたコード（ほかのセットで覚えたまとめ用のコードも・整え方の揺れを吸収した形も）でも開かない枠は、覚えた分を消さずに
+     err 'recode'（このセットのコードが変わった）／'recode-zen'（全年齢版のコードが R18版と別になった）／'recode-old'（コードを覚えていない古い保存）／
+     'recode-same'（コードの集合の指紋 cf が覚えたものと同じなのに開かない＝起きないはずの不具合）にする（2026-11-07）
    ・コードは版ごと（2026-11-07）：R18版のパックは R18版のコード、全年齢版のパックは全年齢版のコードで封をする（build-pack.js）
    ・本体とパックの版：パックの api が本体の HK.Packs.API より新しい／本体に無いかたまりが要る → 「本体を新しくしてください」、
      MIN_API より古い → 「追加データを新しくしてください」。R18版のパックは全年齢版では読まない（逆も）
@@ -64,8 +66,13 @@
     build: '別の版（R18版と全年齢版）の追加データです',
     'main-old': '本体が古いため開けません。本体を新しくしてください',
     'pack-old': '追加データが古いため開けません。追加データを新しくしてください',
-    recode: '追加データの版が変わりました。コードをもう一度入れてください'
+    /* 覚えたコードで開かない（2026-11-07 に 3 通りに分けた）。packs-ui.js がカード・入力の窓・起動の知らせに出す */
+    recode: '覚えているコードでは開けませんでした。このセットのコードが変わったため、新しいコードを一度だけ入れてください',
+    'recode-zen': '全年齢版の追加パックは、R18版とは別の「全年齢版のコード」になりました。全年齢版のコードを一度だけ入れてください（以後は覚えます）',
+    'recode-old': 'この端末の保存は古い形でコードを覚えていないため、一度だけコードを入れ直してください（以後は追加データが新しくなっても聞きません）',
+    'recode-same': 'コードは変わっていないはずですが、覚えているコードで開けませんでした。「覚えているコードで開き直す」を押すか、コードをもう一度入れてください'
   };
+  P.isRecode = function (code) { return /^recode/.test(code || ''); };
   P.errText = function (code) { return ERR[code] || ERR.broken; };
 
   /* ---------- 開ける ---------- */
@@ -95,7 +102,7 @@
       if (head) { x.st = 'error'; x.err = head; out.errors.push({ name: x.pk.name || x.pk.id, err: head }); return; }
       if (register(slot, K)) {
         out.opened.push(x.pk.name || x.pk.id);
-        saved.p[x.pk.id] = { c: C.norm(code), m: x.pk.m, k: C.keyHex(K) };
+        saved.p[x.pk.id] = remember(x.pk, code, K);
       } else out.errors.push({ name: x.pk.name || x.pk.id, err: x.err });
     });
     writeSaved(saved);
@@ -103,25 +110,56 @@
     if (out.opened.length || out.errors.length) emit();
     return out;
   };
-  /* 覚えているコードで開ける（起動時。中身が同じなら覚えた鍵を、新しい版ならコードから） */
+  /* 覚える形：c（整えたコード）・m（中身の印）・k（中身の鍵）・z（全年齢版の別のコードで封をしたパックか）・f（コードの集合の指紋）。z と f は案内の書き分け用 */
+  function remember(pk, code, K) { var C = HK.PackCrypto, o = { c: C.norm(code), m: pk.m, k: C.keyHex(K), z: pk.zc ? 1 : 0 }; if (pk.cf) o.f = pk.cf; return o; }
+  /* 覚えたコードの候補：このセットで覚えたコードを先に、ほかのセットで覚えたコード（まとめ用のコード）を後に。
+     それぞれ、そのままの形と、整え方の揺れ（全角・空白・小文字・ハイフンの種類・記号）を除いた形（英数字だけ）の両方 */
+  function loose(c) { var s = HK.PackCrypto.norm(c); try { s = s.normalize('NFKC'); } catch (e) { /* そのまま */ } return s.toUpperCase().replace(/[^0-9A-Z]/g, ''); }
+  function candidates(saved, id) {
+    var out = [], C = HK.PackCrypto, add = function (c) { if (c == null || c === '') return; [String(c), loose(c)].forEach(function (v) { v = C.norm(v); if (v && out.indexOf(v) < 0) out.push(v); }); };
+    if (saved.p[id]) add(saved.p[id].c);
+    Object.keys(saved.p).forEach(function (k) { if (k !== id && saved.p[k]) add(saved.p[k].c); });
+    return out;
+  }
+  /* 覚えたコードで開かないときの案内の種類 */
+  function recodeKind(pk, s) {
+    if (!s.c) return 'recode-old';
+    if (pk.cf && s.f === pk.cf) return 'recode-same';
+    if (build() === 'zenrei' && pk.zc && !s.z) return 'recode-zen';
+    return 'recode';
+  }
+  /* 覚えているコードで開ける（起動時・「覚えているコードで開き直す」。中身が同じなら覚えた鍵を、作り直したパック（封が変わる）なら覚えたコードから）。
+     コードが同じなら、作り直しのたびに聞き直さない。戻り値は開けたパックの名前 */
   function autoOpen() {
-    var saved = readSaved(), C = HK.PackCrypto, changed = false, any = false;
-    if (!C) return;
+    var saved = readSaved(), C = HK.PackCrypto, changed = false, any = false, opened = [];
+    if (!C) return opened;
     SLOTS.forEach(function (slot) {
       var x = packs[slot];
       if (!x || x.st === 'open') return;
       var s = saved.p[x.pk.id];
-      if (!s || checkHead(x.pk)) return;
-      var K = s.k && s.m === x.pk.m ? C.keyFromHex(s.k) : null;
+      if (checkHead(x.pk)) return;
+      /* このセットを覚えていない枠も、ほかのセットで覚えたまとめ用のコードで開くなら開ける（開かなければ黙って閉じたまま） */
+      if (!s && !Object.keys(saved.p).length) return;
+      var K = s && s.k && s.m === x.pk.m ? C.keyFromHex(s.k) : null, cs, i;
       if (K) { try { C.open(x.pk, K); } catch (e) { K = null; } }
-      if (!K && s.c) { K = C.unlock(x.pk, s.c); if (K) { s.m = x.pk.m; s.k = C.keyHex(K); changed = true; } }
-      if (K && register(slot, K)) any = true;
-      /* 覚えたコードで開かない（全年齢版のコードが別になった・コードが差し替わった。2026-11-07）：覚えた分は消さずに残し、入れ直しを案内する */
-      else if (!K && x.st === 'locked') { x.err = 'recode'; any = true; }
+      if (!K) {
+        cs = candidates(saved, x.pk.id);
+        for (i = 0; i < cs.length && !K; i++) {
+          K = C.unlock(x.pk, cs[i]);
+          if (K) { saved.p[x.pk.id] = remember(x.pk, cs[i], K); changed = true; }
+        }
+      }
+      if (K && register(slot, K)) { any = true; opened.push(x.pk.name || x.pk.id); }
+      /* 覚えたコードで開かない：覚えた分は消さずに残し、入れ直しを案内する（3 通り） */
+      else if (!K && s && x.st === 'locked') { x.err = recodeKind(x.pk, s); any = true; }
     });
     if (changed) writeSaved(saved);
     if (any) emit();
+    return opened;
   }
+  /* 「覚えているコードで開き直す」（packs-ui.js）。覚えたコードがあるか */
+  P.retry = function () { return autoOpen(); };
+  P.hasSavedCode = function () { var p = readSaved().p; return Object.keys(p).some(function (k) { return p[k] && p[k].c; }); };
 
   /* ---------- pack.js を受け取る（pack.js は window.HK_PACK_Q に積んでから HK.Packs.take() を呼ぶ） ---------- */
   P.take = function () {

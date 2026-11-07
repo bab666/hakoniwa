@@ -1,6 +1,6 @@
 /* 箱庭シミュレーター：追加パックを組み立てる（本体の build.js とは別に、パックだけを作り直せる）
    node hakoniwa-tools/build/build-pack.js <パックのフォルダ（hakoniwa-packs/set-a など）> [--build=full|zenrei]（既定は pack.json の builds 全部）
-       [--out=<ビルドのフォルダの代わり>] [--codes=<コードのファイル>] [--dist] [--no-min]
+       [--out=<ビルドのフォルダの代わり>] [--codes=<コードのファイル>] [--dist] [--no-min] [--codes-changed]
    ・パックのフォルダ：pack.json と js/*.js。pack.json の形（hakoniwa-packs/README.md）：
        { "id": "set-a", "slot": "set-a", "name": "セットの名前", "desc": "紹介（コードの入力画面に出す。部屋の名前は書かない）",
          "builds": ["full", "zenrei"], "api": 1,
@@ -17,6 +17,7 @@
      "*" のコードは全部のパックに入る（まとめ用。1つのコードで全部のセットが開く）。
      版ごとのコード（2026-11-07）：鍵に接尾辞の無いコードは R18版（--build=full）の封に、"set-a@zen"・"*@zen" は全年齢版（--build=zenrei）の封に使う。
      全年齢版のコードが無い鍵は、全年齢版でも R18版のコードで封をする（後方互換。警告を出す）
+     前の pack.js を開けたコードが今のコードの一覧に無ければ止める（入れ直しを防ぐ。わざと変えるときは --codes-changed。2026-11-07）
    ・書き出し：<ビルド>/packs/<枠>/pack.js と、<ビルド>/packs/index.js（サイト公開版用：packs にあるパックの枠の一覧）。
      --dist：配布用の zip（dist/<ビルド>-<枠>.zip。中身は packs/<枠>/pack.js だけ。本体のフォルダにそのまま解凍する）も作る。
      本体の配布用の zip は build-dist.js
@@ -56,9 +57,10 @@ const PC = require(path.join(ROOT, 'hakoniwa-full/js/pack-crypto.js'));
 /* 版ごとのコード（2026-11-07）："set-b"・"*" は R18版のコード、"set-b@zen"・"*@zen" は全年齢版のコード。
    全年齢版のコードが無い鍵は、全年齢版でも今までどおり R18版のコードで封をする（後方互換。警告を出す） */
 function codesFor(BUILD) {
+  let zc = false;
   const pick = k => {
     if (BUILD !== 'zenrei') return CODES[k] || [];
-    if (CODES[k + '@zen']) return CODES[k + '@zen'];
+    if (CODES[k + '@zen']) { zc = true; return CODES[k + '@zen']; }
     if ((CODES[k] || []).length) console.warn('※ ' + rel(codesPath) + ' に "' + k + '@zen"（全年齢版のコード）がありません。全年齢版の ' + P.id + ' は R18版の "' + k + '" のコードで封をします');
     return CODES[k] || [];
   };
@@ -67,7 +69,23 @@ function codesFor(BUILD) {
   const norms = codes.map(PC.norm);
   if (norms.some(c => c.length < 6)) throw new Error('コードは整えたあと（空白・- を除いて大文字）6文字以上にしてください');
   if (new Set(norms).size !== norms.length) throw new Error('同じコードが2回あります（整えたあとで同じになるもの。' + BUILD + '）');
-  return { codes, norms };
+  return { codes, norms, zc };
+}
+/* コードの入れ直しを防ぐ（2026-11-07）：書き出す先に前の pack.js があれば、前の封のコードの枠（keys）がすべて今のコードのどれかで開くかを見る。
+   開かない枠がある＝前のコードの一部が消えた・変わった（全年齢版に "<id>@zen" を足したときも）→ 前のコードで開けていた端末は入れ直しになるので止める。
+   わざと変えるときは --codes-changed。封をし直すだけ（コードの集合が同じ）なら利用者は聞かれない（packs.js が覚えたコードで開け直す） */
+function guardCodes(file, norms, BUILD) {
+  if (!fs.existsSync(file)) return;
+  let old = null;
+  try { const w = {}; new Function('window', fs.readFileSync(file, 'utf8'))(w); old = (w.HK_PACK_Q || [])[0]; } catch (e) { old = null; }
+  if (!old || !Array.isArray(old.keys) || (old.build && old.build !== BUILD)) return;
+  const lost = old.keys.filter(k => !norms.some(c => PC.unlock({ keys: [k], it: old.it }, c))).length;
+  if (!lost) return;
+  const msg = '前の ' + rel(file) + '（' + (old.v || '') + '）を開けたコード ' + old.keys.length + ' 個のうち ' + lost + ' 個が、今のコード（' + rel(codesPath) + '・' + BUILD + '）にありません。' +
+    'このまま作り直すと、前のコードで開けていた端末はコードの入れ直しになります' + (BUILD === 'zenrei' ? '（全年齢版に "' + P.id + '@zen"・"*@zen" を足したときも）' : '') +
+    '。コードのファイルが違っていないか確かめ、わざとコードを変えるときは --codes-changed を付けてください';
+  if (flag('--codes-changed')) { console.warn('※ ' + msg); return; }
+  throw new Error(msg);
 }
 
 const rel = p => { const r = path.relative(ROOT, p); return /^\.\./.test(r) ? p : r; };
@@ -82,7 +100,7 @@ P.chunks.forEach(c => {
 
 function buildOne(BUILD) {
   const STRIP = BUILD === 'zenrei';
-  const { codes, norms } = codesFor(BUILD);
+  const { codes, norms, zc } = codesFor(BUILD);
   const bdir = path.resolve(opt('out') ? path.join(opt('out'), 'hakoniwa-' + BUILD) : path.join(ROOT, 'hakoniwa-' + BUILD));
   const mainDir = path.join(ROOT, 'hakoniwa-' + BUILD);
   const html = fs.readFileSync(path.join(mainDir, 'index.html'), 'utf8'), MAN = MF.readManifest(html);
@@ -199,10 +217,16 @@ function buildOne(BUILD) {
   const r18only = BUILD === 'full' && order.every(id => /R-?18/.test(scen[id].kicker || ''));
   const head = { f: 1, id: P.id, slot: P.slot, v, api: API, build: BUILD, name: P.name, desc: P.desc || '' };
   if (r18only) head.r18only = 1;
+  /* 全年齢版を R18版と別のコード（@zen）で封をした印。覚えたコードで開かない端末に「全年齢版は別のコードになりました」と出す（packs.js） */
+  if (zc) head.zc = 1;
+  /* コードの集合の指紋（整えたコードを並べた HMAC の先頭 8 バイト。コードは分からない）。端末は開けたときの指紋を覚え、
+     指紋が同じなのに覚えたコードで開かないときは「コードは変わっていないはずなのに開けない」と別の案内にする（packs.js。2026-11-07） */
+  head.cf = PC.keyHex(PC._t.hmac(PC._t.utf8('hk-pack-codeset'), PC._t.utf8(norms.slice().sort().join('\n'))).subarray(0, 8));
   const js = '/* 箱庭シミュレーター 追加パック「' + P.name.replace(/\*\//g, '') + '」（' + BUILD + '・' + v + '）。中身は暗号化してあります。本体の「箱庭を追加」でコードを入れると開きます */\n' +
     '(window.HK_PACK_Q=window.HK_PACK_Q||[]).push(' + JSON.stringify(Object.assign(head, sealed)).replace(/</g, '\\u003c') + ');\n' +
     'if(window.HK&&window.HK.Packs&&window.HK.Packs.take)window.HK.Packs.take();\n';
   const outDir = path.join(bdir, 'packs', P.slot);
+  guardCodes(path.join(outDir, 'pack.js'), norms, BUILD);
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'pack.js'), js);
   writeIndex(path.join(bdir, 'packs'));
