@@ -38,6 +38,23 @@
 /* @event scen=set-c-kankin id=kk_star cat=bond tie=- label=窓のない部屋の偽物の星空 */
 /* @event scen=set-c-kankin id=kk_phone cat=bond tie=- label=外からの連絡と監視の手 */
 /* @event scen=set-c-kankin id=kk_search cat=bond tie=- label=外で捜索の手が近づく気配 */
+/* @event scen=set-c-kankin id=kk_a_drug_refuse cat=bond tie=- label=薬の杯に気づいて口をつけない */
+/* @event scen=set-c-kankin id=kk_ty_devote cat=bond tie=- label=尽くしすぎて自分を削る献身の日々 */
+/* @event scen=set-c-kankin id=kk_ty_bind cat=bond tie=- label=時刻と記録で縛られる束縛の日々 */
+/* @event scen=set-c-kankin id=kk_ty_purge cat=bond tie=- label=外の人と物が消されていく排除の日々 */
+/* @event scen=set-c-kankin id=kk_ty_depend cat=bond tie=- label=ひとりでいられず縋りつく依存の日々 */
+/* @event scen=set-c-kankin id=kk_goal_keep cat=bond tie=- label=目標のためにそばに置き続けようとする */
+/* @event scen=set-c-kankin id=kk_goal_smile cat=bond tie=- label=目標のために笑顔を向けさせようとする */
+/* @event scen=set-c-kankin id=kk_goal_name cat=bond tie=- label=目標のために名前を呼ばせようとする */
+/* @event scen=set-c-kankin id=kk_goal_ever cat=bond tie=- label=永遠に二人きりでいようとする */
+/* @event scen=set-c-kankin id=kk_goal_heart cat=bond tie=- label=体より先に心を求めようとする */
+/* @event scen=set-c-kankin id=kk_goal_forgive cat=bond tie=- label=閉じ込めたことを許されたいと願う */
+/* @event scen=set-c-kankin id=kk_goal_call cat=bond tie=- label=外と連絡をとろうと手を探す */
+/* @event scen=set-c-kankin id=kk_goal_calm cat=bond tie=- label=相手を怒らせないよう言葉を選ぶ */
+/* @event scen=set-c-kankin id=kk_goal_way cat=bond tie=- label=逃げ道をひそかに探して回る */
+/* @event scen=set-c-kankin id=kk_goal_home cat=bond tie=- label=外の家へ帰りたいと思い続ける */
+/* @event scen=set-c-kankin id=kk_goal_change cat=bond tie=- label=閉じ込める側を変えようと話しかける */
+/* @event scen=set-c-kankin id=kk_goal_live cat=bond tie=- label=閉ざされた部屋で暮らしを作っていく */
 /* @event scen=set-c-kankin id=kk_a_kaijo cat=bond tie=- label=優しさで囲い込まれる一日 */
 /* @event scen=set-c-kankin id=kk_a_drug cat=bond tie=- tags=night label=薬入りの杯を自分の手で飲み干す */
 /* @event scen=set-c-kankin id=kk_a_oitsume cat=bond tie=- label=逃げ場を言葉で塞がれていく */
@@ -132,11 +149,14 @@
   /* 出来事一つ：表 T.EV[key] から段の札で引き、{AL}・{BL} を埋めて記録にする */
   function ev(ctx, S, key, o) {
     o = o || {};
-    var rows = (TX().EV || {})[key]; if (!rows) return null;
-    var t = pk(ctx, S, rows, { g: 'fall', again: o.again });
+    var rows = o.rows || (TX().EV || {})[key]; if (!rows) return null;
+    /* 病み方の札（ty）の付いた行が今の病み方に合えば、その行を先に引く（共通の行は予備。2026-11-07 利用者の指示「病み方で出来事ががらりと変わるように」） */
+    var tyRows = o.rows ? null : rows.filter(function (r) { return r && typeof r === 'object' && r.ty && has(r.ty, S.ty); });
+    var t = (tyRows && tyRows.length ? pk(ctx, S, tyRows, { g: 'fall' }) : '') || pk(ctx, S, rows.filter(function (r) { return !(r && typeof r === 'object' && r.ty) || has(r.ty, S.ty); }), { g: 'fall', again: o.again });
     if (!t) return null;
     t = t.replace('{AL}', o.al ? aLine(ctx, S, o.al) : '').replace('{BL}', o.bl ? bLine(ctx, S, o.bl) : '');
-    var e = DK.say(ctx, { id: 'kk_' + key, cat: 'bond', actors: [S.A, S.B], t: t, a: S.A, b: S.B, why: 'ヤンデレ監禁の部屋：' + (o.why || LABEL[key] || key), face: faceOf(S, key), mag: o.mag || 0, fx: o.fx });
+    if (/hyohen|dark4|caught/.test(key)) S.angerN = (S.angerN || 0) + 1;
+    var e = DK.say(ctx, { id: o.id || 'kk_' + key, cat: 'bond', actors: [S.A, S.B], t: t, a: S.A, b: S.B, why: 'ヤンデレ監禁の部屋：' + (o.why || LABEL[key] || key), face: faceOf(S, key), mag: o.mag || 0, fx: o.fx });
     if (e) S.nEv++;
     return e;
   }
@@ -236,12 +256,21 @@
     DK.gauge(S, 'obsess', { v: Math.max(50, O && O.level ? O.level(ctx, A, B) || 0 : 0), dir: 'up', stages: [60, 80, 95] });
     S.firm = firm;
     S.apathy = !!(HK.Ties && HK.Ties.apathy && (HK.Ties.apathy(ctx, A, B) || HK.Ties.apathy(ctx, B, A)));
+    S.gsA = goalOf(ctx, A, 'keeper', 's'); S.glA = goalOf(ctx, A, 'keeper', 'l'); S.gsB = goalOf(ctx, B, 'kept', 's'); S.glB = goalOf(ctx, B, 'kept', 'l');
+    S.goalHit = 0; S.goalDone = {}; S.angerN = 0;
     /* 分かれ道（薬が切なら「薬を飲ませる」を選ばない） */
     var aKeys = S.drug ? ['kaijo', 'drug', 'oitsume', 'hyohen'] : ['kaijo', 'oitsume', 'hyohen'], at = Object.assign({}, A_TAB);
     if (!S.drug) at.free = 'kaijo';
     S.abr = DK.branch(ctx, A, at, aKeys);
     var bt = Object.assign({}, B_TAB); if (firm && bt[S.perB] === 'obey') bt[S.perB] = 'refuse';
     S.bbr = DK.branch(ctx, B, bt, ['obey', 'lie', 'escape', 'refuse']);
+    /* 目標が分かれ道に効く（2026-11-07 利用者の指示）：許されたい閉じ込める側は豹変・追い詰めより懐柔へ、笑顔を向けさせたい側も懐柔へ。
+       逃げ道を探す・外へ帰りたい受けは脱出へ、怒らせない受けは従うへ、相手を変えたい受けは嘘（取り入る）へ。半分の確かさで */
+    var gA = { forgive: 'kaijo', smile: 'kaijo', keep: 'oitsume' }, gB = { way: 'escape', home: 'escape', calm: 'obey', change: 'lie' };
+    [S.glA.k, S.gsA.k].forEach(function (g) { var k2 = gA[g]; if (k2 && S.abr.k !== k2 && ctx.rng() < 0.5) { S.abr = { k: k2, odd: false, per: S.abr.per, goal: g }; S.goalHit++; } });
+    [S.glB.k, S.gsB.k].forEach(function (g) { var k2 = gB[g]; if (k2 && S.bbr.k !== k2 && !S.bbr.goal && ctx.rng() < 0.5) { S.bbr = { k: k2, odd: false, per: S.bbr.per, goal: g }; S.goalHit++; } });
+    if (S.glB.k === 'live') DK.push(S, 'want', 8);
+    if (S.glA.k === 'heart') DK.push(S, 'want', 4);
     /* 逃げる日（脱出・拒む・嘘のばれた受け。最後の日の前まで） */
     S.escDay = /^(escape|refuse)$/.test(S.bbr.k) || ctx.rng() < 0.25 ? clamp(Math.floor(days * (0.4 + ctx.rng() * 0.25)), 1, days - 2) : -1;
     S.lieDay = S.bbr.k === 'lie' ? clamp(Math.floor(days * (0.35 + ctx.rng() * 0.3)), 1, days - 2) : -1;
@@ -249,7 +278,6 @@
     S.srDays = {};
     var nS = S.search === 'strong' ? 3 + (ctx.rng() < 0.5 ? 1 : 0) : S.search === 'weak' ? 1 + (ctx.rng() < 0.5 ? 1 : 0) : 0;
     for (var i = 0; i < nS; i++) S.srDays[1 + Math.floor(ctx.rng() * (days - 1))] = 1;
-    S.gsA = goalOf(ctx, A, 'keeper', 's'); S.glA = goalOf(ctx, A, 'keeper', 'l'); S.gsB = goalOf(ctx, B, 'kept', 's'); S.glB = goalOf(ctx, B, 'kept', 'l');
     A.goal = { id: 'kk', label: '短期「' + S.gsA.t + '」／長期「' + S.glA.t + '」' }; B.goal = { id: 'kk', label: '短期「' + S.gsB.t + '」／長期「' + S.glB.t + '」' };
     S.G.forEach(function (g) { g.gone = true; });
     if (HK.KankinR18 && HK.KankinR18.setup) HK.KankinR18.setup(ctx, S);
@@ -275,7 +303,8 @@
     if (b === 'obey') { DK.push(S, 'resist', -4 * k); DK.push(S, 'want', 2 * k); }
     else if (b === 'lie') { DK.push(S, 'want', 4 * k); DK.push(S, 'resist', -3 * k); }
     else if (b === 'refuse') DK.push(S, 'want', 1 * k);
-    DK.push(S, 'dark', 85 / (S.days * 0.7));
+    /* 長期目標「永遠に二人きり」は怖さの段が早く進み、「許されたい」は遅い */
+    DK.push(S, 'dark', 85 / (S.days * 0.7) * (S.glA.k === 'ever' ? 1.3 : S.glA.k === 'forgive' ? 0.75 : 1));
   }
   function stepFall(ctx, S) { var r = DK.push(S, 'fall', fallCalc(S) - DK.val(S, 'fall')); return r.rose ? r.stage : 0; }
   /* 体の場面のあと（kankin-r18.js が呼ぶ） */
@@ -304,6 +333,32 @@
     return out;
   }
   function slot(ctx, S, pool) { return fromPool(ctx, S, pool, false) || fromPool(ctx, S, pool, true); }
+  /* 病み方ごとの出来事（kankin-text-d.js の T.TY。2026-11-07 利用者の指示「病み方の違いで出来事ががらりと変わるように」） */
+  var TY_LABEL = { devote: '献身の日々', bind: '束縛の日々', purge: '排除の日々', depend: '依存の日々' }, PART_JA = { m: '朝', d: '日中', n: '夜' };
+  function tyEv(ctx, S, part) {
+    var rows = ((TX().TY || {})[S.ty] || {})[part]; if (!rows) return null;
+    var e = ev(ctx, S, 'ty_' + S.ty + '_' + part, { rows: rows, id: 'kk_ty_' + S.ty, why: TY_LABEL[S.ty] + '（' + PART_JA[part] + '）' });
+    if (e) S.tyN = (S.tyN || 0) + 1;
+    return e;
+  }
+  /* 区切りの出来事：病み方の表を先に（8 割）、使い切ったか外れたら共通の表 */
+  function partSlot(ctx, S, part, pool) {
+    if (tyEv(ctx, S, part)) return true;
+    return !!(slot(ctx, S, pool) || tyEv(ctx, S, part));
+  }
+  /* 目標の出来事（kankin-text-d.js の T.GOAL。2026-11-07 利用者の指示「短期・長期の目標のために行動しているか」） */
+  var GOAL_JA = { keep: 'そばに置き続ける', smile: '笑顔を向けさせる', name: '名前を呼ばせる', ever: '永遠に二人きり', heart: '心まで手に入れる', forgive: '許されたい',
+    call: '外と連絡をとる', calm: '怒らせない', way: '逃げ道を探す', home: '外へ帰る', change: '相手を変える', live: 'ここで生きていく' };
+  function goalEv(ctx, S) {
+    var ks = [S.gsA.k, S.glA.k, S.gsB.k, S.glB.k].filter(function (k) { return (TX().GOAL || {})[k] && DK.fresh(S, 'goal:' + k + ':' + (S.goalN || 0)); });
+    for (var i = ks.length - 1; i > 0; i--) { var j = Math.floor(ctx.rng() * (i + 1)), x = ks[i]; ks[i] = ks[j]; ks[j] = x; }
+    for (var q = 0; q < ks.length; q++) {
+      var k = ks[q], side = k === S.gsA.k || k === S.glA.k ? S.A : S.B;
+      var e = ev(ctx, S, 'goal_' + k, { rows: TX().GOAL[k], id: 'kk_goal_' + k, why: '目標（' + side.name + '：' + GOAL_JA[k] + '）' });
+      if (e) { S.goalHit++; S.goalN = (S.goalN || 0) + 1; S.goalDone[k] = (S.goalDone[k] || 0) + 1; return e; }
+    }
+    return null;
+  }
   function phase(ctx, s) {
     var S = S_(ctx); if (!S || S.ended) return;
     var d = Math.floor(s / 3), t = s % 3, last = d === S.days - 1, A = S.A, B = S.B;
@@ -316,9 +371,9 @@
       drift(ctx, S);
       var dk = DK.stage(S, 'dark');
       S.darkDue = dk > (S.darkSeen || 0) ? dk : 0;
-      slot(ctx, S, M_POOL);
+      partSlot(ctx, S, 'm', M_POOL);
       /* 外との連絡：一日おきに（設定の種） */
-      if (d % 3 === 1) { if (ev(ctx, S, 'phone')) S.setHit++; }
+      if (d % (S.days > 12 ? 4 : 3) === 1) { if (ev(ctx, S, 'phone')) S.setHit++; }
       var fs = stepFall(ctx, S);
       if (fs && DK.once(S, 'fall' + fs)) ev(ctx, S, 'fall' + fs, { bl: 'fall' + fs, mag: 12 });
     } else if (t === 1) {
@@ -330,7 +385,7 @@
     var ss = DK.stage(S, 'sane');
     if (t !== 2 && ss && !S.ended && DK.once(S, 'sane' + ss)) ev(ctx, S, 'sane' + ss, { mag: 10 });
     /* 空の区切りを作らない */
-    if (S.nEv === n0 && !S.ended) slot(ctx, S, t === 0 ? M_POOL : t === 1 ? D_POOL : N_POOL);
+    if (S.nEv === n0 && !S.ended) partSlot(ctx, S, ['m', 'd', 'n'][t], t === 0 ? M_POOL : t === 1 ? D_POOL : N_POOL);
     var r = ctx.rel && ctx.rel[A.i] && ctx.rel[A.i][B.i];
     if (r && t === 2) ctx.mod2(A, B, { att: 2 }, { att: DK.stage(S, 'fall') >= 1 ? 3 : 0, ten: DK.val(S, 'fear') >= 60 ? 2 : 0 });
   }
@@ -342,7 +397,7 @@
         /* 無関心の向きの二人（関係の「無関心」）は、嫉妬の節目を出さない（嫉妬・心配の出来事にしない） */
         if (k === 1 && S.apathy) continue;
         ev(ctx, S, 'dark' + k, { al: k === 1 ? 'jeal' : k === 4 ? 'hyohen' : null, mag: 15 });
-        if (k === 2 && S.drug) S.cupToday = true;
+        if (k === 2 && S.drug) { if (noticeCup(ctx, S)) S.cupWary = true; else S.cupToday = true; }
       }
       S.darkSeen = S.darkDue; S.darkDue = 0;
     }
@@ -357,9 +412,21 @@
     if (S.srDays[d]) { if (ev(ctx, S, 'search', { mag: 8 })) { S.setHit++; return; } }
     /* 分かれ道は一日おき（閉じ込める側と閉じ込められる側を交互に）。ほかの日は日々の出来事。表を使い切ったら日々の出来事へ */
     var lieGone = S.lieFound && S.bbr.k === 'lie', bk = lieGone ? 'refuse' : S.bbr.k, ak = S.abr.k, done = null;
-    if (d % 2 === 1) { done = ev(ctx, S, 'a_' + ak, { al: ak }); if (done && ak === 'drug') S.cupToday = true; }
-    else if (d % 4 === 2) done = ev(ctx, S, 'b_' + bk, { bl: bk });
-    if (!done) slot(ctx, S, D_POOL);
+    if (d % 3 === 1) {
+      /* 薬の杯：邪神村RTA（solo-jashin-r18.js）と同じ気づきの見込み（用心深さ・知恵。一度気づいた人は警戒している）。気づけば飲まない */
+      if (ak === 'drug' && noticeCup(ctx, S)) done = ev(ctx, S, 'a_drug_refuse', { why: '薬の杯に気づいて飲まなかった' });
+      else { done = ev(ctx, S, 'a_' + ak, { al: ak }); if (done && ak === 'drug') S.cupToday = true; }
+    }
+    else if (d % 6 === 2) done = ev(ctx, S, 'b_' + bk, { bl: bk });
+    /* 目標が行動に効く：分かれ道でない日の 4 割は、住人ごとの目標の出来事 */
+    if (!done && (ctx.rng() < 0.45 || (!S.goalN && d >= Math.floor(S.days / 3)))) done = goalEv(ctx, S);
+    if (!done) partSlot(ctx, S, 'd', D_POOL);
+  }
+  function noticeCup(ctx, S) {
+    var t = S.B.tr || {}, p = 0.15 + (t.caution || 0) * 0.45 + (t.a || 0) * 0.2 + (S.cupWary ? 0.25 : 0);
+    var ok = ctx.rng() < p;
+    if (ok) S.cupWary = true;
+    return ok;
   }
   function escapeDay(ctx, S) {
     S.esc = { d: S.d };
@@ -385,8 +452,10 @@
       return;
     }
     if (KR && KR.night && KR.night(ctx, S, '')) return;
-    if (d === 2 || (d > 2 && d % 4 === 2)) { if (ev(ctx, S, 'confess', { al: 'confess' })) return; }
-    slot(ctx, S, N_POOL);
+    /* 長期目標「心まで手に入れる」の閉じ込める側は告白の夜が多い */
+    var cf = S.glA.k === 'heart' ? d % 3 === 2 : d === 2 || (d > 2 && d % 5 === 2);
+    if (cf && ctx.rng() < 0.6) { if (ev(ctx, S, 'confess', { al: 'confess' })) { if (S.glA.k === 'heart') S.goalHit++; return; } }
+    partSlot(ctx, S, 'n', N_POOL);
   }
   function noYoru(ctx, S) {
     var N = TX().NOYORU || {}, R0 = DK.R18, k = S.noBody || !(R0 && R0.ok(ctx, S, S.A, S.B)) ? 'body' : 'want', t = rnd(ctx, N[k]);
@@ -402,18 +471,44 @@
     else if (shinjuOk(ctx) && /^(purge|depend)$/.test(S.ty) && (ss >= 1 || DK.stage(S, 'obsess') >= 2) && ctx.rng() < 0.3) k = 'shinju';
     else if ((S.search === 'strong' && fs < 3 && ctx.rng() < 0.65) || (S.search === 'weak' && fs < 2 && ctx.rng() < 0.3)) k = 'rescue';
     else if ((b === 'lie' && !S.lieFound && fs <= 2 && ctx.rng() < 0.75) || (S.firm && S.ty === 'depend' && DK.stage(S, 'resist') <= 1 && ctx.rng() < 0.5)) k = 'gyakuten';
+    /* 目標が結末に効く：相手を変えたい受けは逆転、外へ帰りたい受けは脱出、ここで生きていく受けは共依存へ寄る */
+    else if (S.glB.k === 'change' && fs <= 2 && ctx.rng() < 0.3) { k = 'gyakuten'; S.goalHit++; }
+    else if (S.glB.k === 'home' && fs < 2 && ctx.rng() < 0.5) { k = 'escape'; S.goalHit++; }
     else if (/^(escape|refuse)$/.test(b) && fs < 2 || (S.esc && S.esc.caught && fs < 1)) k = 'escape';
+    else if (S.glB.k === 'live' && fs >= 1) { k = 'kyoizon'; S.goalHit++; }
     else if (want >= 60 && fs >= 1) k = 'kyoizon';
     else k = fs >= 1 ? 'kyoizon' : 'escape';
     S.endK = k;
-    if (k === 'escape') S.endSub = /^(gentle|devoted|polite|shy)$/.test(S.perA) && ctx.rng() < 0.6 ? 'minogasu' : 'tsuho';
+    if (k === 'escape') S.endSub = (S.glA.k === 'forgive' || /^(gentle|devoted|polite|shy)$/.test(S.perA)) && ctx.rng() < 0.6 ? 'minogasu' : 'tsuho';
     return k;
   }
   /* 心中は死ネタの重さが「重い」のときだけ（本体の HK.Dark。死ネタの重さが「おまかせ」なら展開の重さ。この部屋の既定は重い） */
   function shinjuOk(ctx) { var D = HK.Dark; return !!(D && D.on && D.on(ctx, 'shinju') === 'dark'); }
+  /* 目標が叶ったか（1／0） */
+  function aim(S, g, k) {
+    var fs = DK.stage(S, 'fall'), want = DK.val(S, 'want'), stay = !/^(escape|rescue)$/.test(k);
+    switch (g) {
+      case 'keep': return stay ? 1 : 0;
+      case 'smile': return fs >= 2 && k !== 'shinju' ? 1 : 0;
+      case 'name': return fs >= 1 && stay ? 1 : 0;
+      case 'ever': return /^(kyoizon|broken|shinju)$/.test(k) ? 1 : 0;
+      case 'heart': return (fs >= 2 && want >= 75) || k === 'kyoizon' ? 1 : 0;
+      case 'forgive': return (k === 'escape' && S.endSub === 'minogasu') || k === 'gyakuten' || (k === 'kyoizon' && want >= 75) ? 1 : 0;
+      case 'call': return k === 'rescue' || (S.contact === 'watched' && (S.goalDone.call || 0) > 0) ? 1 : 0;
+      case 'calm': return S.angerN <= 2 ? 1 : 0;
+      case 'way': return S.esc || k === 'escape' ? 1 : 0;
+      case 'home': return /^(escape|rescue)$/.test(k) ? 1 : 0;
+      case 'change': return k === 'gyakuten' || (S.esc && S.esc.back) || (k === 'escape' && S.endSub === 'minogasu') ? 1 : 0;
+      case 'live': return /^(kyoizon|broken)$/.test(k) ? 1 : 0;
+    }
+    return 0;
+  }
   function ending(ctx, S) {
     var k = decide(ctx, S), E = TX().END || {}, key = k === 'escape' ? 'escape_' + S.endSub : k;
     var t = rnd(ctx, E[key]);
+    /* 結末の段に、二人の長期目標が叶ったかの一文 */
+    var GE = TX().GOAL_END || {};
+    [S.glA.k, S.glB.k].forEach(function (g) { var l = GE[g]; if (l) t += l[aim(S, g, k) ? 0 : 1]; });
     var fc = {}; fc[S.B.i] = { broken: 'smile_lover', kyoizon: 'smile_lover', gyakuten: 'joy', escape: 'sad', rescue: 'sad', shinju: 'sad' }[k];
     DK.say(ctx, { id: 'kk_end_' + k, cat: 'bond', actors: [S.A, S.B], t: t, a: S.A, b: S.B, mag: 40, why: 'ヤンデレ監禁の部屋：結末（' + END_NAME[k] + '）', face: fc,
       fx: function () { if (k === 'shinju') { S.A.fate = '心中'; S.B.fate = '心中'; } } });
@@ -422,10 +517,10 @@
   function finish(ctx) {
     var S = S_(ctx); if (!S) return;
     var k = decide(ctx, S), A = S.A, B = S.B;
-    var aimA = { broken: 1, kyoizon: 1, gyakuten: 0, escape: 0, rescue: 0, shinju: 1 }[k], aimB = { broken: 0, kyoizon: 0, gyakuten: 1, escape: 1, rescue: 1, shinju: 0 }[k];
+    var aimA = [aim(S, S.gsA.k, k), aim(S, S.glA.k, k)], aimB = [aim(S, S.gsB.k, k), aim(S, S.glB.k, k)];
     ctx.flags.kankin = { a: A.i, b: B.i, days: S.days, rel: GRP_NAME[S.grp], ty: TY_NAME[S.ty], ab: A_NAME[S.abr.k], bb: B_NAME[S.bbr.k], aOdd: S.abr.odd, bOdd: S.bbr.odd,
       chain: S.chain, contact: S.contact, search: S.search, drug: S.drug, endK: k, end: END_NAME[k], sex: S.r18 ? S.r18.n : 0, esc: S.esc ? (S.esc.back ? 'back' : 'caught') : '',
-      fall: DK.stage(S, 'fall'), sane: Math.round(DK.val(S, 'sane')), fear: Math.round(DK.val(S, 'fear')), gsA: S.gsA.t, glA: S.glA.t, gsB: S.gsB.t, glB: S.glB.t, aimA: aimA, aimB: aimB };
+      fall: DK.stage(S, 'fall'), sane: Math.round(DK.val(S, 'sane')), fear: Math.round(DK.val(S, 'fear')), gsA: S.gsA.t, glA: S.glA.t, gsB: S.gsB.t, glB: S.glB.t, aimA: aimA, aimB: aimB, goalHit: S.goalHit, tyN: S.tyN || 0 };
     A.fate = '閉じ込めた人'; A.fateNote = B.name + 'を部屋に閉じ込めた';
     B.fate = k === 'shinju' ? '心中' : '閉じ込められた人'; B.fateNote = A.name + 'の部屋に閉じ込められた';
     if (k === 'shinju') { A.fate = '心中'; }
@@ -439,8 +534,9 @@
     var a = X.nm(R.a), b = X.nm(R.b);
     lines.push('閉ざされた' + R.days + '日（' + a + 'が' + b + 'を閉じ込めた・' + R.rel + '・病み方は' + R.ty + '）');
     lines.push(a + '：' + R.ab + (R.aOdd ? '（らしくない）' : '') + '／' + b + '：' + R.bb + (R.bOdd ? '（らしくない）' : ''));
-    lines.push(a + 'の目標：短期「' + R.gsA + '」／長期「' + R.glA + '」（' + (R.aimA ? '叶った' : '叶わなかった') + '）');
-    lines.push(b + 'の目標：短期「' + R.gsB + '」／長期「' + R.glB + '」（' + (R.aimB ? '叶った' : '叶わなかった') + '）');
+    var yes = function (v) { return v ? '叶った' : '叶わなかった'; }, am = function (v, i) { return Array.isArray(v) ? v[i] : v; };
+    lines.push(a + 'の目標：短期「' + R.gsA + '」（' + yes(am(R.aimA, 0)) + '）／長期「' + R.glA + '」（' + yes(am(R.aimA, 1)) + '）');
+    lines.push(b + 'の目標：短期「' + R.gsB + '」（' + yes(am(R.aimB, 0)) + '）／長期「' + R.glB + '」（' + yes(am(R.aimB, 1)) + '）');
     if (R.esc) lines.push(b + 'は一度、逃げ出そうとした（' + (R.esc === 'back' ? '開いた扉の前で、自分から戻った' : '見つかって連れ戻された') + '）');
     lines.push('結末：' + R.end);
     X.C.forEach(function (c) { c.afterDone = true; });
