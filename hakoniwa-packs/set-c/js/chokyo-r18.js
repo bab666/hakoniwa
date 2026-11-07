@@ -92,7 +92,7 @@
     if (ins && FINGER_PREV.test(prev) && !FINGER_OUT.test(prev) && !FINGER_PREV.test(ins.replace(/「[^」]*」/g, ''))) ins = '{a}はゆっくりと指を抜いた。' + ins;
     paras.push(ins);
     /* 女性の攻め × 男性の受けは指と手で繋がるので、最中の段を一つ多く（流れの管理の性感が山場の前に届くように） */
-    var nm = (form === 'long' ? 3 : form === 'mid' ? 2 : 1) + (sh === 'fm' ? 1 : 0);
+    var nm = (form === 'long' ? 3 : form === 'mid' ? 2 : 1) + (sh === 'fm' ? (form === 'short' ? 2 : 1) : 0);
     for (var i = 0; i < nm; i++) paras.push(P(T.MID, 'mid'));
     /* 濃いときのもう一度は、山場と同じ段落に続けて書く（もう一度の段で二度目の山場まで行く） */
     var pk0 = ero ? P(T.PEAKE, 'peak') || P(T.PEAK, 'peak') : P(T.PEAK, 'peak');

@@ -199,7 +199,7 @@
     decay: 0.998, actRate: 1e-9,
     derived: ['warmth', 'honesty', 'jealous', 'impulse'],
     env: [
-      { id: 'days', label: '日数', min: 5, max: 14, def: 7, lo: '5日', hi: '14日', unit: '日', desc: '地下室で過ごす日数。1日は朝・日中・夜の3区切り。最後の前の夜がお披露目会、最後の夜が競り' },
+      { id: 'days', label: '日数', min: 5, max: 10, def: 7, lo: '5日', hi: '10日', unit: '日', desc: '地下室で過ごす日数。1日は朝・日中・夜の3区切り。最後の前の夜がお披露目会、最後の夜が競り' },
       { id: 'origin', label: '地下室に来たわけ', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ（二人の関係から決まる契約）' }, { v: 'debt', label: '契約：借金' }, { v: 'curious', label: '契約：興味' }, { v: 'love', label: '契約：相手への想い' }, { v: 'self', label: '契約：自分で望んだ調教' }, { v: 'captured', label: 'やむを得ぬ事情でやってきた' }],
         desc: '奴隷は本音が「止めない」まで来ると夜の場面が起きる。やむを得ぬ事情でやってきた奴隷（借金の肩代わり・身内の代わり・行き場を失った・約束の代償・断れない相手からの話）は、本当は帰りたい。調教と並行して手がかりを集め、脱出を目指す' },
       { id: 'strict', label: '厳しさ', type: 'select', def: 'mid', options: [{ v: 'soft', label: 'やさしい（痛みは使わない）' }, { v: 'mid', label: 'ふつう' }, { v: 'hard', label: '厳しい（罰が重く、進みが早い）' }], desc: '厳しいほど従順と開発が早く進み、心の壊れも進みやすい' },
@@ -226,7 +226,7 @@
     goals: [],
     stepGroup: function (label) { var m = /^(DAY\d+（.）)(.+)$/.exec(label); return m ? { group: m[1], sub: m[2] } : null; },
     steps: function (env) {
-      var n = Math.max(5, Math.min(14, +env.days || 7)), s = [];
+      var n = Math.max(5, Math.min(10, +env.days || 7)), s = [];
       for (var d = 0; d < n; d++) for (var t = 0; t < 3; t++) s.push('DAY' + (d + 1) + '（' + WEEK[d % 7] + '）' + PART[t]);
       return s;
     },
@@ -255,7 +255,7 @@
     DK.heavyDefault(ctx);
     var C = DK.cast(ctx, { field: 'part', top: 'trainer', bottom: 'slave', others: ['slave2', 'guest'], auto: auto });
     var A = C.A, B = C.B, Pp = P();
-    var days = Math.max(5, Math.min(14, +env.days || 7));
+    var days = Math.max(5, Math.min(10, +env.days || 7));
     var rk = relKind(ctx, A, B);
     var S = ctx.ck = { A: A, B: B, days: days, rk: rk, used: {},
       strict: /^(soft|mid|hard)$/.test(env.strict) ? env.strict : 'mid', tools: /^(hand|basic|full)$/.test(env.tools) ? env.tools : 'basic',
@@ -418,22 +418,43 @@
     var top = pk(ctx, byPer(T.TOP, A), { g: 'obey' });
     var gk = 'sens_' + k, rose = null;
     var react = pk(ctx, (T.REACT || {})[S.br], { g: 'obey' });
-    var tx = [head, body, top, react].filter(Boolean).join('');
     var lewd = !PARTS[k].mind && !S.noBody;
-    /* 計器を進める */
+    /* 計器を進める（感度の前後を覚えて、感度の変化の一文と理由の欄に出す。エロトラップダンジョンの開発度の見せ方） */
     var inc = Math.round((14 + ctx.rng() * 6) * sk * mk * (S.gsB.k === 'oboeru' ? 1.12 : 1));
+    var v0 = S.gauges[gk] ? Math.round(DK.val(S, gk)) : null;
     if (S.gauges[gk]) rose = DK.push(S, gk, inc);
+    /* 短い声（本体の喘ぎ。感度の段 0〜1 ははじまりの声、段 2 は高まりの声） */
+    var mo = lewd && S.gauges[gk] ? shortMoan(ctx, B, DK.stage(S, gk) >= 2 ? 1 : 0) : '';
+    /* 感度の変化の一文（段が上がった区切りは節目の一件 sensUp が出すので、上がらなかった区切りに） */
+    var grow = S.gauges[gk] && !(rose && rose.rose) ? growLine(ctx, k, DK.stage(S, gk)) : '';
+    var tx = [head, body, mo, grow, top, react].filter(Boolean).join('');
+    var sensWhy = S.gauges[gk] ? '・' + PARTS[k].label + 'の感度 ' + v0 + '→' + Math.round(DK.val(S, gk)) : '';
     var oi = { obey: 9, flatter: 7, endure: 5, defy: 3 }[S.br] * sk * (S.gsB.k === 'taeru' ? 0.75 : 1) * (S.gsB.k === 'homerare' ? 1.15 : 1);
     DK.push(S, 'obey', Math.round(oi + ctx.rng() * 3));
     DK.push(S, 'crack', Math.round((S.method === 'drug' || S.method === 'hypno' ? 4 : S.method === 'pain' ? 3 : 1) * sk * (S.gsA.k === 'kowasanai' ? 0.6 : 1) * (S.gsB.k === 'taeru' ? 0.7 : 1)));
     DK.push(S, 'want', Math.round(3 + ctx.rng() * 3 + (S.method === 'sweet' ? 2 : 0) + (S.motive === 'self' ? 1 : 0)));
     var fb = S.br === 'defy' ? 'angry' : S.br === 'endure' ? 'normal' : S.br === 'flatter' ? 'joy' : 'shy';
-    say(ctx, PARTS[k].mind ? 'ck_train_mind' : 'ck_train', tx, { why: '調教（' + PARTS[k].label + '・' + METHOD_NAME[S.method] + '／' + B.name + 'は' + BR_NAME[S.br] + '）', lewd: lewd, face: faces([[B, fb]]) });
+    say(ctx, PARTS[k].mind ? 'ck_train_mind' : 'ck_train', tx, { why: '調教（' + PARTS[k].label + '・' + METHOD_NAME[S.method] + '／' + B.name + 'は' + BR_NAME[S.br] + sensWhy + '）', lewd: lewd, face: faces([[B, fb]]) });
     if (rose && rose.rose) sensUp(ctx, k, rose.stage);
     /* 褒美か罰 */
     var pr = { reward: 0.72, even: 0.5, punish: 0.28 }[S.ratio] + (S.br === 'obey' ? 0.12 : S.br === 'defy' ? -0.15 : 0);
     if (ctx.rng() < pr) reward(ctx); else punish(ctx);
     if (S.B2 && ctx.rng() < 0.3) s2Event(ctx, true);
+  }
+  /* 部位の言い方（感度の変化の一文の {p}。体の語は印） */
+  var PART_W = { nip: '{乳首}', ear: '耳', mouth: '喉の奥', pro: '{前立腺}', colon: '{結腸}', vag: '{女性器}', cock: '{男性器}' };
+  function growLine(ctx, k, st) {
+    var S = f(ctx), w = PART_W[k]; if (!w) return '';
+    var t = pk(ctx, ((TX().GROW || {})[st]) || []);
+    return t ? t.split('{p}').join(w) : '';
+  }
+  function shortMoan(ctx, who, st) {
+    var E = HK.Ero; if (!E || !E.moan || HK.SAFE_ON) return '';
+    var m = '';
+    try { m = String(E.moan(ctx, who, st, {}) || ''); } catch (e) { m = ''; }
+    m = m.replace(/^「|」$/g, '').replace(/♡+/g, '').replace(/[ 　]+$/, '');
+    if (!m || m.length > 24) return '';
+    return '{b}「' + m + '」';
   }
   function sensUp(ctx, k, st) {
     var S = f(ctx), T = TX();
@@ -724,7 +745,8 @@
     lines.push('調教の' + R.days + '日（' + a + 'が調教師、' + b + 'が奴隷）');
     lines.push('調教師の型：' + R.method + (R.methodOdd ? '（らしくない）' : '') + '／精神のケア：' + R.care + '／躾ける深さ：' + R.depth + '／' + b + '：' + R.br + (R.brOdd ? '（らしくない）' : ''));
     var sk = Object.keys(R.sens || {});
-    if (sk.length) lines.push('感度：' + sk.map(function (k) { return k + ' ' + R.sens[k]; }).join('／'));
+    /* 部位ごとの感度（エロトラップダンジョンの開発度と同じ形の一行。テキストの書き出し・共有の札にも出る） */
+    if (sk.length) lines.push('感度：' + sk.map(function (k) { return k + R.sens[k]; }).join(' '));
     lines.push('従順 ' + R.obey + '／依存 ' + R.dep + '／心の壊れ ' + R.crack + (R.noBody ? '（体には触れない心の躾けだけ）' : ''));
     (R.goals || []).forEach(function (g) { lines.push(g.who + 'の目標：短期「' + g.s + '」（' + (g.sOk ? '叶った' : '叶わなかった') + '）／長期「' + g.l + '」（' + (g.lOk ? '叶った' : '叶わなかった') + '）'); });
     lines.push('調教 ' + R.trains + '回／褒美 ' + R.rewards + '回／罰 ' + R.punish + '回／エッチ ' + R.sex + '回');
@@ -733,7 +755,11 @@
     if (!R.escaped && !R.letGo) lines.push('落札額：' + kanji(R.price) + (R.endK === 'sold' ? '' : '（' + (R.endK === 'own' ? '調教師が競りを止めた' : R.endK === 'free' ? '奴隷が札を下ろした' : R.endK === 'reverse' ? '競りは成立しなかった' : '競りは取り下げられた') + '）'));
     lines.push('結末：' + R.end);
     X.C.forEach(function (c) { c.afterDone = true; });
-    return { headline: (res.outcome || '') + '。', stats: R.captured ? [['日数', R.days + '日'], ['脱出の試み', R.tries + '回'], ['結末', R.end], ['エッチ', R.sex + '回']] : [['日数', R.days + '日'], ['落札額', kanji(R.price)], ['結末', R.end], ['エッチ', R.sex + '回']], lines: lines };
+    /* 結果のカードに、部位ごとの感度の横棒（ダンジョンの devBars と同じ並び：部位名・棒・数字） */
+    var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var after = sk.length && !R.noBody ? '<div class="ccard"><div class="hd"><span class="nm" style="font-size:16px">感度</span><span class="nums">調教された部位ほど伸び、次から感じやすくなる（30 で触れられるだけで声、65 でそこだけで達する）</span></div><div class="devbars">' +
+      sk.map(function (k) { var v = Math.max(0, Math.min(100, +R.sens[k] || 0)); return '<div class="devrow"><span class="pt">' + esc(k) + '</span><span class="bar"><i style="width:' + v + '%"></i></span><span class="nums">' + v + '</span></div>'; }).join('') + '</div></div>' : '';
+    return { after: after, headline: (res.outcome || '') + '。', stats: R.captured ? [['日数', R.days + '日'], ['脱出の試み', R.tries + '回'], ['結末', R.end], ['エッチ', R.sex + '回']] : [['日数', R.days + '日'], ['落札額', kanji(R.price)], ['結末', R.end], ['エッチ', R.sex + '回']], lines: lines };
   };
   /* 結果欄の二人の関係（結末から） */
   var CKC = {
