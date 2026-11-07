@@ -75,13 +75,13 @@
   put('omega', 'daily relCore jealous parody force preg mobnight long race night job food drink');
   put('ship', 'extreme closed story death force mobnight long race night undead food');
   put('jashin', 'extreme horror story death force preg mobnight short race night job undead food drink');
-  put('yakata', 'extreme closed story jealous death force mobnight race night undead');
+  put('yakata', 'extreme closed story p3 jealous death force mobnight race night undead');
   put('rpg', 'extreme story death race job undead');
   put('jinro', 'extreme story death force race night');
   put('locker', 'closed story p3 force mobnight short raceNight night');
   put('saimin', 'daily story duo force preg short raceNight will');
   put('massage', 'daily story duo force mobnight short raceNight');
-  put('dungeon', 'extreme story force mobnight short raceNight will');
+  put('dungeon', 'extreme story p3 force mobnight short raceNight will');
   put('hole', 'closed story force mobnight short raceNight will');
   put('kaihen', 'daily story force mobnight short raceNight will');
   put('train', 'daily story duo mobnight heat short raceNight will');

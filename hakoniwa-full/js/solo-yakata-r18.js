@@ -419,6 +419,11 @@
      起きても殺人は止まらない（false を返す）。凌辱のあと、そのまま殺されることもある */
   /* 体だけの夜の書き出し（{x}＝攻め、{y}＝受け。本番は SX） */
   var FREE_IN = ['吹雪の音が窓を叩いていた。廊下の暗がりで、{x}と{y}はすれ違いざまに目を合わせた。それだけで、行き先は決まった。', '眠れない夜だった。{x}が客室の扉を叩くと、{y}は何も訊かずに鍵を開けた。互いに欲しいものは、言わなくても分かっていた。', '暖炉の火が落ちた談話室に、二人だけが残っていた。{x}が立ち上がって{y}の手を引くと、{y}は黙ってついてきた。客室の扉が、静かに閉まった。'];
+  /* 恋人どうしの三人の夜の書き出し（{x}{y}{z}＝三人） */
+  var TRIO_IN = ['吹雪の音が一晩じゅう窓を叩いていた。一人で眠るには、館の夜は暗すぎた。{x}が客室の扉を開けると、{y}と{z}が並んでベッドに腰かけていた。誰からともなく、今夜は一緒にいようと言い出した。',
+    '廊下の灯りが落ちたあと、{x}は{y}の部屋をそっと叩いた。中には、もう{z}もいた。三人は顔を見合わせて小さく笑い、扉に鍵をかけた。怖さを忘れるには、互いの体温がいちばんだった。',
+    '暖炉の火が小さくなっても、三人は談話室から動かなかった。{y}が{x}の肩にもたれ、{z}がその手を握った。「＠{x}＠今夜は、離れたくない｜今夜は、離れたくない｜今夜は、離れたくありません」――{x}の言葉に、二人は黙って頷き、そのまま{x}の客室へ向かった。',
+    '眠れない夜だった。{z}が毛布を抱えて{x}と{y}の部屋を訪ねると、二人は何も訊かずに場所を空けた。三人で一つのベッドに潜り込むと、吹雪の音が少しだけ遠くなった。'];
   Y.R18.extra = function (S, day) {
     var rng = S.rng, lv = S.env.ylewd / 100, c = S.cul, T = Y.R18T;
     /* 夜の起こりやすさ（全体の環境値 night。pos.js の HK.Pos.nightK）：住人どうしの合意の場面（吊り橋・大浴場・凍える夜・体だけの夜・誘惑の取り調べ）の重みに掛け、0 なら出さない。
@@ -497,6 +502,25 @@
         ST.say(S, { actors: [sus, iv], tag: '誘惑の取り調べ', kind: 'climax', text: F(fp(S, T.interrogate.concat(T[o4[0] === sus ? 'interrogateT' : 'interrogateB'] || [])), { x: sus.name, y: iv.name }) + SX(S, o4[0], o4[1], 'plain', true), why: '疑われていた' + sus.name + 'が、取り調べ役の' + iv.name + 'を誘惑した（嘘・FC）。' + sus.name + 'への疑いが薄れる', mag: 34 });
         sus.m.sus = Math.max(0, sus.m.sus - 20); if (sus === c) S.fake++; if (iv.isDet) iv.seduced = true;
         Y.setRel(S, sus, iv, 0.25, '取り調べの夜', sus); } }); }
+    /* @event scen=yakata id=yakata_trio_lovers cat=夜 tie=lover tags=night label=恋人どうしの三人が客室で夜を過ごす */
+    /* 恋人どうしの三人の夜（2026-11-07）：三人のうち性的に対象になる組（HK.Pos.trioPlan の pairs。攻めどうし・受けどうしは不問）がすべて恋人などのとき。
+       住人の設定「三人の場面（3P）：しない」・恋愛・R18にしない相手は trioPlan が外す。形は HK.Trio3（受け攻めの設定から。HK.Pos.trioPool） */
+    var LOVE3 = /^(?:lover|mate|fated|spouse|fiance|honmei)$/;
+    var lv3 = function (a, b) { return (S.ties || []).some(function (t) { return ((t.a === a.i && t.b === b.i) || (t.a === b.i && t.b === a.i)) && LOVE3.test(t.type); }); };
+    if (HK.Trio3 && HK.Trio3.quick && HK.Pos && HK.Pos.trioPlan && !HK.SAFE_ON) {
+      var t3 = [];
+      for (var i3 = 0; i3 < live.length; i3++) for (var j3 = i3 + 1; j3 < live.length; j3++) for (var k3 = j3 + 1; k3 < live.length; k3++) {
+        var g3 = [live[i3], live[j3], live[k3]], pl3 = HK.Pos.trioPlan(g3[0], g3[1], g3[2]);
+        if (pl3 && pl3.pairs.every(function (pr) { return lv3(pr[0], pr[1]) && can(pr[0], pr[1]) && libOk(pr[0], pr[1]); }) && g3.every(function (q) { return !(HK.State && !HK.State.r18ok(q)) && !q.locked; })) t3.push(g3);
+      }
+      if (t3.length) EV.push({ cons: 1, w: 7, f: function () {
+        var g = rng.pick(t3), M3 = { x: g[0].name, y: g[1].name, z: g[2].name };
+        var head = F(fp(S, TRIO_IN), M3), body = HK.Trio3.quick(S, g, { env: S.env, ero: lwEro(S), head: head });
+        if (!body) return;
+        ST.say(S, { actors: g, tag: '三人の夜', kind: 'climax', text: body, why: PW(S) + '吹雪に閉ざされた館で、恋人どうしの' + g.map(function (q) { return q.name; }).join('・') + 'が、三人で一つの客室に集まった', mag: 32 });
+        Y.setRel(S, g[0], g[1], 0.15, '三人の夜'); Y.setRel(S, g[0], g[2], 0.15, '三人の夜'); Y.setRel(S, g[1], g[2], 0.15, '三人の夜');
+      } });
+    }
     /* 合意の場面（cons）に夜の起こりやすさの倍率を掛ける。0 なら外す */
     if (nK !== 1) EV = EV.filter(function (e) { if (e.cons) e.w *= nK; return !e.cons || e.w > 0; });
     if (!EV.length) return false;

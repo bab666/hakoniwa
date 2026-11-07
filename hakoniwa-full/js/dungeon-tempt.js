@@ -1,3 +1,4 @@
+/* @event-ok 誘惑の出来事で、恋人どうしの三人なら三人目が加わりやすくした（起こりやすさの分岐だけ。2026-11-07） */
 /* @event-ok 名前の呼びかけを減らした（2026-11-01 担当NC） */
 /* 箱庭シミュレーター（R18版のみ）: エロトラップダンジョン ― 仲間どうしの誘惑
    媚薬の罠（香・霧・湯・発情の呪いなど）を浴びた仲間や、堕ち度の高い仲間が、別の仲間を誘う。
@@ -114,6 +115,7 @@
     return !!(P() && P().okSex(a, b));
   }
   function loveOk(a, b) { return HK.State && HK.State.pairLove ? HK.State.pairLove(a, b) : !!(HK.canLove && HK.canLove(a, b) && HK.canLove(b, a)); }
+  var LOVE3 = /^(?:lover|mate|fated|spouse|fiance|honmei)$/;
   function hardTop(c) { return !!(P() && P().hardTop(c)); }
   function hasCurse(h, id) { return h.curses && h.curses.indexOf(id) >= 0; }
   var APH = /媚薬|発情|催淫|香|霧|湯|花|淫/;
@@ -145,15 +147,22 @@
     if (F.length < 2) return false;
     if ((S.tmN || 0) >= 4 || (S.tmLast != null && S.log.length - S.tmLast < 12)) return false;
     var rng = S.rng;
+    /* 恋人どうしの三人（2026-11-07）：三人のうち性的に対象になる組（HK.Pos.trioPlan の pairs。攻めどうし・受けどうしは不問）がすべて恋人など。
+       罠の熱が残っていれば誘いやすく、三人目も加わりやすい（設定が整えば三人の夜が出るように） */
+    var trioL = function (x, y, z) {
+      var pl = P() && P().trioPlan ? P().trioPlan(x, y, z) : null;
+      return !!(pl && pl.pairs.every(function (pr) { var r0 = rel(S, pr[0], pr[1]); return r0 && LOVE3.test(r0.tie || '') && sexOk(pr[0], pr[1]); }) && [x, y, z].every(function (q) { return HK.State && HK.State.r18ok(q); }));
+    };
+    var inTrio = function (x) { return F.some(function (y) { return y !== x && F.some(function (z) { return z !== x && z !== y && y.i < z.i && trioL(x, y, z); }); }); };
     var heat = function (x) {
       if (!HK.State || !HK.State.r18ok(x)) return 0;
       var aph = (hit && hit.h === x && aphroEv(hit.ev)) || hasCurse(x, 'heat');
-      var v = (aph && x.pleasure >= 35 ? 0.5 + x.pleasure / 150 : 0) + (x.corrupt >= 45 ? (x.corrupt - 35) / 60 : 0);
+      var v = (aph && x.pleasure >= 35 ? 0.5 + x.pleasure / 150 : 0) + (x.corrupt >= 45 ? (x.corrupt - 35) / 60 : 0) + (x.pleasure >= 25 && inTrio(x) ? 0.4 + x.pleasure / 150 : 0);
       /* 誘える相手がいる人だけ */
       return v > 0 && F.some(function (y) { return y !== x && sexOk(x, y); }) ? v : 0;
     };
     var a = HK.weighted(rng, F, heat);
-    if (!a || rng() > 0.2) return false;
+    if (!a || rng() > (inTrio(a) ? 0.35 : 0.2)) return false;
     var aph = (hit && hit.h === a && aphroEv(hit.ev)) || hasCurse(a, 'heat');
     var cand = F.filter(function (y) { return y !== a && sexOk(a, y); });
     var b = HK.weighted(rng, cand, function (y) { var r = rel(S, a, y) || {}; return 0.3 + (r.att || 0) / 40 + (r.tie && /lover|fwb|almost|mate|fated|spouse/.test(r.tie) ? 1 : 0); });
@@ -188,10 +197,14 @@
          住人の設定「三人の場面（3P）：しない」の人が三人のうちにいれば加わらない（pos.js の HK.Pos.trioOptOut。2026-10-27 担当HN） */
       var t3no = function (x) { return !!(P() && P().trioOptOut && [a, b, x].some(P().trioOptOut)); };
       var joiners = others.filter(function (x) {
-        return HK.State.r18ok(x) && sexOk(x, a) && sexOk(x, b) && !t3no(x) && (x.corrupt / 100 + x.tr.fc * 0.3 + x.pleasure / 150) > 0.45;
+        return HK.State.r18ok(x) && sexOk(x, a) && sexOk(x, b) && !t3no(x) && (trioL(a, b, x) || (x.corrupt / 100 + x.tr.fc * 0.3 + x.pleasure / 150) > 0.45);
       });
+      /* 恋人どうしの三人なら、三人目（恋人）が加わりやすい */
+      var jL = joiners.filter(function (x) { return trioL(a, b, x); });
+      if (jL.length && rng() < 0.7) joiners = jL;
+      else if (jL.length) jL = [];
       var stoppers = others.filter(function (x) { return !(HK.ngPair && (HK.ngPair(x, a) || HK.ngPair(x, b))) && x.corrupt < 50 && x.tr.cp + x.tr.np * 0.5 + x.reason / 200 > 0.9; });
-      var j = joiners.length && rng() < 0.4 ? joiners[rng.int(joiners.length)] : null;
+      var j = joiners.length && (jL.length || rng() < 0.4) ? joiners[rng.int(joiners.length)] : null;
       if (j && P()) {
         if (P().order(j, u, [j, u])[0] === j && !P().hardTop(u, j)) mode = 'share';
         else if (P().order(t, j, [t, j])[0] === t && !P().hardTop(j, t)) mode = 'serve';
