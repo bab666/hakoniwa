@@ -43,6 +43,8 @@
 /* @event scen=set-c-chokyo id=ck_debut cat=bond tie=- tags=night,mob label=お披露目会で教えられたことを見せる */
 /* @event scen=set-c-chokyo id=ck_auction cat=bond tie=- label=契約の行き先を決める競りが開かれる */
 /* @event scen=set-c-chokyo id=ck_end cat=bond tie=- label=地下室の契約が終わる最後の夜 */
+/* @event scen=set-c-chokyo id=ck_client cat=bond tie=- label=調教師に客の好みが前もって伝えられる */
+/* @event scen=set-c-chokyo id=ck_client_mid cat=bond tie=- label=客の望みに近づいているか調教師が確かめる */
 /* @event scen=set-c-chokyo id=ck_clue cat=bond tie=- label=帰りたい奴隷が脱出の手がかりを拾う */
 /* @event scen=set-c-chokyo id=ck_escape cat=bond tie=- label=手がかりを頼りに地下室から逃げ出す */
 /* @event scen=set-c-chokyo id=ck_escape_fail cat=bond tie=- label=脱出に失敗して連れ戻される */
@@ -205,8 +207,8 @@
       { id: 'strict', label: '厳しさ', type: 'select', def: 'mid', options: [{ v: 'soft', label: 'やさしい（痛みは使わない）' }, { v: 'mid', label: 'ふつう' }, { v: 'hard', label: '厳しい（罰が重く、進みが早い）' }], desc: '厳しいほど従順と開発が早く進み、心の壊れも進みやすい' },
       { id: 'tools', label: '使える道具', type: 'select', def: 'basic', options: [{ v: 'hand', label: '手と言葉だけ' }, { v: 'basic', label: '縄・目隠し・首輪まで' }, { v: 'full', label: '玩具・拘束台・薬まで' }], desc: '媚薬と催眠の型は「薬まで」のときだけ選ばれる' },
       { id: 'ratio', label: '褒美と罰', type: 'select', def: 'even', options: [{ v: 'reward', label: '褒美が多い' }, { v: 'even', label: '半々' }, { v: 'punish', label: '罰が多い' }], desc: '褒美が多いと依存と本音が、罰が多いと従順と心の壊れが進む' },
-      { id: 'menu', label: '調教の内容', type: 'select', def: 'all', options: [{ v: 'all', label: '全部（体に合うものを全部）' }, { v: 'upper', label: '胸・耳・口と心' }, { v: 'lower', label: '奥（性器・前立腺・結腸）と心' }, { v: 'mind', label: '心が中心（お預け・言葉と、胸・耳を軽く）' }],
-        desc: '体に合わない調教は出ない（前立腺・結腸・男性器は男性器のある体、女性器は女性器のある体）。奥の調教は、奴隷の本音が「止めない」まで来てから' },
+      { id: 'menu', label: '調教の内容', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ（客の好みは回ごとに決まる）' }, { v: 'all', label: '全部（体に合うものを全部）' }, { v: 'upper', label: '胸・耳・口と心' }, { v: 'lower', label: '奥（性器・前立腺・結腸）と心' }, { v: 'mind', label: '心が中心（お預け・言葉と、胸・耳を軽く）' }],
+        desc: '指定すると「その調教を望む客が多い」ことになり、調教師に伝えられる客の好みがそれに寄る（全部＝満遍なく仕上がった奴隷、胸・耳・口／奥＝その部位を極めた奴隷、心＝従順で依存した奴隷）。競りの値段は客の好みにどれだけ沿えたかで決まる。体に合わない調教は出ない。奥の調教は、奴隷の本音が「止めない」まで来てから' },
       { id: 'hypno', label: '恋人だと思い込ませる催眠の薬', type: 'select', def: 'on', options: [{ v: 'on', label: '使う（道具が「薬まで」のとき）' }, { v: 'off', label: '使わない' }], desc: '心の調教の一つ。奴隷は契約で前もって許していて、自分で杯を飲む' },
       { id: 'outsideNames', label: '登場しない住人を出す', type: 'select', def: 'yes', options: [{ v: 'yes', label: '出す（名簿の住人のうち、二人と関係のある人から便りが届く）' }, { v: 'no', label: '出さない（二人と、参加者だけ）' }],
         desc: '名簿にいて今回は参加していない住人のうち、二人のどちらかと関係のある人（三人まで）から、地下室の外の便りが届きます。関係図には出ません' },
@@ -259,7 +261,7 @@
     var rk = relKind(ctx, A, B);
     var S = ctx.ck = { A: A, B: B, days: days, rk: rk, used: {},
       strict: /^(soft|mid|hard)$/.test(env.strict) ? env.strict : 'mid', tools: /^(hand|basic|full)$/.test(env.tools) ? env.tools : 'basic',
-      ratio: /^(reward|even|punish)$/.test(env.ratio) ? env.ratio : 'even', menu: MENU[env.menu] ? env.menu : 'all', hypno: env.hypno !== 'off',
+      ratio: /^(reward|even|punish)$/.test(env.ratio) ? env.ratio : 'even', menu: MENU[env.menu] ? env.menu : 'all', menuSet: !!MENU[env.menu], hypno: env.hypno !== 'off',
       cnt: {}, sex: 0, lewdMax: 0, rewards: 0, punish: 0, trains: 0, debutDay: days - 2, why: C.why || '' };
     /* 体の場面を出せない二人（攻めを選んだ人を受けにしない・恋愛対象・R18 にしない相手・性器なし・身内・性欲なし・全年齢モード） */
     var nb = C.noBody, nbWhy = C.why || '';
@@ -333,12 +335,21 @@
     var deepP = bodyP.filter(function (k) { return PARTS[k].deep && fp.indexOf(k) < 0; });
     if (deepP.length) fp.push(deepP[Math.floor(ctx.rng() * deepP.length)]);
     S.focus = fp;
+    /* 客の好み（客傾向）：even 満遍なく仕上がった奴隷／pin ピンポイント（一つの部位を極めた奴隷）／heart 心（従順・依存・愛情）。
+       「調教の内容」の指定があれば「その調教を望む客が多い」としてそれに寄せ、おまかせは回ごとに決まる。体に触れない二人は心 */
+    var pinCand = bodyP.filter(function (k) { return S.menu === 'upper' ? !PARTS[k].deep : S.menu === 'lower' ? PARTS[k].deep : true; });
+    var ck0 = S.noBody || !bodyP.length ? 'heart' : !S.menuSet ? (function () { var r = ctx.rng(); return r < 0.38 ? 'even' : r < 0.72 ? 'pin' : 'heart'; })()
+      : S.menu === 'all' ? (ctx.rng() < 0.75 ? 'even' : 'pin') : S.menu === 'mind' ? (ctx.rng() < 0.8 ? 'heart' : 'even') : (ctx.rng() < 0.8 ? 'pin' : 'even');
+    if (ck0 === 'pin' && !pinCand.length) ck0 = 'even';
+    S.client = ck0; S.pinPart = ck0 === 'pin' ? pinCand[Math.floor(ctx.rng() * pinCand.length)] : null;
+    if (S.pinPart && S.focus.indexOf(S.pinPart) < 0) S.focus.unshift(S.pinPart);
     C.G.concat([A, B]).forEach(function (c) { c.life = c.life || { job: '' }; if (!c.action) c.action = { id: 'live', label: '' }; if (!c.goal) c.goal = { id: 'ck', label: '' }; c.autoAction = false; c.autoGoal = false; });
     A.goal = { id: 'ck', label: '短期「' + goalLabel('s', S.gsA.k) + '」' + (S.gsA.user ? '（選んだ目標）' : '') + '／長期「' + goalLabel('l', S.glA.k) + '」' + (S.glA.user ? '（選んだ目標）' : '') };
     B.goal = { id: 'ck', label: '短期「' + goalLabel('s', S.gsB.k) + '」' + (S.gsB.user ? '（選んだ目標）' : '') + '／長期「' + goalLabel('l', S.glB.k) + '」' + (S.glB.user ? '（選んだ目標）' : '') };
     if (!HK.SAFE_ON && R18() && R18().quota) { S.lewdQ = R18().quota(ctx, env.lewdN); S.lewdMax = S.noBody ? 0 : S.lewdQ; }
     ctx.place = '地下室';
     intro(ctx);
+    clientIntro(ctx);
   }
   /* 導入：関係ごとの一段 ＋ 契約の理由 ＋ 調教師の態度の一段 ＋ 設定の一文 */
   function intro(ctx) {
@@ -385,6 +396,8 @@
       var st = pk(ctx, tab, g);
       if (st) { S.setHit = (S.setHit || 0) + 1; say(ctx, 'ck_set_' + k, st, { why: '設定（' + { strict: '厳しさ', tools: '道具', ratio: '褒美と罰', menu: '調教の内容' }[k] + '）が効いた朝' }); }
     }
+    /* 半ばの朝：客の望みに近づいているか（沿えた度合い） */
+    if (d === Math.max(2, Math.floor(S.debutDay / 2)) && !S.midDone) { S.midDone = true; clientMid(ctx); return; }
     var r = ctx.rng();
     if (S.B2 && r < 0.4) s2Event(ctx);
     else if (S.guest && !S.captured && r < 0.6 && d >= 1 && !S.guestDay) guestVisit(ctx);
@@ -397,6 +410,11 @@
     if (!cand.length) cand = ['mind'];
     var foc = S.focus.filter(function (k) { return cand.indexOf(k) >= 0; });
     var k = foc.length && ctx.rng() < 0.7 ? foc[Math.floor(ctx.rng() * foc.length)] : cand[Math.floor(ctx.rng() * cand.length)];
+    /* 客の好みに沿って選ぶ（型とペースは調教師のまま）：満遍なく＝いちばん遅れている部位、ピンポイント＝その部位を重ねる、心＝心の躾けとお預け */
+    var r0 = ctx.rng(), bodyC = cand.filter(function (x) { return S.gauges['sens_' + x]; });
+    if (S.client === 'even' && bodyC.length && r0 < 0.7) k = bodyC.slice().sort(function (x, y) { return S.gauges['sens_' + x].v - S.gauges['sens_' + y].v; })[0];
+    else if (S.client === 'pin' && cand.indexOf(S.pinPart) >= 0 && r0 < 0.72) k = S.pinPart;
+    else if (S.client === 'heart' && r0 < 0.55) { var hm = cand.filter(function (x) { return x === 'mind' || x === 'oazuke'; }); if (!hm.length && S.parts.indexOf('mind') >= 0) hm = ['mind']; if (hm.length) k = hm[Math.floor(ctx.rng() * hm.length)]; }
     if (k === S.lastPart && cand.length > 1 && ctx.rng() < 0.7) { var c2 = cand.filter(function (x) { return x !== k; }); k = c2[Math.floor(ctx.rng() * c2.length)]; }
     S.lastPart = k;
     return k;
@@ -649,10 +667,40 @@
   }
 
   /* ---------- 競りと結末（最後の夜） ---------- */
+  /* ---------- 客の好み（客傾向） ---------- */
+  var CLIENT_NAME = { even: '満遍なく仕上がった奴隷を望む客', pin: 'ピンポイントで一つの部位を極めた奴隷を望む客', heart: '心まで躾けられた奴隷（従順・依存）を望む客' };
+  function clientName(S) { return S.client === 'pin' && S.pinPart ? 'ピンポイント（' + PARTS[S.pinPart].label + '）を極めた奴隷を望む客' : CLIENT_NAME[S.client]; }
+  /* 沿えた度合い（0〜1）：満遍なく＝感度の平均（45 で満点）×（1 − 最大と最小の差／160。0.5 まで）、ピンポイント＝その部位の感度（85 で満点）、心＝従順と依存の平均（85 で満点） */
+  function fitOf(S) {
+    if (S.client === 'pin' && S.pinPart && S.gauges['sens_' + S.pinPart]) return Math.min(1, S.gauges['sens_' + S.pinPart].v / 85);
+    if (S.client === 'even') {
+      var g = Object.keys(S.gauges).filter(function (k) { return /^sens_/.test(k); }).map(function (k) { return S.gauges[k].v; });
+      if (!g.length) return 0;
+      var avg = g.reduce(function (a, b) { return a + b; }, 0) / g.length, spread = Math.max.apply(null, g) - Math.min.apply(null, g);
+      return Math.max(0, Math.min(1, avg / 45) * (1 - Math.min(0.5, spread / 160)));
+    }
+    return Math.min(1, (DK.val(S, 'obey') + DK.val(S, 'dep')) / 2 / 85);
+  }
+  function clientIntro(ctx) {
+    var S = f(ctx), T = TX(), w = S.pinPart ? PART_W[S.pinPart] : '';
+    var t = pk(ctx, (T.CLIENT || {})[S.client]), src = S.menuSet ? pk(ctx, T.CLIENT_MANY) : '', p = pk(ctx, byPer(T.CLIENT_PER, S.A));
+    if (!t) return;
+    say(ctx, 'ck_client', (t + src + p).split('{p}').join(w), { actors: [S.A, S.B], why: '客の好み（' + clientName(S) + (S.menuSet ? '・調教の内容の指定から' : '・おまかせ') + '）' });
+  }
+  function clientMid(ctx) {
+    var S = f(ctx), T = TX(), fit = fitOf(S), near = fit >= 0.42;
+    S.midFit = fit;
+    var t = pk(ctx, byPer((T.CLIENT_MID || {})[near ? 'near' : 'far'], S.A));
+    if (t) say(ctx, 'ck_client_mid', t.split('{p}').join(S.pinPart ? PART_W[S.pinPart] : '体'), { actors: [S.A, S.B], why: '客の望みに' + (near ? '近づいている' : '届いていない') + '（沿えた度合い ' + Math.round(fit * 100) + '%）', face: faceOf(S.A, near ? 'joy' : 'normal') });
+  }
+  /* 落札額：基本 50 ＋ 客の望みに沿えた度合い × 160 ＋ 従順 × 0.6 ＋ 開発（感度の平均 × 0.5）＋ 深さ ＋ 披露 × 0.4 − 心の壊れ × 0.3（5 万円刻み）。内訳を S.priceParts に */
   function price(S) {
     var g = Object.keys(S.gauges).filter(function (k) { return /^sens_/.test(k); }), sum = 0;
     g.forEach(function (k) { sum += S.gauges[k].v; });
-    var avg = g.length ? sum / g.length : 0, v = 60 + avg * 1.4 + DK.val(S, 'obey') * 1.2 + (S.depth === 'full' ? 25 : S.depth === 'beg' ? 12 : 0) + (S.debutScore || 0) * 0.6 - DK.val(S, 'crack') * 0.4;
+    var avg = g.length ? sum / g.length : 0, fit = fitOf(S);
+    var P0 = { base: 50, fit: Math.round(fit * 160), obey: Math.round(DK.val(S, 'obey') * 0.6), dev: Math.round(avg * 0.5), depth: S.depth === 'full' ? 20 : S.depth === 'beg' ? 10 : 0, debut: Math.round((S.debutScore || 0) * 0.4), crack: -Math.round(DK.val(S, 'crack') * 0.3) };
+    S.fit = fit; S.priceParts = P0;
+    var v = 0; Object.keys(P0).forEach(function (k) { v += P0[k]; });
     return Math.max(30, Math.round(v / 5) * 5);
   }
   function decideEnd(ctx) {
@@ -661,7 +709,7 @@
     var ob = DK.stage(S, 'obey'), dp = DK.stage(S, 'dep'), cr = DK.stage(S, 'crack'), jo = DK.stage(S, 'jo'), want = DK.val(S, 'want'), pb = DK.per(B), pa = DK.per(A);
     var strong = HK.ForceRep && HK.ForceRep.holds ? HK.ForceRep.holds(B) : /^(proud|stern)$/.test(pb);
     var sc = {
-      sold: 0.7 + ob * 0.45 + (S.debutK === 'mob' ? 0.5 : 0) + (S.depth === 'full' ? 0.4 : 0) - (dp >= 2 ? 0.3 : 0),
+      sold: 0.7 + fitOf(S) * 0.6 + ob * 0.4 + (S.debutK === 'mob' ? 0.5 : 0) + (S.depth === 'full' ? 0.4 : 0) - (dp >= 2 ? 0.3 : 0),
       own: (jo >= 1 ? 0.6 : 0) + jo * 0.6 + (/^(proud|devoted|tsun)$/.test(pa) ? 0.6 : 0) + (ob >= 2 ? 0.4 : 0) - 0.6,
       free: (cr === 0 ? 1.4 : cr === 1 ? 0.5 : 0) + (strong ? 0.8 : 0) + (S.br === 'defy' || S.br === 'endure' ? 0.6 : 0) - ob * 0.3,
       reverse: (/^(proud|stern|tsun|cool)$/.test(pb) ? 0.9 : 0) + (S.br === 'defy' ? 0.9 : 0) + (ob <= 1 ? 0.6 : -0.6) + (want >= 70 ? 0.3 : 0),
@@ -687,7 +735,9 @@
     S.price = price(S);
     var t = pk(ctx, T.AUCTION, { g: 'obey' });
     var tail = pk(ctx, (T.AUCTION_TURN || {})[S.endK]);
-    say(ctx, 'ck_auction', (t + tail).split('{price}').join(kanji(S.price)), { why: '競り（' + S.price + '万円）', face: faces([[B, S.endK === 'sold' ? 'sad' : S.endK === 'free' ? 'normal' : 'surprise']]), mag: 12 });
+    var hit = S.fit >= 0.6, why = pk(ctx, ((T.AUCTION_FIT || {})[hit ? 'hit' : 'miss'] || {})[S.client] || []);
+    why = why.split('{p}').join(S.pinPart ? PART_W[S.pinPart] : '体');
+    say(ctx, 'ck_auction', (t + why + tail).split('{price}').join(kanji(S.price)), { why: '競り（' + S.price + '万円・客の好み「' + clientName(S) + '」に' + (hit ? '望みどおり' : '外れた') + '・沿えた度合い ' + Math.round(S.fit * 100) + '%）', face: faces([[B, S.endK === 'sold' ? 'sad' : S.endK === 'free' ? 'normal' : 'surprise']]), mag: 12 });
   }
   function kanji(v) { return v >= 10000 ? Math.floor(v / 10000) + '億' + (v % 10000 ? (v % 10000) + '万円' : '円') : v + '万円'; }
   function ending(ctx) {
@@ -727,7 +777,7 @@
     var sens = {};
     Object.keys(S.gauges).forEach(function (k) { if (/^sens_/.test(k)) sens[PARTS[k.slice(5)].label] = Math.round(S.gauges[k].v); });
     var res = { gsA: goalRes(S, 'A', 's'), glA: goalRes(S, 'A', 'l'), gsB: goalRes(S, 'B', 's'), glB: goalRes(S, 'B', 'l') };
-    ctx.flags.chokyo = { days: S.days, a: A.i, b: B.i, endK: S.endK, end: endName(S), price: S.price, sens: sens, obey: Math.round(DK.val(S, 'obey')), dep: Math.round(DK.val(S, 'dep')), crack: Math.round(DK.val(S, 'crack')), want: Math.round(DK.val(S, 'want')),
+    ctx.flags.chokyo = { days: S.days, a: A.i, b: B.i, endK: S.endK, end: endName(S), price: S.price, client: clientName(S), fit: Math.round((S.fit != null ? S.fit : fitOf(S)) * 100), pp: S.priceParts || null, sens: sens, obey: Math.round(DK.val(S, 'obey')), dep: Math.round(DK.val(S, 'dep')), crack: Math.round(DK.val(S, 'crack')), want: Math.round(DK.val(S, 'want')),
       method: METHOD_NAME[S.method], methodOdd: !!S.methodOdd, br: BR_NAME[S.br], brOdd: !!S.brOdd, care: S.care === 'many' ? '多い' : '少ない', depth: { obey: '命令に従う', beg: '自分から媚びる', full: '完全な服従' }[S.depth],
       sex: S.sex, noBody: !!S.noBody, captured: !!S.captured, cause: S.captured ? 'やむを得ぬ事情（' + ({ debt: '借金の肩代わり', kin: '身内の代わり', lost: '行き場を失った', promise: '約束の代償', order: '断れない相手からの話' }[S.cause] || '') + '）' : '', esc: Math.round(DK.val(S, 'esc')), tries: S.tries, fails: S.fails, escaped: !!S.escaped, letGo: !!S.letGo, gaveUp: !!S.gaveUp, debut: S.debutK || '', rewards: S.rewards, punish: S.punish, trains: S.trains,
       goals: [[A.name, res.gsA, res.glA], [B.name, res.gsB, res.glB]].map(function (x) { return { who: x[0], s: x[1].label, sOk: x[1].ok, l: x[2].label, lOk: x[2].ok }; }) };
@@ -752,6 +802,8 @@
     lines.push('調教 ' + R.trains + '回／褒美 ' + R.rewards + '回／罰 ' + R.punish + '回／エッチ ' + R.sex + '回');
     if (R.captured) lines.push('地下室に来たわけ：' + (R.cause || 'やむを得ぬ事情'));
     if (R.captured) lines.push('脱出の値 ' + R.esc + '／脱出の試み ' + R.tries + '回（失敗 ' + R.fails + '回）' + (R.escaped ? '／脱出に成功' : R.letGo ? '／調教師が見逃した' : R.gaveUp ? '／逃げるのを諦めた' : ''));
+    if (R.client) lines.push('客の好み：' + R.client + '／沿えた度合い ' + R.fit + '%' + (R.fit >= 60 ? '（望みどおり）' : '（外れていた）'));
+    if (R.pp && !R.escaped && !R.letGo) { var PN = { base: '基本', fit: '客の望み', obey: '従順', dev: '開発', depth: '躾けの深さ', debut: '披露', crack: '心の壊れ' }; lines.push('落札額の内訳：' + Object.keys(PN).map(function (k) { return PN[k] + (R.pp[k] >= 0 ? '＋' : '') + R.pp[k] + '万'; }).join(' ')); }
     if (!R.escaped && !R.letGo) lines.push('落札額：' + kanji(R.price) + (R.endK === 'sold' ? '' : '（' + (R.endK === 'own' ? '調教師が競りを止めた' : R.endK === 'free' ? '奴隷が札を下ろした' : R.endK === 'reverse' ? '競りは成立しなかった' : '競りは取り下げられた') + '）'));
     lines.push('結末：' + R.end);
     X.C.forEach(function (c) { c.afterDone = true; });
