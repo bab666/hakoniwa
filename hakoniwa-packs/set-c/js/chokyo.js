@@ -6,9 +6,9 @@
      調教師の情 jo（独占したくなる気持ち）。
    ・調教師の型（住人ごとの欄。おまかせは態度9種）：お預け oazuke／痛み pain／媚薬 drug／甘く sweet／催眠 hypno。奴隷の受け止め方：従う obey／媚びる flatter／反抗する defy／黙って耐える endure。
    ・山場：お披露目会（最後の前の夜。もてなす／見せつけ／奴隷どうし）→ 競り（最後の夜）→ 結末 5：競りで送り出される sold／調教師が引き取る own／心は折れず解放 free／立場の逆転 reverse／愛情に変わる love
-   ・導入「捕まえられてきた」（環境ダイヤル「地下室に来たわけ」。2026-11-07 利用者の追加の指示）：邪神村（jashin.js）と同じく、日ごとに脱出の手がかり（鍵の在りか・見張りの隙・道具・調教師の油断・ほかの奴隷の協力）を拾い、
+   ・導入「やむを得ぬ事情でやってきた」（環境ダイヤル「地下室に来たわけ」。2026-11-07 利用者の追加の指示）：邪神村（jashin.js）と同じく、日ごとに脱出の手がかり（鍵の在りか・見張りの隙・道具・調教師の油断・ほかの奴隷の協力）を拾い、
      脱出の値 esc（計器。上がるだけ）が線を越えた夜に逃げる。成功＝結末「心は折れず解放」、失敗＝連れ戻されて手がかりを失い、次の線が上がる。諦めて従順になる・調教師の情が移って鍵を開けたままにする、の分かれ方も出る。
-     捕まえられてきた回は、奴隷が前もって「さらわれて閉じ込められる遊び」を契約していた形（合図の言葉あり。導入・きっかけの段・TIPS・開始前の注意で分かるようにし、日々の本文はさらわれた体のまま）。
+     やむを得ぬ事情でやってきた回（値は captured のまま）は、奴隷が事情（借金の肩代わり・身内の代わり・行き場を失った・約束の代償・断れない相手からの話）で自分の足で来た形。表面は「本当は帰りたい」のまま。
      調教・感度の計器・お披露目会・競り・結末 5 種は契約の回と同じに進み、脱出劇は遊びの一部として並行する（脱出に成功すればその夜で終わる）。本音の始まりは低く、線を越えるまでは奥の調教と口の調教を出さない。
    ・体の組（攻めを選んだ人を受けにしない・恋愛対象・R18 にしない相手・性器なし・身内）で体の場面が出せない二人は、調教も「心の躾け」だけになる（S.noBody）。
    文は chokyo-text-*.js（HK.ChokyoText）。{a}＝調教師、{b}＝奴隷、{g}＝三人目（会員・二人目の奴隷・外の知り合い）。登場人物はすべて成人として扱う */
@@ -43,7 +43,7 @@
 /* @event scen=set-c-chokyo id=ck_debut cat=bond tie=- tags=night,mob label=お披露目会で教えられたことを見せる */
 /* @event scen=set-c-chokyo id=ck_auction cat=bond tie=- label=契約の行き先を決める競りが開かれる */
 /* @event scen=set-c-chokyo id=ck_end cat=bond tie=- label=地下室の契約が終わる最後の夜 */
-/* @event scen=set-c-chokyo id=ck_clue cat=bond tie=- label=捕まえられた奴隷が脱出の手がかりを拾う */
+/* @event scen=set-c-chokyo id=ck_clue cat=bond tie=- label=帰りたい奴隷が脱出の手がかりを拾う */
 /* @event scen=set-c-chokyo id=ck_escape cat=bond tie=- label=手がかりを頼りに地下室から逃げ出す */
 /* @event scen=set-c-chokyo id=ck_escape_fail cat=bond tie=- label=脱出に失敗して連れ戻される */
 /* @event scen=set-c-chokyo id=ck_giveup cat=bond tie=- label=逃げることを諦めて首輪を受け入れる */
@@ -124,9 +124,9 @@
     if (Pp && S.B && B_M.test(n) && !Pp.hasM(S.B)) return false;
     if (Pp && S.A && A_M.test(n) && !Pp.hasM(S.A)) return false;
     if (!S.B2 && /\{g2\}/.test(n)) return false;
-    /* 捕まえられてきた回に契約の文を、契約の回にさらわれた文を出さない */
-    /* 捕まえられてきた回：日々の本文はさらわれた体のまま（契約書・署名・紹介状の文を出さない。遊びの約束と合図の言葉は導入ときっかけの段で示す） */
-    if (S.captured && /契約|自分で選んで|望んで来た|署名|名前を書|聞いていた|紹介状/.test(n)) return false;
+    /* やむを得ぬ事情でやってきた回に契約の文を、契約の回にさらわれた文を出さない */
+    /* やむを得ぬ事情でやってきた回：契約書・署名・紹介状・合図の言葉の文を出さない（事情で来たこと自体が土台。本当は帰りたい表面のまま） */
+    if (S.captured && /契約|自分で選んで|望んで来た|署名|名前を書|聞いていた|紹介状|合図の言葉|遊び|芝居/.test(n)) return false;
     if (!S.captured && /さらわれ|捕まえられ|攫われ|連れてこられ|逃げ道|脱出/.test(n)) return false;
     /* 心の躾けだけの二人：体に触れる文・性的な語を出さない */
     if (S.noBody && /罰の痕/.test(n)) return false;
@@ -200,8 +200,8 @@
     derived: ['warmth', 'honesty', 'jealous', 'impulse'],
     env: [
       { id: 'days', label: '日数', min: 5, max: 14, def: 7, lo: '5日', hi: '14日', unit: '日', desc: '地下室で過ごす日数。1日は朝・日中・夜の3区切り。最後の前の夜がお披露目会、最後の夜が競り' },
-      { id: 'origin', label: '地下室に来たわけ', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ（二人の関係から決まる契約）' }, { v: 'debt', label: '契約：借金' }, { v: 'curious', label: '契約：興味' }, { v: 'love', label: '契約：相手への想い' }, { v: 'self', label: '契約：自分で望んだ調教' }, { v: 'captured', label: '捕まえられてきた（さらわれる遊びの契約）' }],
-        desc: '奴隷は本音が「止めない」まで来ると夜の場面が起きる。捕まえられてきた（さらわれる遊びの契約）は、前もって合図の言葉を決めたうえで「さらわれて閉じ込められる」遊びを頼んだ奴隷。本文はさらわれた体で進み、調教と並行して手がかりを集めて脱出を目指す' },
+      { id: 'origin', label: '地下室に来たわけ', type: 'select', def: 'auto', options: [{ v: 'auto', label: 'おまかせ（二人の関係から決まる契約）' }, { v: 'debt', label: '契約：借金' }, { v: 'curious', label: '契約：興味' }, { v: 'love', label: '契約：相手への想い' }, { v: 'self', label: '契約：自分で望んだ調教' }, { v: 'captured', label: 'やむを得ぬ事情でやってきた' }],
+        desc: '奴隷は本音が「止めない」まで来ると夜の場面が起きる。やむを得ぬ事情でやってきた奴隷（借金の肩代わり・身内の代わり・行き場を失った・約束の代償・断れない相手からの話）は、本当は帰りたい。調教と並行して手がかりを集め、脱出を目指す' },
       { id: 'strict', label: '厳しさ', type: 'select', def: 'mid', options: [{ v: 'soft', label: 'やさしい（痛みは使わない）' }, { v: 'mid', label: 'ふつう' }, { v: 'hard', label: '厳しい（罰が重く、進みが早い）' }], desc: '厳しいほど従順と開発が早く進み、心の壊れも進みやすい' },
       { id: 'tools', label: '使える道具', type: 'select', def: 'basic', options: [{ v: 'hand', label: '手と言葉だけ' }, { v: 'basic', label: '縄・目隠し・首輪まで' }, { v: 'full', label: '玩具・拘束台・薬まで' }], desc: '媚薬と催眠の型は「薬まで」のときだけ選ばれる' },
       { id: 'ratio', label: '褒美と罰', type: 'select', def: 'even', options: [{ v: 'reward', label: '褒美が多い' }, { v: 'even', label: '半々' }, { v: 'punish', label: '罰が多い' }], desc: '褒美が多いと依存と本音が、罰が多いと従順と心の壊れが進む' },
@@ -284,13 +284,18 @@
       : rk === 'body' ? 'curious' : rk === 'close' || rk === 'work' ? (ctx.rng() < 0.5 ? 'curious' : 'self') : rk === 'fam' ? 'self' : (ctx.rng() < 0.55 ? 'debt' : 'curious');
     var w0 = (WANT0[rk] || 22) + ({ love: 10, self: 12, curious: 6, debt: 0 }[S.motive] || 0) + (rk === 'pine' && pd === 'A' ? -10 : 0);
     S.LINE = 50;
-    /* 捕まえられてきた回：さらわれた体の遊びなので、本音の始まりは低く（0 ではない。情・褒美・言葉・愛憎で上がる） */
-    if (S.captured) w0 = Math.max(14, Math.round((WANT0[rk] || 22) * 0.55));
+    /* やむを得ぬ事情でやってきた回：本当は帰りたい側なので、本音の始まりは低く（0 ではない。情・褒美・言葉・愛憎で上がる）。事情は関係と態度から */
+    if (S.captured) {
+      w0 = Math.max(14, Math.round((WANT0[rk] || 22) * 0.55));
+      var cz = /^(love|pine|yan|ex|body)$/.test(rk) ? ['promise', 'order'] : rk === 'fam' ? ['kin', 'debt'] : /^(bad|hate)$/.test(rk) ? ['order', 'debt'] : /^(close|work)$/.test(rk) ? ['debt', 'lost'] : ['lost', 'debt'];
+      if (/^(devoted|gentle)$/.test(pb)) cz.push('kin'); if (/^(proud|stern)$/.test(pb)) cz.push('promise');
+      S.cause = cz[Math.floor(ctx.rng() * cz.length)];
+    }
     DK.gauge(S, 'want', { v: Math.min(w0, 80), dir: 'up', stages: [S.LINE, 75] });
     DK.gauge(S, 'obey', { v: 0, dir: 'up', stages: [30, 60, 85] });
     DK.gauge(S, 'dep', { v: rk === 'love' || rk === 'yan' ? 15 : 0, dir: 'up', stages: [30, 60, 85] });
     DK.gauge(S, 'crack', { v: 0, dir: 'up', stages: [35, 65, 90] });
-    /* 脱出の値（捕まえられてきた回）：上がるだけ。線を越えた夜に逃げる。失敗すると手がかりを失い、次の線が上がる */
+    /* 脱出の値（やむを得ぬ事情でやってきた回）：上がるだけ。線を越えた夜に逃げる。失敗すると手がかりを失い、次の線が上がる */
     DK.gauge(S, 'esc', { v: 0, dir: 'up', stages: [] });
     S.escLine = 55; S.clues = []; S.tries = 0; S.fails = 0;
     DK.gauge(S, 'jo', { v: rk === 'love' ? 30 : rk === 'yan' ? 35 : 0, dir: 'up', stages: [40, 75] });
@@ -343,10 +348,10 @@
     var per = pk(ctx, byPer(T.INTRO_PER, A));
     var set = pk(ctx, (T.INTRO_SET || {})[S.strict]) + pk(ctx, (T.INTRO_TOOLS || {})[S.tools]);
     var nb = S.noBody ? pk(ctx, T.INTRO_NOBODY) : '';
-    var pact = S.captured ? pk(ctx, T.CAP_PACT) : '';
+    var pact = S.captured ? pk(ctx, (T.CAP_WHY || {})[S.cause]) : '';
     var tx = [rel, pact, mot, per, set, nb].filter(Boolean).join('');
     if (!tx) tx = '{b}は契約書に名前を書き、地下室へ続く階段を下りた。待っていたのは{a}だった。今日から数日、ここで躾けられる。';
-    say(ctx, 'ck_intro', tx, { why: '始まり（契約の理由：' + { love: '相手への想い', self: '自分で望んだ', curious: '興味', debt: '借金', captured: 'さらわれる遊びの契約' }[S.motive] + '）', face: faces([[B, S.motive === 'debt' || S.captured ? 'fear' : 'normal']]) });
+    say(ctx, 'ck_intro', tx, { why: '始まり（契約の理由：' + { love: '相手への想い', self: '自分で望んだ', curious: '興味', debt: '借金', captured: 'やむを得ぬ事情（' + ({ debt: '借金の肩代わり', kin: '身内の代わり', lost: '行き場を失った', promise: '約束の代償', order: '断れない相手からの話' }[S.cause] || '') + '）' }[S.motive] + '）', face: faces([[B, S.motive === 'debt' || S.captured ? 'fear' : 'normal']]) });
   }
 
   /* ---------- 一日 ---------- */
@@ -529,7 +534,7 @@
     if (t) say(ctx, 'ck_talk', t, { why: '二人のやりとり' });
   }
 
-  /* ---------- 捕まえられてきた回：脱出（邪神村の手がかり集めと同じ作り。文は部屋のもの） ----------
+  /* ---------- やむを得ぬ事情でやってきた回：脱出（邪神村の手がかり集めと同じ作り。文は部屋のもの） ----------
      手がかり 5 種：key 鍵の在りか／gap 見張りの隙／tool 道具／slack 調教師の油断／ally ほかの奴隷の協力（二人目の奴隷がいるときだけ）。
      拾うたびに脱出の値が上がる（調教師の用心深さで増え方が変わる）。値が線を越えた夜に逃げる */
   var CLUE_V = { key: 22, gap: 15, tool: 15, slack: 18, ally: 20 };
@@ -644,7 +649,7 @@
     /* 目標の後押し */
     var GB = { takaku: ['sold', 1], tebanasanai: ['own', 1.1], kaesu: ['free', 0.9], jiyuu: ['free', 1], tokubetsu: [S.love ? 'love' : 'own', 0.9], gyakuten: ['reverse', 1.1], nokoru: [S.love ? 'love' : 'own', 0.7] };
     [S.glA, S.glB].forEach(function (g) { var x = GB[g.k]; if (x) sc[x[0]] += x[1] * (g.user ? 1.5 : 1); });
-    /* 捕まえられてきた回（最後まで出られなかった）：諦めた奴隷は引き取られ・送り出されやすく、失敗しても折れない奴隷は解放・逆転、情の移った調教師は引き取りやすい */
+    /* やむを得ぬ事情でやってきた回（最後まで出られなかった）：諦めた奴隷は引き取られ・送り出されやすく、失敗しても折れない奴隷は解放・逆転、情の移った調教師は引き取りやすい */
     if (S.captured) {
       if (S.gaveUp) { sc.own += 1.2; sc.sold += 0.5; }
       if (S.fails && strong && !S.gaveUp) { sc.free += 0.8; sc.reverse += 0.6; }
@@ -703,7 +708,7 @@
     var res = { gsA: goalRes(S, 'A', 's'), glA: goalRes(S, 'A', 'l'), gsB: goalRes(S, 'B', 's'), glB: goalRes(S, 'B', 'l') };
     ctx.flags.chokyo = { days: S.days, a: A.i, b: B.i, endK: S.endK, end: endName(S), price: S.price, sens: sens, obey: Math.round(DK.val(S, 'obey')), dep: Math.round(DK.val(S, 'dep')), crack: Math.round(DK.val(S, 'crack')), want: Math.round(DK.val(S, 'want')),
       method: METHOD_NAME[S.method], methodOdd: !!S.methodOdd, br: BR_NAME[S.br], brOdd: !!S.brOdd, care: S.care === 'many' ? '多い' : '少ない', depth: { obey: '命令に従う', beg: '自分から媚びる', full: '完全な服従' }[S.depth],
-      sex: S.sex, noBody: !!S.noBody, captured: !!S.captured, esc: Math.round(DK.val(S, 'esc')), tries: S.tries, fails: S.fails, escaped: !!S.escaped, letGo: !!S.letGo, gaveUp: !!S.gaveUp, debut: S.debutK || '', rewards: S.rewards, punish: S.punish, trains: S.trains,
+      sex: S.sex, noBody: !!S.noBody, captured: !!S.captured, cause: S.captured ? 'やむを得ぬ事情（' + ({ debt: '借金の肩代わり', kin: '身内の代わり', lost: '行き場を失った', promise: '約束の代償', order: '断れない相手からの話' }[S.cause] || '') + '）' : '', esc: Math.round(DK.val(S, 'esc')), tries: S.tries, fails: S.fails, escaped: !!S.escaped, letGo: !!S.letGo, gaveUp: !!S.gaveUp, debut: S.debutK || '', rewards: S.rewards, punish: S.punish, trains: S.trains,
       goals: [[A.name, res.gsA, res.glA], [B.name, res.gsB, res.glB]].map(function (x) { return { who: x[0], s: x[1].label, sOk: x[1].ok, l: x[2].label, lOk: x[2].ok }; }) };
     A.fate = { sold: '奴隷を送り出した調教師', own: '奴隷を引き取った調教師', free: '奴隷を解き放った調教師', reverse: '立場を明け渡した調教師', love: '奴隷を愛した調教師' }[S.endK];
     B.fate = { sold: '競りで送り出された奴隷', own: '調教師に引き取られた奴隷', free: '心を折らずに出ていった奴隷', reverse: '調教師の主になった奴隷', love: '調教師に愛された奴隷' }[S.endK];
@@ -723,7 +728,7 @@
     lines.push('従順 ' + R.obey + '／依存 ' + R.dep + '／心の壊れ ' + R.crack + (R.noBody ? '（体には触れない心の躾けだけ）' : ''));
     (R.goals || []).forEach(function (g) { lines.push(g.who + 'の目標：短期「' + g.s + '」（' + (g.sOk ? '叶った' : '叶わなかった') + '）／長期「' + g.l + '」（' + (g.lOk ? '叶った' : '叶わなかった') + '）'); });
     lines.push('調教 ' + R.trains + '回／褒美 ' + R.rewards + '回／罰 ' + R.punish + '回／エッチ ' + R.sex + '回');
-    if (R.captured) lines.push('地下室に来たわけ：さらわれる遊びの契約（合図の言葉あり）');
+    if (R.captured) lines.push('地下室に来たわけ：' + (R.cause || 'やむを得ぬ事情'));
     if (R.captured) lines.push('脱出の値 ' + R.esc + '／脱出の試み ' + R.tries + '回（失敗 ' + R.fails + '回）' + (R.escaped ? '／脱出に成功' : R.letGo ? '／調教師が見逃した' : R.gaveUp ? '／逃げるのを諦めた' : ''));
     if (!R.escaped && !R.letGo) lines.push('落札額：' + kanji(R.price) + (R.endK === 'sold' ? '' : '（' + (R.endK === 'own' ? '調教師が競りを止めた' : R.endK === 'free' ? '奴隷が札を下ろした' : R.endK === 'reverse' ? '競りは成立しなかった' : '競りは取り下げられた') + '）'));
     lines.push('結末：' + R.end);
