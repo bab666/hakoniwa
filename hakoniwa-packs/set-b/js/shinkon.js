@@ -1,5 +1,5 @@
 /* @event-ok 朝の種「やけに優しい／素っ気ない」を優しい朝と素っ気ない朝に分け、不穏な朝・日中・一日の終わりの気分と好意の向きを直した（新しい出来事ではない。2026-11-06） */
-/* 新婚部屋（追加パック set-b の部屋。エンジン型。両方のビルド）
+/* 新婚生活（追加パック set-b の部屋。エンジン型。両方のビルド）
    結婚したばかりの二人（か、元の関係のまま一緒に暮らし始めた二人）の毎日を、朝・日中・夜の3区切りで眺める。最後の夜は幸せなキスで一区切り。
    2026-11-03 利用者のフィードバックで作り直し（docs/reports/2026-11-03/shinkon-feedback.md・shinkon-design.md）：
    ・利用者のソロジャーナルの表は「何が起きたか」の種として内部で引くだけ（記録の行・表の名前は画面に出さない）。願望は場面の文で表す
@@ -191,7 +191,7 @@
   var REL_SHORT = ['幼なじみ', '元ライバル', '長い片想いの相手', '元同僚', '文通やネットで知り合った仲', '家族ぐるみの付き合い', '復縁した元恋人', '運命的な衝動婚', '行き場のない相手を家に迎えた縁', '初めて付き合った相手どうし'];
   function relShort(i) { return REL_SHORT[i] || String(D.REL[i] || '').split(/\s/)[0]; }
   var scen = {
-    id: ID, name: '新婚部屋', kicker: 'ふたり・日常',
+    id: ID, name: '新婚生活', kicker: 'ふたり・日常',
     desc: '結婚したばかりの二人の毎日を、朝・日中・夜ごとに眺める。暮らしの中で目標への気持ちが高まると出来事が起き、最後の夜は幸せなキスで一区切り。',
     note: '※参加は4人まで（最初の二人が新婚の二人）。登場人物はすべて成人として扱います。くわしくは「この箱庭のTIPS」に。',
     unit: '日', perUnit: 3, preRel: 0, lethal: false, minCast: 2, maxCast: 4,
@@ -367,7 +367,7 @@
     return [{ a: A.i, b: B.i, type: 'spouse', spouse: true }];
   }
   /* ---------- 恋愛対象（性別）だけが合わない、恋人・夫婦の設定の二人（2026-11-04 利用者の回答）----------
-     新婚部屋では新婚の二人を恋人として扱う。住人の関係で恋人・夫婦・婚約者・番などを設定した二人が、性別の恋愛対象だけで恋愛・夜にならない組なら、
+     新婚生活では新婚の二人を恋人として扱う。住人の関係で恋人・夫婦・婚約者・番などを設定した二人が、性別の恋愛対象だけで恋愛・夜にならない組なら、
      この部屋の中だけ、恋愛対象を「両方」として見る（HK.canLove・HK.Pos.orients を包む。受け攻めは今までどおり見る）。
      ただし相手を固定している人（恋愛 NG・恋愛相手の固定（恋人だけ・本命・特定の相手）・恋愛しない関係＝HK.ngPairHard、性行為の相手の固定・R18 に参加しない＝HK.sexBlocked）は今までどおり */
   var LOVE_SET = /^(lover|spouse|fiance|mate|fated)$/;
@@ -543,10 +543,10 @@
     var home = D.HOME[S.home], meet = meetName(S.meet), intro, tx, rl;
     if (Q4) {
       tx = HK.ShinkonMulti ? HK.ShinkonMulti.intro(ctx, S, home) : HK.ShinkonFour ? HK.ShinkonFour.qSetup(ctx, S, home) : '';
-      ctx.act2({ actors: T3.slice(), cat: 'romance', text: tx, why: '新婚部屋：四人の暮らしの始まり（四人婚・' + relLine(S) + '）' });
+      ctx.act2({ actors: T3.slice(), cat: 'romance', text: tx, why: '新婚生活：四人の暮らしの始まり（四人婚・' + relLine(S) + '）' });
     } else if (T3) {
       tx = HK.ShinkonMulti ? HK.ShinkonMulti.intro(ctx, S, home) : HK.ShinkonTrio ? HK.ShinkonTrio.say(ctx, HK.ShinkonTrio.T.SETUP, A, B, T3[2], { home: home }) : '';
-      ctx.act2({ actors: T3.slice(), cat: 'romance', text: tx, why: '新婚部屋：三人の暮らしの始まり（三人婚・' + relLine(S) + '）' });
+      ctx.act2({ actors: T3.slice(), cat: 'romance', text: tx, why: '新婚生活：三人の暮らしの始まり（三人婚・' + relLine(S) + '）' });
     } else {
       if (S.rel >= 0) {
         intro = prose(ctx, 'SETUP', 0, '{a}と{b}は、結婚したばかりの二人だ。住まいは{home}。{rel}――出会いは{meet}だった。', A, B);
@@ -559,7 +559,7 @@
       tx = nfs ? fill(ctx, nfs.t, nfs.a, nfs.b, { home: home }) : fill(ctx, intro, A, B, { home: home, rel: rl, meet: meet });
       /* 元の関係のまま：関係の色の一文 */
       if (S.rel < 0 && RC() && !S.exLabel && !nfs) { var rc = RC().rel(ctx, ri.cls); if (rc) tx += fill(ctx, rc, A, B, { rel: rl }); }
-      ctx.act2({ actors: [A, B], cat: S.love ? 'romance' : 'bond', text: tx, why: '新婚部屋：二人の始まり（' + relLine(S) + '）' + (S.trioNG ? '（' + (S.trioNG4 ? '四人婚' : '三人婚') + 'にならなかった：' + S.trioNG + '）' : '') });
+      ctx.act2({ actors: [A, B], cat: S.love ? 'romance' : 'bond', text: tx, why: '新婚生活：二人の始まり（' + relLine(S) + '）' + (S.trioNG ? '（' + (S.trioNG4 ? '四人婚' : '三人婚') + 'にならなかった：' + S.trioNG + '）' : '') });
     }
     /* もとは恐怖の関係だった二人（2026-11-03 利用者の指示で見直し）：元恐怖（三人婚で夫婦にした「恋愛：あり」の恐怖・なれそめで上書きした二人）は恐怖の決まりを当てず、普通の二人と同じ。
        恐怖の関係のままの二人は本体の決まり（ties.js の HK.Ties.after：体の関係の欄が「あり」なら夜を止めない、「恋愛：あり」は和らぐまで恋愛しない）のまま。ここでは何も足さない */
@@ -642,7 +642,7 @@
     var tA = hi.tr || {}, k = (tA.np || 0.5) + (tA.fc || 0.5) > 1.1 ? 'kokuhaku' : (tA.ac || 0.5) > 0.6 ? 'ryokai' : 'kawari';
     var rl = (S.ri && (S.ri.say || S.ri.label)) || '家族同然', rs = (S.ri && (S.ri.says || S.ri.label)) || '家族';
     S.love = true; S.stepDone = true;
-    ctx.act2({ actors: [hi, lo], cat: 'romance', text: fill(ctx, pickT(ctx, STEP[k], hi, lo) || STEP[k][0], hi, lo, { rel: rl, rels: rs }), why: '新婚部屋：恋愛へ進む（' + STEP_NAME[k] + '・' + rl + 'から）',
+    ctx.act2({ actors: [hi, lo], cat: 'romance', text: fill(ctx, pickT(ctx, STEP[k], hi, lo) || STEP[k][0], hi, lo, { rel: rl, rels: rs }), why: '新婚生活：恋愛へ進む（' + STEP_NAME[k] + '・' + rl + 'から）',
       fx: function () { ctx.mod2(hi, lo, { aff: 6, att: 20, trust: 3 }, { aff: 6, att: 20, trust: 3 }); } });
   }
   var HIMO = ['{a}は昼近くまで寝て、起きてからはソファでゲームをしていた。相手が帰ってくる時間が近づくと、慌てて部屋を少しだけ片づけた。', '{a}は日当たりのいい窓辺でうたた寝をして、一日の大半を過ごした。冷蔵庫をのぞいて、今夜は何を作ってもらおうかと考えた。', '{a}はふらりと散歩に出て、商店街で買い食いをして帰ってきた。財布の中身が心もとないことに気づいたのは、帰り道のことだった。',
@@ -833,12 +833,12 @@
     if (part === 'm' && day.trioM) {
       day.trioM = false;
       var mt = TR.say(ctx, TR.T.MORN, ord[0], ord[1], ord[2]);
-      if (mt) ctx.act2({ actors: ord, cat: 'romance', text: mt, why: '新婚部屋：三人の朝', fx: function () { ctx.mod2(ord[0], ord[2], { aff: 1 }, { aff: 1 }); } });
+      if (mt) ctx.act2({ actors: ord, cat: 'romance', text: mt, why: '新婚生活：三人の朝', fx: function () { ctx.mod2(ord[0], ord[2], { aff: 1 }, { aff: 1 }); } });
     }
     if (part === 'd' && day.trioD && !day.trioD.done) {
       day.trioD.done = true;
       var X = day.trioD, tt = TR.say(ctx, (X.date ? TR.T.DATE : TR.T.DAY)[X.k], ord[0], ord[1], ord[2]);
-      if (tt) ctx.act2({ actors: ord, cat: 'romance', text: tt, why: '新婚部屋：三人の' + (X.date ? '休日（' : '日中（') + TR.KN[X.k] + '）',
+      if (tt) ctx.act2({ actors: ord, cat: 'romance', text: tt, why: '新婚生活：三人の' + (X.date ? '休日（' : '日中（') + TR.KN[X.k] + '）',
         fx: function () { ctx.mod2(ord[0], ord[1], { aff: 2, att: 1 }, { aff: 2, att: 1 }); ctx.mod2(ord[0], ord[2], { aff: 2, att: 1 }, { aff: 2, att: 1 }); ctx.mod2(ord[1], ord[2], { aff: 2, att: 1 }, { aff: 2, att: 1 }); } });
     }
   }
@@ -903,14 +903,14 @@
         if (se.length) see = HK.ShinkonTrio.say(ctx, se, c, o, C3);
       }
       tx += see;
-      var e = ctx.act2({ actors: see ? [c, o, C3] : [c, o], cat: S.love ? 'romance' : 'bond', text: tx, odd: odd, why: '新婚部屋：目標への気持ちが高まった（' + c.name + '：' + wn + (see ? '・' + C3.name + 'も見ていた' : '') + '）', fx: function () { ctx.mod2(c, o, { aff: 3, att: S.love ? 2 : 0 }, { aff: 2 + persK(o, 'warm'), att: S.love ? 2 : 0 }); } });
+      var e = ctx.act2({ actors: see ? [c, o, C3] : [c, o], cat: S.love ? 'romance' : 'bond', text: tx, odd: odd, why: '新婚生活：目標への気持ちが高まった（' + c.name + '：' + wn + (see ? '・' + C3.name + 'も見ていた' : '') + '）', fx: function () { ctx.mod2(c, o, { aff: 3, att: S.love ? 2 : 0 }, { aff: 2 + persK(o, 'warm'), att: S.love ? 2 : 0 }); } });
       if (e) { S.acts++; J.count(ctx, 'acts'); if (odd) S.odd++; }
       S.day.urge = Math.max(S.day.urge || 0, w.d === 9 ? 1 : /^(4|7|8)$/.test(String(w.d)) ? 0.55 : 0.3);
       S.day.urgeBy = S.day.urgeBy || c;
     }
   }
   /* ---------- 受け止め方の書き足し（2026-11-05 報告「ふんと鼻を鳴らして…拳を握っていた」「とそっけなく言った」が 10 本で 12 回）----------
-     新婚部屋の遊びだけ、共通の受け止め方（kit-react.js の HK.PairReact）に態度 9 種 × 3 種 × 2 本を足して 4 本ずつにし、一回の遊びで同じ文は 2 回まで、
+     新婚生活の遊びだけ、共通の受け止め方（kit-react.js の HK.PairReact）に態度 9 種 × 3 種 × 2 本を足して 4 本ずつにし、一回の遊びで同じ文は 2 回まで、
      同じ型の付け足し（鼻を鳴らす・そっけなく・拳を握る・口の端…）も 2 回までにする。相手が出張・日中で家にいないときは「おかえり」「迎えた」「玄関」の文を使わない。
      {a}＝受け止める人、{b}＝相手。家事・料理の言い回しは書かない */
   var RX = {
@@ -1023,7 +1023,7 @@
         else tx = prose(ctx, 'INTRO', it, '{a}の朝――' + (day.intro ? day.intro.t : '') + '。', who, other);
         /* 不穏な朝（前の晩の言い合いのあと・素っ気ない朝）は恋愛の出来事にせず、気分を不安・沈む向きに動かす（数値の向きは shinkon-design.md の 15 章） */
         var darkM = cold || it === 0;
-        ctx.act2({ actors: [who, other], cat: darkM ? 'bond' : S.love && it !== 7 ? 'romance' : 'bond', text: fill(ctx, tx, who, other, { special: day.special || '' }), why: '新婚部屋：朝（' + (day.intro ? (it === 6 ? (cold ? 'なぜか今日は相手が素っ気ない' : 'なぜか今日は相手がやけに優しい') : day.intro.t) : '') + '）', fx: darkM ? function () { uneasy(ctx, who, other, cold ? 'cold' : 'awk'); } : null });
+        ctx.act2({ actors: [who, other], cat: darkM ? 'bond' : S.love && it !== 7 ? 'romance' : 'bond', text: fill(ctx, tx, who, other, { special: day.special || '' }), why: '新婚生活：朝（' + (day.intro ? (it === 6 ? (cold ? 'なぜか今日は相手が素っ気ない' : 'なぜか今日は相手がやけに優しい') : day.intro.t) : '') + '）', fx: darkM ? function () { uneasy(ctx, who, other, cold ? 'cold' : 'awk'); } : null });
         if (day.sick) { day.pend = []; return; }
         var k1 = gain(ctx, who, it === 9 ? 1 + Math.floor(ctx.rng() * 10) : 1 + Math.floor(ctx.rng() * 3)), k2 = gain(ctx, other, 1 + Math.floor(ctx.rng() * 2));
         day.pend = [[who, k1], [other, k2]];
@@ -1043,11 +1043,11 @@
       [A, B].forEach(function (c) {
         var pl = c === A ? day2.pa : day2.pb;
         /* 一人の昼の一文は、一回の遊びで同じものを二度出さない（使い切ったら出さない。2026-11-05 通し読み：14 日で「〜の一日は、いつもどおりの段取りで進んだ」が 5 回） */
-        if (day2.hol && !pl.trip) { if (ctx.rng() < 0.45) { var hl = c.life && c.life.role === 'r10' ? freshT(ctx, HIMO, c) : lifeLine(ctx, c, function () { return LF.roleLine(ctx, c); }); if (hl) ctx.act2({ actors: [c], cat: 'solo', text: fill(ctx, hl, c), why: '新婚部屋：休日の家のこと' }); } return; }
+        if (day2.hol && !pl.trip) { if (ctx.rng() < 0.45) { var hl = c.life && c.life.role === 'r10' ? freshT(ctx, HIMO, c) : lifeLine(ctx, c, function () { return LF.roleLine(ctx, c); }); if (hl) ctx.act2({ actors: [c], cat: 'solo', text: fill(ctx, hl, c), why: '新婚生活：休日の家のこと' }); } return; }
         /* ヒモタイプ（家事も仕事も相手に任せきり）は仕事の文を出さない（2026-11-04 報告：ヒモが仕事の資料に向かう） */
-        if (c.life && c.life.role === 'r10' && !pl.trip) { var hm = ctx.rng() < 0.6 ? freshT(ctx, HIMO, c) : ''; if (hm) ctx.act2({ actors: [c], cat: 'solo', text: fill(ctx, hm, c), why: '新婚部屋：ヒモの昼' }); return; }
+        if (c.life && c.life.role === 'r10' && !pl.trip) { var hm = ctx.rng() < 0.6 ? freshT(ctx, HIMO, c) : ''; if (hm) ctx.act2({ actors: [c], cat: 'solo', text: fill(ctx, hm, c), why: '新婚生活：ヒモの昼' }); return; }
         var wl = ctx.rng() < (pl.trip ? 1 : 0.6) ? lifeLine(ctx, c, function () { return LF.line(ctx, c, pl); }, pl) : '';
-        if (wl) ctx.act2({ actors: [c], cat: 'solo', text: fill(ctx, wl, c), why: '新婚部屋：' + (pl.trip ? '出張' : '仕事') + '（' + LF.workInfo(c.life.work).label + '）' });
+        if (wl) ctx.act2({ actors: [c], cat: 'solo', text: fill(ctx, wl, c), why: '新婚生活：' + (pl.trip ? '出張' : '仕事') + '（' + LF.workInfo(c.life.work).label + '）' });
       });
       trouble(ctx, day2, 'd');
       /* 休日の昼ご飯は日中の区切りに（以前は夜の区切りに「休日の昼下がり」の昼ご飯が出ていた。2026-11-04 報告） */
@@ -1067,7 +1067,7 @@
       var nlSkip = dt === fb && nlPair(ctx, a, b);
       /* 不穏な日中の出来事（不安・喧嘩・嫉妬・会話できなかった日）は、恋愛の出来事にせず、好意を上げない（喧嘩は少し下げる）。気分は uneasy で */
       var dk = dl && day2.src === 'DAILY' ? darkKind(dl.t) : '';
-      var e = nlSkip ? null : ctx.act2({ actors: [a, b], cat: dk ? 'bond' : S.love ? 'romance' : 'bond', text: body + re.text, odd: re.odd, why: '新婚部屋：' + SRC_NAME[day2.src] + '（' + soft(dailyText(day2)) + '）', fx: function () { if (dk) { if (dk === 'fight') ctx.mod2(a, b, { aff: -1, ten: 2 }, { aff: -1, ten: 2 }); uneasy(ctx, a, b, dk); return; } var kw = rk && rk[0] === 'warm' ? persK(rk[1], 'warm') : 1; ctx.mod2(a, b, { aff: 2, att: S.love ? 2 : 0 }, { aff: 1 + kw, att: S.love ? 1 + kw * 0.5 : 0 }); } });
+      var e = nlSkip ? null : ctx.act2({ actors: [a, b], cat: dk ? 'bond' : S.love ? 'romance' : 'bond', text: body + re.text, odd: re.odd, why: '新婚生活：' + SRC_NAME[day2.src] + '（' + soft(dailyText(day2)) + '）', fx: function () { if (dk) { if (dk === 'fight') ctx.mod2(a, b, { aff: -1, ten: 2 }, { aff: -1, ten: 2 }); uneasy(ctx, a, b, dk); return; } var kw = rk && rk[0] === 'warm' ? persK(rk[1], 'warm') : 1; ctx.mod2(a, b, { aff: 2, att: S.love ? 2 : 0 }, { aff: 1 + kw, att: S.love ? 1 + kw * 0.5 : 0 }); } });
       if (re.odd && e) S.odd++;
       if (day2.fight) {
         S.fights++;
@@ -1075,7 +1075,7 @@
         if (!day2.fightInDaily) {
           /* 喧嘩の受け止め方：言われた側（b）の態度。意地を張るか、すぐ折れるか */
           var fr = withReact(ctx, 'oops', b, a, 0.35);
-          ctx.act2({ actors: [a, b], cat: 'conflict', text: fill(ctx, ft, a, b) + (fr.odd ? fr.text : ''), odd: fr.odd, why: '新婚部屋：小さな喧嘩（' + day2.fight + '）', fx: function () { ctx.mod2(a, b, { aff: -3, ten: 6 }, { aff: -3, ten: 6 }); } });
+          ctx.act2({ actors: [a, b], cat: 'conflict', text: fill(ctx, ft, a, b) + (fr.odd ? fr.text : ''), odd: fr.odd, why: '新婚生活：小さな喧嘩（' + day2.fight + '）', fx: function () { ctx.mod2(a, b, { aff: -3, ten: 6 }, { aff: -3, ten: 6 }); } });
         }
         day2.fought = true; S.foughtDay = day2.d;
       }
@@ -1106,7 +1106,7 @@
       if (NLT && NLT.makeup) mk = pickT(ctx, NLT.makeup, lo, hi);
       else if (Array.isArray(MK0)) mk = pickT(ctx, MK0, lo, hi);
       if (!mk) mk = prose(ctx, 'MAKEUP', 0, '寝る前に、{a}のほうから「さっきはごめん｜さっきは悪かった｜先ほどはすみませんでした」と切り出した。{b}は小さくうなずいた。', lo, hi);
-      if (ctx.act2({ actors: [lo, hi], cat: 'bond', text: fill(ctx, mk, lo, hi), why: '新婚部屋：仲直り（' + lo.name + 'から）', fx: function () { ctx.mod2(lo, hi, { aff: 4, ten: -6 }, { aff: 4, ten: -6 }); } })) S.makeups++;
+      if (ctx.act2({ actors: [lo, hi], cat: 'bond', text: fill(ctx, mk, lo, hi), why: '新婚生活：仲直り（' + lo.name + 'から）', fx: function () { ctx.mod2(lo, hi, { aff: 4, ten: -6 }, { aff: 4, ten: -6 }); } })) S.makeups++;
     }
     extras(ctx, day2, 'n');
     var gn1 = gain(ctx, A, Math.floor(ctx.rng() * 3)), gn2 = gain(ctx, B, Math.floor(ctx.rng() * 3));
@@ -1179,7 +1179,7 @@
     if (S.trio && !sexed && !day2.apart && !day2.sick && cHome(S, day2, S.C) && !lastN && HK.ShinkonTrio && ctx.rng() < 0.3) {
       var no3 = HK.ShinkonMulti && S.lp ? HK.ShinkonMulti.order(ctx, S, [A, B, S.C]) : [A, B, S.C];
       var nt = HK.ShinkonTrio.say(ctx, HK.ShinkonTrio.T.NIGHT, no3[0], no3[1], no3[2]);
-      if (nt) ctx.act2({ actors: no3, cat: 'romance', text: nt, why: '新婚部屋：三人並んで眠る夜', fx: function () { ctx.mod2(no3[0], no3[1], { aff: 1 }, { aff: 1 }); ctx.mod2(no3[0], no3[2], { aff: 1 }, { aff: 1 }); } });
+      if (nt) ctx.act2({ actors: no3, cat: 'romance', text: nt, why: '新婚生活：三人並んで眠る夜', fx: function () { ctx.mod2(no3[0], no3[1], { aff: 1 }, { aff: 1 }); ctx.mod2(no3[0], no3[2], { aff: 1 }, { aff: 1 }); } });
     }
     /* 四人婚：夜の場面の無い夜は、ときどき四人で布団を並べて眠る段 */
     if (S.quad && !sexed && !day2.sick && !lastN && HK.ShinkonFour && ctx.rng() < 0.3) HK.ShinkonFour.qNight(ctx, S, day2);
@@ -1187,7 +1187,7 @@
     var nlM = !day2.apart && nlPair(ctx, A, B) && HK.ShinkonMulti ? HK.ShinkonMulti.mood(S, A, B) : '';
     if (nlM) {
       var NLE = HK.ShinkonMultiText && HK.ShinkonMultiText.NL ? (HK.ShinkonMultiText.NL[nlM] || HK.ShinkonMultiText.NL.tomo).end : null, ne = NLE ? pickT(ctx, NLE, A, B) : '';
-      if (ne && ctx.rng() < 0.6) ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, ne, A, B), why: '新婚部屋：一日の終わり（恋の相手でない伴侶どうし・' + ((HK.ShinkonMultiText.MOOD || {})[nlM] || '') + '）' });
+      if (ne && ctx.rng() < 0.6) ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, ne, A, B), why: '新婚生活：一日の終わり（恋の相手でない伴侶どうし・' + ((HK.ShinkonMultiText.MOOD || {})[nlM] || '') + '）' });
       if (d === S.days - 1) { ending(ctx); return; }
       return;
     }
@@ -1199,8 +1199,8 @@
       if (dist && SAD_RE.test(et) && !SAD_RE.test(dist)) dist = '';
       /* 不穏な一日の終わり（不安・距離・噛み合わない・泣いてしまった）は、恋愛の出来事にせず、気分を不安の向きに */
       var dEnd = DARK_END.test(en.t);
-      ctx.act2({ actors: [day2.hi, day2.lo], cat: dEnd ? 'bond' : S.love ? 'romance' : 'bond', text: fill(ctx, et, day2.hi, day2.lo) + (dist && d !== S.days - 1 ? dist : ''), why: '新婚部屋：一日の終わり（' + en.k + '）', fx: dEnd ? function () { uneasy(ctx, day2.hi, day2.lo, 'worry'); } : null });
-    } else if (dist && d !== S.days - 1) ctx.act2({ actors: [A, B], cat: 'bond', text: dist, why: '新婚部屋：離れて過ごした一日' });
+      ctx.act2({ actors: [day2.hi, day2.lo], cat: dEnd ? 'bond' : S.love ? 'romance' : 'bond', text: fill(ctx, et, day2.hi, day2.lo) + (dist && d !== S.days - 1 ? dist : ''), why: '新婚生活：一日の終わり（' + en.k + '）', fx: dEnd ? function () { uneasy(ctx, day2.hi, day2.lo, 'worry'); } : null });
+    } else if (dist && d !== S.days - 1) ctx.act2({ actors: [A, B], cat: 'bond', text: dist, why: '新婚生活：離れて過ごした一日' });
     if (d === S.days - 1) { ending(ctx); return; }
   }
   /* ---------- 不穏な日常の出来事（2026-11-06）：数値の向き ----------
@@ -1275,27 +1275,27 @@
     var t = pickT(ctx, SK()[kind === 'morn' ? 'MORN' : kind === 'well' ? 'WELL' : 'DULL'], a, b);
     if (!t) return;
     var tx = fill(ctx, t, a, b) + (kind === 'morn' ? careReact(ctx, a, b, 0.5) : '');
-    ctx.act2({ actors: [a, b], cat: 'bond', text: tx, why: '新婚部屋：' + SICK_WHY[kind] + '（' + b.name + '）', fx: function () { ctx.mod2(a, b, { aff: 1, trust: 1 }, { aff: 2, trust: 2 }); } });
+    ctx.act2({ actors: [a, b], cat: 'bond', text: tx, why: '新婚生活：' + SICK_WHY[kind] + '（' + b.name + '）', fx: function () { ctx.mod2(a, b, { aff: 1, trust: 1 }, { aff: 2, trust: 2 }); } });
   }
   function sickDay(ctx, day) {
     var S = f(ctx), a = day.carer, b = day.sick, W = SK().WORK || {};
     if (!day.hol) {
       var wb = (b.life && b.life.work) || 'regular', wa = (a.life && a.life.work) || 'regular';
-      if (wb !== 'home') { var rt = pickT(ctx, SK().REST, a, b); if (rt) ctx.act2({ actors: [b], cat: 'solo', text: fill(ctx, rt, a, b), why: '新婚部屋：体調を崩して休んだ（' + b.name + '）' }); }
+      if (wb !== 'home') { var rt = pickT(ctx, SK().REST, a, b); if (rt) ctx.act2({ actors: [b], cat: 'solo', text: fill(ctx, rt, a, b), why: '新婚生活：体調を崩して休んだ（' + b.name + '）' }); }
       if (wa !== 'home') {
         var wt = pickT(ctx, wa === 'remote' ? W.remote : W.out, a, b);
-        if (wt) ctx.act2({ actors: [a, b], cat: 'bond', text: fill(ctx, wt, a, b), why: '新婚部屋：看病のために仕事を休んだ（' + a.name + '）' });
+        if (wt) ctx.act2({ actors: [a, b], cat: 'bond', text: fill(ctx, wt, a, b), why: '新婚生活：看病のために仕事を休んだ（' + a.name + '）' });
       }
     }
     var fb = '{a}は、体調を崩した{b}のそばについていた。';
     var dt = prose(ctx, 'DAILY', day.dailyI, fb, a, b);
     var body = fill(ctx, dt, a, b, { item: day.item ? day.item.t : '', special: '', fight: '' }) + careReact(ctx, a, b, 0.6);
-    ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: body, why: '新婚部屋：日中の出来事（' + soft(dailyText(day)) + '・' + b.name + 'が体調を崩した）', fx: function () { ctx.mod2(a, b, { aff: 1, trust: 1 }, { aff: 2 + persK(b, 'warm') * 0.5, trust: 2 }); } });
+    ctx.act2({ actors: [a, b], cat: S.love ? 'romance' : 'bond', text: body, why: '新婚生活：日中の出来事（' + soft(dailyText(day)) + '・' + b.name + 'が体調を崩した）', fx: function () { ctx.mod2(a, b, { aff: 1, trust: 1 }, { aff: 2 + persK(b, 'warm') * 0.5, trust: 2 }); } });
   }
   function sickNight(ctx, day, d) {
     var S = f(ctx), a = day.carer, b = day.sick;
     var t = pickT(ctx, SK().NIGHT, a, b);
-    if (t) ctx.act2({ actors: [a, b], cat: 'bond', text: fill(ctx, t, a, b), why: '新婚部屋：看病の夜（' + b.name + '）', fx: function () { ctx.mod2(a, b, { aff: 1, trust: 1 }, { aff: 2, trust: 2 }); } });
+    if (t) ctx.act2({ actors: [a, b], cat: 'bond', text: fill(ctx, t, a, b), why: '新婚生活：看病の夜（' + b.name + '）', fx: function () { ctx.mod2(a, b, { aff: 1, trust: 1 }, { aff: 2, trust: 2 }); } });
     /* 三人・四人で暮らす家：残りの皆で看る（shinkon-four.js） */
     if (HK.ShinkonFour) HK.ShinkonFour.run(ctx, S, day, 'n');
     if (d === S.days - 1) ending(ctx);
@@ -1305,14 +1305,14 @@
     var S = f(ctx), b = day.back, a = b === S.A ? S.B : S.A;
     var t = pickT(ctx, SK()[key], a, b);
     if (!t) return;
-    ctx.act2({ actors: [a, b], cat: key === 'BACK_N' ? (S.love ? 'romance' : 'bond') : 'solo', text: fill(ctx, t, a, b), why: '新婚部屋：' + (key === 'BACK_M' ? '朝' : key === 'BACK_D' ? '日中' : '夜') + '（' + b.name + (key === 'BACK_N' ? 'が出張から帰ってきた）' : 'が出張から帰ってくる日）') });
+    ctx.act2({ actors: [a, b], cat: key === 'BACK_N' ? (S.love ? 'romance' : 'bond') : 'solo', text: fill(ctx, t, a, b), why: '新婚生活：' + (key === 'BACK_M' ? '朝' : key === 'BACK_D' ? '日中' : '夜') + '（' + b.name + (key === 'BACK_N' ? 'が出張から帰ってきた）' : 'が出張から帰ってくる日）') });
   }
   function apartMorning(ctx, day) {
     var S = f(ctx), A = S.A, B = S.B, both = day.pa.trip && day.pb.trip;
     var b = both ? B : day.pa.trip ? A : B, a = b === A ? B : A;
     var t = pickT(ctx, both ? SK().APART2 : SK().APART, a, b);
     if (!t) return;
-    ctx.act2({ actors: [a, b], cat: 'solo', text: fill(ctx, t, a, b), why: '新婚部屋：朝（' + (both ? '二人とも出張' : b.name + 'が出張') + '）' });
+    ctx.act2({ actors: [a, b], cat: 'solo', text: fill(ctx, t, a, b), why: '新婚生活：朝（' + (both ? '二人とも出張' : b.name + 'が出張') + '）' });
   }
   /* 困りごと（その区切りのもの）：当人の文＋受け止める人の反応（態度・らしくない）＋決着（気質で：笑い話・一緒に何とかする・小さな言い合い） */
   function trouble(ctx, day, part) {
@@ -1344,7 +1344,7 @@
     if (c.tr.id === 'dark') day.dark = true;
     if (c.tr.id === 'forgot') day.forgot = a;
     if (c.tr.id === 'overtime' || c.tr.id === 'train') day.lateHome = a;
-    var e = ctx.act2({ actors: together ? (helper ? [a, b, helper].concat(helper2 ? [helper2] : []) : [a, b]) : [a], cat: oc === 'spat' ? 'conflict' : together ? 'bond' : 'solo', text: tx, odd: odd, why: '新婚部屋：困りごと（' + TROUBLE_NAME[c.tr.id] + '）' + (oc ? '・' + OUT_NAME[oc] : '') + (helper ? '・' + helper.name + (helper2 ? 'と' + helper2.name : '') + 'も手伝った' : ''),
+    var e = ctx.act2({ actors: together ? (helper ? [a, b, helper].concat(helper2 ? [helper2] : []) : [a, b]) : [a], cat: oc === 'spat' ? 'conflict' : together ? 'bond' : 'solo', text: tx, odd: odd, why: '新婚生活：困りごと（' + TROUBLE_NAME[c.tr.id] + '）' + (oc ? '・' + OUT_NAME[oc] : '') + (helper ? '・' + helper.name + (helper2 ? 'と' + helper2.name : '') + 'も手伝った' : ''),
       fx: function () { if (!together) return; if (oc === 'spat') ctx.mod2(a, b, { aff: -2, ten: 5 }, { aff: -2, ten: 5 }); else ctx.mod2(a, b, { aff: 2, trust: 2 }, { aff: 2, trust: oc === 'help' ? 3 : 1 }); } });
     if (e) { S.troubles++; if (odd) S.odd++; }
     if (oc === 'spat' && e) { day.fought = true; S.fights++; day.lo = a; day.hi = b; }
@@ -1364,7 +1364,7 @@
     g.gone = false;
     try {
       var t = VI.text(ctx, v);
-      var e = ctx.act2({ actors: v.kind === 'contact' ? [v.host, g] : [v.host, g, v.other], cat: 'bond', text: fill(ctx, t, v.host, v.other, ex), why: '新婚部屋：' + { visit: '他の住人が遊びに来た', out: '他の住人と出かけた', contact: '他の住人から連絡が来た' }[v.kind] + '（' + g.name + '・' + ex.gl + '）',
+      var e = ctx.act2({ actors: v.kind === 'contact' ? [v.host, g] : [v.host, g, v.other], cat: 'bond', text: fill(ctx, t, v.host, v.other, ex), why: '新婚生活：' + { visit: '他の住人が遊びに来た', out: '他の住人と出かけた', contact: '他の住人から連絡が来た' }[v.kind] + '（' + g.name + '・' + ex.gl + '）',
         fx: function () { if (!g.outside) ctx.mod2(v.host, g, { aff: 3, trust: 2 }, { aff: 3, trust: 2 }); } });
       if (e) S.visits++;
       /* 離れている日（出張）は、そばで妬く場面を出さない */
@@ -1373,7 +1373,7 @@
         var arr = VI.T[fk], jl = fk !== 'bless';
         var ft = fill(ctx, pickOf(ctx, arr), v.host, v.other, ex);
         /* 恋愛の出来事は参加した二人のあいだだけ（ヤキモチは二人の出来事。祝福は他の住人が加わるので仲良しの出来事 bond） */
-        var e2 = ctx.act2({ actors: jl ? [v.other, v.host] : [g, v.host, v.other], cat: jl ? 'romance' : 'bond', text: ft, why: '新婚部屋：' + (jl ? v.other.name + 'のヤキモチ（' + g.name + 'が' + (v.cls === 'ex' ? '元恋人' : ex.gl) + '）' : g.name + 'が二人を祝福した'),
+        var e2 = ctx.act2({ actors: jl ? [v.other, v.host] : [g, v.host, v.other], cat: jl ? 'romance' : 'bond', text: ft, why: '新婚生活：' + (jl ? v.other.name + 'のヤキモチ（' + g.name + 'が' + (v.cls === 'ex' ? '元恋人' : ex.gl) + '）' : g.name + 'が二人を祝福した'),
           fx: function () { if (jl) ctx.mod2(v.other, v.host, { att: 4, ten: 3 }, { att: 3 }); else ctx.mod2(v.host, v.other, { aff: 2, att: 2 }, { aff: 2, att: 2 }); } });
         if (e2 && jl) { day.jealBy = v.other; day.jealOf = v.host; day.jealG = g; day.jealEx = v.cls === 'ex'; }
       }
@@ -1393,7 +1393,7 @@
       if (!mt) return;
     }
     var re = withReact(ctx, 'warm', other, cook, day.cook ? 0.4 : 0.2);
-    ctx.act2({ actors: [cook, other], cat: S.love ? 'romance' : 'bond', text: fill(ctx, mt, cook, other, { food: food }) + re.text, odd: re.odd, why: '新婚部屋：' + MEAL_NAME[day.mealK] + 'ご飯（' + clean(day.meal.k).replace(/（.*$|\s.*$/, '') + (day.cook ? '・' + day.cook.name + 'が作った' : '') + '）' });
+    ctx.act2({ actors: [cook, other], cat: S.love ? 'romance' : 'bond', text: fill(ctx, mt, cook, other, { food: food }) + re.text, odd: re.odd, why: '新婚生活：' + MEAL_NAME[day.mealK] + 'ご飯（' + clean(day.meal.k).replace(/（.*$|\s.*$/, '') + (day.cook ? '・' + day.cook.name + 'が作った' : '') + '）' });
   }
   /* ふたりの距離（その日の終わりの一文） */
   function distance(ctx, day) {
@@ -1425,7 +1425,7 @@
     var act = P.concat(M, G), off = act.filter(function (c) { return c.gone; });
     off.forEach(function (c) { c.gone = false; });
     try {
-      var e = ctx.act2({ actors: act, cat: 'bond', text: fill(ctx, parts.join('').replace(/^\n+/, ''), P[0], P[1]), why: '新婚部屋：最後の夜（家の全員で）', mag: 0 });
+      var e = ctx.act2({ actors: act, cat: 'bond', text: fill(ctx, parts.join('').replace(/^\n+/, ''), P[0], P[1]), why: '新婚生活：最後の夜（家の全員で）', mag: 0 });
       if (e && !S.kissed && P.length >= 3) S.kissed = true;
       S.endAll = !!e;
     } finally { off.forEach(function (c) { if (G.indexOf(c) >= 0) c.gone = true; }); }
@@ -1441,14 +1441,14 @@
     if (S.trio && S.full === false && HK.ShinkonMulti) { if (HK.ShinkonMulti.kiss(ctx, S)) S.kissed = true; return; }
     if (S.trio && HK.ShinkonTrio) {
       var T3 = [S.A0, S.B0, S.C0], kt = HK.ShinkonTrio.say(ctx, HK.ShinkonTrio.T.KISS, T3[0], T3[1], T3[2]);
-      if (ctx.act2({ actors: T3, cat: 'romance', text: kt, why: '新婚部屋：最後の夜（三人の幸せなキス）', fx: function () { ctx.mod2(T3[0], T3[1], { aff: 5, att: 5 }, { aff: 5, att: 5 }); ctx.mod2(T3[0], T3[2], { aff: 5, att: 5 }, { aff: 5, att: 5 }); ctx.mod2(T3[1], T3[2], { aff: 5, att: 5 }, { aff: 5, att: 5 }); } })) S.kissed = true;
+      if (ctx.act2({ actors: T3, cat: 'romance', text: kt, why: '新婚生活：最後の夜（三人の幸せなキス）', fx: function () { ctx.mod2(T3[0], T3[1], { aff: 5, att: 5 }, { aff: 5, att: 5 }); ctx.mod2(T3[0], T3[2], { aff: 5, att: 5 }, { aff: 5, att: 5 }); ctx.mod2(T3[1], T3[2], { aff: 5, att: 5 }, { aff: 5, att: 5 }); } })) S.kissed = true;
       return;
     }
     if (S.love) {
       var t = prose(ctx, 'KISS', k, D.KISS[k], A, B);
-      if (ctx.act2({ actors: [A, B], cat: 'romance', text: fill(ctx, t, A, B), why: '新婚部屋：最後の夜（幸せなキス）', fx: function () { ctx.mod2(A, B, { aff: 6, att: 6, trust: 4 }, { aff: 6, att: 6, trust: 4 }); } })) S.kissed = true;
+      if (ctx.act2({ actors: [A, B], cat: 'romance', text: fill(ctx, t, A, B), why: '新婚生活：最後の夜（幸せなキス）', fx: function () { ctx.mod2(A, B, { aff: 6, att: 6, trust: 4 }, { aff: 6, att: 6, trust: 4 }); } })) S.kissed = true;
     } else {
-      ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, prose(ctx, 'HUG', 0, '最後の夜、{a}と{b}は並んで座り、明日の話をした。穏やかな、いい暮らしだった。', A, B), A, B), why: '新婚部屋：最後の夜' });
+      ctx.act2({ actors: [A, B], cat: 'bond', text: fill(ctx, prose(ctx, 'HUG', 0, '最後の夜、{a}と{b}は並んで座り、明日の話をした。穏やかな、いい暮らしだった。', A, B), A, B), why: '新婚生活：最後の夜' });
     }
   }
   function finish(ctx) {
@@ -1553,7 +1553,7 @@
   };
 
   HK.SCENARIOS[ID] = scen;
-  /* 開始前の注意：三人・四人の夜が起きない配役（本体の HK.Quad.groupWarn。同居生活・新婚部屋・デートの日々で同じ文言。R18版だけ。2026-11-05 利用者の報告「同居で 3P・4P をしない」） */
+  /* 開始前の注意：三人・四人の夜が起きない配役（本体の HK.Quad.groupWarn。同居生活・新婚生活・デートの日々で同じ文言。R18版だけ。2026-11-05 利用者の報告「同居で 3P・4P をしない」） */
   if (HK.SoloWarn && HK.SoloWarn.add) HK.SoloWarn.add(ID, function (input) {
     /* 立場「新婚の夫婦」を選んだ人どうしは夫婦（恋人と同じ）として数える */
     var sp = function (c) { var p = input.perChar && input.perChar[c.i]; return !!(p && p.pick && p.pick.part === 'couple'); };

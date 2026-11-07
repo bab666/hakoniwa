@@ -1,7 +1,7 @@
 /* 長いエッチの場面の流れの点検（2026-11-03。設計は docs/reports/2026-11-03/sex-flow-design.md、フィードバックは sex-flow-feedback.md）
    使い方: node sex-flow-audit.js <ビルドのディレクトリ> [1箱庭あたりの回数=24] [箱庭id,…] [--why] [--raw]
      --raw：流れの管理（HK.SexFlow）を切って、組み立てたままの本文を数える（変更前の数字）
-     新婚部屋など追加パックの箱庭：pack-site.js で作った試しのフォルダを渡し、HK_PACK_CODES=… HK_ONLY_SCEN=set-b-shinkon で回す
+     新婚生活など追加パックの箱庭：pack-site.js で作った試しのフォルダを渡し、HK_PACK_CODES=… HK_ONLY_SCEN=set-b-shinkon で回す
    長い場面（HK.ThickSex.scene・HK.ThickEro.scene のいちばん外側の出力）を集め、HK.SexFlow.analyze（段に分けて状態を進める）で数える：
      (a) 段階の逆戻り（挿入後の脱がせる・下ごしらえ、山場後の挿入）
      (b) 体位の矛盾（体位を変える部品を挟まずに、別の体位を前提にした言い回し：受けが上の直後の「真上から」など）

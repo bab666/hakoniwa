@@ -3,7 +3,7 @@
              [--tones=口調,…] [--scen=箱庭id,…] [--why] [--show=8] [--json=出力.json] [--from=前の出力.json,…] [--dialog]
      例：node moan-tone-audit.js ../../hakoniwa-full                    … R18版の全箱庭（約 6 分）
          HK_PACK_CODES=DDDD-EEEE-FFFF HK_ONLY_SCEN=set-b-shinkon node moan-tone-audit.js <試しのフォルダ>/hakoniwa-full 4 --scen=set-b-shinkon
-                                                                           … 追加パックの新婚部屋（build/pack-site.js で作った試しのフォルダ）
+                                                                           … 追加パックの新婚生活（build/pack-site.js で作った試しのフォルダ）
          node moan-tone-audit.js --from=a.json --why                     … 集めた喘ぎに規則だけ当て直す（規則を直したときの確かめ）
    集め方：moan-audit.js（喘ぎ声の点検）を、夜の性格ごと（なし・サド・マゾ・意地悪・甘々・恥じらい）に回して喘ぎを集める（口調を全員に固定。
      エゴグラムは乱数なので、態度がエゴグラムで決まる口調（ヤンキー・のじゃ・無口など）は態度 9 種がまんべんなく出る。夜の性格は喘ぎの基盤の態度を変える

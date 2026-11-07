@@ -6,12 +6,12 @@
 /* @event scen=set-b-shinkon id=sk_night_vday cat=romance tie=- tags=night label=バレンタインの贈り物はもう一つ（リボン） */
 /* @event scen=set-b-shinkon id=sk_night_wday cat=romance tie=- tags=night label=ホワイトデーのお返しは私 */
 /* @event scen=set-b-shinkon id=sk_night_bday cat=romance tie=- tags=night label=誕生日の最後の贈り物の夜 */
-/* 新婚部屋：新婚らしい夜の入口（R18版だけ。2026-11-03 利用者の追加の指示）
+/* 新婚生活：新婚らしい夜の入口（R18版だけ。2026-11-03 利用者の追加の指示）
    ■ HK.ShinkonR18X（X）
      ・X.offer(ctx, S, day, k, x)：贈り物（vday バレンタイン／wday ホワイトデー／bday 誕生日）がえっちなことになる夜の入口の印（day.r18x）。{x}＝言い出す人（贈った人。誕生日は祝う人）
      ・X.apron(ctx, S, day, x, y)：裸エプロン姿で帰りを待つ（新婚らしい出来事。shinkon-wed.js から。全年齢版は服を着た版）。{x}＝待っていた人、{y}＝帰ってきた人
      ・X.pillow(ctx, S, day, x, y)：イエスノー枕。{x}が「YES」を見せる（態度 9 種）→ {y}が応える（YES 態度 9 種／NO 態度 9 種）→ NO なら{x}の受け止め（態度 9 種）。NO の夜は体の関係の場面を出さない（day.noSex）
-     ・X.lead(ctx, k, a, b, x, y)：その夜のきっかけの段（shinkon-r18.js の SH.night が場面の直前に出す）。X.src(k, x, y)：場面の文（PLAY・OPEN を入口ごとに。ほかは新婚部屋の文）
+     ・X.lead(ctx, k, a, b, x, y)：その夜のきっかけの段（shinkon-r18.js の SH.night が場面の直前に出す）。X.src(k, x, y)：場面の文（PLAY・OPEN を入口ごとに。ほかは新婚生活の文）
    ■ 文：LEAD は {x}＝言い出した人・{y}＝相手（受け攻めに関係なく。立場を入れ替える言い回しは書かない）。PLAY・OPEN は {a}＝攻め・{b}＝受け、{x}＝エプロンを着ていた人・贈った人、{y}＝誕生日の人。
      形 mf／ff／fm ごとに地の文 3 文以上。体の語は印。台詞は3本（一人称「私」、二人称「あなた」）。合意の上の新婚の二人。登場人物はすべて成人として扱う */
 (function () {
@@ -43,7 +43,7 @@
   X.apron = function (ctx, S, day, x, y) {
     var t = SK().pickT(ctx, X.APRON, x, y), u = SK().pickT(ctx, X.APRON_ANS, x, y);
     if (!t) return null;
-    var e = ctx.act2({ actors: [x, y], cat: 'romance', text: SK().fill(ctx, t, x, y) + SK().fill(ctx, u, x, y), why: '新婚部屋：' + (ctx.sk && ctx.sk.wed ? '新婚らしい出来事' : '暮らしの出来事') + '（' + x.name + 'が裸エプロンで出迎えた）', fx: function () { ctx.mod2(x, y, { att: 4 }, { att: 6, aff: 2 }); } });
+    var e = ctx.act2({ actors: [x, y], cat: 'romance', text: SK().fill(ctx, t, x, y) + SK().fill(ctx, u, x, y), why: '新婚生活：' + (ctx.sk && ctx.sk.wed ? '新婚らしい出来事' : '暮らしの出来事') + '（' + x.name + 'が裸エプロンで出迎えた）', fx: function () { ctx.mod2(x, y, { att: 4 }, { att: 6, aff: 2 }); } });
     if (e && canNight(ctx, S, day, x, y) && !day.r18x) day.r18x = { k: 'apron', x: x, y: y };
     return e;
   };
@@ -104,7 +104,7 @@
     var pNo = 0.22 + (tired ? 0.3 : 0) + (lib === 'low' ? 0.25 : lib === 'high' ? -0.12 : 0);
     var no = ctx.rng() < Math.max(0.05, Math.min(0.7, pNo));
     var tx = SK().fill(ctx, pk9(ctx, P.show, x, y, x, y), x, y) + SK().fill(ctx, pk9(ctx, no ? P.no : P.yes, y, x, x, y), x, y) + (no ? SK().fill(ctx, pk9(ctx, P.noReact, x, y, x, y), x, y) : '');
-    var e = ctx.act2({ actors: [x, y], cat: 'romance', text: tx, why: '新婚部屋：新婚らしい出来事（イエスノー枕・' + x.name + 'が誘い、' + y.name + 'は' + (no ? '「NO」で断った' : '「YES」で応えた') + '）',
+    var e = ctx.act2({ actors: [x, y], cat: 'romance', text: tx, why: '新婚生活：新婚らしい出来事（イエスノー枕・' + x.name + 'が誘い、' + y.name + 'は' + (no ? '「NO」で断った' : '「YES」で応えた') + '）',
       fx: function () { ctx.mod2(x, y, { att: 3 }, { att: no ? 1 : 3, aff: 1 }); } });
     if (!e) return null;
     if (no) day.noSex = true;
@@ -156,7 +156,7 @@
     wday: L('お返しの包みを開けたまま、二人は寝室に移った。{a}は{b}をベッドの端に座らせ、その前にひざをついた。今夜は、時間をかけて返すつもりだった。|テーブルに残ったお返しの箱を横目に、{a}は{b}の手を引いた。寝室の戸が閉まると、{a}は{b}を胸に抱き寄せ、長い口づけを落とした。'),
     bday: L('誕生日の夜の、最後の時間だった。{a}は{b}をベッドに横たえ、額にそっと口づけた。ろうそくの火を吹き消したときの{y}の笑顔を、{a}はまだ覚えていた。|寝室には、今日もらったばかりの花が飾ってあった。{a}は{b}を抱き寄せ、その香りの中でゆっくりと唇を重ねた。今日という日を、二人で最後まで味わうつもりだった。')
   };
-  /* 場面の文の出どころ（kit-r18.js の HK.PairR18.scene に渡す）。PLAY・OPEN が無い入口（枕）は null（新婚部屋の文のまま） */
+  /* 場面の文の出どころ（kit-r18.js の HK.PairR18.scene に渡す）。PLAY・OPEN が無い入口（枕）は null（新婚生活の文のまま） */
   X.src = function (k, x, y, base, a) {
     if (!X.PLAY[k]) return null;
     /* 攻め（{a}）がエプロンの人・誕生日の人なら、その文の「{x}の」「{y}の」は「自分の」に（「{a}は…{a}のエプロン」と書かない） */

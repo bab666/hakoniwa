@@ -1,4 +1,4 @@
-/* 新婚部屋：元の関係が分かる出来事と「元○○」の扱い（両方のビルド。2026-11-03 利用者の追加の指示「関係性の出来事をもっと増やす」「結婚しないはずの関係は元○○の扱い」）
+/* 新婚生活：元の関係が分かる出来事と「元○○」の扱い（両方のビルド。2026-11-03 利用者の追加の指示「関係性の出来事をもっと増やす」「結婚しないはずの関係は元○○の扱い」）
    ■ HK.ShinkonPast（PS）
      ・PS.exOf(ties, ai, bi, trio)：二人の関係（入力の ties）に「結婚しないはずの関係」（EXK：恐怖（三人婚の組で「恋愛：あり」を選んだときだけ）・敵対・主従・ライバル・不仲・愛憎）があり、恋人・夫婦などの関係が無く、
        ほかに「恋愛：なし」の関係（家族・無関心・信仰など）も「恋愛：なし」を選んだ関係も無ければ { k, x }（x＝恐怖なら怖がっていた人・主従なら主の番号）。
@@ -119,14 +119,14 @@
     if (k === 'fear') {
       say = P(ctx, ((T.FEAR || {})[X.fm] || {})[per(x)] || ((T.FEAR || {})[X.fm] || {}).gentle, x, y);
       ans = P(ctx, (T.FEARANS || {})[X.fm], y, x);
-      why = '新婚部屋：まさか私たちが結婚するなんて（' + EXNAME[k] + '・' + x.name + 'は' + (X.fm === 'calm' ? 'もう怖くない' : 'まだ少し怖い') + '）';
+      why = '新婚生活：まさか私たちが結婚するなんて（' + EXNAME[k] + '・' + x.name + 'は' + (X.fm === 'calm' ? 'もう怖くない' : 'まだ少し怖い') + '）';
     } else {
       var sp = ctx.rng() < 0.5 ? x : y, ot = sp === x ? y : x;
       say = P(ctx, (T.EXSAY || {})[per(sp)] || (T.EXSAY || {}).gentle, sp, ot);
       ans = P(ctx, (T.EXANS || {})[per(ot)] || (T.EXANS || {}).gentle, ot, sp);
       say = say ? F(ctx, say, sp, ot, { was: WAS[k] }) : '';
       ans = ans ? F(ctx, ans, ot, sp) : '';
-      why = '新婚部屋：まさか私たちが結婚するなんて（' + EXNAME[k] + (X.nare ? '・なれそめ' : '') + '・' + sp.name + 'から）';
+      why = '新婚生活：まさか私たちが結婚するなんて（' + EXNAME[k] + (X.nare ? '・なれそめ' : '') + '・' + sp.name + 'から）';
       var tx0 = F(ctx, nar, x, y) + (say ? '\n\n' + say + ans : '');
       return ctx.act2({ actors: [sp, ot], cat: 'romance', text: tx0, why: why, fx: function () { ctx.mod2(sp, ot, { aff: 3, att: 3 }, { aff: 3, att: 3 }); } });
     }
@@ -173,7 +173,7 @@
     var k = ctx.rng() < 0.5 ? 'kind' : 'used', per = SK().per(x);
     var tx = FS ? F2(ctx, P(ctx, FS.sit ? FS.sit(ctx, k) : FS.SIT[k], x, y) || '', x, y) + F2(ctx, P(ctx, FS.RX[per] || FS.RX.gentle, x, y) || '', x, y) + F2(ctx, P(ctx, FS.FREE, x, y) || '', x, y) : '';
     if (!tx) return null;
-    return ctx.act2({ actors: [x, y], cat: 'bond', text: tx, why: '新婚部屋：恐怖が和らいだ（' + x.name + 'は' + y.name + 'を怖がっていたが、ぶり返しが減った。「恋愛：あり」の二人なので、ここから恋愛になりうる）／恐怖の和らぎ：' + x.name + 'の' + y.name + 'への恐怖が和らいだ',
+    return ctx.act2({ actors: [x, y], cat: 'bond', text: tx, why: '新婚生活：恐怖が和らいだ（' + x.name + 'は' + y.name + 'を怖がっていたが、ぶり返しが減った。「恋愛：あり」の二人なので、ここから恋愛になりうる）／恐怖の和らぎ：' + x.name + 'の' + y.name + 'への恐怖が和らいだ',
       fx: function () { ctx.mod2(x, y, { trust: 4, aff: 3 }, { aff: 2 }); } });
   };
   /* 恐怖の関係のままの二人の始まりの段（無ければ ''。shinkon.js の setup が NW_SETUP の代わりに使う） */
@@ -190,7 +190,7 @@
     var say = P(ctx, (T.NFSAY || {})[per(x)] || (T.NFSAY || {}).gentle, x, y), ans = P(ctx, (T.NFANS || {})[per(y)] || (T.NFANS || {}).gentle, y, x);
     if (!say) return null;
     var tx = F2(ctx, say, x, y) + (ans ? F2(ctx, ans, y, x) : '');
-    return ctx.act2({ actors: [x, y], cat: 'bond', text: tx, why: '新婚部屋：元恐怖でも、今は少し慣れてきた……多分（' + x.name + 'は' + y.name + 'を怖がっていた）',
+    return ctx.act2({ actors: [x, y], cat: 'bond', text: tx, why: '新婚生活：元恐怖でも、今は少し慣れてきた……多分（' + x.name + 'は' + y.name + 'を怖がっていた）',
       fx: function () { ctx.mod2(x, y, { trust: 2 }, { aff: 1, trust: 1 }); } });
   };
   function F2(ctx, t, a, b) { return t ? SK().fill(ctx, t, a, b) : ''; }
@@ -230,7 +230,7 @@
     /* 恐怖の関係のままの二人は、ぶり返した日の夜は体の関係の場面を出さない（元恐怖は普通の二人と同じなので止めない） */
     if (!F.ex) day.noSex = true;
     if (yk === 'fureru') day.fearTouch = true;
-    var e = ctx.act2({ actors: [x, y], cat: 'bond', text: tx, odd: odd, why: '新婚部屋：恐怖がぶり返した（' + x.name + '・' + FKN[E.k] + '。' + y.name + 'は' + (yk === 'fureru' ? 'そっと触れた' : '距離を取った') + '）',
+    var e = ctx.act2({ actors: [x, y], cat: 'bond', text: tx, odd: odd, why: '新婚生活：恐怖がぶり返した（' + x.name + '・' + FKN[E.k] + '。' + y.name + 'は' + (yk === 'fureru' ? 'そっと触れた' : '距離を取った') + '）',
       fx: function () { if (yk === 'fureru') ctx.mod2(x, y, { trust: 2 }, { aff: 1 }); else ctx.mod2(x, y, { trust: 1 }, { trust: 1 }); } });
     if (e) { S.fearN = (S.fearN || 0) + 1; if (yk === 'fureru') S.fearTouch = (S.fearTouch || 0) + 1; if (odd) S.odd++; }
   };
@@ -250,7 +250,7 @@
     /* 恋人になった二人は、恐怖の名残の緊張を下ろし、好意・惹かれを恋人どうしの値にそろえる（結末の分類が「恋人」になるように） */
     if (lov) { S.fearLove = true; var pf0 = ctx.pair(x, y); pf0.couple = true; [ctx.R(x, y), ctx.R(y, x)].forEach(function (r) { r.ten = Math.min(r.ten, 30); r.aff = Math.max(r.aff, 45); r.att = Math.max(r.att, 50); r.trust = Math.max(r.trust, 35); }); }
     var NM = { calm: '怖くなくなった', some: '少し慣れた', still: 'まだ怖い日もある' };
-    return ctx.act2({ actors: [x, y], cat: lov ? 'romance' : 'bond', text: F2(ctx, t, x, y), why: '新婚部屋：最後の夜（恐怖のゆくえ：' + x.name + 'は' + NM[k] + (lov ? '。恐怖が和らいだ二人は、恋人になった' : '') + '）',
+    return ctx.act2({ actors: [x, y], cat: lov ? 'romance' : 'bond', text: F2(ctx, t, x, y), why: '新婚生活：最後の夜（恐怖のゆくえ：' + x.name + 'は' + NM[k] + (lov ? '。恐怖が和らいだ二人は、恋人になった' : '') + '）',
       fx: function () { ctx.mod2(x, y, { trust: k === 'calm' ? 4 : 2 }, { aff: 1 }); } });
   };
   PS.FEAR_END = { calm: '怖くなくなった', some: '少し慣れた', still: 'まだ怖い日もある' };
@@ -283,11 +283,11 @@
       var X = I.exr; a = X.x; b = X.y;
       if (X.k !== 'fear' && X.k !== 'master' && ctx.rng() < 0.5) { a = X.y; b = X.x; }
       arr = ((T.EXEV || {})[X.k] || {})[E.k]; U['ex:' + X.k + ':' + E.k] = 1;
-      why = '新婚部屋：' + EXNAME[X.k] + 'の二人（' + KN[E.k] + '）';
+      why = '新婚生活：' + EXNAME[X.k] + 'の二人（' + KN[E.k] + '）';
     } else {
       var Q = I.past; a = Q.x || (ctx.rng() < 0.5 ? S.A : S.B); b = a === S.A ? S.B : S.A;
       arr = ((T.PAST || {})[Q.k] || {})[E.k]; U['p:' + Q.k + ':' + E.k + ':' + key(S.A, S.B)] = 1;
-      why = '新婚部屋：元の関係（' + PS.NAME[Q.k] + '・' + KN[E.k] + '）'; tie = Q.k;
+      why = '新婚生活：元の関係（' + PS.NAME[Q.k] + '・' + KN[E.k] + '）'; tie = Q.k;
     }
     var t = P(ctx, arr, a, b);
     if (!t) return;

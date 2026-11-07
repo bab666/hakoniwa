@@ -2,11 +2,11 @@
 /* @event-ok 四人の夜の長い版の途中の段（寸止め・次の組へ移る一文）を足した（既にある出来事の言い回し。2026-11-05） */
 /* @event scen=set-b-shinkon id=sk_night_futari cat=romance tie=- tags=night cond=家に三人以上・ほかの人が仕事や外出 label=ほかの人の留守に夫婦で過ごす昼 */
 /* @event scen=set-b-shinkon id=sk_night_quad cat=romance tie=- tags=night cond=四人婚・四人とも体の関係にしてよい label=四人で軽く求め合う新婚の夜 */
-/* 新婚部屋：三人・四人で暮らす家の R18（R18版だけ。2026-11-04 利用者の指示）
+/* 新婚生活：三人・四人で暮らす家の R18（R18版だけ。2026-11-04 利用者の指示）
    ■ 昼の二人きり（HK.ShinkonR18Four.futari）：家に三人以上が暮らしていて、仕事の忙しくない夫婦の二人が家にいて、ほかの全員が仕事・出張・外出で留守の日中に、その二人の場面。
      ・二人は夫婦の組だけ（同居人とはしない）。体の関係にしてよい組（HK.PairR18.sexOk＝HK.State.pairSex＝HK.Pos.okSex を通す）だけなので、攻めどうしの組は出ない
        （利用者の決まり「受けが一人しか居なくて、受けが出かけているからと攻め同士でまぐわう、はなし。あくまで受けやリバがいるときだけ」）
-     ・場面は新婚部屋の夜の組み立て（HK.ShinkonR18.night）を、新婚らしい入口の仕組み（HK.ShinkonR18X の day.r18x）で呼ぶ：きっかけの段（理由「きっかけ：家に二人きりの昼」）→ 場面。
+     ・場面は新婚生活の夜の組み立て（HK.ShinkonR18.night）を、新婚らしい入口の仕組み（HK.ShinkonR18X の day.r18x）で呼ぶ：きっかけの段（理由「きっかけ：家に二人きりの昼」）→ 場面。
        昼の場面の文（PLAY・OPEN・FADE・AFTER）はこのファイルの X.*.futari（3 組の専用文）。その夜は二人の夜の場面を出さない
    ■ 四人の夜（HK.ShinkonR18Four.quad）：四人婚で四人とも家にいる夜に、本体の HK.Quad（R18版の pack-lewd。js/quad-r18.js）の条件 HK.Quad.ok を満たすときだけ、
      きっかけの文（このファイルの QLEAD）を渡して HK.Quad.scene（受けの人数で描写を切り替える・短いものはきっかけのあとさっぱり済ませる）。HK.Quad が無い版では出さない（二人の夜に落ちる）。
@@ -90,7 +90,7 @@
     '休みの前の夜、寝室に布団を並べ終えたところで、{a}が{b}の手を取った。それを見ていた{c}が{d}の袖を引き、四人の距離が自然に縮まった。結婚してから、こういう夜は初めてだった。|' +
     '風呂上がりの{a}が寝室に戻ると、{b}と{c}と{d}が布団の上で待っていた。「＠{b}＠遅い｜遅いぞ｜遅いですよ」と{b}が言い、{a}は笑ってその輪の中に腰を下ろした。誰が言い出すでもなく、明かりが消えた。');
   /* 四人の夜の長い版（2026-11-05 報告「四人婚の夜が『B→A、D→C』の 2 行だけ」）：組ごとに、入り方（前戯）・繋がる段・最中の一幕・山場・終わり方を
-     新婚部屋専用の段（shinkon-r18-more.js の HK.PairR18.addRoom）から組む。組が三つ以上（受け一人に攻め三人など）は繋がる段・山場・終わり方だけ。
+     新婚生活専用の段（shinkon-r18-more.js の HK.PairR18.addRoom）から組む。組が三つ以上（受け一人に攻め三人など）は繋がる段・山場・終わり方だけ。
      体の組が形に合わない組（性器の指定など）は本体の二人の段のまま。最後は本体の締めの一文 */
   /* 組が三つ以上の四人の夜（攻め 1・受け 3＝同じ攻めが三人と順に／受け 1・攻め 3＝同じ受けのもとへ順に）で、途中の組の段（2026-11-05 申し送り：
      攻め 1・受け 3 で、攻めが三つの段それぞれで「中に熱を注いだ」と 3 回果てた）。
@@ -186,7 +186,7 @@
     var lead = SK().fill(ctx, SK().pickT(ctx, R4.QLEAD, a, o[1]), a, o[1], { c: o[2].name, d: o[3].name });
     var len = ctx.env.lewdLen === 'thick' ? 'long' : ctx.env.lewdLen === 'short' ? 'short' : ctx.rng() < 0.7 ? 'long' : 'short';
     if (lv === 'low') len = 'short';
-    var r = Q.scene(ctx, ids, { len: len, lead: lead, why: '新婚部屋：', leadWhy: '四人の夜（新婚の四人・' + a.name + 'から）',
+    var r = Q.scene(ctx, ids, { len: len, lead: lead, why: '新婚生活：', leadWhy: '四人の夜（新婚の四人・' + a.name + 'から）',
       fx: function () { for (var i = 0; i < 4; i++) for (var j = i + 1; j < 4; j++) ctx.mod2(o[i], o[j], { att: 3, aff: 2 }, { att: 3, aff: 2 }); } });
     if (!r) return false;
     if (lv === 'low' && r.e) {

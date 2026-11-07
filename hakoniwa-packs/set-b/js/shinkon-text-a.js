@@ -1,4 +1,4 @@
-/* 新婚部屋の地の文（a。両方のビルド。書式は hakoniwa-packs/set-b/WRITING.md）
+/* 新婚生活の地の文（a。両方のビルド。書式は hakoniwa-packs/set-b/WRITING.md）
    SETUP・INTRO・DAILY・FIGHT・MAKEUP・KISS・HUG・DIST。
    SETUP・MAKEUP・HUG は shinkon.js が prose(ctx, key, 0) で引くので、[ [文, 文, …] ] の形（0 番の中から一つ選ばれる） */
 (function () {

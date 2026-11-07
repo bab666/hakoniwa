@@ -1,4 +1,4 @@
-/* 新婚部屋：新婚さんならではの出来事（両方のビルド。2026-11-03 利用者のメモ「新婚さんならではの出来事の追加（裸エプロン姿で待つ、イエスノー枕）」）
+/* 新婚生活：新婚さんならではの出来事（両方のビルド。2026-11-03 利用者のメモ「新婚さんならではの出来事の追加（裸エプロン姿で待つ、イエスノー枕）」）
    ■ HK.ShinkonWed（W）
      ・W.roll(ctx, S, day)：その日の新婚らしい出来事を一つ選ぶ（一回の遊びで同じ出来事は一度だけ。季節の行事・誕生日・元の関係の出来事のある日は控えめ）
      ・W.run(ctx, S, day, part)：出す（part：d 日中／n 夜／bed 寝る前＝願望の行動のあと、夜の場面の直前）。受け止め方は相手の態度 9 種（HK.PairReact）
@@ -133,7 +133,7 @@
     if (!t0 || !SK().okText(ctx, t0, a, b)) return;
     if (part === 'n' && /健康診断|朝、|朝もや|日課|夕方/.test(t0)) return;
     var t = SK().fill(ctx, t0, a, b, E.pet ? { pet: S.pet.name } : null);
-    ctx.act2({ actors: [a, b], cat: 'bond', text: t, why: '新婚部屋：' + (E.pet ? 'ペットと暮らす（' + (S.pet.k === 'dog' ? '犬' : '猫') + 'の' + S.pet.name + '）' : '住まいの出来事（' + ((HK.ShinkonData || {}).HOME || [])[S.home] + '）'),
+    ctx.act2({ actors: [a, b], cat: 'bond', text: t, why: '新婚生活：' + (E.pet ? 'ペットと暮らす（' + (S.pet.k === 'dog' ? '犬' : '猫') + 'の' + S.pet.name + '）' : '住まいの出来事（' + ((HK.ShinkonData || {}).HOME || [])[S.home] + '）'),
       fx: function () { ctx.mod2(a, b, { aff: 1 }, { aff: 1 }); } });
   };
   W.roll = function (ctx, S, day) {
@@ -167,7 +167,7 @@
     var t = SK().pickT(ctx, W.T[e.id], a, b);
     if (!t) return;
     var re = SK().withReact(ctx, 'warm', b, a, 0.35), rom = SK().ROM.test(t);
-    var ev = ctx.act2({ actors: [a, b], cat: S.love && (rom || e.love || e.wed) ? 'romance' : 'bond', text: SK().fill(ctx, t, a, b) + re.text, odd: re.odd, why: '新婚部屋：' + (S.wed ? '新婚らしい出来事' : '暮らしの出来事') + '（' + e.nm + '）',
+    var ev = ctx.act2({ actors: [a, b], cat: S.love && (rom || e.love || e.wed) ? 'romance' : 'bond', text: SK().fill(ctx, t, a, b) + re.text, odd: re.odd, why: '新婚生活：' + (S.wed ? '新婚らしい出来事' : '暮らしの出来事') + '（' + e.nm + '）',
       fx: function () { ctx.mod2(a, b, { aff: 2, att: S.love ? 2 : 0 }, { aff: 2, att: S.love ? 2 : 0 }); } });
     if (ev) { S.wedN = (S.wedN || 0) + 1; if (re.odd) S.odd++; }
   };

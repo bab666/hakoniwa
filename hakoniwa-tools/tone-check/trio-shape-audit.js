@@ -1,7 +1,7 @@
 /* 三人の場面の形の計測（2026-11-03。設計は docs/reports/2026-11-03/trio-sex-design.md）
    使い方: node trio-shape-audit.js <ビルドのディレクトリ> [1箱庭・1配役あたりの回数=4] [箱庭id,…] [--why] [--show=2]
-     追加パックの新婚部屋：HK_PACK_CODES=DDDD-EEEE-FFFF HK_ONLY_SCEN=set-b-shinkon node trio-shape-audit.js <試しのフォルダ>/hakoniwa-full 4 set-b-shinkon
-   三人の場面（HK.Trio3 の組み立て。出られない部屋・媚薬ロッカー・吹雪の館・新婚部屋の三人婚など）を、受け攻めの設定を振った三人で回して数える：
+     追加パックの新婚生活：HK_PACK_CODES=DDDD-EEEE-FFFF HK_ONLY_SCEN=set-b-shinkon node trio-shape-audit.js <試しのフォルダ>/hakoniwa-full 4 set-b-shinkon
+   三人の場面（HK.Trio3 の組み立て。出られない部屋・媚薬ロッカー・吹雪の館・新婚生活の三人婚など）を、受け攻めの設定を振った三人で回して数える：
      ・形ごとの件数：攻め×攻め×受け（twoOne）・攻め×受け・受け（oneTwo）・攻め→リバ→受け（sandwich）・見せつけ（show）・輪（ring）・触れ合いだけ（touch）、変化ごと、配役（受け攻めの設定）ごと
      ・設定に合わない形（0 件が合格）：形の組の向きが HK.Pos.orients に無い／受ける人が自分で攻めを選んでいる（HK.Pos.hardTopIn）／
        sandwich の真ん中がリバ・おまかせでない（HK.Pos.midOk）・後ろの人が跨る組（女性の攻め×男性）

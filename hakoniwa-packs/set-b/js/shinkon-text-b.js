@@ -1,4 +1,4 @@
-/* 新婚部屋の地の文（b。両方のビルド。書式は hakoniwa-packs/set-b/WRITING.md）
+/* 新婚生活の地の文（b。両方のビルド。書式は hakoniwa-packs/set-b/WRITING.md）
    DATE：休日のデート（{a} 主役・{b} 相手）／PONKOTSU：ポンコツ編（{a} 見守る側・{b} やらかす側）／END：一日の終わり（{a} 思う人・{b} 相手）
    各キーは HK.ShinkonData の同じ名前の表と同じ並び（52 行）。1 行に 2 本。♡ の台詞の行だけ r18:ok（飾りの ♡ で、性的な語ではない） */
 (function () {

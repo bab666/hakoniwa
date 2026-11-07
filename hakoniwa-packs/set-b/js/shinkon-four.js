@@ -1,4 +1,4 @@
-/* 新婚部屋：三人・四人で暮らす（両方のビルド。2026-11-04 利用者の指示「新婚部屋は 4 人まで暮らせるように」「3 人・4 人限定のシーンを追加」）
+/* 新婚生活：三人・四人で暮らす（両方のビルド。2026-11-04 利用者の指示「新婚生活は 4 人まで暮らせるように」「3 人・4 人限定のシーンを追加」）
    ■ 家の顔ぶれ（shinkon.js の setup が決める）：S.spouses（新婚の夫婦。二人・三人婚・四人婚）＋ S.M（立場「同じ家で暮らす住人」＝同居人。立場がおまかせの三人目・四人目も）＝ S.H。
      同居人は恋愛・夜の相手にしない（出番の外は留守の印 gone。出番の場面のあいだだけ場に出す。本体の共通の出来事に混ざらない）。訪ねてくる住人（立場「他の住人（訪ねてくる側）」・名簿から訪れる住人）は S.G のまま
    ■ HK.ShinkonFour（F）
@@ -130,7 +130,7 @@
   }
   function emit(ctx, S, M, kind, text, why, fx, odd) {
     if (!text) return null;
-    var e = onStage(S, M, function () { return ctx.act2({ actors: M.slice(), cat: 'bond', text: text, odd: !!odd, why: '新婚部屋：' + why, fx: fx }); });
+    var e = onStage(S, M, function () { return ctx.act2({ actors: M.slice(), cat: 'bond', text: text, odd: !!odd, why: '新婚生活：' + why, fx: fx }); });
     if (e) { S.houseN = (S.houseN || 0) + 1; var U = S.houseK = S.houseK || {}; U[kind] = (U[kind] || 0) + 1; if (odd) S.odd = (S.odd || 0) + 1; }
     return e;
   }
@@ -336,12 +336,12 @@
     if (part === 'm' && day.quadM && F.allHome(S, day, 'm')) {
       day.quadM = false;
       var mt = F.say(ctx, Q.MORN, o[0], o[1], o[2], o[3]);
-      if (mt) ctx.act2({ actors: o, cat: 'romance', text: mt, why: '新婚部屋：四人の朝', fx: all4({ aff: 1 }) });
+      if (mt) ctx.act2({ actors: o, cat: 'romance', text: mt, why: '新婚生活：四人の朝', fx: all4({ aff: 1 }) });
     }
     if (part === 'd' && day.quadD && !day.quadD.done && F.allHome(S, day, 'd')) {
       day.quadD.done = true;
       var X = day.quadD, tt = F.say(ctx, (X.date ? Q.DATE : Q.DAY)[X.k], o[0], o[1], o[2], o[3]);
-      if (tt) ctx.act2({ actors: o, cat: 'romance', text: tt, why: '新婚部屋：四人の' + (X.date ? '休日（' : '日中（') + QKN[X.k] + '）', fx: all4({ aff: 2, att: 1 }) });
+      if (tt) ctx.act2({ actors: o, cat: 'romance', text: tt, why: '新婚生活：四人の' + (X.date ? '休日（' : '日中（') + QKN[X.k] + '）', fx: all4({ aff: 2, att: 1 }) });
     }
   };
   /* 困りごとにほかの二人が駆けつける（{a}{b}＝困りごとの二人、{c}{d}＝駆けつける二人）。駆けつけた二人を返す */
@@ -358,7 +358,7 @@
     if (S.full === false && !(S.shape && S.shape.k === 'star')) NQ = NQ.slice(1);
     var t = F.say(ctx, NQ, o[0], o[1], o[2], o[3]);
     if (!t) return false;
-    return !!ctx.act2({ actors: o, cat: 'romance', text: t, why: '新婚部屋：四人で眠る夜', fx: function () { ctx.mod2(o[0], o[1], { aff: 1 }, { aff: 1 }); ctx.mod2(o[0], o[2], { aff: 1 }, { aff: 1 }); ctx.mod2(o[0], o[3], { aff: 1 }, { aff: 1 }); } });
+    return !!ctx.act2({ actors: o, cat: 'romance', text: t, why: '新婚生活：四人で眠る夜', fx: function () { ctx.mod2(o[0], o[1], { aff: 1 }, { aff: 1 }); ctx.mod2(o[0], o[2], { aff: 1 }, { aff: 1 }); ctx.mod2(o[0], o[3], { aff: 1 }, { aff: 1 }); } });
   };
   F.qKiss = function (ctx, S) {
     /* 恋の相手どうしでない組が混ざる四人（2026-11-04 NO 1・2）：二組の恋が輪になった四人（cycle）は、輪の順に口づける文（{a}→{b}→{c}→{d}→{a} がどれも恋の相手）。
@@ -370,6 +370,6 @@
     else if (HK.ShinkonMulti && S.lp) return HK.ShinkonMulti.kiss(ctx, S);
     var kt = F.say(ctx, KQ, T[0], T[1], T[2], T[3]);
     if (!kt) return false;
-    return !!ctx.act2({ actors: T.slice(), cat: 'romance', text: kt, why: '新婚部屋：最後の夜（四人の幸せなキス）', fx: function () { for (var i = 0; i < 4; i++) for (var j = i + 1; j < 4; j++) ctx.mod2(T[i], T[j], { aff: 5, att: 5 }, { aff: 5, att: 5 }); } });
+    return !!ctx.act2({ actors: T.slice(), cat: 'romance', text: kt, why: '新婚生活：最後の夜（四人の幸せなキス）', fx: function () { for (var i = 0; i < 4; i++) for (var j = i + 1; j < 4; j++) ctx.mod2(T[i], T[j], { aff: 5, att: 5 }, { aff: 5, att: 5 }); } });
   };
 })();

@@ -13,7 +13,7 @@
 /* @event scen=set-b-shinkon id=sk_form_short cat=romance tie=- tags=night label=夜の場面・短い場面（52種の内容） */
 /* @event scen=set-b-shinkon id=sk_form_mid cat=romance tie=- tags=night label=夜の場面・中くらいの場面（反応と山場） */
 /* @event scen=set-b-shinkon id=sk_form_long cat=romance tie=- tags=night label=夜の場面・段落を分けた長い場面 */
-/* 新婚部屋の夜（R18版だけ。全年齢版のパックを組み立てるとき、この印の間は落ちる）
+/* 新婚生活の夜（R18版だけ。全年齢版のパックを組み立てるとき、この印の間は落ちる）
    ■ HK.ShinkonR18.quota(ctx, 'low'|'mid'|'high')：一回の遊びのエッチの回数（1／1〜2／2〜3）
    ■ HK.ShinkonR18.night(ctx, A, B, day, last)：その夜にエッチの場面を出したら true
      ・体の関係にしてよい組だけ（HK.State.pairSex・HK.sexBlocked・HK.ngSexPair・HK.canLove を両方向）。受け攻めは HK.Pos.order
@@ -40,7 +40,7 @@
   var PR = HK.PairR18;
   if (!PR) return;
   var sexOk = PR.sexOk, shape = PR.shape;
-  /* 表の行ごとの文（共通の部品 HK.PairR18.text。新婚部屋の文 HK.ShinkonR18Text と、家事の担い手の絞り込み HK.Shinkon.okText） */
+  /* 表の行ごとの文（共通の部品 HK.PairR18.text。新婚生活の文 HK.ShinkonR18Text と、家事の担い手の絞り込み HK.Shinkon.okText） */
   var SRC = { TX: TX, MO: function () { return HK.ShinkonR18More || {}; }, R: R, ok: function () { return HK.Shinkon ? HK.Shinkon.okText : null; } };
   function text(ctx, key, i, sh, fb, a, b) { return PR.text(ctx, SRC, key, i, sh, fb, a, b); }
   /* 文の予備は共通の部品（kit-r18.js の HK.PairR18.FB） */
@@ -211,7 +211,7 @@
       if (!kr) kn = null;
       else S.knockN = (S.knockN || 0) + 1;
     }
-    /* 新婚らしい入口・贈り物の夜は、入口ごとの場面の文（PLAY・OPEN。枕は新婚部屋の文のまま） */
+    /* 新婚らしい入口・贈り物の夜は、入口ごとの場面の文（PLAY・OPEN。枕は新婚生活の文のまま） */
     var xsrc = cute === 'x' ? XX.src(X0.k, X0.x, X0.y, SRC, a) : null;
     /* 新婚の型（2026-11-04 不具合リスト NO 11。shinkon-r18-pair.js）：短い・中くらいの場面の 55%。邪魔が入った続き・新婚らしい入口・性器の指定のある組・
        受けから始まる夜（受けから誘う・ゴムのおねだり・受けが妬いた夜）・攻めが妬いた夜は今までの組み立て */
@@ -223,7 +223,7 @@
       leadB: !kn && (cute === 'ini' || cute === 'gomu' || (cute === 'jeal' && day.jealBy === b) || (cute === 'x' && X0.x === b)), entry: entry, resume: !!kn }, xsrc);
     day.r18x = null;
     form = full.form;
-    var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚部屋：' + (cute === 'x' && X0.k === 'futari' ? '昼' : '夜') + '（' + FORM[form] + '）' + (full.room ? '・新婚の段' : '') + (pairS ? '・' + pairS.why : cute === 'x' ? '・' + ENTRY[entry] : (form === 'short' || form === 'mid') && !kn ? '・' + rowWhy(play.t) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
+    var e = ctx.act2({ actors: [a, b], cat: ctx.sk.love ? 'romance' : 'bond', text: full.text, why: '新婚生活：' + (cute === 'x' && X0.k === 'futari' ? '昼' : '夜') + '（' + FORM[form] + '）' + (full.room ? '・新婚の段' : '') + (pairS ? '・' + pairS.why : cute === 'x' ? '・' + ENTRY[entry] : (form === 'short' || form === 'mid') && !kn ? '・' + rowWhy(play.t) : kn ? '・続き' : ''), sex: true, lewd: form !== 'fade',
       fx: function () { ctx.mod2(a, b, { aff: 4, att: 6, trust: 2 }, { aff: 4, att: 6, trust: 2 }); } });
     /* 場面が出せなかった夜は、きっかけの段も取り消す（きっかけだけが残らないように） */
     if (!e) { if (le0 && !kn) { var li = ctx.log.lastIndexOf(le0); if (li >= 0) ctx.log.splice(li, 1); } return !!kn; }

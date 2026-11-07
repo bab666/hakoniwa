@@ -359,7 +359,7 @@ const JUDGE = function (HK, opt) {
        和らいだ（HK.fearHeld が偽）あとの夜は誤りにしない。fPick＝体の相手に固定した二人、fBody＝夜を誤りにしない二人 */
     const fPick = (t, P) => !!(t && t.type === 'fear' && (HK.TIE_LOVE_GATE === false ? !!(P && P[t.a] && P[t.b] && HK.bodyPick && HK.bodyPick(P[t.a], P[t.b])) : (t.body === 'ok' && HK.tieBodyOK && HK.tieBodyOK(t))));
     const fBody = (t, P) => fPick(t, P) || (HK.TIE_LOVE_GATE === false && fFree(t, P));
-    /* 箱庭が恐怖・無関心の関係を外した二人（新婚部屋の元恐怖：なれそめで上書き・三人婚で夫婦に）は、その関係の決まりを当てない（エンジン型。回している ctx に関係が無い） */
+    /* 箱庭が恐怖・無関心の関係を外した二人（新婚生活の元恐怖：なれそめで上書き・三人婚で夫婦に）は、その関係の決まりを当てない（エンジン型。回している ctx に関係が無い） */
     const fGone = (t, ctx) => !!(t && ctx && ctx.tiesAll && ctx.chars && HK.Ties && HK.Ties.has && ctx.chars[t.a] && ctx.chars[t.b] && !HK.Ties.has(ctx, ctx.chars[t.a], ctx.chars[t.b], t.type));
     const fFree = (t, P) => !!(t && t.type === 'fear' && (t.love === 'ok' || HK.TIE_LOVE_GATE === false) && P && P[t.a] && P[t.b] && HK.fearHeld && !HK.fearHeld(P[t.a], P[t.b]));
     /* 2026-11-06（利用者の指示「恐怖を持っている側からのアプローチが制限されるだけで、恋愛イベント自体は発生させて」）：住人の設定で恋愛してよい恐怖の二人（HK.loveOK）は、

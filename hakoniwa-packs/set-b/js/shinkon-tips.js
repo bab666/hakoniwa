@@ -1,4 +1,4 @@
-/* 箱庭シミュレーター: 新婚部屋（set-b-shinkon）の「この箱庭のTIPS」（両ビルド。かたまり shinkon の最後。表示は本体の tips.js。2026-11-07）
+/* 箱庭シミュレーター: 新婚生活（set-b-shinkon）の「この箱庭のTIPS」（両ビルド。かたまり shinkon の最後。表示は本体の tips.js。2026-11-07）
    本体の HK.TIPS_SCEN に足す（tips.js は late なので、先に読まれても後に読まれても残るよう、両側が HK.TIPS_SCEN = HK.TIPS_SCEN || {} で待つ）。
    箱庭の印 tips: true は目録にも入り、部屋をまだ読んでいなくてもカードに「この箱庭のTIPS」が出る（押すと部屋を読んでから開く）。R18 の追記は r18 の印の中 */
 (function () {

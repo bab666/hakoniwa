@@ -1,4 +1,4 @@
-# 新婚部屋の文の書き方（担当向け）
+# 新婚生活の文の書き方（担当向け）
 
 設計は `docs/reports/2026-11-03/shinkon-design.md`。表のデータは `js/shinkon-data.js`（`HK.ShinkonData`）と `js/shinkon-r18-data.js`（`HK.ShinkonR18Data`）。
 表の行は「何が起きたか」の種として内部で引くだけで、画面には出ない（2026-11-03 の作り直し）。担当が書くのは、その行を**一つの場面にした地の文**。
@@ -21,7 +21,7 @@
 ファイルの形（中身を足すだけ）：
 
 ```js
-/* 新婚部屋の地の文（a。…） */
+/* 新婚生活の地の文（a。…） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -76,7 +76,7 @@ node hakoniwa-tools/build/pack-site.js hakoniwa-packs/set-b --out=<試しのフ�
 
 - 組み立てが通ること（全年齢版のパックに性的な語が残ると止まる。両方のビルドに出るファイルに性的な語を書かない）。
 - `node -e` で構文を確かめ、配列の数（52・10）が表と合うことを確かめる。
-- できあがりの見本：`<試しのフォルダ>` の hakoniwa-full を開いてコードを入れ、新婚部屋を回して読む（まとめ役が回し方の道具を持っている）。
+- できあがりの見本：`<試しのフォルダ>` の hakoniwa-full を開いてコードを入れ、新婚生活を回して読む（まとめ役が回し方の道具を持っている）。
 - 点検（audit-all・tone-feel・relcons・base-lint）はまとめ役がまとめて回す。
 
 # 看病の部屋の文の書き方（担当向け。2026-11-03）
@@ -97,7 +97,7 @@ node hakoniwa-tools/build/pack-site.js hakoniwa-packs/set-b --out=<試しのフ�
   R18 の病中の夜は `kanbyo-r18-text.js` の ILL_*（理性が揺らぐ入口は、受けの「でも……」の段 ILL_HESIT を必ず書く）。
 - 看病の部屋でしか出ない長い場面は `kanbyo-r18-text.js` の LONG_LEAD・LONG_OPEN（{ mf, ff, fm } × 2 本、2 段落）・LONG_AFTER。中盤と山場は本体の長い場面の部品が組み立てる。
 
-# 新婚部屋の追加の文（2026-11-03。設計は `docs/reports/2026-11-03/shinkon-design.md` の 6）
+# 新婚生活の追加の文（2026-11-03。設計は `docs/reports/2026-11-03/shinkon-design.md` の 6）
 
 | ファイル | キー | {a} | {b} | ほかの印・決まり |
 | --- | --- | --- | --- | --- |

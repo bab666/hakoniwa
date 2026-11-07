@@ -1,10 +1,10 @@
 /* r18:begin */
 /* @event scen=set-b-shinkon id=sk_form_pair cat=romance tie=- tags=night label=新婚の型の夜（入り方7・最中7・終わり方5） */
-/* 新婚部屋：二人のエッチの「新婚の型」（R18版だけ。2026-11-04 不具合リスト 1104 の NO 11「2 人のエロの場面のパターンが少ない。有料版はエロが売り」）
-   ■ HK.ShinkonPair.scene(ctx, S, env, a, b, sh, form, o)：短い・中くらいの夜の場面を、新婚部屋ならではの型で組む（{ text, form, why } か null）
+/* 新婚生活：二人のエッチの「新婚の型」（R18版だけ。2026-11-04 不具合リスト 1104 の NO 11「2 人のエロの場面のパターンが少ない。有料版はエロが売り」）
+   ■ HK.ShinkonPair.scene(ctx, S, env, a, b, sh, form, o)：短い・中くらいの夜の場面を、新婚生活ならではの型で組む（{ text, form, why } か null）
      ・入り方 7 種（台所で後ろから・ソファで映画のあと・風呂上がりに髪を乾かして・新しいベッド・結婚指輪を外す手・玄関で・寝ずに待っていた）
      ・最中の一幕 7 種（名前を呼ぶ・指輪が当たる・壁の薄い新居・姿見・好きを言わせる・明日の朝の話・カーテンの隙間の月）＋受けの反応（態度 9 種）
-     ・山場は共通の部品と同じ（受けの態度 9 種の喘ぎ・男性向けの山場の文 PEAK_E・新婚部屋の山場の文）
+     ・山場は共通の部品と同じ（受けの態度 9 種の喘ぎ・男性向けの山場の文 PEAK_E・新婚生活の山場の文）
      ・終わり方 5 種（腕枕・シャワーを浴び直す・水を取りに行く・シーツを替える・明日の朝の約束）＋受けの一言（態度 9 種）
      選び方：その夜のきっかけ（雨なら風呂上がり、遅い帰りなら玄関・待っていた）、家の顔ぶれ（三人以上で暮らす家は壁の薄い新居）、結婚しているか（指輪）、
      攻めの夜の性格（サド・意地悪は姿見）・受けの態度（恥じらい・丁寧は名前、意地っ張り・強気・冷静は好きを言わせる）、家事をする人か（台所）。
@@ -71,7 +71,7 @@
     if (pkl && P0 && P0.hasM && ((sh === 'mf' && !P0.hasM(a)) || (sh === 'fm' && !P0.hasM(b)))) pkl = pkl.filter(function (x) { return !/\{(?:男性器|精液)\}/.test(x); });
     if (pkl && !pkl.length) pkl = null;
     var TP = (HK.ShinkonR18Text || {}).PEAK, tp0 = TP && TP[0] ? (Array.isArray(TP[0]) ? TP[0] : TP[0][sh] || TP[0].all) : null;
-    /* 山場は新婚部屋専用の段（shinkon-r18-more.js の HK.PairR18.addRoom）を先に。無ければ今までの文 */
+    /* 山場は新婚生活専用の段（shinkon-r18-more.js の HK.PairR18.addRoom）を先に。無ければ今までの文 */
     var rp = PR.part && PR.bodyFits && PR.bodyFits(sh, a, b) ? PR.part(ctx, 'set-b-shinkon', ero ? 'peakE' : 'peak', sh, a, b) : '';
     var peak = rp || fresh(ctx, pkl || (Array.isArray(tp0) && tp0.length ? tp0 : PR.FB.peak[sh]), a, b);
     if (!peak) return null;

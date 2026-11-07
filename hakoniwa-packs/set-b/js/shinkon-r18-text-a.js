@@ -1,5 +1,5 @@
 /* r18:begin */
-/* 新婚部屋の夜の文（a。R18版だけ。書式は hakoniwa-packs/set-b/WRITING.md）
+/* 新婚生活の夜の文（a。R18版だけ。書式は hakoniwa-packs/set-b/WRITING.md）
    LEWD（ちょっとえっちな日替わり：その夜の始まりの段）・TRIGGER（きっかけの段）・WITNESS（自慰の目撃のきっかけ）・AFTER（事後の反応）。
    {a}＝攻め・{b}＝受け（WITNESS は {s}＝ひとりでしていた人・{w}＝見た人）。台詞は「くだけた常体｜硬い常体｜敬語」 */
 (function () {

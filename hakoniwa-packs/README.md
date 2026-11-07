@@ -83,7 +83,7 @@ HK.PairR18.addRoom('<部屋の id>', {
 - 重み（`HK.PairR18.roomW`）：書き出し・前戯・繋がる段・最中・山場（男性向けは peakE）・終わり方がその組にそろっていて、最中の一幕が 12 本以上なら 95%（`addRoom` の `w` で変えられる）。少なければ本数に比例。性器の指定で形と体が食い違う組（フタナリなど）・性器なしの組は共通の組み立て。男性どうしは mf の文を使い、受けに男性器があれば `{女性器}`・`{陰核}` の文を外す（受けの男性器の文は `when` で受けに男性器があるときだけに）。
 - 一回の遊びで同じ段落は二度出さない（`ctx._pkLru`。`HK.PairR18.lru(ctx, 配列)` は部屋の文にも使える）。共通の長い場面に渡す選び方も繰り返さない選び方（`HK.Ero.freshPick`）にした。
 - 書くときの決まり（sex-flow を 0 件にするため）：場所は一つ（寝室ならベッド。玄関・台所・脱衣所・ソファなど場所の語を最中の一幕に書かない）。後ろからの繋がる段（うつ伏せ・後ろから・背中から）のあとは、顔を合わせる文（見つめ・額・頬・見下ろす…）を自動で外す。最中の一幕は 3 文で、性感が閾値に届くように「動き」「揺れ」などの最中の言葉を入れる（fm は指の文だけだと前戯に数えられるので、受けの「腰を揺らす」などを 1 文）。描写の長さ「数行で短く」の場面は一つの段落にまとまる（部屋の段は使わない）。
-- 確かめ方：`HK.PairR18.trace = []` にして回すと、部屋の段で組んだ場面（印の解決前）がたまるので、`HK.SexFlow.analyze(text, a, b, sh, after)` で数える（新婚部屋の計測は `docs/reports/2026-11-03/shinkon-design.md` の 10）。
+- 確かめ方：`HK.PairR18.trace = []` にして回すと、部屋の段で組んだ場面（印の解決前）がたまるので、`HK.SexFlow.analyze(text, a, b, sh, after)` で数える（新婚生活の計測は `docs/reports/2026-11-03/shinkon-design.md` の 10）。
 - 体の語の絞り込み（受けに男性器があれば `{女性器}`・`{陰核}`・`{愛液}`・「潮を」の文を外す）は、`addRoom` の表と `addMid` などで足した段にだけかかる。部屋が `HK.Play.addScene` の lead・steps や、`HK.PairR18.scene` に渡す書き出し（`MO.OPEN`）を自分の関数で返すときは、部屋の側で同じ絞り込みと `ok`（部屋の決まり）を通す（配信の部屋の `fit`・`MO`。2026-11-06 P15b：男性どうしの専用の長い場面に女性器の語が出ていた）。mf の文は受けが男性のこともあるので `{ナカ}` で書くのが安全。
 
 ## 温度（HK.Heat・2026-11-06）
@@ -124,11 +124,11 @@ if (h) { var chg = H.change(ctx, h, a, b), aft = H.after(ctx, h, 組, { spot: �
   - `opt.trig`：きっかけ（`itte` いってらっしゃい・`okaeri` おかえり・`oyasumi` おやすみ・`neoki` 寝起き・`gochi` ごちそうさま・`fui` ふいに・`naka` 仲直り・`hobi` ご褒美・`karakai` からかい・`amayadori` 雨宿り・`amae` おねだり・`kinen` お祝い）
   - `opt.len`（`'s'`｜`'m'`｜`'l'`）・`opt.end`（`tere`・`again`・`nagori`・`hold`・`oazuke`・`promise`・`late`・`out`・`night`）を渡すと固定、省くと二人の態度・夜の性格・気分で選ぶ。`opt.place`（`genkan`・`kitchen`・`sofa`・`futon`・`soto`）は場所の決まっていないきっかけの頭に一文を置く
   - `opt.x`・`opt.y`：いってらっしゃい・おかえりの出かける人（帰った人）と見送る人。`opt.promise: true` で「続きは帰ってから」、`opt.night: true` で「そのまま夜へ」（R18 だけ）を候補にする
-  - `opt.lead`・`opt.tail`：始まりの段を部屋の文（`{a}{b}` のまま）に替える・最後の段の後ろに文を足す（新婚部屋の最後の夜の幸せなキスで使用）
+  - `opt.lead`・`opt.tail`：始まりの段を部屋の文（`{a}{b}` のまま）に替える・最後の段の後ろに文を足す（新婚生活の最後の夜の幸せなキスで使用）
   - `opt.whyPre`（理由の欄の頭。既定は「キスだけの触れ合い：」）・`opt.fx`・`opt.tag`
 - `HK.Kiss.text(ctx, a, b, opt)`：記録に出さずに本文だけ返す（`{ text, plan, why, label }`）。`HK.Kiss.trio(ctx, a, b, c)`（三人のキス）・`HK.Kiss.seen(ctx, a, b, c, 'warm'|'jeal')`（三人目 c に見られる）。
 - 本体の共通の出来事のキス（kiss-events.js）は、id が `set-` で始まる箱庭には出ない。部屋でキスを出すときは、部屋のファイルから `HK.Kiss.scene` を呼び、出来事の印（`/* @event scen=<部屋の id> id=… label=… */`）を付ける。
-- 例：新婚部屋は `js/shinkon-kiss.js`（shinkon.js を書き換えず、`HK.wrap` で区切りの関数 `phase`・`HK.Journal.add`・`HK.ShinkonR18.night` を包んで差し込む）。
+- 例：新婚生活は `js/shinkon-kiss.js`（shinkon.js を書き換えず、`HK.wrap` で区切りの関数 `phase`・`HK.Journal.add`・`HK.ShinkonR18.night` を包んで差し込む）。
 
 ## 記録のコメント欄 `e.ch`（2026-11-06・api 3）
 

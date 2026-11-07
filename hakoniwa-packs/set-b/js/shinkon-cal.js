@@ -1,4 +1,4 @@
-/* 新婚部屋：季節と日付・月の行事・バレンタイン／ホワイトデー・誕生日（両方のビルド。2026-11-03 利用者の追加の指示）
+/* 新婚生活：季節と日付・月の行事・バレンタイン／ホワイトデー・誕生日（両方のビルド。2026-11-03 利用者の追加の指示）
    ■ HK.ShinkonCal（CL）
      ・設定「始まりの月」（env.month：auto／m1〜m12）と「始まりの日」（env.sday：auto＝その月の大きな行事の日が入るように／rand／e 上旬／m 中旬／l 下旬）から、DAY1 の月日を決める（CL.setup）。
        CL.date(S, d)：d 日目の { m, dd }（月をまたぐ。2 月は 28 日）。曜日は今までどおり DAY1＝月曜の並び（土日が休日）
@@ -247,7 +247,7 @@
       if (part === 'm' && !bd.morn) {
         bd.morn = 1;
         var mt = T(ctx, (CT.BDAY || {}).morn, o, c);
-        if (mt) act(ctx, { actors: [o, c], cat: 'bond', text: F(ctx, mt, o, c), why: '新婚部屋：誕生日の朝（' + lab + '・' + c.name + 'の誕生日）', fx: function () { ctx.mod2(o, c, { aff: 2 }, { aff: 3, trust: 1 }); } });
+        if (mt) act(ctx, { actors: [o, c], cat: 'bond', text: F(ctx, mt, o, c), why: '新婚生活：誕生日の朝（' + lab + '・' + c.name + 'の誕生日）', fx: function () { ctx.mod2(o, c, { aff: 2 }, { aff: 3, trust: 1 }); } });
       }
       if (part === 'n' && !bd.party) {
         bd.party = 1;
@@ -258,19 +258,19 @@
         var tx = F(ctx, pt, o, c) + (gt ? '\n\n' + F(ctx, gt, o, c, { gift: gname }) + gift(ctx, c, o) : '');
         var th = trio3(ctx, S, day, BD.trio3, o, c);
         if (th) tx += th;
-        var e = act(ctx, { actors: th ? [o, c].concat(S.spouses.filter(function (x) { return x !== o && x !== c; })) : [o, c], cat: lv ? 'romance' : 'bond', text: tx, why: '新婚部屋：誕生日（' + lab + '・' + c.name + 'の誕生日・' + { cook: o.name + 'の手料理', buy: 'ケーキを買って', out: '店を予約して' }[how] + '）',
+        var e = act(ctx, { actors: th ? [o, c].concat(S.spouses.filter(function (x) { return x !== o && x !== c; })) : [o, c], cat: lv ? 'romance' : 'bond', text: tx, why: '新婚生活：誕生日（' + lab + '・' + c.name + 'の誕生日・' + { cook: o.name + 'の手料理', buy: 'ケーキを買って', out: '店を予約して' }[how] + '）',
           fx: function () { ctx.mod2(o, c, { aff: 3, att: lv ? 2 : 0 }, { aff: 5 + SK().persK(c, 'warm'), att: lv ? 3 : 0, trust: 2 }); } });
         if (e) { S.bdayN = (S.bdayN || 0) + 1; if (R18 && R18.offer && lv) R18.offer(ctx, S, day, 'bday', o, c); }
       }
     }
     if (day.bprep && part === 'n' && !day.bprep.prep) {
       var bc = day.bprep.c, bo = bc === A ? B : bc === B ? A : (S.C && bc === S.C) || (S.D && bc === S.D) ? A : null;
-      if (bo) { day.bprep.prep = 1; var pp = T(ctx, (CT.BDAY || {}).prep, bo, bc); if (pp) act(ctx, { actors: [bo], cat: 'solo', text: F(ctx, pp, bo, bc), why: '新婚部屋：誕生日の前の日（' + bc.name + 'の誕生日は明日）' }); }
+      if (bo) { day.bprep.prep = 1; var pp = T(ctx, (CT.BDAY || {}).prep, bo, bc); if (pp) act(ctx, { actors: [bo], cat: 'solo', text: F(ctx, pp, bo, bc), why: '新婚生活：誕生日の前の日（' + bc.name + 'の誕生日は明日）' }); }
     }
     /* バレンタイン（前の晩の準備・当日） */
     if (day.vprep && part === 'n') {
       var vp = day.vprep, gi = vp.style.map(function (s, i) { return s === 'hand' || s === 'fail' ? vp.givers[i] : null; }).filter(Boolean)[0];
-      if (gi && (gi === A || gi === B)) { var pr = T(ctx, (CT.VDAY || {}).prep, gi, other(S, gi)); if (pr) act(ctx, { actors: [gi], cat: lv ? 'romance' : 'bond', text: F(ctx, pr, gi, other(S, gi)), why: '新婚部屋：バレンタインの前の晩（' + gi.name + 'が手作りの準備）' }); }
+      if (gi && (gi === A || gi === B)) { var pr = T(ctx, (CT.VDAY || {}).prep, gi, other(S, gi)); if (pr) act(ctx, { actors: [gi], cat: lv ? 'romance' : 'bond', text: F(ctx, pr, gi, other(S, gi)), why: '新婚生活：バレンタインの前の晩（' + gi.name + 'が手作りの準備）' }); }
       day.vprep = null;
     }
     if (day.vday && part === (day.hol ? 'd' : 'n') && !day.vdone) { day.vdone = 1; valentine(ctx, S, day, day.vday); }
@@ -283,7 +283,7 @@
       if (tt) {
         var rom = HK.Shinkon.ROM.test(tt);
         var re = { text: '', odd: false };
-        act(ctx, { actors: [who, ot], cat: lv && rom ? 'romance' : 'bond', text: F(ctx, tt, who, ot) + re.text, odd: re.odd, why: '新婚部屋：季節の行事（' + lab + '・' + ev.nm + '）',
+        act(ctx, { actors: [who, ot], cat: lv && rom ? 'romance' : 'bond', text: F(ctx, tt, who, ot) + re.text, odd: re.odd, why: '新婚生活：季節の行事（' + lab + '・' + ev.nm + '）',
           fx: function () { ctx.mod2(who, ot, { aff: 2, att: lv ? 1 : 0 }, { aff: 2, att: lv ? 1 : 0 }); } });
       }
     }
@@ -309,7 +309,7 @@
       parts.push(F(ctx, t, g, r) + gift(ctx, r, g));
       why.push(g.name + '→' + r.name + '（' + (lv ? { hand: '手作り', shop: '市販', fail: '手作りに失敗', surp: 'サプライズ' }[st] : '感謝のしるし') + '）');
     });
-    var e = act(ctx, { actors: th ? [gs[0], other(S, gs[0]), S.C] : [gs[0], other(S, gs[0])], cat: lv ? 'romance' : 'bond', text: parts.join('\n\n') + th, why: '新婚部屋：バレンタイン（' + lab + '・' + why.join('／') + (th ? '・' + S.C.name + 'も' : '') + '）',
+    var e = act(ctx, { actors: th ? [gs[0], other(S, gs[0]), S.C] : [gs[0], other(S, gs[0])], cat: lv ? 'romance' : 'bond', text: parts.join('\n\n') + th, why: '新婚生活：バレンタイン（' + lab + '・' + why.join('／') + (th ? '・' + S.C.name + 'も' : '') + '）',
       fx: function () { gs.forEach(function (g) { ctx.mod2(g, other(S, g), { aff: 2, att: lv ? 2 : 0 }, { aff: 4, att: lv ? 3 : 0 }); }); } });
     if (e) { S.vdayN = 1; if (HK.ShinkonR18Cal && HK.ShinkonR18Cal.offer) HK.ShinkonR18Cal.offer(ctx, S, day, 'vday', gs[Math.floor(ctx.rng() * gs.length)], null); }
   }
@@ -335,7 +335,7 @@
       else { parts.push(F(ctx, T(ctx, CT.none, A, B), A, B)); why = '先月のバレンタインも、今日も、二人とも何もしなかった'; }
     }
     var th = trio3(ctx, S, day, CT.trio3, A, B);
-    var e = act(ctx, { actors: th ? [giver || A, other(S, giver || A), S.C] : [giver || A, other(S, giver || A)], cat: lv ? 'romance' : 'bond', text: parts.join('') + th, why: '新婚部屋：ホワイトデー（' + lab + '・' + why + (th ? '・' + S.C.name + 'も' : '') + '）',
+    var e = act(ctx, { actors: th ? [giver || A, other(S, giver || A), S.C] : [giver || A, other(S, giver || A)], cat: lv ? 'romance' : 'bond', text: parts.join('') + th, why: '新婚生活：ホワイトデー（' + lab + '・' + why + (th ? '・' + S.C.name + 'も' : '') + '）',
       fx: function () { if (giver) ctx.mod2(giver, other(S, giver), { aff: 2, att: lv ? 2 : 0 }, { aff: 4, att: lv ? 3 : 0 }); } });
     if (e) { S.wdayN = 1; if (giver && HK.ShinkonR18Cal && HK.ShinkonR18Cal.offer) HK.ShinkonR18Cal.offer(ctx, S, day, 'wday', giver, null); }
   }

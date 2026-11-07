@@ -571,14 +571,14 @@
   }
   /* 三人デートの三人目と二人の関係：poly 三人とも恋人どうし／tri 三人目が二人のどちらかに想いを寄せる（三角）／friend 友人・家族などが混ざる */
   function trioKind(ctx, A, B, C) {
-    /* 恋人（関係）か、互いに恋愛相手を固定し合った二人（住人の設定。2026-11-05 同居・新婚部屋と同じ輪の判定） */
+    /* 恋人（関係）か、互いに恋愛相手を固定し合った二人（住人の設定。2026-11-05 同居・新婚生活と同じ輪の判定） */
     /* 性行為の相手に互いを指定し合っただけの組（HK.Quad.bodyOnly。R18版）も輪をつなぐ組に数え、体だけの三人の夜にする（body。2026-11-06 利用者の指示） */
     var bo = function (x, y) { return !HK.SAFE_ON && !!(HK.Quad && HK.Quad.bodyOnly && HK.Quad.bodyOnly(ctx, x, y) && HK.bodyOK(x, y)); };
     var lc = function (x, y) { return ((/^(spouse|lover)$/.test(relKind(ctx, x, y)) || !!(HK.lockTo && HK.lockTo(x, y) && HK.lockTo(y, x))) && loveOk(ctx, x, y)) || bo(x, y); };
     var bdy = !HK.SAFE_ON && !!(HK.Quad && HK.Quad.bodyRing && HK.Quad.bodyRing(ctx, [A, B, C]));
     if (lc(A, B) && lc(C, A) && lc(C, B)) return { k: 'poly', C: C, t: ctx.rng() < 0.5 ? A : B, body: bdy };
     /* 受けを中心にした輪（2026-11-05 利用者の報告「デートでも 3P を」）：恋人の組が二つ以上あり、残りの組が性的に対象にならない（攻めどうし・受けどうしなど）か
-       輪の外側の組なら、三人の恋人として扱う。判定は本体の HK.Quad.ringOk（同居・新婚部屋と同じ。R18版）。全年齢では、残りの組が恋愛にならない組のとき */
+       輪の外側の組なら、三人の恋人として扱う。判定は本体の HK.Quad.ringOk（同居・新婚生活と同じ。R18版）。全年齢では、残りの組が恋愛にならない組のとき */
     var L3 = [[A, B], [C, A], [C, B]], nL = L3.filter(function (q) { return lc(q[0], q[1]); }).length;
     if (nL >= 2 && (HK.Quad && HK.Quad.ringOk && !HK.SAFE_ON ? HK.Quad.ringOk(ctx, [A, B, C]) : L3.every(function (q) { return lc(q[0], q[1]) || !loveOk(ctx, q[0], q[1]); }))) {
       var hub = [A, B, C].filter(function (x) { return [A, B, C].every(function (y) { return y === x || lc(x, y); }); })[0];
@@ -1993,7 +1993,7 @@
   };
   HK.Date = { okText: okText, pickT: pickT, relPick: relPick, attPick: attPick, per: per, fill: fill, RK_NAME: RK_NAME, BR_NAME: BR_NAME, has: has, yen: yen, rcat: rcat, withPair: withPair, loveOk: loveOk };
   HK.SCENARIOS[ID] = scen;
-  /* 開始前の注意：三人・四人の夜が起きない配役（本体の HK.Quad.groupWarn。同居生活・新婚部屋・デートの日々で同じ文言。R18版だけ。2026-11-05 利用者の報告「同居で 3P・4P をしない」） */
+  /* 開始前の注意：三人・四人の夜が起きない配役（本体の HK.Quad.groupWarn。同居生活・新婚生活・デートの日々で同じ文言。R18版だけ。2026-11-05 利用者の報告「同居で 3P・4P をしない」） */
   if (HK.SoloWarn && HK.SoloWarn.add) HK.SoloWarn.add(ID, function (input) { return HK.Quad && HK.Quad.groupWarn ? HK.Quad.groupWarn(input, {}) : []; });
   if (HK.Lewd && HK.Lewd.install) HK.Lewd.install(ID, { lenDef: 'mix', desc: HK.SAFE_BUILD ? '' : '夜の場面の描き方。ほのめかす＝ぼかした一文と翌朝だけ／ほどほど＝描写する／濃い＝果てたあと、もう一度求め合うところまで' });
 })();

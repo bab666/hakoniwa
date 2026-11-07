@@ -1,8 +1,8 @@
 /* r18:begin */
 /* @event scen=set-b-shinkon id=sk_night_trio cat=romance tie=- tags=night cond=三人婚 label=三人で求め合う新婚の夜 */
-/* 新婚部屋：三人婚の三人の夜（R18版だけ。2026-11-03）
+/* 新婚生活：三人婚の三人の夜（R18版だけ。2026-11-03）
    ■ HK.ShinkonR18Trio.night(ctx, S, day, last)：三人の場面を出したら true
-     ・三人の組み立ては本体の HK.Pos.trioPlan（体の関係にしてよい組：HK.State.pairSex＋新婚部屋の判定 HK.PairR18.sexOk）と HK.Trio3（trio-talk-r18.js。かたまり pack-lewd）。
+     ・三人の組み立ては本体の HK.Pos.trioPlan（体の関係にしてよい組：HK.State.pairSex＋新婚生活の判定 HK.PairR18.sexOk）と HK.Trio3（trio-talk-r18.js。かたまり pack-lewd）。
        直接の行為は plan の組だけ（ほかの組は同じ場にいても触れ合わない）。受け攻めは HK.Trio3.shapeOf（HK.Pos.order）のとおり
      ・形は本体の HK.Trio3.shapeOf（受け攻めの設定から：攻め×攻め×受け twoOne／攻め×受け・受け oneTwo／攻め→リバ→受け sandwich（真ん中はリバ・おまかせの人だけ）／
        合う形がなければ見せつけ show）。繋がる段・山場・事後の一言は本体の形ごとの文（trio-form-text-r18.js）。三人とも攻めなど、繋がる組が作れない三人は口づけと手だけ（HK.Trio3.touchScene）
@@ -79,7 +79,7 @@
       '三人は額を寄せ合って、順番に名前を呼んだ。呼ばれた人が呼んだ人に口づけ、その人がまた次の人を呼ぶ。輪になった呼び声は、だんだんと息づかいに変わっていった。' + '')
   };
   /* 本体の三人の場面（HK.Trio3.quick）を、きっかけ→触れ合い→挿入→喘ぎ→山場→事後の順の段落に並べ直す。
-     繋がる文より前にある喘ぎ・繋がったあとを前提にした台詞は、繋がる文のあとへ。最中の段（新婚部屋の一段）は山場の前に */
+     繋がる文より前にある喘ぎ・繋がったあとを前提にした台詞は、繋がる文のあとへ。最中の段（新婚生活の一段）は山場の前に */
   var INS3 = /抱いたのは|満たし|沈め|沈みこ|沈み込|貫|挿(?:れ|入)|突き入|呑み込|呑みこ|繋が|埋め|押し入|迎え入れ|指を[^。]{0,10}(?:沈|差し入|入れ)|突かれ|揺さぶられ|突き上げ/;
   var CLI3 = /果て|達し|昇りつめ|上り詰め|絶頂|崩れた|熱を(?:注|吐き出|放)|弾け/;
   var POST3 = /形を|中が|奥|出る|白濁|イく|イっ|締め|動いて|腰|もっと|欲張り|集中/;
@@ -146,7 +146,7 @@
     else if (lv === 'low') { text = K.say(ctx, R3.FADE, a, bc[0], bc[1]); why = 'ほのめかす'; }
     else {
       var short = !!(LV && LV.short && LV.short(env, ctx.rng));
-      /* 山場は本体の形ごとの文（受けの態度 9 種）に任せる。最中の段は新婚部屋の一段（形の組と同じ向き） */
+      /* 山場は本体の形ごとの文（受けの態度 9 種）に任せる。最中の段は新婚生活の一段（形の組と同じ向き） */
       var mid3 = short ? '' : sub(pk((R3.MID[sp.p] || R3.MID.ring).filter(function (x) { return !q4 || !NOT4.test(x); })));
       /* 本体の形ごとの文（山場の一文など）が、三人の夜の多い回で同じ文を 3 回以上出さないように（2026-11-05 NO 20 で三人の夜が増えたため）：
          三度まで組み直して、この回ですでに 2 回出た文の少ないものを使う */
@@ -168,7 +168,7 @@
       why = (X3.FORM_JA && X3.FORM_JA[sp.p] || '') + '：' + { oneTwo: sp.t.name + 'が二人を', twoOne: sp.t.name + 'と' + sp.m.name + 'が' + sp.u.name + 'を', sandwich: '真ん中の' + sp.m.name + 'を挟んで', ring: '輪になって', show: sp.t.name + 'と' + sp.m.name + '、' + sp.u.name + 'は見守る' }[sp.p];
     }
     if (!text) return false;
-    var e = ctx.act2({ actors: g, cat: 'romance', text: text, why: '新婚部屋：三人の夜（' + (q4 ? opt.away.name + 'が留守・' : '') + why + '）',
+    var e = ctx.act2({ actors: g, cat: 'romance', text: text, why: '新婚生活：三人の夜（' + (q4 ? opt.away.name + 'が留守・' : '') + why + '）',
       sex: !touch, lewd: lv !== 'low', trioPairs: pl ? pl.pairs : [], fx: function () { ctx.mod2(g[0], g[1], { att: 4, aff: 2 }, { att: 4, aff: 2 }); ctx.mod2(g[0], g[2], { att: 4, aff: 2 }, { att: 4, aff: 2 }); ctx.mod2(g[1], g[2], { att: 4, aff: 2 }, { att: 4, aff: 2 }); } });
     /* 記録の門で落ちた場面（e.skipped）は出せなかったものとして、きっかけの段も外す（2026-11-05） */
     if (!e || e.skipped) { if (le && !le.skipped) { var li = ctx.log.lastIndexOf(le); if (li >= 0) ctx.log.splice(li, 1); } return false; }

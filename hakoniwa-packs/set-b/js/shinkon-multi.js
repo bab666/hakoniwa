@@ -1,4 +1,4 @@
-/* 新婚部屋：三人婚・四人婚の組み立て（両方のビルド。2026-11-04 不具合リスト 1104 の NO 1・2）
+/* 新婚生活：三人婚・四人婚の組み立て（両方のビルド。2026-11-04 不具合リスト 1104 の NO 1・2）
    ■ 利用者の指摘：三人・四人の全員を「新婚の夫婦」にしても、攻めどうし・受けどうしの組があると三人婚・四人婚にならず、上の二人の暮らし（「〜の同居の7日」・二人のキス・二人用の導入）になっていた。
      三人目・四人目もほとんど出なかった。→ 全員が配偶者なら全員が夫婦。恋の相手どうしでない組（攻めどうし・受けどうし・恋愛対象の合わない組）は夫婦の関係（恋愛：なし）にし、
      生まれる気持ちは恋愛より下（友人のよう・張り合う・互いを邪魔に思う。性格と態度で選ぶ）。恋愛の出来事（告白・やきもち・デート）はその組には出さない
@@ -161,7 +161,7 @@
     var t = SK().pickT(ctx, h && E.dayH ? E.dayH : E.day, A, B);
     if (!t) return null;
     var act = [A, B].concat(h ? [h] : []);
-    var e = ctx.act2({ actors: act, cat: 'bond', text: fillN(ctx, t, A, B, { h: h ? h.name : '' }), why: '新婚部屋：恋の相手でない伴侶どうしの一幕（' + A.name + 'と' + B.name + '・' + (MT().MOOD || {})[x.mood] + '）',
+    var e = ctx.act2({ actors: act, cat: 'bond', text: fillN(ctx, t, A, B, { h: h ? h.name : '' }), why: '新婚生活：恋の相手でない伴侶どうしの一幕（' + A.name + 'と' + B.name + '・' + (MT().MOOD || {})[x.mood] + '）',
       fx: function () { var m = x.mood === 'tomo' || x.mood === 'kin' ? { aff: 2, trust: 2 } : { ten: 2, aff: -1 }; ctx.mod2(A, B, m, m); } });
     if (e) S.nlDayN++;
     return e;
@@ -194,7 +194,7 @@
     });
     parts.push(fillN(ctx, (pk(ctx, K.close) || '').split('{all}').join(all), T[0], T[1]));
     S.kissPairs = E.map(function (p) { return [p[0].i, p[1].i]; });
-    return !!ctx.act2({ actors: T.slice(), cat: 'romance', text: parts.join(''), why: '新婚部屋：最後の夜（' + all + 'の幸せなキス）',
+    return !!ctx.act2({ actors: T.slice(), cat: 'romance', text: parts.join(''), why: '新婚生活：最後の夜（' + all + 'の幸せなキス）',
       fx: function () { S.lp.forEach(function (p) { ctx.mod2(p[0], p[1], { aff: 5, att: 5 }, { aff: 5, att: 5 }); }); } });
   };
   M.mood = function (S, a, b) { var x = S && S.nl && S.nl[key(a, b)]; return x ? x.mood : ''; };

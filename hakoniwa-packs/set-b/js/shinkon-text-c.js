@@ -1,4 +1,4 @@
-/* 新婚部屋の地の文（c。両方のビルド。書式は hakoniwa-packs/set-b/WRITING.md）
+/* 新婚生活の地の文（c。両方のビルド。書式は hakoniwa-packs/set-b/WRITING.md）
    ACT[願望][行動]：{a}＝願望を持つ人・{b}＝相手。WISH4：願望4「もっと気持ちを言葉にしてほしい・したい」の行動の表。
    BREAKFAST・LUNCH・DINNER：{a}＝ご飯を作る・用意する人・{b}＝相手・{food}＝食材表の食材。 */
 (function () {

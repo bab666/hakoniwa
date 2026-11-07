@@ -1,4 +1,4 @@
-/* セットB の部屋の共通部品：配役の組み立て（両方のビルド。2026-11-03。新婚部屋の shinkon.js から、看病の部屋でも使う部分を共通のかたまり kit に移した）
+/* セットB の部屋の共通部品：配役の組み立て（両方のビルド。2026-11-03。新婚生活の shinkon.js から、看病の部屋でも使う部分を共通のかたまり kit に移した）
    ■ HK.PairCast.install(ID, couple, endKey)：箱庭 ID の HK.simulate を包む（HK.wrap）。couple(C, input) は二人を選ぶ関数（[一人目, 二人目]）、endKey は結果の end に写す記録の名前（ctx.flags[endKey]）
      ・関係の上書き（override）：設定 env.rel が 'keep' でないとき、二人のあいだの関係を外す（家族などで恋愛が「なし」の関係は残す）。入力はそのまま、写しで動かす。足す関係は箱庭の extraTies
      ・登場しない住人（outsideOf・withOutside）：設定 env.outsideNames が 'no' でなければ、名簿（HK.UI.state()）から、二人のどちらかと関係（家族・擬似親子・友人・同僚・先輩後輩・同級生・元恋人・知人。

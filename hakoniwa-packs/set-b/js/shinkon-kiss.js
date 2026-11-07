@@ -1,4 +1,4 @@
-/* 新婚部屋のキス（追加パック set-b。両方のビルド。shinkon.js のあとに読む。shinkon.js は書き換えず、HK.wrap で差し込む）
+/* 新婚生活のキス（追加パック set-b。両方のビルド。shinkon.js のあとに読む。shinkon.js は書き換えず、HK.wrap で差し込む）
    本体の共通部品 HK.Kiss（キスの描写の型：きっかけ・長さ・深さ・終わり方。文は本体の kiss-text*.js）で、新婚の毎日のキスを足す。夜（エッチ）には数えない。
    ・朝：いってらっしゃいのキス（その日、仕事で出かける人がいる朝。短い版が基本で、たまに盛り上がって名残惜しくなり、遅刻しそうになる／「続きは帰ってから」のお預け）
    ・夜のはじめ：おかえりのキス（出かけた人が帰った夜。帰りが遅い夜・出張の日は出さない）
@@ -34,7 +34,7 @@
   /* キスの段を出す（記録の一件。夜（エッチ）の印は付けない） */
   function kiss(ctx, a, b, opt, k) {
     var S = S0(ctx), st = stat(ctx);
-    var r = KS.scene(ctx, a, b, Object.assign({ whyPre: '新婚部屋：', fx: function () { ctx.mod2(a, b, { aff: 2, att: 2 }, { aff: 2, att: 2 }); } }, opt));
+    var r = KS.scene(ctx, a, b, Object.assign({ whyPre: '新婚生活：', fx: function () { ctx.mod2(a, b, { aff: 2, att: 2 }, { aff: 2, att: 2 }); } }, opt));
     if (!r) return null;
     /* 平屋の家：階段・二階の文を外す（本体のキスの文。2026-11-05 報告「平屋で階段を下りて」） */
     if (S && S.hira && r.e && typeof r.e.text === 'string' && /階段|二階/.test(r.e.text)) {
@@ -129,7 +129,7 @@
     /* 三人婚：三人とも家にいる夜は、ときどき三人のキス */
     if (S.trio && S.C && S.full !== false && spouses(S).every(function (c) { var p = lifeDay(c, day.d); return !p || !p.trip; }) && ctx.rng() < 0.18) {
       var T3 = spouses(S), t3 = KS.trio(ctx, T3[0], T3[1], T3[2]);
-      if (t3 && ctx.act2({ actors: T3, cat: 'romance', text: t3, why: '新婚部屋：三人のキス（おやすみ）', fx: function () { ctx.mod2(T3[0], T3[1], { aff: 2, att: 2 }, { aff: 2, att: 2 }); ctx.mod2(T3[1], T3[2], { aff: 2, att: 2 }, { aff: 2, att: 2 }); } })) st.trio++;
+      if (t3 && ctx.act2({ actors: T3, cat: 'romance', text: t3, why: '新婚生活：三人のキス（おやすみ）', fx: function () { ctx.mod2(T3[0], T3[1], { aff: 2, att: 2 }, { aff: 2, att: 2 }); ctx.mod2(T3[1], T3[2], { aff: 2, att: 2 }, { aff: 2, att: 2 }); } })) st.trio++;
       return;
     }
     var k = null;
