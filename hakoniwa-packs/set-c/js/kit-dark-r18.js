@@ -165,7 +165,7 @@
     }
     if (fB && ROUGH_V.test(m)) m = '';
     /* この部屋のセットは ♡ を使わない（甘く美化しない。set-c-design.md の 0-2） */
-    m = m.replace(/^「|」$/g, '').replace(/[♡♥]+/g, '').replace(/[ 　]+(?=」|$)/g, '');
+    m = m.replace(/^「|」$/g, '').replace(/[♡♥]+[ 　]?/g, '').replace(/[ 　]+$/g, '');
     return m ? '{b}「' + m + '」' : '';
   }
   R.voice = voice;

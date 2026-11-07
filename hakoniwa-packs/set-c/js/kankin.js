@@ -5,7 +5,7 @@
    ・計器（巻き戻らない。HK.DarkKit.gauge）：恐怖 fear（上がる）・抵抗 resist（下がる）・正気 sane（下がる）・快楽 pleasure（上がる）・本音 want（上がる）・
      怖さの段 dark（上がる：優しい顔 → 嫉妬 → 薬・合鍵 → 塞ぐ → 豹変）・堕ちの段 fall（0 まだ／1 慣れ／2 求める／3 溺れる）・執着 obsess
    ・分かれ道：A は 懐柔 kaijo／薬 drug（薬「入」のときだけ）／追い詰め oitsume／豹変 hyohen、B は 従う obey／嘘で取り入る lie／脱出 escape／拒む refuse（態度 9 種 → 既定、運命の揺らぎでらしくない方へ）
-   ・山場：逃げ出そうとして見つかった夜のお仕置き。結末 6：壊れて溺れる／脱出（通報・見逃される）／共依存の楽園／立場の逆転／救出／心中（死ネタのスイッチが入のときだけ）
+   ・山場：逃げ出そうとして見つかった夜のお仕置き。結末 6：壊れて溺れる／脱出（通報・見逃される）／共依存の楽園／立場の逆転／救出／心中（死ネタの重さが「重い」のときだけ。HK.Dark）
    文は kankin-text-a.js・-b.js・-c.js（HK.KankinText）。部品は HK.DarkKit（kit）。本体の共通の出来事は混ぜない（actRate ≒ 0・exclude）。登場人物はすべて成人として扱う */
 /* @event scen=set-c-kankin id=kk_intro cat=bond tie=- label=閉ざされた部屋で二人きりの日々が始まる */
 /* @event scen=set-c-kankin id=kk_wake cat=bond tie=- label=閉ざされた部屋で迎える朝 */
@@ -262,16 +262,16 @@
   /* ---------- 計器の動き ---------- */
   function fallCalc(S) {
     var x = (100 - DK.val(S, 'resist')) + DK.val(S, 'pleasure') + Math.max(0, DK.val(S, 'want') - WANT_LINE) / 2;
-    return x >= 150 ? 3 : x >= 100 ? 2 : x >= 55 ? 1 : 0;
+    return x >= 175 ? 3 : x >= 120 ? 2 : x >= 60 ? 1 : 0;
   }
   function drift(ctx, S) {
     var k = S.k, a = S.abr.k, b = S.bbr.k, fr = S.firm ? 0.6 : 1;
-    DK.push(S, 'sane', -2 * k); DK.push(S, 'resist', -3 * k * fr); DK.push(S, 'want', 2 * k); DK.push(S, 'obsess', 3);
-    if (a === 'kaijo') { DK.push(S, 'want', 4 * k); DK.push(S, 'fear', 1); DK.push(S, 'resist', -4 * k * fr); }
-    else if (a === 'drug') { DK.push(S, 'pleasure', 6 * k); DK.push(S, 'sane', -5 * k); DK.push(S, 'resist', -5 * k * fr); }
-    else if (a === 'oitsume') { DK.push(S, 'sane', -7 * k); DK.push(S, 'fear', 5 * k); DK.push(S, 'resist', -3 * k * fr); }
-    else { DK.push(S, 'fear', 8 * k); DK.push(S, 'sane', -4 * k); DK.push(S, 'resist', -2 * k * fr); }
-    if (b === 'obey') { DK.push(S, 'resist', -6 * k); DK.push(S, 'want', 2 * k); }
+    DK.push(S, 'sane', -1.5 * k); DK.push(S, 'resist', -2 * k * fr); DK.push(S, 'want', 2 * k); DK.push(S, 'obsess', 3);
+    if (a === 'kaijo') { DK.push(S, 'want', 4 * k); DK.push(S, 'fear', 1); DK.push(S, 'resist', -3 * k * fr); DK.push(S, 'sane', -1 * k); }
+    else if (a === 'drug') { DK.push(S, 'pleasure', 5 * k); DK.push(S, 'sane', -3 * k); DK.push(S, 'resist', -4 * k * fr); }
+    else if (a === 'oitsume') { DK.push(S, 'sane', -5 * k); DK.push(S, 'fear', 5 * k); DK.push(S, 'resist', -2 * k * fr); }
+    else { DK.push(S, 'fear', 8 * k); DK.push(S, 'sane', -3 * k); DK.push(S, 'resist', -2 * k * fr); }
+    if (b === 'obey') { DK.push(S, 'resist', -4 * k); DK.push(S, 'want', 2 * k); }
     else if (b === 'lie') { DK.push(S, 'want', 4 * k); DK.push(S, 'resist', -3 * k); }
     else if (b === 'refuse') DK.push(S, 'want', 1 * k);
     DK.push(S, 'dark', 85 / (S.days * 0.7));
@@ -279,7 +279,7 @@
   function stepFall(ctx, S) { var r = DK.push(S, 'fall', fallCalc(S) - DK.val(S, 'fall')); return r.rose ? r.stage : 0; }
   /* 体の場面のあと（kankin-r18.js が呼ぶ） */
   function afterSex(ctx, S, kind) {
-    DK.push(S, 'pleasure', 15); DK.push(S, 'resist', -6 * (S.firm ? 0.6 : 1)); DK.push(S, 'sane', kind === 'oshioki' ? -10 : -5); DK.push(S, 'want', 5);
+    DK.push(S, 'pleasure', 12); DK.push(S, 'resist', -5 * (S.firm ? 0.6 : 1)); DK.push(S, 'sane', kind === 'oshioki' ? -8 : -3); DK.push(S, 'want', 5);
     ctx.mod2(S.A, S.B, { aff: 3, att: 6 }, { att: 5, ten: 2 });
   }
 
@@ -317,7 +317,7 @@
       S.darkDue = dk > (S.darkSeen || 0) ? dk : 0;
       slot(ctx, S, M_POOL);
       /* 外との連絡：一日おきに（設定の種） */
-      if (d % 2 === 1 || S.contact === 'watched') { if (ev(ctx, S, 'phone')) S.setHit++; }
+      if (d % 3 === 1) { if (ev(ctx, S, 'phone')) S.setHit++; }
       var fs = stepFall(ctx, S);
       if (fs && DK.once(S, 'fall' + fs)) ev(ctx, S, 'fall' + fs, { bl: 'fall' + fs, mag: 12 });
     } else if (t === 1) {
@@ -395,17 +395,19 @@
   function decide(ctx, S) {
     if (S.endK) return S.endK;
     var fs = DK.stage(S, 'fall'), ss = DK.stage(S, 'sane'), want = DK.val(S, 'want'), b = S.bbr.k, k;
-    if (DK.val(S, 'sane') <= 0 || (fs >= 3 && ss >= 2)) k = 'broken';
-    else if (DK.content(ctx, 'death') && /^(purge|depend)$/.test(S.ty) && ss >= 1 && ctx.rng() < 0.4) k = 'shinju';
-    else if ((S.search === 'strong' && fs < 2 && ctx.rng() < 0.75) || (S.search === 'weak' && fs < 1 && ctx.rng() < 0.35)) k = 'rescue';
+    if (DK.val(S, 'sane') <= 0 || (fs >= 3 && DK.val(S, 'sane') <= 15)) k = 'broken';
+    else if (shinjuOk(ctx) && /^(purge|depend)$/.test(S.ty) && ss >= 1 && ctx.rng() < 0.45) k = 'shinju';
+    else if ((S.search === 'strong' && fs < 3 && ctx.rng() < 0.65) || (S.search === 'weak' && fs < 2 && ctx.rng() < 0.3)) k = 'rescue';
     else if ((b === 'lie' && !S.lieFound && fs <= 2 && ctx.rng() < 0.75) || (S.firm && S.ty === 'depend' && DK.stage(S, 'resist') <= 1 && ctx.rng() < 0.5)) k = 'gyakuten';
-    else if (/^(escape|refuse)$/.test(b) && fs < 2) k = 'escape';
+    else if (/^(escape|refuse)$/.test(b) && fs < 2 || (S.esc && S.esc.caught && fs < 1)) k = 'escape';
     else if (want >= 60 && fs >= 1) k = 'kyoizon';
     else k = fs >= 1 ? 'kyoizon' : 'escape';
     S.endK = k;
     if (k === 'escape') S.endSub = /^(gentle|devoted|polite|shy)$/.test(S.perA) && ctx.rng() < 0.6 ? 'minogasu' : 'tsuho';
     return k;
   }
+  /* 心中は死ネタの重さが「重い」のときだけ（本体の HK.Dark。死ネタの重さが「おまかせ」なら展開の重さ。この部屋の既定は重い） */
+  function shinjuOk(ctx) { var D = HK.Dark; return !!(D && D.on && D.on(ctx, 'shinju') === 'dark'); }
   function ending(ctx, S) {
     var k = decide(ctx, S), E = TX().END || {}, key = k === 'escape' ? 'escape_' + S.endSub : k;
     var t = rnd(ctx, E[key]);

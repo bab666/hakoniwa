@@ -275,13 +275,13 @@
       face: k === 'wake_ng' || k === 'apart' ? faceB(S, 'angry') : body ? faceB(S, 'shy') : null });
     /* 暮らし方の朝（2 日目以降も毎日のどこかで暮らし方を効かせる。朝に出なかった日は昼に） */
     S.setToday = false;
-    if (ctx.rng() < 0.5) { var ms = pk(ctx, S, (T.SET_M || {})[S.reason]); if (ms) { say(ctx, S, 'nm_set', ms, { why: '暮らし方の朝（' + ({ together: '同居', stay: '泊まり', trip: '旅先' })[S.reason] + '）' }); S.setToday = true; } }
+    if (!S.broken && ctx.rng() < 0.5) { var ms = pk(ctx, S, (T.SET_M || {})[S.reason]); if (ms) { say(ctx, S, 'nm_set', ms, { why: '暮らし方の朝（' + ({ together: '同居', stay: '泊まり', trip: '旅先' })[S.reason] + '）' }); S.setToday = true; } }
   }
 
   /* 昼：眠る側の分岐・触れる側の顔・暮らし方・疼き・二人のやりとり */
   function day(ctx, S, d) {
     var T = TX();
-    if (S.broken) { say(ctx, S, 'nm_post_ng', pk(ctx, S, T.POST_NG_D), { why: '知られてしまったあとの昼', face: faceB(S, 'angry') }); setDay(ctx, S, T); return; }
+    if (S.broken) { for (var bi = 0; bi < 2; bi++) say(ctx, S, 'nm_post_ng', pk(ctx, S, T.POST_NG_D, { again: false }), { why: '知られてしまったあとの昼（' + ({ together: '同じ家で避け合う', stay: '' + S.B.name + 'は自分の家へ', trip: '宿の別々の部屋' })[S.reason] + '）', face: faceB(S, 'angry') }); return; }
     if (S.accepted) {
       say(ctx, S, 'nm_post_ok', pk(ctx, S, T.POST_OK_D, { g: 'uzuki' }), { cat: rcat(ctx, S), why: '受け入れたあとの昼' });
       setDay(ctx, S, T);
@@ -354,9 +354,7 @@
     if (S.bBr === 'feign' && st(S, 'aware') >= 2 && wantOk(S)) {
       if (S.lewdOn && R && S.sexN < S.quota && S.flags.feignN >= 1 && !S.flags.feignSex) { S.flags.feignSex = true; if (R.scene(ctx, S, 'feign')) { S.lastNight = 'scene'; return; } }
       S.flags.feignN = (S.flags.feignN || 0) + 1;
-      var ft = pk(ctx, S, T.FEIGN, { g: 'reach' });
-      say(ctx, S, 'nm_feign', ft, { why: '寝たふりの夜（' + S.B.name + 'は起きていた）', face: faceB(S, 'shy') });
-      if (S.lewdOn && R && R.touch) R.touch(ctx, S, 'feign');
+      if (!(S.lewdOn && R && R.touch(ctx, S, 'feign'))) say(ctx, S, 'nm_feign', pk(ctx, S, T.FEIGN, { g: 'reach' }), { why: '寝たふりの夜（' + S.B.name + 'は起きていた）', face: faceB(S, 'shy') });
       DK.push(S, 'uzuki', 12); bumpWant(ctx, S, 4);
       S.lastNight = 'feign';
       return;
@@ -412,7 +410,6 @@
     S.accepted = true;
     DK.push(S, 'aware', 100);
     if (S.lewdOn && R && S.sexN < S.quota && R.scene(ctx, S, 'wake')) { S.lastNight = 'scene'; return; }
-    if (S.lewdOn && R && S.sexN >= S.quota && S.quota > 0) R.why(ctx, S, 'used');
     say(ctx, S, 'nm_night_ok', pk(ctx, S, P.calm), { cat: rcat(ctx, S), why: '山場のあと、並んで眠った' });
     S.lastNight = 'wake_ok';
   }

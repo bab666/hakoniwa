@@ -38,6 +38,44 @@
         "js/kankin-tips.js",
         "js/solo-warn-set-c-kankin.js"
       ]
+    },
+    {
+      "name": "chokyo",
+      "deps": [
+        "kit",
+        "pack-lewd"
+      ],
+      "files": [
+        "js/chokyo-text-a.js",
+        "js/chokyo-text-b.js",
+        "js/chokyo-text-c.js",
+        "js/chokyo-text-d.js",
+        "js/chokyo-r18-text.js",
+        "js/chokyo.js",
+        "js/chokyo-r18.js",
+        "js/chokyo-tags.js",
+        "js/solo-warn-set-c-chokyo.js",
+        "js/chokyo-tips.js"
+      ]
+    },
+    {
+      "name": "nemuri",
+      "deps": [
+        "kit",
+        "pack-lewd"
+      ],
+      "files": [
+        "js/nemuri-text-a.js",
+        "js/nemuri-text-b.js",
+        "js/nemuri-text-c.js",
+        "js/nemuri.js",
+        "js/nemuri-r18-text.js",
+        "js/nemuri-r18-text-b.js",
+        "js/nemuri-r18.js",
+        "js/nemuri-tags.js",
+        "js/solo-warn-set-c-nemuri.js",
+        "js/nemuri-tips.js"
+      ]
     }
   ]
 }

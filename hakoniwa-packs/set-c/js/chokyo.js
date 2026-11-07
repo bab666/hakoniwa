@@ -110,7 +110,7 @@
 
   /* ---------- 文の絞り込み（設定と食い違う文を出さない） ---------- */
   var FULL_RE = /玩具|ローター|バイブ|張り型|拘束台|媚薬|ペニバン|クリップ|小瓶|薬/, BASIC_RE = /縄|目隠し|首輪|手枷|鎖|鞭|革の|枷/, SOFT_NG = /鞭|赤く腫れ|痕が残|容赦なく/, HYPNO_RE = /催眠|暗示|振り子/;
-  var B_F = /\{(?:女性器|陰核|愛液)\}/, B_M = /\{b\}の[^。、「」]{0,6}\{(?:男性器|亀頭)\}|\{(?:前立腺|結腸)\}/, A_M = /\{a\}の[^。、「」]{0,6}\{(?:男性器|亀頭)\}|\{精液\}/;
+  var B_F = /\{(?:女性器|陰核|愛液)\}/, B_M = /\{b\}の[^。、「」]{0,6}\{(?:男性器|亀頭)\}|\{(?:前立腺|結腸)\}/, A_M = /\{a\}の[^。、「」]{0,6}\{(?:男性器|亀頭)\}|自分の\{男性器\}/;
   function okText(S, x) {
     if (typeof x !== 'string' || !x) return false;
     var n = x;
@@ -121,7 +121,7 @@
     var Pp = P();
     if (Pp && S.B && B_F.test(n) && !Pp.hasF(S.B)) return false;
     if (Pp && S.B && B_M.test(n) && !Pp.hasM(S.B)) return false;
-    if (Pp && S.A && A_M.test(n) && !/\{b\}は[^。]{0,12}\{精液\}/.test(n) && !Pp.hasM(S.A)) return false;
+    if (Pp && S.A && A_M.test(n) && !Pp.hasM(S.A)) return false;
     if (!S.B2 && /\{g2\}/.test(n)) return false;
     /* 捕まえられてきた回に契約の文を、契約の回にさらわれた文を出さない */
     if (S.captured && /契約|自分で選んで|望んで来た|署名|名前を書|催眠|暗示|合図の言葉|口づけ|キス|抱き寄せ|抱きしめ|膝に乗せ|膝の上|甘え/.test(n)) return false;
@@ -326,7 +326,7 @@
     C.G.concat([A, B]).forEach(function (c) { c.life = c.life || { job: '' }; if (!c.action) c.action = { id: 'live', label: '' }; if (!c.goal) c.goal = { id: 'ck', label: '' }; c.autoAction = false; c.autoGoal = false; });
     A.goal = { id: 'ck', label: '短期「' + goalLabel('s', S.gsA.k) + '」' + (S.gsA.user ? '（選んだ目標）' : '') + '／長期「' + goalLabel('l', S.glA.k) + '」' + (S.glA.user ? '（選んだ目標）' : '') };
     B.goal = { id: 'ck', label: '短期「' + goalLabel('s', S.gsB.k) + '」' + (S.gsB.user ? '（選んだ目標）' : '') + '／長期「' + goalLabel('l', S.glB.k) + '」' + (S.glB.user ? '（選んだ目標）' : '') };
-    if (!HK.SAFE_ON && R18() && R18().quota) S.lewdMax = S.noBody ? 0 : R18().quota(ctx, env.lewdN);
+    if (!HK.SAFE_ON && R18() && R18().quota) { S.lewdQ = R18().quota(ctx, env.lewdN); S.lewdMax = S.noBody ? 0 : S.lewdQ; }
     ctx.place = '地下室';
     intro(ctx);
   }
@@ -355,7 +355,7 @@
     if (t === 0) morning(ctx, d);
     else if (t === 1) { if (d === S.debutDay) debutPrep(ctx); else { daytime(ctx, d); if (S.captured) clue(ctx, d); } }
     else if (S.captured) { if (!escapeNight(ctx, d, last)) { if (last) ending(ctx); else night(ctx, d); } }
-    else { if (last) { auction(ctx); ending(ctx); } else if (d === S.debutDay) debut(ctx); else night(ctx, d); }
+    else { if (last) { if (!S.sex && S.lewdQ > 0 && R18() && R18().noneWhy) R18().noneWhy(ctx, S); auction(ctx); ending(ctx); } else if (d === S.debutDay) debut(ctx); else night(ctx, d); }
     /* 空の区切りを作らない（二人のやりとりを 1 件以上） */
     if (!S.partN && !S.ended) filler(ctx);
   }
@@ -394,16 +394,16 @@
   function daytime(ctx, d) {
     var S = f(ctx), T = TX(), A = S.A, B = S.B, k = trainPart(ctx), sk = STRICT_K[S.strict], mk = METHOD_K[S.method];
     S.trains++; S.cnt[k] = (S.cnt[k] || 0) + 1;
-    var head = pk(ctx, (T.METHOD || {})[S.method], { g: 'obey' }) || pk(ctx, (T.METHOD || {}).all, { g: 'obey', again: true });
-    var top = pk(ctx, byPer(T.TOP, A), { g: 'obey', again: true });
+    var head = pk(ctx, (T.METHOD || {})[S.method], { g: 'obey' }) || pk(ctx, (T.METHOD || {}).all, { g: 'obey' });
+    var top = pk(ctx, byPer(T.TOP, A), { g: 'obey' });
     var body, gk = 'sens_' + k, rose = null;
     if (PARTS[k].mind || k === 'oazuke') body = pk(ctx, (T.PART || {})[k], { g: 'obey', again: true });
     else body = pk(ctx, (T.PART || {})[k], { g: gk, again: true });
-    var react = pk(ctx, (T.REACT || {})[S.br], { g: 'obey', again: true });
+    var react = pk(ctx, (T.REACT || {})[S.br], { g: 'obey' });
     var tx = [head, body, top, react].filter(Boolean).join('');
     var lewd = !PARTS[k].mind && !S.noBody;
     /* 計器を進める */
-    var inc = Math.round((20 + ctx.rng() * 9) * sk * mk * (S.gsB.k === 'oboeru' ? 1.12 : 1));
+    var inc = Math.round((14 + ctx.rng() * 6) * sk * mk * (S.gsB.k === 'oboeru' ? 1.12 : 1));
     if (S.gauges[gk]) rose = DK.push(S, gk, inc);
     var oi = { obey: 9, flatter: 7, endure: 5, defy: 3 }[S.br] * sk * (S.gsB.k === 'taeru' ? 0.75 : 1) * (S.gsB.k === 'homerare' ? 1.15 : 1);
     DK.push(S, 'obey', Math.round(oi + ctx.rng() * 3));
@@ -424,16 +424,16 @@
   }
   function reward(ctx) {
     var S = f(ctx), T = TX();
-    var t = pk(ctx, byPer(T.REWARD, S.A), { g: 'obey', again: true });
-    var r = pk(ctx, (T.REWARD_B || {})[S.br], { g: 'obey', again: true });
+    var t = pk(ctx, byPer(T.REWARD, S.A), { g: 'obey' }) || pk(ctx, T.REWARD_ALL, { g: 'obey' }) || pk(ctx, byPer(T.REWARD, S.A).concat(T.REWARD_ALL || []), { g: 'obey', again: true });
+    var r = pk(ctx, (T.REWARD_B || {})[S.br], { g: 'obey' });
     S.rewards++;
     DK.push(S, 'dep', 4 + (S.care === 'many' ? 2 : 0)); DK.push(S, 'want', 3); DK.push(S, 'jo', 3);
     if (t) say(ctx, 'ck_reward', t + r, { why: '褒美', face: faces([[S.B, 'joy']]), fx: function () { ctx.mod2(S.A, S.B, { aff: 2, trust: 2 }, { aff: 2, trust: 2 }); } });
   }
   function punish(ctx) {
     var S = f(ctx), T = TX();
-    var t = pk(ctx, byPer(T.PUNISH, S.A), { g: 'obey', again: true });
-    var r = pk(ctx, (T.PUNISH_B || {})[S.br], { g: 'obey', again: true });
+    var t = pk(ctx, byPer(T.PUNISH, S.A), { g: 'obey' }) || pk(ctx, T.PUNISH_ALL, { g: 'obey' }) || pk(ctx, byPer(T.PUNISH, S.A).concat(T.PUNISH_ALL || []), { g: 'obey', again: true });
+    var r = pk(ctx, (T.PUNISH_B || {})[S.br], { g: 'obey' });
     S.punish++;
     var hk = S.strict === 'hard' ? 1.5 : S.strict === 'soft' ? 0.6 : 1;
     DK.push(S, 'obey', Math.round(5 * hk)); DK.push(S, 'crack', Math.round(4 * hk * (S.gsA.k === 'kowasanai' ? 0.6 : 1)));
@@ -444,7 +444,7 @@
   function night(ctx, d) {
     var S = f(ctx), T = TX(), A = S.A, B = S.B;
     var many = S.care === 'many';
-    var ct = pk(ctx, many ? T.CARE : T.COLD, { g: many ? 'dep' : 'crack', again: true });
+    var ct = pk(ctx, many ? T.CARE : T.COLD, { g: many ? 'dep' : 'crack' }) || pk(ctx, T.NIGHT_ALL, { g: 'obey' });
     if (ct) say(ctx, many ? 'ck_care' : 'ck_cold', ct, { why: many ? '手当て（精神のケアが多い）' : '手当てのない夜（精神のケアが少ない）', face: faces([[B, many ? 'shy' : 'sad']]) });
     DK.push(S, 'dep', many ? 6 : 2); DK.push(S, 'crack', many ? 0 : 4); DK.push(S, 'want', many ? 4 : 2); DK.push(S, 'jo', many ? 4 : 2);
     milestones(ctx);
@@ -456,7 +456,7 @@
       if (ctx.rng() < p) did = R.night(ctx, S, kindOf(ctx));
     }
     if (!did) {
-      if (S.noBody || ctx.rng() < 0.5) { var ps = pk(ctx, T.PSY, { g: 'obey', again: true }); if (ps) say(ctx, 'ck_psy', ps, { why: '心理劇の夜（言葉と鎖だけ）', face: faces([[B, 'shy']]) }); }
+      if (S.noBody || ctx.rng() < 0.5) { var ps = pk(ctx, T.PSY, { g: 'obey' }); if (ps) say(ctx, 'ck_psy', ps, { why: '心理劇の夜（言葉と鎖だけ）', face: faces([[B, 'shy']]) }); }
       else talk(ctx);
     }
     if (ctx.rng() < 0.45) solo(ctx);
@@ -469,7 +469,7 @@
   }
   function talk(ctx) {
     var S = f(ctx), T = TX();
-    var t = pk(ctx, T.TALK, { g: 'dep', again: true });
+    var t = pk(ctx, T.TALK, { g: 'dep' });
     if (t) say(ctx, 'ck_talk', t, { why: '寝る前の会話', fx: function () { ctx.mod2(S.A, S.B, { aff: 2 }, { aff: 2 }); } });
   }
   function solo(ctx) {
@@ -546,7 +546,7 @@
       var tg = pk(ctx, T.GIVEUP);
       if (tg) { say(ctx, 'ck_giveup', tg, { why: B.name + 'が逃げるのを諦めた', face: faceOf(B, 'sad'), mag: 10 }); return false; }
     }
-    if (S.gaveUp || d < 1 || DK.val(S, 'esc') < S.escLine) return false;
+    if (S.gaveUp || d < 1 || (!last && DK.val(S, 'esc') < S.escLine)) return false;
     /* 情の移った調教師：鍵を開けたままにする */
     if (DK.stage(S, 'jo') >= 1 && /^(gentle|devoted|shy|tsun)$/.test(DK.per(A)) && ctx.rng() < 0.55) {
       S.letGo = true; S.endK = 'free';
@@ -620,7 +620,8 @@
     if (S.endK) return S.endK;
     if (S.captured) {
       var pb0 = DK.per(B);
-      S.endK = S.gaveUp ? 'own' : (/^(proud|tsun|cool|stern)$/.test(pb0) && S.br === 'defy' && DK.stage(S, 'obey') <= 1) ? 'reverse' : DK.stage(S, 'obey') >= 2 ? 'own' : 'free';
+      /* 脱出・見逃しは escapeNight が free にする。ここに来るのは最後の夜まで出られなかった回 */
+      S.endK = !S.gaveUp && /^(proud|tsun|cool|stern)$/.test(pb0) && (S.br === 'defy' || S.fails >= 2) && DK.stage(S, 'obey') <= 1 ? 'reverse' : 'own';
       return S.endK;
     }
     var ob = DK.stage(S, 'obey'), dp = DK.stage(S, 'dep'), cr = DK.stage(S, 'crack'), jo = DK.stage(S, 'jo'), want = DK.val(S, 'want'), pb = DK.per(B), pa = DK.per(A);
@@ -651,7 +652,7 @@
   function kanji(v) { return v >= 10000 ? Math.floor(v / 10000) + '億' + (v % 10000 ? (v % 10000) + '万円' : '円') : v + '万円'; }
   function ending(ctx) {
     var S = f(ctx), T = TX(), A = S.A, B = S.B, k = decideEnd(ctx);
-    var t = pk(ctx, ((S.captured ? T.END_CAP || {} : T.END || {})[k]) || []);
+    var t = pk(ctx, ((S.captured ? T.END_CAP || {} : T.END || {})[S.captured && k === 'own' && !S.gaveUp ? 'held' : k]) || []);
     var w = pk(ctx, ((T.END_PER || {})[k] || {})[DK.per(B)] || []);
     if (!t) t = '{b}の地下室の日々は、ここで終わった。';
     say(ctx, 'ck_end', t + w, { why: '結末（' + END_NAME[k] + '）', face: faces([[B, { sold: 'sad', own: 'smile_lover', free: 'joy', reverse: 'joy', love: 'smile_lover' }[k]], [A, { sold: 'normal', own: 'joy', free: 'sad', reverse: 'surprise', love: 'smile_lover' }[k]]]), mag: 20,
@@ -671,6 +672,10 @@
     }[g.k];
     return { label: goalLabel(kind, g.k), ok: !!ok, user: g.user, v: v };
   }
+  function endName(S) {
+    if (!S.captured) return END_NAME[S.endK];
+    return S.endK === 'free' ? (S.letGo ? '調教師が見逃した' : '地下室から脱出した') : S.endK === 'reverse' ? '立場が逆転した' : S.gaveUp ? '逃げるのを諦めた' : '最後まで出られなかった';
+  }
   function finish(ctx) {
     var S = f(ctx); if (!S) return;
     var A = S.A, B = S.B;
@@ -680,14 +685,15 @@
     var sens = {};
     Object.keys(S.gauges).forEach(function (k) { if (/^sens_/.test(k)) sens[PARTS[k.slice(5)].label] = Math.round(S.gauges[k].v); });
     var res = { gsA: goalRes(S, 'A', 's'), glA: goalRes(S, 'A', 'l'), gsB: goalRes(S, 'B', 's'), glB: goalRes(S, 'B', 'l') };
-    ctx.flags.chokyo = { days: S.days, a: A.i, b: B.i, endK: S.endK, end: END_NAME[S.endK], price: S.price, sens: sens, obey: Math.round(DK.val(S, 'obey')), dep: Math.round(DK.val(S, 'dep')), crack: Math.round(DK.val(S, 'crack')), want: Math.round(DK.val(S, 'want')),
+    ctx.flags.chokyo = { days: S.days, a: A.i, b: B.i, endK: S.endK, end: endName(S), price: S.price, sens: sens, obey: Math.round(DK.val(S, 'obey')), dep: Math.round(DK.val(S, 'dep')), crack: Math.round(DK.val(S, 'crack')), want: Math.round(DK.val(S, 'want')),
       method: METHOD_NAME[S.method], methodOdd: !!S.methodOdd, br: BR_NAME[S.br], brOdd: !!S.brOdd, care: S.care === 'many' ? '多い' : '少ない', depth: { obey: '命令に従う', beg: '自分から媚びる', full: '完全な服従' }[S.depth],
       sex: S.sex, noBody: !!S.noBody, captured: !!S.captured, esc: Math.round(DK.val(S, 'esc')), tries: S.tries, fails: S.fails, escaped: !!S.escaped, letGo: !!S.letGo, gaveUp: !!S.gaveUp, debut: S.debutK || '', rewards: S.rewards, punish: S.punish, trains: S.trains,
       goals: [[A.name, res.gsA, res.glA], [B.name, res.gsB, res.glB]].map(function (x) { return { who: x[0], s: x[1].label, sOk: x[1].ok, l: x[2].label, lOk: x[2].ok }; }) };
     A.fate = { sold: '奴隷を送り出した調教師', own: '奴隷を引き取った調教師', free: '奴隷を解き放った調教師', reverse: '立場を明け渡した調教師', love: '奴隷を愛した調教師' }[S.endK];
     B.fate = { sold: '競りで送り出された奴隷', own: '調教師に引き取られた奴隷', free: '心を折らずに出ていった奴隷', reverse: '調教師の主になった奴隷', love: '調教師に愛された奴隷' }[S.endK];
     A.fateNote = B.name + 'を' + S.days + '日のあいだ躾けた'; B.fateNote = A.name + 'のもとで' + S.days + '日を過ごした';
-    ctx.flags.outcome = '調教の地下室の' + S.days + '日――' + END_NAME[S.endK];
+    if (S.captured) { A.fate = '奴隷を捕まえてきた調教師'; B.fate = S.endK === 'free' ? '地下室を出た奴隷' : S.endK === 'reverse' ? '調教師の主になった奴隷' : '地下室に残った奴隷'; }
+    ctx.flags.outcome = '調教の地下室の' + S.days + '日――' + endName(S);
   }
   DK.install(ID, DK.couple('part', 'trainer', 'slave', ['slave2', 'guest']), 'chokyo');
   if (HK.Endings) HK.Endings[ID] = function (res, X) {
