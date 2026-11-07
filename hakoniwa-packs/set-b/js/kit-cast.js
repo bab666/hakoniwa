@@ -4,7 +4,8 @@
      ・登場しない住人（outsideOf・withOutside）：設定 env.outsideNames が 'no' でなければ、名簿（HK.UI.state()）から、二人のどちらかと関係（家族・擬似親子・友人・同僚・先輩後輩・同級生・元恋人・知人。
        恋人・敵対などの関係が一つでもある人は外す）がある住人を三人まで、名簿の設定のまま「他の住人」（立場 guest・印 outside）として配役の後ろに足す。結果は入力の outsideG に写す
      ・結果から訪れた住人を外す（strip）：関係図・二人ずつ・住人ごと・区切りごとの記録・出来事の顔ぶれ。名前は地の文にだけ残る
-     返り値は { override, outsideOf, withOutside, strip }（点検用） */
+     ・出来事の顔ぶれを本文に合わせる（trim）：日常の記録で、本文に名前の出ていない人を actors から外す（経過の「人で絞る」が効くように）
+     返り値は { override, outsideOf, withOutside, strip, trim }（点検用） */
 (function () {
   'use strict';
   var HK = window.HK;
@@ -102,6 +103,20 @@
       });
       (r.log || []).forEach(function (e) { if (Array.isArray(e.actors)) e.actors = e.actors.filter(function (i) { return typeof i !== 'number' || i < n; }); });
     }
+    /* 出来事の顔ぶれ（actors）を本文に合わせる（2026-11-07 利用者の報告「人で絞っても記録が減らない」）：二人の部屋は、日常の記録でも二人そろって actors に入っていて、
+       経過の「人で絞る」で一人を選んでも記録が減らなかった。本文に名前が一人以上出ている記録は、名前の出ていない人を actors から外す（だれの名前も出ない記録はそのまま）。
+       日常の記録（kind が event・cat が romance でない）だけを見る。恋愛・夜・合意のない場面・三人の場面・コメント欄・重要な出来事（mag 20 以上・関係の節目・条件）は組を崩さない */
+    function trim(r) {
+      if (!r || !Array.isArray(r.chars) || !Array.isArray(r.log)) return;
+      var nm = r.chars.map(function (c) { return c && c.name ? String(c.name) : ''; });
+      r.log.forEach(function (e) {
+        if (!e || e.kind !== 'event' || e.cat === 'romance' || e.ch || e.sex || e.lewd || e.force || e.trioPairs || (e.mag || 0) >= 20 || (e.mark && e.mark.length) || e.goal || e.goalExit) return;
+        var a = e.actors, t = e.text;
+        if (!Array.isArray(a) || a.length < 2 || typeof t !== 'string') return;
+        var keep = a.filter(function (i) { return typeof i !== 'number' || (nm[i] && t.indexOf(nm[i]) >= 0); });
+        if (keep.length && keep.length < a.length) e.actors = keep;
+      });
+    }
     if (HK.wrap && HK.simulate) HK.wrap(HK, 'simulate', function (sim0) {
       return function (input) {
         var mine = input && input.scenId === ID;
@@ -109,9 +124,10 @@
         var r = sim0.apply(this, mine ? [inp].concat([].slice.call(arguments, 1)) : arguments), C0 = HK._curCtx;
         if (r && r.end && mine && C0 && C0.scen && C0.scen.id === ID && C0.flags) r.end[endKey] = C0.flags[endKey] || null;
         if (r && mine && inp && inp._outN) strip(r, inp._outN);
+        if (r && mine) trim(r);
         return r;
       };
     });
-    return { override: override, outsideOf: outsideOf, withOutside: withOutside, strip: strip };
+    return { override: override, outsideOf: outsideOf, withOutside: withOutside, strip: strip, trim: trim };
   };
 })();
